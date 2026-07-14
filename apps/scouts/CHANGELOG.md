@@ -1,5 +1,80 @@
 # Changelog
 
+## 1.90.22
+
+### Patch Changes
+
+-   [#1401](https://github.com/learningeconomy/LearnCard/pull/1401) [`86557d270445ebc7cdb192adf2256306e6ab84fe`](https://github.com/learningeconomy/LearnCard/commit/86557d270445ebc7cdb192adf2256306e6ab84fe) Thanks [@Custard7](https://github.com/Custard7)! - feat: Rich Tags
+
+## 1.90.21
+
+### Patch Changes
+
+-   [#1354](https://github.com/learningeconomy/LearnCard/pull/1354) [`1164a61bc9e43c76b4a13960f6c6a3c2a9d0900e`](https://github.com/learningeconomy/LearnCard/commit/1164a61bc9e43c76b4a13960f6c6a3c2a9d0900e) Thanks [@goblincore](https://github.com/goblincore)! - Add tenant/stage environment support to the ScoutPass lc CLI (LC-1943)
+
+    -   New `environments/scoutpass/` config with a base (production) config and a `local` stage overlay, mirroring learn-card-app's environments schema
+    -   `bun run lc dev|start|docker-start` accept an optional stage arg and inject the resolved env (LCN_URL, LCN_API_URL, CLOUD_URL, LEARN_CLOUD_XAPI_URL, API_URL, SENTRY_ENV); dev commands default to the `local` stage
+    -   New `bun run lc resolve [stage]` prints the merged config and the env vars that would be injected
+    -   compose.yaml / compose-local.yaml env now uses `${VAR:-default}` substitution so lc-injected env flows through while bare `docker compose up` keeps today's defaults
+
+-   [#1367](https://github.com/learningeconomy/LearnCard/pull/1367) [`f1e7b459a4650cf2fb9236369950efcaea935c3f`](https://github.com/learningeconomy/LearnCard/commit/f1e7b459a4650cf2fb9236369950efcaea935c3f) Thanks [@smurflo2](https://github.com/smurflo2)! - Revive Scouts, fix various bugs
+
+-   Updated dependencies [[`c0b5edb671ba3704b44547f9d0ef99f6f0e090ba`](https://github.com/learningeconomy/LearnCard/commit/c0b5edb671ba3704b44547f9d0ef99f6f0e090ba)]:
+    -   @learncard/react@2.10.6
+    -   @learncard/helpers@1.3.9
+    -   @learncard/lca-api-plugin@1.2.19
+    -   @learncard/sss-key-manager@0.1.17
+
+## 1.90.20
+
+### Patch Changes
+
+-   Updated dependencies [[`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68)]:
+    -   @learncard/helpers@1.3.8
+    -   @learncard/react@2.10.5
+    -   @learncard/sss-key-manager@0.1.16
+    -   @learncard/lca-api-plugin@1.2.18
+
+## 1.90.19
+
+### Patch Changes
+
+-   Updated dependencies [[`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299)]:
+    -   @learncard/helpers@1.3.7
+    -   @learncard/lca-api-plugin@1.2.17
+    -   @learncard/react@2.10.4
+    -   @learncard/sss-key-manager@0.1.15
+
+## 1.90.18
+
+### Patch Changes
+
+-   Updated dependencies [[`6bebc466925987b23008b0de2229db554035a87e`](https://github.com/learningeconomy/LearnCard/commit/6bebc466925987b23008b0de2229db554035a87e)]:
+    -   @learncard/helpers@1.3.6
+    -   @learncard/lca-api-plugin@1.2.16
+    -   @learncard/react@2.10.3
+    -   @learncard/sss-key-manager@0.1.14
+
+## 1.90.17
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.3.5
+    -   @learncard/lca-api-plugin@1.2.15
+    -   @learncard/react@2.10.2
+    -   @learncard/sss-key-manager@0.1.13
+
+## 1.90.16
+
+### Patch Changes
+
+-   [#1305](https://github.com/learningeconomy/LearnCard/pull/1305) [`a8d215a8eccaf3781b02d1c1b5df67ef1c315340`](https://github.com/learningeconomy/LearnCard/commit/a8d215a8eccaf3781b02d1c1b5df67ef1c315340) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1895] - Issuer Detail Popover
+
+-   Updated dependencies [[`ff998efc079ad82dec633353927dfa0dd3f6054c`](https://github.com/learningeconomy/LearnCard/commit/ff998efc079ad82dec633353927dfa0dd3f6054c), [`f77abec6b108d931e566c573f0694f2197e73eb9`](https://github.com/learningeconomy/LearnCard/commit/f77abec6b108d931e566c573f0694f2197e73eb9), [`ed44808fad96e9cba5c019fffa3780aba35f4095`](https://github.com/learningeconomy/LearnCard/commit/ed44808fad96e9cba5c019fffa3780aba35f4095), [`a8d215a8eccaf3781b02d1c1b5df67ef1c315340`](https://github.com/learningeconomy/LearnCard/commit/a8d215a8eccaf3781b02d1c1b5df67ef1c315340)]:
+    -   @learncard/react@2.10.1
+    -   @learncard/lca-api-plugin@1.2.14
+
 ## 1.90.15
 
 ### Patch Changes

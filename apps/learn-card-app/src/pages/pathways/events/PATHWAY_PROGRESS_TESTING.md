@@ -10,7 +10,7 @@ fastest to most realistic:
 3. **Real-world** — claim an actual boost / finish an actual AI tutor
    session and watch the full pipeline fire.
 
-Every step assumes the dev server is running (`pnpm lc dev ...`) and
+Every step assumes the dev server is running (`bun run lc dev ...`) and
 you're signed in with any learner DID.
 
 ---
@@ -59,7 +59,7 @@ __pathwaysDev.inspectPathway();
 // 6. Simulate the IAM tutor session ending
 __pathwaysDev.simulateAiSessionFinish({
     topicUri: 'boost:aws-iam-deep-dive',
-    durationSec: 600,  // 10 minutes
+    durationSec: 600, // 10 minutes
 });
 //   [pathwaysDev] simulateAiSessionFinish → { nodeCompletions: 1, topicUri: '...', threadId: '...' }
 //   (No modal — only credential ingests surface the CTA; AI sessions
@@ -72,13 +72,13 @@ __pathwaysDev.inspectPathway();
 
 ### What to watch for
 
-| Behaviour | Where it comes from |
-|---|---|
-| Modal appears once per credential, not once per match | `PathwayProgressReactorMount` dedupes by `credentialUri` |
-| `simulateCredentialClaim` with the same `eventId` twice → only one dispatch | `walletEventBus` dedup by `eventId` |
-| `simulateAiSessionFinish` without a `topicUri` → rejected | publisher-side guard in the simulator |
-| `simulateCredentialClaim` with a non-matching type → `nodeCompletions: 0` and no modal | `CredentialClaimedPathwayCta` early-returns when `hasProgress === false` |
-| Calling the same simulator twice with different `eventId`s → second call shows `already-completed` | idempotent-by-node-status at binder layer |
+| Behaviour                                                                                          | Where it comes from                                                      |
+| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Modal appears once per credential, not once per match                                              | `PathwayProgressReactorMount` dedupes by `credentialUri`                 |
+| `simulateCredentialClaim` with the same `eventId` twice → only one dispatch                        | `walletEventBus` dedup by `eventId`                                      |
+| `simulateAiSessionFinish` without a `topicUri` → rejected                                          | publisher-side guard in the simulator                                    |
+| `simulateCredentialClaim` with a non-matching type → `nodeCompletions: 0` and no modal             | `CredentialClaimedPathwayCta` early-returns when `hasProgress === false` |
+| Calling the same simulator twice with different `eventId`s → second call shows `already-completed` | idempotent-by-node-status at binder layer                                |
 
 ### Exercising the full DSL
 
@@ -140,20 +140,21 @@ __pathwaysDev.seedAws('did:example:alice');
 
 Then navigate to `/pathways/today`. Expected state:
 
-- The pathway shows seven nodes. The termination copy for each uses
-  the extended view-model:
-  - Nodes 1, 2, 6 render a progress ring (existing `count` view).
-  - Node 3 renders the "Ready when you are" affordance (`ready` view).
-  - **Node 4 renders "Finish the AI tutor session"** — the new
-    `external` view triggered by the `session-completed` termination.
-  - Node 5 renders "Ready when you are" (`self-attest`, kept as a
-    control).
-  - **Node 7 renders "Earn a qualifying credential"** — the new
-    `external` view triggered by `requirement-satisfied`.
+-   The pathway shows seven nodes. The termination copy for each uses
+    the extended view-model:
+    -   Nodes 1, 2, 6 render a progress ring (existing `count` view).
+    -   Node 3 renders the "Ready when you are" affordance (`ready` view).
+    -   **Node 4 renders "Finish the AI tutor session"** — the new
+        `external` view triggered by the `session-completed` termination.
+    -   Node 5 renders "Ready when you are" (`self-attest`, kept as a
+        control).
+    -   **Node 7 renders "Earn a qualifying credential"** — the new
+        `external` view triggered by `requirement-satisfied`.
 
 ### Visual tests
 
 **Session-completed loop** — click into Node 4 (IAM deep dive):
+
 1. The `AiSessionCard` renders the launch CTA.
 2. Tap **Start session** — the modal-over-map launches the first-
    party tutor for `boost:aws-iam-deep-dive`.
@@ -171,18 +172,21 @@ Then navigate to `/pathways/today`. Expected state:
 **Requirement-satisfied loop** — after node 6 (Pearson VUE), AWS
 issues a real VC. Any path that puts it in the wallet triggers the
 reactor. For scripted testing:
+
 ```js
 __pathwaysDev.simulateCredentialClaim({
     type: 'AWSCertifiedCloudPractitioner',
     issuer: 'did:web:aws.example',
 });
 ```
+
 Watch for:
-- `CredentialClaimedPathwayCta` modal appears. Copy: "Advanced 'Earn:
-  AWS Cloud Practitioner credential' on AWS Cloud Practitioner."
-- Node 7 flips to completed.
-- Pathway-level outcome "Earned AWS Cloud Practitioner" shows as
-  bound on `/pathways/today` (outcome binder also ran).
+
+-   `CredentialClaimedPathwayCta` modal appears. Copy: "Advanced 'Earn:
+    AWS Cloud Practitioner credential' on AWS Cloud Practitioner."
+-   Node 7 flips to completed.
+-   Pathway-level outcome "Earned AWS Cloud Practitioner" shows as
+    bound on `/pathways/today` (outcome binder also ran).
 
 ---
 
@@ -198,14 +202,15 @@ mean a regression in the publisher side, not the reactor.
 
 Follow any of these paths with a freshly seeded AWS pathway in place:
 
-| Source | How to trigger |
-|---|---|
-| Claim link | Open `/claim/boost?boostUri=...&challenge=...` with a real boost link. |
-| Dashboard | Use the in-app "Claim from Dashboard" flow with a real credential exchange. |
-| Partner SDK | Use the `@learncard/partner-connect` SDK `saveCredential` method from an embedded app. |
-| Interaction URL | `/interactions/claim/<base64-payload>`. |
+| Source          | How to trigger                                                                         |
+| --------------- | -------------------------------------------------------------------------------------- |
+| Claim link      | Open `/claim/boost?boostUri=...&challenge=...` with a real boost link.                 |
+| Dashboard       | Use the in-app "Claim from Dashboard" flow with a real credential exchange.            |
+| Partner SDK     | Use the `@learncard/partner-connect` SDK `saveCredential` method from an embedded app. |
+| Interaction URL | `/interactions/claim/<base64-payload>`.                                                |
 
 Expected result:
+
 1. Standard "Successfully claimed Credential!" toast appears as before.
 2. ~150ms later, the `CredentialClaimedPathwayCta` modal appears on
    top of it (if the credential matched a termination or outcome on
@@ -215,17 +220,17 @@ Expected result:
 
 Issues to watch for:
 
-- **No modal appears** and `listDispatches()` is empty → publisher
-  didn't fire. Check `useAddCredentialToWallet.onSuccess` in Network
-  tab or add a `console.log` inside its `try/catch`.
-- **Modal appears but node doesn't flip** → publisher fired but
-  `ownerDid` mismatch; check the dispatch record's proposals. The
-  reactor logs `[pathwayProgressReactor] proposal owner does not
-  match session owner` in that case.
-- **Modal flashes and disappears** → stacking collision with the
-  claim-surface's own modal. The 150ms defer in
-  `PathwayProgressReactorMount` should handle this; if not, bump the
-  delay.
+-   **No modal appears** and `listDispatches()` is empty → publisher
+    didn't fire. Check `useAddCredentialToWallet.onSuccess` in Network
+    tab or add a `console.log` inside its `try/catch`.
+-   **Modal appears but node doesn't flip** → publisher fired but
+    `ownerDid` mismatch; check the dispatch record's proposals. The
+    reactor logs `[pathwayProgressReactor] proposal owner does not
+match session owner` in that case.
+-   **Modal flashes and disappears** → stacking collision with the
+    claim-surface's own modal. The 150ms defer in
+    `PathwayProgressReactorMount` should handle this; if not, bump the
+    delay.
 
 ### 3b. Real AI tutor session
 
@@ -240,12 +245,12 @@ Issues to watch for:
 
 Issues to watch for:
 
-- **`listDispatches()` empty after finish** → the chat store's
-  `currentTopicUri` atom may not have been populated. Check that
-  `startTopicWithUri` ran (it should have, since the tutor launched).
-- **Dispatch fired but didn't match** → the `topicUri` on the node's
-  `session-completed` termination doesn't equal the one in the chat
-  store's `currentTopicUri` atom. Both must be the exact same string.
+-   **`listDispatches()` empty after finish** → the chat store's
+    `currentTopicUri` atom may not have been populated. Check that
+    `startTopicWithUri` ran (it should have, since the tutor launched).
+-   **Dispatch fired but didn't match** → the `topicUri` on the node's
+    `session-completed` termination doesn't equal the one in the chat
+    store's `currentTopicUri` atom. Both must be the exact same string.
 
 ---
 
@@ -256,39 +261,40 @@ completeness of the architecture coverage. Expected counts after the
 architecture changes:
 
 ```bash
-pnpm exec vitest run src/pages/pathways --reporter=dot
+bunx vitest run src/pages/pathways --reporter=dot
 # Test Files  52 passed | 1 skipped (53)
 #      Tests  899 passed | 4 skipped (903)
 ```
 
 The **72 new tests** live in:
-- `src/pages/pathways/core/credentialIdentity.test.ts` (19)
-- `src/pages/pathways/core/nodeRequirementMatcher.test.ts` (24)
-- `src/pages/pathways/agents/nodeProgressBinder.test.ts` (11)
-- `src/pages/pathways/events/walletEventBus.test.ts` (12)
-- `src/pages/pathways/events/pathwayProgressReactor.test.ts` (6)
+
+-   `src/pages/pathways/core/credentialIdentity.test.ts` (19)
+-   `src/pages/pathways/core/nodeRequirementMatcher.test.ts` (24)
+-   `src/pages/pathways/agents/nodeProgressBinder.test.ts` (11)
+-   `src/pages/pathways/events/walletEventBus.test.ts` (12)
+-   `src/pages/pathways/events/pathwayProgressReactor.test.ts` (6)
 
 ---
 
 ## Known limitations
 
-- **AI session modal is suppressed.** `PathwayProgressReactorMount`
-  only raises the CTA modal for credential ingests. Session-end
-  already has its own in-chat summary UI; stacking a second modal
-  over it would be noisy. If you want the "advanced your pathway"
-  affordance on session-end too, flip the `shouldPresentForDispatch`
-  rule.
-- **`ArtifactUploaded` and `SelfAttestConfirmed` events aren't
-  wired.** The bus and reactor accommodate them trivially (new
-  `WalletEvent` variant, new binder branch, publish from the
-  upload/attest surfaces), but no publishers exist yet. Self-attest
-  still flips via the existing `completeTermination` action in the
-  pathway store.
-- **Trust registry is blank.** Every signed DID classifies as
-  `trusted`. When the issuer registry lands, the reactor accepts a
-  real `IssuerTrustRegistry` via `createPathwayProgressReactor(opts)`
-  and the `institution` tier comes alive.
-- **No review surface for completion proposals.** All three
-  auto-accept toggles default to `true`. When the review UI ships,
-  flip `autoAcceptCredential: false` on the module-level reactor and
-  learners will see pending completion proposals in the Proposals tab.
+-   **AI session modal is suppressed.** `PathwayProgressReactorMount`
+    only raises the CTA modal for credential ingests. Session-end
+    already has its own in-chat summary UI; stacking a second modal
+    over it would be noisy. If you want the "advanced your pathway"
+    affordance on session-end too, flip the `shouldPresentForDispatch`
+    rule.
+-   **`ArtifactUploaded` and `SelfAttestConfirmed` events aren't
+    wired.** The bus and reactor accommodate them trivially (new
+    `WalletEvent` variant, new binder branch, publish from the
+    upload/attest surfaces), but no publishers exist yet. Self-attest
+    still flips via the existing `completeTermination` action in the
+    pathway store.
+-   **Trust registry is blank.** Every signed DID classifies as
+    `trusted`. When the issuer registry lands, the reactor accepts a
+    real `IssuerTrustRegistry` via `createPathwayProgressReactor(opts)`
+    and the `institution` tier comes alive.
+-   **No review surface for completion proposals.** All three
+    auto-accept toggles default to `true`. When the review UI ships,
+    flip `autoAcceptCredential: false` on the module-level reactor and
+    learners will see pending completion proposals in the Proposals tab.

@@ -32,7 +32,6 @@ import BoostPreview from '../boostCMS/BoostPreview/BoostPreview';
 import ShareBoostLink from '../boost-options-menu/ShareBoostLink';
 import NonBoostPreview from '../boostCMS/BoostPreview/NonBoostPreview';
 import IDDisplayCard from 'learn-card-base/components/id/IDDisplayCard';
-import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
 import CustomIssuerName from './helpers/CustomIssuerName';
 import BoostTextSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
 import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
@@ -76,6 +75,7 @@ type BoostEarnedCardProps = {
     textColor?: string;
     isClrChildCredential?: boolean;
     parentVerificationItems?: VerificationItem[];
+    isPreview?: boolean;
     relativeDate?: boolean;
     compact?: boolean;
 };
@@ -102,6 +102,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     textColor,
     isClrChildCredential = false,
     parentVerificationItems = [],
+    isPreview = false,
     relativeDate = false,
     compact = false,
 }) => {
@@ -161,6 +162,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         idAccentColor,
         backgroundImage,
         backgroundColor,
+        accentColor,
 
         loading: vcInfoLoading,
     } = useGetVCInfo(cred, categoryType);
@@ -298,7 +300,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     {...mappedInputs}
                 />
             ) : (
-                <CredentialBadge
+                <CredentialBadgeNew
                     achievementType={achievementType}
                     boostType={categoryType}
                     badgeThumbnail={badgeThumbnail}
@@ -313,6 +315,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             },
             formattedDisplayType: formattedAchievementType,
             isEarnedBoost: true,
+            isPreview,
             isClrChildCredential,
         };
 
@@ -332,7 +335,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                 handleOptionsMenu();
             },
             customThumbComponent: (
-                <CredentialBadge
+                <CredentialBadgeNew
                     achievementType={achievementType}
                     fallbackCircleText={title}
                     boostType={categoryType}
@@ -348,6 +351,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             isEarnedBoost: true,
             isClrChildCredential,
             isClrCredential,
+            isPreview,
         };
 
         const bgImage = isCertificate || isID || isAwardDisplay ? backgroundImage : undefined;
@@ -359,7 +363,9 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             newCredsStore.set.removeCreds([record?.uri]);
         }
 
-        if (isBoost) {
+        // CLR transcripts only render in NonBoostPreview; a boost-wrapped CLR
+        // (isBoost === true) must be excluded here or it renders as a plain boost.
+        if (isBoost && !isClrCredential) {
             newModal(<BoostPreview {...props} showEndorsementBadge />, {
                 backgroundImage: bgImage,
             });
@@ -427,27 +433,36 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                         />
                     }
                     customThumbComponent={
-                        <CredentialBadge
-                            achievementType={achievementType}
-                            fallbackCircleText={title}
-                            boostType={categoryType}
-                            badgeThumbnail={badgeThumbnail}
-                            showBackgroundImage
-                            backgroundImage={backgroundImage}
-                            backgroundColor={backgroundColor}
-                            badgeContainerCustomClass="mt-[0px] mb-[8px]"
-                            badgeCircleCustomClass={`!w-[116px] h-[116px] mt-1 ${
-                                isAwardDisplay ? 'mt-[17px]' : 'shadow-3xl'
-                            }`}
-                            badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"
-                            badgeRibbonCustomClass="w-[26px]"
-                            badgeRibbonIconCustomClass="w-[90%] mt-[4px]"
-                            displayType={displayType}
-                            credential={cred}
-                        />
+                        showSkeleton ? (
+                            <BadgeSkeleton
+                                badgeContainerCustomClass="mt-[0px] mb-[8px]"
+                                badgeCircleCustomClass="w-[116px] h-[116px] shadow-3xl mt-1"
+                            />
+                        ) : (
+                            <CredentialBadgeNew
+                                achievementType={achievementType}
+                                fallbackCircleText={title}
+                                boostType={categoryType}
+                                badgeThumbnail={badgeThumbnail}
+                                showBackgroundImage
+                                backgroundImage={backgroundImage}
+                                backgroundColor={backgroundColor}
+                                accentColor={accentColor}
+                                badgeContainerCustomClass="mt-[0px] mb-[8px]"
+                                badgeCircleCustomClass={`!w-[116px] h-[116px] mt-1 ${
+                                    isAwardDisplay ? 'mt-[17px]' : 'shadow-3xl'
+                                }`}
+                                badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"
+                                badgeRibbonCustomClass="w-[26px]"
+                                badgeRibbonIconCustomClass="w-[90%] mt-[4px]"
+                                displayType={displayType}
+                                credential={cred}
+                            />
+                        )
                     }
                     title={title}
-                    type={type}
+                    customTitle={customTitle}
+                    type={categoryType}
                     categoryType={categoryType}
                     boostPageViewMode={boostPageViewMode}
                     credential={cred}
@@ -462,6 +477,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     relativeDate={relativeDate}
                     compact={compact}
                     isCLR={isClrCredential}
+                    trustedVerifierOnly
                 />
             </ErrorBoundary>
         );
@@ -499,13 +515,14 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                         }
                         customThumbComponent={
                             <>
-                                <CredentialBadge
+                                <CredentialBadgeNew
                                     achievementType={achievementType}
                                     boostType={categoryType}
                                     badgeThumbnail={badgeThumbnail}
                                     showBackgroundImage
                                     backgroundImage={backgroundImage}
                                     backgroundColor={backgroundColor}
+                                    accentColor={accentColor}
                                     badgeContainerCustomClass="mt-[0px] mb-[8px]"
                                     badgeCircleCustomClass={`!w-[116px] h-[116px] mt-1 ${
                                         isAwardDisplay ? 'mt-[17px]' : 'shadow-3xl'
@@ -534,6 +551,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                         relativeDate={relativeDate}
                         compact={compact}
                         isCLR={isClrCredential}
+                        trustedVerifierOnly
                     />
                 </IonCol>
             </ErrorBoundary>
@@ -608,6 +626,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                 showBackgroundImage
                                 backgroundImage={backgroundImage}
                                 backgroundColor={backgroundColor}
+                                accentColor={accentColor}
                                 badgeContainerCustomClass="mt-[0px] mb-[8px]"
                                 badgeCircleCustomClass={`!w-[116px] h-[116px] mt-1 ${
                                     isAwardDisplay ? 'mt-[17px] mb-[-22px]' : 'shadow-3xl'
@@ -647,6 +666,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     relativeDate={relativeDate}
                     compact={compact}
                     isCLR={isClrCredential}
+                    trustedVerifierOnly
                 />
             </IonCol>
         </ErrorBoundary>

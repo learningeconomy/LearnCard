@@ -42,7 +42,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
 
     return (
         <div className="flex justify-center w-full font-poppins">
-            <div className="w-full max-w-[1200px] flex flex-col gap-5 px-4 pt-4 pb-[100px] desktop:px-8 desktop:pt-6">
+            <div className="w-full max-w-[1200px] flex flex-col gap-5 px-4 pt-4 pb-[100px] desktop:px-8 desktop:pt-6 safe-area-top-margin">
                 <GenericErrorBoundary>
                     <DashboardHeaderCard
                         brandName={brandName}
@@ -51,13 +51,11 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
                         heroImage={header.heroImage}
                         profileRole={header.profileRole}
                         shortBio={header.shortBio}
-                        affiliation={header.affiliation}
-                        stats={header.stats}
                         professionalTitle={header.professionalTitle}
-                        experience={header.experience ?? null}
-                        skills={header.skills}
-                        onSkillPillClick={header.onSkillPillClick}
                         onAvatarClick={header.onAvatarClick}
+                        onNotificationsClick={header.onNotificationsClick}
+                        unreadCount={header.unreadCount}
+                        roleSwitcher={header.roleSwitcher}
                         topRightAction={
                             <button
                                 type="button"

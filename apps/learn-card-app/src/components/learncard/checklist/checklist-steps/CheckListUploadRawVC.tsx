@@ -25,7 +25,6 @@ import {
 import { useUploadFile } from '../../../../hooks/useUploadFile';
 import { useUploadVcFromText } from '../../../../hooks/useUploadVcFromText';
 import useTheme from '../../../../theme/hooks/useTheme';
-import * as m from '../../../../paraglide/messages.js';
 
 export type RawVCFileType = {
     id: string;
@@ -36,6 +35,11 @@ export type RawVCFileType = {
     category: CredentialCategoryEnum;
     uri: string;
 };
+
+// Stable, user-facing copy. Raw parser / validation / storage details are logged, never
+// rendered — they can contain JSON parser internals, Zod field paths, or index errors.
+const FRIENDLY_PASTE_ERROR =
+    'We could not add that credential. Please check the text and try again.';
 
 export const CheckListUploadRawVC: React.FC = () => {
     const { initWallet } = useWallet();
@@ -153,14 +157,11 @@ export const CheckListUploadRawVC: React.FC = () => {
         loadRawVCs();
     }, []);
 
-    // Validate VC on input change
+    // Validate VC on input change. Show friendly copy only — validateTextVC can return raw
+    // Zod field paths, which shouldn't reach the user.
     useEffect(() => {
         const errors = validateTextVC(rawVcText);
-        if (errors?.length > 0) {
-            setRawTextErrors(errors);
-        } else {
-            setRawTextErrors([]);
-        }
+        setRawTextErrors(errors && errors.length > 0 ? [FRIENDLY_PASTE_ERROR] : []);
     }, [rawVcText]);
 
     const handleAddRawVcText = async () => {
@@ -177,22 +178,36 @@ export const CheckListUploadRawVC: React.FC = () => {
             if (result?.success) {
                 setRawVcText('');
                 loadRawVCs();
-                presentToast(m['passport.buildMyLearnCard.managers.rawVC.toastAddedBody'](), {
-                    title: m['passport.buildMyLearnCard.managers.rawVC.toastAdded'](),
-                    hasDismissButton: true,
-                    type: ToastTypeEnum.Success,
-                    hasCheckmark: true,
-                    autoDismiss: false,
-                });
+
+                const added = result.addedCount;
+                const failed = result.failedCount;
+                const partial = failed > 0;
+
+                presentToast(
+                    partial
+                        ? `${added} of ${
+                              added + failed
+                          } credentials added. ${failed} could not be added.`
+                        : `Your journey is now reflected in portable, trusted credentials.`,
+                    {
+                        title:
+                            added === 1 && !partial
+                                ? `JSON Credential Successfully Added`
+                                : `${added} Credential${added === 1 ? '' : 's'} Added`,
+                        hasDismissButton: true,
+                        type: ToastTypeEnum.Success,
+                        hasCheckmark: true,
+                        autoDismiss: false,
+                    }
+                );
             } else {
-                setRawTextErrors([
-                    `${m['passport.buildMyLearnCard.managers.rawVC.toastParseFailed']()} ${
-                        result?.error
-                    }`,
-                ]);
+                // Keep the raw reasons in logs; show stable friendly copy in the UI.
+                log.error('Paste VC upload failed', result?.errors);
+                setRawTextErrors([FRIENDLY_PASTE_ERROR]);
             }
         } catch (error: any) {
-            setRawTextErrors([error.message]);
+            log.error('Paste VC upload threw', error);
+            setRawTextErrors([FRIENDLY_PASTE_ERROR]);
         } finally {
             setIsUploadingRawVC(false);
         }
@@ -211,7 +226,7 @@ export const CheckListUploadRawVC: React.FC = () => {
                         <div className="flex items-center gap-[10px]">
                             <BulkImportWithPlusIcon className="w-[65px] h-[65px]" />
                             <h5 className="text-[22px] font-semibold text-grayscale-900 font-poppins leading-[24px]">
-                                {m['passport.buildMyLearnCard.managers.rawVC.addButton']()}
+                                Add Credentials
                             </h5>
                         </div>
                     </div>
@@ -224,17 +239,17 @@ export const CheckListUploadRawVC: React.FC = () => {
                 <div className="w-full bg-white flex flex-col gap-[20px] items-center justify-center shadow-bottom-2-4 p-[15px] mt-4 rounded-[15px]">
                     <div className="flex flex-col items-start justify-center gap-[5px]">
                         <h4 className="text-[20px] text-grayscale-900 font-notoSans text-left">
-                            {m['passport.buildMyLearnCard.managers.rawVC.title']()}
+                            Verifiable Credentials
                         </h4>
                         <p className="text-[14px] text-grayscale-600 font-notoSans text-left">
-                            {m['passport.buildMyLearnCard.managers.rawVC.description']()}
+                            Upload or paste raw JSON credentials to add them to your wallet.
                         </p>
                     </div>
 
                     <input
                         multiple
                         type="file"
-                        accept=".json"
+                        accept=".json,.txt"
                         onChange={async e => {
                             setFileErrors([]);
                             const results = await getJsonFiles(e, error => {
@@ -295,9 +310,7 @@ export const CheckListUploadRawVC: React.FC = () => {
                         disabled={isUploading}
                     >
                         <UploadIcon className="w-[25px] h-[25px] text-white" strokeWidth="2" />
-                        {isUploading
-                            ? m['passport.buildMyLearnCard.managers.uploading']()
-                            : m['passport.buildMyLearnCard.managers.upload']()}
+                        {isUploading ? 'Uploading...' : 'Upload'}
                     </button>
 
                     <div className="w-full h-[1px] bg-grayscale-200" />
@@ -318,9 +331,7 @@ export const CheckListUploadRawVC: React.FC = () => {
                                 '--padding-end': '10px',
                                 '--padding-bottom': '10px',
                             }}
-                            placeholder={m[
-                                'passport.buildMyLearnCard.managers.rawVC.placeholder'
-                            ]()}
+                            placeholder="Paste your JSON here..."
                             rows={4}
                         />
 
@@ -354,9 +365,7 @@ export const CheckListUploadRawVC: React.FC = () => {
                             disabled={!rawVcText || isUploadingRawVC || rawTextErrors.length > 0}
                         >
                             <Plus className="w-[25px] h-[25px] text-white" />
-                            {isUploadingRawVC
-                                ? m['passport.buildMyLearnCard.managers.rawVC.parsing']()
-                                : m['passport.buildMyLearnCard.managers.addButton']()}
+                            {isUploadingRawVC ? 'Parsing...' : 'Add'}
                         </button>
                     </div>
                 </div>

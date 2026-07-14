@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { add } from 'ionicons/icons';
 import moment from 'moment';
-import { VC } from '@learncard/types';
+import type { UnsignedVC, VC } from '@learncard/types';
 
 import {
     IonDatetime,
@@ -20,7 +20,13 @@ import NonBoostPreview from '../../boost/boostCMS/BoostPreview/NonBoostPreview';
 
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
-import { ModalTypes, useGetResolvedCredential, useGetVCInfo, useModal } from 'learn-card-base';
+import {
+    CredentialCategoryEnum,
+    ModalTypes,
+    useGetResolvedCredential,
+    useGetVCInfo,
+    useModal,
+} from 'learn-card-base';
 import { ResumeSectionKey } from '../resume-builder.helpers';
 import {
     getDefaultCategoryForCredential,
@@ -29,6 +35,13 @@ import {
 } from 'learn-card-base/helpers/credentialHelpers';
 
 import * as m from '../../../paraglide/messages.js';
+
+const EMPTY_CREDENTIAL_PREVIEW: UnsignedVC = {
+    '@context': [],
+    type: [],
+    issuer: '',
+    credentialSubject: {},
+};
 
 const ResumePreviewCredentialToTextBlock: React.FC<{
     uri: string;
@@ -44,7 +57,7 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
     );
     const vc = resolvedCredential ?? queriedCredential;
     const { title, description: vcDescription } = useGetVCInfo(
-        vc ?? ({ '@context': [], type: [] } as VC),
+        vc ?? EMPTY_CREDENTIAL_PREVIEW,
         section
     );
 
@@ -62,6 +75,8 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
 
     const entry = (credentialEntries[section] ?? []).find(e => e.uri === uri);
     const fields = [...(entry?.fields ?? [])].sort((a, b) => a.index - b.index);
+    const descriptionField = fields.find(field => field.type === 'description');
+    const isDescriptionHidden = Boolean(descriptionField?.hidden);
     const visibleExportFields = fields.filter(field => {
         if (!field.value.trim()) return false;
         if (field.type === 'description' && field.hidden) return false;
@@ -89,6 +104,10 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
     } else if (visibleStartLabel) {
         dateLabel = visibleStartLabel;
     }
+    const metadataPlaceholder =
+        section === CredentialCategoryEnum.workHistory
+            ? 'Add Job Task Description'
+            : 'Add Credential Detail';
 
     const openInlineDatePicker = (mode: 'start' | 'end') => {
         newModal(
@@ -180,38 +199,55 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
         <div className="flex items-start gap-3">
             <div className="flex flex-col gap-1 flex-1 min-w-0">
                 {/* ── Locked anchor: title · issuer · date ── */}
-                <div className="flex items-start gap-1.5 min-w-0">
-                    <span data-pdf-hide className="inline-flex mt-0.5 shrink-0">
-                        <TrustedIcon className="w-4 h-4 inline-block" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-1">
-                            {vc && !isEditing ? (
-                                <button
-                                    type="button"
-                                    onClick={openCredentialPreview}
-                                    className="max-w-full cursor-pointer bg-transparent border-none p-0 text-left text-sm font-semibold text-grayscale-800 leading-tight break-words hover:underline hover:underline-offset-2"
-                                >
-                                    {title || m['passport.resumeBuilder.credential']()}
-                                </button>
-                            ) : (
-                                <span className="text-sm font-semibold text-grayscale-800 leading-tight break-words">
-                                    {title || m['passport.resumeBuilder.credential']()}
-                                </span>
-                            )}
-                            <div className="mt-1 sm:mt-0 min-w-0">
-                                <ResumePreviewCredentialDateDisplay
-                                    isEditing={isEditing}
-                                    startLabel={fallbackStartLabel}
-                                    formattedStartDate={formattedStartDate}
-                                    formattedEndDate={formattedEndDate}
-                                    dateLabel={dateLabel}
-                                    onOpenStartDatePicker={() => openInlineDatePicker('start')}
-                                    onOpenEndDatePicker={() => openInlineDatePicker('end')}
-                                />
+                <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                        <span data-pdf-hide className="inline-flex h-5 items-center shrink-0">
+                            <TrustedIcon className="w-4 h-4 inline-block" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-1">
+                                {vc && !isEditing ? (
+                                    <button
+                                        type="button"
+                                        onClick={openCredentialPreview}
+                                        className="max-w-full cursor-pointer bg-transparent border-none p-0 text-left text-sm font-semibold text-grayscale-800 leading-tight break-words hover:underline hover:underline-offset-2"
+                                    >
+                                        {title || m['passport.resumeBuilder.credential']()}
+                                    </button>
+                                ) : (
+                                    <span className="text-sm font-semibold text-grayscale-800 leading-tight break-words">
+                                        {title || m['passport.resumeBuilder.credential']()}
+                                    </span>
+                                )}
+                                <div className="mt-1 sm:mt-0 min-w-0">
+                                    <ResumePreviewCredentialDateDisplay
+                                        isEditing={isEditing}
+                                        startLabel={fallbackStartLabel}
+                                        formattedStartDate={formattedStartDate}
+                                        formattedEndDate={formattedEndDate}
+                                        dateLabel={dateLabel}
+                                        onOpenStartDatePicker={() => openInlineDatePicker('start')}
+                                        onOpenEndDatePicker={() => openInlineDatePicker('end')}
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
+                    {isEditing && descriptionField && (
+                        <div data-pdf-hide className="ml-auto shrink-0">
+                            <ResumeBuilderToggle
+                                checked={!isDescriptionHidden}
+                                onChange={checked =>
+                                    setCredentialFieldHidden(
+                                        uri,
+                                        section,
+                                        descriptionField.id,
+                                        !checked
+                                    )
+                                }
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {isEditing ? (
@@ -235,8 +271,6 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                             >
                                 {fields.map(field => {
                                     const isDescriptionField = field.type === 'description';
-                                    const isDescriptionHidden =
-                                        isDescriptionField && Boolean(field.hidden);
                                     const isMetadataAddRow =
                                         field.type === 'metadata' &&
                                         field.id === lastMetadataField?.id;
@@ -250,68 +284,49 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                                         >
                                             <div className="flex-1">
                                                 {isDescriptionField ? (
-                                                    <div className="flex items-start gap-3">
-                                                        <div className="flex-1">
-                                                            <ResumePreviewEditableTextBlock
-                                                                value={field.value}
-                                                                placeholder={m[
-                                                                    'passport.resumeBuilder.addDescription'
-                                                                ]()}
-                                                                isEditing
-                                                                isSelfAttested={
-                                                                    field.source === 'selfAttested'
-                                                                }
-                                                                multiline
-                                                                showDefaultSummaryDecoration
-                                                                onRestoreDefault={
-                                                                    vcDescription
-                                                                        ? () => {
-                                                                              updateCredentialField(
-                                                                                  uri,
-                                                                                  section,
-                                                                                  field.id,
-                                                                                  vcDescription,
-                                                                                  'vc'
-                                                                              );
-                                                                          }
-                                                                        : undefined
-                                                                }
-                                                                onChange={val => {
-                                                                    const source =
-                                                                        vcDescription &&
-                                                                        val === vcDescription
-                                                                            ? 'vc'
-                                                                            : 'selfAttested';
-                                                                    updateCredentialField(
-                                                                        uri,
-                                                                        section,
-                                                                        field.id,
-                                                                        val,
-                                                                        source
-                                                                    );
-                                                                }}
-                                                            />
-                                                        </div>
-                                                        <div className="shrink-0 flex flex-col items-center gap-2 pt-0.5">
-                                                            <ResumeBuilderToggle
-                                                                checked={!isDescriptionHidden}
-                                                                onChange={checked =>
-                                                                    setCredentialFieldHidden(
-                                                                        uri,
-                                                                        section,
-                                                                        field.id,
-                                                                        !checked
-                                                                    )
-                                                                }
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                ) : (
                                                     <ResumePreviewEditableTextBlock
                                                         value={field.value}
                                                         placeholder={m[
-                                                            'passport.resumeBuilder.addItem'
+                                                            'passport.resumeBuilder.addDescription'
                                                         ]()}
+                                                        isEditing
+                                                        isSelfAttested={
+                                                            field.source === 'selfAttested'
+                                                        }
+                                                        multiline
+                                                        showDefaultSummaryDecoration
+                                                        onRestoreDefault={
+                                                            vcDescription
+                                                                ? () => {
+                                                                      updateCredentialField(
+                                                                          uri,
+                                                                          section,
+                                                                          field.id,
+                                                                          vcDescription,
+                                                                          'vc'
+                                                                      );
+                                                                  }
+                                                                : undefined
+                                                        }
+                                                        onChange={val => {
+                                                            const source =
+                                                                vcDescription &&
+                                                                val === vcDescription
+                                                                    ? 'vc'
+                                                                    : 'selfAttested';
+                                                            updateCredentialField(
+                                                                uri,
+                                                                section,
+                                                                field.id,
+                                                                val,
+                                                                source
+                                                            );
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <ResumePreviewEditableTextBlock
+                                                        value={field.value}
+                                                        placeholder={metadataPlaceholder}
                                                         isEditing
                                                         isSelfAttested={
                                                             field.source === 'selfAttested'
@@ -343,7 +358,7 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                                                     type="button"
                                                     onClick={() => handleAddDetail(field.value)}
                                                     className="shrink-0 w-[32px] h-[32px] rounded-xl bg-grayscale-100 flex items-center justify-center text-grayscale-700"
-                                                    title={m['passport.resumeBuilder.addItem']()}
+                                                    title={metadataPlaceholder}
                                                 >
                                                     <IonIcon icon={add} className="w-6 h-6" />
                                                 </button>

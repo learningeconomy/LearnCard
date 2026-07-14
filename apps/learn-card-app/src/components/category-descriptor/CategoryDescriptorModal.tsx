@@ -9,80 +9,80 @@ import { CredentialCategoryEnum } from 'learn-card-base';
 import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
 import { walletSubtypeToDefaultImageSrc, BoostCategoryOptionsEnum } from 'learn-card-base';
 
-const AI_IMG_SRC = 'https://cdn.filestackcontent.com/QAC1JmfQgGFccwM7EF0L';
-
-// Resolve the descriptor image + the category key used to look up the
-// description. Keyed off the CredentialCategoryEnum the page already passes
-// (previously keyed off the English title string, which broke once the title
-// became translated). The descriptor category preserves the exact values the
-// old title-based switch returned so the description lookup is unchanged.
-const getCategoryandImgSrc = (
-    category?: CredentialCategoryEnum
-): { imgSrc?: string; descriptorCategory: BoostCategoryOptionsEnum | string } => {
-    switch (category) {
-        case CredentialCategoryEnum.learningHistory:
-            return {
-                imgSrc: walletSubtypeToDefaultImageSrc(WalletCategoryTypes.learningHistory),
-                descriptorCategory: BoostCategoryOptionsEnum.learningHistory,
-            };
-        case CredentialCategoryEnum.socialBadge:
-            return {
-                imgSrc: walletSubtypeToDefaultImageSrc(WalletCategoryTypes.socialBadges),
-                descriptorCategory: BoostCategoryOptionsEnum.socialBadge,
-            };
-        case CredentialCategoryEnum.achievement:
-            return {
-                imgSrc: walletSubtypeToDefaultImageSrc(WalletCategoryTypes.achievements),
-                descriptorCategory: BoostCategoryOptionsEnum.achievement,
-            };
-        case CredentialCategoryEnum.accomplishment:
-            return {
-                imgSrc: walletSubtypeToDefaultImageSrc(WalletCategoryTypes.accomplishments),
-                descriptorCategory: BoostCategoryOptionsEnum.accomplishment,
-            };
-        case CredentialCategoryEnum.skill:
-            return {
-                imgSrc: walletSubtypeToDefaultImageSrc(WalletCategoryTypes.skills),
-                descriptorCategory: BoostCategoryOptionsEnum.skill,
-            };
-        case CredentialCategoryEnum.workHistory:
-        case CredentialCategoryEnum.experience:
-            return {
-                imgSrc: walletSubtypeToDefaultImageSrc(WalletCategoryTypes.jobHistory),
-                descriptorCategory: BoostCategoryOptionsEnum.workHistory,
-            };
-        case CredentialCategoryEnum.accommodation:
-            return {
-                imgSrc: walletSubtypeToDefaultImageSrc(WalletCategoryTypes.accommodations),
-                descriptorCategory: BoostCategoryOptionsEnum.accommodation,
-            };
-        case CredentialCategoryEnum.id:
-            return {
-                imgSrc: 'https://cdn.filestackcontent.com/9z6i0x3hSlG43paNZHag', // not totally sure why this one's different. Leaving it.
-                descriptorCategory: BoostCategoryOptionsEnum.id,
-            };
-        case CredentialCategoryEnum.family:
-            return {
-                imgSrc: walletSubtypeToDefaultImageSrc(WalletCategoryTypes.families),
-                descriptorCategory: BoostCategoryOptionsEnum.family,
-            };
-        case CredentialCategoryEnum.aiInsight:
-            return { imgSrc: AI_IMG_SRC, descriptorCategory: CredentialCategoryEnum.aiInsight };
-        case CredentialCategoryEnum.aiPathway:
-            return { imgSrc: AI_IMG_SRC, descriptorCategory: 'aiPathway' };
-        default:
-            // Defensive: never throw (that black-screened the page). Fall back to
-            // passing the category straight through so the descriptor still renders.
-            return { imgSrc: undefined, descriptorCategory: category ?? '' };
-    }
-};
-
 const CategoryDescriptorModal: React.FC<{
     handleCloseModal: () => void;
     title: string;
-    category?: CredentialCategoryEnum;
-}> = ({ handleCloseModal, title, category }) => {
-    const { imgSrc, descriptorCategory } = getCategoryandImgSrc(category);
+}> = ({ handleCloseModal, title }) => {
+    const getCategoryandImgSrc = (title: string) => {
+        let imgSrc;
+        let category;
+
+        // TODO: swap these out to use categories instead of titles!
+        switch (title) {
+            case 'Studies':
+                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.learningHistory);
+                category = BoostCategoryOptionsEnum.learningHistory;
+                break;
+
+            case 'Badges':
+                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.socialBadges);
+                category = BoostCategoryOptionsEnum.socialBadge;
+                break;
+
+            case 'Achievements':
+                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.achievements);
+                category = BoostCategoryOptionsEnum.achievement;
+                break;
+
+            case 'Portfolio':
+                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.accomplishments);
+                category = BoostCategoryOptionsEnum.accomplishment;
+                break;
+
+            case 'Skills Hub':
+                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.skills);
+                category = BoostCategoryOptionsEnum.skill;
+                break;
+
+            case 'Experiences':
+                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.jobHistory);
+                category = BoostCategoryOptionsEnum.workHistory;
+                break;
+
+            case 'Assistance':
+                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.accommodations);
+                category = BoostCategoryOptionsEnum.accommodation;
+                break;
+
+            case 'IDs':
+                imgSrc = 'https://cdn.filestackcontent.com/9z6i0x3hSlG43paNZHag'; // not totally sure why this one's different. Leaving it.
+                // imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.ids)
+                category = BoostCategoryOptionsEnum.id;
+                break;
+
+            case 'Families':
+                imgSrc = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.families);
+                category = BoostCategoryOptionsEnum.family;
+                break;
+
+            case 'Insights':
+                imgSrc = 'https://cdn.filestackcontent.com/QAC1JmfQgGFccwM7EF0L';
+                category = CredentialCategoryEnum.aiInsight;
+                break;
+
+            case 'Pathways':
+                imgSrc = 'https://cdn.filestackcontent.com/QAC1JmfQgGFccwM7EF0L';
+                category = 'aiPathway' as CredentialCategoryEnum;
+                break;
+
+            default:
+                throw new Error('Invalid title provided');
+        }
+
+        return { imgSrc, category };
+    };
+
+    const { imgSrc, category } = getCategoryandImgSrc(title);
 
     return (
         <IonPage>
@@ -91,16 +91,15 @@ const CategoryDescriptorModal: React.FC<{
                 buttonText={m['wallet.categoryDescriptor.gotIt']()}
             >
                 <div className="p-[30px]">
-                    {imgSrc && (
-                        <img src={imgSrc} alt={title} className="w-[100px] h-[100px] m-auto" />
-                    )}
+                    <img
+                        src={imgSrc}
+                        alt="learning history"
+                        className="w-[100px] h-[100px] m-auto"
+                    />
                     <p className="text-center text-[22px] font-poppins font-normal leading-[130%] text-grayscale-900">
                         <strong>{m['wallet.categoryDescriptor.about']({ name: title })}</strong>
                     </p>
-                    <CategoryDescriptor
-                        category={descriptorCategory}
-                        className="text-left mt-[10px]"
-                    />
+                    <CategoryDescriptor category={category} className="text-left mt-[10px]" />
                 </div>
             </ModalLayout>
         </IonPage>

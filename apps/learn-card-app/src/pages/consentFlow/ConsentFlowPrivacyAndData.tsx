@@ -27,6 +27,7 @@ import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
 import TransP from '../../i18n/TransP';
 import {
+    getAllCredentialUrisForCategory,
     getPrivacyAndDataInfo,
     isVerifiableDataContractCategory,
     VERIFIABLE_DATA_CONTRACT_CATEGORIES,
@@ -40,6 +41,10 @@ type ConsentFlowPrivacyAndDataProps = {
 
     isPostConsent?: boolean;
     headerClass?: string;
+
+    embedded?: boolean;
+    onSaved?: () => void;
+    onCancel?: () => void;
 
     // Optional: pass these directly to avoid lookup issues
     termsUri?: string;
@@ -55,6 +60,10 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
 
     isPostConsent,
     headerClass,
+
+    embedded = false,
+    onSaved,
+    onCancel,
 
     termsUri: propTermsUri,
     ownerDid: propOwnerDid,
@@ -144,22 +153,16 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                         categories: {},
                     };
                     updatedTerms.read.credentials.categories ??= {};
-                    await Promise.all(
-                        categoriesWithLiveSync.map(async category => {
-                            const allCategoryCredUris = (
-                                await wallet.index.LearnCloud.get({ category })
-                            ).map(item => item.uri);
-
-                            updatedTerms.read.credentials.categories[category] = {
-                                ...(updatedTerms.read.credentials.categories[category] ?? {
-                                    shareAll: true,
-                                    sharing: true,
-                                    shared: [],
-                                }),
-                                shared: allCategoryCredUris,
-                            };
-                        })
-                    );
+                    for (const category of categoriesWithLiveSync) {
+                        updatedTerms.read.credentials.categories[category] = {
+                            ...(updatedTerms.read.credentials.categories[category] ?? {
+                                shareAll: true,
+                                sharing: true,
+                                shared: [],
+                            }),
+                            shared: await getAllCredentialUrisForCategory(wallet, category),
+                        };
+                    }
 
                     const isUpdated = !isEqual(terms, updatedTerms);
 
@@ -314,12 +317,14 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
     const saveWord = updatingTerms ? m['consentFlow.saving']() : m['common.save']();
 
     return (
-        <div className="h-full">
-            <PrivacyAndDataHeader name={name} image={image} className={headerClass} />
+        <div className={embedded ? 'relative h-full overflow-hidden' : 'h-full'}>
+            {!embedded && (
+                <PrivacyAndDataHeader name={name} image={image} className={headerClass} />
+            )}
 
             <div
                 className="h-full w-full flex flex-col gap-[20px] overflow-y-auto p-[20px] pb-[300px]"
-                style={appStyles}
+                style={embedded ? undefined : appStyles}
             >
                 <div className="text-grayscale-900 text-[14px] rounded-[15px] bg-white w-full p-[15px] flex flex-col gap-[10px] shadow-box-bottom">
                     <ContractPermissionsAndDetailsText
@@ -513,16 +518,18 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
             <ConsentFlowFooter
                 actionButtonText={isPostConsent ? saveWord : undefined}
                 actionButtonDisabled={updatingTerms || loadingShareAllCredentials || !isUpdated}
+                actionButtonColorClass={embedded ? 'bg-emerald-600' : undefined}
                 onActionButtonClick={async () => {
                     if (isPostConsent && isUpdated) {
                         try {
                             await guardedAction(async () => {
                                 await updateTerms(terms, shareDuration);
                             });
-                            closeModal();
                             presentToast('Successfully updated!', {
                                 type: ToastTypeEnum.Success,
                             });
+                            if (embedded) onSaved?.();
+                            else closeModal();
                         } catch (e) {
                             presentToast(`Failed to update terms: ${e.message}`, {
                                 type: ToastTypeEnum.Error,
@@ -533,7 +540,8 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                 secondaryButtonText={isPostConsent ? m['common.cancel']() : m['common.back']()}
                 onSecondaryButtonClick={async () => {
                     saveTerms?.(terms);
-                    closeModal();
+                    if (embedded) onCancel?.();
+                    else closeModal();
                 }}
             />
         </div>

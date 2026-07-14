@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 import { IonFooter, IonCol, IonGrid, IonRow, IonInput } from '@ionic/react';
-import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
+import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import BoostEarnedCard from '../boost-earned-card/BoostEarnedCard';
 import ListItemsIcon from 'learn-card-base/svgs/ListItemsIcon';
 import GridIcon from 'learn-card-base/svgs/GridIcon';
@@ -151,7 +151,7 @@ export const BoostLinkedCredentialsModal: React.FC<{
         >
             <div className="w-full flex items-center justify-start ion-padding bg-white rounded-b-[30px] overflow-hidden shadow-md">
                 <div>
-                    <CredentialBadge
+                    <CredentialBadgeNew
                         achievementType={
                             credential?.credentialSubject?.achievement?.achievementType
                         }

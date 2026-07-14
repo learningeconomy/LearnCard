@@ -9,6 +9,7 @@ import {
     switchedProfileStore,
 } from 'learn-card-base';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
+import { notificationCardStyles } from './types';
 import NotificationBoostCard from './NotificationBoostCard';
 import ConnectionRequestCard from './ConnectionRequestCard';
 import NotificationConsentFlowCard from './NotificationConsentFlowCard';
@@ -440,11 +441,7 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
     }
 
     return (
-        <div
-            className={`flex justify-start max-w-[600px] items-start relative w-full rounded-3xl shadow-bottom py-[10px] px-[10px] bg-white ${className}`}
-        >
-            Notification
-        </div>
+        <div className={`${notificationCardStyles.fallbackShell} ${className}`}>Notification</div>
     );
 };
 

@@ -581,7 +581,7 @@ const PathwaySwitcher: React.FC<PathwaySwitcherProps> = ({ variant = 'chip' }) =
     const mobilePrefix = hasMeaningfulPrefix ? fullTitle.slice(0, colonIdx) : fullTitle;
 
     return (
-        <div className={isTitle ? 'relative min-w-0' : 'relative'} ref={containerRef}>
+        <div className={isTitle ? 'relative min-w-0 flex-1' : 'relative'} ref={containerRef}>
             <button
                 type="button"
                 onClick={() => setOpen(v => !v)}

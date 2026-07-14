@@ -150,9 +150,9 @@ public async someMethod(): Promise<Response> {
 
 ### Build Commands
 
--   **Build**: `pnpm exec nx build partner-connect-sdk`
--   **Development**: `pnpm exec nx dev partner-connect-sdk`
--   **Type Check**: `pnpm exec nx typecheck partner-connect-sdk`
+-   **Build**: `bunx nx build partner-connect-sdk`
+-   **Development**: `bunx nx dev partner-connect-sdk`
+-   **Type Check**: `bunx nx typecheck partner-connect-sdk`
 
 ### Build Outputs
 

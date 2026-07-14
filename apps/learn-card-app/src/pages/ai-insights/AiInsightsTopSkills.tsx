@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { m } from '../../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 
 import { SkillsIconWithShape } from 'learn-card-base/svgs/wallet/SkillsIcon';
 import { SkillsChipItem } from '../skills/SkillsChipList';
@@ -26,7 +26,7 @@ const AiInsightsTopSkills: React.FC<AiInsightsTopSkillsProps> = ({
         <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-4-4 p-[15px] rounded-[15px]">
             <div className="w-full flex items-center justify-start">
                 {showSkillsIcon && <SkillsIconWithShape className="w-[40px] h-[40px]" />}
-                <h2 className="text-xl text-grayscale-800 font-notoSans">
+                <h2 className="text-base sm:text-xl text-grayscale-800 font-notoSans text-left">
                     {m['aiInsights.topSkills']()}
                 </h2>
             </div>

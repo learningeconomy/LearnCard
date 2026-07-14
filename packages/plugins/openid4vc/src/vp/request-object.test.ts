@@ -6,12 +6,7 @@
  * verification math is exercised end-to-end. No network, no fixtures
  * on disk.
  */
-import {
-    exportJWK,
-    generateKeyPair,
-    JWK,
-    SignJWT,
-} from 'jose';
+import { exportJWK, generateKeyPair, JWK, SignJWT } from 'jose';
 
 import {
     verifyAndDecodeRequestObject,
@@ -25,8 +20,7 @@ import {
 /* -------------------------------------------------------------------------- */
 
 const toB64url = (input: string | Uint8Array): string => {
-    const bytes =
-        typeof input === 'string' ? new TextEncoder().encode(input) : input;
+    const bytes = typeof input === 'string' ? new TextEncoder().encode(input) : input;
     return Buffer.from(bytes)
         .toString('base64')
         .replace(/\+/g, '-')
@@ -85,9 +79,7 @@ const baseClaims = (
     state: 'state-1',
     presentation_definition: {
         id: 'pd-1',
-        input_descriptors: [
-            { id: 'd1', constraints: { fields: [{ path: ['$.type'] }] } },
-        ],
+        input_descriptors: [{ id: 'd1', constraints: { fields: [{ path: ['$.type'] }] } }],
     },
     ...overrides,
 });
@@ -101,8 +93,7 @@ const mockFetch = (
         if (!route) throw new Error(`mockFetch: unexpected URL ${url}`);
 
         const status = route.status ?? 200;
-        const body =
-            typeof route.body === 'string' ? route.body : JSON.stringify(route.body);
+        const body = typeof route.body === 'string' ? route.body : JSON.stringify(route.body);
 
         return {
             ok: status >= 200 && status < 300,
@@ -110,9 +101,7 @@ const mockFetch = (
             statusText: 'OK',
             headers: new Headers({
                 'content-type':
-                    typeof route.body === 'string'
-                        ? 'application/jwt'
-                        : 'application/json',
+                    typeof route.body === 'string' ? 'application/jwt' : 'application/json',
             }),
             text: async () => body,
             json: async () => JSON.parse(body),
@@ -162,9 +151,7 @@ describe('verifyAndDecodeRequestObject — client_id_scheme=did (did:jwk)', () =
         const tamperedClaims = baseClaims(keyA, { client_id: keyB.did });
         const jws = await signRequestObject(keyA, tamperedClaims, { kid: keyB.kid });
 
-        await expect(
-            verifyAndDecodeRequestObject({ inlineJwt: jws })
-        ).rejects.toMatchObject({
+        await expect(verifyAndDecodeRequestObject({ inlineJwt: jws })).rejects.toMatchObject({
             name: 'RequestObjectError',
             code: 'request_signature_invalid',
         });
@@ -191,9 +178,9 @@ describe('verifyAndDecodeRequestObject — client_id_scheme=did (did:jwk)', () =
         // Signature value is irrelevant — we should fail before verify.
         const jws = `${header}.${payload}.${toB64url('sig')}`;
 
-        await expect(
-            verifyAndDecodeRequestObject({ inlineJwt: jws })
-        ).rejects.toMatchObject({ code: 'invalid_request_object' });
+        await expect(verifyAndDecodeRequestObject({ inlineJwt: jws })).rejects.toMatchObject({
+            code: 'invalid_request_object',
+        });
     });
 
     it('delegates to a custom didResolver for unsupported DID methods', async () => {
@@ -241,22 +228,20 @@ describe('verifyAndDecodeRequestObject — client_id_scheme=did (did:jwk)', () =
             { kid: 'did:totally:unsupported#k' }
         );
 
-        await expect(
-            verifyAndDecodeRequestObject({ inlineJwt: jws })
-        ).rejects.toMatchObject({ code: 'did_resolution_failed' });
+        await expect(verifyAndDecodeRequestObject({ inlineJwt: jws })).rejects.toMatchObject({
+            code: 'did_resolution_failed',
+        });
     });
 
     it('rejects a kid that does not exist on the DID document', async () => {
         const key = await makeVerifierKey();
-        const jws = await signRequestObject(
-            key,
-            baseClaims(key),
-            { kid: `${key.did}#does-not-exist` }
-        );
+        const jws = await signRequestObject(key, baseClaims(key), {
+            kid: `${key.did}#does-not-exist`,
+        });
 
-        await expect(
-            verifyAndDecodeRequestObject({ inlineJwt: jws })
-        ).rejects.toMatchObject({ code: 'request_signer_untrusted' });
+        await expect(verifyAndDecodeRequestObject({ inlineJwt: jws })).rejects.toMatchObject({
+            code: 'request_signer_untrusted',
+        });
     });
 });
 
@@ -311,20 +296,21 @@ describe('verifyAndDecodeRequestObject — did:web', () => {
             { ...baseClaims(key), client_id: didWeb },
             { kid: vmId }
         );
+        const didDocument: DidDocument = {
+            id: didWeb,
+            verificationMethod: [
+                {
+                    id: vmId,
+                    type: 'JsonWebKey2020',
+                    controller: didWeb,
+                    publicKeyJwk: key.publicJwk,
+                },
+            ],
+        };
 
         const fetchImpl = mockFetch({
             'https://verifier.test/tenants/acme/did.json': {
-                body: {
-                    id: didWeb,
-                    verificationMethod: [
-                        {
-                            id: vmId,
-                            type: 'JsonWebKey2020',
-                            controller: didWeb,
-                            publicKeyJwk: key.publicJwk,
-                        },
-                    ],
-                } satisfies DidDocument,
+                body: didDocument,
             },
         });
 
@@ -344,26 +330,26 @@ describe('verifyAndDecodeRequestObject — did:web', () => {
 describe('verifyAndDecodeRequestObject — unsupported / forbidden schemes', () => {
     it('refuses signed requests with client_id_scheme=redirect_uri', async () => {
         const key = await makeVerifierKey();
-        const jws = await signRequestObject(
-            key,
-            { ...baseClaims(key), client_id_scheme: 'redirect_uri' }
-        );
+        const jws = await signRequestObject(key, {
+            ...baseClaims(key),
+            client_id_scheme: 'redirect_uri',
+        });
 
-        await expect(
-            verifyAndDecodeRequestObject({ inlineJwt: jws })
-        ).rejects.toMatchObject({ code: 'unsupported_client_id_scheme' });
+        await expect(verifyAndDecodeRequestObject({ inlineJwt: jws })).rejects.toMatchObject({
+            code: 'unsupported_client_id_scheme',
+        });
     });
 
     it('refuses client_id_scheme=pre-registered until wiring exists', async () => {
         const key = await makeVerifierKey();
-        const jws = await signRequestObject(
-            key,
-            { ...baseClaims(key), client_id_scheme: 'pre-registered' }
-        );
+        const jws = await signRequestObject(key, {
+            ...baseClaims(key),
+            client_id_scheme: 'pre-registered',
+        });
 
-        await expect(
-            verifyAndDecodeRequestObject({ inlineJwt: jws })
-        ).rejects.toMatchObject({ code: 'unsupported_client_id_scheme' });
+        await expect(verifyAndDecodeRequestObject({ inlineJwt: jws })).rejects.toMatchObject({
+            code: 'unsupported_client_id_scheme',
+        });
     });
 
     it('infers prefix=did from a bare did:jwk client_id (OID4VP 1.0 implicit form)', async () => {
@@ -399,9 +385,9 @@ describe('verifyAndDecodeRequestObject — unsupported / forbidden schemes', () 
             client_id_scheme: undefined,
         });
 
-        await expect(
-            verifyAndDecodeRequestObject({ inlineJwt: jws })
-        ).rejects.toMatchObject({ code: 'unsupported_client_id_scheme' });
+        await expect(verifyAndDecodeRequestObject({ inlineJwt: jws })).rejects.toMatchObject({
+            code: 'unsupported_client_id_scheme',
+        });
     });
 
     // NOTE: positive-flow coverage for the
@@ -484,9 +470,9 @@ describe('verifyAndDecodeRequestObject — input validation', () => {
         const header = toB64url(JSON.stringify({ alg: 'EdDSA' }));
         const jws = `${header}.not-base64url-json.${toB64url('sig')}`;
 
-        await expect(
-            verifyAndDecodeRequestObject({ inlineJwt: jws })
-        ).rejects.toMatchObject({ code: 'invalid_request_object' });
+        await expect(verifyAndDecodeRequestObject({ inlineJwt: jws })).rejects.toMatchObject({
+            code: 'invalid_request_object',
+        });
     });
 });
 
@@ -506,9 +492,7 @@ describe('verifyAndDecodeRequestObject — client_id_scheme=x509_san_dns', () =>
             { x5c: ['MIIBkjCCATg=' /* bogus DER; never parsed */] }
         );
 
-        await expect(
-            verifyAndDecodeRequestObject({ inlineJwt: jws })
-        ).rejects.toMatchObject({
+        await expect(verifyAndDecodeRequestObject({ inlineJwt: jws })).rejects.toMatchObject({
             // Either invalid_request_object (cert parse failed first) or
             // request_signer_untrusted (trust policy empty). Both indicate
             // the verifier correctly refused.
@@ -518,14 +502,11 @@ describe('verifyAndDecodeRequestObject — client_id_scheme=x509_san_dns', () =>
 
     it('throws invalid_request_object when x5c header is missing', async () => {
         const key = await makeVerifierKey();
-        const jws = await signRequestObject(
-            key,
-            {
-                ...baseClaims(key),
-                client_id: 'verifier.test',
-                client_id_scheme: 'x509_san_dns',
-            }
-        );
+        const jws = await signRequestObject(key, {
+            ...baseClaims(key),
+            client_id: 'verifier.test',
+            client_id_scheme: 'x509_san_dns',
+        });
 
         await expect(
             verifyAndDecodeRequestObject({

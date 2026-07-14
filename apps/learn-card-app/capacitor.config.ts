@@ -1,10 +1,10 @@
 /**
- * Default Capacitor config — used as the source for `npx cap sync`.
+ * Default Capacitor config — used as the source for `bunx cap sync`.
  *
- * **Workflow order for tenant builds (enforced by `pnpm lc native`):**
+ * **Workflow order for tenant builds (enforced by `bun run lc native`):**
  *   1. `prepare-native-config.ts <tenant>` — populates public/ with tenant config + assets
  *   2. `vite build`                        — compiles web app with correct tenant data
- *   3. `npx cap sync`                      — copies fresh build/ into native projects
+ *   3. `bunx cap sync`                     — copies fresh build/ into native projects
  *   4. `prepare-native-config.ts <tenant>` — re-patches native files that cap sync
  *                                             overwrites (capacitor.config.json, etc.)
  *
@@ -52,11 +52,7 @@ const config: CapacitorConfig = {
         },
         CapacitorUpdater: {
             appId: 'com.learncard.app',
-            // TEMPORARY (LC-1831): disabled OTA live updates so TestFlight/native test
-            // builds keep their own bundled JS (incl. paraglide translations) instead of
-            // being clobbered by the channel's non-translated bundle. Do NOT merge to main —
-            // revert to `true` before release.
-            autoUpdate: false,
+            autoUpdate: true,
             // SINGLE SOURCE OF TRUTH for the Capgo channel.
             // - CI reads this value via `tools/capgo/getCapgoChannel.js` (regex match) to pick
             //   the channel that OTA bundles are uploaded to in the deploy workflow.

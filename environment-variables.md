@@ -22,46 +22,46 @@ infisical init
 #    → This creates .infisical.json (safe to commit)
 
 # 4. Optionally back up your current .env files
-pnpm env:backup
+bun run env:backup
 
 # 5. Pull all .env files
-pnpm env:pull
+bun run env:pull
 
 # 6. Optionally compare the new .env files against the backup
-pnpm env:compare-backup
+bun run env:compare-backup
 
 # 7. Optionally compare your local .env files against Infisical
-pnpm env:compare-infisical
+bun run env:compare-infisical
 ```
 
 ## Usage
 
 ```bash
 # Pull dev environment for all services (default)
-pnpm env:pull
+bun run env:pull
 
 # Pull a specific environment
-pnpm env:pull --env=staging
-pnpm env:pull --env=prod
+bun run env:pull --env=staging
+bun run env:pull --env=prod
 
 # Pull only one service
-pnpm env:pull --only=brain
-pnpm env:pull --only=app
+bun run env:pull --only=brain
+bun run env:pull --only=app
 
 # List available service targets
-pnpm env:pull --list
+bun run env:pull --list
 
 # Combine flags
-pnpm env:pull --env=staging --only=lca-api
+bun run env:pull --env=staging --only=lca-api
 
 # Backup the current .env files before regenerating them
-pnpm env:backup
+bun run env:backup
 
 # Compare the current .env files against their .env.backup copies
-pnpm env:compare-backup
+bun run env:compare-backup
 
 # Compare the current .env files against Infisical exports
-pnpm env:compare-infisical
+bun run env:compare-infisical
 ```
 
 ### Backup and Compare Workflow
@@ -71,10 +71,10 @@ environment files before pulling from Infisical again.
 
 ```bash
 # Copy each current .env to a matching .env.backup file
-pnpm env:backup
+bun run env:backup
 
 # Show which keys differ between .env and .env.backup
-pnpm env:compare-backup
+bun run env:compare-backup
 ```
 
 The compare-backup command reports keys that were added, removed, or changed

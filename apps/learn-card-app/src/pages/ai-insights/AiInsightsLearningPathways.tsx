@@ -10,7 +10,7 @@ import { AiPathwaysIconWithShape } from 'learn-card-base/svgs/wallet/AiPathwaysI
 import {
     CredentialCategoryEnum,
     categoryMetadata,
-    useAiInsightCredential,
+    useExistingAiInsightCredential,
     useWallet,
 } from 'learn-card-base';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
@@ -32,7 +32,7 @@ type PathwayItem = PathwayStep & {
 
 export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
     const { data: aiInsightCredential, isLoading: aiInsightCredentialLoading } =
-        useAiInsightCredential();
+        useExistingAiInsightCredential();
     const { resolveCredential, initWallet } = useWallet();
     const history = useHistory();
 

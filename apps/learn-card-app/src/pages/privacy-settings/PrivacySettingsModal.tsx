@@ -1,21 +1,23 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { IonToggle } from '@ionic/react';
-import { ChevronLeft } from 'lucide-react';
+import { Check, ChevronLeft } from 'lucide-react';
 import { AllowConnectionRequestsEnum, ProfileVisibilityEnum } from '@learncard/types';
 
 import {
     RadioGroup,
     ToastTypeEnum,
     useGetPreferencesForDid,
+    useConsentedContracts,
     useUpdatePreferences,
     useGetCurrentLCNUser,
     useModal,
     useToast,
     useWallet,
     useBrandingConfig,
+    LEARNCARD_AI_PASSPORT_CONTRACT_URI,
+    useAiFeatureGate,
 } from 'learn-card-base';
-import { getAiFeatureAgeGateState } from 'learn-card-base';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
 import { useAnalytics } from '../../analytics';
@@ -24,47 +26,81 @@ import * as m from '../../paraglide/messages.js';
 type ProfileVisibilityValue =
     (typeof ProfileVisibilityEnum.enum)[keyof typeof ProfileVisibilityEnum.enum];
 
+type PrivacySettingsProfile = {
+    profileVisibility?: ProfileVisibilityValue;
+    isPrivate?: boolean;
+    showEmail?: boolean;
+    allowConnectionRequests?: (typeof AllowConnectionRequestsEnum.enum)[keyof typeof AllowConnectionRequestsEnum.enum];
+};
+
 const PrivacySettingsModal: React.FC = () => {
     const { closeModal } = useModal();
     const { data: preferences } = useGetPreferencesForDid();
     const { mutate: updatePreferences } = useUpdatePreferences();
     const { setEnabled: setAnalyticsEnabled } = useAnalytics();
     const { currentLCNUser, refetch } = useGetCurrentLCNUser();
+    const { data: consentedContracts } = useConsentedContracts();
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
     const { name: brandName } = useBrandingConfig();
     const profileType = switchedProfileStore.use.profileType();
     const [savingProfileField, setSavingProfileField] = useState<string | null>(null);
+    const [retryingAiConsent, setRetryingAiConsent] = useState(false);
+    const [isSyncingAiConsent, setIsSyncingAiConsent] = useState(false);
+    const [aiConnectionStatus, setAiConnectionStatus] = useState<
+        'idle' | 'connecting' | 'connected' | 'disconnecting' | 'disconnected'
+    >('idle');
+    const [isAiConnectionVisible, setIsAiConnectionVisible] = useState(false);
+    const aiConnectionHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const aiConnectionClearTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const profile = currentLCNUser as PrivacySettingsProfile | null;
 
     // Local DOB fallback so minor banner/locks work even without stored preferences.
     // Uses GDPR country-specific thresholds for EU users, 18 for everyone else.
-    const ageGate = getAiFeatureAgeGateState({
-        profileType,
-        dob: currentLCNUser?.dob,
-        country: currentLCNUser?.country,
-    });
+    const { isAiEnabled: aiFeatureEnabled, reason: aiFeatureGateReason } = useAiFeatureGate();
     const { handleAiToggle } = useAiConsentToggle();
-    const isMinor = ageGate.isChildProfile || ageGate.isMinorByAge;
+    const isMinor = profileType === 'child';
 
-    const aiEnabled = ageGate.isAiAgeRestricted
-        ? false
-        : ageGate.isChildProfile
-        ? preferences?.aiEnabled ?? false
-        : preferences?.aiEnabled ?? true;
+    const aiEnabled = aiFeatureEnabled;
+    const [aiToggleOverride, setAiToggleOverride] = useState<boolean | null>(null);
+    const aiToggleChecked = aiToggleOverride ?? aiEnabled;
+    const hasAiConsent = useMemo(() => {
+        return consentedContracts?.some(
+            consent =>
+                consent?.contract?.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI &&
+                consent?.status !== 'withdrawn'
+        );
+    }, [consentedContracts]);
+    const showAiConsentWarning =
+        !!preferences?.aiEnabled &&
+        !hasAiConsent &&
+        aiFeatureGateReason !== 'disabled_minor' &&
+        !isSyncingAiConsent &&
+        !retryingAiConsent;
+    const showAiConnectionStatus = aiConnectionStatus !== 'idle';
     const analyticsEnabled = preferences?.analyticsEnabled ?? !isMinor;
     const bugReportsEnabled = preferences?.bugReportsEnabled ?? !isMinor;
+
+    useEffect(() => {
+        if (aiToggleOverride === null) return;
+
+        if (aiToggleOverride === aiEnabled) {
+            setAiToggleOverride(null);
+        }
+    }, [aiEnabled, aiToggleOverride]);
+
     // Legacy profiles may only have `isPrivate` populated. Mirror the backend
     // fallback so the selected privacy option matches the profile's effective
     // visibility until the user saves the new canonical field.
     let profileVisibility: ProfileVisibilityValue = ProfileVisibilityEnum.enum.public;
-    if (currentLCNUser?.profileVisibility) {
-        profileVisibility = currentLCNUser.profileVisibility;
-    } else if (currentLCNUser?.isPrivate) {
+    if (profile?.profileVisibility) {
+        profileVisibility = profile.profileVisibility;
+    } else if (profile?.isPrivate) {
         profileVisibility = ProfileVisibilityEnum.enum.private;
     }
-    const showEmail = currentLCNUser?.showEmail ?? false;
+    const showEmail = profile?.showEmail ?? false;
     const allowConnectionRequests =
-        currentLCNUser?.allowConnectionRequests ?? AllowConnectionRequestsEnum.enum.anyone;
+        profile?.allowConnectionRequests ?? AllowConnectionRequestsEnum.enum.anyone;
 
     const visibilityOptions = useMemo(
         () => [
@@ -155,6 +191,88 @@ const PrivacySettingsModal: React.FC = () => {
         [allowConnectionRequests, handleProfileUpdate]
     );
 
+    const handleRetryAiConsent = useCallback(async () => {
+        try {
+            setRetryingAiConsent(true);
+            setAiToggleOverride(true);
+            setAiConnectionStatus('connecting');
+            setIsAiConnectionVisible(true);
+
+            const synced = await handleAiToggle(true);
+
+            if (synced) {
+                setAiConnectionStatus('connected');
+            } else {
+                setAiToggleOverride(null);
+                setAiConnectionStatus('idle');
+                setIsAiConnectionVisible(false);
+            }
+        } finally {
+            setRetryingAiConsent(false);
+        }
+    }, [handleAiToggle]);
+
+    const handleAiFeatureToggle = useCallback(
+        (enabled: boolean) => {
+            setAiToggleOverride(enabled);
+            setAiConnectionStatus(enabled ? 'connecting' : 'disconnecting');
+            setIsAiConnectionVisible(true);
+            setIsSyncingAiConsent(true);
+
+            void (async () => {
+                try {
+                    const synced = await handleAiToggle(enabled);
+
+                    if (synced) {
+                        setAiConnectionStatus(enabled ? 'connected' : 'disconnected');
+                        return;
+                    }
+
+                    setAiToggleOverride(null);
+                    setAiConnectionStatus('idle');
+                    setIsAiConnectionVisible(false);
+                } finally {
+                    setIsSyncingAiConsent(false);
+                }
+            })();
+        },
+        [handleAiToggle]
+    );
+
+    useEffect(() => {
+        if (aiConnectionHideTimeoutRef.current) {
+            clearTimeout(aiConnectionHideTimeoutRef.current);
+            aiConnectionHideTimeoutRef.current = null;
+        }
+
+        if (aiConnectionClearTimeoutRef.current) {
+            clearTimeout(aiConnectionClearTimeoutRef.current);
+            aiConnectionClearTimeoutRef.current = null;
+        }
+
+        if (aiConnectionStatus !== 'connected' && aiConnectionStatus !== 'disconnected') return;
+
+        aiConnectionHideTimeoutRef.current = setTimeout(() => {
+            setIsAiConnectionVisible(false);
+            aiConnectionClearTimeoutRef.current = setTimeout(() => {
+                setAiConnectionStatus('idle');
+                aiConnectionClearTimeoutRef.current = null;
+            }, 300);
+        }, 2000);
+
+        return () => {
+            if (aiConnectionHideTimeoutRef.current) {
+                clearTimeout(aiConnectionHideTimeoutRef.current);
+                aiConnectionHideTimeoutRef.current = null;
+            }
+
+            if (aiConnectionClearTimeoutRef.current) {
+                clearTimeout(aiConnectionClearTimeoutRef.current);
+                aiConnectionClearTimeoutRef.current = null;
+            }
+        };
+    }, [aiConnectionStatus]);
+
     return (
         <div className="bg-white rounded-[20px] p-6 min-w-[350px] max-w-[450px] w-full">
             <div className="flex items-center gap-3 mb-4">
@@ -217,7 +335,7 @@ const PrivacySettingsModal: React.FC = () => {
                                 checked={showEmail}
                                 disabled={savingProfileField === 'showEmail'}
                                 onIonChange={e => handleShowEmailToggle(e.detail.checked)}
-                                aria-label="Show email to connections"
+                                aria-label={m['settings.privacy.showEmail']()}
                             />
                         </div>
 
@@ -255,14 +373,65 @@ const PrivacySettingsModal: React.FC = () => {
                             </p>
                         </div>
                         <IonToggle
-                            checked={aiEnabled}
-                            disabled={ageGate.isAiAgeRestricted}
-                            onIonChange={e =>
-                                !ageGate.isAiAgeRestricted && handleAiToggle(e.detail.checked)
+                            checked={aiToggleChecked}
+                            disabled={
+                                aiFeatureGateReason === 'disabled_minor' ||
+                                isSyncingAiConsent ||
+                                retryingAiConsent
                             }
-                            aria-label="AI Features"
+                            onIonChange={e =>
+                                aiFeatureGateReason !== 'disabled_minor' &&
+                                handleAiFeatureToggle(e.detail.checked)
+                            }
+                            aria-label={m['settings.aiFeatures']()}
                         />
                     </div>
+                    {showAiConnectionStatus && (
+                        <div
+                            className={`px-5 pb-4 transition-opacity duration-300 ${
+                                isAiConnectionVisible ? 'opacity-100' : 'opacity-0'
+                            }`}
+                        >
+                            {aiConnectionStatus === 'connecting' ? (
+                                <p className="text-xs text-grayscale-500 leading-relaxed">
+                                    Connecting...
+                                </p>
+                            ) : aiConnectionStatus === 'disconnecting' ? (
+                                <p className="text-xs text-grayscale-500 leading-relaxed">
+                                    Disconnecting...
+                                </p>
+                            ) : (
+                                <p className="flex items-center gap-1.5 text-xs text-emerald-600 leading-relaxed">
+                                    <Check className="w-3.5 h-3.5 shrink-0" />
+                                    <span>
+                                        {aiConnectionStatus === 'connected'
+                                            ? m['dataSharing.connected']()
+                                            : m['dataSharing.disconnected']()}
+                                    </span>
+                                </p>
+                            )}
+                        </div>
+                    )}
+                    {showAiConsentWarning && (
+                        <div className="px-5 pb-4">
+                            <div className="rounded-[16px] border border-red-100 bg-red-50 px-4 py-3">
+                                <p className="text-sm text-red-700 leading-relaxed">
+                                    {m['dataSharing.aiConsentWarning']()}
+                                    <button
+                                        type="button"
+                                        onClick={handleRetryAiConsent}
+                                        disabled={retryingAiConsent}
+                                        className="ml-1 font-medium underline underline-offset-2 text-red-700 disabled:opacity-60"
+                                    >
+                                        {retryingAiConsent
+                                            ? m['dataSharing.retrying']()
+                                            : m['dataSharing.tryAgain']()}
+                                    </button>
+                                    .
+                                </p>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Analytics */}
@@ -279,7 +448,7 @@ const PrivacySettingsModal: React.FC = () => {
                         <IonToggle
                             checked={analyticsEnabled}
                             onIonChange={e => handleAnalyticsToggle(e.detail.checked)}
-                            aria-label="Usage Analytics"
+                            aria-label={m['settings.analytics']()}
                         />
                     </div>
                 </div>
@@ -298,7 +467,7 @@ const PrivacySettingsModal: React.FC = () => {
                         <IonToggle
                             checked={bugReportsEnabled}
                             onIonChange={e => handleBugReportsToggle(e.detail.checked)}
-                            aria-label="Crash Reports"
+                            aria-label={m['settings.bugReports']()}
                         />
                     </div>
                 </div>

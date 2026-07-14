@@ -4,8 +4,10 @@ import { SplashScreen } from '@capacitor/splash-screen';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { asyncWithLDProvider } from 'launchdarkly-react-client-sdk';
 import { LAUNCH_DARKLY_CONFIG } from './constants/launchDarkly';
+import { TenantConfigProvider } from 'learn-card-base';
 
 import App from './App';
+import { bootstrapTenantConfig } from './config/bootstrapTenantConfig';
 
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import reportWebVitals from './reportWebVitals';
@@ -17,6 +19,8 @@ const log = getLogger('index');
 (window as any).Buffer = Buffer;
 
 (async () => {
+    const tenantConfig = await bootstrapTenantConfig();
+
     // notifyAppReady
     const capGoApp = await CapacitorUpdater.notifyAppReady();
     const capGoBundle = capGoApp.bundle;
@@ -36,9 +40,11 @@ const log = getLogger('index');
     if (container) {
         const root = createRoot(container);
         root.render(
-            <LDProvider>
-                <App />
-            </LDProvider>
+            <TenantConfigProvider config={tenantConfig}>
+                <LDProvider>
+                    <App />
+                </LDProvider>
+            </TenantConfigProvider>
         );
     }
     // If you want your app to work offline and load faster, you can change

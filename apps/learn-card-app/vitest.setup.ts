@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
-import { TextEncoder, TextDecoder as NodeTextDecoder } from 'util';
+import { TextEncoder, TextDecoder as NodeTextDecoder } from 'node:util';
 import { createMockLogger } from './src/test-utils/mockLearnCardBaseLogger';
 
 const defineGlobalValue = <T>(key: string, value: T): void => {

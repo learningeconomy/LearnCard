@@ -25,11 +25,24 @@ import { ColorSetEnum } from '../../../theme/colors/index';
 import { StyleSetEnum } from '../../../theme/styles/index';
 
 export const NotificationsSubHeader: React.FC<{
-    notificationCount: number;
     isEmptyState: boolean;
     setTab: React.Dispatch<React.SetStateAction<string>>;
     tab: string;
-}> = ({ notificationCount, isEmptyState, setTab, tab }) => {
+    /**
+     * Overrides the back-button behavior. Defaults to `history.goBack()` (used
+     * by the full-page route). The notifications modal passes `closeModal` so
+     * the back arrow dismisses the modal instead of navigating the route
+     * underneath it.
+     */
+    onBack?: () => void;
+    /**
+     * Forces the back arrow to render on desktop too (it is hidden on desktop
+     * by default). The notifications modal enables this so the arrow acts as the
+     * close control on every breakpoint — avoiding a separate close button that
+     * would collide with the "Archive All" button.
+     */
+    showBackButton?: boolean;
+}> = ({ isEmptyState, setTab, tab, onBack, showBackButton }) => {
     const { getColorSet, getStyleSet } = useTheme();
     const styleSet = getStyleSet(StyleSetEnum.defaults);
     const colorSet = getColorSet(ColorSetEnum.defaults);
@@ -112,11 +125,16 @@ export const NotificationsSubHeader: React.FC<{
                     <button
                         className="text-grayscale-50 p-0 mr-[2px] flex items-center justify-start"
                         onClick={() => {
-                            history.goBack();
+                            if (onBack) onBack();
+                            else history.goBack();
                         }}
-                        aria-label="Back button"
+                        aria-label={onBack ? 'Close alerts' : 'Back button'}
                     >
-                        <LeftArrow className="w-6 mr-[10px] h-auto text-black desktop:hidden" />
+                        <LeftArrow
+                            className={`w-6 mr-[10px] h-auto text-black ${
+                                showBackButton ? '' : 'desktop:hidden'
+                            }`}
+                        />
                         <span className="text-grayscale-900 font-poppins font-semibold text-[25px] tracking-[0.01rem]">
                             {m['alerts.title']()}
                         </span>

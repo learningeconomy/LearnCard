@@ -25,10 +25,10 @@ export const ShareInsightsCard: React.FC<{}> = () => {
                     />
 
                     <div className="w-full flex items-start justify-center flex-col ml-[12px]">
-                        <p className="text-[17px] text-grayscale-900 line-clamp-1">
+                        <p className="text-[17px] text-grayscale-900 line-clamp-1 text-left">
                             {currentUser?.name}
                         </p>
-                        <p className="font-semibold text-sm font-poppins capitalize text-grayscale-700">
+                        <p className="font-semibold text-sm font-poppins capitalize text-grayscale-700 text-left">
                             {currentRoleLabel} {total ?? 0} Skills
                         </p>
                     </div>

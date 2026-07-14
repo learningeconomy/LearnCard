@@ -10,54 +10,54 @@ name: OpenID4VC Interop Tests
 # file is purely for the heavyweight, real-vendor tier.
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    paths:
-      - 'packages/plugins/openid4vc/**'
-      - 'tests/openid4vc-interop-e2e/**'
-      - 'tests/openid4vc-e2e/**'
-      - 'pnpm-lock.yaml'
-      - '.github/workflows/openid4vc-interop.yml'
-  workflow_dispatch:
-    inputs:
-      branch:
-        description: 'Branch to test'
-        required: true
-        default: 'main'
+    pull_request:
+        types: [opened, synchronize, reopened]
+        paths:
+            - 'packages/plugins/openid4vc/**'
+            - 'tests/openid4vc-interop-e2e/**'
+            - 'tests/openid4vc-e2e/**'
+            - 'bun.lock'
+            - '.github/workflows/openid4vc-interop.yml'
+    workflow_dispatch:
+        inputs:
+            branch:
+                description: 'Branch to test'
+                required: true
+                default: 'main'
 
 jobs:
-  interop:
-    name: Interop (walt.id + Sphereon + EUDI)
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.event.inputs.branch }}
-          fetch-depth: 0
+    interop:
+        name: Interop (walt.id + Sphereon + EUDI)
+        runs-on: ubuntu-latest
+        timeout-minutes: 45
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.inputs.branch }}
+                  fetch-depth: 0
 
-      - name: Use Composite Setup Action
-        uses: ./.github/actions/setup
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
 
-      - name: Build openid4vc plugin
-        run: pnpm exec nx build openid4vc-plugin
+            - name: Build openid4vc plugin
+              run: bunx nx build openid4vc-plugin
 
-      - name: Run in-process OID4VC e2e suite
-        run: pnpm --filter @workspace/openid4vc-e2e-tests test
+            - name: Run in-process OID4VC e2e suite
+              run: bun run --filter @workspace/openid4vc-e2e-tests test
 
-      - name: Run cross-vendor interop suite (docker compose)
-        run: pnpm --filter @workspace/openid4vc-interop-e2e-tests test:interop:e2e
-        env:
-          # Surface real-vendor failures rather than silently skipping.
-          CI: 'true'
+            - name: Run cross-vendor interop suite (docker compose)
+              run: bun run --filter @workspace/openid4vc-interop-e2e-tests test:interop:e2e
+              env:
+                  # Surface real-vendor failures rather than silently skipping.
+                  CI: 'true'
 
-      - name: Dump docker compose logs on failure
-        if: failure()
-        working-directory: tests/openid4vc-interop-e2e
-        run: docker compose logs --no-color --tail=500 || true
+            - name: Dump docker compose logs on failure
+              if: failure()
+              working-directory: tests/openid4vc-interop-e2e
+              run: docker compose logs --no-color --tail=500 || true
 
-      - name: Tear down docker compose
-        if: always()
-        working-directory: tests/openid4vc-interop-e2e
-        run: docker compose down -v --remove-orphans || true
+            - name: Tear down docker compose
+              if: always()
+              working-directory: tests/openid4vc-interop-e2e
+              run: docker compose down -v --remove-orphans || true

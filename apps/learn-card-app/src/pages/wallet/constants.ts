@@ -127,7 +127,7 @@ export const walletPageData: WalletPageItem[] = [
     },
     {
         id: 5,
-        title: 'Boosts',
+        title: 'Badges',
         bgColor: 'bg-blue-300',
         bgColorSecondary: 'bg-blue-500',
         subtype: WalletCategoryTypes.socialBadges,

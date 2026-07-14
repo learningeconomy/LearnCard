@@ -32,11 +32,11 @@
             }
         },
         "start": {
-            "executor": "./tools/executors/workspace:run-command",
+            "executor": "nx:run-commands",
             "dependsOn": ["^build"],
             "options": {
-                "command": "pnpm start",
-                "cwd": "{root}/packages/learn-card-cli"
+                "command": "bun run start --",
+                "cwd": "{projectRoot}"
             }
         }
     }

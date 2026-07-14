@@ -7,11 +7,10 @@ import {
     CredentialCategoryEnum,
     getBaseUrl,
     getCategoryForCredential,
+    queueAiInsightCredentialRefresh,
     switchedProfileStore,
     useDeleteCredentialRecord,
     useGetProfile,
-    useGetSelfAssignedSkillsBoost,
-    useGetSelfAssignedSkillsCredential,
     useWallet,
     VC_WITH_URI,
 } from 'learn-card-base';
@@ -36,6 +35,7 @@ import { insertItem } from './mutation.helpers';
 import { convertAttachmentsToEvidence } from '../../components/boost/boost';
 import { v4 as uuidv4 } from 'uuid';
 import { LCR } from 'learn-card-base/types/credential-records';
+import { deleteCredentialFromAllContracts } from './pruneConsentFlowDeletedCredentials';
 import { useSyncAllCredentialsToContractsMutation } from './syncAllCredentials';
 import { getLogger } from '../../logging/logger';
 const log = getLogger('boosts');
@@ -526,11 +526,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
     const syncAllCredentialsToContracts = useSyncAllCredentialsToContractsMutation();
-
     const { data: profile } = useGetProfile();
-    const { data: sasBoost, isLoading: isLoadingSasBoost } = useGetSelfAssignedSkillsBoost();
-    const { data: sasCred, isLoading: isLoadingSasCred } = useGetSelfAssignedSkillsCredential();
-
     const { mutateAsync: deleteCredentialRecord } = useDeleteCredentialRecord();
 
     return useMutation({
@@ -539,13 +535,8 @@ export const useManageSelfAssignedSkillsBoost = () => {
         }: {
             skills?: { frameworkId: string; id: string; proficiencyLevel?: number }[];
         }) => {
-            if (isLoadingSasBoost || isLoadingSasCred) {
-                log.debug('Loading self-assigned skills boost/credential... please try again.');
-                return { boostUri: undefined };
-            }
             if (!profile) {
-                log.debug('No profile found, please try again.');
-                return { boostUri: undefined };
+                throw new Error('No profile found, please try again.');
             }
 
             const wallet = await initWallet();
@@ -562,6 +553,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
                     : undefined;
 
             const sasBoostExists = !!freshSasBoost;
+            const deletedUris: string[] = [];
 
             // If boost exists, delete ALL old credential records BEFORE updating
             // Query by multiple criteria to catch records with or without boostUri
@@ -594,14 +586,18 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 // Delete ALL matching records
                 for (const record of allRecordsMap.values()) {
                     try {
-                        await deleteCredentialRecord(record);
+                        const deletionResult = await deleteCredentialRecord({
+                            ...record,
+                            skipPostDeleteCleanup: true,
+                        });
+                        deletedUris.push(...deletionResult.deletedUris);
                     } catch (e) {
                         log.warn('Failed to delete credential record:', e);
                     }
                 }
             }
 
-            const walletDid = wallet?.id?.did();
+            const walletDid = wallet.id.did();
             const currentDate = new Date()?.toISOString();
 
             const credentialPayload: Record<string, any> = {
@@ -667,17 +663,18 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 });
             }
 
-            const sentCredentialUri = await wallet?.invoke?.sendBoost(
-                profile?.profileId,
-                boostUri,
-                {
-                    skipNotification: true,
-                    encrypt: true,
-                }
-            );
+            const sentCredentialUri = await wallet.invoke.sendBoost(profile.profileId, boostUri, {
+                skipNotification: true,
+                encrypt: true,
+            });
 
-            const sentCredential = await wallet?.read?.get(sentCredentialUri);
-            const issuedVcUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(sentCredential);
+            if (!sentCredentialUri)
+                throw new Error('Failed to issue self-assigned skills credential.');
+
+            const sentCredential = await wallet.read.get(sentCredentialUri);
+            const issuedVcUri = await wallet.store.LearnCloud.uploadEncrypted?.(sentCredential);
+
+            if (!issuedVcUri) throw new Error('Failed to store self-assigned skills credential.');
 
             // addCredentialToWallet
             const vc = await VCValidator.parseAsync(await wallet.read.get(issuedVcUri));
@@ -694,13 +691,17 @@ export const useManageSelfAssignedSkillsBoost = () => {
 
             return {
                 boostUri,
+                credentialUri: issuedVcUri,
+                category,
+                profileDid: walletDid,
+                deletedUris: [...new Set(deletedUris)],
                 // name: state.basicInfo.name,
                 // type: state.basicInfo.achievementType ?? '',
                 // category: state.basicInfo.type,
                 // status,
             };
         },
-        onSuccess: async ({ boostUri }) => {
+        onSuccess: ({ boostUri, credentialUri, category, profileDid, deletedUris }) => {
             const switchedDid = switchedProfileStore.get.switchedDid();
             queryClient.invalidateQueries({
                 queryKey: ['selfAssignedSkillsBoost', switchedDid ?? ''],
@@ -730,7 +731,30 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 queryKey: ['useSyncConsentFlow'],
             });
 
-            syncAllCredentialsToContracts.mutate();
+            void (async () => {
+                try {
+                    const wallet = await initWallet();
+
+                    if (deletedUris.length > 0) {
+                        await deleteCredentialFromAllContracts({
+                            wallet,
+                            queryClient,
+                            deletedUris,
+                        });
+                    }
+
+                    await syncAllCredentialsToContracts.mutateAsync();
+                    await queueAiInsightCredentialRefresh({
+                        wallet,
+                        queryClient,
+                    });
+                } catch (error) {
+                    log.warn(
+                        'Failed to complete post-save contract sync or AI refresh for self-assigned skills:',
+                        error
+                    );
+                }
+            })();
         },
     });
 };

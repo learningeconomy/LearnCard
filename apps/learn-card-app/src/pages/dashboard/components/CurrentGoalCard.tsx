@@ -10,6 +10,7 @@ type GoalSummary = {
     completed: number;
     nextNode: PathwayNode | null;
     pathwayId: string;
+    goals?: string[];
 } | null;
 
 type CurrentGoalCardProps = {
@@ -110,9 +111,56 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
         );
     }
 
-    const { title, goal, total, completed, nextNode } = goalSummary;
+    const { title, goal, total, completed, nextNode, goals } = goalSummary;
+    const hasGoalsList = goals && goals.length > 0;
 
     if (isHero) {
+        if (hasGoalsList) {
+            const [primaryGoal, ...secondaryGoals] = goals;
+            return (
+                <section className="relative overflow-hidden rounded-[20px] p-6 desktop:p-8 bg-gradient-to-br from-grayscale-900 via-grayscale-800 to-grayscale-900 text-white shadow-soft-bottom animate-fade-in-up">
+                    <span
+                        aria-hidden
+                        className="absolute -top-20 -right-16 w-64 h-64 rounded-full bg-indigo-500/20 blur-2xl"
+                    />
+                    <div className="relative">
+                        <p className="text-[11px] font-medium tracking-[0.14em] text-white/60 uppercase">
+                            {goals.length === 1 ? 'Current goal' : 'Current goals'}
+                        </p>
+                        <h2 className="mt-1 text-2xl desktop:text-3xl font-semibold leading-tight">
+                            {primaryGoal}
+                        </h2>
+
+                        {secondaryGoals.length > 0 && (
+                            <div className="mt-4 flex flex-wrap gap-2">
+                                {secondaryGoals.map((g, i) => (
+                                    <span
+                                        key={i}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm text-xs font-medium text-white/90"
+                                    >
+                                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-300 shrink-0" />
+                                        {g}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+
+                        <button
+                            type="button"
+                            onClick={onContinue}
+                            className={`mt-5 w-full py-3 px-4 rounded-[20px] font-semibold text-sm hover:opacity-90 transition-opacity active:scale-[0.99] ${primaryButtonClass}`}
+                        >
+                            {pathwaysEnabled
+                                ? nextNode
+                                    ? 'Continue journey'
+                                    : 'Open journey'
+                                : 'Navigate pathways'}
+                        </button>
+                    </div>
+                </section>
+            );
+        }
+
         return (
             <section className="relative overflow-hidden rounded-[20px] p-6 desktop:p-8 bg-gradient-to-br from-grayscale-900 via-grayscale-800 to-grayscale-900 text-white shadow-soft-bottom animate-fade-in-up">
                 <span
@@ -201,6 +249,42 @@ const CurrentGoalCard: React.FC<CurrentGoalCardProps> = ({
                             : m['dashboard.currentGoal.navigatePathways']()}
                     </button>
                 </div>
+            </section>
+        );
+    }
+
+    if (hasGoalsList) {
+        const [primaryGoal, ...secondaryGoals] = goals;
+        return (
+            <section className="bg-white rounded-[20px] p-5 shadow-soft-bottom border border-grayscale-200 animate-fade-in-up">
+                <p className="text-xs font-medium tracking-wider text-grayscale-500 uppercase">
+                    {goals.length === 1 ? 'Current goal' : 'Current goals'}
+                </p>
+                <h2 className="mt-1 text-xl font-semibold text-grayscale-900 leading-tight">
+                    {primaryGoal}
+                </h2>
+
+                {secondaryGoals.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                        {secondaryGoals.map((g, i) => (
+                            <span
+                                key={i}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-grayscale-100 text-xs font-medium text-grayscale-700"
+                            >
+                                <span className="w-1.5 h-1.5 rounded-full bg-grayscale-900 shrink-0" />
+                                {g}
+                            </span>
+                        ))}
+                    </div>
+                )}
+
+                <button type="button" onClick={onContinue} className={buttonClass}>
+                    {pathwaysEnabled
+                        ? nextNode
+                            ? 'Continue journey'
+                            : 'Open journey'
+                        : 'Navigate pathways'}
+                </button>
             </section>
         );
     }

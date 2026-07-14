@@ -1,11 +1,13 @@
 import React from 'react';
 
 import EndorsementButton from './EndorsementButton';
-import EndorsementsList from './EndorsementsList/EndorsementsList';
-import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
+import { IDsIconSolid } from 'learn-card-base/svgs/wallet/IDsIcon';
+import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 
 import {
+    BoostCategoryOptionsEnum,
     CredentialCategoryEnum,
+    getBoostMetadata,
     useGetCurrentLCNUser,
     useGetVCInfo,
     useIsLoggedIn,
@@ -23,19 +25,8 @@ export const EndorsementCard: React.FC<{
 }> = ({ credential, categoryType, existingEndorsements = [] }) => {
     const isLoggedIn = useIsLoggedIn();
     const { currentLCNUser } = useGetCurrentLCNUser();
-    const {
-        achievementType,
-        title,
-        badgeThumbnail,
-        backgroundImage,
-        backgroundColor,
-        displayType,
-        isCurrentUserSubject,
-    } = useGetVCInfo(credential, categoryType);
-
-    const isAwardDisplay = displayType === 'award';
-    const isCertDisplayType = displayType === 'certificate';
-    const isMeritBadge = displayType === 'meritBadge';
+    const { title, badgeThumbnail, achievementType, displayType, isCurrentUserSubject } =
+        useGetVCInfo(credential, categoryType);
 
     const categoryTypeString = categoryType as CredentialCategoryEnum;
 
@@ -46,31 +37,82 @@ export const EndorsementCard: React.FC<{
 
     if (hasEndorsed || !isLoggedIn) return <></>;
 
+    const isIDCategory = categoryType === CredentialCategoryEnum.id;
+    const isCertificateDisplayType = displayType === 'certificate';
+    const isAwardDisplayType = displayType === 'award';
+    const isMediaDisplayType = displayType === 'media';
+    const isMeritStyleBadge =
+        isAwardDisplayType || categoryType === CredentialCategoryEnum.meritBadge;
+    const badgeScaleClass = isCertificateDisplayType
+        ? 'w-[120px] min-w-[120px] scale-[0.7]'
+        : isMeritStyleBadge
+        ? 'w-[138px] min-w-[138px] scale-[0.8]'
+        : 'w-full';
+
+    const categoryMeta = getBoostMetadata(
+        (categoryType as unknown as BoostCategoryOptionsEnum) ??
+            BoostCategoryOptionsEnum.socialBadge
+    );
+    const CategoryIcon = categoryMeta?.SolidIconComponent ?? categoryMeta?.IconComponent;
+    const categoryCircleColor = categoryMeta?.badgeBackgroundColor ?? 'gray-500';
+
+    const renderCredentialBadge = () => {
+        if (isIDCategory) {
+            return (
+                <div className="w-[90px] h-[90px] min-w-[90px] min-h-[90px] rounded-full bg-blue-400 border-4 border-solid border-white flex items-center justify-center overflow-hidden">
+                    {badgeThumbnail ? (
+                        <img
+                            src={badgeThumbnail}
+                            alt=""
+                            className="w-[70%] h-[70%] rounded-full object-cover border-4 border-solid border-white"
+                        />
+                    ) : (
+                        <IDsIconSolid className="w-[36px] h-[36px] text-white" />
+                    )}
+                </div>
+            );
+        }
+
+        if (isMediaDisplayType) {
+            return (
+                <div
+                    className={`w-[90px] h-[90px] min-w-[90px] min-h-[90px] rounded-full border-4 border-solid border-white flex items-center justify-center overflow-hidden bg-${categoryCircleColor}`}
+                >
+                    <div className="w-[70%] h-[70%] rounded-full border-4 border-solid border-white flex items-center justify-center">
+                        {CategoryIcon && <CategoryIcon className="w-[32px] h-[32px] text-white" />}
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <div className="w-[90px] h-[90px] min-w-[90px] min-h-[90px] flex items-center justify-center">
+                <div
+                    className={`flex flex-col items-center justify-center shrink-0 ${badgeScaleClass}`}
+                >
+                    <CredentialBadgeNew
+                        credential={undefined as never}
+                        achievementType={achievementType}
+                        fallbackCircleText={title}
+                        boostType={categoryType as unknown as BoostCategoryOptionsEnum}
+                        badgeThumbnail={badgeThumbnail || ''}
+                        showBackgroundImage={false}
+                        backgroundImage=""
+                        backgroundColor=""
+                        badgeCircleCustomClass="!w-[90px] h-[90px]"
+                        badgeContainerCustomClass="notification-cred-badge mt-[0px] mb-[0px]"
+                        badgeRibbonContainerCustomClass="notification-cred-badge-ribbon my-[0px]"
+                        displayType={displayType}
+                    />
+                </div>
+            </div>
+        );
+    };
+
     return isCurrentUserSubject ? (
         <div className="py-4 pr-4 gap-4 bg-white flex flex-col items-start rounded-[20px] w-full shadow-bottom-2-4">
             <div className="flex items-center w-full">
-                <CredentialBadge
-                    achievementType={achievementType}
-                    fallbackCircleText={title}
-                    boostType={categoryType}
-                    badgeThumbnail={badgeThumbnail as string}
-                    backgroundImage={backgroundImage as string}
-                    backgroundColor={backgroundColor as string}
-                    badgeContainerCustomClass={
-                        isCertDisplayType || isAwardDisplay || isMeritBadge
-                            ? 'hidden'
-                            : 'mt-[0px] mb-[8px]'
-                    }
-                    badgeCircleCustomClass={`!w-[80px] h-[80px] mt-1 ${
-                        isAwardDisplay || isMeritBadge ? 'mt-[17px]' : 'shadow-3xl'
-                    }`}
-                    badgeRibbonContainerCustomClass="left-[31%] bottom-[-40%]"
-                    badgeRibbonCustomClass="w-[26px]"
-                    badgeRibbonIconCustomClass="w-[70%] mt-[4px]"
-                    displayType={displayType}
-                    credential={credential}
-                    hideMediaBadge
-                />
+                <div className="ml-2 mr-3 shrink-0">{renderCredentialBadge()}</div>
 
                 <div className="flex items-start">
                     <p className="text-sm text-grayscale-900 text-left">

@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { capitalize } from 'lodash-es';
 import moment from 'moment';
 
-import { m } from '../../../paraglide/messages.js';
+import * as m from '../../../paraglide/messages.js';
 
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import useConsentFlow from '../../../pages/consentFlow/useConsentFlow';
@@ -33,6 +33,7 @@ import {
 import {
     NotificationTypeEnum,
     NotificationTypeStyles,
+    notificationCardStyles,
 } from '../../../components/notifications/notificationsV2/types';
 
 import { LCNProfile } from '@learncard/types';
@@ -298,9 +299,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
         <>
             <ErrorBoundary
                 fallback={
-                    <div
-                        className={`flex min-h-[120px] justify-start max-w-[600px] items-start relative w-full py-[10px] px-[10px] bg-white my-[15px]`}
-                    >
+                    <div className={notificationCardStyles.fallbackShell}>
                         {m['aiInsights.unableToLoad']()}
                     </div>
                 }
@@ -308,7 +307,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
                 <div
                     onClick={handleCardClick}
                     ref={ref}
-                    className={`flex min-h-[120px] justify-start max-w-[600px] items-start relative w-full py-[10px] px-[10px] bg-white my-[15px]`}
+                    className={`${notificationCardStyles.shell} min-h-[120px]`}
                 >
                     {!isRead && !isLoading && (
                         <div className="notification-count-mobile unread-indicator-dot" />
@@ -322,24 +321,26 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
                             />
                         </div>
 
-                        {isLoading && <div className="w-[78px] h-[78px] rounded-full bg-gray-50" />}
+                        {isLoading && (
+                            <div className="w-[78px] h-[78px] rounded-full bg-grayscale-50" />
+                        )}
                     </div>
                     <div className="flex flex-col justify-center items-start relative w-full">
                         <div className="text-left ml-3 flex flex-col items-start justify-start w-full">
                             <h4
-                                className="cursor-pointer font-semibold tracking-wide line-clamp-2 text-grayscale-900 text-[14px] pr-[20px] notification-card-title"
+                                className={`cursor-pointer ${notificationCardStyles.title}`}
                                 data-testid="notification-title"
                             >
                                 {capitalize(title)}
                             </h4>
                             <p
-                                className={`font-bold p-0 mt-[10px] leading-none tracking-wide line-clamp-1 text-[12px] notification-card-type-text text-indigo-600`}
+                                className={`${notificationCardStyles.meta} mt-[10px] text-indigo-600`}
                                 data-testid="notification-type"
                             >
                                 {m['aiInsights.insightsLabel']()}{' '}
                                 {issueDate && (
                                     <span
-                                        className="text-[rgba(24,34,78,0.8)] normal-case font-normal text-[12px] notification-card-type-issue-date"
+                                        className={notificationCardStyles.date}
                                         data-testid="notification-cred-issue-date"
                                     >
                                         • {issueDate}
@@ -349,7 +350,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
 
                             <div className="flex relative items-center justify-between mt-3 w-full">
                                 <button
-                                    className={`cursor-pointer notification-claim-btn flex items-center mr-[15px] w-[143px] justify-center flex-1 rounded-[24px] border-2 border-solid font-semibold font-poppins py-2 px-3 tracking-wide ${claimButtonStyles}`}
+                                    className={`cursor-pointer ${notificationCardStyles.primaryButton} mr-[15px] w-[143px] ${claimButtonStyles}`}
                                     onClick={e => {
                                         e.stopPropagation();
                                         handleButtonClick();
@@ -362,7 +363,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
 
                                 <button
                                     onClick={handleArchiveAction}
-                                    className={`rounded-[40px] flex items-center justify-center border-[1px] border-[#E2E3E9] border-solid h-[42px] w-[42px] bg-white font-semibold mr-2 p-[0px] tracking-wide`}
+                                    className={`${notificationCardStyles.iconButton} mr-2`}
                                     name="notification-view-button"
                                 >
                                     {!isArchived && (

@@ -3,7 +3,8 @@
     "displayName": "Colorful",
     "iconSet": "colorful",
     "defaults": {
-        "viewMode": "grid"
+        "passportViewMode": "list",
+        "credentialViewMode": "card"
     },
     "colors": {
         "categories": {
@@ -13,7 +14,7 @@
                 "indicatorColor": "indigo-500",
                 "borderColor": "cyan-301",
                 "statusBarColor": "light",
-                "headerBrandingTextColor": "text-white",
+                "headerBrandingTextColor": "text-grayscale-900",
                 "headerTextColor": "text-grayscale-900",
                 "helperTextColor": "text-grayscale-600",
                 "backgroundPrimaryColor": "!bg-white",
@@ -168,7 +169,7 @@
         "sideMenu": {
             "linkActiveColor": "text-grayscale-900",
             "linkInactiveColor": "text-grayscale-700",
-            "linkActiveBackgroundColor": "bg-grayscale-100/50",
+            "linkActiveBackgroundColor": "bg-grayscale-100",
             "linkInactiveBackgroundColor": "bg-white",
             "primaryButtonColor": "bg-indigo-500 text-white",
             "secondaryButtonColor": "bg-gradient-rainbow text-white border-white",
@@ -179,7 +180,7 @@
         },
         "navbar": {
             "activeColor": "text-grayscale-900",
-            "inactiveColor": "text-grayscale-600",
+            "inactiveColor": "text-grayscale-800",
             "syncingColor": "!text-indigo-500",
             "completedColor": "!text-emerald-700"
         },

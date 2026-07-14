@@ -1,0 +1,299 @@
+import React, { useState, useMemo, useCallback } from 'react';
+import { Search, Sparkles, Plus } from 'lucide-react';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { Capacitor } from '@capacitor/core';
+import {
+    BadgePreset,
+    getStylePackPresets,
+    VIBE_COLORS,
+    resolveBadgeStyle,
+} from '../boostAFriend.helpers';
+import { LCAStylesPackRegistryEntry, BadgeGroup } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
+
+interface BadgePickerProps {
+    onSelect: (badge: BadgePreset, vibeColor: string) => void;
+    onBack: () => void;
+    stylePacks: LCAStylesPackRegistryEntry[] | undefined;
+    badgeGroups: BadgeGroup[] | undefined;
+}
+
+export const BadgePicker: React.FC<BadgePickerProps> = ({
+    onSelect,
+    onBack,
+    stylePacks,
+    badgeGroups,
+}) => {
+    const [search, setSearch] = useState('');
+    const presets = useMemo(() => getStylePackPresets(stylePacks), [stylePacks]);
+
+    const filteredPresets = useMemo(() => {
+        if (!search) return presets;
+        const lower = search.toLowerCase();
+        return presets.filter(p => p.title.toLowerCase().includes(lower));
+    }, [presets, search]);
+
+    const [isCollapsed, setIsCollapsed] = useState(false);
+
+    const handleScroll = useCallback(
+        (e: React.UIEvent<HTMLDivElement>) => {
+            const scrollTop = e.currentTarget.scrollTop;
+            if (scrollTop > 24 && !isCollapsed) {
+                setIsCollapsed(true);
+            } else if (scrollTop <= 8 && isCollapsed) {
+                setIsCollapsed(false);
+            }
+        },
+        [isCollapsed]
+    );
+
+    const handleSelect = (badge: BadgePreset, color: string) => {
+        if (Capacitor.isNativePlatform()) {
+            try {
+                Haptics.impact({ style: ImpactStyle.Light });
+            } catch {
+                // Haptics are best-effort; a device without support must not block selection.
+            }
+        }
+        onSelect(badge, color);
+    };
+
+    const handleSurpriseMe = () => {
+        const randomPreset = presets[Math.floor(Math.random() * presets.length)];
+        const randomColor = VIBE_COLORS[Math.floor(Math.random() * VIBE_COLORS.length)];
+        handleSelect(randomPreset, randomColor);
+    };
+
+    const handleCustom = () => {
+        const trimmedSearch = search.trim();
+        const randomColor = VIBE_COLORS[Math.floor(Math.random() * VIBE_COLORS.length)];
+        handleSelect(
+            { title: trimmedSearch, type: 'ext:Custom', category: 'Social Badge' },
+            randomColor
+        );
+    };
+
+    const groupedPresets = useMemo(() => {
+        if (search) return null;
+
+        const groups: { group: BadgeGroup; presets: BadgePreset[] }[] = [];
+        const usedTypes = new Set<string>();
+
+        if (badgeGroups) {
+            for (const group of badgeGroups) {
+                const groupPresets = presets.filter(p => group.types.includes(p.type));
+                if (groupPresets.length > 0) {
+                    groups.push({ group, presets: groupPresets });
+                    groupPresets.forEach(p => usedTypes.add(p.type));
+                }
+            }
+        }
+
+        const remainingPresets = presets.filter(p => !usedTypes.has(p.type));
+        if (remainingPresets.length > 0) {
+            groups.push({
+                group: { id: 'more', label: m['boostAFriend.pick.moreBadge'](), types: [] },
+                presets: remainingPresets,
+            });
+        }
+
+        return groups;
+    }, [presets, badgeGroups, search]);
+
+    return (
+        <div className="flex flex-col h-full animate-fade-in-up">
+            <div
+                className="flex-1 overflow-y-auto pb-20 -mx-4 sm:mx-0 scrollbar-hide"
+                onScroll={handleScroll}
+            >
+                <div
+                    className={`sticky sm:static top-0 z-20 bg-white/70 sm:bg-transparent backdrop-blur-xl sm:backdrop-blur-none border-b sm:border-0 border-grayscale-200/60 px-6 sm:px-0 pt-[calc(env(safe-area-inset-top)+1rem)] sm:pt-6 transition-all duration-300 motion-reduce:transition-none ${
+                        isCollapsed ? 'pb-3 mb-4 sm:pb-4 sm:mb-6' : 'pb-4 mb-6'
+                    }`}
+                >
+                    <div className="relative">
+                        <button
+                            type="button"
+                            onClick={onBack}
+                            className={`absolute right-0 z-10 text-sm font-medium text-grayscale-600 hover:text-grayscale-900 transition-all duration-300 motion-reduce:transition-none ${
+                                isCollapsed ? 'top-[18px] sm:top-1' : 'top-1'
+                            }`}
+                        >
+                            {m['common.cancel']()}
+                        </button>
+
+                        <div
+                            className={`transition-all duration-300 motion-reduce:transition-none overflow-hidden pr-14 ${
+                                isCollapsed
+                                    ? 'max-h-0 opacity-0 mb-0 sm:max-h-none sm:opacity-100 sm:mb-3'
+                                    : 'max-h-24 opacity-100 mb-3 sm:max-h-none sm:opacity-100 sm:mb-3'
+                            }`}
+                        >
+                            <h1 className="text-xl font-semibold text-grayscale-900">
+                                {m['boostAFriend.pick.title']()}
+                            </h1>
+                            <p className="text-sm text-grayscale-600 mt-0.5">
+                                {m['boostAFriend.pick.subtitle']()}
+                            </p>
+                        </div>
+
+                        <div
+                            className={`relative py-0.5 pl-0.5 transition-all duration-300 motion-reduce:transition-none ${
+                                isCollapsed ? 'pr-14 sm:pr-0.5 mb-0 sm:mb-4' : 'pr-0.5 mb-4'
+                            }`}
+                        >
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-grayscale-400 ml-0.5" />
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                placeholder={m['boostAFriend.pick.search']()}
+                                className="w-full py-3.5 pl-12 pr-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 transition-all"
+                            />
+                        </div>
+                    </div>
+
+                    <div
+                        className={`flex gap-3 overflow-x-auto scrollbar-hide transition-all duration-300 motion-reduce:transition-none ${
+                            isCollapsed
+                                ? 'max-h-0 opacity-0 pb-0 sm:max-h-none sm:opacity-100 sm:pb-1'
+                                : 'max-h-16 opacity-100 pb-1 sm:max-h-none sm:opacity-100 sm:pb-1'
+                        }`}
+                    >
+                        <button
+                            type="button"
+                            onClick={handleSurpriseMe}
+                            className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity whitespace-nowrap"
+                        >
+                            <Sparkles className="w-4 h-4 text-amber-300" />
+                            {m['boostAFriend.pick.surprise']()}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleCustom}
+                            className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-emerald-50 text-emerald-700 font-medium text-sm hover:bg-emerald-100 transition-colors whitespace-nowrap"
+                        >
+                            <Plus className="w-4 h-4" />
+                            {m['passport.wallet.new']()}
+                        </button>
+                    </div>
+                </div>
+
+                <div className="px-0">
+                    {search ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 px-6 sm:px-0">
+                            {filteredPresets.map((preset, index) => {
+                                const color = VIBE_COLORS[index % VIBE_COLORS.length];
+                                return (
+                                    <BadgeTile
+                                        key={preset.title}
+                                        preset={preset}
+                                        color={color}
+                                        onSelect={() => handleSelect(preset, color)}
+                                        stylePacks={stylePacks}
+                                        index={index}
+                                    />
+                                );
+                            })}
+                            {filteredPresets.length === 0 && (
+                                <div className="col-span-full text-center py-10 text-grayscale-500">
+                                    {m['boostAFriend.pick.noBadges']()}
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="space-y-8">
+                            {groupedPresets?.map((groupData, groupIndex) => (
+                                <div key={groupData.group.id} className="space-y-3">
+                                    <div className="px-6 sm:px-1">
+                                        <h2 className="text-lg sm:text-xl font-semibold text-grayscale-900">
+                                            {groupData.group.label}
+                                        </h2>
+                                        {groupData.group.description && (
+                                            <p className="text-sm text-grayscale-500 mt-0.5">
+                                                {groupData.group.description}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div className="flex sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 overflow-x-auto sm:overflow-x-visible snap-x snap-mandatory pb-4 sm:pb-0 scrollbar-hide px-6 sm:px-0 scroll-pl-6 sm:scroll-pl-0">
+                                        {groupData.presets.map((preset, index) => {
+                                            const color =
+                                                VIBE_COLORS[
+                                                    (groupIndex * 10 + index) % VIBE_COLORS.length
+                                                ];
+                                            return (
+                                                <div
+                                                    key={preset.title}
+                                                    className="snap-start shrink-0 w-32 sm:w-auto"
+                                                >
+                                                    <BadgeTile
+                                                        preset={preset}
+                                                        color={color}
+                                                        onSelect={() => handleSelect(preset, color)}
+                                                        stylePacks={stylePacks}
+                                                        index={index}
+                                                    />
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const BadgeTile: React.FC<{
+    preset: BadgePreset;
+    color: string;
+    onSelect: () => void;
+    stylePacks: LCAStylesPackRegistryEntry[] | undefined;
+    index: number;
+}> = ({ preset, color, onSelect, stylePacks, index }) => {
+    const [imgError, setImgError] = useState(false);
+    const { imageUrl, backgroundColor } = resolveBadgeStyle(preset, stylePacks);
+    const tileColor = backgroundColor || color;
+
+    const isRealImage = Boolean(imageUrl) && !imgError;
+
+    return (
+        <button
+            type="button"
+            onClick={onSelect}
+            className="group w-full aspect-square relative overflow-hidden rounded-2xl sm:rounded-3xl border border-grayscale-200 shadow-sm hover:shadow-md transition-all duration-300 text-left motion-safe:hover:-translate-y-0.5 active:scale-[0.97] motion-safe:animate-pop-in"
+            style={{ animationDelay: `${Math.min(index * 50, 500)}ms` }}
+        >
+            {isRealImage ? (
+                <img
+                    src={imageUrl}
+                    alt={preset.title}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 motion-safe:group-hover:scale-105"
+                    onError={() => setImgError(true)}
+                />
+            ) : (
+                <div
+                    className="absolute inset-0 w-full h-full transition-transform duration-300 motion-safe:group-hover:scale-105"
+                    style={{ backgroundColor: tileColor }}
+                />
+            )}
+
+            <div
+                className={`absolute inset-x-0 bottom-0 pt-12 pb-3 px-3 sm:px-4 flex items-end ${
+                    isRealImage ? 'bg-gradient-to-t from-black/80 via-black/30 to-transparent' : ''
+                }`}
+            >
+                <span
+                    className={`text-sm font-semibold text-white line-clamp-2 break-normal w-full leading-tight ${
+                        isRealImage ? 'drop-shadow-md' : ''
+                    }`}
+                >
+                    {preset.title}
+                </span>
+            </div>
+        </button>
+    );
+};

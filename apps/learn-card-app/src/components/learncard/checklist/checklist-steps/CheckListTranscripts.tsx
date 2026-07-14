@@ -14,6 +14,7 @@ import { getWalletCategory } from './AchievementTypeSelectorModal';
 import { useUploadFile } from '../../../../hooks/useUploadFile';
 import {
     useWallet,
+    useDeleteCredentialRecord,
     useConfirmation,
     useToast,
     ToastTypeEnum,
@@ -24,6 +25,7 @@ import {
 
 import { useTheme } from '../../../../theme/hooks/useTheme';
 import * as m from '../../../../paraglide/messages.js';
+import type { LCR } from 'learn-card-base/types/credential-records';
 
 export type TranscriptType = {
     id: string;
@@ -31,6 +33,15 @@ export type TranscriptType = {
     fileSize: string;
     fileType: string;
     type: string;
+};
+
+type TranscriptCredential = {
+    recordId: string;
+    rawArtifact?: {
+        fileName?: string;
+        fileSize?: string;
+        fileType?: string;
+    };
 };
 
 export const CheckListTranscripts: React.FC = () => {
@@ -51,6 +62,7 @@ export const CheckListTranscripts: React.FC = () => {
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const confirm = useConfirmation();
     const { presentToast } = useToast();
+    const { mutateAsync: deleteCredentialRecord } = useDeleteCredentialRecord();
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -133,7 +145,7 @@ export const CheckListTranscripts: React.FC = () => {
                 return;
             }
 
-            const transcriptsCredentials = await Promise.all(
+            const transcriptsCredentials: TranscriptCredential[] = await Promise.all(
                 recordUris.map(async ({ uri, id }: { uri: string; id: string }) => {
                     return {
                         ...(await wallet.read.get(uri)),
@@ -142,11 +154,11 @@ export const CheckListTranscripts: React.FC = () => {
                 })
             );
 
-            const _transcripts = transcriptsCredentials.map(({ recordId, rawArtifact }: any) => ({
+            const _transcripts = transcriptsCredentials.map(({ recordId, rawArtifact }) => ({
                 id: recordId,
-                fileName: rawArtifact?.fileName,
-                fileSize: rawArtifact?.fileSize,
-                fileType: rawArtifact?.fileType,
+                fileName: rawArtifact?.fileName ?? '',
+                fileSize: rawArtifact?.fileSize ?? '',
+                fileType: rawArtifact?.fileType ?? '',
                 type: UploadTypesEnum.Transcript,
             }));
 
@@ -169,7 +181,12 @@ export const CheckListTranscripts: React.FC = () => {
         void (async () => {
             try {
                 const wallet = await initWallet();
-                await wallet.index.LearnCloud.remove(id);
+                const record = await wallet.index.LearnCloud.get({ id });
+                const targetRecord = record?.[0] as unknown as LCR | undefined;
+
+                if (!targetRecord) return;
+
+                await deleteCredentialRecord(targetRecord);
                 refetchCheckListStatus();
             } catch (error) {
                 log.error('handleDeleteTranscript::error', error);

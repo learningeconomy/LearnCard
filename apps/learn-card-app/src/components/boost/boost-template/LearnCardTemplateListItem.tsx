@@ -1,7 +1,7 @@
 import React from 'react';
 import { BoostUserTypeEnum, CredentialCategory, categoryMetadata, useModal } from 'learn-card-base';
 import { useHistory } from 'react-router-dom';
-import { useLCAStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
+import { useStylePackRegistry } from '../../../registries/useStylePackRegistry';
 import { getDefaultAchievementTypeImage } from '../boostHelpers';
 import { getAchievementTypeDisplayText } from 'learn-card-base/helpers/credentialHelpers';
 import CredentialGeneralPlus from '../../svgs/CredentialGeneralPlus';
@@ -30,8 +30,7 @@ const LearnCardTemplateListItem: React.FC<LearnCardTemplateListItemProps> = ({
         link = `${baseLink}&otherUserProfileId=${userToBoostProfileId}`;
     }
 
-    const { data: boostAppearanceBadgeList, isLoading: stylePackLoading } =
-        useLCAStylesPackRegistry();
+    const { data: boostAppearanceBadgeList, isLoading: stylePackLoading } = useStylePackRegistry();
 
     const badgeThumbnail = getDefaultAchievementTypeImage(
         categoryType,

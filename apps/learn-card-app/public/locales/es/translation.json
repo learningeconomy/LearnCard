@@ -76,9 +76,14 @@
             "connectionsEncrypted": "Todas las conexiones están <0>encriptadas.</0>",
             "privacyPolicy": "Política de privacidad",
             "termsOfService": "Términos de servicio",
-            "copyright": "© {{year}} Learning Economy"
+            "copyright": "© {{year}} Learning Economy",
+            "privacy": "Privacidad",
+            "terms": "Términos",
+            "logout": "Cerrar sesión",
+            "viewVersionDetails": "Ver detalles de la versión"
         },
         "links": {
+            "dashboard": "Panel",
             "launchPad": "Aplicaciones",
             "launchPadShort": "Apps",
             "contacts": "Contactos",
@@ -91,7 +96,7 @@
             "aiInsights": "IA Insights",
             "aiPathways": "IA Pathways",
             "skills": "Habilidades",
-            "socialBadges": "Boosts",
+            "socialBadges": "Insignias",
             "achievements": "Logros",
             "studies": "Estudios",
             "portfolio": "Portafolio",
@@ -100,7 +105,9 @@
             "families": "Familias",
             "ids": "Identificaciones",
             "pathways": "Caminos"
-        }
+        },
+        "settings": "Ajustes",
+        "closeMenu": "Cerrar menú"
     },
     "passport": {
         "buildMyLearnCard": {
@@ -137,7 +144,13 @@
                 "noCredentials": "No se encontraron credenciales de demostración. Inténtalo de nuevo.",
                 "deletedCount": "Se eliminaron {{count}} credenciales de demostración",
                 "confirmSync": "¿Seguro que quieres sincronizar con la escuela de demostración? Esto importará varias credenciales de ejemplo, pero podrás eliminarlas fácilmente más tarde.",
-                "confirmDelete": "¿Seguro que quieres eliminar todo el contenido de demostración? Esta acción no se puede deshacer, pero podrás volver a cargar el contenido de demostración más tarde si lo necesitas."
+                "confirmDelete": "¿Seguro que quieres eliminar todo el contenido de demostración? Esta acción no se puede deshacer, pero podrás volver a cargar el contenido de demostración más tarde si lo necesitas.",
+                "checking": "Verificando Escuela de Demostración...",
+                "connecting": "Conectando con Escuela de Demostración...",
+                "syncing": "Sincronizando Credenciales...",
+                "disconnect": "Desconectando de Escuela de Demostración...",
+                "deleting": "Eliminando Credenciales de Demostración...",
+                "delError": "No se pudo eliminar la escuela de demostración. Inténtalo de nuevo."
             },
             "managers": {
                 "resume": {
@@ -462,7 +475,85 @@
                 "description2": "Compártelo con reclutadores, responsables de contratación, amigos o cualquier persona que quieras que revise tu currículum."
             }
         },
-        "explore": "Explorar"
+        "explore": "Explorar",
+        "wallet": {
+            "newCredentials": "Credenciales nuevas",
+            "scanQrCode": "Escanear un código QR",
+            "addToPassport": "Añadir al Pasaporte",
+            "new": "Nuevo"
+        },
+        "activity": {
+            "heading": "Actividad",
+            "searchAria": "Buscar actividad",
+            "searchPlaceholder": "Buscar...",
+            "filter": "Filtrar",
+            "error": "Algo salió mal — no pudimos cargar tu actividad.",
+            "empty": "Aún no hay actividad.",
+            "reset": "Restablecer",
+            "applyFilter": "Aplicar filtro",
+            "you": "Tú",
+            "someone": "Alguien",
+            "credential": "Credencial",
+            "sentYou": "{actorName} te envió {article} {categoryLabel}",
+            "youSent": "Enviaste {article} {categoryLabel} a {recipientName}",
+            "months": {
+                "jan": "Ene",
+                "feb": "Feb",
+                "mar": "Mar",
+                "apr": "Abr",
+                "may": "May",
+                "jun": "Jun",
+                "jul": "Jul",
+                "aug": "Ago",
+                "sep": "Sep",
+                "oct": "Oct",
+                "nov": "Nov",
+                "dec": "Dic",
+                "JANUARY": "Enero",
+                "FEBRUARY": "Febrero",
+                "MARCH": "Marzo",
+                "APRIL": "Abril",
+                "MAY": "Mayo",
+                "JUNE": "Junio",
+                "JULY": "Julio",
+                "AUGUST": "Agosto",
+                "SEPTEMBER": "Septiembre",
+                "OCTOBER": "Octubre",
+                "NOVEMBER": "Noviembre",
+                "DECEMBER": "Diciembre"
+            },
+            "categories": {
+                "all": "Todo",
+                "socialBadge": "Insignia",
+                "achievement": "Logro",
+                "learningHistory": "Curso",
+                "accomplishment": "Elemento de portafolio",
+                "accommodation": "Asistencia",
+                "workHistory": "Experiencia",
+                "credential": "Credencial"
+            },
+            "categoriesPlural": {
+                "all": "Todo",
+                "socialBadge": "Insignias",
+                "achievement": "Logros",
+                "learningHistory": "Cursos",
+                "accomplishment": "Portafolio",
+                "accommodation": "Asistencia",
+                "workHistory": "Experiencias",
+                "id": "IDs"
+            },
+            "selfAdded": "Añadiste esto a tu pasaporte.",
+            "sentShare": "Compartiste esto con {{name}}.",
+            "rcvdShare": "{{name}} compartió esto contigo.",
+            "what": "Qué",
+            "type": "Tipo",
+            "date": "Fecha",
+            "viewInPass": "Ver en tu pasaporte",
+            "allCreds": "Todas las credenciales",
+            "emptyAll": "Aún no hay nada en tu pasaporte.",
+            "recent": "AÑADIDOS RECIENTEMENTE",
+            "seeAll": "Ver todo"
+        }
     },
     "launchpad": {
         "title": "Aplicaciones",
@@ -595,7 +686,7 @@
             "aiPathways": "Pathways",
             "aiInsights": "Insights",
             "skills": "Habilidades",
-            "socialBadges": "Boosts",
+            "socialBadges": "Insignias",
             "achievements": "Logros",
             "studies": "Estudios",
             "portfolio": "Portafolio",
@@ -642,7 +733,7 @@
             "aiPathways": "IA Pathway",
             "aiInsights": "IA Insight",
             "skills": "Habilidad",
-            "socialBadges": "Boost",
+            "socialBadges": "Insignia",
             "achievements": "Logro",
             "studies": "Estudio",
             "portfolio": "Portafolio",
@@ -1067,7 +1158,7 @@
         "userId": "ID de usuario",
         "emailAddress": "Dirección de correo electrónico",
         "phoneNumber": "Número de teléfono",
-        "country": "País",
+        "country": "Seleccionar País",
         "dateOfBirth": "Fecha de nacimiento",
         "disabled": "(desactivado)",
         "age": "Edad:",
@@ -1157,8 +1248,27 @@
             "linkADevice": "Vincular un dispositivo",
             "switchAccount": "Cambiar de cuenta",
             "buildMyLearnCard": "Construye mi {{brand}}",
-            "stepsCompleted": "{{completed}} de {{total}}"
-        }
+            "stepsCompleted": "{{completed}} de {{total}}",
+            "completeProfile": "Completar Perfil",
+            "settings": "Configuración de la Cuenta"
+        },
+        "saved": "Perfil guardado",
+        "saveFail": "No se pudo guardar tu perfil. Inténtalo de nuevo.",
+        "yourName": "Tu Nombre",
+        "profile": "Perfil",
+        "namePlace": "Ingresa tu nombre completo",
+        "countryLbl": "País",
+        "role": "Rol",
+        "prefs": "Preferencias",
+        "notifs": "Notificaciones",
+        "notifsSub": "Gestionar notificaciones push",
+        "netId": "Red e Identidad",
+        "security": "Seguridad",
+        "exportSub": "Respalda tu frase de recuperación de la billetera",
+        "connectSub": "Habilitar manejo de credenciales basado en web",
+        "connect": "Conectar",
+        "danger": "Zona de Peligro",
+        "deleteSub": "Eliminar tus datos permanentemente"
     },
     "settings": {
         "privacyTitle": "Privacidad y datos",
@@ -1181,13 +1291,26 @@
                 "description": "Los aumentos incluyen todo tipo de credenciales, incluidas: habilidades, identificaciones, logros, historial de aprendizaje, historial laboral, moneda e insignias."
             },
             "prompt": {
-                "title": "¿Permanecer informado?",
-                "description": "Reciba notificaciones automáticas para:",
+                "title": "Notificaciones",
+                "description": "Recibe notificaciones para no perderte lo que importa.",
                 "details": "Nuevas solicitudes de conexión, nuevos impulsos (como logros, credenciales e insignias).",
-                "continue": "Continuar",
-                "notYet": "Aún no",
+                "continue": "Activar Notificaciones",
+                "notYet": "Ahora no",
                 "privacyPolicy": "política de privacidad",
-                "termsOfService": "Términos de servicio"
+                "termsOfService": "Términos de servicio",
+                "enabled": "Notificaciones activadas",
+                "anytime": "Puedes activar las notificaciones en cualquier momento en Configuración.",
+                "enableFail": "No se pudieron activar las notificaciones. Inténtalo de nuevo.",
+                "on": "Activado",
+                "blocked": "Bloqueado",
+                "off": "Desactivado",
+                "back": "Volver",
+                "about": "Recibirás notificaciones sobre:",
+                "benefit1": "Nuevas solicitudes de conexión",
+                "benefit2": "Nuevos boosts — logros, credenciales e insignias.",
+                "working": "Trabajando...",
+                "openSet": "Abrir Configuración",
+                "openSys": "Abrir Configuración del Sistema"
             }
         },
         "privacy": {
@@ -1715,7 +1838,11 @@
         "unfinished": "Inacabada",
         "untitledSession": "Sesión sin título",
         "browseTopicsPlaceholder": "Explorar temas...",
-        "personalizeMyAi": "Personaliza mi IA"
+        "personalizeMyAi": "Personaliza mi IA",
+        "noSessionsForTopicBody": "Aún no tienes sesiones para \"{{topic}}\". Inicia una nueva para empezar a chatear sobre este tema.",
+        "completedOn": "<0>Completado</0> el {{date}}",
+        "topicLabel": "Tema",
+        "appLabel": "App"
     },
     "pathways": {
         "title": "Caminos",
@@ -2022,7 +2149,8 @@
                 "Finalizando todo ahora...",
                 "La IA está creando tu prueba...",
                 "Ya casi está..."
-            ]
+            ],
+            "generatingDetails": "Generando detalles del boost..."
         },
         "template": {
             "custom": "Personalizado",
@@ -2031,7 +2159,8 @@
             "noBoosts": "¡Aún no hay boosts!",
             "newTemplate": "Nueva plantilla",
             "brandTemplate": "Plantilla de {{brand}}",
-            "boostTypePlaceholder": "Tipo de Boost..."
+            "boostTypePlaceholder": "Tipo de Boost...",
+            "noneYet": "¡Aún no hay {{type}}!"
         },
         "newBoost": {
             "study": "Nuevo estudio",
@@ -2060,15 +2189,15 @@
     },
     "claim": {
         "didAuth": {
-            "title": "¡Te han enviado una credencial!",
-            "subtitle": "Alguien quiere emitirte una credencial verificable",
+            "title": "Te han enviado una credencial",
+            "subtitle": "Confirma tu identidad para recibirla",
             "ready": "¿Listo para reclamarla?",
-            "intro": "Para recibir esta credencial, deberás confirmar tu identidad. Esto permite que el emisor te la entregue de forma segura en tu cartera.",
+            "intro": "Para recibir esta credencial, deberás confirmar tu identidad. Esto permite que el remitente la entregue de forma segura a tu cuenta.",
             "whatHappens": "Qué sucede cuando continúas:",
-            "step1": "Tu cartera confirma tu identidad al emisor",
-            "step2": "La credencial se entrega de forma segura en tu cartera",
-            "step3": "Eres dueño y controlas esta credencial para siempre",
-            "privacy": "Tu identidad solo se comparte con el emisor para completar este intercambio. Siempre tienes el control de tus datos.",
+            "step1": "Confirmamos que eres realmente tú",
+            "step2": "Tu credencial llega de forma segura",
+            "step3": "Es tuya para siempre",
+            "privacy": "Tu identidad solo se comparte para completar este intercambio. Siempre tienes el control de tus datos.",
             "connecting": "Conectando...",
             "claimButton": "Reclamar mi credencial",
             "decline": "No gracias, llévame al inicio",
@@ -2076,12 +2205,14 @@
         },
         "initiate": {
             "heading": "Te han enviado una solicitud",
-            "description": "Haz clic en el botón de abajo para comenzar el proceso de intercambio.",
-            "begin": "Comenzar"
+            "description": "Haz clic en el botón de abajo para comenzar el proceso de intercambio y ver lo que te han enviado.",
+            "begin": "Comenzar",
+            "subtitle": "Un intercambio de credenciales está listo"
         },
         "redirect": {
             "heading": "Redirección requerida",
-            "description": "Para continuar, debes completar un paso en un sitio web externo."
+            "description": "Para continuar, debes completar un paso en un sitio web externo.",
+            "subtitle": "Completa el siguiente paso"
         },
         "claiming": "Reclamando...",
         "claimingCredential": "Reclamando credencial",
@@ -2144,6 +2275,33 @@
                 "invalidVc": "Eso parece una credencial, pero no pudimos leerla. Pídele al emisor una copia nueva.",
                 "unknownFormat": "No pudimos interpretar eso. Pega un enlace de reclamación o sube una imagen de código QR."
             }
+        },
+        "accept": {
+            "success": "¡{{count}} credencial(es) reclamada(s) con éxito!",
+            "exists": "Ya has reclamado esta credencial.",
+            "failed": "Vaya, no pudimos reclamar la(s) credencial(es).",
+            "readyCount": "{{count}} credenciales listas para reclamar",
+            "tapHint": "Toca cada credencial para seleccionarla o deseleccionarla. Solo las credenciales seleccionadas se añadirán a tu cuenta.",
+            "selCount": {
+                "one": "{{selected}} de {{total}} credencial seleccionada",
+                "other": "{{selected}} de {{total}} credenciales seleccionadas"
+            },
+            "selectOne": "Selecciona al menos una para continuar",
+            "willAdd": "Estas se añadirán a tu cuenta",
+            "deselAll": "Deseleccionar todo",
+            "selAll": "Seleccionar todo",
+            "noneTitle": "No se encontraron credenciales",
+            "noneSub": "Este enlace no contiene credenciales",
+            "noneDesc": "El enlace de credencial que seguiste no tiene credenciales para reclamar. Esto puede ocurrir si:",
+            "reason1": "La credencial ya ha sido reclamada",
+            "reason2": "El enlace ha expirado",
+            "reason3": "El remitente eliminó la credencial",
+            "whatToDo": "Qué hacer",
+            "noneHelp": "Contacta a la persona u organización que te envió este enlace para solicitar uno nuevo.",
+            "goHome": "Ir al inicio",
+            "support": "Contactar soporte",
+            "claimed": "Reclamada",
+            "claiming": "Reclamando Credencial(es)..."
         }
     },
     "chapi": {
@@ -2153,7 +2311,9 @@
         "p2": "Imagina una paloma mensajera confiable y confidencial, pero para credenciales verificables.",
         "p3": "Permite que tu cartera digital envíe o reciba credenciales verificables de un verificador o emisor externo independiente, de una manera que establece confianza y preserva la privacidad.",
         "readMore": "Leer más",
-        "connectHandler": "Conectar gestor"
+        "connectHandler": "Conectar gestor",
+        "connected": "Manejador de credenciales conectado",
+        "connFail": "No se pudo conectar el manejador de credenciales. Tu navegador puede haberlo bloqueado — revisa los permisos e inténtalo de nuevo."
     },
     "legal": {
         "connectionsEncrypted": "Todas las conexiones están cifradas.",
@@ -2552,7 +2712,9 @@
         "contractDescription": "Permite a tu profesor ver los insights seleccionados",
         "shareChildInsights": "Comparte los Insights de <0>{{child}}</0> con <1>{{teacher}}</1>",
         "successfullyShared": "Has compartido los Insights con {{name}} correctamente",
-        "approveDescription": "Si lo apruebas, tu profesor podrá ver tus Habilidades Principales, Resúmenes de Aprendizaje y Rutas Sugeridas. También podrá enviarte sugerencias de rutas de aprendizaje."
+        "approveDescription": "Si lo apruebas, tu profesor podrá ver tus Habilidades Principales, Resúmenes de Aprendizaje y Rutas Sugeridas. También podrá enviarte sugerencias de rutas de aprendizaje.",
+        "regenerate": "Regenerar",
+        "regenLoad": "Regenerando..."
     },
     "aiPathways": {
         "searchSkillGoalJob": "Buscar por habilidad, objetivo o trabajo...",
@@ -2708,7 +2870,9 @@
             "viewLess": "Ver menos",
             "viewAll": "Ver todo",
             "didntFind": "¿No encontraste lo que buscabas?",
-            "suggestionThankYou": "¡Gracias por tu sugerencia!"
+            "suggestionThankYou": "¡Gracias por tu sugerencia!",
+            "prev": "Anterior",
+            "next": "Siguiente"
         },
         "adminPanel": {
             "createFramework": "Crear marco",
@@ -3133,10 +3297,13 @@
         "noPermissions": "Sin permisos",
         "revokeConfirm": {
             "title": "¿Revocar acceso?",
-            "body": "<0>{{name}}</0> ya no podrá acceder a tus datos de {{brand}}."
+            "aiTitle": "¿Desactivar las funciones de IA?",
+            "body": "<0>{{name}}</0> ya no podrá acceder a tus datos de {{brand}}.",
+            "aiBody": "Esto revocará el acceso de LearnCard AI y desactivará las funciones de IA."
         },
         "revoking": "Revocando...",
         "confirmRevoke": "Sí, revocar acceso",
+        "disableAiRevoke": "Desactivar IA y revocar",
         "appDetails": "Detalles de la aplicación",
         "dataAccessPermissions": "Permisos de acceso a datos",
         "opening": "Abriendo...",
@@ -3148,7 +3315,23 @@
         "readAccess": "Acceso de lectura",
         "noReadPermissions": "No se han concedido permisos de lectura",
         "writeAccess": "Acceso de escritura",
-        "noWritePermissions": "No se han concedido permisos de escritura"
+        "noWritePermissions": "No se han concedido permisos de escritura",
+        "loadingCenter": "Cargando tu centro de privacidad...",
+        "centerFooter": "Puedes cambiar esto en cualquier momento. Desactivar algo tiene efecto de inmediato.",
+        "activityFeed": "Feed de actividad",
+        "loadingActivityData": "Cargando datos de actividad...",
+        "noActivityYet": "Aún no hay datos de actividad",
+        "noActivitySubtitle": "La actividad de esta aplicación aparecerá aquí cuando esté disponible.",
+        "activityCount": "Mostrando {{count}} actividades de esta aplicación",
+        "editAccess": "Editar acceso",
+        "dataAccess": "Acceso a datos",
+        "connecting": "Conectando...",
+        "disconnecting": "Desconectando...",
+        "connected": "Conectado",
+        "disconnected": "Desconectado correctamente",
+        "aiConsentWarning": "La IA está activada, pero falta el consentimiento al contrato de IA de LearnCard.",
+        "tryAgain": "Intentar de nuevo",
+        "retrying": "Reintentando..."
     },
     "recoveryPrompt": {
         "title": "Recupera tu progreso",
@@ -3281,7 +3464,13 @@
             "statSkills": "{{count}} habilidades",
             "statContact": "{{count}} contacto",
             "statContacts": "{{count}} contactos",
-            "overflowSkills": "+{{count}} más"
+            "overflowSkills": "+{{count}} más",
+            "greetMorn": "Buenos días,",
+            "greetAft": "Buenas tardes,",
+            "greetEve": "Buenas noches,",
+            "welcome": "Bienvenido",
+            "alertOne": "Tienes {{count}} alerta no leída. Abrir alertas",
+            "alertMany": "Tienes {{count}} alertas no leídas. Abrir alertas"
         },
         "tips": {
             "scanQrTitle": "Escanea un código QR",
@@ -3416,6 +3605,89 @@
         },
         "appLaunch": {
             "error": "No se pudo abrir esta app. Inténtalo de nuevo."
+        },
+        "roleSwitcher": {
+            "iconAlt": "Icono de {{role}}",
+            "roleAria": "Rol: {{role}}",
+            "switchAria": "Cambiar rol — actual: {{role}}"
+        }
+    },
+    "notifications": {
+        "contract": "tu contrato",
+        "loadErr": "No se pudo cargar la actividad",
+        "updates": "Actualizaciones",
+        "credShared": "Credenciales compartidas",
+        "firstAct": "Primera actividad",
+        "sharedWith": "Compartido con {{name}}",
+        "sharedCred": "Credenciales compartidas con {{name}}",
+        "updateCnt": "{{count}} actualizaciones",
+        "latest": "Último {{date}}"
+    },
+    "boostAFriend": {
+        "yourBadge": "Tu Insignia",
+        "page": {
+            "noRecip": "Añade al menos un destinatario.",
+            "descDflt": "Una insignia social por ser {{title}}",
+            "saveErr": "La insignia fue emitida, pero no se pudo guardar en tu Pasaporte.",
+            "copyFail": "No se pudo copiar el enlace",
+            "shareTtl": "¡Reclama tu insignia!",
+            "shareTxt": "¡Te envié una insignia de {{badge}}!",
+            "qrSaved": "Código QR guardado en Fotos.",
+            "qrFail": "No se pudo descargar el código QR.",
+            "sendTo": "Enviar a",
+            "whoGets": "¿Quién recibe esta insignia?",
+            "creating": "Creando enlace...",
+            "createLnk": "Crear Enlace",
+            "sendBadge": "Enviar Insignia",
+            "linkReady": "¡Enlace listo!",
+            "claimAny": "Cualquier persona con este enlace o código QR puede reclamarla.",
+            "copied": "Copiado",
+            "copyLink": "Copiar enlace",
+            "dlQr": "Descargar QR",
+            "another": "Impulsar a Otro",
+            "added": "¡Añadido a tu Pasaporte!",
+            "sent": "¡Insignia enviada!",
+            "findBadge": "La encontrarás en tus insignias.",
+            "sentTo": "Enviado a {{recipients}}"
+        },
+        "pick": {
+            "moreBadge": "Más Insignias",
+            "title": "Elige una Insignia",
+            "subtitle": "Envía una insignia divertida a un amigo para mostrar tu aprecio.",
+            "search": "Buscar insignias...",
+            "surprise": "Sorpréndeme",
+            "noBadges": "No se encontraron insignias."
+        },
+        "person": {
+            "subtitle": "Añade una nota y elige un color.",
+            "name": "Nombre de la insignia",
+            "namePlace": "ej. Pionero",
+            "subtype": "Subtipo",
+            "subDesc": "Una etiqueta corta para este tipo de insignia.",
+            "image": "Imagen de la insignia (opcional)",
+            "uploadAria": "Subir imagen de la insignia",
+            "change": "Cambiar imagen",
+            "uploadImg": "Subir imagen",
+            "fileTypes": "PNG, JPG o GIF.",
+            "vibe": "Color de Ambiente",
+            "colorAria": "Seleccionar color {{color}}",
+            "note": "Añadir una nota (opcional)",
+            "notePlace": "Eres increíble porque..."
+        },
+        "recip": {
+            "justMe": "Solo yo",
+            "shareLnk": "Compartir enlace",
+            "rmRecip": "Eliminar destinatario",
+            "search": "Buscar personas...",
+            "sendTo": "Enviar a {{query}}",
+            "emailHint": "Recibirán un correo electrónico para reclamarla",
+            "noResults": "No se encontraron resultados. Ingresa un correo electrónico válido para enviar una invitación.",
+            "hint": "Busca a alguien por nombre, @usuario o correo electrónico.",
+            "selfDesc": "Esta insignia se añadirá directamente a tu propio Pasaporte.",
+            "linkDesc": "Cualquier persona con el enlace puede reclamar esta insignia.",
+            "expires": "Vence (opcional)",
+            "maxClaims": "Máximo de reclamos (opcional)",
+            "unlimited": "Ilimitado"
         }
     },
     "developerPortal": {

@@ -7,13 +7,13 @@ The LearnCloud Plugin (`@learncard/learn-cloud-plugin`) simplifies the process o
 #### Installation
 
 ```bash
-pnpm install @learncard/learn-cloud-plugin
+bun add @learncard/learn-cloud-plugin
 ```
 
 #### Initialization
 
 ```javascript
-import { initLearnCard } from '@learncard/init'
+import { initLearnCard } from '@learncard/init';
 import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
 
 const learnCard = await initLearnCard({ seed, didkit });

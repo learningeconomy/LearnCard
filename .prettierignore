@@ -9,7 +9,7 @@ coverage
 *.tsbuildinfo
 
 # Lockfiles
-pnpm-lock.yaml
+bun.lock
 
 # Generated tenant config / native artifacts (see apps/learn-card-app/AGENTS.md)
 apps/learn-card-app/public/tenant-config.json

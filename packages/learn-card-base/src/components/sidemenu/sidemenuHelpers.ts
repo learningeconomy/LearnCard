@@ -98,6 +98,28 @@ export const getSideMenuTranslationKey = (linkId: string | undefined): string =>
     return entry ? entry[0] : linkId;
 };
 
+/**
+ * Resolve a side-menu link's display label from the Paraglide message map,
+ * falling back to the link's static `label` when no translation key exists.
+ *
+ * Side-menu link sets are theme/config-driven, so the translation key is built
+ * dynamically (`sidemenu.links.${getSideMenuTranslationKey(link.id)}`) and is
+ * invisible to the static missing-key build guards. If a link's key is absent
+ * from the active locale, the raw `m[key]` is `undefined` — calling it throws
+ * "m[...] is not a function" and crashes the whole menu. Degrade to `link.label`
+ * instead. `messages` is passed in (rather than imported) to keep this package
+ * decoupled from the app's generated Paraglide module.
+ */
+export const getSideMenuLinkLabel = (
+    messages: Record<string, unknown>,
+    link: { id?: string | number | null; label?: string | null }
+): string => {
+    const translationKey = getSideMenuTranslationKey(link.id == null ? undefined : String(link.id));
+    const message = messages[`sidemenu.links.${translationKey}`];
+
+    return typeof message === 'function' ? (message as () => string)() : link.label ?? '';
+};
+
 export type SideMenuLinks = {
     id: number;
     name: string;
@@ -218,7 +240,7 @@ export const sidemenuLinks: Record<BrandingEnum, SideMenuLinks[]> = {
         },
         {
             id: 2,
-            name: 'Boosts',
+            name: 'Badges',
             IconComponent: BoostsTwoTonedIcon,
             path: '/socialBadges',
             type: SideMenuLinksEnum.socialBadges,
