@@ -44,8 +44,7 @@ import { IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
 import EmailForm from './forms/EmailForm';
 import PhoneForm from './forms/PhoneForm';
 import LoginFooter from './LoginFooter';
-import OnboardingContainer from '../../components/onboarding/OnboardingContainer';
-import { OnboardingStepsEnum } from '../../components/onboarding/onboarding.helpers';
+import OnboardingFlow from '../../components/onboarding/v2/OnboardingFlow';
 import EUParentalConsentModalContent from '../../components/onboarding/onboardingNetworkForm/components/EUParentalConsentModalContent';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import SocialLoginsButtons from './SocialLogins/SocialLoginsButtons';
@@ -103,19 +102,16 @@ export const LoginContent: React.FC = () => {
         }
     }, [generatePinUpdateToken]);
 
-    const openOnboardingModal = useCallback(
-        (initialStep?: OnboardingStepsEnum) => {
-            // OnboardingContainer unmount owns the `isOnboardingOpen(false)` reset.
-            redirectStore.set.isOnboardingOpen(true);
+    const openOnboardingModal = useCallback(() => {
+        // OnboardingFlow unmount owns the `isOnboardingOpen(false)` reset.
+        redirectStore.set.isOnboardingOpen(true);
 
-            newModal(
-                <OnboardingContainer initialStep={initialStep} />,
-                {},
-                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
-            );
-        },
-        [coordinatorState.status, currentUser, isLoggedIn, newModal]
-    );
+        newModal(
+            <OnboardingFlow />,
+            {},
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+        );
+    }, [coordinatorState.status, currentUser, isLoggedIn, newModal]);
 
     // Removed unnecessary LC network redirect helper; inline push is sufficient.
 
@@ -125,7 +121,7 @@ export const LoginContent: React.FC = () => {
         }
 
         if (coordinatorState.status === 'needs_setup') {
-            openOnboardingModal(OnboardingStepsEnum.ageGate);
+            openOnboardingModal();
             return;
         }
 
@@ -136,7 +132,7 @@ export const LoginContent: React.FC = () => {
             const profile = await wallet?.invoke?.getProfile();
 
             if (!profile) {
-                openOnboardingModal(OnboardingStepsEnum.ageGate);
+                openOnboardingModal();
             } else if (profile?.approved === false) {
                 // Re-prompt EU Parental Consent if user was previously marked unapproved
                 newModal(
