@@ -1,43 +1,18 @@
 import React, { useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 
-import { getLogger } from 'learn-card-base';
-const log = getLogger('user-profile-setup-listener');
 import {
+    getLogger,
     SocialLoginTypes,
     authStore,
-    currentUserStore,
     useIsCurrentUserLCNUser,
     useWallet,
     useCurrentUser,
 } from 'learn-card-base';
 import { useJoinLCNetworkModal } from '../network-prompts/hooks/useJoinLCNetworkModal';
+import userProfileSetupStore from '../../stores/userProfileSetupStore';
 
-const AUTO_PROMPT_SESSION_KEY = 'scouts:user-profile-setup:auto-prompted';
-
-const clearAutoPromptGuard = () => {
-    try {
-        window.sessionStorage.removeItem(AUTO_PROMPT_SESSION_KEY);
-    } catch {
-        // ignore session storage access issues
-    }
-};
-
-const markAutoPromptGuard = () => {
-    try {
-        window.sessionStorage.setItem(AUTO_PROMPT_SESSION_KEY, 'true');
-    } catch {
-        // ignore session storage access issues
-    }
-};
-
-const hasAutoPromptedThisSession = () => {
-    try {
-        return window.sessionStorage.getItem(AUTO_PROMPT_SESSION_KEY) === 'true';
-    } catch {
-        return false;
-    }
-};
+const log = getLogger('user-profile-setup-listener');
 
 export const UserProfileSetupListener: React.FC<{ loading: boolean }> = ({ loading }) => {
     const history = useHistory();
@@ -52,7 +27,7 @@ export const UserProfileSetupListener: React.FC<{ loading: boolean }> = ({ loadi
         window.location.search.includes('profileSetup=true');
 
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal(true, () => {
-        clearAutoPromptGuard();
+        userProfileSetupStore.set.clearAutoPrompted();
         history.replace({ search: undefined });
     });
 
@@ -65,24 +40,34 @@ export const UserProfileSetupListener: React.FC<{ loading: boolean }> = ({ loadi
         // ! apple's guidelines: additional user info should not be required
         if (loading || currentLCNUserLoading) return;
 
-        // * short circuit querying the network if the currentUserStore is already set
-        if (currentUserIsLCNUser) {
+        if (!currentUser) {
             hasPresentedSetupModalRef.current = false;
-            clearAutoPromptGuard();
+            userProfileSetupStore.set.clearAutoPrompted();
             return;
         }
 
-        if (hasPresentedSetupModalRef.current || hasAutoPromptedThisSession()) return;
+        // * short circuit querying the network if the currentUserStore is already set
+        if (currentUserIsLCNUser) {
+            hasPresentedSetupModalRef.current = false;
+            userProfileSetupStore.set.clearAutoPrompted();
+            return;
+        }
+
+        if (hasPresentedSetupModalRef.current || userProfileSetupStore.get.autoPrompted()) return;
 
         const getLCNeworkProfile = async () => {
             try {
                 const wallet = await initWallet();
                 const profile = await wallet?.invoke?.getProfile();
-                if (profile) return;
+                if (profile) {
+                    hasPresentedSetupModalRef.current = false;
+                    userProfileSetupStore.set.clearAutoPrompted();
+                    return;
+                }
 
                 if (!isUserModalOpen && currentUser) {
                     hasPresentedSetupModalRef.current = true;
-                    markAutoPromptGuard();
+                    userProfileSetupStore.set.markAutoPrompted();
                     history.replace({ search: 'profileSetup=true' });
                     await handlePresentJoinNetworkModal({ forceOpen: true });
                 }
