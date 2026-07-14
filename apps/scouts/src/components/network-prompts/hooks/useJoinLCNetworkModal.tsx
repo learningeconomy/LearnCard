@@ -42,6 +42,7 @@ export const useJoinLCNetworkModal = (
                 handleCloseModal={() => {
                     closeModal();
                     closeAll?.();
+                    onDismiss?.();
                 }}
                 showNotificationsModal={showNotificationsModal}
             />,
@@ -50,19 +51,29 @@ export const useJoinLCNetworkModal = (
                 cancelButtonTextOverride: 'Skip For Now',
             }
         );
-    }, [newModal, closeModal, showNotificationsModal]);
+    }, [newModal, closeModal, showNotificationsModal, onDismiss]);
 
-    const handlePresentJoinNetworkModal = useCallback(async () => {
-        const deletingAccount = deletingAccountStore.get.deletingAccount();
-        if (deletingAccount) {
+    const handlePresentJoinNetworkModal = useCallback(
+        async (options?: { forceOpen?: boolean }) => {
+            const deletingAccount = deletingAccountStore.get.deletingAccount();
+            if (deletingAccount) {
+                return { prompted: false };
+            }
+
+            if (options?.forceOpen) {
+                openNetworkModal();
+                return { prompted: true };
+            }
+
+            if (shouldPromptProfileOnboarding(authStatus)) {
+                openNetworkModal();
+                return { prompted: true };
+            }
+
             return { prompted: false };
-        }
-        if (shouldPromptProfileOnboarding(authStatus)) {
-            openNetworkModal();
-            return { prompted: true };
-        }
-        return { prompted: false };
-    }, [authStatus, openNetworkModal]);
+        },
+        [authStatus, openNetworkModal]
+    );
 
     return {
         handlePresentJoinNetworkModal,

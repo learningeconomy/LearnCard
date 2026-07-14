@@ -576,7 +576,7 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                         {notInNetwork && (
                             <button
                                 onClick={() => {
-                                    void handlePresentJoinNetworkModal();
+                                    void handlePresentJoinNetworkModal({ forceOpen: true });
                                 }}
                                 className="bg-grayscale-800 text-white font-notoSans text-[17px] font-semibold px-[20px] py-[7px] rounded-[10px] mb-[10px]"
                             >

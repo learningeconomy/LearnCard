@@ -11,7 +11,7 @@ export const useCheckIfUserInNetwork = () => {
         }
 
         if (!isNetworkUser) {
-            handlePresentJoinNetworkModal();
+            void handlePresentJoinNetworkModal({ forceOpen: true });
             return false;
         }
         return true;
