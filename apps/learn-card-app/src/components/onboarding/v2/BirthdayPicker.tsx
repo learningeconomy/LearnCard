@@ -275,7 +275,7 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
         <div className={`flex flex-col items-center w-full font-poppins ${className}`}>
             {!hasInteracted && (
                 <p className="text-xs text-grayscale-500 mb-2 animate-fade-in-up">
-                    Scroll to set your date of birth
+                    Scroll to choose
                 </p>
             )}
             <div className="relative w-full bg-white/80 backdrop-blur-sm border border-grayscale-200/60 rounded-2xl shadow-sm p-2 overflow-hidden">

@@ -4,7 +4,7 @@ import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { auth } from '../../../firebase/firebase';
 import { updateProfile } from 'firebase/auth';
-import { Check, Loader2, Edit2, ShieldCheck } from 'lucide-react';
+import { Check, Loader2, Edit2, ShieldCheck, User } from 'lucide-react';
 
 import {
     useModal,
@@ -562,36 +562,48 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                             )}
 
                             <div className="space-y-4">
-                                <BirthdayPicker value={dob} onChange={setDob} className="w-full" />
+                                <div>
+                                    <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                                        Date of Birth
+                                    </label>
+                                    <BirthdayPicker
+                                        value={dob}
+                                        onChange={setDob}
+                                        className="w-full"
+                                    />
+                                </div>
 
-                                <button
-                                    className="w-full flex items-center justify-between bg-white/80 backdrop-blur-sm text-grayscale-900 rounded-2xl font-medium px-4 py-4 text-sm border border-grayscale-200/60 shadow-sm motion-safe:hover:-translate-y-0.5 active:scale-[0.98] transition-all"
-                                    onClick={() => {
-                                        newModal(
-                                            <CountrySelectorModal
-                                                selected={country}
-                                                onSelect={code => {
-                                                    setCountry(code);
-                                                    closeModal();
-                                                }}
-                                            />,
-                                            {
-                                                sectionClassName:
-                                                    '!bg-transparent !border-none !shadow-none !rounded-none',
-                                            },
-                                            {
-                                                desktop: ModalTypes.Cancel,
-                                                mobile: ModalTypes.Cancel,
-                                            }
-                                        );
-                                    }}
-                                    type="button"
-                                >
-                                    {country
-                                        ? COUNTRIES[country] ?? country
-                                        : 'Country of Residence'}
-                                    <LocationIcon className="w-5 h-5 text-grayscale-500" />
-                                </button>
+                                <div>
+                                    <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                                        Country
+                                    </label>
+                                    <button
+                                        className="w-full flex items-center justify-between bg-white/80 backdrop-blur-sm text-grayscale-900 rounded-2xl font-medium px-4 py-4 text-sm border border-grayscale-200/60 shadow-sm motion-safe:hover:-translate-y-0.5 active:scale-[0.98] transition-all"
+                                        onClick={() => {
+                                            newModal(
+                                                <CountrySelectorModal
+                                                    selected={country}
+                                                    onSelect={code => {
+                                                        setCountry(code);
+                                                        closeModal();
+                                                    }}
+                                                />,
+                                                {
+                                                    sectionClassName:
+                                                        '!bg-transparent !border-none !shadow-none !rounded-none',
+                                                },
+                                                {
+                                                    desktop: ModalTypes.Cancel,
+                                                    mobile: ModalTypes.Cancel,
+                                                }
+                                            );
+                                        }}
+                                        type="button"
+                                    >
+                                        {country ? COUNTRIES[country] ?? country : 'Select country'}
+                                        <LocationIcon className="w-5 h-5 text-grayscale-500" />
+                                    </button>
+                                </div>
 
                                 {needsUSConsent && (
                                     <div className="mt-4 p-4 bg-white/80 backdrop-blur-sm border border-grayscale-200/60 rounded-2xl space-y-3 animate-fade-in-up shadow-sm">
@@ -665,8 +677,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
             {step === 'profile' && (
                 <div className="relative z-10 w-full h-full flex flex-col">
-                    <div className="flex-1 flex flex-col items-center px-4 pt-[calc(env(safe-area-inset-top)_+_2rem)] pb-8 overflow-y-auto">
-                        <div className="w-full max-w-[420px] animate-fade-in-up">
+                    <div className="flex-1 flex flex-col items-center desktop:justify-center px-4 pt-[calc(env(safe-area-inset-top)_+_2rem)] pb-8 overflow-y-auto">
+                        <div className="w-full max-w-[420px] desktop:max-w-[900px] animate-fade-in-up">
                             {renderProgress(2)}
 
                             <div className="text-center mb-8">
@@ -686,261 +698,271 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                 </div>
                             )}
 
-                            <div className="flex flex-col items-center space-y-5">
-                                {/* Hero Card Preview */}
-                                <div className="w-full max-w-[320px] bg-white/90 backdrop-blur-md rounded-3xl shadow-xl border border-white/60 p-6 pt-8 flex flex-col items-center gap-3 relative overflow-hidden group transition-all duration-300 hover:shadow-2xl">
-                                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/15 via-emerald-50/5 to-transparent pointer-events-none" />
-                                    <div className="absolute top-4 left-5 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700/50">
-                                        {brandName}
-                                    </div>
-                                    <div className="relative">
-                                        <div className="relative flex justify-center items-center h-24 w-24 rounded-full overflow-hidden border-4 border-white shadow-md bg-grayscale-100 transition-transform duration-300 group-hover:scale-105">
-                                            {photo ? (
-                                                <img
-                                                    src={photo}
-                                                    alt=""
-                                                    className="w-full h-full object-cover rounded-full"
-                                                    referrerPolicy="no-referrer"
-                                                />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-400 to-emerald-600 text-white font-semibold text-3xl">
-                                                    {(
-                                                        name?.[0] ||
-                                                        profileId?.[0] ||
-                                                        '#'
-                                                    ).toUpperCase()}
-                                                </div>
-                                            )}
-                                            {imageUploadLoading && (
-                                                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                                                    <Loader2 className="w-6 h-6 text-white animate-spin" />
-                                                </div>
-                                            )}
+                            <div className="flex flex-col desktop:grid desktop:grid-cols-2 desktop:gap-10 desktop:items-center items-center space-y-5 desktop:space-y-0">
+                                {/* LEFT COLUMN: Hero Card Preview */}
+                                <div className="w-full flex justify-center">
+                                    <div className="w-full max-w-[320px] bg-white/90 backdrop-blur-md rounded-3xl shadow-xl border border-white/60 p-6 pt-8 flex flex-col items-center gap-3 relative overflow-hidden group transition-all duration-300 hover:shadow-2xl">
+                                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/15 via-emerald-50/5 to-transparent pointer-events-none" />
+                                        <div className="absolute top-4 left-5 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700/50">
+                                            {brandName}
                                         </div>
-                                        <button
-                                            onClick={handleImageSelect}
-                                            className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center border border-grayscale-200 text-grayscale-700 hover:bg-grayscale-50 transition-colors active:scale-95"
-                                        >
-                                            <Edit2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                    <div className="text-center relative z-10 w-full">
-                                        <h2 className="text-xl font-semibold text-grayscale-900 truncate px-2">
-                                            {name || 'Your Name'}
-                                        </h2>
-                                        <p className="text-sm text-grayscale-500 font-medium truncate px-2">
-                                            @{profileId || 'username'}
-                                        </p>
+                                        <div className="relative">
+                                            <div className="relative flex justify-center items-center h-24 w-24 rounded-full overflow-hidden border-4 border-white shadow-md bg-grayscale-100 transition-transform duration-300 group-hover:scale-105">
+                                                {photo ? (
+                                                    <img
+                                                        src={photo}
+                                                        alt=""
+                                                        className="w-full h-full object-cover rounded-full"
+                                                        referrerPolicy="no-referrer"
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-400 to-emerald-600 text-white font-semibold text-3xl">
+                                                        {(
+                                                            name?.trim()?.[0] ||
+                                                            profileId?.trim()?.[0] ||
+                                                            ''
+                                                        ).toUpperCase() || (
+                                                            <User
+                                                                className="w-1/2 h-1/2 opacity-90"
+                                                                strokeWidth={1.75}
+                                                            />
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {imageUploadLoading && (
+                                                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                                        <Loader2 className="w-6 h-6 text-white animate-spin" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <button
+                                                onClick={handleImageSelect}
+                                                className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center border border-grayscale-200 text-grayscale-700 hover:bg-grayscale-50 transition-colors active:scale-95"
+                                            >
+                                                <Edit2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                        <div className="text-center relative z-10 w-full">
+                                            <h2 className="text-xl font-semibold text-grayscale-900 truncate px-2">
+                                                {name || 'Your Name'}
+                                            </h2>
+                                            <p className="text-sm text-grayscale-500 font-medium truncate px-2">
+                                                @{profileId || 'username'}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="w-full bg-white/80 backdrop-blur-sm border border-grayscale-200/60 rounded-3xl shadow-sm p-5 space-y-4">
-                                    <div>
-                                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
-                                            Full Name
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={name}
-                                            onChange={e => setName(e.target.value)}
-                                            placeholder="Your Name"
-                                            className="w-full py-3 px-4 border border-grayscale-200/60 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/50 transition-all"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
-                                            Public Handle
-                                        </label>
-                                        <div
-                                            className={`flex items-center w-full border rounded-xl bg-white/50 focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-transparent transition-all ${
-                                                profileIdError
-                                                    ? 'border-red-300'
-                                                    : 'border-grayscale-200/60'
-                                            }`}
-                                        >
-                                            <span className="pl-4 text-grayscale-400 font-medium">
-                                                @
-                                            </span>
+                                {/* RIGHT COLUMN: Profile Card + Privacy Card */}
+                                <div className="w-full flex flex-col space-y-5">
+                                    <div className="w-full bg-white/80 backdrop-blur-sm border border-grayscale-200/60 rounded-3xl shadow-sm p-5 space-y-4">
+                                        <div>
+                                            <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                                                Full Name
+                                            </label>
                                             <input
                                                 type="text"
-                                                value={profileId}
-                                                onChange={e => {
-                                                    setIsHandleManuallyEdited(true);
-                                                    setProfileId(e.target.value);
-                                                    setProfileIdError('');
-                                                }}
-                                                placeholder="username"
-                                                className="flex-1 py-3 px-2 text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none bg-transparent"
+                                                value={name}
+                                                onChange={e => setName(e.target.value)}
+                                                placeholder="Your Name"
+                                                className="w-full py-3 px-4 border border-grayscale-200/60 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/50 transition-all"
                                             />
-                                            <div className="pr-4 flex items-center">
-                                                {uniqueProfileFetching && (
-                                                    <Loader2 className="w-4 h-4 text-grayscale-400 animate-spin" />
-                                                )}
-                                                {!uniqueProfileFetching &&
-                                                    isUniqueValid &&
-                                                    isLengthValid &&
-                                                    isFormatValid && (
-                                                        <Check className="w-4 h-4 text-emerald-500" />
-                                                    )}
-                                            </div>
                                         </div>
-                                        {profileIdError && (
-                                            <p className="mt-1.5 text-xs text-red-600">
-                                                {profileIdError}
-                                            </p>
-                                        )}
-                                        {profileId &&
-                                        !(
-                                            isLengthValid &&
-                                            isFormatValid &&
-                                            isUniqueValid &&
-                                            !uniqueProfileFetching
-                                        ) ? (
-                                            <div className="mt-2 space-y-1">
-                                                <div
-                                                    className={`flex items-center gap-1.5 text-xs transition-colors ${
-                                                        isLengthValid
-                                                            ? 'text-emerald-600'
-                                                            : 'text-grayscale-400'
-                                                    }`}
-                                                >
-                                                    {isLengthValid ? (
-                                                        <Check className="w-3.5 h-3.5 shrink-0" />
-                                                    ) : (
-                                                        <span className="w-3.5 h-3.5 flex items-center justify-center shrink-0">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-grayscale-300" />
-                                                        </span>
+
+                                        <div>
+                                            <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                                                Public Handle
+                                            </label>
+                                            <div
+                                                className={`flex items-center w-full border rounded-xl bg-white/50 focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-transparent transition-all ${
+                                                    profileIdError
+                                                        ? 'border-red-300'
+                                                        : 'border-grayscale-200/60'
+                                                }`}
+                                            >
+                                                <span className="pl-4 text-grayscale-400 font-medium">
+                                                    @
+                                                </span>
+                                                <input
+                                                    type="text"
+                                                    value={profileId}
+                                                    onChange={e => {
+                                                        setIsHandleManuallyEdited(true);
+                                                        setProfileId(e.target.value);
+                                                        setProfileIdError('');
+                                                    }}
+                                                    placeholder="username"
+                                                    className="flex-1 py-3 px-2 text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none bg-transparent"
+                                                />
+                                                <div className="pr-4 flex items-center">
+                                                    {uniqueProfileFetching && (
+                                                        <Loader2 className="w-4 h-4 text-grayscale-400 animate-spin" />
                                                     )}
-                                                    3–25 characters
-                                                </div>
-                                                <div
-                                                    className={`flex items-center gap-1.5 text-xs transition-colors ${
-                                                        isFormatValid
-                                                            ? 'text-emerald-600'
-                                                            : 'text-grayscale-400'
-                                                    }`}
-                                                >
-                                                    {isFormatValid ? (
-                                                        <Check className="w-3.5 h-3.5 shrink-0" />
-                                                    ) : (
-                                                        <span className="w-3.5 h-3.5 flex items-center justify-center shrink-0">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-grayscale-300" />
-                                                        </span>
-                                                    )}
-                                                    Letters, numbers, and dashes only
-                                                </div>
-                                                <div
-                                                    className={`flex items-center gap-1.5 text-xs transition-colors ${
-                                                        !uniqueProfileFetching && isUniqueValid
-                                                            ? 'text-emerald-600'
-                                                            : 'text-grayscale-400'
-                                                    }`}
-                                                >
-                                                    {uniqueProfileFetching ? (
-                                                        <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin" />
-                                                    ) : isUniqueValid ? (
-                                                        <Check className="w-3.5 h-3.5 shrink-0" />
-                                                    ) : (
-                                                        <span className="w-3.5 h-3.5 flex items-center justify-center shrink-0">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-grayscale-300" />
-                                                        </span>
-                                                    )}
-                                                    {uniqueProfileFetching
-                                                        ? 'Checking availability…'
-                                                        : isUniqueValid
-                                                        ? 'Available'
-                                                        : 'Already taken'}
+                                                    {!uniqueProfileFetching &&
+                                                        isUniqueValid &&
+                                                        isLengthValid &&
+                                                        isFormatValid && (
+                                                            <Check className="w-4 h-4 text-emerald-500" />
+                                                        )}
                                                 </div>
                                             </div>
-                                        ) : (
-                                            <p className="mt-1.5 text-xs text-grayscale-500">
-                                                Friends can find you with this. You can change it
-                                                anytime.
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="w-full p-5 bg-white/80 backdrop-blur-sm border border-grayscale-200/60 rounded-3xl shadow-sm space-y-5">
-                                    <div>
-                                        <h3 className="text-sm font-semibold text-grayscale-900">
-                                            Your Privacy
-                                        </h3>
-                                        <p className="text-xs text-grayscale-500 mt-0.5">
-                                            Set based on your age. Change anytime in Settings.
-                                        </p>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm font-medium text-grayscale-700">
-                                                {brandName} AI
-                                            </span>
-                                            <Toggle
-                                                checked={Boolean(
-                                                    privacyPreferences?.aiEnabled &&
-                                                        !privacyPreferences?.isMinor
-                                                )}
-                                                disabled={privacyPreferences?.isMinor}
-                                                onChange={() =>
-                                                    setPrivacyPreferences(prev =>
-                                                        prev
-                                                            ? {
-                                                                  ...prev,
-                                                                  aiEnabled: !prev.aiEnabled,
-                                                              }
-                                                            : prev
-                                                    )
-                                                }
-                                            />
+                                            {profileIdError && (
+                                                <p className="mt-1.5 text-xs text-red-600">
+                                                    {profileIdError}
+                                                </p>
+                                            )}
+                                            {profileId &&
+                                            !(
+                                                isLengthValid &&
+                                                isFormatValid &&
+                                                isUniqueValid &&
+                                                !uniqueProfileFetching
+                                            ) ? (
+                                                <div className="mt-2 space-y-1">
+                                                    <div
+                                                        className={`flex items-center gap-1.5 text-xs transition-colors ${
+                                                            isLengthValid
+                                                                ? 'text-emerald-600'
+                                                                : 'text-grayscale-400'
+                                                        }`}
+                                                    >
+                                                        {isLengthValid ? (
+                                                            <Check className="w-3.5 h-3.5 shrink-0" />
+                                                        ) : (
+                                                            <span className="w-3.5 h-3.5 flex items-center justify-center shrink-0">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-grayscale-300" />
+                                                            </span>
+                                                        )}
+                                                        3–25 characters
+                                                    </div>
+                                                    <div
+                                                        className={`flex items-center gap-1.5 text-xs transition-colors ${
+                                                            isFormatValid
+                                                                ? 'text-emerald-600'
+                                                                : 'text-grayscale-400'
+                                                        }`}
+                                                    >
+                                                        {isFormatValid ? (
+                                                            <Check className="w-3.5 h-3.5 shrink-0" />
+                                                        ) : (
+                                                            <span className="w-3.5 h-3.5 flex items-center justify-center shrink-0">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-grayscale-300" />
+                                                            </span>
+                                                        )}
+                                                        Letters, numbers, and dashes only
+                                                    </div>
+                                                    <div
+                                                        className={`flex items-center gap-1.5 text-xs transition-colors ${
+                                                            !uniqueProfileFetching && isUniqueValid
+                                                                ? 'text-emerald-600'
+                                                                : 'text-grayscale-400'
+                                                        }`}
+                                                    >
+                                                        {uniqueProfileFetching ? (
+                                                            <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin" />
+                                                        ) : isUniqueValid ? (
+                                                            <Check className="w-3.5 h-3.5 shrink-0" />
+                                                        ) : (
+                                                            <span className="w-3.5 h-3.5 flex items-center justify-center shrink-0">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-grayscale-300" />
+                                                            </span>
+                                                        )}
+                                                        {uniqueProfileFetching
+                                                            ? 'Checking availability…'
+                                                            : isUniqueValid
+                                                            ? 'Available'
+                                                            : 'Already taken'}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <p className="mt-1.5 text-xs text-grayscale-500">
+                                                    Friends can find you with this. You can change
+                                                    it anytime.
+                                                </p>
+                                            )}
                                         </div>
-                                        {privacyPreferences?.isMinor && (
-                                            <p className="text-xs text-amber-700 bg-amber-50/80 backdrop-blur-sm p-2.5 rounded-xl border border-amber-100/50">
-                                                AI features are disabled for users under 18.
+                                    </div>
+
+                                    <div className="w-full p-5 bg-white/80 backdrop-blur-sm border border-grayscale-200/60 rounded-3xl shadow-sm space-y-5">
+                                        <div>
+                                            <h3 className="text-sm font-semibold text-grayscale-900">
+                                                Your Privacy
+                                            </h3>
+                                            <p className="text-xs text-grayscale-500 mt-0.5">
+                                                Set based on your age. Change anytime in Settings.
                                             </p>
-                                        )}
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm font-medium text-grayscale-700">
-                                                Analytics
-                                            </span>
-                                            <Toggle
-                                                checked={Boolean(
-                                                    privacyPreferences?.analyticsEnabled
-                                                )}
-                                                onChange={() =>
-                                                    setPrivacyPreferences(prev =>
-                                                        prev
-                                                            ? {
-                                                                  ...prev,
-                                                                  analyticsEnabled:
-                                                                      !prev.analyticsEnabled,
-                                                              }
-                                                            : prev
-                                                    )
-                                                }
-                                            />
                                         </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm font-medium text-grayscale-700">
-                                                Bug Reports
-                                            </span>
-                                            <Toggle
-                                                checked={Boolean(
-                                                    privacyPreferences?.bugReportsEnabled
-                                                )}
-                                                onChange={() =>
-                                                    setPrivacyPreferences(prev =>
-                                                        prev
-                                                            ? {
-                                                                  ...prev,
-                                                                  bugReportsEnabled:
-                                                                      !prev.bugReportsEnabled,
-                                                              }
-                                                            : prev
-                                                    )
-                                                }
-                                            />
+
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm font-medium text-grayscale-700">
+                                                    {brandName} AI
+                                                </span>
+                                                <Toggle
+                                                    checked={Boolean(
+                                                        privacyPreferences?.aiEnabled &&
+                                                            !privacyPreferences?.isMinor
+                                                    )}
+                                                    disabled={privacyPreferences?.isMinor}
+                                                    onChange={() =>
+                                                        setPrivacyPreferences(prev =>
+                                                            prev
+                                                                ? {
+                                                                      ...prev,
+                                                                      aiEnabled: !prev.aiEnabled,
+                                                                  }
+                                                                : prev
+                                                        )
+                                                    }
+                                                />
+                                            </div>
+                                            {privacyPreferences?.isMinor && (
+                                                <p className="text-xs text-amber-700 bg-amber-50/80 backdrop-blur-sm p-2.5 rounded-xl border border-amber-100/50">
+                                                    AI features are disabled for users under 18.
+                                                </p>
+                                            )}
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm font-medium text-grayscale-700">
+                                                    Analytics
+                                                </span>
+                                                <Toggle
+                                                    checked={Boolean(
+                                                        privacyPreferences?.analyticsEnabled
+                                                    )}
+                                                    onChange={() =>
+                                                        setPrivacyPreferences(prev =>
+                                                            prev
+                                                                ? {
+                                                                      ...prev,
+                                                                      analyticsEnabled:
+                                                                          !prev.analyticsEnabled,
+                                                                  }
+                                                                : prev
+                                                        )
+                                                    }
+                                                />
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm font-medium text-grayscale-700">
+                                                    Bug Reports
+                                                </span>
+                                                <Toggle
+                                                    checked={Boolean(
+                                                        privacyPreferences?.bugReportsEnabled
+                                                    )}
+                                                    onChange={() =>
+                                                        setPrivacyPreferences(prev =>
+                                                            prev
+                                                                ? {
+                                                                      ...prev,
+                                                                      bugReportsEnabled:
+                                                                          !prev.bugReportsEnabled,
+                                                                  }
+                                                                : prev
+                                                        )
+                                                    }
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -998,7 +1020,16 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                 />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-400 to-emerald-600 text-white font-semibold text-4xl">
-                                    {(name?.[0] || profileId?.[0] || '#').toUpperCase()}
+                                    {(
+                                        name?.trim()?.[0] ||
+                                        profileId?.trim()?.[0] ||
+                                        ''
+                                    ).toUpperCase() || (
+                                        <User
+                                            className="w-1/2 h-1/2 opacity-90"
+                                            strokeWidth={1.75}
+                                        />
+                                    )}
                                 </div>
                             )}
                         </div>
