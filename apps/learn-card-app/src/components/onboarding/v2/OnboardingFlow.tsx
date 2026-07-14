@@ -153,13 +153,24 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
         }
     }, [profileId]);
 
-    // Auto-generate handle
     useEffect(() => {
-        if (name && !isHandleManuallyEdited && !profileId) {
-            const generated = generateHandle(name);
-            setProfileId(generated);
+        if (isHandleManuallyEdited) return;
+
+        const trimmed = name.trim();
+        if (!trimmed) {
+            setProfileId('');
+            return;
         }
-    }, [name, isHandleManuallyEdited, profileId]);
+
+        const timeout = window.setTimeout(() => {
+            setProfileId(prev => {
+                const next = generateHandle(trimmed);
+                return next === prev ? prev : next;
+            });
+        }, 400);
+
+        return () => window.clearTimeout(timeout);
+    }, [name, isHandleManuallyEdited]);
 
     // Handle collision resolution
     useEffect(() => {
@@ -754,10 +765,75 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                 {profileIdError}
                                             </p>
                                         )}
-                                        <p className="mt-1.5 text-xs text-grayscale-500">
-                                            Friends can find you with this. You can change it
-                                            anytime.
-                                        </p>
+                                        {profileId &&
+                                        !(
+                                            isLengthValid &&
+                                            isFormatValid &&
+                                            isUniqueValid &&
+                                            !uniqueProfileFetching
+                                        ) ? (
+                                            <div className="mt-2 space-y-1">
+                                                <div
+                                                    className={`flex items-center gap-1.5 text-xs transition-colors ${
+                                                        isLengthValid
+                                                            ? 'text-emerald-600'
+                                                            : 'text-grayscale-400'
+                                                    }`}
+                                                >
+                                                    {isLengthValid ? (
+                                                        <Check className="w-3.5 h-3.5 shrink-0" />
+                                                    ) : (
+                                                        <span className="w-3.5 h-3.5 flex items-center justify-center shrink-0">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-grayscale-300" />
+                                                        </span>
+                                                    )}
+                                                    3–25 characters
+                                                </div>
+                                                <div
+                                                    className={`flex items-center gap-1.5 text-xs transition-colors ${
+                                                        isFormatValid
+                                                            ? 'text-emerald-600'
+                                                            : 'text-grayscale-400'
+                                                    }`}
+                                                >
+                                                    {isFormatValid ? (
+                                                        <Check className="w-3.5 h-3.5 shrink-0" />
+                                                    ) : (
+                                                        <span className="w-3.5 h-3.5 flex items-center justify-center shrink-0">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-grayscale-300" />
+                                                        </span>
+                                                    )}
+                                                    Letters, numbers, and dashes only
+                                                </div>
+                                                <div
+                                                    className={`flex items-center gap-1.5 text-xs transition-colors ${
+                                                        !uniqueProfileFetching && isUniqueValid
+                                                            ? 'text-emerald-600'
+                                                            : 'text-grayscale-400'
+                                                    }`}
+                                                >
+                                                    {uniqueProfileFetching ? (
+                                                        <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin" />
+                                                    ) : isUniqueValid ? (
+                                                        <Check className="w-3.5 h-3.5 shrink-0" />
+                                                    ) : (
+                                                        <span className="w-3.5 h-3.5 flex items-center justify-center shrink-0">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-grayscale-300" />
+                                                        </span>
+                                                    )}
+                                                    {uniqueProfileFetching
+                                                        ? 'Checking availability…'
+                                                        : isUniqueValid
+                                                        ? 'Available'
+                                                        : 'Already taken'}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <p className="mt-1.5 text-xs text-grayscale-500">
+                                                Friends can find you with this. You can change it
+                                                anytime.
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
 
