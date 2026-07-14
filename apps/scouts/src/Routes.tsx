@@ -81,44 +81,15 @@ const PrivateRoute = ({ component: Component, ...rest }: PrivateRouteProps) => {
         sensitive: rest.sensitive,
     });
 
-    if (
-        matchesCurrentLocation &&
-        (location.pathname.startsWith('/claim') || rest.path.startsWith('/claim'))
-    ) {
-        console.log('[Scouts route trace] PrivateRoute evaluation', {
-            currentPath: location.pathname,
-            currentSearch: location.search,
-            routePath: rest.path,
-            isLoggedIn,
-            matchesCurrentLocation,
-        });
-    }
-
-    // console.log('PrivateRoute', { isLoggedIn, component: Component, rest });
-
     if (!matchesCurrentLocation) {
         return null;
     }
 
-    if (isLoggedIn || rest.path.startsWith('/claim')) {
-        if (rest.path.startsWith('/claim')) {
-            console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
-
-            console.log('PrivateRoute allowing access to /claim');
-            console.log('rest.path:', rest.path);
-        }
-        return <SentryRoute {...rest} render={props => <Component {...props} {...rest} />} />;
-    } else {
-        console.log('[Scouts route trace] PrivateRoute redirecting to /login', {
-            currentPath: location.pathname,
-            currentSearch: location.search,
-            routePath: rest.path,
-            isLoggedIn,
-            matchesCurrentLocation,
-        });
-
-        return <Redirect to="/login" />;
-    }
+    return isLoggedIn ? (
+        <SentryRoute {...rest} render={props => <Component {...props} {...rest} />} />
+    ) : (
+        <Redirect to="/login" />
+    );
 
     // return isLoggedIn ? (
     //     <SentryRoute {...rest} render={props => <Component {...props} {...rest} />} />
@@ -139,8 +110,6 @@ export const Routes: React.FC = () => {
         location.pathname.startsWith('/did-auth/') ||
         location.pathname.startsWith('/share-creds/');
     const switchLocation = background && isModalRoute ? background : location;
-
-    // console.log('Routes', { isLoggedIn, location, background, isModalRoute, switchLocation });
 
     return (
         <ChunkBoundary>
@@ -217,22 +186,7 @@ export const Routes: React.FC = () => {
                         <SentryRoute exact path="/connect" component={ConnectPage} />
                         <SentryRoute exact path="/connect/:profileId" component={ConnectPage} />
                         <SentryRoute exact path="/invite" component={InvitePage} />
-                        <SentryRoute
-                            exact
-                            path="/claim/boost"
-                            render={() => {
-                                console.log(
-                                    '[Scouts route trace] public /claim/boost route rendered',
-                                    {
-                                        pathname: location.pathname,
-                                        search: location.search,
-                                        isLoggedIn,
-                                    }
-                                );
-
-                                return <ClaimBoost />;
-                            }}
-                        />
+                        <SentryRoute exact path="/claim/boost" component={ClaimBoost} />
 
                         <SentryRoute
                             exact
@@ -254,22 +208,13 @@ export const Routes: React.FC = () => {
                         <SentryRoute
                             exact
                             path="/"
-                            render={() => {
-                                if (isLoggedIn) {
-                                    return <Redirect to={tabRoutes.tab2} />;
-                                }
-
-                                console.log(
-                                    '[Scouts route trace] root route redirecting to /login',
-                                    {
-                                        pathname: location.pathname,
-                                        search: location.search,
-                                        isLoggedIn,
-                                    }
-                                );
-
-                                return <Redirect to="/login" />;
-                            }}
+                            render={() =>
+                                isLoggedIn ? (
+                                    <Redirect to={tabRoutes.tab2} />
+                                ) : (
+                                    <Redirect to="/login" />
+                                )
+                            }
                         />
 
                         <SentryRoute

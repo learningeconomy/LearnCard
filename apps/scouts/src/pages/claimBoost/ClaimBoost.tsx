@@ -151,12 +151,6 @@ export const ClaimBoostModal: React.FC<{
 
     const handleRedirectTo = () => {
         const redirectTo = `/claim/boost?boostUri=${boostUri}&challenge=${challenge}`;
-        console.log('[Scouts route trace] ClaimBoost logged-out redirect handler invoked', {
-            pathname: history.location.pathname,
-            search: history.location.search,
-            redirectTo,
-            isLoggedIn,
-        });
         redirectStore.set.lcnRedirect(redirectTo);
         dismissClaimModal?.();
         closeLoggedOutModal();
@@ -414,12 +408,6 @@ const ClaimBoost: React.FC = () => {
     const redirectTo = `${history.location.pathname}${history.location.search}`;
 
     useEffect(() => {
-        console.log('[Scouts route trace] ClaimBoost mounted / redirect store set', {
-            pathname: history.location.pathname,
-            search: history.location.search,
-            redirectTo,
-            isLoggedIn,
-        });
         redirectStore.set.lcnRedirect(redirectTo);
     }, [redirectTo]);
 
@@ -439,20 +427,10 @@ const ClaimBoost: React.FC = () => {
     }, [isLoggedIn, uriParam, challengeParam]);
 
     if (!isLoggedIn) {
-        console.log('[Scouts route trace] ClaimBoost rendering logged-out prompt', {
-            pathname: history.location.pathname,
-            search: history.location.search,
-            isLoggedIn,
-        });
-
         return (
             <ClaimBoostLoggedOutPrompt
                 handleCloseModal={() => history.push('/')}
                 handleRedirectTo={() => {
-                    console.log('[Scouts route trace] ClaimBoost prompt button callback invoked', {
-                        pathname: history.location.pathname,
-                        search: history.location.search,
-                    });
                     redirectStore.set.lcnRedirect(
                         `${history.location.pathname}${history.location.search}`
                     );

@@ -5,8 +5,6 @@ export const ClaimBoostLoggedOutPrompt: React.FC<{
     handleCloseModal: () => void;
     handleRedirectTo: () => void;
 }> = ({ handleCloseModal, handleRedirectTo }) => {
-    console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
-    console.log('ClaimBoostLoggedOutPrompt');
     return (
         <IonPage>
             <IonHeader className="ion-no-border ion-no-padding bg-white">
