@@ -109,29 +109,10 @@ const BoostAFriendPage: React.FC = () => {
         setStep('personalize');
     };
 
-    const handleIssue = async () => {
+    const runIssue = async () => {
         if (!selectedBadge) return;
 
         const isLinkMode = recipientMode === 'link';
-        const hasRecipients = recipients.length > 0;
-
-        if (recipientMode === 'people' && !hasRecipients) {
-            setError('Please add at least one recipient.');
-            return;
-        }
-
-        setError(null);
-
-        // Every send mode needs an LCN profile. If the user has none, open
-        // onboarding and resume this same send once it completes.
-        const { prompted } = await gate(async () => {
-            try {
-                await handleIssue();
-            } catch (err) {
-                setError(getFriendlyIssueError(err, recipientMode).message);
-            }
-        });
-        if (prompted) return;
 
         setIsIssuing(true);
 
@@ -206,6 +187,39 @@ const BoostAFriendPage: React.FC = () => {
         } finally {
             setIsIssuing(false);
         }
+    };
+
+    // The onboarding resume callback below is created once (at send-time) but
+    // fires later, after onboarding. Routing through a ref invokes the latest
+    // runIssue closure (post-onboarding auth/profile) instead of a stale one.
+    const runIssueRef = useRef(runIssue);
+    runIssueRef.current = runIssue;
+
+    const handleIssue = async () => {
+        if (!selectedBadge) return;
+
+        const hasRecipients = recipients.length > 0;
+
+        if (recipientMode === 'people' && !hasRecipients) {
+            setError('Please add at least one recipient.');
+            return;
+        }
+
+        setError(null);
+
+        // Every send mode needs an LCN profile. If the user has none, open
+        // onboarding, then resume via the ref so the send runs against fresh
+        // state without re-triggering the profile gate.
+        const { prompted } = await gate(async () => {
+            try {
+                await runIssueRef.current();
+            } catch (err) {
+                setError(getFriendlyIssueError(err, recipientMode).message);
+            }
+        });
+        if (prompted) return;
+
+        await runIssue();
     };
 
     const handleCopyLink = async () => {

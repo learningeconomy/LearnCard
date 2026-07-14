@@ -34,7 +34,10 @@ export const UserQRCode: React.FC<{
         if (!url) return;
 
         fetch(url, { mode: 'cors', credentials: 'omit' })
-            .then(response => response.blob())
+            .then(response => {
+                if (!response.ok) throw new Error(`logo fetch failed: ${response.status}`);
+                return response.blob();
+            })
             .then(
                 blob =>
                     new Promise<string>((resolve, reject) => {
