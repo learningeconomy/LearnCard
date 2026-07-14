@@ -165,6 +165,22 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
         currentMode = '';
     }
 
+    const idDescriptionPlaceholder = useMemo(() => {
+        if (isInMemberViewMode) {
+            return 'Scout ID description...';
+        }
+
+        if (rootViewMode === TroopsCMSViewModeEnum.global) {
+            return 'Global admin ID description...';
+        }
+
+        if (rootViewMode === TroopsCMSViewModeEnum.network) {
+            return 'Network admin ID description...';
+        }
+
+        return 'Troop leader ID description...';
+    }, [isInMemberViewMode, rootViewMode]);
+
     const handleSetDefaultContent = (toggleState?: boolean) => {
         setState(prevState => {
             return {
@@ -509,7 +525,7 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
                                 handleSetIDState('idDescription', _description);
                                 setErrors?.({});
                             }}
-                            placeholder={`${currentMode} ID description...`}
+                            placeholder={idDescriptionPlaceholder}
                             className={`bg-grayscale-100 text-grayscale-900 rounded-[15px] font-normal text-[17px] font-notoSans troops-cms-textarea ${
                                 errors?.description ? 'border-red-300 border-2' : ''
                             }`}
