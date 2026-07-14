@@ -17,6 +17,7 @@ import {
     useSQLiteStorage,
     currentUserStore,
     ModalTypes,
+    useDeviceTypeByWidth,
     UploadRes,
     useFilestack,
     getLogger,
@@ -27,6 +28,7 @@ import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
 import redirectStore from 'learn-card-base/stores/redirectStore';
 import { calculateAge, isFutureDate } from 'learn-card-base/helpers/dateHelpers';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { useAppAuth } from '../../../providers/AuthCoordinatorProvider';
 import { generateEd25519PrivateKey } from '@learncard/sss-key-manager';
@@ -37,7 +39,6 @@ import { isEUCountry, requiresEUParentalConsent } from '../onboardingNetworkForm
 import { getDefaultPrivacyPreferences, OnboardingPrivacyPreferences } from '../privacyPreferences';
 import { ProfileIDStateValidator } from '../onboardingNetworkForm/helpers/validators';
 import { generateHandle, generateRandomSuffix } from './handleGenerator';
-import { inferCountryCode } from './countryInference';
 
 import BirthdayPicker from './BirthdayPicker';
 import CountrySelectorModal from '../onboardingNetworkForm/components/CountrySelectorModal';
@@ -46,7 +47,6 @@ import UnderageModalContent from '../onboardingNetworkForm/components/UnderageMo
 import GuardianLinkedModal from '../GuardianLinkedModal';
 import OnboardingSwiperForSlides from '../onboardingRoles/OnboardingSwiperForSlides';
 import { Confetti } from '../../../pages/issue/components/Confetti';
-import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 
 import useLogout from '../../../hooks/useLogout';
 import useAutoConsentLearnCardAi from '../../../hooks/useAutoConsentLearnCardAi';
@@ -77,9 +77,13 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const { refetch } = useGetCurrentLCNUser();
     const { refetch: refetchIsCurrentUserLCNUser } = useIsCurrentUserLCNUser();
     const queryClient = useQueryClient();
+    const { isDesktop } = useDeviceTypeByWidth();
     const { handleLogout } = useLogout();
     const { autoConsentLearnCardAi } = useAutoConsentLearnCardAi();
     const { updateCurrentUser } = useSQLiteStorage();
+
+    const brandingConfig = useBrandingConfig();
+    const brandName = brandingConfig?.name || 'LearnCard';
 
     const currentUser = useCurrentUser();
     const authToken = getAuthToken();
@@ -104,6 +108,14 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const [dob, setDob] = useState<string>('');
     const [country, setCountry] = useState<string>('');
     const [usMinorConsent, setUsMinorConsent] = useState(false);
+
+    const inferCountryCode = () => {
+        try {
+            return Intl.DateTimeFormat().resolvedOptions().locale.split('-')[1];
+        } catch (e) {
+            return null;
+        }
+    };
 
     useEffect(() => {
         setCountry(prev => prev || inferCountryCode() || '');
@@ -536,8 +548,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                     Welcome — let's set you up
                                 </h1>
                                 <p className="text-sm text-grayscale-600 leading-relaxed">
-                                    Just a couple quick things to personalize LearnCard and keep you
-                                    safe.
+                                    Just a couple quick things to personalize {brandName} and keep
+                                    you safe.
                                 </p>
                             </div>
 
@@ -674,24 +686,37 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                 </div>
                             )}
 
-                            <div className="flex flex-col items-center space-y-8">
+                            <div className="flex flex-col items-center space-y-5">
                                 {/* Hero Card Preview */}
-                                <div className="w-full max-w-[320px] bg-white/90 backdrop-blur-md rounded-3xl shadow-xl border border-white/50 p-6 flex flex-col items-center gap-4 relative overflow-hidden group transition-all duration-300 hover:shadow-2xl">
-                                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-transparent opacity-50" />
+                                <div className="w-full max-w-[320px] bg-white/90 backdrop-blur-md rounded-3xl shadow-xl border border-white/60 p-6 pt-8 flex flex-col items-center gap-3 relative overflow-hidden group transition-all duration-300 hover:shadow-2xl">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-400/15 via-emerald-50/5 to-transparent pointer-events-none" />
+                                    <div className="absolute top-4 left-5 text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-700/50">
+                                        {brandName}
+                                    </div>
                                     <div className="relative">
-                                        <ProfilePicture
-                                            customContainerClass="flex justify-center items-center h-24 w-24 rounded-full overflow-hidden border-4 border-white shadow-md bg-grayscale-100 transition-transform duration-300 group-hover:scale-105"
-                                            customImageClass="w-full h-full object-cover"
-                                            customSize={500}
-                                            overrideSrc={photo?.length > 0}
-                                            overrideSrcURL={photo}
-                                        >
+                                        <div className="relative flex justify-center items-center h-24 w-24 rounded-full overflow-hidden border-4 border-white shadow-md bg-grayscale-100 transition-transform duration-300 group-hover:scale-105">
+                                            {photo ? (
+                                                <img
+                                                    src={photo}
+                                                    alt=""
+                                                    className="w-full h-full object-cover rounded-full"
+                                                    referrerPolicy="no-referrer"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-400 to-emerald-600 text-white font-semibold text-3xl">
+                                                    {(
+                                                        name?.[0] ||
+                                                        profileId?.[0] ||
+                                                        '#'
+                                                    ).toUpperCase()}
+                                                </div>
+                                            )}
                                             {imageUploadLoading && (
                                                 <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                                                     <Loader2 className="w-6 h-6 text-white animate-spin" />
                                                 </div>
                                             )}
-                                        </ProfilePicture>
+                                        </div>
                                         <button
                                             onClick={handleImageSelect}
                                             className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center border border-grayscale-200 text-grayscale-700 hover:bg-grayscale-50 transition-colors active:scale-95"
@@ -709,8 +734,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                     </div>
                                 </div>
 
-                                <div className="w-full space-y-4">
-                                    <div className="bg-white/80 backdrop-blur-sm border border-grayscale-200/60 rounded-2xl p-4 shadow-sm">
+                                <div className="w-full bg-white/80 backdrop-blur-sm border border-grayscale-200/60 rounded-3xl shadow-sm p-5 space-y-4">
+                                    <div>
                                         <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
                                             Full Name
                                         </label>
@@ -723,7 +748,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                         />
                                     </div>
 
-                                    <div className="bg-white/80 backdrop-blur-sm border border-grayscale-200/60 rounded-2xl p-4 shadow-sm">
+                                    <div>
                                         <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
                                             Public Handle
                                         </label>
@@ -850,7 +875,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between">
                                             <span className="text-sm font-medium text-grayscale-700">
-                                                LearnCard AI
+                                                {brandName} AI
                                             </span>
                                             <Toggle
                                                 checked={Boolean(
@@ -942,7 +967,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                 {isCreating ? (
                                     <Loader2 className="w-5 h-5 animate-spin" />
                                 ) : (
-                                    'Create my LearnCard'
+                                    `Create my ${brandName}`
                                 )}
                             </button>
                         </div>
@@ -958,18 +983,25 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                         <h1 className="text-3xl font-semibold text-grayscale-900 mb-2">
                             You're in!
                         </h1>
-                        <p className="text-base text-grayscale-600">Your LearnCard is ready.</p>
+                        <p className="text-base text-grayscale-600">Your {brandName} is ready.</p>
                     </div>
 
                     <div className="w-full max-w-[320px] bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl border border-white/50 p-8 flex flex-col items-center gap-5 relative overflow-hidden mb-10">
                         <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent opacity-50" />
-                        <ProfilePicture
-                            customContainerClass="flex justify-center items-center h-28 w-28 rounded-full overflow-hidden border-4 border-white shadow-md bg-grayscale-100 relative z-10"
-                            customImageClass="w-full h-full object-cover"
-                            customSize={500}
-                            overrideSrc={photo?.length > 0}
-                            overrideSrcURL={photo}
-                        />
+                        <div className="relative flex justify-center items-center h-28 w-28 rounded-full overflow-hidden border-4 border-white shadow-md bg-grayscale-100 z-10">
+                            {photo ? (
+                                <img
+                                    src={photo}
+                                    alt=""
+                                    className="w-full h-full object-cover rounded-full"
+                                    referrerPolicy="no-referrer"
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-400 to-emerald-600 text-white font-semibold text-4xl">
+                                    {(name?.[0] || profileId?.[0] || '#').toUpperCase()}
+                                </div>
+                            )}
+                        </div>
                         <div className="text-center relative z-10 w-full">
                             <h2 className="text-2xl font-semibold text-grayscale-900 truncate px-2">
                                 {name}
@@ -1007,7 +1039,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                             onClick={handleExplore}
                             className="w-full py-3.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-base hover:opacity-90 transition-all shadow-md active:scale-[0.98]"
                         >
-                            Explore LearnCard
+                            Explore {brandName}
                         </button>
                     </div>
                 </div>
