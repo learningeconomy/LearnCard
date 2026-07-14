@@ -31,13 +31,13 @@ export const getClient = async (
         return challengeRequester.utilities.getChallenges.query({ amount });
     };
 
-    // Challenges are fetched lazily on first use so that constructing a client
-    // that is never used doesn't cost a network round-trip
     let refillPromise: Promise<void> | undefined;
 
     const refillChallenges = (): Promise<void> => {
         refillPromise ??= getChallenges()
             .then(result => {
+                if (result.length === 0) throw new Error('Challenge refill returned no challenges');
+
                 challenges.push(...result);
             })
             .finally(() => {
@@ -46,6 +46,19 @@ export const getClient = async (
 
         return refillPromise;
     };
+
+    const takeChallenge = async (): Promise<string> => {
+        while (true) {
+            const challenge = challenges.pop();
+            if (challenge !== undefined) return challenge;
+
+            await refillChallenges();
+        }
+    };
+
+    // Pre-warm the pool while the caller continues client/plugin setup. Requests
+    // arriving before this settles await the same single-flight refill.
+    void refillChallenges().catch(() => undefined);
 
     const trpc = createTRPCClient<AppRouter>({
         links: [
@@ -57,11 +70,9 @@ export const getClient = async (
                 url,
                 maxItems: 50,
                 maxURLLength: 3072,
-                headers: async () => {
-                    if (challenges.length === 0) await refillChallenges();
-
-                    return { Authorization: `Bearer ${await didAuthFunction(challenges.pop())}` };
-                },
+                headers: async () => ({
+                    Authorization: `Bearer ${await didAuthFunction(await takeChallenge())}`,
+                }),
             }),
         ],
     });

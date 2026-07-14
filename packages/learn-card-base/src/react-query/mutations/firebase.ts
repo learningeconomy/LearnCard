@@ -99,12 +99,11 @@ export const useGetProofOfLoginVp = (opts?: { showAlert?: boolean }) => {
         {
             mutationFn: async ({ token }: { token: string }) => {
                 try {
-                    // The server route is open (only the firebase token is verified;
-                    // the caller's DID is ignored), so prefer the logged-in user's
-                    // wallet — it's already built and cached. The throwaway 'aaa'
-                    // seed is only needed pre-login, and otherwise forces an entire
-                    // second wallet (and its network clients) to boot.
-                    const wallet = await initWallet((await getCurrentUserPrivateKey()) ?? 'aaa');
+                    // The server route ignores the caller's DID. Reuse the active
+                    // wallet when signed in; only build the dummy wallet pre-login.
+                    const wallet = (await getCurrentUserPrivateKey())
+                        ? await initWallet()
+                        : await initWallet('aaa');
                     const data = await wallet?.invoke?.getProofOfLoginVp(token);
 
                     return data;

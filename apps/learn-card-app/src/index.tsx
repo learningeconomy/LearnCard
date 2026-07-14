@@ -17,10 +17,6 @@ import * as Sentry from '@sentry/browser';
 
 (window as any).Buffer = Buffer;
 
-// Keep resource-timing entries for the whole boot (default 250 overflows under
-// Vite dev's module count) so boot network activity can be audited from the console
-performance.setResourceTimingBufferSize(10000);
-
 (async () => {
     // Resolve and bootstrap TenantConfig before anything else.
     // This sets up Firebase, auth config, network store, Sentry, and Userflow.

@@ -1,5 +1,5 @@
 import { isEqual } from 'lodash';
-import { initLearnCard } from '@learncard/init';
+import { initLearnCard, type LearnCardFromSeed } from '@learncard/init';
 import type { CredentialRecord } from '@learncard/types';
 import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
 import { getLCAPlugin } from '@learncard/lca-api-plugin';
@@ -26,7 +26,7 @@ const log = getLogger('wallet-helpers');
 // entry so the next caller can retry.
 let LEARN_CARDS: Record<string, Promise<BespokeLearnCard>> = {};
 
-let SIGNING_LEARN_CARDS: Record<string, Promise<Awaited<ReturnType<typeof initLearnCard>>>> = {};
+let SIGNING_LEARN_CARDS: Record<string, Promise<LearnCardFromSeed['returnValue']>> = {};
 
 export const clearLearnCardCache = () => {
     LEARN_CARDS = {};

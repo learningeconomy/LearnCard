@@ -797,16 +797,18 @@ export const useWallet = () => {
     };
 
     const getWalletOrFallback = async () => {
-        try {
-            // Don't trust `isLoggedIn` alone: during early boot it can still be
-            // false while the private key is already available from secure
-            // storage. Falling back in that window builds a throwaway seed-'a'
-            // wallet (and all of its network clients) for a logged-in user.
-            if (isLoggedIn || (await getCurrentUserPrivateKey())) {
+        // Don't trust `isLoggedIn` alone: during early boot it can still be
+        // false while the private key is already available from secure storage.
+        // Keep this read outside the fallback catch so storage failures are not
+        // mistaken for an absent key.
+        const hasPrivateKey = isLoggedIn || Boolean(await getCurrentUserPrivateKey());
+
+        if (hasPrivateKey) {
+            try {
                 return await getWallet();
+            } catch (e) {
+                log.debug('getWalletOrFallback::error', e);
             }
-        } catch (e) {
-            log.debug('getWalletOrFallback::error', e);
         }
 
         return getBespokeLearnCard('a');

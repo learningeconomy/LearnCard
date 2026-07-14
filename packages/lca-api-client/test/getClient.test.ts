@@ -10,9 +10,21 @@ type FetchCall = { url: string; init?: RequestInit };
  * Stubs global fetch with a tRPC-compatible handler that serves
  * utilities.getChallenges and utilities.health responses, and counts calls.
  */
-const stubFetch = (options?: { failHealthWith401Times?: number }) => {
+const stubFetch = (options?: {
+    challengeGate?: Promise<void>;
+    challenges?: string[];
+    failHealthWith401Times?: number;
+    healthGate?: Promise<void>;
+}) => {
     const calls: FetchCall[] = [];
+    const challenges = options?.challenges ?? CHALLENGES;
     let healthFailuresRemaining = options?.failHealthWith401Times ?? 0;
+    const { promise: challengeRequested, resolve: markChallengeRequested } =
+        Promise.withResolvers<void>();
+    const { promise: secondChallengeRequested, resolve: markSecondChallengeRequested } =
+        Promise.withResolvers<void>();
+    const { promise: healthRequested, resolve: markHealthRequested } =
+        Promise.withResolvers<void>();
 
     const challengeCalls = () => calls.filter(call => call.url.includes('getChallenges'));
 
@@ -31,16 +43,21 @@ const stubFetch = (options?: { failHealthWith401Times?: number }) => {
             const size = batchSize(urlString);
 
             if (urlString.includes('getChallenges')) {
-                // Delay so overlapping requests genuinely race on the challenge fetch
-                await new Promise(resolve => setTimeout(resolve, 10));
+                const challengeCallCount = challengeCalls().length;
+                if (challengeCallCount === 1) markChallengeRequested();
+                if (challengeCallCount === 2) markSecondChallengeRequested();
+                if (options?.challengeGate) await options.challengeGate;
 
                 return new Response(
                     JSON.stringify(
-                        Array.from({ length: size }, () => ({ result: { data: CHALLENGES } }))
+                        Array.from({ length: size }, () => ({ result: { data: challenges } }))
                     ),
                     { status: 200, headers: { 'content-type': 'application/json' } }
                 );
             }
+
+            markHealthRequested();
+            if (options?.healthGate) await options.healthGate;
 
             if (healthFailuresRemaining > 0) {
                 healthFailuresRemaining -= 1;
@@ -70,7 +87,13 @@ const stubFetch = (options?: { failHealthWith401Times?: number }) => {
         })
     );
 
-    return { calls, challengeCalls };
+    return {
+        calls,
+        challengeCalls,
+        challengeRequested,
+        healthRequested,
+        secondChallengeRequested,
+    };
 };
 
 describe('getClient challenge fetching', () => {
@@ -78,51 +101,100 @@ describe('getClient challenge fetching', () => {
         vi.unstubAllGlobals();
     });
 
-    it('does not fetch challenges at construction', async () => {
-        const { challengeCalls } = stubFetch();
+    it('prefetches challenges at construction', async () => {
+        const { challengeCalls, challengeRequested } = stubFetch();
 
         await getClient('https://example.com/api', async challenge => `jwt:${challenge ?? ''}`);
+        await challengeRequested;
 
-        // Give any stray eager prefetch a chance to fire
-        await new Promise(resolve => setTimeout(resolve, 25));
-
-        expect(challengeCalls()).toHaveLength(0);
+        expect(challengeCalls()).toHaveLength(1);
     });
 
-    it('fetches challenges once on first request and uses one per request', async () => {
-        const { challengeCalls } = stubFetch();
-
+    it('shares the eager in-flight prefetch with the first request', async () => {
+        const challengeGate = Promise.withResolvers<void>();
+        const { challengeCalls, challengeRequested } = stubFetch({
+            challengeGate: challengeGate.promise,
+        });
         const didAuthFunction = vi.fn(async (challenge?: string) => `jwt:${challenge ?? 'none'}`);
         const client = await getClient('https://example.com/api', didAuthFunction);
 
-        await client.utilities.healthCheck.query();
+        await challengeRequested;
+        const firstRequest = client.utilities.healthCheck.query();
 
         expect(challengeCalls()).toHaveLength(1);
+
+        challengeGate.resolve();
+        await firstRequest;
+
         expect(didAuthFunction).toHaveBeenLastCalledWith(CHALLENGES[CHALLENGES.length - 1]);
 
-        // Second request should reuse the existing pool without refetching
         await client.utilities.healthCheck.query();
 
         expect(challengeCalls()).toHaveLength(1);
     });
 
     it('only fetches challenges once for concurrent first requests', async () => {
-        const { challengeCalls } = stubFetch();
-
+        const challengeGate = Promise.withResolvers<void>();
+        const { challengeCalls, challengeRequested } = stubFetch({
+            challengeGate: challengeGate.promise,
+        });
         const client = await getClient(
             'https://example.com/api',
             async challenge => `jwt:${challenge ?? ''}`
         );
 
-        // Fire two requests in separate macrotasks so they land in separate HTTP batches,
-        // both while the (delayed) challenge fetch is still in flight
+        await challengeRequested;
         const first = client.utilities.healthCheck.query();
-        await new Promise(resolve => setTimeout(resolve, 0));
         const second = client.utilities.healthCheck.query();
+        challengeGate.resolve();
 
         await Promise.all([first, second]);
 
         expect(challengeCalls()).toHaveLength(1);
+    });
+
+    it('refills when concurrent requests exhaust the shared pool', async () => {
+        const healthGate = Promise.withResolvers<void>();
+        const { challengeCalls, challengeRequested, healthRequested, secondChallengeRequested } =
+            stubFetch({
+                challenges: ['only-challenge'],
+                healthGate: healthGate.promise,
+            });
+        const didAuthFunction = vi.fn(async (challenge?: string) => `jwt:${challenge ?? 'none'}`);
+        const client = await getClient('https://example.com/api', didAuthFunction);
+
+        await challengeRequested;
+        const first = client.utilities.healthCheck.query();
+        await healthRequested;
+        const second = client.utilities.healthCheck.query();
+        await secondChallengeRequested;
+        healthGate.resolve();
+
+        await Promise.all([first, second]);
+
+        expect(challengeCalls()).toHaveLength(2);
+        expect(didAuthFunction.mock.calls.slice(1).map(([challenge]) => challenge)).toEqual([
+            'only-challenge',
+            'only-challenge',
+        ]);
+    });
+
+    it('rejects an empty shared refill explicitly', async () => {
+        const challengeGate = Promise.withResolvers<void>();
+        const { challengeRequested } = stubFetch({
+            challengeGate: challengeGate.promise,
+            challenges: [],
+        });
+        const client = await getClient(
+            'https://example.com/api',
+            async challenge => `jwt:${challenge ?? ''}`
+        );
+
+        await challengeRequested;
+        const request = client.utilities.healthCheck.query();
+        challengeGate.resolve();
+
+        await expect(request).rejects.toThrow('Challenge refill returned no challenges');
     });
 
     it('refetches challenges after a 401 and retries the request', async () => {
@@ -136,8 +208,6 @@ describe('getClient challenge fetching', () => {
         const result = await client.utilities.healthCheck.query();
 
         expect(result).toEqual('OK');
-
-        // 1 initial fetch + 1 refetch triggered by the 401 retry path
         expect(challengeCalls()).toHaveLength(2);
 
         const healthCalls = calls.filter(call => call.url.includes('healthCheck'));
