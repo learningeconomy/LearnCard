@@ -36,7 +36,10 @@ type AuthGrant = {
 
 const STEPS = [
     { id: 'api-token', title: m['developerPortal.guides.serverWebhooks.steps.apiToken']() },
-    { id: 'webhook-endpoint', title: m['developerPortal.guides.serverWebhooks.steps.createEndpoint']() },
+    {
+        id: 'webhook-endpoint',
+        title: m['developerPortal.guides.serverWebhooks.steps.createEndpoint'](),
+    },
     { id: 'handle-events', title: m['developerPortal.guides.serverWebhooks.steps.handleEvents']() },
     { id: 'test', title: m['developerPortal.guides.serverWebhooks.steps.testIt']() },
 ];
@@ -123,7 +126,9 @@ const ApiTokenStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.serverWebhooks.apiTokenStep.title']()}</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.serverWebhooks.apiTokenStep.title']()}
+                </h3>
 
                 <p className="text-gray-600">
                     {m['developerPortal.guides.serverWebhooks.apiTokenStep.description']()}
@@ -136,10 +141,19 @@ const ApiTokenStep: React.FC<{
                     loading
                         ? m['developerPortal.guides.serverWebhooks.apiTokenStep.statusChecking']()
                         : hasActiveToken
-                        ? m['developerPortal.guides.serverWebhooks.apiTokenStep.statusReady']({ count: activeGrants.length, context: activeGrants.length !== 1 ? 'plural' : '' })
+                        ? m['developerPortal.guides.serverWebhooks.apiTokenStep.statusReady']({
+                              count: activeGrants.length,
+                              context: activeGrants.length !== 1 ? 'plural' : '',
+                          })
                         : m['developerPortal.guides.serverWebhooks.apiTokenStep.statusWarning']()
                 }
-                description={hasActiveToken ? m['developerPortal.guides.serverWebhooks.apiTokenStep.statusReadyHint']() : m['developerPortal.guides.serverWebhooks.apiTokenStep.statusWarningHint']()}
+                description={
+                    hasActiveToken
+                        ? m['developerPortal.guides.serverWebhooks.apiTokenStep.statusReadyHint']()
+                        : m[
+                              'developerPortal.guides.serverWebhooks.apiTokenStep.statusWarningHint'
+                          ]()
+                }
             />
 
             {/* Token list */}
@@ -154,7 +168,9 @@ const ApiTokenStep: React.FC<{
                                 <p className="font-medium text-gray-800">{grant.name}</p>
 
                                 <p className="text-sm text-gray-500">
-                                    {m['developerPortal.guides.serverWebhooks.apiTokenStep.createdLabel']({ date: new Date(grant.createdAt!).toLocaleDateString() })}
+                                    {m[
+                                        'developerPortal.guides.serverWebhooks.apiTokenStep.createdLabel'
+                                    ]({ date: new Date(grant.createdAt!).toLocaleDateString() })}
                                 </p>
                             </div>
 
@@ -167,7 +183,9 @@ const ApiTokenStep: React.FC<{
                                 ) : (
                                     <Copy className="w-4 h-4" />
                                 )}
-                                {m['developerPortal.guides.serverWebhooks.apiTokenStep.copyButton']()}
+                                {m[
+                                    'developerPortal.guides.serverWebhooks.apiTokenStep.copyButton'
+                                ]()}
                             </button>
                         </div>
                     ))}
@@ -179,14 +197,18 @@ const ApiTokenStep: React.FC<{
                 <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {m['developerPortal.guides.serverWebhooks.apiTokenStep.tokenNameLabel']()}
+                            {m[
+                                'developerPortal.guides.serverWebhooks.apiTokenStep.tokenNameLabel'
+                            ]()}
                         </label>
 
                         <input
                             type="text"
                             value={newTokenName}
                             onChange={e => setNewTokenName(e.target.value)}
-                            placeholder={m['developerPortal.guides.serverWebhooks.apiTokenStep.tokenNamePlaceholder']()}
+                            placeholder={m[
+                                'developerPortal.guides.serverWebhooks.apiTokenStep.tokenNamePlaceholder'
+                            ]()}
                             className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                     </div>
@@ -197,7 +219,11 @@ const ApiTokenStep: React.FC<{
                             disabled={creating || !newTokenName.trim()}
                             className="flex-1 px-4 py-2.5 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 disabled:opacity-50 transition-colors"
                         >
-                            {creating ? m['developerPortal.guides.serverWebhooks.apiTokenStep.creatingButton']() : m['common.create']()}
+                            {creating
+                                ? m[
+                                      'developerPortal.guides.serverWebhooks.apiTokenStep.creatingButton'
+                                  ]()
+                                : m['common.create']()}
                         </button>
 
                         <button
@@ -256,7 +282,9 @@ const WebhookEndpointStep: React.FC<{
 
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {m['developerPortal.guides.serverWebhooks.webhookEndpointStep.yourWebhookUrl']()}
+                    {m[
+                        'developerPortal.guides.serverWebhooks.webhookEndpointStep.yourWebhookUrl'
+                    ]()}
                 </label>
 
                 <input
@@ -269,7 +297,9 @@ const WebhookEndpointStep: React.FC<{
             </div>
 
             <CodeOutputPanel
-                title={m['developerPortal.guides.serverWebhooks.webhookEndpointStep.codePanelTitle']()}
+                title={m[
+                    'developerPortal.guides.serverWebhooks.webhookEndpointStep.codePanelTitle'
+                ]()}
                 snippets={{
                     typescript: `// Express.js webhook handler
 import express from 'express';
@@ -347,13 +377,31 @@ def webhook():
             />
 
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                <h4 className="font-medium text-amber-800 mb-2">{m['developerPortal.guides.serverWebhooks.webhookEndpointStep.requirementsTitle']()}</h4>
+                <h4 className="font-medium text-amber-800 mb-2">
+                    {m[
+                        'developerPortal.guides.serverWebhooks.webhookEndpointStep.requirementsTitle'
+                    ]()}
+                </h4>
 
                 <ul className="text-sm text-amber-700 space-y-1">
-                    <li>{m['developerPortal.guides.serverWebhooks.webhookEndpointStep.reqHttps']()}</li>
-                    <li>{m['developerPortal.guides.serverWebhooks.webhookEndpointStep.reqResponseTime']()}</li>
-                    <li>{m['developerPortal.guides.serverWebhooks.webhookEndpointStep.reqStatus2xx']()}</li>
-                    <li>{m['developerPortal.guides.serverWebhooks.webhookEndpointStep.reqSignature']()}</li>
+                    <li>
+                        {m['developerPortal.guides.serverWebhooks.webhookEndpointStep.reqHttps']()}
+                    </li>
+                    <li>
+                        {m[
+                            'developerPortal.guides.serverWebhooks.webhookEndpointStep.reqResponseTime'
+                        ]()}
+                    </li>
+                    <li>
+                        {m[
+                            'developerPortal.guides.serverWebhooks.webhookEndpointStep.reqStatus2xx'
+                        ]()}
+                    </li>
+                    <li>
+                        {m[
+                            'developerPortal.guides.serverWebhooks.webhookEndpointStep.reqSignature'
+                        ]()}
+                    </li>
                 </ul>
             </div>
 
@@ -384,17 +432,41 @@ const HandleEventsStep: React.FC<{
     onBack: () => void;
 }> = ({ onComplete, onBack }) => {
     const eventTypes = [
-        { type: 'credential.received', description: m['developerPortal.guides.serverWebhooks.handleEventsStep.eventReceived']() },
-        { type: 'credential.accepted', description: m['developerPortal.guides.serverWebhooks.handleEventsStep.eventAccepted']() },
-        { type: 'consent.granted', description: m['developerPortal.guides.serverWebhooks.handleEventsStep.eventConsentGranted']() },
-        { type: 'consent.revoked', description: m['developerPortal.guides.serverWebhooks.handleEventsStep.eventConsentRevoked']() },
-        { type: 'connection.created', description: m['developerPortal.guides.serverWebhooks.handleEventsStep.eventConnectionCreated']() },
+        {
+            type: 'credential.received',
+            description:
+                m['developerPortal.guides.serverWebhooks.handleEventsStep.eventReceived'](),
+        },
+        {
+            type: 'credential.accepted',
+            description:
+                m['developerPortal.guides.serverWebhooks.handleEventsStep.eventAccepted'](),
+        },
+        {
+            type: 'consent.granted',
+            description:
+                m['developerPortal.guides.serverWebhooks.handleEventsStep.eventConsentGranted'](),
+        },
+        {
+            type: 'consent.revoked',
+            description:
+                m['developerPortal.guides.serverWebhooks.handleEventsStep.eventConsentRevoked'](),
+        },
+        {
+            type: 'connection.created',
+            description:
+                m[
+                    'developerPortal.guides.serverWebhooks.handleEventsStep.eventConnectionCreated'
+                ](),
+        },
     ];
 
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.serverWebhooks.handleEventsStep.title']()}</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.serverWebhooks.handleEventsStep.title']()}
+                </h3>
 
                 <p className="text-gray-600">
                     {m['developerPortal.guides.serverWebhooks.handleEventsStep.description']()}
@@ -494,7 +566,10 @@ const TestStep: React.FC<{
 
     const handleTest = async () => {
         if (!webhookUrl) {
-            setTestResult({ success: false, message: m['developerPortal.guides.serverWebhooks.testStep.enterUrlError']() });
+            setTestResult({
+                success: false,
+                message: m['developerPortal.guides.serverWebhooks.testStep.enterUrlError'](),
+            });
             return;
         }
 
@@ -523,7 +598,9 @@ const TestStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.serverWebhooks.testStep.title']()}</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.serverWebhooks.testStep.title']()}
+                </h3>
 
                 <p className="text-gray-600">
                     {m['developerPortal.guides.serverWebhooks.testStep.description']()}
@@ -532,7 +609,9 @@ const TestStep: React.FC<{
 
             {/* Checklist */}
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                <h4 className="font-medium text-gray-800 mb-3">{m['developerPortal.guides.serverWebhooks.testStep.preflightTitle']()}</h4>
+                <h4 className="font-medium text-gray-800 mb-3">
+                    {m['developerPortal.guides.serverWebhooks.testStep.preflightTitle']()}
+                </h4>
 
                 <div className="space-y-2">
                     <div className="flex items-center gap-2">
@@ -551,7 +630,9 @@ const TestStep: React.FC<{
                             }`}
                         />
                         <span className={webhookUrl ? 'text-gray-800' : 'text-gray-400'}>
-                            {m['developerPortal.guides.serverWebhooks.testStep.webhookConfigured']()}
+                            {m[
+                                'developerPortal.guides.serverWebhooks.testStep.webhookConfigured'
+                            ]()}
                         </span>
                     </div>
 
@@ -580,10 +661,13 @@ const TestStep: React.FC<{
             <div className="p-4 border border-gray-200 rounded-xl">
                 <div className="flex items-center justify-between mb-3">
                     <div>
-                        <h4 className="font-medium text-gray-800">{m['developerPortal.guides.serverWebhooks.testStep.sendTestTitle']()}</h4>
+                        <h4 className="font-medium text-gray-800">
+                            {m['developerPortal.guides.serverWebhooks.testStep.sendTestTitle']()}
+                        </h4>
 
                         <p className="text-sm text-gray-500">
-                            {webhookUrl || m['developerPortal.guides.serverWebhooks.testStep.noWebhookUrl']()}
+                            {webhookUrl ||
+                                m['developerPortal.guides.serverWebhooks.testStep.noWebhookUrl']()}
                         </p>
                     </div>
 
@@ -595,12 +679,16 @@ const TestStep: React.FC<{
                         {testing ? (
                             <>
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                {m['developerPortal.guides.serverWebhooks.testStep.sendingButton']()}
+                                {m[
+                                    'developerPortal.guides.serverWebhooks.testStep.sendingButton'
+                                ]()}
                             </>
                         ) : (
                             <>
                                 <Webhook className="w-4 h-4" />
-                                {m['developerPortal.guides.serverWebhooks.testStep.sendTestButton']()}
+                                {m[
+                                    'developerPortal.guides.serverWebhooks.testStep.sendTestButton'
+                                ]()}
                             </>
                         )}
                     </button>
@@ -625,7 +713,9 @@ const TestStep: React.FC<{
                     <Rocket className="w-8 h-8 text-emerald-600" />
                 </div>
 
-                <h4 className="text-lg font-semibold text-gray-800 mb-2">{m['developerPortal.guides.serverWebhooks.testStep.readyTitle']()}</h4>
+                <h4 className="text-lg font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.serverWebhooks.testStep.readyTitle']()}
+                </h4>
 
                 <p className="text-gray-600">
                     {m['developerPortal.guides.serverWebhooks.testStep.readyDescription']()}

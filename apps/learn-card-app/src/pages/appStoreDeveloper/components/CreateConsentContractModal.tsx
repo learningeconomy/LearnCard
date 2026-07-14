@@ -155,7 +155,11 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
         <div className="w-full max-w-lg mx-auto">
             {/* Header */}
             <div className="flex items-center justify-between mb-6 mt-6">
-                <h2 className="text-xl font-semibold text-gray-900">{m['developerPortal.components.createConsentContractModal.createConsentContract']()}</h2>
+                <h2 className="text-xl font-semibold text-gray-900">
+                    {m[
+                        'developerPortal.components.createConsentContractModal.createConsentContract'
+                    ]()}
+                </h2>
 
                 <button
                     onClick={closeModal}
@@ -178,7 +182,9 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                             ) : contract.image ? (
                                 <img
                                     src={contract.image}
-                                    alt={m['developerPortal.components.createConsentContractModal.contractLabel']()}
+                                    alt={m[
+                                        'developerPortal.components.createConsentContractModal.contractLabel'
+                                    ]()}
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
@@ -202,7 +208,11 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                             type="text"
                             value={contract.name}
                             onChange={e => updateSlice('name', e.target.value)}
-                            placeholder={m['developerPortal.components.createConsentContractModal.contractName']() + ' *'}
+                            placeholder={
+                                m[
+                                    'developerPortal.components.createConsentContractModal.contractName'
+                                ]() + ' *'
+                            }
                             className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                         />
 
@@ -211,7 +221,9 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                             type="text"
                             value={contract.subtitle || ''}
                             onChange={e => updateSlice('subtitle', e.target.value)}
-                            placeholder={m['developerPortal.components.createConsentContractModal.subtitle']()}
+                            placeholder={m[
+                                'developerPortal.components.createConsentContractModal.subtitle'
+                            ]()}
                             className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                         />
                     </div>
@@ -226,7 +238,9 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                     <textarea
                         value={contract.description || ''}
                         onChange={e => updateSlice('description', e.target.value)}
-                        placeholder={m['developerPortal.components.createConsentContractModal.descriptionPlaceholder']()}
+                        placeholder={m[
+                            'developerPortal.components.createConsentContractModal.descriptionPlaceholder'
+                        ]()}
                         className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 min-h-[80px] resize-none"
                     />
                 </div>
@@ -234,14 +248,18 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                 {/* Reason for Accessing */}
                 <div>
                     <label className="block text-sm font-medium text-gray-600 mb-1">
-                        {m['developerPortal.components.createConsentContractModal.reasonForAccessing']()}
+                        {m[
+                            'developerPortal.components.createConsentContractModal.reasonForAccessing'
+                        ]()}
                     </label>
 
                     <input
                         type="text"
                         value={contract.reasonForAccessing || ''}
                         onChange={e => updateSlice('reasonForAccessing', e.target.value)}
-                        placeholder={m['developerPortal.components.createConsentContractModal.reasonPlaceholder']()}
+                        placeholder={m[
+                            'developerPortal.components.createConsentContractModal.reasonPlaceholder'
+                        ]()}
                         className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                     />
                 </div>
@@ -256,7 +274,9 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                     </h3>
 
                     <p className="text-xs text-gray-500 mb-3">
-                        {m['developerPortal.components.createConsentContractModal.readAccessDesc']()}
+                        {m[
+                            'developerPortal.components.createConsentContractModal.readAccessDesc'
+                        ]()}
                     </p>
 
                     <ContractCategoryMultiSelect
@@ -270,11 +290,15 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                     <div className="flex items-center justify-between py-2 border-t border-gray-200 mt-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-600">
-                                {m['developerPortal.components.createConsentContractModal.anonymizeData']()}
+                                {m[
+                                    'developerPortal.components.createConsentContractModal.anonymizeData'
+                                ]()}
                             </label>
 
                             <p className="text-xs text-gray-400">
-                                {m['developerPortal.components.createConsentContractModal.anonymizeDataDesc']()}
+                                {m[
+                                    'developerPortal.components.createConsentContractModal.anonymizeDataDesc'
+                                ]()}
                             </p>
                         </div>
 
@@ -300,7 +324,9 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                     {/* Personal Data Fields */}
                     <div className="mt-4 pt-4 border-t border-gray-200">
                         <p className="text-xs text-gray-500 mb-3">
-                            {m['developerPortal.components.createConsentContractModal.personalDataFieldsDesc']()}
+                            {m[
+                                'developerPortal.components.createConsentContractModal.personalDataFieldsDesc'
+                            ]()}
                         </p>
 
                         {/* Quick-add common fields */}
@@ -344,7 +370,13 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                                                             : 'bg-gray-50 border-gray-200 text-gray-400'
                                                     }`}
                                                 >
-                                                    {config.required ? m['developerPortal.components.createConsentContractModal.required']() : m['developerPortal.components.createConsentContractModal.optional']()}
+                                                    {config.required
+                                                        ? m[
+                                                              'developerPortal.components.createConsentContractModal.required'
+                                                          ]()
+                                                        : m[
+                                                              'developerPortal.components.createConsentContractModal.optional'
+                                                          ]()}
                                                 </button>
 
                                                 <button
@@ -377,7 +409,9 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                                         setCustomFieldName('');
                                     }
                                 }}
-                                placeholder={m['developerPortal.components.createConsentContractModal.customFieldName']()}
+                                placeholder={m[
+                                    'developerPortal.components.createConsentContractModal.customFieldName'
+                                ]()}
                                 className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                             />
 
@@ -414,7 +448,9 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                     </h3>
 
                     <p className="text-xs text-gray-500 mb-3">
-                        {m['developerPortal.components.createConsentContractModal.writeAccessDesc']()}
+                        {m[
+                            'developerPortal.components.createConsentContractModal.writeAccessDesc'
+                        ]()}
                     </p>
 
                     <ContractCategoryMultiSelect
@@ -432,7 +468,11 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                         onClick={() => setShowAdvanced(!showAdvanced)}
                         className="w-full px-4 py-3 flex items-center justify-between bg-white hover:bg-gray-50 transition-colors"
                     >
-                        <span className="text-sm font-medium text-gray-600">{m['developerPortal.components.createConsentContractModal.advancedOptions']()}</span>
+                        <span className="text-sm font-medium text-gray-600">
+                            {m[
+                                'developerPortal.components.createConsentContractModal.advancedOptions'
+                            ]()}
+                        </span>
 
                         {showAdvanced ? (
                             <ChevronUp className="w-4 h-4 text-gray-400" />
@@ -446,7 +486,9 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                             {/* Redirect URL */}
                             <div className="pt-4">
                                 <label className="block text-sm font-medium text-gray-600 mb-1">
-                                    {m['developerPortal.components.createConsentContractModal.redirectUrl']()}
+                                    {m[
+                                        'developerPortal.components.createConsentContractModal.redirectUrl'
+                                    ]()}
                                 </label>
 
                                 <input
@@ -458,7 +500,9 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                                 />
 
                                 <p className="text-xs text-gray-400 mt-1">
-                                    {m['developerPortal.components.createConsentContractModal.redirectUrlDesc']()}
+                                    {m[
+                                        'developerPortal.components.createConsentContractModal.redirectUrlDesc'
+                                    ]()}
                                 </p>
                             </div>
 
@@ -466,11 +510,15 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                             <div className="flex items-center justify-between py-2">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-600">
-                                        {m['developerPortal.components.createConsentContractModal.guardianConsentFlow']()}
+                                        {m[
+                                            'developerPortal.components.createConsentContractModal.guardianConsentFlow'
+                                        ]()}
                                     </label>
 
                                     <p className="text-xs text-gray-400">
-                                        {m['developerPortal.components.createConsentContractModal.guardianConsentFlowDesc']()}
+                                        {m[
+                                            'developerPortal.components.createConsentContractModal.guardianConsentFlowDesc'
+                                        ]()}
                                     </p>
                                 </div>
 

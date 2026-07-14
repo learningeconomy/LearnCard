@@ -181,13 +181,17 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
         await Clipboard.write({ string: code });
         setCopied(id);
         setTimeout(() => setCopied(null), 2000);
-        presentToast(m['developerPortal.dashboards.tabs.embedCode.copied'](), { hasDismissButton: true });
+        presentToast(m['developerPortal.dashboards.tabs.embedCode.copied'](), {
+            hasDismissButton: true,
+        });
     };
 
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.embedCode.title']()}</h2>
+                <h2 className="text-lg font-semibold text-gray-800">
+                    {m['developerPortal.dashboards.tabs.embedCode.title']()}
+                </h2>
                 <p className="text-sm text-gray-500">
                     {m['developerPortal.dashboards.tabs.embedCode.description']()}
                 </p>
@@ -208,7 +212,9 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                         ) : (
                             <Copy className="w-3 h-3" />
                         )}
-                        {copied === 'key' ? m['developerPortal.dashboards.tabs.embedCode.copied']() : m['developerPortal.dashboards.tabs.embedCode.copy']()}
+                        {copied === 'key'
+                            ? m['developerPortal.dashboards.tabs.embedCode.copied']()
+                            : m['developerPortal.dashboards.tabs.embedCode.copy']()}
                     </button>
                 </div>
                 <div className="px-3 py-2 bg-white border border-pink-200 rounded-lg font-mono text-sm text-gray-700 break-all">
@@ -261,7 +267,9 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                         ) : (
                             <Copy className="w-3 h-3" />
                         )}
-                        {copied === 'html' ? m['developerPortal.dashboards.tabs.embedCode.copied']() : m['developerPortal.dashboards.tabs.embedCode.copy']()}
+                        {copied === 'html'
+                            ? m['developerPortal.dashboards.tabs.embedCode.copied']()
+                            : m['developerPortal.dashboards.tabs.embedCode.copy']()}
                     </button>
                 </div>
                 <pre className="p-4 bg-gray-900 text-gray-100 rounded-xl text-sm overflow-x-auto">
@@ -289,7 +297,9 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                         ) : (
                             <Copy className="w-3 h-3" />
                         )}
-                        {copied === 'react' ? m['developerPortal.dashboards.tabs.embedCode.copied']() : m['developerPortal.dashboards.tabs.embedCode.copy']()}
+                        {copied === 'react'
+                            ? m['developerPortal.dashboards.tabs.embedCode.copied']()
+                            : m['developerPortal.dashboards.tabs.embedCode.copy']()}
                     </button>
                 </div>
                 <div className="mb-2">
@@ -303,18 +313,22 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
             {/* SDK Reference */}
             <details className="group rounded-xl border border-gray-200 bg-gray-50">
                 <summary className="flex cursor-pointer items-center justify-between p-4 text-sm font-medium text-gray-700 select-none [&::-webkit-details-marker]:hidden list-none">
-                    <span>
-                        {m['developerPortal.dashboards.tabs.embedCode.sdkReference']()}
-                    </span>
+                    <span>{m['developerPortal.dashboards.tabs.embedCode.sdkReference']()}</span>
                     <ChevronDown className="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180" />
                 </summary>
                 <div className="px-4 pb-4">
                     <table className="w-full text-xs border-collapse">
                         <thead>
                             <tr className="border-b border-gray-200 text-left text-gray-500">
-                                <th className="py-1.5 pr-2 font-medium">{m['developerPortal.dashboards.tabs.embedCode.propHeader']()}</th>
-                                <th className="py-1.5 pr-2 font-medium">{m['developerPortal.dashboards.tabs.embedCode.typeHeader']()}</th>
-                                <th className="py-1.5 font-medium">{m['developerPortal.dashboards.tabs.embedCode.descHeader']()}</th>
+                                <th className="py-1.5 pr-2 font-medium">
+                                    {m['developerPortal.dashboards.tabs.embedCode.propHeader']()}
+                                </th>
+                                <th className="py-1.5 pr-2 font-medium">
+                                    {m['developerPortal.dashboards.tabs.embedCode.typeHeader']()}
+                                </th>
+                                <th className="py-1.5 font-medium">
+                                    {m['developerPortal.dashboards.tabs.embedCode.descHeader']()}
+                                </th>
                             </tr>
                         </thead>
                         <tbody className="text-gray-700">
@@ -335,18 +349,28 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                                 </td>
                                 <td className="py-1.5 pr-2 font-mono text-gray-500">{`{ name: string }`}</td>
                                 <td className="py-1.5">
-                                    {m['developerPortal.dashboards.tabs.embedCode.sdkCredentialDesc']()}
+                                    {m[
+                                        'developerPortal.dashboards.tabs.embedCode.sdkCredentialDesc'
+                                    ]()}
                                 </td>
                             </tr>
                             <tr className="border-b border-gray-100">
                                 <td className="py-1.5 pr-2 font-mono">publishableKey</td>
                                 <td className="py-1.5 pr-2 font-mono text-gray-500">string</td>
-                                <td className="py-1.5">{m['developerPortal.dashboards.tabs.embedCode.sdkPublishableKeyDesc']()}</td>
+                                <td className="py-1.5">
+                                    {m[
+                                        'developerPortal.dashboards.tabs.embedCode.sdkPublishableKeyDesc'
+                                    ]()}
+                                </td>
                             </tr>
                             <tr className="border-b border-gray-100">
                                 <td className="py-1.5 pr-2 font-mono">partnerName</td>
                                 <td className="py-1.5 pr-2 font-mono text-gray-500">string</td>
-                                <td className="py-1.5">{m['developerPortal.dashboards.tabs.embedCode.sdkPartnerNameDesc']()}</td>
+                                <td className="py-1.5">
+                                    {m[
+                                        'developerPortal.dashboards.tabs.embedCode.sdkPartnerNameDesc'
+                                    ]()}
+                                </td>
                             </tr>
                             <tr className="border-b border-gray-100">
                                 <td className="py-1.5 pr-2 font-mono">branding</td>
@@ -355,8 +379,18 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                                 </td>
                                 <td className="py-1.5">
                                     <TransP
-                                        m={m['developerPortal.dashboards.tabs.embedCode.sdkBrandingDesc']}
-                                        components={[<code />, <code />, <code />, <code />, <code />]}
+                                        m={
+                                            m[
+                                                'developerPortal.dashboards.tabs.embedCode.sdkBrandingDesc'
+                                            ]
+                                        }
+                                        components={[
+                                            <code />,
+                                            <code />,
+                                            <code />,
+                                            <code />,
+                                            <code />,
+                                        ]}
                                     />
                                 </td>
                             </tr>
@@ -366,7 +400,9 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                                 </td>
                                 <td className="py-1.5 pr-2 font-mono text-gray-500">boolean</td>
                                 <td className="py-1.5">
-                                    {m['developerPortal.dashboards.tabs.embedCode.sdkBackgroundIssuanceDesc']()}
+                                    {m[
+                                        'developerPortal.dashboards.tabs.embedCode.sdkBackgroundIssuanceDesc'
+                                    ]()}
                                 </td>
                             </tr>
                             <tr className="border-b border-gray-100">
@@ -374,7 +410,11 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                                 <td className="py-1.5 pr-2 font-mono text-gray-500">{`(details) => void`}</td>
                                 <td className="py-1.5">
                                     <TransP
-                                        m={m['developerPortal.dashboards.tabs.embedCode.sdkOnSuccessDesc']}
+                                        m={
+                                            m[
+                                                'developerPortal.dashboards.tabs.embedCode.sdkOnSuccessDesc'
+                                            ]
+                                        }
                                         components={[<code />, <code />, <code />]}
                                     />
                                 </td>
@@ -384,8 +424,14 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                                 <td className="py-1.5 pr-2 font-mono text-gray-500">string</td>
                                 <td className="py-1.5">
                                     <TransP
-                                        m={m['developerPortal.dashboards.tabs.embedCode.sdkApiBaseUrlDesc']}
-                                        values={{ url: getResolvedTenantConfig().apis.brainServiceApi }}
+                                        m={
+                                            m[
+                                                'developerPortal.dashboards.tabs.embedCode.sdkApiBaseUrlDesc'
+                                            ]
+                                        }
+                                        values={{
+                                            url: getResolvedTenantConfig().apis.brainServiceApi,
+                                        }}
                                         components={[<code />]}
                                     />
                                 </td>

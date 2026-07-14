@@ -46,7 +46,9 @@ export const PromotionMenu: React.FC<PromotionMenuProps> = ({
 
     return (
         <div>
-            <h3 className="text-sm font-medium text-gray-600 mb-2">{m['appStoreAdmin.listing.promotionTitle']()}</h3>
+            <h3 className="text-sm font-medium text-gray-600 mb-2">
+                {m['appStoreAdmin.listing.promotionTitle']()}
+            </h3>
 
             <div className="relative">
                 <button
@@ -54,7 +56,9 @@ export const PromotionMenu: React.FC<PromotionMenuProps> = ({
                     className="w-full p-3 bg-gray-50 rounded-lg flex items-center justify-between hover:bg-gray-100 transition-colors"
                 >
                     <span className="text-sm text-gray-600">
-                        {currentLevel ? getPromotionLabel(currentLevel) : m['appStoreAdmin.listing.promotion.standard']()}
+                        {currentLevel
+                            ? getPromotionLabel(currentLevel)
+                            : m['appStoreAdmin.listing.promotion.standard']()}
                     </span>
                     <ArrowDown className="w-4 h-4 text-gray-400" />
                 </button>
@@ -85,7 +89,9 @@ export const PromotionMenu: React.FC<PromotionMenuProps> = ({
                                         <p className="text-sm font-medium text-gray-600">
                                             {getPromotionLabel(level)}
                                         </p>
-                                        <p className="text-xs text-gray-400">{getPromotionDescription(level)}</p>
+                                        <p className="text-xs text-gray-400">
+                                            {getPromotionDescription(level)}
+                                        </p>
                                     </div>
                                 </button>
                             );

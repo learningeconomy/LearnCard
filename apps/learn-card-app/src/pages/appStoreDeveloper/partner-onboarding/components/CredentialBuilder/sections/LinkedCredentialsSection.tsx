@@ -86,7 +86,9 @@ export const LinkedCredentialsSection: React.FC<LinkedCredentialsSectionProps> =
             icon={<Link2 className="w-4 h-4" />}
             isExpanded={isExpanded}
             onToggle={onToggle}
-            badge={`${credentials.length} ${m['developerPortal.credentialBuilder.linkedCredentials.signedBadge']()}`}
+            badge={`${credentials.length} ${m[
+                'developerPortal.credentialBuilder.linkedCredentials.signedBadge'
+            ]()}`}
         >
             <div className="space-y-2">
                 <div className="px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg">
@@ -127,18 +129,24 @@ export const LinkedCredentialsSection: React.FC<LinkedCredentialsSectionProps> =
 
                                     <div className="flex items-center gap-2 mt-0.5">
                                         {achievementType && (
-                                            <span className="text-xs text-gray-500">{achievementType}</span>
+                                            <span className="text-xs text-gray-500">
+                                                {achievementType}
+                                            </span>
                                         )}
 
                                         {issuerName && (
                                             <span className="text-xs text-gray-400 truncate">
-                                                {m['developerPortal.credentialBuilder.linkedCredentials.by']({ name: issuerName })}
+                                                {m[
+                                                    'developerPortal.credentialBuilder.linkedCredentials.by'
+                                                ]({ name: issuerName })}
                                             </span>
                                         )}
 
                                         {hasProof && (
                                             <span className="text-xs bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded">
-                                                {m['developerPortal.credentialBuilder.linkedCredentials.signedBadge']()}
+                                                {m[
+                                                    'developerPortal.credentialBuilder.linkedCredentials.signedBadge'
+                                                ]()}
                                             </span>
                                         )}
                                     </div>

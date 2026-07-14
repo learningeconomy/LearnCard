@@ -58,7 +58,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
     return (
         <div className="space-y-6">
             <div className="text-center mb-6">
-                <h2 className="text-xl font-semibold text-gray-700">{m['developerPortal.components.appDetailsStep.title']()}</h2>
+                <h2 className="text-xl font-semibold text-gray-700">
+                    {m['developerPortal.components.appDetailsStep.title']()}
+                </h2>
 
                 <p className="text-sm text-gray-500 mt-1">
                     {m['developerPortal.components.appDetailsStep.description']()}
@@ -67,7 +69,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
 
             {/* Icon Upload */}
             <div className="flex flex-col items-center gap-3">
-                <label className="text-sm font-medium text-gray-600">{m['developerPortal.components.appDetailsStep.appIcon']()}</label>
+                <label className="text-sm font-medium text-gray-600">
+                    {m['developerPortal.components.appDetailsStep.appIcon']()}
+                </label>
 
                 <ImageUpload
                     value={data.icon_url}
@@ -77,20 +81,26 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                     previewClassName="w-24 h-24 rounded-2xl"
                 />
 
-                <p className="text-xs text-gray-400">{m['developerPortal.components.appDetailsStep.resolutionRecommend']()}</p>
+                <p className="text-xs text-gray-400">
+                    {m['developerPortal.components.appDetailsStep.resolutionRecommend']()}
+                </p>
 
                 {errors.icon_url && <p className="text-sm text-red-500">{errors.icon_url}</p>}
             </div>
 
             {/* Display Name */}
             <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">{m['developerPortal.components.appDetailsStep.displayName']()}</label>
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                    {m['developerPortal.components.appDetailsStep.displayName']()}
+                </label>
 
                 <input
                     type="text"
                     value={data.display_name || ''}
                     onChange={e => handleChange('display_name', e.target.value)}
-                    placeholder={m['developerPortal.components.appDetailsStep.displayNamePlaceholder']()}
+                    placeholder={m[
+                        'developerPortal.components.appDetailsStep.displayNamePlaceholder'
+                    ]()}
                     className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
                         errors.display_name ? 'border-red-300' : 'border-gray-200'
                     }`}
@@ -144,13 +154,17 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
 
             {/* Tagline */}
             <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">{m['developerPortal.components.appDetailsStep.tagline']()}</label>
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                    {m['developerPortal.components.appDetailsStep.tagline']()}
+                </label>
 
                 <input
                     type="text"
                     value={data.tagline || ''}
                     onChange={e => handleChange('tagline', e.target.value)}
-                    placeholder={m['developerPortal.components.appDetailsStep.taglinePlaceholder']()}
+                    placeholder={m[
+                        'developerPortal.components.appDetailsStep.taglinePlaceholder'
+                    ]()}
                     className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
                         errors.tagline ? 'border-red-300' : 'border-gray-200'
                     }`}
@@ -177,7 +191,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                 <textarea
                     value={data.full_description || ''}
                     onChange={e => handleChange('full_description', e.target.value)}
-                    placeholder={m['developerPortal.components.appDetailsStep.fullDescriptionPlaceholder']()}
+                    placeholder={m[
+                        'developerPortal.components.appDetailsStep.fullDescriptionPlaceholder'
+                    ]()}
                     className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 min-h-[120px] resize-y ${
                         errors.full_description ? 'border-red-300' : 'border-gray-200'
                     }`}
@@ -199,14 +215,18 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
 
             {/* Category */}
             <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">{m['developerPortal.components.appDetailsStep.category']()}</label>
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                    {m['developerPortal.components.appDetailsStep.category']()}
+                </label>
 
                 <select
                     value={data.category || ''}
                     onChange={e => handleChange('category', e.target.value)}
                     className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                 >
-                    <option value="">{m['developerPortal.components.appDetailsStep.selectCategory']()}</option>
+                    <option value="">
+                        {m['developerPortal.components.appDetailsStep.selectCategory']()}
+                    </option>
 
                     {visibleCategoryOptions.map(cat => (
                         <option key={cat.value} value={cat.value}>
@@ -221,9 +241,13 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                 <div className="flex items-center gap-2 mb-2">
                     <Users className="w-4 h-4 text-gray-400" />
 
-                    <label className="text-sm font-medium text-gray-600">{m['developerPortal.components.appDetailsStep.ageRestrictions']()}</label>
+                    <label className="text-sm font-medium text-gray-600">
+                        {m['developerPortal.components.appDetailsStep.ageRestrictions']()}
+                    </label>
 
-                    <span className="text-xs text-gray-400">{m['developerPortal.components.appDetailsStep.optional']()}</span>
+                    <span className="text-xs text-gray-400">
+                        {m['developerPortal.components.appDetailsStep.optional']()}
+                    </span>
                 </div>
 
                 <p className="text-xs text-gray-400 mb-3">
@@ -246,7 +270,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                             }
                             className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                         >
-                            <option value="">{m['developerPortal.components.appDetailsStep.noRating']()}</option>
+                            <option value="">
+                                {m['developerPortal.components.appDetailsStep.noRating']()}
+                            </option>
 
                             {AGE_RATING_OPTIONS.map(opt => (
                                 <option key={opt.value} value={opt.value}>
@@ -276,7 +302,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                                             : Math.min(18, Math.max(0, parseInt(val, 10))),
                                 });
                             }}
-                            placeholder={m['developerPortal.components.appDetailsStep.ageRatingPlaceholder']()}
+                            placeholder={m[
+                                'developerPortal.components.appDetailsStep.ageRatingPlaceholder'
+                            ]()}
                             className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                         />
                     </div>
@@ -286,12 +314,30 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                     <div className="mt-2 p-2 bg-amber-50 border border-amber-100 rounded-lg space-y-1">
                         {data.min_age !== undefined && (
                             <p className="text-xs text-red-700">
-                                <strong>{m['developerPortal.components.appDetailsStep.hardBlockLabel']()}:</strong> {m['developerPortal.components.appDetailsStep.hardBlockDesc']({ age: data.min_age })}
+                                <strong>
+                                    {m[
+                                        'developerPortal.components.appDetailsStep.hardBlockLabel'
+                                    ]()}
+                                    :
+                                </strong>{' '}
+                                {m['developerPortal.components.appDetailsStep.hardBlockDesc']({
+                                    age: data.min_age,
+                                })}
                             </p>
                         )}
                         {data.age_rating && (
                             <p className="text-xs text-amber-700">
-                                <strong>{m['developerPortal.components.appDetailsStep.softBlockLabel']()}:</strong> {m['developerPortal.components.appDetailsStep.softBlockDesc']({ age: AGE_RATING_OPTIONS.find(o => o.value === data.age_rating)?.minAge ?? 0 })}
+                                <strong>
+                                    {m[
+                                        'developerPortal.components.appDetailsStep.softBlockLabel'
+                                    ]()}
+                                    :
+                                </strong>{' '}
+                                {m['developerPortal.components.appDetailsStep.softBlockDesc']({
+                                    age:
+                                        AGE_RATING_OPTIONS.find(o => o.value === data.age_rating)
+                                            ?.minAge ?? 0,
+                                })}
                             </p>
                         )}
                     </div>
@@ -307,7 +353,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         {m['developerPortal.components.appDetailsStep.listingBgColor']()}
                     </label>
 
-                    <span className="text-xs text-gray-400">{m['developerPortal.components.appDetailsStep.optional']()}</span>
+                    <span className="text-xs text-gray-400">
+                        {m['developerPortal.components.appDetailsStep.optional']()}
+                    </span>
                 </div>
 
                 <p className="text-xs text-gray-400 mb-2">
@@ -353,7 +401,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
 
             {/* Highlights */}
             <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">{m['developerPortal.components.appDetailsStep.highlights']()}</label>
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                    {m['developerPortal.components.appDetailsStep.highlights']()}
+                </label>
 
                 <p className="text-xs text-gray-400 mb-2">
                     {m['developerPortal.components.appDetailsStep.highlightsDesc']()}
@@ -366,7 +416,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                                 type="text"
                                 value={highlight}
                                 onChange={e => updateArrayItem('highlights', index, e.target.value)}
-                                placeholder={m['developerPortal.components.appDetailsStep.highlightPlaceholder']()}
+                                placeholder={m[
+                                    'developerPortal.components.appDetailsStep.highlightPlaceholder'
+                                ]()}
                                 className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                                 maxLength={200}
                             />
@@ -396,7 +448,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
 
             {/* Screenshots */}
             <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">{m['developerPortal.components.appDetailsStep.screenshots']()}</label>
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                    {m['developerPortal.components.appDetailsStep.screenshots']()}
+                </label>
 
                 <p className="text-xs text-gray-400 mb-2">
                     {m['developerPortal.components.appDetailsStep.screenshotsDesc']()}
@@ -431,16 +485,22 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                 <div className="flex items-center gap-2 mb-1">
                     <Video className="w-4 h-4 text-gray-400" />
 
-                    <label className="text-sm font-medium text-gray-600">{m['developerPortal.components.appDetailsStep.promoVideoUrl']()}</label>
+                    <label className="text-sm font-medium text-gray-600">
+                        {m['developerPortal.components.appDetailsStep.promoVideoUrl']()}
+                    </label>
 
-                    <span className="text-xs text-gray-400">{m['developerPortal.components.appDetailsStep.optional']()}</span>
+                    <span className="text-xs text-gray-400">
+                        {m['developerPortal.components.appDetailsStep.optional']()}
+                    </span>
                 </div>
 
                 <input
                     type="url"
                     value={data.promo_video_url || ''}
                     onChange={e => handleChange('promo_video_url', e.target.value)}
-                    placeholder={m['developerPortal.components.appDetailsStep.promoVideoPlaceholder']()}
+                    placeholder={m[
+                        'developerPortal.components.appDetailsStep.promoVideoPlaceholder'
+                    ]()}
                     className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                 />
             </div>
@@ -450,9 +510,13 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                 <div className="flex items-center gap-2 mb-2">
                     <Shield className="w-4 h-4 text-gray-400" />
 
-                    <label className="text-sm font-medium text-gray-600">{m['developerPortal.components.appDetailsStep.legalPrivacy']()}</label>
+                    <label className="text-sm font-medium text-gray-600">
+                        {m['developerPortal.components.appDetailsStep.legalPrivacy']()}
+                    </label>
 
-                    <span className="text-xs text-gray-400">{m['developerPortal.components.appDetailsStep.optional']()}</span>
+                    <span className="text-xs text-gray-400">
+                        {m['developerPortal.components.appDetailsStep.optional']()}
+                    </span>
                 </div>
 
                 <div className="space-y-3">
@@ -460,7 +524,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         type="url"
                         value={data.privacy_policy_url || ''}
                         onChange={e => handleChange('privacy_policy_url', e.target.value)}
-                        placeholder={m['developerPortal.components.appDetailsStep.privacyPolicyUrl']()}
+                        placeholder={m[
+                            'developerPortal.components.appDetailsStep.privacyPolicyUrl'
+                        ]()}
                         className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                     />
 
@@ -468,7 +534,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         type="url"
                         value={data.terms_url || ''}
                         onChange={e => handleChange('terms_url', e.target.value)}
-                        placeholder={m['developerPortal.components.appDetailsStep.termsOfServiceUrl']()}
+                        placeholder={m[
+                            'developerPortal.components.appDetailsStep.termsOfServiceUrl'
+                        ]()}
                         className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                     />
                 </div>
@@ -483,7 +551,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         {m['developerPortal.components.appDetailsStep.nativeAppStoreLinks']()}
                     </label>
 
-                    <span className="text-xs text-gray-400">{m['developerPortal.components.appDetailsStep.optional']()}</span>
+                    <span className="text-xs text-gray-400">
+                        {m['developerPortal.components.appDetailsStep.optional']()}
+                    </span>
                 </div>
 
                 <div className="space-y-3">
@@ -499,7 +569,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         type="text"
                         value={data.android_app_store_id || ''}
                         onChange={e => handleChange('android_app_store_id', e.target.value)}
-                        placeholder={m['developerPortal.components.appDetailsStep.androidAppStoreId']()}
+                        placeholder={m[
+                            'developerPortal.components.appDetailsStep.androidAppStoreId'
+                        ]()}
                         className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                     />
                 </div>
@@ -509,7 +581,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                             {m['developerPortal.components.appDetailsStep.contactInformation']()}
                         </label>
 
-                        <span className="text-xs text-gray-400">{m['developerPortal.components.appDetailsStep.optional']()}</span>
+                        <span className="text-xs text-gray-400">
+                            {m['developerPortal.components.appDetailsStep.optional']()}
+                        </span>
                     </div>
 
                     <p className="text-xs text-gray-400 mb-2">
@@ -535,7 +609,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                 <Info className="w-5 h-5 text-cyan-600 flex-shrink-0 mt-0.5" />
 
                 <div className="text-sm text-gray-600">
-                    <p className="font-medium text-gray-700 mb-1">{m['developerPortal.components.appDetailsStep.tipsForGreatListing']()}</p>
+                    <p className="font-medium text-gray-700 mb-1">
+                        {m['developerPortal.components.appDetailsStep.tipsForGreatListing']()}
+                    </p>
 
                     <ul className="space-y-1 text-xs">
                         <li>• {m['developerPortal.components.appDetailsStep.tip1']()}</li>

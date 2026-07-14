@@ -164,7 +164,9 @@ export const ConsentFlowCodeTab: React.FC<ConsentFlowCodeTabProps> = ({
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.consentFlowCode.title']()}</h2>
+                <h2 className="text-lg font-semibold text-gray-800">
+                    {m['developerPortal.dashboards.tabs.consentFlowCode.title']()}
+                </h2>
                 <p className="text-sm text-gray-500">
                     {m['developerPortal.dashboards.tabs.consentFlowCode.description']()}
                 </p>
@@ -181,7 +183,9 @@ export const ConsentFlowCodeTab: React.FC<ConsentFlowCodeTabProps> = ({
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
                             <p className="text-xs text-gray-500 font-medium">
-                                {m['developerPortal.dashboards.tabs.consentFlowCode.consentUrl.liveUrl']()}
+                                {m[
+                                    'developerPortal.dashboards.tabs.consentFlowCode.consentUrl.liveUrl'
+                                ]()}
                             </p>
                             <CopyButton text={consentUrl} id="consent-url" />
                         </div>
@@ -197,13 +201,17 @@ export const ConsentFlowCodeTab: React.FC<ConsentFlowCodeTabProps> = ({
                             className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg text-sm font-medium hover:bg-cyan-600 transition-colors"
                         >
                             <ExternalLink className="w-4 h-4" />
-                            {m['developerPortal.dashboards.tabs.consentFlowCode.consentUrl.testButton']()}
+                            {m[
+                                'developerPortal.dashboards.tabs.consentFlowCode.consentUrl.testButton'
+                            ]()}
                         </a>
                     </div>
                 ) : (
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                         <p className="text-xs text-amber-800">
-                            {m['developerPortal.dashboards.tabs.consentFlowCode.consentUrl.notConfigured']()}
+                            {m[
+                                'developerPortal.dashboards.tabs.consentFlowCode.consentUrl.notConfigured'
+                            ]()}
                         </p>
                     </div>
                 )}
@@ -235,19 +243,25 @@ ${getAppBaseUrl()}/consent-flow?uri=${encodeURIComponent(
                 icon={Webhook}
                 iconColor="text-violet-600"
                 title={m['developerPortal.dashboards.tabs.consentFlowCode.callbackHandler.title']()}
-                description={m['developerPortal.dashboards.tabs.consentFlowCode.callbackHandler.desc']()}
+                description={m[
+                    'developerPortal.dashboards.tabs.consentFlowCode.callbackHandler.desc'
+                ]()}
             >
                 <div className="p-3 bg-violet-50 border border-violet-200 rounded-lg">
                     <div className="flex gap-2">
                         <Info className="w-4 h-4 text-violet-600 flex-shrink-0 mt-0.5" />
                         <p className="text-xs text-violet-800">
-                            {m['developerPortal.dashboards.tabs.consentFlowCode.callbackHandler.info']()}
+                            {m[
+                                'developerPortal.dashboards.tabs.consentFlowCode.callbackHandler.info'
+                            ]()}
                         </p>
                     </div>
                 </div>
 
                 <CodeOutputPanel
-                    title={m['developerPortal.dashboards.tabs.consentFlowCode.expressCallbackHandler']()}
+                    title={m[
+                        'developerPortal.dashboards.tabs.consentFlowCode.expressCallbackHandler'
+                    ]()}
                     snippets={{
                         typescript: `import { initLearnCard } from '@learncard/init';
 
@@ -314,10 +328,14 @@ def learncard_callback():
                 icon={Send}
                 iconColor="text-emerald-600"
                 title={m['developerPortal.dashboards.tabs.consentFlowCode.sendCredentials.title']()}
-                description={m['developerPortal.dashboards.tabs.consentFlowCode.sendCredentials.desc']()}
+                description={m[
+                    'developerPortal.dashboards.tabs.consentFlowCode.sendCredentials.desc'
+                ]()}
             >
                 <CodeOutputPanel
-                    title={m['developerPortal.dashboards.tabs.consentFlowCode.sendCredentialAfterConsent']()}
+                    title={m[
+                        'developerPortal.dashboards.tabs.consentFlowCode.sendCredentialAfterConsent'
+                    ]()}
                     snippets={{
                         typescript: `// Get the user's DID (stored from the consent callback)
 const userDID = await getUserLearnCardDID(userId);
@@ -349,7 +367,11 @@ log.info('Credential sent:', result.credentialUri);`,
 
                 {templates.length > 0 && (
                     <div className="space-y-2">
-                        <p className="text-xs text-gray-500 font-medium">{m['developerPortal.dashboards.tabs.consentFlowCode.yourTemplateUris']()}</p>
+                        <p className="text-xs text-gray-500 font-medium">
+                            {m[
+                                'developerPortal.dashboards.tabs.consentFlowCode.yourTemplateUris'
+                            ]()}
+                        </p>
                         {templates
                             .filter(t => t.boostUri)
                             .map(t => (
@@ -368,7 +390,9 @@ log.info('Credential sent:', result.credentialUri);`,
                                     <CopyButton
                                         text={t.boostUri!}
                                         id={`uri-${t.id}`}
-                                        label={m['developerPortal.dashboards.tabs.consentFlowCode.copyUri']()}
+                                        label={m[
+                                            'developerPortal.dashboards.tabs.consentFlowCode.copyUri'
+                                        ]()}
                                     />
                                 </div>
                             ))}
@@ -385,7 +409,9 @@ log.info('Credential sent:', result.credentialUri);`,
                 defaultOpen={false}
             >
                 <CodeOutputPanel
-                    title={m['developerPortal.dashboards.tabs.consentFlowCode.getAllConsentRecords']()}
+                    title={m[
+                        'developerPortal.dashboards.tabs.consentFlowCode.getAllConsentRecords'
+                    ]()}
                     snippets={{
                         typescript: `// Query all consent records
 const consentData = await learnCard.invoke.getConsentFlowData(
@@ -402,7 +428,9 @@ consentData.records.forEach(record => {
                 />
 
                 <CodeOutputPanel
-                    title={m['developerPortal.dashboards.tabs.consentFlowCode.getConsentDataForUser']()}
+                    title={m[
+                        'developerPortal.dashboards.tabs.consentFlowCode.getConsentDataForUser'
+                    ]()}
                     snippets={{
                         typescript: `// Query consent data for a specific DID
 const userConsentData = await learnCard.invoke.getConsentFlowDataForDid(
@@ -426,7 +454,11 @@ log.info('User consent records:', userConsentData.records);`,
                     {/* Integration ID (read-only) */}
                     <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
                         <div>
-                            <p className="text-xs text-gray-500">{m['developerPortal.dashboards.tabs.consentFlowCode.settings.integrationId']()}</p>
+                            <p className="text-xs text-gray-500">
+                                {m[
+                                    'developerPortal.dashboards.tabs.consentFlowCode.settings.integrationId'
+                                ]()}
+                            </p>
                             <code className="text-xs text-gray-700 break-all">
                                 {integration.id}
                             </code>
@@ -437,9 +469,16 @@ log.info('User consent records:', userConsentData.records);`,
                     {/* Contract URI (read-only) */}
                     <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
                         <div>
-                            <p className="text-xs text-gray-500">{m['developerPortal.dashboards.tabs.consentFlowCode.settings.contractUri']()}</p>
+                            <p className="text-xs text-gray-500">
+                                {m[
+                                    'developerPortal.dashboards.tabs.consentFlowCode.settings.contractUri'
+                                ]()}
+                            </p>
                             <code className="text-xs text-gray-700 break-all">
-                                {contractUri || m['developerPortal.dashboards.tabs.consentFlowCode.settings.notSet']()}
+                                {contractUri ||
+                                    m[
+                                        'developerPortal.dashboards.tabs.consentFlowCode.settings.notSet'
+                                    ]()}
                             </code>
                         </div>
                         {contractUri && <CopyButton text={contractUri} id="config-contract-uri" />}
@@ -448,7 +487,11 @@ log.info('User consent records:', userConsentData.records);`,
                     {/* Callback URL (editable) */}
                     <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg space-y-2">
                         <div className="flex items-center justify-between">
-                            <p className="text-xs text-gray-500">{m['developerPortal.dashboards.tabs.consentFlowCode.settings.callbackUrl']()}</p>
+                            <p className="text-xs text-gray-500">
+                                {m[
+                                    'developerPortal.dashboards.tabs.consentFlowCode.settings.callbackUrl'
+                                ]()}
+                            </p>
                             {!editingCallbackUrl && (
                                 <button
                                     onClick={() => {
@@ -457,7 +500,9 @@ log.info('User consent records:', userConsentData.records);`,
                                     }}
                                     className="text-xs text-cyan-600 hover:text-cyan-700 font-medium"
                                 >
-                                    {m['developerPortal.dashboards.tabs.consentFlowCode.settings.edit']()}
+                                    {m[
+                                        'developerPortal.dashboards.tabs.consentFlowCode.settings.edit'
+                                    ]()}
                                 </button>
                             )}
                         </div>
@@ -499,31 +544,52 @@ log.info('User consent records:', userConsentData.records);`,
                                                     },
                                                 });
                                                 setEditingCallbackUrl(false);
-                                                presentToast(m['developerPortal.dashboards.tabs.consentFlowCode.settings.updateSuccess'](), {
-                                                    type: ToastTypeEnum.Success,
-                                                });
+                                                presentToast(
+                                                    m[
+                                                        'developerPortal.dashboards.tabs.consentFlowCode.settings.updateSuccess'
+                                                    ](),
+                                                    {
+                                                        type: ToastTypeEnum.Success,
+                                                    }
+                                                );
                                             } catch (err) {
-                                                presentToast(m['developerPortal.dashboards.tabs.consentFlowCode.settings.updateError'](), {
-                                                    type: ToastTypeEnum.Error,
-                                                });
+                                                presentToast(
+                                                    m[
+                                                        'developerPortal.dashboards.tabs.consentFlowCode.settings.updateError'
+                                                    ](),
+                                                    {
+                                                        type: ToastTypeEnum.Error,
+                                                    }
+                                                );
                                             }
                                         }}
                                         disabled={updateIntegration.isPending}
                                         className="px-3 py-1.5 text-xs bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 disabled:opacity-50 font-medium"
                                     >
-                                        {updateIntegration.isPending ? m['developerPortal.dashboards.tabs.consentFlowCode.settings.saving']() : m['developerPortal.dashboards.tabs.consentFlowCode.settings.save']()}
+                                        {updateIntegration.isPending
+                                            ? m[
+                                                  'developerPortal.dashboards.tabs.consentFlowCode.settings.saving'
+                                              ]()
+                                            : m[
+                                                  'developerPortal.dashboards.tabs.consentFlowCode.settings.save'
+                                              ]()}
                                     </button>
                                     <button
                                         onClick={() => setEditingCallbackUrl(false)}
                                         className="px-3 py-1.5 text-xs bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
                                     >
-                                        {m['developerPortal.dashboards.tabs.consentFlowCode.settings.cancel']()}
+                                        {m[
+                                            'developerPortal.dashboards.tabs.consentFlowCode.settings.cancel'
+                                        ]()}
                                     </button>
                                 </div>
                             </div>
                         ) : (
                             <code className="text-xs text-gray-700 break-all block">
-                                {redirectUrl || m['developerPortal.dashboards.tabs.consentFlowCode.settings.notSet']()}
+                                {redirectUrl ||
+                                    m[
+                                        'developerPortal.dashboards.tabs.consentFlowCode.settings.notSet'
+                                    ]()}
                             </code>
                         )}
                     </div>
@@ -531,9 +597,15 @@ log.info('User consent records:', userConsentData.records);`,
                     {/* Templates count (read-only) */}
                     <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
                         <div>
-                            <p className="text-xs text-gray-500">{m['developerPortal.dashboards.tabs.consentFlowCode.settings.templates']()}</p>
+                            <p className="text-xs text-gray-500">
+                                {m[
+                                    'developerPortal.dashboards.tabs.consentFlowCode.settings.templates'
+                                ]()}
+                            </p>
                             <code className="text-xs text-gray-700">
-                                {m['developerPortal.dashboards.tabs.consentFlowCode.settings.templatesCount']({ count: templates.filter(t => t.boostUri).length })}
+                                {m[
+                                    'developerPortal.dashboards.tabs.consentFlowCode.settings.templatesCount'
+                                ]({ count: templates.filter(t => t.boostUri).length })}
                             </code>
                         </div>
                     </div>

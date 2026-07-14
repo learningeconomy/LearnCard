@@ -99,63 +99,123 @@ import { useIntegrationActivity } from './hooks/useIntegrationActivity';
 
 function getTabsForConfig(config: DashboardConfig): DashboardTabConfig[] {
     const tabs: DashboardTabConfig[] = [
-        { id: 'overview', label: m['developerPortal.dashboards.nav.overview'](), icon: LayoutDashboard },
+        {
+            id: 'overview',
+            label: m['developerPortal.dashboards.nav.overview'](),
+            icon: LayoutDashboard,
+        },
     ];
 
     if (config.showTemplates) {
-        tabs.push({ id: 'templates', label: m['developerPortal.dashboards.nav.templates'](), icon: Award });
+        tabs.push({
+            id: 'templates',
+            label: m['developerPortal.dashboards.nav.templates'](),
+            icon: Award,
+        });
     }
 
     if (config.showApiTokens) {
-        tabs.push({ id: 'tokens', label: m['developerPortal.dashboards.nav.apiTokens'](), icon: Key });
+        tabs.push({
+            id: 'tokens',
+            label: m['developerPortal.dashboards.nav.apiTokens'](),
+            icon: Key,
+        });
     }
 
     if (config.showEmbedConfig) {
-        tabs.push({ id: 'embed-config', label: m['developerPortal.dashboards.nav.config'](), icon: Settings });
+        tabs.push({
+            id: 'embed-config',
+            label: m['developerPortal.dashboards.nav.config'](),
+            icon: Settings,
+        });
     }
 
     if (config.showEmbedCode) {
-        tabs.push({ id: 'embed-code', label: m['developerPortal.dashboards.nav.embedCode'](), icon: Code });
+        tabs.push({
+            id: 'embed-code',
+            label: m['developerPortal.dashboards.nav.embedCode'](),
+            icon: Code,
+        });
     }
 
     if (config.showContracts) {
-        tabs.push({ id: 'contracts', label: m['developerPortal.dashboards.nav.contracts'](), icon: FileText });
+        tabs.push({
+            id: 'contracts',
+            label: m['developerPortal.dashboards.nav.contracts'](),
+            icon: FileText,
+        });
     }
 
     if (config.showConnections) {
-        tabs.push({ id: 'connections', label: m['developerPortal.dashboards.nav.connections'](), icon: Users });
+        tabs.push({
+            id: 'connections',
+            label: m['developerPortal.dashboards.nav.connections'](),
+            icon: Users,
+        });
     }
 
     if (config.showSigningAuthority) {
-        tabs.push({ id: 'signing', label: m['developerPortal.dashboards.nav.signing'](), icon: Shield });
+        tabs.push({
+            id: 'signing',
+            label: m['developerPortal.dashboards.nav.signing'](),
+            icon: Shield,
+        });
     }
 
     if (config.showBranding) {
-        tabs.push({ id: 'branding', label: m['developerPortal.dashboards.nav.branding'](), icon: Palette });
+        tabs.push({
+            id: 'branding',
+            label: m['developerPortal.dashboards.nav.branding'](),
+            icon: Palette,
+        });
     }
 
     // embed-app specific tabs
     if (config.showAppListings) {
-        tabs.push({ id: 'app-listings', label: m['developerPortal.dashboards.nav.appListings'](), icon: Layout });
+        tabs.push({
+            id: 'app-listings',
+            label: m['developerPortal.dashboards.nav.appListings'](),
+            icon: Layout,
+        });
     }
 
     if (config.showPartnerConnect) {
-        tabs.push({ id: 'partner-connect', label: m['developerPortal.dashboards.nav.partnerConnect'](), icon: LinkIcon });
+        tabs.push({
+            id: 'partner-connect',
+            label: m['developerPortal.dashboards.nav.partnerConnect'](),
+            icon: LinkIcon,
+        });
     }
 
     if (config.showAppConfig) {
-        tabs.push({ id: 'app-config', label: m['developerPortal.dashboards.nav.appConfig'](), icon: Settings });
+        tabs.push({
+            id: 'app-config',
+            label: m['developerPortal.dashboards.nav.appConfig'](),
+            icon: Settings,
+        });
     }
 
     // API-based integration tabs (code snippets, CSV upload, testing)
     // Excluded for embed-claim which has its own live preview in the Embed Code tab
     if (config.showTemplates && !config.showAppListings && !config.showEmbedCode) {
-        tabs.push({ id: 'code', label: m['developerPortal.dashboards.nav.code'](), icon: FileCode });
+        tabs.push({
+            id: 'code',
+            label: m['developerPortal.dashboards.nav.code'](),
+            icon: FileCode,
+        });
         // CSV upload only for non-consent-flow (consent-flow sends via API after redirect)
         if (!config.showConnections) {
-            tabs.push({ id: 'csv-upload', label: m['developerPortal.dashboards.nav.csvUpload'](), icon: FileSpreadsheet });
+            tabs.push({
+                id: 'csv-upload',
+                label: m['developerPortal.dashboards.nav.csvUpload'](),
+                icon: FileSpreadsheet,
+            });
         }
-        tabs.push({ id: 'testing', label: m['developerPortal.dashboards.nav.testing'](), icon: TestTube2 });
+        tabs.push({
+            id: 'testing',
+            label: m['developerPortal.dashboards.nav.testing'](),
+            icon: TestTube2,
+        });
     }
 
     // Analytics tab hidden for now - will add back when we have time-series data
@@ -520,7 +580,9 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
             <div className="flex items-center justify-center min-h-[400px]">
                 <div className="text-center">
                     <Loader2 className="w-10 h-10 text-cyan-500 mx-auto animate-spin" />
-                    <p className="text-sm text-gray-500 mt-3">{m['developerPortal.dashboards.loadingDashboard']()}</p>
+                    <p className="text-sm text-gray-500 mt-3">
+                        {m['developerPortal.dashboards.loadingDashboard']()}
+                    </p>
                 </div>
             </div>
         );

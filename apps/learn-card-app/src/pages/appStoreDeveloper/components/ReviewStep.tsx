@@ -12,7 +12,9 @@ interface ReviewStepProps {
 export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
     const getCategoryLabel = (value?: string) => {
         const cat = CATEGORY_OPTIONS.find(c => c.value === value);
-        return cat ? (m as any)[cat.labelKey]() : value || m['developerPortal.components.reviewStep.notSpecified']();
+        return cat
+            ? (m as any)[cat.labelKey]()
+            : value || m['developerPortal.components.reviewStep.notSpecified']();
     };
 
     const launchTypeInfo = data.launch_type ? LAUNCH_TYPE_INFO[data.launch_type] : null;
@@ -32,7 +34,9 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                     <CheckCircle2 className="w-7 h-7 text-emerald-600" />
                 </div>
 
-                <h2 className="text-xl font-semibold text-gray-700">{m['developerPortal.components.reviewStep.title']()}</h2>
+                <h2 className="text-xl font-semibold text-gray-700">
+                    {m['developerPortal.components.reviewStep.title']()}
+                </h2>
 
                 <p className="text-sm text-gray-500 mt-1">
                     {m['developerPortal.components.reviewStep.description']()}
@@ -58,7 +62,8 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
 
                     <div className="flex-1 min-w-0">
                         <h3 className="text-lg font-semibold text-gray-700 truncate">
-                            {data.display_name || m['developerPortal.components.reviewStep.untitledApp']()}
+                            {data.display_name ||
+                                m['developerPortal.components.reviewStep.untitledApp']()}
                         </h3>
 
                         <p className="text-gray-500 text-sm mt-0.5 line-clamp-2">
@@ -92,18 +97,23 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                     <div className="flex items-center gap-2 mb-2">
                         <FileText className="w-4 h-4 text-gray-400" />
 
-                        <h4 className="font-medium text-gray-600 text-sm">{m['developerPortal.components.reviewStep.description']()}</h4>
+                        <h4 className="font-medium text-gray-600 text-sm">
+                            {m['developerPortal.components.reviewStep.description']()}
+                        </h4>
                     </div>
 
                     <p className="text-sm text-gray-500 whitespace-pre-wrap">
-                        {data.full_description || m['developerPortal.components.reviewStep.noDescription']()}
+                        {data.full_description ||
+                            m['developerPortal.components.reviewStep.noDescription']()}
                     </p>
                 </div>
 
                 {/* Highlights */}
                 {data.highlights && data.highlights.length > 0 && (
                     <div className="bg-white rounded-xl border border-gray-200 p-4">
-                        <h4 className="font-medium text-gray-600 text-sm mb-2">{m['developerPortal.components.reviewStep.highlights']()}</h4>
+                        <h4 className="font-medium text-gray-600 text-sm mb-2">
+                            {m['developerPortal.components.reviewStep.highlights']()}
+                        </h4>
 
                         <ul className="space-y-1">
                             {data.highlights
@@ -126,15 +136,21 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                     <div className="flex items-center gap-2 mb-2">
                         <Settings className="w-4 h-4 text-gray-400" />
 
-                        <h4 className="font-medium text-gray-600 text-sm">{m['developerPortal.components.reviewStep.launchConfiguration']()}</h4>
+                        <h4 className="font-medium text-gray-600 text-sm">
+                            {m['developerPortal.components.reviewStep.launchConfiguration']()}
+                        </h4>
                     </div>
 
                     <div className="space-y-2">
                         <div className="flex justify-between py-1.5 border-b border-gray-100">
-                            <span className="text-sm text-gray-500">{m['developerPortal.components.reviewStep.launchType']()}</span>
+                            <span className="text-sm text-gray-500">
+                                {m['developerPortal.components.reviewStep.launchType']()}
+                            </span>
 
                             <span className="text-sm font-medium text-gray-600">
-                                {launchTypeInfo ? (m as any)[launchTypeInfo.labelKey]() : m['developerPortal.components.reviewStep.notSelected']()}
+                                {launchTypeInfo
+                                    ? (m as any)[launchTypeInfo.labelKey]()
+                                    : m['developerPortal.components.reviewStep.notSelected']()}
                             </span>
                         </div>
 
@@ -158,11 +174,15 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                         <div className="flex items-center gap-2 mb-2">
                             {/* <Link2 className="w-4 h-4 text-gray-400" /> */}
 
-                            <h4 className="font-medium text-gray-600 text-sm">{m['developerPortal.components.reviewStep.minimumAge']()}</h4>
+                            <h4 className="font-medium text-gray-600 text-sm">
+                                {m['developerPortal.components.reviewStep.minimumAge']()}
+                            </h4>
                         </div>
 
                         <p className="text-sm text-gray-500 whitespace-pre-wrap">
-                            {m['developerPortal.components.reviewStep.minimumAgeDesc']({ age: data.min_age })}
+                            {m['developerPortal.components.reviewStep.minimumAgeDesc']({
+                                age: data.min_age,
+                            })}
                         </p>
                     </div>
                 )}
@@ -173,7 +193,9 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                         <div className="flex items-center gap-2 mb-2">
                             <Link2 className="w-4 h-4 text-gray-400" />
 
-                            <h4 className="font-medium text-gray-600 text-sm">{m['developerPortal.components.reviewStep.additionalLinks']()}</h4>
+                            <h4 className="font-medium text-gray-600 text-sm">
+                                {m['developerPortal.components.reviewStep.additionalLinks']()}
+                            </h4>
                         </div>
 
                         <div className="space-y-1.5">
@@ -208,7 +230,9 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                         <div className="flex items-center gap-2 mb-2">
                             <Smartphone className="w-4 h-4 text-gray-400" />
 
-                            <h4 className="font-medium text-gray-600 text-sm">{m['developerPortal.components.reviewStep.nativeAppLinks']()}</h4>
+                            <h4 className="font-medium text-gray-600 text-sm">
+                                {m['developerPortal.components.reviewStep.nativeAppLinks']()}
+                            </h4>
                         </div>
 
                         <div className="space-y-2">
@@ -220,7 +244,9 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                                     className="flex items-center gap-2 text-sm text-cyan-600 hover:underline"
                                 >
                                     <ExternalLink className="w-4 h-4" />
-                                    {m['appStoreAdmin.listing.iosAppStore']({ id: data.ios_app_store_id })}
+                                    {m['appStoreAdmin.listing.iosAppStore']({
+                                        id: data.ios_app_store_id,
+                                    })}
                                 </a>
                             )}
 
@@ -232,7 +258,9 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                                     className="flex items-center gap-2 text-sm text-cyan-600 hover:underline"
                                 >
                                     <ExternalLink className="w-4 h-4" />
-                                    {m['appStoreAdmin.listing.googlePlayStore']({ id: data.android_app_store_id })}
+                                    {m['appStoreAdmin.listing.googlePlayStore']({
+                                        id: data.android_app_store_id,
+                                    })}
                                 </a>
                             )}
                         </div>

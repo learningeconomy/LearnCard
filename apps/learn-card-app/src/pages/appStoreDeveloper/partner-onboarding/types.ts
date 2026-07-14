@@ -146,17 +146,65 @@ export interface PartnerOnboardingState {
 }
 
 export const ONBOARDING_STEPS = [
-    { id: 'project-setup', title: 'Project Setup', description: 'Create your project and get credentials', titleKey: 'developerPortal.onboarding.steps.step1.title', descriptionKey: 'developerPortal.onboarding.steps.step1.description' },
-    { id: 'signing-authority', title: 'Signing', description: 'Set up credential signing', titleKey: 'developerPortal.onboarding.steps.step2.title', descriptionKey: 'developerPortal.onboarding.steps.step2.description' },
-    { id: 'branding', title: 'Branding', description: 'Customize your credential appearance', titleKey: 'developerPortal.onboarding.steps.step3.title', descriptionKey: 'developerPortal.onboarding.steps.step3.description' },
-    { id: 'templates', title: 'Templates', description: 'Define your credential schemas', titleKey: 'developerPortal.onboarding.steps.step4.title', descriptionKey: 'developerPortal.onboarding.steps.step4.description' },
-    { id: 'integration', title: 'Integration', description: 'Choose how to connect', titleKey: 'developerPortal.onboarding.steps.step5.title', descriptionKey: 'developerPortal.onboarding.steps.step5.description' },
-    { id: 'mapping', title: 'Data Mapping', description: 'Map your data to credentials', titleKey: 'developerPortal.onboarding.steps.step6.title', descriptionKey: 'developerPortal.onboarding.steps.step6.description' },
-    { id: 'testing', title: 'Testing', description: 'Test your integration', titleKey: 'developerPortal.onboarding.steps.step7.title', descriptionKey: 'developerPortal.onboarding.steps.step7.description' },
-    { id: 'production', title: 'Go Live', description: 'Launch and monitor', titleKey: 'developerPortal.onboarding.steps.step8.title', descriptionKey: 'developerPortal.onboarding.steps.step8.description' },
+    {
+        id: 'project-setup',
+        title: 'Project Setup',
+        description: 'Create your project and get credentials',
+        titleKey: 'developerPortal.onboarding.steps.step1.title',
+        descriptionKey: 'developerPortal.onboarding.steps.step1.description',
+    },
+    {
+        id: 'signing-authority',
+        title: 'Signing',
+        description: 'Set up credential signing',
+        titleKey: 'developerPortal.onboarding.steps.step2.title',
+        descriptionKey: 'developerPortal.onboarding.steps.step2.description',
+    },
+    {
+        id: 'branding',
+        title: 'Branding',
+        description: 'Customize your credential appearance',
+        titleKey: 'developerPortal.onboarding.steps.step3.title',
+        descriptionKey: 'developerPortal.onboarding.steps.step3.description',
+    },
+    {
+        id: 'templates',
+        title: 'Templates',
+        description: 'Define your credential schemas',
+        titleKey: 'developerPortal.onboarding.steps.step4.title',
+        descriptionKey: 'developerPortal.onboarding.steps.step4.description',
+    },
+    {
+        id: 'integration',
+        title: 'Integration',
+        description: 'Choose how to connect',
+        titleKey: 'developerPortal.onboarding.steps.step5.title',
+        descriptionKey: 'developerPortal.onboarding.steps.step5.description',
+    },
+    {
+        id: 'mapping',
+        title: 'Data Mapping',
+        description: 'Map your data to credentials',
+        titleKey: 'developerPortal.onboarding.steps.step6.title',
+        descriptionKey: 'developerPortal.onboarding.steps.step6.description',
+    },
+    {
+        id: 'testing',
+        title: 'Testing',
+        description: 'Test your integration',
+        titleKey: 'developerPortal.onboarding.steps.step7.title',
+        descriptionKey: 'developerPortal.onboarding.steps.step7.description',
+    },
+    {
+        id: 'production',
+        title: 'Go Live',
+        description: 'Launch and monitor',
+        titleKey: 'developerPortal.onboarding.steps.step8.title',
+        descriptionKey: 'developerPortal.onboarding.steps.step8.description',
+    },
 ] as const;
 
-export type OnboardingStepId = typeof ONBOARDING_STEPS[number]['id'];
+export type OnboardingStepId = (typeof ONBOARDING_STEPS)[number]['id'];
 
 export const DEFAULT_ONBOARDING_STATE: PartnerOnboardingState = {
     currentStep: 0,

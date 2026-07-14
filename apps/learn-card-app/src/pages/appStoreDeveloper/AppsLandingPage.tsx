@@ -65,7 +65,9 @@ const AppsLandingPage: React.FC = () => {
                     <div className="flex items-center justify-center min-h-[400px]">
                         <div className="text-center">
                             <Loader2 className="w-10 h-10 text-cyan-500 mx-auto animate-spin" />
-                            <p className="text-sm text-gray-500 mt-3">{m['developerPortal.shell.loadingProjects']()}</p>
+                            <p className="text-sm text-gray-500 mt-3">
+                                {m['developerPortal.shell.loadingProjects']()}
+                            </p>
                         </div>
                     </div>
                 </IonContent>
@@ -128,7 +130,9 @@ const AppsLandingPage: React.FC = () => {
                                     value={newProjectName}
                                     onChange={e => setNewProjectName(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && handleCreateFirstProject()}
-                                    placeholder={m['developerPortal.shell.projectNamePlaceholder']()}
+                                    placeholder={m[
+                                        'developerPortal.shell.projectNamePlaceholder'
+                                    ]()}
                                     className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl text-base text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 shadow-sm"
                                     disabled={isCreatingIntegration}
                                 />
@@ -167,8 +171,12 @@ const AppsLandingPage: React.FC = () => {
             <IonContent className="ion-padding">
                 <div className="max-w-3xl mx-auto py-6">
                     <div className="text-center mb-8">
-                        <h1 className="text-2xl font-semibold text-gray-800 mb-2">{m['developerPortal.shell.yourProjects']()}</h1>
-                        <p className="text-gray-500">{m['developerPortal.shell.selectProject']()}</p>
+                        <h1 className="text-2xl font-semibold text-gray-800 mb-2">
+                            {m['developerPortal.shell.yourProjects']()}
+                        </h1>
+                        <p className="text-gray-500">
+                            {m['developerPortal.shell.selectProject']()}
+                        </p>
                     </div>
 
                     <div className="space-y-3">
@@ -200,8 +208,12 @@ const AppsLandingPage: React.FC = () => {
                                             {integration.name}
                                         </h3>
                                         <p className="text-sm text-gray-500">
-                                            {isActive ? m['developerPortal.shell.statusLive']() : m['developerPortal.shell.statusInSetup']()} •{' '}
-                                            {integration.guideType || m['developerPortal.shell.noGuideSelected']()}
+                                            {isActive
+                                                ? m['developerPortal.shell.statusLive']()
+                                                : m['developerPortal.shell.statusInSetup']()}{' '}
+                                            •{' '}
+                                            {integration.guideType ||
+                                                m['developerPortal.shell.noGuideSelected']()}
                                         </p>
                                     </div>
 

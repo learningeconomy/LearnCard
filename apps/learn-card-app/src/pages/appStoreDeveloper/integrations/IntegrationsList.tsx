@@ -123,7 +123,8 @@ const IntegrationCard: React.FC<IntegrationCardProps> = ({
                     <Zap className="w-4 h-4 text-gray-400" />
 
                     <span className="text-sm text-gray-600">
-                        <span className="font-semibold text-gray-800">{stats.issued}</span> {m['developerPortal.shell.issued']()}
+                        <span className="font-semibold text-gray-800">{stats.issued}</span>{' '}
+                        {m['developerPortal.shell.issued']()}
                     </span>
                 </div>
 
@@ -141,12 +142,18 @@ const IntegrationCard: React.FC<IntegrationCardProps> = ({
             <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-400">
                     {integration.createdAt
-                        ? m['developerPortal.shell.createdDate']({ date: new Date(integration.createdAt).toLocaleDateString() })
+                        ? m['developerPortal.shell.createdDate']({
+                              date: new Date(integration.createdAt).toLocaleDateString(),
+                          })
                         : m['developerPortal.shell.recentlyCreated']()}
                 </span>
 
                 <div className="flex items-center gap-1.5 text-cyan-600 font-medium text-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                    <span>{status === 'setup' ? m['developerPortal.shell.continueSetup']() : m['developerPortal.shell.openDashboard']()}</span>
+                    <span>
+                        {status === 'setup'
+                            ? m['developerPortal.shell.continueSetup']()
+                            : m['developerPortal.shell.openDashboard']()}
+                    </span>
                     <ArrowRight className="w-4 h-4" />
                 </div>
             </div>
@@ -207,10 +214,13 @@ const IntegrationsList: React.FC = () => {
                 newProjectName.trim()
             );
 
-            presentToast(m['developerPortal.shell.createdProject']({ name: newProjectName.trim() }), {
-                type: ToastTypeEnum.Success,
-                hasDismissButton: true,
-            });
+            presentToast(
+                m['developerPortal.shell.createdProject']({ name: newProjectName.trim() }),
+                {
+                    type: ToastTypeEnum.Success,
+                    hasDismissButton: true,
+                }
+            );
 
             setNewProjectName('');
             setShowCreateForm(false);
@@ -322,7 +332,9 @@ const IntegrationsList: React.FC = () => {
                                         value={newProjectName}
                                         onChange={e => setNewProjectName(e.target.value)}
                                         onKeyDown={e => e.key === 'Enter' && handleCreateProject()}
-                                        placeholder={m['developerPortal.shell.integrationNamePlaceholder']()}
+                                        placeholder={m[
+                                            'developerPortal.shell.integrationNamePlaceholder'
+                                        ]()}
                                         className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
                                         autoFocus
                                         disabled={createIntegrationMutation.isPending}
@@ -375,7 +387,9 @@ const IntegrationsList: React.FC = () => {
                                 </h2>
 
                                 <span className="text-sm text-gray-500">
-                                    {m['developerPortal.shell.integrationCount']({ count: integrationsWithConfig.length })}
+                                    {m['developerPortal.shell.integrationCount']({
+                                        count: integrationsWithConfig.length,
+                                    })}
                                 </span>
                             </div>
 
@@ -432,7 +446,9 @@ const IntegrationsList: React.FC = () => {
                                         <p className="font-medium text-gray-800">
                                             {m['developerPortal.shell.apiDocumentation']()}
                                         </p>
-                                        <p className="text-sm text-gray-500">{m['developerPortal.shell.fullReferenceDocs']()}</p>
+                                        <p className="text-sm text-gray-500">
+                                            {m['developerPortal.shell.fullReferenceDocs']()}
+                                        </p>
                                     </div>
                                 </a>
                             </div>

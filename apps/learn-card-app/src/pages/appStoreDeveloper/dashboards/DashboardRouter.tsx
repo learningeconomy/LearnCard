@@ -25,16 +25,13 @@ export const DashboardRouter: React.FC<DashboardRouterProps> = ({
             <div className="flex items-center justify-center min-h-[400px]">
                 <div className="text-center">
                     <Loader2 className="w-10 h-10 text-cyan-500 mx-auto animate-spin" />
-                    <p className="text-sm text-gray-500 mt-3">{m['developerPortal.dashboards.loading']()}</p>
+                    <p className="text-sm text-gray-500 mt-3">
+                        {m['developerPortal.dashboards.loading']()}
+                    </p>
                 </div>
             </div>
         );
     }
 
-    return (
-        <UnifiedIntegrationDashboard
-            integration={integration}
-            onBack={onBack}
-        />
-    );
+    return <UnifiedIntegrationDashboard integration={integration} onBack={onBack} />;
 };

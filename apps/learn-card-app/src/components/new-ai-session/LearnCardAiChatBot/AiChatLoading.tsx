@@ -14,7 +14,11 @@ const AiChatLoading: React.FC<AiChatLoadingProps> = ({
 }) => {
     return (
         <div className="w-full flex flex-col gap-2 items-center justify-center py-4 my-auto">
-            <img src={LoadingAnimation} alt={m['common.loading']()} className="w-[240px] h-[240px]" />
+            <img
+                src={LoadingAnimation}
+                alt={m['common.loading']()}
+                className="w-[240px] h-[240px]"
+            />
             <AiSessionLoader contractUri={contractUri} textOnly overrideText={aiThinkingText} />
         </div>
     );

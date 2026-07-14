@@ -78,7 +78,7 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
             plugin: () => m['appStoreAdmin.listing.category.plugin'](),
             other: () => m['appStoreAdmin.listing.category.other'](),
         };
-        return (map[cat as string])?.();
+        return map[cat as string]?.();
     };
     const getPermissionLabel = (p: AppPermission): string => {
         const map: Record<string, () => string> = {
@@ -198,7 +198,9 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                                     className="flex-shrink-0 flex items-center gap-1 md:gap-1.5 px-2 py-1 md:px-3 md:py-1.5 bg-indigo-100 text-indigo-700 rounded-lg text-xs md:text-sm font-medium hover:bg-indigo-200 transition-colors"
                                 >
                                     <Eye className="w-3 h-3 md:w-4 md:h-4" />
-                                    <span className="hidden sm:inline">{m['common.preview']()}</span>
+                                    <span className="hidden sm:inline">
+                                        {m['common.preview']()}
+                                    </span>
                                     <ChevronDown className="w-3 h-3" />
                                 </button>
 
@@ -262,7 +264,9 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                         <div className="flex items-center gap-2">
                             <User className="w-3.5 h-3.5 text-gray-400" />
                             <span className="text-sm text-gray-600">
-                                <span className="font-medium">{m['appStoreAdmin.listing.submittedBy']()}</span>{' '}
+                                <span className="font-medium">
+                                    {m['appStoreAdmin.listing.submittedBy']()}
+                                </span>{' '}
                                 {listing.submitter?.displayName ||
                                     listing.submitter?.profileId ||
                                     'Unknown'}
@@ -271,7 +275,9 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                         <div className="flex items-center gap-2">
                             <Calendar className="w-3.5 h-3.5 text-gray-400" />
                             <span className="text-sm text-gray-600">
-                                <span className="font-medium">{m['appStoreAdmin.listing.submitted']()}</span>{' '}
+                                <span className="font-medium">
+                                    {m['appStoreAdmin.listing.submitted']()}
+                                </span>{' '}
                                 {formatSubmissionDate(listing.submitted_at)}
                             </span>
                         </div>
@@ -281,7 +287,11 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                                 <a
                                     href={`mailto:${
                                         listing.contact_email || listing.submitter?.email
-                                    }?subject=${encodeURIComponent(m['appStoreAdmin.listing.emailSubject']({ name: listing.display_name }))}`}
+                                    }?subject=${encodeURIComponent(
+                                        m['appStoreAdmin.listing.emailSubject']({
+                                            name: listing.display_name,
+                                        })
+                                    )}`}
                                     className="text-sm text-indigo-600 hover:text-indigo-800 hover:underline"
                                 >
                                     {listing.contact_email || listing.submitter?.email}
@@ -293,7 +303,9 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
 
                 {/* Description */}
                 <div>
-                    <h3 className="text-sm font-medium text-gray-600 mb-1">{m['appStoreAdmin.listing.description']()}</h3>
+                    <h3 className="text-sm font-medium text-gray-600 mb-1">
+                        {m['appStoreAdmin.listing.description']()}
+                    </h3>
                     <p className="text-sm text-gray-500 whitespace-pre-wrap">
                         {listing.full_description}
                     </p>
@@ -302,7 +314,9 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                 {/* Highlights */}
                 {listing.highlights && listing.highlights.length > 0 && (
                     <div>
-                        <h3 className="text-sm font-medium text-gray-600 mb-2">{m['appStoreAdmin.listing.highlights']()}</h3>
+                        <h3 className="text-sm font-medium text-gray-600 mb-2">
+                            {m['appStoreAdmin.listing.highlights']()}
+                        </h3>
                         <ul className="space-y-1.5">
                             {listing.highlights.map((h, i) => (
                                 <li key={i} className="flex items-start gap-2">
@@ -317,7 +331,9 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                 {/* Minimum Age */}
                 {listing.min_age && (
                     <div>
-                        <h3 className="text-sm font-medium text-gray-600 mb-1">{m['appStoreAdmin.listing.minimumAge']()}</h3>
+                        <h3 className="text-sm font-medium text-gray-600 mb-1">
+                            {m['appStoreAdmin.listing.minimumAge']()}
+                        </h3>
                         <p className="text-sm text-gray-500 whitespace-pre-wrap">
                             {listing.min_age}
                         </p>
@@ -330,7 +346,9 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                         <div className="flex items-center gap-2 mb-2">
                             <Image className="w-4 h-4 text-gray-400" />
                             <h3 className="text-sm font-medium text-gray-600">
-                                {m['appStoreAdmin.listing.screenshots']({ count: listing.screenshots.length })}
+                                {m['appStoreAdmin.listing.screenshots']({
+                                    count: listing.screenshots.length,
+                                })}
                             </h3>
                         </div>
                         <div className="flex gap-2 overflow-x-auto pb-2">
@@ -344,7 +362,9 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                                 >
                                     <img
                                         src={s}
-                                        alt={m['appStoreAdmin.listing.screenshotAlt']({ count: i + 1 })}
+                                        alt={m['appStoreAdmin.listing.screenshotAlt']({
+                                            count: i + 1,
+                                        })}
                                         className="h-40 w-auto rounded-lg border border-gray-200 hover:border-cyan-500 transition-colors"
                                     />
                                 </a>
@@ -357,7 +377,9 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                 <div>
                     <div className="flex items-center gap-2 mb-2">
                         <ShieldAlert className="w-4 h-4 text-amber-500" />
-                        <h3 className="text-sm font-medium text-gray-600">{m['appStoreAdmin.listing.launchConfig']()}</h3>
+                        <h3 className="text-sm font-medium text-gray-600">
+                            {m['appStoreAdmin.listing.launchConfig']()}
+                        </h3>
                     </div>
                     <pre className="p-3 bg-gray-800 text-gray-100 rounded-lg text-xs overflow-x-auto">
                         <code>{JSON.stringify(parsedConfig, null, 2)}</code>
@@ -390,7 +412,9 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
 
                 {/* External Links */}
                 <div>
-                    <h3 className="text-sm font-medium text-gray-600 mb-2">{m['appStoreAdmin.listing.externalLinks']()}</h3>
+                    <h3 className="text-sm font-medium text-gray-600 mb-2">
+                        {m['appStoreAdmin.listing.externalLinks']()}
+                    </h3>
                     <div className="space-y-1.5">
                         {typeof parsedConfig.url === 'string' && parsedConfig.url && (
                             <a
@@ -442,7 +466,9 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                 {/* Native App Links */}
                 {(listing.ios_app_store_id || listing.android_app_store_id) && (
                     <div>
-                        <h3 className="text-sm font-medium text-gray-600 mb-2">{m['appStoreAdmin.listing.nativeAppLinks']()}</h3>
+                        <h3 className="text-sm font-medium text-gray-600 mb-2">
+                            {m['appStoreAdmin.listing.nativeAppLinks']()}
+                        </h3>
                         <div className="space-y-1.5">
                             {listing.ios_app_store_id && (
                                 <a
@@ -452,7 +478,9 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                                     className="flex items-center gap-2 text-sm text-cyan-600 hover:underline"
                                 >
                                     <ExternalLink className="w-4 h-4" />
-                                    {m['appStoreAdmin.listing.iosAppStore']({ id: listing.ios_app_store_id })}
+                                    {m['appStoreAdmin.listing.iosAppStore']({
+                                        id: listing.ios_app_store_id,
+                                    })}
                                 </a>
                             )}
                             {listing.android_app_store_id && (
@@ -463,7 +491,9 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                                     className="flex items-center gap-2 text-sm text-cyan-600 hover:underline"
                                 >
                                     <ExternalLink className="w-4 h-4" />
-                                    {m['appStoreAdmin.listing.googlePlayStore']({ id: listing.android_app_store_id })}
+                                    {m['appStoreAdmin.listing.googlePlayStore']({
+                                        id: listing.android_app_store_id,
+                                    })}
                                 </a>
                             )}
                         </div>

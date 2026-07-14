@@ -18,11 +18,7 @@ import {
 } from 'lucide-react';
 import { ImageIcon } from 'lucide-react';
 
-import { 
-    CATALOG_FIELD_OPTIONS, 
-    FIELD_GROUPS, 
-    ISSUANCE_FIELDS,
-} from './templateBuilderConstants';
+import { CATALOG_FIELD_OPTIONS, FIELD_GROUPS, ISSUANCE_FIELDS } from './templateBuilderConstants';
 
 interface CsvImportModalProps {
     csvColumns: string[];
@@ -67,9 +63,17 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                         </div>
 
                         <div>
-                            <h3 className="font-semibold text-gray-800">{m['developerPortal.onboarding.templateBuilder.csvImportTitle']()}</h3>
+                            <h3 className="font-semibold text-gray-800">
+                                {m['developerPortal.onboarding.templateBuilder.csvImportTitle']()}
+                            </h3>
                             <p className="text-sm text-gray-500">
-                                {m['developerPortal.onboarding.templateBuilder.csvCoursesFound']({ count: csvAllRows.length })} • {m['developerPortal.onboarding.templateBuilder.csvColumns']({ count: csvColumns.length })}
+                                {m['developerPortal.onboarding.templateBuilder.csvCoursesFound']({
+                                    count: csvAllRows.length,
+                                })}{' '}
+                                •{' '}
+                                {m['developerPortal.onboarding.templateBuilder.csvColumns']({
+                                    count: csvColumns.length,
+                                })}
                             </p>
                         </div>
                     </div>
@@ -86,9 +90,13 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                 <div className="flex-1 overflow-auto p-4 space-y-6">
                     {/* Explanation */}
                     <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-800">
-                        <p className="font-medium mb-1">{m['developerPortal.onboarding.templateBuilder.csvHowItWorksTitle']()}</p>
+                        <p className="font-medium mb-1">
+                            {m['developerPortal.onboarding.templateBuilder.csvHowItWorksTitle']()}
+                        </p>
                         <p>
-                            {m['developerPortal.onboarding.templateBuilder.csvHowItWorks']({ count: csvAllRows.length })}
+                            {m['developerPortal.onboarding.templateBuilder.csvHowItWorks']({
+                                count: csvAllRows.length,
+                            })}
                         </p>
                     </div>
 
@@ -99,7 +107,9 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                                 {m['developerPortal.onboarding.templateBuilder.csvDefaultImage']()}
                             </label>
                             <p className="text-xs text-gray-500">
-                                {m['developerPortal.onboarding.templateBuilder.csvDefaultImageDesc']()}
+                                {m[
+                                    'developerPortal.onboarding.templateBuilder.csvDefaultImageDesc'
+                                ]()}
                             </p>
                         </div>
 
@@ -108,7 +118,9 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                                 <div className="relative group">
                                     <img
                                         src={defaultImage}
-                                        alt={m['developerPortal.onboarding.templateBuilder.csvDefaultImageAlt']()}
+                                        alt={m[
+                                            'developerPortal.onboarding.templateBuilder.csvDefaultImageAlt'
+                                        ]()}
                                         className="w-20 h-20 rounded-xl object-cover border border-gray-200"
                                     />
 
@@ -133,12 +145,20 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                                 {isUploadingImage ? (
                                     <>
                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                        {m['developerPortal.onboarding.templateBuilder.csvUploading']()}
+                                        {m[
+                                            'developerPortal.onboarding.templateBuilder.csvUploading'
+                                        ]()}
                                     </>
                                 ) : (
                                     <>
                                         <Upload className="w-4 h-4" />
-                                        {defaultImage ? m['developerPortal.onboarding.templateBuilder.csvChangeImage']() : m['developerPortal.onboarding.templateBuilder.csvUploadImage']()}
+                                        {defaultImage
+                                            ? m[
+                                                  'developerPortal.onboarding.templateBuilder.csvChangeImage'
+                                              ]()
+                                            : m[
+                                                  'developerPortal.onboarding.templateBuilder.csvUploadImage'
+                                              ]()}
                                     </>
                                 )}
                             </button>
@@ -150,13 +170,22 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                         <div className="flex items-center justify-between mb-3">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">
-                                    {m['developerPortal.onboarding.templateBuilder.csvCatalogFields']()}
+                                    {m[
+                                        'developerPortal.onboarding.templateBuilder.csvCatalogFields'
+                                    ]()}
                                 </label>
-                                <p className="text-xs text-gray-500">{m['developerPortal.onboarding.templateBuilder.csvCatalogFieldsDesc']()}</p>
+                                <p className="text-xs text-gray-500">
+                                    {m[
+                                        'developerPortal.onboarding.templateBuilder.csvCatalogFieldsDesc'
+                                    ]()}
+                                </p>
                             </div>
 
                             <span className="text-xs text-gray-500">
-                                {m['developerPortal.onboarding.templateBuilder.csvMapped']({ count: Object.values(columnMappings).filter(v => v !== 'skip').length })}
+                                {m['developerPortal.onboarding.templateBuilder.csvMapped']({
+                                    count: Object.values(columnMappings).filter(v => v !== 'skip')
+                                        .length,
+                                })}
                             </span>
                         </div>
 
@@ -175,25 +204,35 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                                         }`}
                                     >
                                         <div className="flex-1 min-w-0">
-                                            <div className="font-medium text-gray-800 truncate">{column}</div>
+                                            <div className="font-medium text-gray-800 truncate">
+                                                {column}
+                                            </div>
 
                                             {sampleValue && (
                                                 <div className="text-xs text-gray-500 truncate">
-                                                    {m['developerPortal.onboarding.templateBuilder.csvExampleValue']({ value: sampleValue })}
+                                                    {m[
+                                                        'developerPortal.onboarding.templateBuilder.csvExampleValue'
+                                                    ]({ value: sampleValue })}
                                                 </div>
                                             )}
                                         </div>
 
-                                        <ArrowDown className={`w-4 h-4 flex-shrink-0 ${
-                                            mapping === 'skip' ? 'text-gray-300' : 'text-emerald-500'
-                                        }`} />
+                                        <ArrowDown
+                                            className={`w-4 h-4 flex-shrink-0 ${
+                                                mapping === 'skip'
+                                                    ? 'text-gray-300'
+                                                    : 'text-emerald-500'
+                                            }`}
+                                        />
 
                                         <select
                                             value={mapping}
-                                            onChange={(e) => setColumnMappings(prev => ({
-                                                ...prev,
-                                                [column]: e.target.value
-                                            }))}
+                                            onChange={e =>
+                                                setColumnMappings(prev => ({
+                                                    ...prev,
+                                                    [column]: e.target.value,
+                                                }))
+                                            }
                                             className={`px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
                                                 mapping === 'skip'
                                                     ? 'border-gray-300 bg-white'
@@ -201,20 +240,32 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                                             }`}
                                         >
                                             {/* Skip option */}
-                                            <option value="skip">{m['developerPortal.onboarding.templateBuilder.csvSkipColumn']()}</option>
+                                            <option value="skip">
+                                                {m[
+                                                    'developerPortal.onboarding.templateBuilder.csvSkipColumn'
+                                                ]()}
+                                            </option>
 
                                             {/* Group options by category */}
                                             {Object.entries(FIELD_GROUPS)
                                                 .filter(([key]) => key !== 'skip')
                                                 .map(([groupKey, groupLabel]) => {
-                                                    const groupOptions = CATALOG_FIELD_OPTIONS.filter(o => o.group === groupKey);
+                                                    const groupOptions =
+                                                        CATALOG_FIELD_OPTIONS.filter(
+                                                            o => o.group === groupKey
+                                                        );
 
                                                     if (groupOptions.length === 0) return null;
 
                                                     return (
                                                         <optgroup key={groupKey} label={groupLabel}>
                                                             {groupOptions.map(option => (
-                                                                <option key={option.id} value={option.id}>{option.label}</option>
+                                                                <option
+                                                                    key={option.id}
+                                                                    value={option.id}
+                                                                >
+                                                                    {option.label}
+                                                                </option>
                                                             ))}
                                                         </optgroup>
                                                     );
@@ -230,17 +281,22 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                     <div>
                         <div className="mb-3">
                             <label className="block text-sm font-medium text-gray-700">
-                                {m['developerPortal.onboarding.templateBuilder.csvIssuanceFields']()}
+                                {m[
+                                    'developerPortal.onboarding.templateBuilder.csvIssuanceFields'
+                                ]()}
                             </label>
                             <p className="text-xs text-gray-500">
-                                {m['developerPortal.onboarding.templateBuilder.csvIssuanceFieldsDesc']()}
+                                {m[
+                                    'developerPortal.onboarding.templateBuilder.csvIssuanceFieldsDesc'
+                                ]()}
                             </p>
                         </div>
 
                         {/* Dynamic fields - user can toggle */}
                         <div className="grid grid-cols-2 gap-2 mb-4">
                             {ISSUANCE_FIELDS.filter(f => f.type === 'dynamic').map(field => {
-                                const isIncluded = issuanceFieldsIncluded[field.id] ?? field.defaultIncluded;
+                                const isIncluded =
+                                    issuanceFieldsIncluded[field.id] ?? field.defaultIncluded;
 
                                 return (
                                     <label
@@ -254,21 +310,29 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                                         <input
                                             type="checkbox"
                                             checked={isIncluded}
-                                            onChange={(e) => setIssuanceFieldsIncluded(prev => ({
-                                                ...prev,
-                                                [field.id]: e.target.checked
-                                            }))}
+                                            onChange={e =>
+                                                setIssuanceFieldsIncluded(prev => ({
+                                                    ...prev,
+                                                    [field.id]: e.target.checked,
+                                                }))
+                                            }
                                             className="w-4 h-4 rounded border-gray-300 text-violet-500 focus:ring-2 focus:ring-violet-500"
                                         />
 
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2">
-                                                <span className="font-medium text-gray-800 text-sm">{field.label}</span>
+                                                <span className="font-medium text-gray-800 text-sm">
+                                                    {field.label}
+                                                </span>
                                                 <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-violet-100 text-violet-700">
-                                                    {m['developerPortal.onboarding.templateBuilder.csvDynamic']()}
+                                                    {m[
+                                                        'developerPortal.onboarding.templateBuilder.csvDynamic'
+                                                    ]()}
                                                 </span>
                                             </div>
-                                            <div className="text-xs text-gray-500">{field.description}</div>
+                                            <div className="text-xs text-gray-500">
+                                                {field.description}
+                                            </div>
                                         </div>
 
                                         {isIncluded && (
@@ -287,11 +351,18 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                                 <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-cyan-100 text-cyan-700">
                                     {m['developerPortal.onboarding.templateBuilder.csvSystem']()}
                                 </span>
-                                <span className="text-xs text-cyan-700 font-medium">{m['developerPortal.onboarding.templateBuilder.csvAutoInjected']()}</span>
+                                <span className="text-xs text-cyan-700 font-medium">
+                                    {m[
+                                        'developerPortal.onboarding.templateBuilder.csvAutoInjected'
+                                    ]()}
+                                </span>
                             </div>
                             <div className="space-y-1">
                                 {ISSUANCE_FIELDS.filter(f => f.type === 'system').map(field => (
-                                    <div key={field.id} className="flex items-center gap-2 text-xs text-cyan-800">
+                                    <div
+                                        key={field.id}
+                                        className="flex items-center gap-2 text-xs text-cyan-800"
+                                    >
                                         <CheckCircle2 className="w-3 h-3 text-cyan-600" />
                                         <span className="font-medium">{field.label}</span>
                                         <span className="text-cyan-600">— {field.description}</span>
@@ -309,15 +380,30 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
 
                         <div className="space-y-2">
                             {csvSampleRows.slice(0, 3).map((row, idx) => {
-                                const nameCol = Object.entries(columnMappings).find(([_, type]) => type === 'achievement.name')?.[0];
+                                const nameCol = Object.entries(columnMappings).find(
+                                    ([_, type]) => type === 'achievement.name'
+                                )?.[0];
                                 const name = nameCol ? row[nameCol] : `Course ${idx + 1}`;
 
                                 return (
-                                    <div key={idx} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-200">
+                                    <div
+                                        key={idx}
+                                        className="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-200"
+                                    >
                                         <Award className="w-4 h-4 text-cyan-500" />
-                                        <span className="font-medium text-gray-800">{m['developerPortal.onboarding.templateBuilder.csvCompletion']({ name })}</span>
+                                        <span className="font-medium text-gray-800">
+                                            {m[
+                                                'developerPortal.onboarding.templateBuilder.csvCompletion'
+                                            ]({ name })}
+                                        </span>
                                         <span className="text-xs text-gray-500">
-                                            {m['developerPortal.onboarding.templateBuilder.csvDynamicFieldsCount']({ count: Object.values(issuanceFieldsIncluded).filter(Boolean).length })}
+                                            {m[
+                                                'developerPortal.onboarding.templateBuilder.csvDynamicFieldsCount'
+                                            ]({
+                                                count: Object.values(issuanceFieldsIncluded).filter(
+                                                    Boolean
+                                                ).length,
+                                            })}
                                         </span>
                                     </div>
                                 );
@@ -325,7 +411,9 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
 
                             {csvAllRows.length > 3 && (
                                 <div className="text-xs text-gray-500 text-center py-1">
-                                    {m['developerPortal.onboarding.templateBuilder.csvAndMore']({ count: csvAllRows.length - 3 })}
+                                    {m['developerPortal.onboarding.templateBuilder.csvAndMore']({
+                                        count: csvAllRows.length - 3,
+                                    })}
                                 </div>
                             )}
                         </div>
@@ -335,7 +423,9 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                 {/* Modal Footer */}
                 <div className="flex items-center justify-between p-4 border-t border-gray-200">
                     <div className="text-sm text-gray-600">
-                        {m['developerPortal.onboarding.templateBuilder.csvWillCreate']({ count: csvAllRows.length })}
+                        {m['developerPortal.onboarding.templateBuilder.csvWillCreate']({
+                            count: csvAllRows.length,
+                        })}
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -352,7 +442,9 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                             className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-xl font-medium hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             <Check className="w-4 h-4" />
-                            {m['developerPortal.onboarding.templateBuilder.csvCreateBoosts']({ count: csvAllRows.length })}
+                            {m['developerPortal.onboarding.templateBuilder.csvCreateBoosts']({
+                                count: csvAllRows.length,
+                            })}
                         </button>
                     </div>
                 </div>

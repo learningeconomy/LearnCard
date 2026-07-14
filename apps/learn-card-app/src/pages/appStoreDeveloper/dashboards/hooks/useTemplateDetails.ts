@@ -379,7 +379,10 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
             }
 
             const wallet = await initWalletRef.current();
-            const name = options?.name || (credential.name as string) || m['developerPortal.dashboards.template.untitled']();
+            const name =
+                options?.name ||
+                (credential.name as string) ||
+                m['developerPortal.dashboards.template.untitled']();
 
             // Generate or use provided alias (only meaningful with listingId)
             let templateAlias = options?.alias || generateTemplateAlias(name);
@@ -474,7 +477,10 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
             options?: { name?: string }
         ): Promise<void> => {
             const wallet = await initWalletRef.current();
-            const name = options?.name || (credential.name as string) || m['developerPortal.dashboards.template.untitled']();
+            const name =
+                options?.name ||
+                (credential.name as string) ||
+                m['developerPortal.dashboards.template.untitled']();
 
             // Replace system placeholders
             const issuerDid = wallet.id.did();

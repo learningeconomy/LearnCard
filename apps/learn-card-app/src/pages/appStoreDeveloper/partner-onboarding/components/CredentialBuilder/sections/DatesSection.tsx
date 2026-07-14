@@ -49,14 +49,18 @@ export const DatesSection: React.FC<DatesSectionProps> = ({
         >
             <FieldEditor
                 label={m['developerPortal.credentialBuilder.dates.issuanceDate']()}
-                field={systemField('The current timestamp when the credential is issued (ISO 8601 format)')}
+                field={systemField(
+                    'The current timestamp when the credential is issued (ISO 8601 format)'
+                )}
                 onChange={() => {}}
                 helpText={m['developerPortal.credentialBuilder.dates.issuanceDateHelp']()}
             />
 
             <div className="mt-4">
                 <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm font-medium text-gray-700">{m['developerPortal.credentialBuilder.dates.expirationDate']()}</label>
+                    <label className="text-sm font-medium text-gray-700">
+                        {m['developerPortal.credentialBuilder.dates.expirationDate']()}
+                    </label>
 
                     <button
                         type="button"
@@ -67,7 +71,9 @@ export const DatesSection: React.FC<DatesSectionProps> = ({
                                 : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                         }`}
                     >
-                        {hasExpiration ? m['developerPortal.credentialBuilder.dates.removeExpiration']() : m['developerPortal.credentialBuilder.dates.addExpiration']()}
+                        {hasExpiration
+                            ? m['developerPortal.credentialBuilder.dates.removeExpiration']()
+                            : m['developerPortal.credentialBuilder.dates.addExpiration']()}
                     </button>
                 </div>
 
@@ -75,8 +81,10 @@ export const DatesSection: React.FC<DatesSectionProps> = ({
                     <FieldEditor
                         label=""
                         field={template.validUntil || staticField('')}
-                        onChange={(f) => updateField('validUntil', f)}
-                        placeholder={m['developerPortal.credentialBuilder.dates.expirationPlaceholder']()}
+                        onChange={f => updateField('validUntil', f)}
+                        placeholder={m[
+                            'developerPortal.credentialBuilder.dates.expirationPlaceholder'
+                        ]()}
                         helpText={m['developerPortal.credentialBuilder.dates.expirationHelp']()}
                         showDynamicToggle={!disableDynamicFields}
                     />

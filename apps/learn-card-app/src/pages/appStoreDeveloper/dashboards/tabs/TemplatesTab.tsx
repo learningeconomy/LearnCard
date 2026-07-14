@@ -1,6 +1,6 @@
 /**
  * TemplatesTab - Dashboard version of credential template management
- * 
+ *
  * Re-exports TemplateBuilderStep for full functionality including:
  * - Master templates with child boosts
  * - CSV catalog import
@@ -37,16 +37,19 @@ export const TemplatesTab: React.FC<TemplatesTabProps> = ({
                 image: currentLCNUser.image || '',
                 shortBio: currentLCNUser.shortBio || '',
                 bio: currentLCNUser.bio || '',
-                display: currentLCNUser.display as Record<string, unknown> || {},
+                display: (currentLCNUser.display as Record<string, unknown>) || {},
             };
         }
         return null;
     }, [propBranding, currentLCNUser]);
 
-    const project = useMemo(() => ({
-        id: integrationId,
-        name: m['developerPortal.dashboards.tabs.templates.projectName'](),
-    }), [integrationId]);
+    const project = useMemo(
+        () => ({
+            id: integrationId,
+            name: m['developerPortal.dashboards.tabs.templates.projectName'](),
+        }),
+        [integrationId]
+    );
 
     const handleComplete = () => {
         onRefresh?.();

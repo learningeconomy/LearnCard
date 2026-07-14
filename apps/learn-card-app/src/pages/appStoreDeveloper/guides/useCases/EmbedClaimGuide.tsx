@@ -66,7 +66,9 @@ const PublishableKeyStep: React.FC<{
             await Clipboard.write({ string: publishableKey });
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
-            presentToast(m['developerPortal.guides.embedClaim.publishableKeyStep.copiedButton'](), { hasDismissButton: true });
+            presentToast(m['developerPortal.guides.embedClaim.publishableKeyStep.copiedButton'](), {
+                hasDismissButton: true,
+            });
         } catch {
             presentToast(m['developerPortal.guides.embedClaim.genericFailedToast'](), {
                 type: ToastTypeEnum.Error,
@@ -78,7 +80,9 @@ const PublishableKeyStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.embedClaim.publishableKeyStep.title']()}</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.embedClaim.publishableKeyStep.title']()}
+                </h3>
 
                 <p className="text-gray-600">
                     {m['developerPortal.guides.embedClaim.publishableKeyStep.description']()}
@@ -90,13 +94,21 @@ const PublishableKeyStep: React.FC<{
                 status={selectedIntegration ? 'ready' : 'warning'}
                 label={
                     selectedIntegration
-                        ? m['developerPortal.guides.embedClaim.publishableKeyStep.statusReadyLabel']({ name: selectedIntegration.name })
-                        : m['developerPortal.guides.embedClaim.publishableKeyStep.statusWarningLabel']()
+                        ? m[
+                              'developerPortal.guides.embedClaim.publishableKeyStep.statusReadyLabel'
+                          ]({ name: selectedIntegration.name })
+                        : m[
+                              'developerPortal.guides.embedClaim.publishableKeyStep.statusWarningLabel'
+                          ]()
                 }
                 description={
                     selectedIntegration
-                        ? m['developerPortal.guides.embedClaim.publishableKeyStep.statusReadyDesc']()
-                        : m['developerPortal.guides.embedClaim.publishableKeyStep.statusWarningDesc']()
+                        ? m[
+                              'developerPortal.guides.embedClaim.publishableKeyStep.statusReadyDesc'
+                          ]()
+                        : m[
+                              'developerPortal.guides.embedClaim.publishableKeyStep.statusWarningDesc'
+                          ]()
                 }
             />
 
@@ -113,7 +125,13 @@ const PublishableKeyStep: React.FC<{
                             className="text-xs text-emerald-700 hover:text-emerald-800 flex items-center gap-1"
                         >
                             {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                            {copied ? m['developerPortal.guides.embedClaim.publishableKeyStep.copiedButton']() : m['developerPortal.guides.embedClaim.publishableKeyStep.copyButton']()}
+                            {copied
+                                ? m[
+                                      'developerPortal.guides.embedClaim.publishableKeyStep.copiedButton'
+                                  ]()
+                                : m[
+                                      'developerPortal.guides.embedClaim.publishableKeyStep.copyButton'
+                                  ]()}
                         </button>
                     </div>
 
@@ -129,7 +147,9 @@ const PublishableKeyStep: React.FC<{
                 <div className="p-6 bg-amber-50 border border-amber-200 rounded-xl text-center">
                     <Building2 className="w-10 h-10 text-amber-400 mx-auto mb-3" />
 
-                    <p className="text-amber-800 font-medium mb-1">{m['developerPortal.guides.embedClaim.publishableKeyStep.noProjectTitle']()}</p>
+                    <p className="text-amber-800 font-medium mb-1">
+                        {m['developerPortal.guides.embedClaim.publishableKeyStep.noProjectTitle']()}
+                    </p>
 
                     <p className="text-sm text-amber-700">
                         {m['developerPortal.guides.embedClaim.publishableKeyStep.noProjectDesc']()}
@@ -191,7 +211,9 @@ const AddTargetStep: React.FC<{
             />
 
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                <h4 className="font-medium text-gray-800 mb-2">{m['developerPortal.guides.embedClaim.addTargetStep.whatGetsRendered']()}</h4>
+                <h4 className="font-medium text-gray-800 mb-2">
+                    {m['developerPortal.guides.embedClaim.addTargetStep.whatGetsRendered']()}
+                </h4>
 
                 <p className="text-sm text-gray-600 mb-3">
                     {m['developerPortal.guides.embedClaim.addTargetStep.whatGetsRenderedDesc']()}
@@ -202,7 +224,9 @@ const AddTargetStep: React.FC<{
                         {m['developerPortal.guides.embedClaim.addTargetStep.exampleButtonLabel']()}
                     </div>
 
-                    <span className="text-xs text-gray-500">{m['developerPortal.guides.embedClaim.addTargetStep.exampleLabel']()}</span>
+                    <span className="text-xs text-gray-500">
+                        {m['developerPortal.guides.embedClaim.addTargetStep.exampleLabel']()}
+                    </span>
                 </div>
             </div>
 
@@ -245,9 +269,13 @@ const LoadSdkStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.embedClaim.loadSdkStep.title']()}</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.embedClaim.loadSdkStep.title']()}
+                </h3>
 
-                <p className="text-gray-600">{m['developerPortal.guides.embedClaim.loadSdkStep.description']()}</p>
+                <p className="text-gray-600">
+                    {m['developerPortal.guides.embedClaim.loadSdkStep.description']()}
+                </p>
             </div>
 
             <div className="flex gap-2">
@@ -276,7 +304,7 @@ const LoadSdkStep: React.FC<{
 
             {method === 'cdn' ? (
                 <CodeOutputPanel
-                    title={m["developerPortal.guides.embedClaim.loadSdkStep.cdnScriptTagTitle"]()}
+                    title={m['developerPortal.guides.embedClaim.loadSdkStep.cdnScriptTagTitle']()}
                     snippets={{
                         typescript: `<!-- Add before closing </body> tag -->
 <script src="https://cdn.jsdelivr.net/npm/@learncard/embed-sdk@latest/dist/learncard.js" defer></script>
@@ -293,7 +321,9 @@ const LoadSdkStep: React.FC<{
                 />
             ) : (
                 <CodeOutputPanel
-                    title={m["developerPortal.guides.embedClaim.loadSdkStep.npmInstallationTitle"]()}
+                    title={m[
+                        'developerPortal.guides.embedClaim.loadSdkStep.npmInstallationTitle'
+                    ]()}
                     snippets={{
                         typescript: `# Install the package
 npm install @learncard/embed-sdk
@@ -310,7 +340,9 @@ init({
             )}
 
             <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-                <h4 className="font-medium text-emerald-800 mb-2">{m['developerPortal.guides.embedClaim.loadSdkStep.zeroDepsTitle']()}</h4>
+                <h4 className="font-medium text-emerald-800 mb-2">
+                    {m['developerPortal.guides.embedClaim.loadSdkStep.zeroDepsTitle']()}
+                </h4>
 
                 <p className="text-sm text-emerald-700">
                     {m['developerPortal.guides.embedClaim.loadSdkStep.zeroDepsDesc']()}
@@ -482,7 +514,9 @@ const ConfigureStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.embedClaim.configureStep.title']()}</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.embedClaim.configureStep.title']()}
+                </h3>
 
                 <p className="text-gray-600">
                     {m['developerPortal.guides.embedClaim.configureStep.description']()}
@@ -506,12 +540,20 @@ const ConfigureStep: React.FC<{
                                     await Clipboard.write({ string: publishableKey });
                                     setKeyCopied(true);
                                     setTimeout(() => setKeyCopied(false), 2000);
-                                    presentToast(m['developerPortal.guides.embedClaim.publishableKeyStep.copiedButton'](), { hasDismissButton: true });
+                                    presentToast(
+                                        m[
+                                            'developerPortal.guides.embedClaim.publishableKeyStep.copiedButton'
+                                        ](),
+                                        { hasDismissButton: true }
+                                    );
                                 } catch {
-                                    presentToast(m['developerPortal.guides.embedClaim.genericFailedToast'](), {
-                                        type: ToastTypeEnum.Error,
-                                        hasDismissButton: true,
-                                    });
+                                    presentToast(
+                                        m['developerPortal.guides.embedClaim.genericFailedToast'](),
+                                        {
+                                            type: ToastTypeEnum.Error,
+                                            hasDismissButton: true,
+                                        }
+                                    );
                                 }
                             }}
                             className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
@@ -549,10 +591,16 @@ const ConfigureStep: React.FC<{
                         </div>
 
                         <div className="flex-1">
-                            <h4 className="font-medium text-amber-800 mb-1">{m['developerPortal.guides.embedClaim.configureStep.noProjectTitle']()}</h4>
+                            <h4 className="font-medium text-amber-800 mb-1">
+                                {m[
+                                    'developerPortal.guides.embedClaim.configureStep.noProjectTitle'
+                                ]()}
+                            </h4>
 
                             <p className="text-sm text-amber-700">
-                                {m['developerPortal.guides.embedClaim.configureStep.noProjectDesc']()}
+                                {m[
+                                    'developerPortal.guides.embedClaim.configureStep.noProjectDesc'
+                                ]()}
                             </p>
                         </div>
                     </div>
@@ -584,7 +632,9 @@ const ConfigureStep: React.FC<{
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">
-                                {m['developerPortal.guides.embedClaim.configureStep.primaryColor']()}
+                                {m[
+                                    'developerPortal.guides.embedClaim.configureStep.primaryColor'
+                                ]()}
                             </label>
 
                             <div className="flex gap-2">
@@ -641,14 +691,18 @@ const ConfigureStep: React.FC<{
                     <div className="pt-3 border-t border-gray-100">
                         <label className="block text-xs font-medium text-gray-600 mb-1">
                             {m['developerPortal.guides.embedClaim.configureStep.partnerName']()}{' '}
-                            {m['developerPortal.guides.embedClaim.configureStep.partnerNameOptional']()}
+                            {m[
+                                'developerPortal.guides.embedClaim.configureStep.partnerNameOptional'
+                            ]()}
                         </label>
 
                         <input
                             type="text"
                             value={partnerName}
                             onChange={e => setPartnerName(e.target.value)}
-                            placeholder={m['developerPortal.guides.embedClaim.configureStep.partnerNamePlaceholder']()}
+                            placeholder={m[
+                                'developerPortal.guides.embedClaim.configureStep.partnerNamePlaceholder'
+                            ]()}
                             className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             style={{ colorScheme: 'light' }}
                         />
@@ -662,7 +716,9 @@ const ConfigureStep: React.FC<{
                     <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">
                             {m['developerPortal.guides.embedClaim.configureStep.partnerLogo']()}{' '}
-                            {m['developerPortal.guides.embedClaim.configureStep.partnerLogoOptional']()}
+                            {m[
+                                'developerPortal.guides.embedClaim.configureStep.partnerLogoOptional'
+                            ]()}
                         </label>
 
                         <div className="flex gap-2">
@@ -672,7 +728,9 @@ const ConfigureStep: React.FC<{
                                 onChange={e =>
                                     setBranding({ ...branding, partnerLogoUrl: e.target.value })
                                 }
-                                placeholder={m['developerPortal.guides.embedClaim.configureStep.partnerLogoPlaceholder']()}
+                                placeholder={m[
+                                    'developerPortal.guides.embedClaim.configureStep.partnerLogoPlaceholder'
+                                ]()}
                                 className="flex-1 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                 disabled={isUploadingLogo}
                                 style={{ colorScheme: 'light' }}
@@ -683,7 +741,9 @@ const ConfigureStep: React.FC<{
                                 onClick={() => handleLogoUpload()}
                                 disabled={isUploadingLogo}
                                 className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center gap-1"
-                                title={m["developerPortal.guides.embedClaim.configureStep.uploadImageTitle"]()}
+                                title={m[
+                                    'developerPortal.guides.embedClaim.configureStep.uploadImageTitle'
+                                ]()}
                             >
                                 {isUploadingLogo ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -696,7 +756,9 @@ const ConfigureStep: React.FC<{
                         {branding.partnerLogoUrl && (
                             <img
                                 src={branding.partnerLogoUrl}
-                                alt={m['developerPortal.guides.embedClaim.configureStep.logoPreviewAlt']()}
+                                alt={m[
+                                    'developerPortal.guides.embedClaim.configureStep.logoPreviewAlt'
+                                ]()}
                                 className="mt-2 h-12 object-contain rounded border border-gray-200"
                                 onError={e => {
                                     (e.target as HTMLImageElement).style.display = 'none';
@@ -723,11 +785,15 @@ const ConfigureStep: React.FC<{
 
                         <div>
                             <span className="text-sm font-medium text-gray-700">
-                                {m['developerPortal.guides.embedClaim.configureStep.backgroundIssuanceLabel']()}
+                                {m[
+                                    'developerPortal.guides.embedClaim.configureStep.backgroundIssuanceLabel'
+                                ]()}
                             </span>
 
                             <p className="text-xs text-gray-500 mt-0.5">
-                                {m['developerPortal.guides.embedClaim.configureStep.backgroundIssuanceDesc']()}
+                                {m[
+                                    'developerPortal.guides.embedClaim.configureStep.backgroundIssuanceDesc'
+                                ]()}
                             </p>
                         </div>
                     </label>
@@ -759,7 +825,9 @@ const ConfigureStep: React.FC<{
                                 }
                             }
                         }}
-                        placeholder={m['developerPortal.guides.embedClaim.configureStep.whitelistedDomainsPlaceholder']()}
+                        placeholder={m[
+                            'developerPortal.guides.embedClaim.configureStep.whitelistedDomainsPlaceholder'
+                        ]()}
                         className="flex-1 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                         style={{ colorScheme: 'light' }}
                     />
@@ -775,7 +843,9 @@ const ConfigureStep: React.FC<{
                         }}
                         className="px-3 py-2 bg-cyan-500 text-white text-sm font-medium rounded-lg hover:bg-cyan-600 transition-colors"
                     >
-                        {m['developerPortal.guides.embedClaim.configureStep.whitelistedDomainsAdd']()}
+                        {m[
+                            'developerPortal.guides.embedClaim.configureStep.whitelistedDomainsAdd'
+                        ]()}
                     </button>
                 </div>
 
@@ -795,7 +865,9 @@ const ConfigureStep: React.FC<{
                                         )
                                     }
                                     className="text-indigo-400 hover:text-indigo-700 ml-0.5"
-                                    aria-label={m['developerPortal.guides.embedClaim.configureStep.whitelistedDomainsRemoveLabel']({ domain })}
+                                    aria-label={m[
+                                        'developerPortal.guides.embedClaim.configureStep.whitelistedDomainsRemoveLabel'
+                                    ]({ domain })}
                                 >
                                     &times;
                                 </button>
@@ -804,36 +876,60 @@ const ConfigureStep: React.FC<{
                     </div>
                 ) : (
                     <p className="text-xs text-amber-600">
-                        {m['developerPortal.guides.embedClaim.configureStep.whitelistedDomainsEmpty']()}
+                        {m[
+                            'developerPortal.guides.embedClaim.configureStep.whitelistedDomainsEmpty'
+                        ]()}
                     </p>
                 )}
             </div>
 
-            <CodeOutputPanel title={m['developerPortal.guides.embedClaim.configureStep.fullConfig']()} snippets={{ typescript: getCode() }} />
+            <CodeOutputPanel
+                title={m['developerPortal.guides.embedClaim.configureStep.fullConfig']()}
+                snippets={{ typescript: getCode() }}
+            />
 
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                <h4 className="font-medium text-amber-800 mb-2">{m['developerPortal.guides.embedClaim.configureStep.importantOptions']()}</h4>
+                <h4 className="font-medium text-amber-800 mb-2">
+                    {m['developerPortal.guides.embedClaim.configureStep.importantOptions']()}
+                </h4>
 
                 <ul className="text-sm text-amber-700 space-y-1">
                     <li>
-                        {'•'} <code className="bg-amber-100 px-1 rounded">target</code>{' — '}{m['developerPortal.guides.embedClaim.configureStep.optionTargetDesc']()}
+                        {'•'} <code className="bg-amber-100 px-1 rounded">target</code>
+                        {' — '}
+                        {m['developerPortal.guides.embedClaim.configureStep.optionTargetDesc']()}
                     </li>
                     <li>
-                        {'•'} <code className="bg-amber-100 px-1 rounded">credential</code>{' — '}{m['developerPortal.guides.embedClaim.configureStep.optionCredentialDesc']()}
+                        {'•'} <code className="bg-amber-100 px-1 rounded">credential</code>
+                        {' — '}
+                        {m[
+                            'developerPortal.guides.embedClaim.configureStep.optionCredentialDesc'
+                        ]()}
                     </li>
                     <li>
-                        {'•'} <code className="bg-amber-100 px-1 rounded">publishableKey</code>{' — '}{m['developerPortal.guides.embedClaim.configureStep.optionPublishableKeyDesc']()}
+                        {'•'} <code className="bg-amber-100 px-1 rounded">publishableKey</code>
+                        {' — '}
+                        {m[
+                            'developerPortal.guides.embedClaim.configureStep.optionPublishableKeyDesc'
+                        ]()}
                     </li>
                     <li>
-                        {'•'} <code className="bg-amber-100 px-1 rounded">branding</code>{' — '}{m['developerPortal.guides.embedClaim.configureStep.optionBrandingDesc']()}
+                        {'•'} <code className="bg-amber-100 px-1 rounded">branding</code>
+                        {' — '}
+                        {m['developerPortal.guides.embedClaim.configureStep.optionBrandingDesc']()}
                     </li>
                     <li>
                         {'•'}{' '}
                         <code className="bg-amber-100 px-1 rounded">requestBackgroundIssuance</code>{' '}
-                        {' — '}{m['developerPortal.guides.embedClaim.configureStep.optionBackgroundDesc']()}
+                        {' — '}
+                        {m[
+                            'developerPortal.guides.embedClaim.configureStep.optionBackgroundDesc'
+                        ]()}
                     </li>
                     <li>
-                        {'•'} <code className="bg-amber-100 px-1 rounded">onSuccess</code>{' — '}{m['developerPortal.guides.embedClaim.configureStep.optionOnSuccessDesc']()}
+                        {'•'} <code className="bg-amber-100 px-1 rounded">onSuccess</code>
+                        {' — '}
+                        {m['developerPortal.guides.embedClaim.configureStep.optionOnSuccessDesc']()}
                     </li>
                 </ul>
             </div>
@@ -858,7 +954,9 @@ const ConfigureStep: React.FC<{
                             <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
                             <>
-                                {m['developerPortal.guides.embedClaim.configureStep.continueButton']()}
+                                {m[
+                                    'developerPortal.guides.embedClaim.configureStep.continueButton'
+                                ]()}
                                 <ArrowRight className="w-4 h-4" />
                             </>
                         )}
@@ -923,7 +1021,9 @@ const TestStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.embedClaim.testStep.title']()}</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.embedClaim.testStep.title']()}
+                </h3>
 
                 <p className="text-gray-600">
                     {m['developerPortal.guides.embedClaim.testStep.description']()}
@@ -932,7 +1032,9 @@ const TestStep: React.FC<{
 
             {/* Dynamic pre-flight checklist */}
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                <h4 className="font-medium text-gray-800 mb-3">{m['developerPortal.guides.embedClaim.testStep.preflightChecklist']()}</h4>
+                <h4 className="font-medium text-gray-800 mb-3">
+                    {m['developerPortal.guides.embedClaim.testStep.preflightChecklist']()}
+                </h4>
 
                 <div className="space-y-2">
                     {checks.map(check => (
@@ -996,7 +1098,9 @@ const TestStep: React.FC<{
 
             {/* User flow */}
             <div className="p-4 border border-gray-200 rounded-xl">
-                <h4 className="font-medium text-gray-800 mb-3">{m['developerPortal.guides.embedClaim.testStep.userFlow']()}</h4>
+                <h4 className="font-medium text-gray-800 mb-3">
+                    {m['developerPortal.guides.embedClaim.testStep.userFlow']()}
+                </h4>
 
                 <div className="space-y-3">
                     <div className="flex items-start gap-3">
@@ -1008,7 +1112,11 @@ const TestStep: React.FC<{
                             <p className="font-medium text-gray-800">
                                 {m['developerPortal.guides.embedClaim.testStep.userFlowStep1']()}
                             </p>
-                            <p className="text-sm text-gray-500">{m['developerPortal.guides.embedClaim.testStep.userFlowStep1Desc']()}</p>
+                            <p className="text-sm text-gray-500">
+                                {m[
+                                    'developerPortal.guides.embedClaim.testStep.userFlowStep1Desc'
+                                ]()}
+                            </p>
                         </div>
                     </div>
 
@@ -1018,9 +1126,13 @@ const TestStep: React.FC<{
                         </div>
 
                         <div>
-                            <p className="font-medium text-gray-800">{m['developerPortal.guides.embedClaim.testStep.userFlowStep2']()}</p>
+                            <p className="font-medium text-gray-800">
+                                {m['developerPortal.guides.embedClaim.testStep.userFlowStep2']()}
+                            </p>
                             <p className="text-sm text-gray-500">
-                                {m['developerPortal.guides.embedClaim.testStep.userFlowStep2Desc']()}
+                                {m[
+                                    'developerPortal.guides.embedClaim.testStep.userFlowStep2Desc'
+                                ]()}
                             </p>
                         </div>
                     </div>
@@ -1031,9 +1143,13 @@ const TestStep: React.FC<{
                         </div>
 
                         <div>
-                            <p className="font-medium text-gray-800">{m['developerPortal.guides.embedClaim.testStep.userFlowStep3']()}</p>
+                            <p className="font-medium text-gray-800">
+                                {m['developerPortal.guides.embedClaim.testStep.userFlowStep3']()}
+                            </p>
                             <p className="text-sm text-gray-500">
-                                {m['developerPortal.guides.embedClaim.testStep.userFlowStep3Desc']()}
+                                {m[
+                                    'developerPortal.guides.embedClaim.testStep.userFlowStep3Desc'
+                                ]()}
                             </p>
                         </div>
                     </div>
@@ -1044,9 +1160,13 @@ const TestStep: React.FC<{
                         </div>
 
                         <div>
-                            <p className="font-medium text-gray-800">{m['developerPortal.guides.embedClaim.testStep.userFlowStep4']()}</p>
+                            <p className="font-medium text-gray-800">
+                                {m['developerPortal.guides.embedClaim.testStep.userFlowStep4']()}
+                            </p>
                             <p className="text-sm text-gray-500">
-                                {m['developerPortal.guides.embedClaim.testStep.userFlowStep4Desc']()}
+                                {m[
+                                    'developerPortal.guides.embedClaim.testStep.userFlowStep4Desc'
+                                ]()}
                             </p>
                         </div>
                     </div>
@@ -1055,7 +1175,9 @@ const TestStep: React.FC<{
 
             {/* Returning users */}
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                <h4 className="font-medium text-blue-800 mb-2">{m['developerPortal.guides.embedClaim.testStep.returningUsers']()}</h4>
+                <h4 className="font-medium text-blue-800 mb-2">
+                    {m['developerPortal.guides.embedClaim.testStep.returningUsers']()}
+                </h4>
 
                 <p className="text-sm text-blue-700">
                     {m['developerPortal.guides.embedClaim.testStep.returningUsersDesc']()}
@@ -1068,7 +1190,9 @@ const TestStep: React.FC<{
                     <Play className="w-8 h-8 text-emerald-600" />
                 </div>
 
-                <h4 className="text-lg font-semibold text-gray-800 mb-2">{m['developerPortal.guides.embedClaim.testStep.readyToGoLive']()}</h4>
+                <h4 className="text-lg font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.embedClaim.testStep.readyToGoLive']()}
+                </h4>
 
                 <p className="text-gray-600 mb-4">
                     {m['developerPortal.guides.embedClaim.testStep.readyToGoLiveDesc']()}

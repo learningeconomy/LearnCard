@@ -157,7 +157,9 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
             <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-gray-50">
                 <div className="flex items-center gap-2">
                     <Code className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm font-medium text-gray-700">{m['developerPortal.credentialBuilder.jsonPreview.title']()}</span>
+                    <span className="text-sm font-medium text-gray-700">
+                        {m['developerPortal.credentialBuilder.jsonPreview.title']()}
+                    </span>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -259,7 +261,9 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
                     <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
 
                     <div className="flex-1">
-                        <p className="text-xs font-medium text-red-700">{m['developerPortal.credentialBuilder.jsonPreview.invalidJson']()}</p>
+                        <p className="text-xs font-medium text-red-700">
+                            {m['developerPortal.credentialBuilder.jsonPreview.invalidJson']()}
+                        </p>
                         <p className="text-xs text-red-600 mt-0.5">{parseError}</p>
                     </div>
                 </div>
@@ -271,7 +275,9 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
                     <XCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
 
                     <div className="flex-1">
-                        <p className="text-xs font-medium text-red-700">{m['developerPortal.credentialBuilder.jsonPreview.issueTestFailed']()}</p>
+                        <p className="text-xs font-medium text-red-700">
+                            {m['developerPortal.credentialBuilder.jsonPreview.issueTestFailed']()}
+                        </p>
                         <p className="text-xs text-red-600 mt-0.5">{testIssueError}</p>
                     </div>
                 </div>
@@ -284,9 +290,15 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
                     {dynamicVariables.length > 0 && (
                         <div>
                             <p className="text-xs font-medium text-violet-700 mb-1">
-                                {m['developerPortal.credentialBuilder.jsonPreview.dynamicVariables']()} ({dynamicVariables.length})
+                                {m[
+                                    'developerPortal.credentialBuilder.jsonPreview.dynamicVariables'
+                                ]()}{' '}
+                                ({dynamicVariables.length})
                                 <span className="font-normal text-gray-500 ml-1">
-                                    — {m['developerPortal.credentialBuilder.jsonPreview.dynamicVariablesHint']()}
+                                    —{' '}
+                                    {m[
+                                        'developerPortal.credentialBuilder.jsonPreview.dynamicVariablesHint'
+                                    ]()}
                                 </span>
                             </p>
 
@@ -307,8 +319,16 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
                     {systemVariables.length > 0 && (
                         <div>
                             <p className="text-xs font-medium text-gray-500 mb-1">
-                                {m['developerPortal.credentialBuilder.jsonPreview.systemVariables']()} ({systemVariables.length})
-                                <span className="font-normal ml-1">— {m['developerPortal.credentialBuilder.jsonPreview.systemVariablesHint']()}</span>
+                                {m[
+                                    'developerPortal.credentialBuilder.jsonPreview.systemVariables'
+                                ]()}{' '}
+                                ({systemVariables.length})
+                                <span className="font-normal ml-1">
+                                    —{' '}
+                                    {m[
+                                        'developerPortal.credentialBuilder.jsonPreview.systemVariablesHint'
+                                    ]()}
+                                </span>
                             </p>
 
                             <div className="flex flex-wrap gap-1">

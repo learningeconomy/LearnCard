@@ -13,7 +13,10 @@ export const highlightCode = (code: string): React.ReactNode[] => {
     const patterns: { type: string; regex: RegExp }[] = [
         { type: 'comment', regex: /^(\/\/[^\n]*|\/\*[\s\S]*?\*\/)/ },
         { type: 'string', regex: /^(`[\s\S]*?`|'[^']*'|"[^"]*")/ },
-        { type: 'keyword', regex: /^(const|let|var|function|async|await|return|import|export|from|if|else|for|while|class|new|typeof|instanceof|try|catch|throw|finally)\b/ },
+        {
+            type: 'keyword',
+            regex: /^(const|let|var|function|async|await|return|import|export|from|if|else|for|while|class|new|typeof|instanceof|try|catch|throw|finally)\b/,
+        },
         { type: 'boolean', regex: /^(true|false|null|undefined)\b/ },
         { type: 'function', regex: /^([a-zA-Z_$][a-zA-Z0-9_$]*)\s*(?=\()/ },
         { type: 'property', regex: /^(\.[a-zA-Z_$][a-zA-Z0-9_$]*)/ },
@@ -75,8 +78,8 @@ interface CodeBlockProps {
 /**
  * Reusable code block component with syntax highlighting and copy button
  */
-export const CodeBlock: React.FC<CodeBlockProps> = ({ 
-    code, 
+export const CodeBlock: React.FC<CodeBlockProps> = ({
+    code,
     language = 'typescript',
     className = '',
     maxHeight = '',

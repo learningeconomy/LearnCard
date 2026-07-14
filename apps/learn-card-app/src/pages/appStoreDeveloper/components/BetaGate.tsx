@@ -204,7 +204,9 @@ export const BetaGate: React.FC<BetaGateProps> = ({ children }) => {
                                 type="text"
                                 value={password}
                                 onChange={e => setPassword(e.target.value)}
-                                placeholder={m['developerPortal.components.betaGate.accessCodePlaceholder']()}
+                                placeholder={m[
+                                    'developerPortal.components.betaGate.accessCodePlaceholder'
+                                ]()}
                                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all text-gray-900 bg-white"
                                 autoFocus
                                 autoComplete="off"
@@ -294,25 +296,35 @@ export const BetaGate: React.FC<BetaGateProps> = ({ children }) => {
                     </div>
 
                     <div className="space-y-3 mb-6">
-                        <p className="text-sm font-medium text-gray-700">{m['developerPortal.components.betaGate.yourAccessIncludes']()}</p>
+                        <p className="text-sm font-medium text-gray-700">
+                            {m['developerPortal.components.betaGate.yourAccessIncludes']()}
+                        </p>
 
                         <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                             <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
 
-                            <span className="text-gray-700">{m['developerPortal.components.betaGate.integrationDashboard']()}</span>
+                            <span className="text-gray-700">
+                                {m['developerPortal.components.betaGate.integrationDashboard']()}
+                            </span>
                         </div>
 
                         <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                             <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
 
-                            <span className="text-gray-700">{m['developerPortal.components.betaGate.apiTokenManagement']()}</span>
+                            <span className="text-gray-700">
+                                {m['developerPortal.components.betaGate.apiTokenManagement']()}
+                            </span>
                         </div>
 
                         {isFull ? (
                             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                                 <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
 
-                                <span className="text-gray-700">{m['developerPortal.components.betaGate.allIntegrationGuides']()}</span>
+                                <span className="text-gray-700">
+                                    {m[
+                                        'developerPortal.components.betaGate.allIntegrationGuides'
+                                    ]()}
+                                </span>
                             </div>
                         ) : (
                             <>
@@ -324,7 +336,8 @@ export const BetaGate: React.FC<BetaGateProps> = ({ children }) => {
                                         <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
 
                                         <span className="text-gray-700">
-                                            {guideNames[guideId] || guideId} {m['developerPortal.components.betaGate.guideLabel']()}
+                                            {guideNames[guideId] || guideId}{' '}
+                                            {m['developerPortal.components.betaGate.guideLabel']()}
                                         </span>
                                     </div>
                                 ))}
@@ -332,7 +345,11 @@ export const BetaGate: React.FC<BetaGateProps> = ({ children }) => {
                                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                                     <Lock className="w-5 h-5 text-gray-400 flex-shrink-0" />
 
-                                    <span className="text-gray-500">{m['developerPortal.components.betaGate.otherGuidesLocked']()}</span>
+                                    <span className="text-gray-500">
+                                        {m[
+                                            'developerPortal.components.betaGate.otherGuidesLocked'
+                                        ]()}
+                                    </span>
                                 </div>
                             </>
                         )}

@@ -760,19 +760,31 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             }`}
                             title={
                                 validationStatus === 'valid'
-                                    ? m['developerPortal.credentialBuilder.validate.tooltip.valid']()
+                                    ? m[
+                                          'developerPortal.credentialBuilder.validate.tooltip.valid'
+                                      ]()
                                     : validationStatus === 'invalid' && analyzedError
-                                    ? m['developerPortal.credentialBuilder.validate.tooltip.invalidWithSuggestions']({
-                                        summary: analyzedError.summary,
-                                        suggestions: analyzedError.suggestions.join('\n• ')
-                                    })
+                                    ? m[
+                                          'developerPortal.credentialBuilder.validate.tooltip.invalidWithSuggestions'
+                                      ]({
+                                          summary: analyzedError.summary,
+                                          suggestions: analyzedError.suggestions.join('\n• '),
+                                      })
                                     : validationStatus === 'invalid'
-                                    ? m['developerPortal.credentialBuilder.validate.tooltip.invalidGeneric']({ error: validationError || '' })
+                                    ? m[
+                                          'developerPortal.credentialBuilder.validate.tooltip.invalidGeneric'
+                                      ]({ error: validationError || '' })
                                     : validationStatus === 'dirty'
-                                    ? m['developerPortal.credentialBuilder.validate.tooltip.dirty']()
+                                    ? m[
+                                          'developerPortal.credentialBuilder.validate.tooltip.dirty'
+                                      ]()
                                     : validationStatus === 'validating'
-                                    ? m['developerPortal.credentialBuilder.validate.tooltip.validating']()
-                                    : m['developerPortal.credentialBuilder.validate.tooltip.clickToValidate']()
+                                    ? m[
+                                          'developerPortal.credentialBuilder.validate.tooltip.validating'
+                                      ]()
+                                    : m[
+                                          'developerPortal.credentialBuilder.validate.tooltip.clickToValidate'
+                                      ]()
                             }
                         >
                             {validationStatus === 'validating' ? (
@@ -805,7 +817,9 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                         <div className="flex items-center gap-1 px-2 py-1 bg-violet-100 rounded-lg">
                             <Zap className="w-3 h-3 text-violet-600" />
                             <span className="text-xs font-medium text-violet-700">
-                                {m['developerPortal.credentialBuilder.validate.dynamicCount']({ count: dynamicVariables.length })}
+                                {m['developerPortal.credentialBuilder.validate.dynamicCount']({
+                                    count: dynamicVariables.length,
+                                })}
                             </span>
                         </div>
                     )}
@@ -843,13 +857,17 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                 <div className="absolute right-0 top-full mt-1 w-72 bg-white rounded-xl shadow-xl border border-gray-200 z-20 overflow-hidden">
                                     <div className="p-2 border-b border-gray-100">
                                         <p className="text-xs text-gray-500">
-                                            {m['developerPortal.credentialBuilder.templates.choose']()}
+                                            {m[
+                                                'developerPortal.credentialBuilder.templates.choose'
+                                            ]()}
                                         </p>
                                     </div>
 
                                     <div className="max-h-80 overflow-y-auto p-2">
                                         <p className="text-xs font-medium text-gray-400 px-2 py-1 uppercase tracking-wider">
-                                            {m['developerPortal.credentialBuilder.templates.openBadgesSection']()}
+                                            {m[
+                                                'developerPortal.credentialBuilder.templates.openBadgesSection'
+                                            ]()}
                                         </p>
                                         {TEMPLATE_PRESETS.map(preset => {
                                             const IconComponent =
@@ -898,7 +916,9 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                         })}
 
                                         <p className="text-xs font-medium text-gray-400 px-2 py-1 mt-2 uppercase tracking-wider">
-                                            {m['developerPortal.credentialBuilder.templates.clrSection']()}
+                                            {m[
+                                                'developerPortal.credentialBuilder.templates.clrSection'
+                                            ]()}
                                         </p>
                                         {CLR2_PRESETS.map(preset => {
                                             const IconComponent =
@@ -969,10 +989,17 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
             {template.schemaType === 'custom' && (
                 <div className="px-4 py-3 bg-violet-50 border-b border-violet-200">
                     <p className="text-sm text-violet-800">
-                        <strong>{m['developerPortal.credentialBuilder.schema.customTitle']()}</strong>
+                        <strong>
+                            {m['developerPortal.credentialBuilder.schema.customTitle']()}
+                        </strong>
                     </p>
-                    <p className="text-xs text-violet-600 mt-1"
-                        dangerouslySetInnerHTML={{ __html: m['developerPortal.credentialBuilder.schema.customDescription']() }}
+                    <p
+                        className="text-xs text-violet-600 mt-1"
+                        dangerouslySetInnerHTML={{
+                            __html: m[
+                                'developerPortal.credentialBuilder.schema.customDescription'
+                            ](),
+                        }}
                     />
                 </div>
             )}
@@ -985,14 +1012,18 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
 
                         <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-red-800">
-                                {m['developerPortal.credentialBuilder.errorPanel.summary']({ summary: analyzedError.summary })}
+                                {m['developerPortal.credentialBuilder.errorPanel.summary']({
+                                    summary: analyzedError.summary,
+                                })}
                             </p>
 
                             {/* Show changed fields as likely candidates */}
                             {changedFields.length > 0 && (
                                 <div className="mt-2 p-2 bg-red-100 rounded-lg">
                                     <p className="text-xs font-medium text-red-800 mb-1">
-                                        {m['developerPortal.credentialBuilder.errorPanel.likelyCulprits']({ plural: changedFields.length > 1 ? 's' : '' })}
+                                        {m[
+                                            'developerPortal.credentialBuilder.errorPanel.likelyCulprits'
+                                        ]({ plural: changedFields.length > 1 ? 's' : '' })}
                                     </p>
                                     <ul className="space-y-1">
                                         {changedFields.map((change, i) => (
@@ -1008,7 +1039,9 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                                                   ? '...'
                                                                   : ''
                                                           }"`
-                                                        : m['developerPortal.credentialBuilder.errorPanel.empty']()}
+                                                        : m[
+                                                              'developerPortal.credentialBuilder.errorPanel.empty'
+                                                          ]()}
                                                     {' → '}
                                                     {change.newValue
                                                         ? `"${change.newValue.slice(0, 20)}${
@@ -1016,7 +1049,9 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                                                   ? '...'
                                                                   : ''
                                                           }"`
-                                                        : m['developerPortal.credentialBuilder.errorPanel.empty']()}
+                                                        : m[
+                                                              'developerPortal.credentialBuilder.errorPanel.empty'
+                                                          ]()}
                                                 </span>
                                             </li>
                                         ))}
@@ -1082,7 +1117,9 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                                 {m['developerPortal.credentialBuilder.schema.jsonOnlyTitle']()}
                             </h3>
                             <p className="text-sm text-gray-600 mb-4">
-                                {m['developerPortal.credentialBuilder.schema.jsonOnlyDescription']()}
+                                {m[
+                                    'developerPortal.credentialBuilder.schema.jsonOnlyDescription'
+                                ]()}
                             </p>
                             <button
                                 type="button"
@@ -1227,24 +1264,39 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             </div>
 
                             <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-lg">
-                                <p className="text-xs text-cyan-800 text-center"
-                                    dangerouslySetInnerHTML={{ __html: m['developerPortal.credentialBuilder.preview.cardTip']() }}
+                                <p
+                                    className="text-xs text-cyan-800 text-center"
+                                    dangerouslySetInnerHTML={{
+                                        __html: m[
+                                            'developerPortal.credentialBuilder.preview.cardTip'
+                                        ](),
+                                    }}
                                 />
                             </div>
 
                             {!template.image?.value &&
                                 !template.credentialSubject.achievement?.image?.value && (
                                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                                        <p className="text-xs text-amber-800 text-center"
-                                            dangerouslySetInnerHTML={{ __html: m['developerPortal.credentialBuilder.preview.addImageNote']() }}
+                                        <p
+                                            className="text-xs text-amber-800 text-center"
+                                            dangerouslySetInnerHTML={{
+                                                __html: m[
+                                                    'developerPortal.credentialBuilder.preview.addImageNote'
+                                                ](),
+                                            }}
                                         />
                                     </div>
                                 )}
 
                             {dynamicVariables.length > 0 && (
                                 <div className="p-3 bg-violet-50 border border-violet-200 rounded-lg">
-                                    <p className="text-xs text-violet-800 text-center"
-                                        dangerouslySetInnerHTML={{ __html: m['developerPortal.credentialBuilder.preview.dynamicFieldsNote']() }}
+                                    <p
+                                        className="text-xs text-violet-800 text-center"
+                                        dangerouslySetInnerHTML={{
+                                            __html: m[
+                                                'developerPortal.credentialBuilder.preview.dynamicFieldsNote'
+                                            ](),
+                                        }}
                                     />
                                 </div>
                             )}

@@ -23,13 +23,14 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title, rightCont
     const { currentIntegrationId, goToIntegrationHub } = useDeveloperPortalContext();
 
     const isOnAdminPage = location.pathname.includes('/app-store/admin');
-    
+
     // Apps page: /app-store/developer or /integrations/:id/apps
-    const isOnAppsPage = location.pathname === '/app-store/developer' || 
-        location.pathname.includes('/apps');
-    
+    const isOnAppsPage =
+        location.pathname === '/app-store/developer' || location.pathname.includes('/apps');
+
     // Build page: /integrations/:id (dashboard) or /integrations/:id/guides or /guides
-    const isOnBuildPage = (location.pathname.includes('/integrations') && !location.pathname.includes('/apps')) ||
+    const isOnBuildPage =
+        (location.pathname.includes('/integrations') && !location.pathname.includes('/apps')) ||
         location.pathname.includes('/guides');
 
     const handlePortalToggle = () => {
@@ -54,7 +55,13 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title, rightCont
                             className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg"
                         />
 
-                        <span className={`text-lg font-semibold text-gray-700 ${rightContent ? 'hidden sm:block' : ''}`}>{title || m['developerPortal.components.appStoreHeader.title']()}</span>
+                        <span
+                            className={`text-lg font-semibold text-gray-700 ${
+                                rightContent ? 'hidden sm:block' : ''
+                            }`}
+                        >
+                            {title || m['developerPortal.components.appStoreHeader.title']()}
+                        </span>
                     </button>
 
                     <div className="flex items-center gap-1.5 sm:gap-3 overflow-visible">
@@ -66,7 +73,9 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title, rightCont
                                 onClick={() => {
                                     // Retain integration context when switching to Apps
                                     if (currentIntegrationId) {
-                                        history.push(`/app-store/developer/integrations/${currentIntegrationId}/apps`);
+                                        history.push(
+                                            `/app-store/developer/integrations/${currentIntegrationId}/apps`
+                                        );
                                     } else {
                                         history.push('/app-store/developer');
                                     }
@@ -100,7 +109,9 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title, rightCont
                                 if (isOnBuildPage) {
                                     // Retain integration context when switching to Apps
                                     if (currentIntegrationId) {
-                                        history.push(`/app-store/developer/integrations/${currentIntegrationId}/apps`);
+                                        history.push(
+                                            `/app-store/developer/integrations/${currentIntegrationId}/apps`
+                                        );
                                     } else {
                                         history.push('/app-store/developer');
                                     }
@@ -125,12 +136,18 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title, rightCont
                                 {isOnAdminPage ? (
                                     <>
                                         <Code2 className="w-4 h-4" />
-                                        <span className="hidden sm:inline">{m['developerPortal.components.appStoreHeader.developer']()}</span>
+                                        <span className="hidden sm:inline">
+                                            {m[
+                                                'developerPortal.components.appStoreHeader.developer'
+                                            ]()}
+                                        </span>
                                     </>
                                 ) : (
                                     <>
                                         <Shield className="w-4 h-4" />
-                                        <span className="hidden sm:inline">{m['developerPortal.components.appStoreHeader.admin']()}</span>
+                                        <span className="hidden sm:inline">
+                                            {m['developerPortal.components.appStoreHeader.admin']()}
+                                        </span>
                                     </>
                                 )}
                             </button>

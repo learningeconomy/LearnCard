@@ -114,7 +114,11 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     } = useGetProfile();
 
     if (isLCNetworkUrlIssuer) {
-        issuerName = profile ? profile?.displayName : isLoading ? m['common.loading']() : m['common.unknown']();
+        issuerName = profile
+            ? profile?.displayName
+            : isLoading
+            ? m['common.loading']()
+            : m['common.unknown']();
     } else {
         issuerName = getIssuerNameNonBoost(cred);
     }

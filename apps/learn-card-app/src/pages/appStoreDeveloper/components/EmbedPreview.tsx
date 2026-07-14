@@ -59,7 +59,9 @@ export const EmbedPreview: React.FC<EmbedPreviewProps> = ({
 
         // Clear stored session so switching templates starts a fresh claim flow
         const storageKey = `lcEmbed:v1:${publishableKey || 'anon'}`;
-        try { localStorage.removeItem(storageKey); } catch {}
+        try {
+            localStorage.removeItem(storageKey);
+        } catch {}
 
         try {
             initEmbed({
@@ -86,22 +88,43 @@ export const EmbedPreview: React.FC<EmbedPreviewProps> = ({
                     clearFinalizeCache();
                     autoVerifyStore.set.markVerifySuccess();
                     // Open the local wallet directly — walletUrl: '' suppresses SDK's auto-open
-                    window.open(window.location.origin + '/wallet', '_blank', 'noopener,noreferrer');
+                    window.open(
+                        window.location.origin + '/wallet',
+                        '_blank',
+                        'noopener,noreferrer'
+                    );
                 },
             });
             setIsLoaded(true);
         } catch (err) {
-            setError(err instanceof Error ? err.message : m['developerPortal.components.embedPreview.failedToLoad']());
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : m['developerPortal.components.embedPreview.failedToLoad']()
+            );
         }
 
         return () => {
             if (el) el.innerHTML = '';
         };
-    }, [publishableKey, partnerName, issuerName, issuerLogoUrl, credentialKey, brandingKey, requestBackgroundIssuance, apiBaseUrl, walletName, brandMark]);
+    }, [
+        publishableKey,
+        partnerName,
+        issuerName,
+        issuerLogoUrl,
+        credentialKey,
+        brandingKey,
+        requestBackgroundIssuance,
+        apiBaseUrl,
+        walletName,
+        brandMark,
+    ]);
 
     return (
         <div className="border rounded-lg bg-gray-50 p-6">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">{m['developerPortal.components.embedPreview.livePreview']()}</h4>
+            <h4 className="text-sm font-medium text-gray-700 mb-3">
+                {m['developerPortal.components.embedPreview.livePreview']()}
+            </h4>
 
             <p className="text-xs text-gray-500 mb-4">
                 {m['developerPortal.components.embedPreview.livePreviewDesc']()}

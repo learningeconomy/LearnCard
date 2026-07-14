@@ -1,6 +1,6 @@
 /**
  * CourseCatalogGuide - Enterprise LMS integration guide
- * 
+ *
  * Full guided setup for LMS partners. Configure webhooks, build credential
  * templates, map your data, and go live with automatic credential issuance.
  */
@@ -14,7 +14,10 @@ import type { GuideProps } from '../GuidePage';
 // Import the wizard content component (we'll render its inner content)
 import { PartnerOnboardingWizardContent } from '../../partner-onboarding/PartnerOnboardingWizard';
 
-const CourseCatalogGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedIntegration }) => {
+const CourseCatalogGuide: React.FC<GuideProps> = ({
+    selectedIntegration,
+    setSelectedIntegration,
+}) => {
     const { useUpdateIntegration } = useDeveloperPortal();
     const updateIntegrationMutation = useUpdateIntegration();
 
@@ -31,7 +34,9 @@ const CourseCatalogGuide: React.FC<GuideProps> = ({ selectedIntegration, setSele
     if (!selectedIntegration) {
         return (
             <div className="text-center py-12">
-                <p className="text-gray-500">{m['developerPortal.guides.courseCatalog.noIntegration']()}</p>
+                <p className="text-gray-500">
+                    {m['developerPortal.guides.courseCatalog.noIntegration']()}
+                </p>
             </div>
         );
     }

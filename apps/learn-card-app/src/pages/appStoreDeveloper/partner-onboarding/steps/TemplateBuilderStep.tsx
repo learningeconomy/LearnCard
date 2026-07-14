@@ -965,10 +965,10 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                 <FileStack className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
 
                 <div className="text-sm text-blue-800">
-                    <p className="font-medium mb-1">{m['developerPortal.onboarding.templateBuilder.title']()}</p>
-                    <p>
-                        {m['developerPortal.onboarding.templateBuilder.description']()}
+                    <p className="font-medium mb-1">
+                        {m['developerPortal.onboarding.templateBuilder.title']()}
                     </p>
+                    <p>{m['developerPortal.onboarding.templateBuilder.description']()}</p>
                 </div>
             </div>
 
@@ -976,9 +976,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             {expandedId && localTemplates.some(t => t.id === expandedId && t.isNew) && (
                 <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-sm">
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                    <span>
-                        {m['developerPortal.onboarding.templateBuilder.editingHint']()}
-                    </span>
+                    <span>{m['developerPortal.onboarding.templateBuilder.editingHint']()}</span>
                 </div>
             )}
 
@@ -1008,12 +1006,19 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                 {template.name}
                                             </span>
                                             <span className="px-2 py-0.5 bg-violet-200 text-violet-700 text-xs font-medium rounded-full">
-                                                {m['developerPortal.onboarding.templateBuilder.masterBadge']()}
+                                                {m[
+                                                    'developerPortal.onboarding.templateBuilder.masterBadge'
+                                                ]()}
                                             </span>
                                         </div>
 
                                         <p className="text-sm text-gray-500">
-                                            {m['developerPortal.onboarding.templateBuilder.templateStats']({ boosts: template.childTemplates?.length || 0, fields: template.fields?.length || 0 })}
+                                            {m[
+                                                'developerPortal.onboarding.templateBuilder.templateStats'
+                                            ]({
+                                                boosts: template.childTemplates?.length || 0,
+                                                fields: template.fields?.length || 0,
+                                            })}
                                         </p>
                                     </div>
 
@@ -1057,7 +1062,9 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                         {dynamicVars.length > 0 && (
                                                             <p className="text-sm text-violet-800">
                                                                 <strong>
-                                                                    {m['developerPortal.onboarding.templateBuilder.userProvided']()}
+                                                                    {m[
+                                                                        'developerPortal.onboarding.templateBuilder.userProvided'
+                                                                    ]()}
                                                                 </strong>{' '}
                                                                 {dynamicVars
                                                                     .map(
@@ -1069,7 +1076,11 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
                                                         {systemVars.length > 0 && (
                                                             <p className="text-sm text-violet-600">
-                                                                <strong>{m['developerPortal.onboarding.templateBuilder.autoInjected']()}</strong>{' '}
+                                                                <strong>
+                                                                    {m[
+                                                                        'developerPortal.onboarding.templateBuilder.autoInjected'
+                                                                    ]()}
+                                                                </strong>{' '}
                                                                 {systemVars
                                                                     .map(
                                                                         f => `{{${f.variableName}}}`
@@ -1081,7 +1092,9 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                         {dynamicVars.length === 0 &&
                                                             systemVars.length === 0 && (
                                                                 <p className="text-sm text-violet-600">
-                                                                    {m['developerPortal.onboarding.templateBuilder.noDynamicVars']()}
+                                                                    {m[
+                                                                        'developerPortal.onboarding.templateBuilder.noDynamicVars'
+                                                                    ]()}
                                                                 </p>
                                                             )}
                                                     </>
@@ -1093,7 +1106,11 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
                                                 <span className="font-medium">
-                                                    {m['developerPortal.onboarding.templateBuilder.courseBoosts']({ count: template.childTemplates?.length || 0 })}
+                                                    {m[
+                                                        'developerPortal.onboarding.templateBuilder.courseBoosts'
+                                                    ]({
+                                                        count: template.childTemplates?.length || 0,
+                                                    })}
                                                 </span>
                                             </div>
 
@@ -1114,12 +1131,17 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                                 {child.name}
                                                             </p>
                                                             <p className="text-xs text-gray-500 truncate">
-                                                                {child.description || m['developerPortal.onboarding.templateBuilder.noDescription']()}
+                                                                {child.description ||
+                                                                    m[
+                                                                        'developerPortal.onboarding.templateBuilder.noDescription'
+                                                                    ]()}
                                                             </p>
                                                         </div>
 
                                                         <span className="text-xs text-gray-400">
-                                                            {m['developerPortal.onboarding.templateBuilder.fields']({ count: child.fields?.length || 0 })}
+                                                            {m[
+                                                                'developerPortal.onboarding.templateBuilder.fields'
+                                                            ]({ count: child.fields?.length || 0 })}
                                                         </span>
 
                                                         <button
@@ -1132,7 +1154,9 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                                 );
                                                             }}
                                                             className="p-1.5 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                                                            title={m['developerPortal.onboarding.templateBuilder.customizeBoost']()}
+                                                            title={m[
+                                                                'developerPortal.onboarding.templateBuilder.customizeBoost'
+                                                            ]()}
                                                         >
                                                             <Pencil className="w-4 h-4" />
                                                         </button>
@@ -1148,7 +1172,9 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                 className="flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg text-sm transition-colors"
                                             >
                                                 <Trash2 className="w-4 h-4" />
-                                                {m['developerPortal.onboarding.templateBuilder.deleteMasterAndChildren']()}
+                                                {m[
+                                                    'developerPortal.onboarding.templateBuilder.deleteMasterAndChildren'
+                                                ]()}
                                             </button>
                                         </div>
                                     </div>
@@ -1254,10 +1280,17 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
                                 <div>
                                     <h3 className="font-semibold text-gray-800">
-                                        {m['developerPortal.onboarding.templateBuilder.csvImportTitle']()}
+                                        {m[
+                                            'developerPortal.onboarding.templateBuilder.csvImportTitle'
+                                        ]()}
                                     </h3>
                                     <p className="text-sm text-gray-500">
-                                        {m['developerPortal.onboarding.templateBuilder.csvHeaderStats']({ courses: csvAllRows.length, columns: csvColumns.length })}
+                                        {m[
+                                            'developerPortal.onboarding.templateBuilder.csvHeaderStats'
+                                        ]({
+                                            courses: csvAllRows.length,
+                                            columns: csvColumns.length,
+                                        })}
                                     </p>
                                 </div>
                             </div>
@@ -1274,9 +1307,15 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                         <div className="flex-1 overflow-auto p-4 space-y-6">
                             {/* Explanation */}
                             <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-800">
-                                <p className="font-medium mb-1">{m['developerPortal.onboarding.templateBuilder.csvHowItWorksTitle']()}</p>
+                                <p className="font-medium mb-1">
+                                    {m[
+                                        'developerPortal.onboarding.templateBuilder.csvHowItWorksTitle'
+                                    ]()}
+                                </p>
                                 <p>
-                                    {m['developerPortal.onboarding.templateBuilder.csvHowItWorks']({ count: csvAllRows.length })}
+                                    {m['developerPortal.onboarding.templateBuilder.csvHowItWorks']({
+                                        count: csvAllRows.length,
+                                    })}
                                 </p>
                             </div>
 
@@ -1284,10 +1323,14 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                             <div>
                                 <div className="mb-3">
                                     <label className="block text-sm font-medium text-gray-700">
-                                        {m['developerPortal.onboarding.templateBuilder.csvDefaultImage']()}
+                                        {m[
+                                            'developerPortal.onboarding.templateBuilder.csvDefaultImage'
+                                        ]()}
                                     </label>
                                     <p className="text-xs text-gray-500">
-                                        {m['developerPortal.onboarding.templateBuilder.csvDefaultImageDesc']()}
+                                        {m[
+                                            'developerPortal.onboarding.templateBuilder.csvDefaultImageDesc'
+                                        ]()}
                                     </p>
                                 </div>
 
@@ -1296,7 +1339,9 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                         <div className="relative group">
                                             <img
                                                 src={defaultImage}
-                                                alt={m['developerPortal.onboarding.templateBuilder.csvDefaultImageAlt']()}
+                                                alt={m[
+                                                    'developerPortal.onboarding.templateBuilder.csvDefaultImageAlt'
+                                                ]()}
                                                 className="w-20 h-20 rounded-xl object-cover border border-gray-200"
                                             />
 
@@ -1321,12 +1366,20 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                         {isUploadingImage ? (
                                             <>
                                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                                {m['developerPortal.onboarding.templateBuilder.csvUploading']()}
+                                                {m[
+                                                    'developerPortal.onboarding.templateBuilder.csvUploading'
+                                                ]()}
                                             </>
                                         ) : (
                                             <>
                                                 <Upload className="w-4 h-4" />
-                                                {defaultImage ? m['developerPortal.onboarding.templateBuilder.csvChangeImage']() : m['developerPortal.onboarding.templateBuilder.csvUploadImage']()}
+                                                {defaultImage
+                                                    ? m[
+                                                          'developerPortal.onboarding.templateBuilder.csvChangeImage'
+                                                      ]()
+                                                    : m[
+                                                          'developerPortal.onboarding.templateBuilder.csvUploadImage'
+                                                      ]()}
                                             </>
                                         )}
                                     </button>
@@ -1338,10 +1391,14 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                 <div className="flex items-center justify-between mb-3">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">
-                                            {m['developerPortal.onboarding.templateBuilder.csvCatalogFields']()}
+                                            {m[
+                                                'developerPortal.onboarding.templateBuilder.csvCatalogFields'
+                                            ]()}
                                         </label>
                                         <p className="text-xs text-gray-500">
-                                            {m['developerPortal.onboarding.templateBuilder.csvCatalogFieldsDesc']()}
+                                            {m[
+                                                'developerPortal.onboarding.templateBuilder.csvCatalogFieldsDesc'
+                                            ]()}
                                         </p>
                                     </div>
 
@@ -1350,7 +1407,11 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                             Object.values(columnMappings).filter(v => v !== 'skip')
                                                 .length
                                         }{' '}
-                                        {m['developerPortal.onboarding.templateBuilder.csvMapped']({ count: Object.values(columnMappings).filter(v => v !== 'skip').length })}
+                                        {m['developerPortal.onboarding.templateBuilder.csvMapped']({
+                                            count: Object.values(columnMappings).filter(
+                                                v => v !== 'skip'
+                                            ).length,
+                                        })}
                                     </span>
                                 </div>
 
@@ -1375,7 +1436,9 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
                                                     {sampleValue && (
                                                         <div className="text-xs text-gray-500 truncate">
-                                                            {m['developerPortal.onboarding.templateBuilder.csvExampleValue']({ value: sampleValue })}
+                                                            {m[
+                                                                'developerPortal.onboarding.templateBuilder.csvExampleValue'
+                                                            ]({ value: sampleValue })}
                                                         </div>
                                                     )}
                                                 </div>
@@ -1404,7 +1467,9 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                 >
                                                     {/* Skip option */}
                                                     <option value="skip">
-                                                        {m['developerPortal.onboarding.templateBuilder.csvSkipColumn']()}
+                                                        {m[
+                                                            'developerPortal.onboarding.templateBuilder.csvSkipColumn'
+                                                        ]()}
                                                     </option>
 
                                                     {/* Group options by category */}
@@ -1446,10 +1511,14 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                             <div>
                                 <div className="mb-3">
                                     <label className="block text-sm font-medium text-gray-700">
-                                        {m['developerPortal.onboarding.templateBuilder.csvIssuanceFields']()}
+                                        {m[
+                                            'developerPortal.onboarding.templateBuilder.csvIssuanceFields'
+                                        ]()}
                                     </label>
                                     <p className="text-xs text-gray-500">
-                                        {m['developerPortal.onboarding.templateBuilder.csvIssuanceFieldsDesc']()}
+                                        {m[
+                                            'developerPortal.onboarding.templateBuilder.csvIssuanceFieldsDesc'
+                                        ]()}
                                     </p>
                                 </div>
 
@@ -1488,7 +1557,9 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                                                 {field.label}
                                                             </span>
                                                             <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-violet-100 text-violet-700">
-                                                                {m['developerPortal.onboarding.templateBuilder.csvDynamic']()}
+                                                                {m[
+                                                                    'developerPortal.onboarding.templateBuilder.csvDynamic'
+                                                                ]()}
                                                             </span>
                                                         </div>
                                                         <div className="text-xs text-gray-500">
@@ -1511,10 +1582,14 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                 <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-xl">
                                     <div className="flex items-center gap-2 mb-2">
                                         <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-cyan-100 text-cyan-700">
-                                            {m['developerPortal.onboarding.templateBuilder.csvSystem']()}
+                                            {m[
+                                                'developerPortal.onboarding.templateBuilder.csvSystem'
+                                            ]()}
                                         </span>
                                         <span className="text-xs text-cyan-700 font-medium">
-                                            {m['developerPortal.onboarding.templateBuilder.csvAutoInjected']()}
+                                            {m[
+                                                'developerPortal.onboarding.templateBuilder.csvAutoInjected'
+                                            ]()}
                                         </span>
                                     </div>
                                     <div className="space-y-1">
@@ -1558,10 +1633,18 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                             >
                                                 <Award className="w-4 h-4 text-cyan-500" />
                                                 <span className="font-medium text-gray-800">
-                                                    {m['developerPortal.onboarding.templateBuilder.csvCompletion']({ name })}
+                                                    {m[
+                                                        'developerPortal.onboarding.templateBuilder.csvCompletion'
+                                                    ]({ name })}
                                                 </span>
                                                 <span className="text-xs text-gray-500">
-                                                    {m['developerPortal.onboarding.templateBuilder.dynamicFields']({ count: Object.values(issuanceFieldsIncluded).filter(Boolean).length })}
+                                                    {m[
+                                                        'developerPortal.onboarding.templateBuilder.dynamicFields'
+                                                    ]({
+                                                        count: Object.values(
+                                                            issuanceFieldsIncluded
+                                                        ).filter(Boolean).length,
+                                                    })}
                                                 </span>
                                             </div>
                                         );
@@ -1569,7 +1652,9 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
                                     {csvAllRows.length > 3 && (
                                         <div className="text-xs text-gray-500 text-center py-1">
-                                            {m['developerPortal.onboarding.templateBuilder.csvAndMore']({ count: csvAllRows.length - 3 })}
+                                            {m[
+                                                'developerPortal.onboarding.templateBuilder.csvAndMore'
+                                            ]({ count: csvAllRows.length - 3 })}
                                         </div>
                                     )}
                                 </div>
@@ -1579,7 +1664,9 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                         {/* Modal Footer */}
                         <div className="flex items-center justify-between p-4 border-t border-gray-200">
                             <div className="text-sm text-gray-600">
-                                {m['developerPortal.onboarding.templateBuilder.csvWillCreate']({ count: csvAllRows.length })}
+                                {m['developerPortal.onboarding.templateBuilder.csvWillCreate']({
+                                    count: csvAllRows.length,
+                                })}
                             </div>
 
                             <div className="flex items-center gap-3">
@@ -1598,7 +1685,9 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                     className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-xl font-medium hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                     <Check className="w-4 h-4" />
-                                    {m['developerPortal.onboarding.templateBuilder.csvCreateBoosts']({ count: csvAllRows.length })}
+                                    {m[
+                                        'developerPortal.onboarding.templateBuilder.csvCreateBoosts'
+                                    ]({ count: csvAllRows.length })}
                                 </button>
                             </div>
                         </div>
@@ -1618,7 +1707,11 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                 </div>
 
                                 <div>
-                                    <h3 className="font-semibold text-gray-800">{m['developerPortal.onboarding.templateBuilder.childEditTitle']()}</h3>
+                                    <h3 className="font-semibold text-gray-800">
+                                        {m[
+                                            'developerPortal.onboarding.templateBuilder.childEditTitle'
+                                        ]()}
+                                    </h3>
                                     <p className="text-sm text-gray-500">
                                         {editingChild.template.name?.value || 'Untitled'}
                                     </p>
@@ -1660,14 +1753,20 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                     <div className="flex items-center gap-2 text-sm text-gray-500">
                                         <AlertCircle className="w-4 h-4 flex-shrink-0" />
                                         <span>
-                                            {m['developerPortal.onboarding.templateBuilder.childValidateHint']()}
+                                            {m[
+                                                'developerPortal.onboarding.templateBuilder.childValidateHint'
+                                            ]()}
                                         </span>
                                     </div>
                                 )}
                                 {childValidationStatus === 'valid' && (
                                     <div className="flex items-center gap-2 text-sm text-emerald-600">
                                         <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                                        <span>{m['developerPortal.onboarding.templateBuilder.childValidated']()}</span>
+                                        <span>
+                                            {m[
+                                                'developerPortal.onboarding.templateBuilder.childValidated'
+                                            ]()}
+                                        </span>
                                     </div>
                                 )}
                             </div>
@@ -1686,7 +1785,9 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
                                     className="flex items-center gap-2 px-4 py-2 bg-violet-500 text-white rounded-xl font-medium hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                     title={
                                         childValidationStatus === 'invalid'
-                                            ? m['developerPortal.onboarding.templateBuilder.childFixValidation']()
+                                            ? m[
+                                                  'developerPortal.onboarding.templateBuilder.childFixValidation'
+                                              ]()
                                             : undefined
                                     }
                                 >

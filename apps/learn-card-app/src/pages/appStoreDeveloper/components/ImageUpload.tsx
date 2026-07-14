@@ -51,7 +51,9 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                     <div className="flex flex-col items-center gap-2">
                         <Loader2 className="w-6 h-6 text-cyan-500 animate-spin" />
 
-                        <span className="text-xs text-gray-500">{m['developerPortal.components.imageUpload.uploading']()}</span>
+                        <span className="text-xs text-gray-500">
+                            {m['developerPortal.components.imageUpload.uploading']()}
+                        </span>
                     </div>
                 ) : value ? (
                     <>
@@ -75,7 +77,10 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                     <div className="flex flex-col items-center gap-2 p-4 text-center">
                         <ImageIcon className="w-6 h-6 text-gray-400" />
 
-                        <span className="text-xs text-gray-500">{placeholder || m['developerPortal.components.imageUpload.clickToUpload']()}</span>
+                        <span className="text-xs text-gray-500">
+                            {placeholder ||
+                                m['developerPortal.components.imageUpload.clickToUpload']()}
+                        </span>
                     </div>
                 )}
             </div>

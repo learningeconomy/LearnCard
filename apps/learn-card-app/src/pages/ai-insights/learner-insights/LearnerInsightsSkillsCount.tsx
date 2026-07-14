@@ -9,7 +9,8 @@ export const LearnerInsightsSkillsCount: React.FC<{ profile: LCNProfile }> = ({ 
 
     return (
         <span>
-            {isLoadingResolved ? m['common.loading']() : total || 0} {total === 1 ? 'Skill' : 'Skills'}
+            {isLoadingResolved ? m['common.loading']() : total || 0}{' '}
+            {total === 1 ? 'Skill' : 'Skills'}
         </span>
     );
 };

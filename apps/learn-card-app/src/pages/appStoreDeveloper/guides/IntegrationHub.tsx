@@ -224,7 +224,10 @@ const IntegrationHub: React.FC = () => {
 
     return (
         <IonPage>
-            <AppStoreHeader title={m['developerPortal.guides.page.title']()} rightContent={integrationSelector} />
+            <AppStoreHeader
+                title={m['developerPortal.guides.page.title']()}
+                rightContent={integrationSelector}
+            />
 
             <IonContent className="ion-padding">
                 <div className="max-w-5xl mx-auto py-4">
@@ -339,7 +342,9 @@ const IntegrationHub: React.FC = () => {
                                     </div>
                                     <div className="flex-1">
                                         <h3 className="text-lg font-semibold text-gray-800 mb-1">
-                                            {m['developerPortal.guides.hub.projectCount']({ count: integrations.length })}
+                                            {m['developerPortal.guides.hub.projectCount']({
+                                                count: integrations.length,
+                                            })}
                                         </h3>
                                         <p className="text-gray-600">
                                             {m['developerPortal.guides.hub.projectsChoose']()}
@@ -364,14 +369,20 @@ const IntegrationHub: React.FC = () => {
                                                 <p className="text-sm text-gray-500">
                                                     {integration.guideType &&
                                                     integration.guideType in USE_CASES
-                                                        ? (USE_CASES[
+                                                        ? USE_CASES[
                                                               integration.guideType as UseCaseId
                                                           ]?.titleKey
-                                                            ? m[USE_CASES[integration.guideType as UseCaseId]?.titleKey!]()
+                                                            ? m[
+                                                                  USE_CASES[
+                                                                      integration.guideType as UseCaseId
+                                                                  ]?.titleKey!
+                                                              ]()
                                                             : USE_CASES[
                                                                   integration.guideType as UseCaseId
-                                                              ]?.title)
-                                                        : m['developerPortal.guides.hub.notStarted']()}
+                                                              ]?.title
+                                                        : m[
+                                                              'developerPortal.guides.hub.notStarted'
+                                                          ]()}
                                                 </p>
                                             </div>
                                             <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-cyan-500 group-hover:translate-x-1 transition-all flex-shrink-0" />
@@ -434,8 +445,16 @@ const IntegrationHub: React.FC = () => {
                                     </div>
 
                                     <div className="flex-1 text-start">
-                                        <p className="font-medium text-gray-800">{m['developerPortal.guides.hub.resources.documentation.title']()}</p>
-                                        <p className="text-sm text-gray-500">{m['developerPortal.guides.hub.resources.documentation.description']()}</p>
+                                        <p className="font-medium text-gray-800">
+                                            {m[
+                                                'developerPortal.guides.hub.resources.documentation.title'
+                                            ]()}
+                                        </p>
+                                        <p className="text-sm text-gray-500">
+                                            {m[
+                                                'developerPortal.guides.hub.resources.documentation.description'
+                                            ]()}
+                                        </p>
                                     </div>
 
                                     <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
@@ -460,8 +479,16 @@ const IntegrationHub: React.FC = () => {
                                     </div>
 
                                     <div className="flex-1 text-start">
-                                        <p className="font-medium text-gray-800">{m['developerPortal.guides.hub.resources.github.title']()}</p>
-                                        <p className="text-sm text-gray-500">{m['developerPortal.guides.hub.resources.github.description']()}</p>
+                                        <p className="font-medium text-gray-800">
+                                            {m[
+                                                'developerPortal.guides.hub.resources.github.title'
+                                            ]()}
+                                        </p>
+                                        <p className="text-sm text-gray-500">
+                                            {m[
+                                                'developerPortal.guides.hub.resources.github.description'
+                                            ]()}
+                                        </p>
                                     </div>
 
                                     <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
@@ -476,8 +503,16 @@ const IntegrationHub: React.FC = () => {
                                     </div>
 
                                     <div className="flex-1">
-                                        <p className="font-medium text-gray-800">{m['developerPortal.guides.hub.resources.myApps.title']()}</p>
-                                        <p className="text-sm text-gray-500">{m['developerPortal.guides.hub.resources.myApps.description']()}</p>
+                                        <p className="font-medium text-gray-800">
+                                            {m[
+                                                'developerPortal.guides.hub.resources.myApps.title'
+                                            ]()}
+                                        </p>
+                                        <p className="text-sm text-gray-500">
+                                            {m[
+                                                'developerPortal.guides.hub.resources.myApps.description'
+                                            ]()}
+                                        </p>
                                     </div>
 
                                     <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />

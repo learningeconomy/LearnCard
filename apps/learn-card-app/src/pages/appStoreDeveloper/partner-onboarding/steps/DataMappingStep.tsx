@@ -1226,8 +1226,12 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         <div className="flex items-start gap-3 p-4 bg-violet-50 border border-violet-200 rounded-xl">
                             <Zap className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
                             <div className="text-sm text-violet-800">
-                                <p className="font-medium mb-1">{m['developerPortal.onboarding.dataMapping.apiBoostUrisInfo']()}</p>
-                                <p>{m['developerPortal.onboarding.dataMapping.apiBoostUrisDesc']()}</p>
+                                <p className="font-medium mb-1">
+                                    {m['developerPortal.onboarding.dataMapping.apiBoostUrisInfo']()}
+                                </p>
+                                <p>
+                                    {m['developerPortal.onboarding.dataMapping.apiBoostUrisDesc']()}
+                                </p>
                             </div>
                         </div>
 
@@ -1244,7 +1248,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             ) : (
                                 <>
                                     <Download className="w-4 h-4" />
-                                    {m['developerPortal.onboarding.dataMapping.apiCopyConfig']({count: issuableTemplates.filter(t => t.boostUri).length})}
+                                    {m['developerPortal.onboarding.dataMapping.apiCopyConfig']({
+                                        count: issuableTemplates.filter(t => t.boostUri).length,
+                                    })}
                                 </>
                             )}
                         </button>
@@ -1262,7 +1268,11 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                             {master.name}
                                         </span>
                                         <span className="text-xs text-gray-500">
-                                            {m['developerPortal.onboarding.dataMapping.apiBoosts']({count: master.childTemplates?.filter(c => c.boostUri).length || 0})}
+                                            {m['developerPortal.onboarding.dataMapping.apiBoosts']({
+                                                count:
+                                                    master.childTemplates?.filter(c => c.boostUri)
+                                                        .length || 0,
+                                            })}
                                         </span>
                                     </div>
 
@@ -1280,7 +1290,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                             </code>
                                                         ) : (
                                                             <span className="text-xs text-amber-600">
-                                                                {m['developerPortal.onboarding.dataMapping.apiNotSaved']()}
+                                                                {m[
+                                                                    'developerPortal.onboarding.dataMapping.apiNotSaved'
+                                                                ]()}
                                                             </span>
                                                         )}
                                                     </div>
@@ -1315,7 +1327,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                         <div className="flex items-center gap-3 p-3 bg-gray-50 border-b border-gray-200">
                                             <Award className="w-4 h-4 text-gray-500" />
                                             <span className="font-medium text-gray-700">
-                                                {m['developerPortal.onboarding.dataMapping.otherTemplates']()}
+                                                {m[
+                                                    'developerPortal.onboarding.dataMapping.otherTemplates'
+                                                ]()}
                                             </span>
                                         </div>
                                     )}
@@ -1343,7 +1357,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                                 </code>
                                                             ) : (
                                                                 <span className="text-xs text-amber-600">
-                                                                    {m['developerPortal.onboarding.dataMapping.apiNotSaved']()}
+                                                                    {m[
+                                                                        'developerPortal.onboarding.dataMapping.apiNotSaved'
+                                                                    ]()}
                                                                 </span>
                                                             )}
                                                         </div>
@@ -1378,9 +1394,24 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                                 <Code className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                                 <div className="text-sm">
-                                    <p className="font-medium text-amber-800">{m['developerPortal.onboarding.dataMapping.yourApiKey']()}</p>
+                                    <p className="font-medium text-amber-800">
+                                        {m['developerPortal.onboarding.dataMapping.yourApiKey']()}
+                                    </p>
                                     <p className="text-xs text-amber-700 mt-0.5">
-                                        <TransP m={m['developerPortal.onboarding.dataMapping.setApiKeyInEnv']} values={{apiKeyPreview: project.apiKey.slice(0, 12) + '...'}} components={[<code className="bg-amber-100 px-1 rounded" />, <code className="bg-amber-100 px-1 rounded ml-1 font-mono" />]} />
+                                        <TransP
+                                            m={
+                                                m[
+                                                    'developerPortal.onboarding.dataMapping.setApiKeyInEnv'
+                                                ]
+                                            }
+                                            values={{
+                                                apiKeyPreview: project.apiKey.slice(0, 12) + '...',
+                                            }}
+                                            components={[
+                                                <code className="bg-amber-100 px-1 rounded" />,
+                                                <code className="bg-amber-100 px-1 rounded ml-1 font-mono" />,
+                                            ]}
+                                        />
                                     </p>
                                 </div>
                             </div>
@@ -1394,9 +1425,15 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         <div className="flex items-start gap-3 p-4 bg-violet-50 border border-violet-200 rounded-xl">
                             <Zap className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
                             <div className="text-sm text-violet-800">
-                                <p className="font-medium mb-1">{m['developerPortal.onboarding.dataMapping.codeExampleGenerator']()}</p>
+                                <p className="font-medium mb-1">
+                                    {m[
+                                        'developerPortal.onboarding.dataMapping.codeExampleGenerator'
+                                    ]()}
+                                </p>
                                 <p>
-                                    {m['developerPortal.onboarding.dataMapping.codeExampleGeneratorDesc']()}
+                                    {m[
+                                        'developerPortal.onboarding.dataMapping.codeExampleGeneratorDesc'
+                                    ]()}
                                 </p>
                             </div>
                         </div>
@@ -1405,7 +1442,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         {issuableTemplates.length > 0 && (
                             <div className="space-y-3">
                                 <label className="block text-sm font-medium text-gray-700">
-                                    {m['developerPortal.onboarding.dataMapping.selectTemplateForExample']()}
+                                    {m[
+                                        'developerPortal.onboarding.dataMapping.selectTemplateForExample'
+                                    ]()}
                                 </label>
 
                                 {/* Master Templates with Children */}
@@ -1421,7 +1460,11 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                     {master.name}
                                                 </p>
                                                 <p className="text-xs text-violet-600">
-                                                    {m['developerPortal.onboarding.dataMapping.courseBoostsCount']({count: master.childTemplates?.length || 0})}
+                                                    {m[
+                                                        'developerPortal.onboarding.dataMapping.courseBoostsCount'
+                                                    ]({
+                                                        count: master.childTemplates?.length || 0,
+                                                    })}
                                                 </p>
                                             </div>
                                         </div>
@@ -1459,7 +1502,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                                                     {child.boostUri && (
                                                         <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs flex-shrink-0">
-                                                            {m['developerPortal.onboarding.dataMapping.saved']()}
+                                                            {m[
+                                                                'developerPortal.onboarding.dataMapping.saved'
+                                                            ]()}
                                                         </span>
                                                     )}
 
@@ -1479,7 +1524,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     <div className="space-y-2">
                                         {masterTemplates.length > 0 && (
                                             <p className="text-xs text-gray-500 font-medium pt-2">
-                                                {m['developerPortal.onboarding.dataMapping.otherTemplates']()}
+                                                {m[
+                                                    'developerPortal.onboarding.dataMapping.otherTemplates'
+                                                ]()}
                                             </p>
                                         )}
 
@@ -1522,13 +1569,18 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                             {template.name}
                                                         </p>
                                                         <p className="text-xs text-gray-500">
-                                                            {template.description || m['developerPortal.onboarding.dataMapping.noDescription']()}
+                                                            {template.description ||
+                                                                m[
+                                                                    'developerPortal.onboarding.dataMapping.noDescription'
+                                                                ]()}
                                                         </p>
                                                     </div>
 
                                                     {template.boostUri && (
                                                         <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs">
-                                                            {m['developerPortal.onboarding.dataMapping.saved']()}
+                                                            {m[
+                                                                'developerPortal.onboarding.dataMapping.saved'
+                                                            ]()}
                                                         </span>
                                                     )}
 
@@ -1547,9 +1599,15 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <div className="flex items-start gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
                                 <Layers className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
                                 <div className="text-sm text-emerald-800">
-                                    <p className="font-medium">{m['developerPortal.onboarding.dataMapping.courseDataPreFilled']()}</p>
+                                    <p className="font-medium">
+                                        {m[
+                                            'developerPortal.onboarding.dataMapping.courseDataPreFilled'
+                                        ]()}
+                                    </p>
                                     <p className="text-xs text-emerald-700 mt-0.5">
-                                        {m['developerPortal.onboarding.dataMapping.courseDataPreFilledDesc']()}
+                                        {m[
+                                            'developerPortal.onboarding.dataMapping.courseDataPreFilledDesc'
+                                        ]()}
                                     </p>
                                 </div>
                             </div>
@@ -1564,12 +1622,20 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     </label>
 
                                     <span className="text-xs text-gray-500">
-                                        {apiTemplateVariables.length === 1 ? m['developerPortal.onboarding.dataMapping.fieldsToProvide']({count: 1}) : m['developerPortal.onboarding.dataMapping.fieldsToProvidePlural']({count: apiTemplateVariables.length})}
+                                        {apiTemplateVariables.length === 1
+                                            ? m[
+                                                  'developerPortal.onboarding.dataMapping.fieldsToProvide'
+                                              ]({ count: 1 })
+                                            : m[
+                                                  'developerPortal.onboarding.dataMapping.fieldsToProvidePlural'
+                                              ]({ count: apiTemplateVariables.length })}
                                     </span>
                                 </div>
 
                                 <p className="text-xs text-gray-500">
-                                    {m['developerPortal.onboarding.dataMapping.enterExampleValues']()}
+                                    {m[
+                                        'developerPortal.onboarding.dataMapping.enterExampleValues'
+                                    ]()}
                                 </p>
 
                                 <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
@@ -1613,7 +1679,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 <Zap className="w-4 h-4 text-cyan-600 flex-shrink-0 mt-0.5" />
                                 <div className="text-sm">
                                     <p className="font-medium text-cyan-800">
-                                        {m['developerPortal.onboarding.dataMapping.autoInjectedAtIssuance']()}
+                                        {m[
+                                            'developerPortal.onboarding.dataMapping.autoInjectedAtIssuance'
+                                        ]()}
                                     </p>
                                     <p className="text-xs text-cyan-700 mt-0.5">
                                         {apiSystemVariables.map(v => `{{${v}}}`).join(', ')}
@@ -1632,12 +1700,16 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 type="text"
                                 value={apiRecipientEmail}
                                 onChange={e => setApiRecipientEmail(e.target.value)}
-                                placeholder={m['developerPortal.onboarding.dataMapping.profileIdOrEmail']()}
+                                placeholder={m[
+                                    'developerPortal.onboarding.dataMapping.profileIdOrEmail'
+                                ]()}
                                 className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             />
 
                             <p className="text-xs text-gray-500">
-                                {m['developerPortal.onboarding.dataMapping.enterProfileIdOrEmail']()}
+                                {m[
+                                    'developerPortal.onboarding.dataMapping.enterProfileIdOrEmail'
+                                ]()}
                             </p>
                         </div>
 
@@ -1646,9 +1718,24 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                                 <Code className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                                 <div className="text-sm">
-                                    <p className="font-medium text-amber-800">{m['developerPortal.onboarding.dataMapping.yourApiKey']()}</p>
+                                    <p className="font-medium text-amber-800">
+                                        {m['developerPortal.onboarding.dataMapping.yourApiKey']()}
+                                    </p>
                                     <p className="text-xs text-amber-700 mt-0.5">
-                                        <TransP m={m['developerPortal.onboarding.dataMapping.setApiKeyInEnv']} values={{apiKeyPreview: project.apiKey.slice(0, 12) + '...'}} components={[<code className="bg-amber-100 px-1 rounded" />, <code className="bg-amber-100 px-1 rounded ml-1 font-mono" />]} />
+                                        <TransP
+                                            m={
+                                                m[
+                                                    'developerPortal.onboarding.dataMapping.setApiKeyInEnv'
+                                                ]
+                                            }
+                                            values={{
+                                                apiKeyPreview: project.apiKey.slice(0, 12) + '...',
+                                            }}
+                                            components={[
+                                                <code className="bg-amber-100 px-1 rounded" />,
+                                                <code className="bg-amber-100 px-1 rounded ml-1 font-mono" />,
+                                            ]}
+                                        />
                                     </p>
                                 </div>
                             </div>
@@ -1664,7 +1751,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             ) : (
                                 <ChevronDown className="w-4 h-4" />
                             )}
-                            {apiShowAdvanced ? m['developerPortal.onboarding.dataMapping.hideAdvancedOptions']() : m['developerPortal.onboarding.dataMapping.showAdvancedOptions']()}
+                            {apiShowAdvanced
+                                ? m['developerPortal.onboarding.dataMapping.hideAdvancedOptions']()
+                                : m['developerPortal.onboarding.dataMapping.showAdvancedOptions']()}
                             {apiHasAdvancedOptions && (
                                 <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded text-xs">
                                     {m['developerPortal.onboarding.dataMapping.active']()}
@@ -1676,20 +1765,26 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         {apiShowAdvanced && (
                             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-4">
                                 <p className="text-sm text-gray-600">
-                                    {m['developerPortal.onboarding.dataMapping.customizeBrandingWebhooks']()}
+                                    {m[
+                                        'developerPortal.onboarding.dataMapping.customizeBrandingWebhooks'
+                                    ]()}
                                 </p>
 
                                 {/* Branding Section */}
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                                         <Building2 className="w-4 h-4 text-indigo-500" />
-                                        {m['developerPortal.onboarding.dataMapping.emailBranding']()}
+                                        {m[
+                                            'developerPortal.onboarding.dataMapping.emailBranding'
+                                        ]()}
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         <div>
                                             <label className="block text-xs font-medium text-gray-600 mb-1">
-                                                {m['developerPortal.onboarding.dataMapping.issuerName']()}
+                                                {m[
+                                                    'developerPortal.onboarding.dataMapping.issuerName'
+                                                ]()}
                                             </label>
                                             <input
                                                 type="text"
@@ -1700,14 +1795,18 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                         issuerName: e.target.value,
                                                     }))
                                                 }
-                                                placeholder={m['developerPortal.onboarding.dataMapping.yourOrganization']()}
+                                                placeholder={m[
+                                                    'developerPortal.onboarding.dataMapping.yourOrganization'
+                                                ]()}
                                                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                             />
                                         </div>
 
                                         <div>
                                             <label className="block text-xs font-medium text-gray-600 mb-1">
-                                                {m['developerPortal.onboarding.dataMapping.logoUrl']()}
+                                                {m[
+                                                    'developerPortal.onboarding.dataMapping.logoUrl'
+                                                ]()}
                                             </label>
                                             <input
                                                 type="url"
@@ -1725,7 +1824,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                                         <div>
                                             <label className="block text-xs font-medium text-gray-600 mb-1">
-                                                {m['developerPortal.onboarding.dataMapping.recipientName']()}
+                                                {m[
+                                                    'developerPortal.onboarding.dataMapping.recipientName'
+                                                ]()}
                                             </label>
                                             <input
                                                 type="text"
@@ -1736,7 +1837,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                         recipientName: e.target.value,
                                                     }))
                                                 }
-                                                placeholder={m['developerPortal.onboarding.dataMapping.johnDoe']()}
+                                                placeholder={m[
+                                                    'developerPortal.onboarding.dataMapping.johnDoe'
+                                                ]()}
                                                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                             />
                                         </div>
@@ -1747,12 +1850,16 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 <div className="space-y-3 pt-3 border-t border-gray-200">
                                     <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                                         <Webhook className="w-4 h-4 text-emerald-500" />
-                                        {m['developerPortal.onboarding.dataMapping.webhookNotification']()}
+                                        {m[
+                                            'developerPortal.onboarding.dataMapping.webhookNotification'
+                                        ]()}
                                     </div>
 
                                     <div>
                                         <label className="block text-xs font-medium text-gray-600 mb-1">
-                                            {m['developerPortal.onboarding.dataMapping.webhookUrl']()}
+                                            {m[
+                                                'developerPortal.onboarding.dataMapping.webhookUrl'
+                                            ]()}
                                         </label>
                                         <input
                                             type="url"
@@ -1767,7 +1874,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                         />
                                         <p className="text-xs text-gray-500 mt-1">
-                                            {m['developerPortal.onboarding.dataMapping.receivePostRequest']()}
+                                            {m[
+                                                'developerPortal.onboarding.dataMapping.receivePostRequest'
+                                            ]()}
                                         </p>
                                     </div>
                                 </div>
@@ -1789,12 +1898,16 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                         <div className="flex items-center gap-2">
                                             <BellOff className="w-4 h-4 text-amber-500" />
                                             <span className="text-sm font-medium text-gray-700">
-                                                {m['developerPortal.onboarding.dataMapping.suppressEmailDelivery']()}
+                                                {m[
+                                                    'developerPortal.onboarding.dataMapping.suppressEmailDelivery'
+                                                ]()}
                                             </span>
                                         </div>
                                     </label>
                                     <p className="text-xs text-gray-500 ml-7">
-                                        {m['developerPortal.onboarding.dataMapping.suppressDeliveryDesc']()}
+                                        {m[
+                                            'developerPortal.onboarding.dataMapping.suppressDeliveryDesc'
+                                        ]()}
                                     </p>
                                 </div>
                             </div>
@@ -1818,10 +1931,14 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                                 <div className="flex-1">
                                     <h4 className="font-medium text-gray-800 mb-1">
-                                        {m['developerPortal.onboarding.dataMapping.verifyYourCodeWorked']()}
+                                        {m[
+                                            'developerPortal.onboarding.dataMapping.verifyYourCodeWorked'
+                                        ]()}
                                     </h4>
                                     <p className="text-sm text-gray-600 mb-3">
-                                        {m['developerPortal.onboarding.dataMapping.verifyTestDesc']()}
+                                        {m[
+                                            'developerPortal.onboarding.dataMapping.verifyTestDesc'
+                                        ]()}
                                     </p>
 
                                     {!apiIsPolling && !apiPollResult?.success && (
@@ -1830,7 +1947,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                             className="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600 transition-colors"
                                         >
                                             <RefreshCw className="w-4 h-4" />
-                                            {m['developerPortal.onboarding.dataMapping.checkForSentCredentials']()}
+                                            {m[
+                                                'developerPortal.onboarding.dataMapping.checkForSentCredentials'
+                                            ]()}
                                         </button>
                                     )}
 
@@ -1839,17 +1958,23 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                             <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
                                             <div>
                                                 <p className="text-sm font-medium text-gray-700">
-                                                    {m['developerPortal.onboarding.dataMapping.waitingForNewCredentials']()}
+                                                    {m[
+                                                        'developerPortal.onboarding.dataMapping.waitingForNewCredentials'
+                                                    ]()}
                                                 </p>
                                                 <p className="text-xs text-gray-500">
-                                                    {m['developerPortal.onboarding.dataMapping.runCodeNowDetect']()}
+                                                    {m[
+                                                        'developerPortal.onboarding.dataMapping.runCodeNowDetect'
+                                                    ]()}
                                                 </p>
                                             </div>
                                             <button
                                                 onClick={() => setApiIsPolling(false)}
                                                 className="ml-auto px-3 py-1 text-sm text-gray-500 hover:text-gray-700"
                                             >
-                                                {m['developerPortal.onboarding.dataMapping.cancel']()}
+                                                {m[
+                                                    'developerPortal.onboarding.dataMapping.cancel'
+                                                ]()}
                                             </button>
                                         </div>
                                     )}
@@ -1885,7 +2010,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                     onClick={handleApiStartPolling}
                                                     className="px-3 py-1 text-sm bg-amber-100 text-amber-700 rounded hover:bg-amber-200"
                                                 >
-                                                    {m['developerPortal.onboarding.dataMapping.tryAgain']()}
+                                                    {m[
+                                                        'developerPortal.onboarding.dataMapping.tryAgain'
+                                                    ]()}
                                                 </button>
                                             )}
                                         </div>
@@ -1936,10 +2063,10 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     <FileSpreadsheet className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
 
                     <div className="text-sm text-amber-800">
-                        <p className="font-medium mb-1">{m['developerPortal.onboarding.dataMapping.csvBatchUpload']()}</p>
-                        <p>
-                            {m['developerPortal.onboarding.dataMapping.csvBatchUploadDesc']()}
+                        <p className="font-medium mb-1">
+                            {m['developerPortal.onboarding.dataMapping.csvBatchUpload']()}
                         </p>
+                        <p>{m['developerPortal.onboarding.dataMapping.csvBatchUploadDesc']()}</p>
                     </div>
                 </div>
 
@@ -1951,16 +2078,22 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         </div>
 
                         <div>
-                            <h3 className="font-semibold text-gray-800">{m['developerPortal.onboarding.dataMapping.csvTemplate']()}</h3>
+                            <h3 className="font-semibold text-gray-800">
+                                {m['developerPortal.onboarding.dataMapping.csvTemplate']()}
+                            </h3>
                             <p className="text-sm text-gray-500">
-                                {m['developerPortal.onboarding.dataMapping.downloadPreFormattedTemplate']()}
+                                {m[
+                                    'developerPortal.onboarding.dataMapping.downloadPreFormattedTemplate'
+                                ]()}
                             </p>
                         </div>
                     </div>
 
                     {/* Template columns preview */}
                     <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
-                        <p className="text-xs font-medium text-gray-600">{m['developerPortal.onboarding.dataMapping.templateColumns']()}</p>
+                        <p className="text-xs font-medium text-gray-600">
+                            {m['developerPortal.onboarding.dataMapping.templateColumns']()}
+                        </p>
                         <div className="flex flex-wrap gap-2">
                             <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
                                 {m['developerPortal.onboarding.dataMapping.recipientColumn']()}
@@ -1982,7 +2115,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                         {hasMasterTemplates && (
                             <p className="text-xs text-gray-500">
-                                {m['developerPortal.onboarding.dataMapping.csvCourseCount']({count: totalChildTemplates})}
+                                {m['developerPortal.onboarding.dataMapping.csvCourseCount']({
+                                    count: totalChildTemplates,
+                                })}
                             </p>
                         )}
                     </div>
@@ -2004,8 +2139,12 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         </div>
 
                         <div>
-                            <h3 className="font-semibold text-gray-800">{m['developerPortal.onboarding.dataMapping.howItWorks']()}</h3>
-                            <p className="text-sm text-gray-500">{m['developerPortal.onboarding.dataMapping.simple3StepProcess']()}</p>
+                            <h3 className="font-semibold text-gray-800">
+                                {m['developerPortal.onboarding.dataMapping.howItWorks']()}
+                            </h3>
+                            <p className="text-sm text-gray-500">
+                                {m['developerPortal.onboarding.dataMapping.simple3StepProcess']()}
+                            </p>
                         </div>
                     </div>
 
@@ -2013,14 +2152,21 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                             <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center flex-shrink-0">
                                 {/* eslint-disable-next-line i18next/no-literal-string */}
-                            <span className="text-xs font-bold text-cyan-700" aria-hidden="true">1</span>
+                                <span
+                                    className="text-xs font-bold text-cyan-700"
+                                    aria-hidden="true"
+                                >
+                                    1
+                                </span>
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-gray-800">
                                     {m['developerPortal.onboarding.dataMapping.downloadTemplate']()}
                                 </p>
                                 <p className="text-xs text-gray-500">
-                                    {m['developerPortal.onboarding.dataMapping.getCsvWithHeaders']()}
+                                    {m[
+                                        'developerPortal.onboarding.dataMapping.getCsvWithHeaders'
+                                    ]()}
                                 </p>
                             </div>
                         </div>
@@ -2028,7 +2174,12 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                             <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center flex-shrink-0">
                                 {/* eslint-disable-next-line i18next/no-literal-string */}
-                            <span className="text-xs font-bold text-cyan-700" aria-hidden="true">2</span>
+                                <span
+                                    className="text-xs font-bold text-cyan-700"
+                                    aria-hidden="true"
+                                >
+                                    2
+                                </span>
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-gray-800">
@@ -2043,10 +2194,17 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                             <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center flex-shrink-0">
                                 {/* eslint-disable-next-line i18next/no-literal-string */}
-                            <span className="text-xs font-bold text-cyan-700" aria-hidden="true">3</span>
+                                <span
+                                    className="text-xs font-bold text-cyan-700"
+                                    aria-hidden="true"
+                                >
+                                    3
+                                </span>
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-gray-800">{m['developerPortal.onboarding.dataMapping.uploadAndSend']()}</p>
+                                <p className="text-sm font-medium text-gray-800">
+                                    {m['developerPortal.onboarding.dataMapping.uploadAndSend']()}
+                                </p>
                                 <p className="text-xs text-gray-500">
                                     {m['developerPortal.onboarding.dataMapping.goToCsvUploadTab']()}
                                 </p>
@@ -2088,8 +2246,12 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-gray-800">{m['developerPortal.onboarding.dataMapping.yourWebhookUrl']()}</h3>
-                        <p className="text-sm text-gray-500">{m['developerPortal.onboarding.dataMapping.configureInLms']()}</p>
+                        <h3 className="font-semibold text-gray-800">
+                            {m['developerPortal.onboarding.dataMapping.yourWebhookUrl']()}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                            {m['developerPortal.onboarding.dataMapping.configureInLms']()}
+                        </p>
                     </div>
                 </div>
 
@@ -2119,7 +2281,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-gray-800">{m['developerPortal.onboarding.dataMapping.captureSampleEvent']()}</h3>
+                        <h3 className="font-semibold text-gray-800">
+                            {m['developerPortal.onboarding.dataMapping.captureSampleEvent']()}
+                        </h3>
                         <p className="text-sm text-gray-500">
                             {m['developerPortal.onboarding.dataMapping.sendTestEventOrSimulate']()}
                         </p>
@@ -2132,13 +2296,17 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <div className="space-y-3">
                                 <Loader2 className="w-8 h-8 text-cyan-500 animate-spin mx-auto" />
                                 <p className="text-sm text-gray-600">
-                                    {m['developerPortal.onboarding.dataMapping.waitingForWebhookEvent']()}
+                                    {m[
+                                        'developerPortal.onboarding.dataMapping.waitingForWebhookEvent'
+                                    ]()}
                                 </p>
                             </div>
                         ) : (
                             <div className="space-y-3">
                                 <p className="text-sm text-gray-600">
-                                    {m['developerPortal.onboarding.dataMapping.simulateEventDesc']()}
+                                    {m[
+                                        'developerPortal.onboarding.dataMapping.simulateEventDesc'
+                                    ]()}
                                 </p>
 
                                 <button
@@ -2146,7 +2314,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-100 text-cyan-700 rounded-lg hover:bg-cyan-200 transition-colors"
                                 >
                                     <RefreshCw className="w-4 h-4" />
-                                    {m['developerPortal.onboarding.dataMapping.simulateTestEvent']()}
+                                    {m[
+                                        'developerPortal.onboarding.dataMapping.simulateTestEvent'
+                                    ]()}
                                 </button>
                             </div>
                         )}
@@ -2155,7 +2325,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     <div className="space-y-3">
                         <div className="flex items-center gap-2 text-sm text-emerald-600">
                             <Check className="w-4 h-4" />
-                            {m['developerPortal.onboarding.dataMapping.eventCapturedSuccessfully']()}
+                            {m[
+                                'developerPortal.onboarding.dataMapping.eventCapturedSuccessfully'
+                            ]()}
                         </div>
 
                         <div className="p-4 bg-gray-900 rounded-xl overflow-x-auto">
@@ -2176,9 +2348,18 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         </div>
 
                         <div>
-                            <h3 className="font-semibold text-gray-800">{m['developerPortal.onboarding.dataMapping.courseBoostSelection']()}</h3>
+                            <h3 className="font-semibold text-gray-800">
+                                {m['developerPortal.onboarding.dataMapping.courseBoostSelection']()}
+                            </h3>
                             <p className="text-sm text-gray-500">
-                                {m['developerPortal.onboarding.dataMapping.courseBoostSelectionDesc']({count: masterTemplates.reduce((sum, m) => sum + (m.childTemplates?.length || 0), 0)})}
+                                {m[
+                                    'developerPortal.onboarding.dataMapping.courseBoostSelectionDesc'
+                                ]({
+                                    count: masterTemplates.reduce(
+                                        (sum, m) => sum + (m.childTemplates?.length || 0),
+                                        0
+                                    ),
+                                })}
                             </p>
                         </div>
                     </div>
@@ -2186,7 +2367,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     <div className="p-4 bg-violet-50 border border-violet-200 rounded-xl space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-violet-800 mb-2">
-                                {m['developerPortal.onboarding.dataMapping.whichFieldIdentifiesCourse']()}
+                                {m[
+                                    'developerPortal.onboarding.dataMapping.whichFieldIdentifiesCourse'
+                                ]()}
                             </label>
 
                             <select
@@ -2194,7 +2377,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 onChange={e => setBoostSelectorField(e.target.value)}
                                 className="w-full px-3 py-2 border border-violet-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-violet-500"
                             >
-                                <option value="">{m['developerPortal.onboarding.dataMapping.selectField']()}</option>
+                                <option value="">
+                                    {m['developerPortal.onboarding.dataMapping.selectField']()}
+                                </option>
                                 {sourceFields.map(field => (
                                     <option key={field} value={field}>
                                         {field}
@@ -2205,7 +2390,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                         <div>
                             <label className="block text-sm font-medium text-violet-800 mb-2">
-                                {m['developerPortal.onboarding.dataMapping.howShouldWeMatchCourses']()}
+                                {m[
+                                    'developerPortal.onboarding.dataMapping.howShouldWeMatchCourses'
+                                ]()}
                             </label>
 
                             <div className="space-y-2">
@@ -2220,10 +2407,14 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     />
                                     <div>
                                         <p className="font-medium text-gray-800">
-                                            {m['developerPortal.onboarding.dataMapping.matchByCourseId']()}
+                                            {m[
+                                                'developerPortal.onboarding.dataMapping.matchByCourseId'
+                                            ]()}
                                         </p>
                                         <p className="text-xs text-gray-500">
-                                            {m['developerPortal.onboarding.dataMapping.matchByIdDesc']()}
+                                            {m[
+                                                'developerPortal.onboarding.dataMapping.matchByIdDesc'
+                                            ]()}
                                         </p>
                                     </div>
                                 </label>
@@ -2239,10 +2430,14 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     />
                                     <div>
                                         <p className="font-medium text-gray-800">
-                                            {m['developerPortal.onboarding.dataMapping.matchByCourseName']()}
+                                            {m[
+                                                'developerPortal.onboarding.dataMapping.matchByCourseName'
+                                            ]()}
                                         </p>
                                         <p className="text-xs text-gray-500">
-                                            {m['developerPortal.onboarding.dataMapping.matchByNameDesc']()}
+                                            {m[
+                                                'developerPortal.onboarding.dataMapping.matchByNameDesc'
+                                            ]()}
                                         </p>
                                     </div>
                                 </label>
@@ -2253,7 +2448,27 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <div className="flex items-start gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
                                 <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
                                 <p className="text-xs text-emerald-800">
-                                    <TransP m={m['developerPortal.onboarding.dataMapping.boostMatcherConfirmation']} values={{field: boostSelectorField, matchType: boostSelectorMatchType === 'id' ? m['developerPortal.onboarding.dataMapping.exactIdMatch']() : m['developerPortal.onboarding.dataMapping.nameMatching']()}} components={[<code className="bg-emerald-100 px-1 rounded" />]} />
+                                    <TransP
+                                        m={
+                                            m[
+                                                'developerPortal.onboarding.dataMapping.boostMatcherConfirmation'
+                                            ]
+                                        }
+                                        values={{
+                                            field: boostSelectorField,
+                                            matchType:
+                                                boostSelectorMatchType === 'id'
+                                                    ? m[
+                                                          'developerPortal.onboarding.dataMapping.exactIdMatch'
+                                                      ]()
+                                                    : m[
+                                                          'developerPortal.onboarding.dataMapping.nameMatching'
+                                                      ](),
+                                        }}
+                                        components={[
+                                            <code className="bg-emerald-100 px-1 rounded" />,
+                                        ]}
+                                    />
                                 </p>
                             </div>
                         )}
@@ -2270,10 +2485,14 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         </div>
 
                         <div>
-                            <h3 className="font-semibold text-gray-800">{m['developerPortal.onboarding.dataMapping.mapIssuanceFields']()}</h3>
+                            <h3 className="font-semibold text-gray-800">
+                                {m['developerPortal.onboarding.dataMapping.mapIssuanceFields']()}
+                            </h3>
                             <p className="text-sm text-gray-500">
                                 {masterTemplates.length > 0
-                                    ? m['developerPortal.onboarding.dataMapping.mapWithCourseData']()
+                                    ? m[
+                                          'developerPortal.onboarding.dataMapping.mapWithCourseData'
+                                      ]()
                                     : m['developerPortal.onboarding.dataMapping.connectYourData']()}
                             </p>
                         </div>
@@ -2314,7 +2533,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     <button
                                         onClick={() => handleRemoveMapping(idx)}
                                         className="ml-auto p-1 text-gray-400 hover:text-red-500 rounded"
-                                        aria-label={m['developerPortal.onboarding.dataMapping.removeMapping']()}
+                                        aria-label={m[
+                                            'developerPortal.onboarding.dataMapping.removeMapping'
+                                        ]()}
                                     >
                                         <span aria-hidden="true">{'\u00D7'}</span>
                                     </button>
@@ -2327,7 +2548,10 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                         <Link2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
                         <p className="text-xs text-blue-800">
-                            <TransP m={m['developerPortal.onboarding.dataMapping.howToMapInstructions']} components={[<strong />]} />
+                            <TransP
+                                m={m['developerPortal.onboarding.dataMapping.howToMapInstructions']}
+                                components={[<strong />]}
+                            />
                         </p>
                     </div>
 
@@ -2337,7 +2561,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <label className="block text-xs font-medium text-gray-600 mb-2">
                                 {m['developerPortal.onboarding.dataMapping.sourceFields']()}
                                 {selectedSource && (
-                                    <span className="ml-2 text-cyan-600">{m['developerPortal.onboarding.dataMapping.selectTarget']()}</span>
+                                    <span className="ml-2 text-cyan-600">
+                                        {m['developerPortal.onboarding.dataMapping.selectTarget']()}
+                                    </span>
                                 )}
                             </label>
 
@@ -2370,7 +2596,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 {sourceFields.filter(f => !mappings.some(m => m.sourceField === f))
                                     .length === 0 && (
                                     <p className="text-xs text-gray-400 text-center py-2">
-                                        {m['developerPortal.onboarding.dataMapping.allSourceFieldsMapped']()}
+                                        {m[
+                                            'developerPortal.onboarding.dataMapping.allSourceFieldsMapped'
+                                        ]()}
                                     </p>
                                 )}
                             </div>
@@ -2380,7 +2608,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <label className="block text-xs font-medium text-gray-600 mb-2">
                                 {m['developerPortal.onboarding.dataMapping.targetFields']()}
                                 {selectedTarget && (
-                                    <span className="ml-2 text-cyan-600">{m['developerPortal.onboarding.dataMapping.selectSource']()}</span>
+                                    <span className="ml-2 text-cyan-600">
+                                        {m['developerPortal.onboarding.dataMapping.selectSource']()}
+                                    </span>
                                 )}
                             </label>
 
@@ -2415,7 +2645,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 {targetFields.filter(f => !mappings.some(m => m.targetField === f))
                                     .length === 0 && (
                                     <p className="text-xs text-gray-400 text-center py-2">
-                                        {m['developerPortal.onboarding.dataMapping.allTargetFieldsMapped']()}
+                                        {m[
+                                            'developerPortal.onboarding.dataMapping.allTargetFieldsMapped'
+                                        ]()}
                                     </p>
                                 )}
                             </div>
@@ -2439,10 +2671,14 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 </code>
                             )}
                             {selectedSource && !selectedTarget && (
-                                <span>{m['developerPortal.onboarding.dataMapping.nowSelectTarget']()}</span>
+                                <span>
+                                    {m['developerPortal.onboarding.dataMapping.nowSelectTarget']()}
+                                </span>
                             )}
                             {selectedTarget && !selectedSource && (
-                                <span>{m['developerPortal.onboarding.dataMapping.nowSelectSource']()}</span>
+                                <span>
+                                    {m['developerPortal.onboarding.dataMapping.nowSelectSource']()}
+                                </span>
                             )}
                         </div>
                     )}
@@ -2459,7 +2695,13 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                             f => !mappings.some(m => m.targetField === f)
                                         ).length
                                     }{' '}
-                                    {m['developerPortal.onboarding.dataMapping.unmappedFieldsWarning']({count: targetFields.filter(f => !mappings.some(m => m.targetField === f)).length})}
+                                    {m[
+                                        'developerPortal.onboarding.dataMapping.unmappedFieldsWarning'
+                                    ]({
+                                        count: targetFields.filter(
+                                            f => !mappings.some(m => m.targetField === f)
+                                        ).length,
+                                    })}
                                 </p>
                             </div>
                         )}
@@ -2470,12 +2712,21 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <div className="flex items-center gap-2">
                                 <Code className="w-4 h-4 text-violet-600" />
                                 <span className="text-sm font-medium text-gray-700">
-                                    {m['developerPortal.onboarding.dataMapping.generatedTemplateData']()}
+                                    {m[
+                                        'developerPortal.onboarding.dataMapping.generatedTemplateData'
+                                    ]()}
                                 </span>
                             </div>
 
                             <p className="text-xs text-gray-500">
-                                <TransP m={m['developerPortal.onboarding.dataMapping.templateDataPreviewDesc']} components={[<code className="bg-gray-100 px-1 rounded" />]} />
+                                <TransP
+                                    m={
+                                        m[
+                                            'developerPortal.onboarding.dataMapping.templateDataPreviewDesc'
+                                        ]
+                                    }
+                                    components={[<code className="bg-gray-100 px-1 rounded" />]}
+                                />
                             </p>
 
                             <div className="p-4 bg-gray-900 rounded-xl overflow-x-auto">

@@ -43,7 +43,11 @@ type AuthGrant = {
 };
 
 const SCOPE_OPTIONS = [
-    { label: m['developerPortal.guides.consentFlow.apiSetupStep.fullAccess'](), value: '*:*', description: m['developerPortal.guides.consentFlow.apiSetupStep.fullAccessDesc']() },
+    {
+        label: m['developerPortal.guides.consentFlow.apiSetupStep.fullAccess'](),
+        value: '*:*',
+        description: m['developerPortal.guides.consentFlow.apiSetupStep.fullAccessDesc'](),
+    },
     {
         label: m['developerPortal.guides.consentFlow.apiSetupStep.credentialsOnly'](),
         value: 'credential:* presentation:*',
@@ -52,10 +56,19 @@ const SCOPE_OPTIONS = [
 ];
 
 const STEPS = [
-    { id: 'create-contract', title: m['developerPortal.guides.consentFlow.steps.createContract']() },
-    { id: 'redirect-handler', title: m['developerPortal.guides.consentFlow.steps.redirectHandler']() },
+    {
+        id: 'create-contract',
+        title: m['developerPortal.guides.consentFlow.steps.createContract'](),
+    },
+    {
+        id: 'redirect-handler',
+        title: m['developerPortal.guides.consentFlow.steps.redirectHandler'](),
+    },
     { id: 'api-setup', title: m['developerPortal.guides.consentFlow.steps.apiSetup']() },
-    { id: 'send-credentials', title: m['developerPortal.guides.consentFlow.steps.sendCredentials']() },
+    {
+        id: 'send-credentials',
+        title: m['developerPortal.guides.consentFlow.steps.sendCredentials'](),
+    },
     { id: 'test', title: m['developerPortal.guides.consentFlow.steps.test']() },
     { id: 'go-live', title: m['developerPortal.guides.consentFlow.steps.goLive']() },
 ];
@@ -115,7 +128,9 @@ const CreateContractStep: React.FC<{
 
             <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
                 <p className="text-sm text-indigo-800">
-                    {m['developerPortal.guides.consentFlow.createContractStep.redirectFlowDescription']()}
+                    {m[
+                        'developerPortal.guides.consentFlow.createContractStep.redirectFlowDescription'
+                    ]()}
                 </p>
             </div>
 
@@ -129,7 +144,9 @@ const CreateContractStep: React.FC<{
 
                             <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-emerald-800">
-                                    {m['developerPortal.guides.consentFlow.createContractStep.contractSelectedTitle']()}
+                                    {m[
+                                        'developerPortal.guides.consentFlow.createContractStep.contractSelectedTitle'
+                                    ]()}
                                 </p>
 
                                 <p className="text-xs text-emerald-600 font-mono truncate mt-1">
@@ -149,7 +166,9 @@ const CreateContractStep: React.FC<{
 
                     <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                         <p className="text-xs text-amber-800">
-                            {m['developerPortal.guides.consentFlow.createContractStep.saveContractWarning']()}
+                            {m[
+                                'developerPortal.guides.consentFlow.createContractStep.saveContractWarning'
+                            ]()}
                         </p>
                     </div>
                 </div>
@@ -276,14 +295,26 @@ app.get('/api/learncard/callback', async (req, res) => {
             </StepCard>
 
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">{m['developerPortal.guides.consentFlow.redirectHandlerStep.flowSummary']()}</h4>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                    {m['developerPortal.guides.consentFlow.redirectHandlerStep.flowSummary']()}
+                </h4>
 
                 <ol className="text-xs text-gray-600 space-y-2 list-decimal list-inside">
-                    <li>{m['developerPortal.guides.consentFlow.redirectHandlerStep.flowStep1']()}</li>
-                    <li>{m['developerPortal.guides.consentFlow.redirectHandlerStep.flowStep2']()}</li>
-                    <li>{m['developerPortal.guides.consentFlow.redirectHandlerStep.flowStep3']()}</li>
-                    <li>{m['developerPortal.guides.consentFlow.redirectHandlerStep.flowStep4']()}</li>
-                    <li>{m['developerPortal.guides.consentFlow.redirectHandlerStep.flowStep5']()}</li>
+                    <li>
+                        {m['developerPortal.guides.consentFlow.redirectHandlerStep.flowStep1']()}
+                    </li>
+                    <li>
+                        {m['developerPortal.guides.consentFlow.redirectHandlerStep.flowStep2']()}
+                    </li>
+                    <li>
+                        {m['developerPortal.guides.consentFlow.redirectHandlerStep.flowStep3']()}
+                    </li>
+                    <li>
+                        {m['developerPortal.guides.consentFlow.redirectHandlerStep.flowStep4']()}
+                    </li>
+                    <li>
+                        {m['developerPortal.guides.consentFlow.redirectHandlerStep.flowStep5']()}
+                    </li>
                 </ol>
             </div>
 
@@ -356,7 +387,8 @@ const APISetupStep: React.FC<{
             const wallet = await initWallet();
             await wallet.invoke.addAuthGrant({
                 name: newTokenName.trim(),
-                description: m['developerPortal.guides.consentFlow.apiSetupStep.createdFromGuide'](),
+                description:
+                    m['developerPortal.guides.consentFlow.apiSetupStep.createdFromGuide'](),
                 scope: selectedScope,
             });
             presentToast('API Token created!', { hasDismissButton: true });
@@ -421,7 +453,9 @@ const APISetupStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.consentFlow.apiSetupStep.title']()}</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.consentFlow.apiSetupStep.title']()}
+                </h3>
 
                 <p className="text-gray-600">
                     {m['developerPortal.guides.consentFlow.apiSetupStep.description']()}
@@ -478,7 +512,9 @@ const APISetupStep: React.FC<{
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {m['developerPortal.guides.consentFlow.apiSetupStep.permissionsLabel']()}
+                            {m[
+                                'developerPortal.guides.consentFlow.apiSetupStep.permissionsLabel'
+                            ]()}
                         </label>
 
                         <select
@@ -548,7 +584,11 @@ const APISetupStep: React.FC<{
                                     <p className="font-medium text-gray-800">{grant.name}</p>
 
                                     <p className="text-sm text-gray-500">
-                                        {m['developerPortal.guides.consentFlow.apiSetupStep.createdLabel']({ date: new Date(grant.createdAt!).toLocaleDateString() })}
+                                        {m[
+                                            'developerPortal.guides.consentFlow.apiSetupStep.createdLabel'
+                                        ]({
+                                            date: new Date(grant.createdAt!).toLocaleDateString(),
+                                        })}
                                     </p>
                                 </div>
                             </div>
@@ -571,7 +611,9 @@ const APISetupStep: React.FC<{
             {apiToken && selectedGrantId && (
                 <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
                     <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs font-medium text-indigo-700">{m['developerPortal.guides.consentFlow.apiSetupStep.yourApiToken']()}</p>
+                        <p className="text-xs font-medium text-indigo-700">
+                            {m['developerPortal.guides.consentFlow.apiSetupStep.yourApiToken']()}
+                        </p>
 
                         <button
                             onClick={async () => {
@@ -631,7 +673,9 @@ const APISetupStep: React.FC<{
                 title={m['developerPortal.guides.consentFlow.apiSetupStep.step2Title']()}
                 icon={<Zap className="w-4 h-4 text-gray-400 ml-auto" />}
             >
-                <p className="text-sm text-gray-600 mb-3">{m['developerPortal.guides.consentFlow.apiSetupStep.step2Desc']()}</p>
+                <p className="text-sm text-gray-600 mb-3">
+                    {m['developerPortal.guides.consentFlow.apiSetupStep.step2Desc']()}
+                </p>
 
                 <CodeOutputPanel
                     snippets={{
@@ -723,7 +767,9 @@ const SendCredentialsStep: React.FC<{
                 <p className="text-sm text-gray-600 mb-3">
                     <TransP
                         m={m['developerPortal.guides.consentFlow.sendCredentialsStep.step2Desc']}
-                        components={[<code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs" />]}
+                        components={[
+                            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs" />,
+                        ]}
                     />
                 </p>
 
@@ -772,7 +818,9 @@ await learnCard.invoke.send({
                 <div className="space-y-4">
                     <div>
                         <p className="text-xs text-gray-500 mb-2 font-medium">
-                            {m['developerPortal.guides.consentFlow.sendCredentialsStep.step3Sub1']()}
+                            {m[
+                                'developerPortal.guides.consentFlow.sendCredentialsStep.step3Sub1'
+                            ]()}
                         </p>
 
                         <CodeOutputPanel
@@ -792,7 +840,9 @@ log.info('Consented records:', consentData.records);`,
 
                     <div>
                         <p className="text-xs text-gray-500 mb-2 font-medium">
-                            {m['developerPortal.guides.consentFlow.sendCredentialsStep.step3Sub2']()}
+                            {m[
+                                'developerPortal.guides.consentFlow.sendCredentialsStep.step3Sub2'
+                            ]()}
                         </p>
 
                         <CodeOutputPanel
@@ -815,17 +865,32 @@ log.info('User consent records:', userConsentData.records);`,
                     <Info className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
 
                     <div>
-                        <h4 className="text-sm font-medium text-amber-800">{m['developerPortal.guides.consentFlow.sendCredentialsStep.tipsTitle']()}</h4>
+                        <h4 className="text-sm font-medium text-amber-800">
+                            {m[
+                                'developerPortal.guides.consentFlow.sendCredentialsStep.tipsTitle'
+                            ]()}
+                        </h4>
 
                         <ul className="text-xs text-amber-700 mt-1 space-y-1">
-                            <li>• {m['developerPortal.guides.consentFlow.sendCredentialsStep.tip1']()}</li>
                             <li>
-                                • <TransP
-                                    m={m['developerPortal.guides.consentFlow.sendCredentialsStep.tip2']}
+                                •{' '}
+                                {m['developerPortal.guides.consentFlow.sendCredentialsStep.tip1']()}
+                            </li>
+                            <li>
+                                •{' '}
+                                <TransP
+                                    m={
+                                        m[
+                                            'developerPortal.guides.consentFlow.sendCredentialsStep.tip2'
+                                        ]
+                                    }
                                     components={[<code className="bg-amber-100 px-1 rounded" />]}
                                 />
                             </li>
-                            <li>• {m['developerPortal.guides.consentFlow.sendCredentialsStep.tip3']()}</li>
+                            <li>
+                                •{' '}
+                                {m['developerPortal.guides.consentFlow.sendCredentialsStep.tip3']()}
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -876,7 +941,9 @@ const TestStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.consentFlow.testStep.title']()}</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.consentFlow.testStep.title']()}
+                </h3>
 
                 <p className="text-gray-600">
                     {m['developerPortal.guides.consentFlow.testStep.description']()}
@@ -885,7 +952,7 @@ const TestStep: React.FC<{
 
             <StepCard
                 step={1}
-                title={m["developerPortal.guides.consentFlow.testStep.step1Title"]()}
+                title={m['developerPortal.guides.consentFlow.testStep.step1Title']()}
                 icon={<ExternalLink className="w-4 h-4 text-gray-400 ml-auto" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
@@ -895,7 +962,9 @@ const TestStep: React.FC<{
                 {consentUrl ? (
                     <div className="space-y-3">
                         <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                            <p className="text-xs text-gray-500 mb-1 font-medium">{m['developerPortal.guides.consentFlow.testStep.consentUrlLabel']()}</p>
+                            <p className="text-xs text-gray-500 mb-1 font-medium">
+                                {m['developerPortal.guides.consentFlow.testStep.consentUrlLabel']()}
+                            </p>
 
                             <p className="text-xs text-gray-700 font-mono break-all">
                                 {consentUrl}
@@ -923,7 +992,7 @@ const TestStep: React.FC<{
 
             <StepCard
                 step={2}
-                title={m["developerPortal.guides.consentFlow.testStep.step2Title"]()}
+                title={m['developerPortal.guides.consentFlow.testStep.step2Title']()}
                 icon={<Code className="w-4 h-4 text-gray-400 ml-auto" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
@@ -973,7 +1042,7 @@ const TestStep: React.FC<{
 
             <StepCard
                 step={3}
-                title={m["developerPortal.guides.consentFlow.testStep.step3Title"]()}
+                title={m['developerPortal.guides.consentFlow.testStep.step3Title']()}
                 icon={<Send className="w-4 h-4 text-gray-400 ml-auto" />}
             >
                 <p className="text-sm text-gray-600 mb-3">

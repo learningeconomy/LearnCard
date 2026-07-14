@@ -36,7 +36,11 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
 
     const [partnerName, setPartnerName] = useState(savedConfig?.partnerName || '');
     const [branding, setBranding] = useState(
-        savedConfig?.branding || { primaryColor: '#1F51FF', accentColor: '#0F3BD9', partnerLogoUrl: '' }
+        savedConfig?.branding || {
+            primaryColor: '#1F51FF',
+            accentColor: '#0F3BD9',
+            partnerLogoUrl: '',
+        }
     );
     const [requestBackgroundIssuance, setRequestBackgroundIssuance] = useState(
         savedConfig?.requestBackgroundIssuance ?? false
@@ -68,11 +72,17 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
         const domain = domainInput.trim().toLowerCase();
         if (!domain || whitelistedDomains.includes(domain)) return;
         updateIntegrationMutation.mutate(
-            { id: integration.id, updates: { whitelistedDomains: [...whitelistedDomains, domain] } },
+            {
+                id: integration.id,
+                updates: { whitelistedDomains: [...whitelistedDomains, domain] },
+            },
             {
                 onSuccess: () => {
                     setDomainInput('');
-                    presentToast('Domain added', { type: ToastTypeEnum.Success, hasDismissButton: true });
+                    presentToast('Domain added', {
+                        type: ToastTypeEnum.Success,
+                        hasDismissButton: true,
+                    });
                 },
             }
         );
@@ -80,7 +90,10 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
 
     const removeDomain = (domain: string) => {
         updateIntegrationMutation.mutate(
-            { id: integration.id, updates: { whitelistedDomains: whitelistedDomains.filter(d => d !== domain) } },
+            {
+                id: integration.id,
+                updates: { whitelistedDomains: whitelistedDomains.filter(d => d !== domain) },
+            },
             {
                 onSuccess: () => {
                     presentToast('Domain removed', { hasDismissButton: true });
@@ -94,7 +107,9 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
     const selectedTemplate = templates[safeIdx];
     const credential = useMemo(
         () => ({
-            name: selectedTemplate?.name || m['developerPortal.dashboards.tabs.embedConfig.untitledTemplate'](),
+            name:
+                selectedTemplate?.name ||
+                m['developerPortal.dashboards.tabs.embedConfig.untitledTemplate'](),
             ...(selectedTemplate || {}),
         }),
         [selectedTemplate]
@@ -107,14 +122,20 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.embedConfig.title']()}</h2>
-                <p className="text-sm text-gray-500">{m['developerPortal.dashboards.tabs.embedConfig.description']()}</p>
+                <h2 className="text-lg font-semibold text-gray-800">
+                    {m['developerPortal.dashboards.tabs.embedConfig.title']()}
+                </h2>
+                <p className="text-sm text-gray-500">
+                    {m['developerPortal.dashboards.tabs.embedConfig.description']()}
+                </p>
             </div>
 
             {/* Live Preview */}
             {publishableKey && templates.length > 0 && (
                 <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
-                    <h3 className="text-sm font-medium text-indigo-800 mb-3">{m['developerPortal.dashboards.tabs.embedConfig.livePreview']()}</h3>
+                    <h3 className="text-sm font-medium text-indigo-800 mb-3">
+                        {m['developerPortal.dashboards.tabs.embedConfig.livePreview']()}
+                    </h3>
 
                     <p className="text-xs text-indigo-600 mb-4">
                         {m['developerPortal.dashboards.tabs.embedConfig.livePreviewDesc']()}
@@ -123,7 +144,9 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
                     {/* Template selector for preview */}
                     {templates.length > 1 && (
                         <div className="mb-4">
-                            <label className="text-xs font-medium text-indigo-700 mb-1.5 block">{m['developerPortal.dashboards.tabs.embedConfig.previewTemplate']()}</label>
+                            <label className="text-xs font-medium text-indigo-700 mb-1.5 block">
+                                {m['developerPortal.dashboards.tabs.embedConfig.previewTemplate']()}
+                            </label>
                             <div className="flex flex-wrap gap-2">
                                 {templates.map((t, idx) => (
                                     <button
@@ -167,18 +190,24 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">{m['developerPortal.dashboards.tabs.embedConfig.primaryColor']()}</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                                {m['developerPortal.dashboards.tabs.embedConfig.primaryColor']()}
+                            </label>
                             <div className="flex gap-2">
                                 <input
                                     type="color"
                                     value={branding.primaryColor}
-                                    onChange={(e) => setBranding({ ...branding, primaryColor: e.target.value })}
+                                    onChange={e =>
+                                        setBranding({ ...branding, primaryColor: e.target.value })
+                                    }
                                     className="w-10 h-10 rounded-lg border border-gray-300 cursor-pointer"
                                 />
                                 <input
                                     type="text"
                                     value={branding.primaryColor}
-                                    onChange={(e) => setBranding({ ...branding, primaryColor: e.target.value })}
+                                    onChange={e =>
+                                        setBranding({ ...branding, primaryColor: e.target.value })
+                                    }
                                     placeholder="#1F51FF"
                                     className="flex-1 px-3 py-2 text-sm font-mono bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                 />
@@ -186,18 +215,24 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
                         </div>
 
                         <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">{m['developerPortal.dashboards.tabs.embedConfig.accentColor']()}</label>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                                {m['developerPortal.dashboards.tabs.embedConfig.accentColor']()}
+                            </label>
                             <div className="flex gap-2">
                                 <input
                                     type="color"
                                     value={branding.accentColor}
-                                    onChange={(e) => setBranding({ ...branding, accentColor: e.target.value })}
+                                    onChange={e =>
+                                        setBranding({ ...branding, accentColor: e.target.value })
+                                    }
                                     className="w-10 h-10 rounded-lg border border-gray-300 cursor-pointer"
                                 />
                                 <input
                                     type="text"
                                     value={branding.accentColor}
-                                    onChange={(e) => setBranding({ ...branding, accentColor: e.target.value })}
+                                    onChange={e =>
+                                        setBranding({ ...branding, accentColor: e.target.value })
+                                    }
                                     placeholder="#0F3BD9"
                                     className="flex-1 px-3 py-2 text-sm font-mono bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                 />
@@ -207,12 +242,21 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
 
                     {/* Partner Name */}
                     <div className="pt-3 border-t border-gray-100">
-                        <label className="block text-xs font-medium text-gray-600 mb-1">{m['developerPortal.dashboards.tabs.embedConfig.partnerName']()} <span className="text-gray-400 font-normal">{m['developerPortal.dashboards.tabs.embedConfig.partnerNameOptional']()}</span></label>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                            {m['developerPortal.dashboards.tabs.embedConfig.partnerName']()}{' '}
+                            <span className="text-gray-400 font-normal">
+                                {m[
+                                    'developerPortal.dashboards.tabs.embedConfig.partnerNameOptional'
+                                ]()}
+                            </span>
+                        </label>
                         <input
                             type="text"
                             value={partnerName}
-                            onChange={(e) => setPartnerName(e.target.value)}
-                            placeholder={m['developerPortal.dashboards.tabs.embedConfig.partnerNamePlaceholder']()}
+                            onChange={e => setPartnerName(e.target.value)}
+                            placeholder={m[
+                                'developerPortal.dashboards.tabs.embedConfig.partnerNamePlaceholder'
+                            ]()}
                             className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             style={{ colorScheme: 'light' }}
                         />
@@ -223,12 +267,21 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
 
                     {/* Partner Logo */}
                     <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">{m['developerPortal.dashboards.tabs.embedConfig.partnerLogo']()} <span className="text-gray-400 font-normal">{m['developerPortal.dashboards.tabs.embedConfig.partnerLogoOptional']()}</span></label>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                            {m['developerPortal.dashboards.tabs.embedConfig.partnerLogo']()}{' '}
+                            <span className="text-gray-400 font-normal">
+                                {m[
+                                    'developerPortal.dashboards.tabs.embedConfig.partnerLogoOptional'
+                                ]()}
+                            </span>
+                        </label>
                         <div className="flex gap-2">
                             <input
                                 type="url"
                                 value={branding.partnerLogoUrl}
-                                onChange={(e) => setBranding({ ...branding, partnerLogoUrl: e.target.value })}
+                                onChange={e =>
+                                    setBranding({ ...branding, partnerLogoUrl: e.target.value })
+                                }
                                 placeholder="https://example.com/logo.png"
                                 className="flex-1 px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                 disabled={isUploadingLogo}
@@ -239,7 +292,9 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
                                 onClick={() => handleLogoUpload()}
                                 disabled={isUploadingLogo}
                                 className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center gap-1"
-                                title={m['developerPortal.credentialBuilder.fieldEditor.uploadImage']()}
+                                title={m[
+                                    'developerPortal.credentialBuilder.fieldEditor.uploadImage'
+                                ]()}
                             >
                                 {isUploadingLogo ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -253,7 +308,9 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
                                 src={branding.partnerLogoUrl}
                                 alt={m['developerPortal.components.accountSelector.logoPreview']()}
                                 className="mt-2 h-12 object-contain rounded border border-gray-200"
-                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                onError={e => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                }}
                             />
                         )}
                     </div>
@@ -270,13 +327,19 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
                         <input
                             type="checkbox"
                             checked={requestBackgroundIssuance}
-                            onChange={(e) => setRequestBackgroundIssuance(e.target.checked)}
+                            onChange={e => setRequestBackgroundIssuance(e.target.checked)}
                             className="mt-1 w-4 h-4 text-cyan-500 border-gray-300 rounded focus:ring-cyan-500"
                         />
                         <div>
-                            <span className="text-sm font-medium text-gray-700">{m['developerPortal.dashboards.tabs.embedConfig.requestBackgroundIssuance']()}</span>
+                            <span className="text-sm font-medium text-gray-700">
+                                {m[
+                                    'developerPortal.dashboards.tabs.embedConfig.requestBackgroundIssuance'
+                                ]()}
+                            </span>
                             <p className="text-xs text-gray-500 mt-0.5">
-                                {m['developerPortal.dashboards.tabs.embedConfig.requestBackgroundIssuanceDesc']()}
+                                {m[
+                                    'developerPortal.dashboards.tabs.embedConfig.requestBackgroundIssuanceDesc'
+                                ]()}
                             </p>
                         </div>
                     </label>
@@ -287,7 +350,9 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
                 <div className="flex items-center gap-2 mb-2">
                     <Globe className="w-4 h-4 text-gray-500" />
-                    <label className="text-sm font-medium text-gray-700">{m['developerPortal.dashboards.tabs.embedConfig.whitelistedDomains']()}</label>
+                    <label className="text-sm font-medium text-gray-700">
+                        {m['developerPortal.dashboards.tabs.embedConfig.whitelistedDomains']()}
+                    </label>
                 </div>
 
                 <p className="text-xs text-gray-500 mb-3">
@@ -299,7 +364,12 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
                         type="text"
                         value={domainInput}
                         onChange={e => setDomainInput(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addDomain(); } }}
+                        onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                addDomain();
+                            }
+                        }}
                         placeholder="e.g., yourcompany.com"
                         className="flex-1 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500"
                         style={{ colorScheme: 'light' }}

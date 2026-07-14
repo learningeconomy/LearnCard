@@ -44,11 +44,17 @@ const METHODS: MethodOption[] = [
         titleKey: 'restApi',
         subtitleKey: 'fullControl',
         descriptionKey: 'restApiDesc',
-        description: 'Call our API directly from your backend code when you want to issue credentials.',
+        description:
+            'Call our API directly from your backend code when you want to issue credentials.',
         icon: Code,
         color: 'text-violet-600',
         bgColor: 'bg-violet-100',
-        featureKeys: ['featureProgrammatic','featureCustomLogic','featureBatchOps','featureSdkAvailable'],
+        featureKeys: [
+            'featureProgrammatic',
+            'featureCustomLogic',
+            'featureBatchOps',
+            'featureSdkAvailable',
+        ],
         features: [
             'Complete programmatic control',
             'Custom business logic',
@@ -63,11 +69,11 @@ const METHODS: MethodOption[] = [
         titleKey: 'csvUpload',
         subtitleKey: 'simpleBatch',
         descriptionKey: 'csvUploadDesc',
-        description: 'Upload a spreadsheet of completions and we\'ll issue credentials in bulk.',
+        description: "Upload a spreadsheet of completions and we'll issue credentials in bulk.",
         icon: FileSpreadsheet,
         color: 'text-amber-600',
         bgColor: 'bg-amber-100',
-        featureKeys: ['featureNoIntegration','featureMigration','featureTemplateDownload'],
+        featureKeys: ['featureNoIntegration', 'featureMigration', 'featureTemplateDownload'],
         features: [
             'No technical integration needed',
             'Great for initial migration',
@@ -80,11 +86,17 @@ const METHODS: MethodOption[] = [
         titleKey: 'webhook',
         subtitleKey: 'realtimeAutomated',
         descriptionKey: 'webhookDesc',
-        description: 'Your external system sends events to LearnCard when courses are completed. Credentials are issued automatically.',
+        description:
+            'Your external system sends events to LearnCard when courses are completed. Credentials are issued automatically.',
         icon: Webhook,
         color: 'text-gray-400',
         bgColor: 'bg-gray-100',
-        featureKeys: ['featureRealtime','featureNoManual','featureCrossPlatform','featureVisualMapping'],
+        featureKeys: [
+            'featureRealtime',
+            'featureNoManual',
+            'featureCrossPlatform',
+            'featureVisualMapping',
+        ],
         features: [
             'Real-time credential issuance',
             'No manual intervention needed',
@@ -112,15 +124,13 @@ export const IntegrationMethodStep: React.FC<IntegrationMethodStepProps> = ({
 
                 <div className="text-sm text-blue-800">
                     <p className="font-medium mb-1">{t('title')}</p>
-                    <p>
-                        {t('description')}
-                    </p>
+                    <p>{t('description')}</p>
                 </div>
             </div>
 
             {/* Method Cards */}
             <div className="space-y-4">
-                {METHODS.map((method) => {
+                {METHODS.map(method => {
                     const Icon = method.icon;
                     const isSelected = selected === method.id;
 
@@ -133,18 +143,28 @@ export const IntegrationMethodStep: React.FC<IntegrationMethodStepProps> = ({
                                 method.comingSoon
                                     ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed'
                                     : isSelected
-                                        ? 'border-cyan-500 bg-cyan-50 shadow-md'
-                                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                                    ? 'border-cyan-500 bg-cyan-50 shadow-md'
+                                    : 'border-gray-200 hover:border-gray-300 bg-white'
                             }`}
                         >
                             <div className="flex items-start gap-4">
-                                <div className={`w-12 h-12 ${method.bgColor} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                                <div
+                                    className={`w-12 h-12 ${method.bgColor} rounded-xl flex items-center justify-center flex-shrink-0`}
+                                >
                                     <Icon className={`w-6 h-6 ${method.color}`} />
                                 </div>
 
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
-                                        <h3 className={`font-semibold ${method.comingSoon ? 'text-gray-500' : 'text-gray-800'}`}>{t(method.titleKey)}</h3>
+                                        <h3
+                                            className={`font-semibold ${
+                                                method.comingSoon
+                                                    ? 'text-gray-500'
+                                                    : 'text-gray-800'
+                                            }`}
+                                        >
+                                            {t(method.titleKey)}
+                                        </h3>
 
                                         {method.recommended && (
                                             <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">
@@ -159,9 +179,17 @@ export const IntegrationMethodStep: React.FC<IntegrationMethodStepProps> = ({
                                         )}
                                     </div>
 
-                                    <p className="text-sm text-gray-500 mb-2">{t(method.subtitleKey)}</p>
+                                    <p className="text-sm text-gray-500 mb-2">
+                                        {t(method.subtitleKey)}
+                                    </p>
 
-                                    <p className={`text-sm mb-3 ${method.comingSoon ? 'text-gray-400' : 'text-gray-600'}`}>{t(method.descriptionKey)}</p>
+                                    <p
+                                        className={`text-sm mb-3 ${
+                                            method.comingSoon ? 'text-gray-400' : 'text-gray-600'
+                                        }`}
+                                    >
+                                        {t(method.descriptionKey)}
+                                    </p>
 
                                     <div className="flex flex-wrap gap-2">
                                         {method.features.map((feature, idx) => (
@@ -176,11 +204,13 @@ export const IntegrationMethodStep: React.FC<IntegrationMethodStepProps> = ({
                                     </div>
                                 </div>
 
-                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                                    isSelected
-                                        ? 'border-cyan-500 bg-cyan-500'
-                                        : 'border-gray-300'
-                                }`}>
+                                <div
+                                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                                        isSelected
+                                            ? 'border-cyan-500 bg-cyan-500'
+                                            : 'border-gray-300'
+                                    }`}
+                                >
                                     {isSelected && <Check className="w-4 h-4 text-white" />}
                                 </div>
                             </div>
@@ -195,22 +225,12 @@ export const IntegrationMethodStep: React.FC<IntegrationMethodStepProps> = ({
                     <h4 className="font-medium text-gray-800 mb-2">{t('nextSteps')}</h4>
 
                     {selected === 'webhook' && (
-                        <p className="text-sm text-gray-600">
-                            {t('webhookNext')}
-                        </p>
+                        <p className="text-sm text-gray-600">{t('webhookNext')}</p>
                     )}
 
-                    {selected === 'api' && (
-                        <p className="text-sm text-gray-600">
-                            {t('apiNext')}
-                        </p>
-                    )}
+                    {selected === 'api' && <p className="text-sm text-gray-600">{t('apiNext')}</p>}
 
-                    {selected === 'csv' && (
-                        <p className="text-sm text-gray-600">
-                            {t('csvNext')}
-                        </p>
-                    )}
+                    {selected === 'csv' && <p className="text-sm text-gray-600">{t('csvNext')}</p>}
                 </div>
             )}
 

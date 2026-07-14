@@ -1,4 +1,4 @@
-export type UseCaseId = 
+export type UseCaseId =
     | 'issue-credentials'
     | 'embed-claim'
     | 'embed-app'
@@ -38,7 +38,7 @@ export interface GuideState {
 // ============================================================
 // EMBED APP GUIDE - Persisted Configuration
 // ============================================================
-// This interface defines all user selections that should be 
+// This interface defines all user selections that should be
 // persisted across page refreshes and navigation
 
 export interface EmbedAppFeatureConfig {
@@ -129,7 +129,8 @@ export const USE_CASES: Record<UseCaseId, Omit<UseCaseConfig, 'steps'>> = {
         titleKey: 'developerPortal.guides.useCases.issueCredentials.title',
         subtitle: 'Give badges to users',
         subtitleKey: 'developerPortal.guides.useCases.issueCredentials.subtitle',
-        description: 'Issue verifiable credentials like badges, certificates, or achievements to your users.',
+        description:
+            'Issue verifiable credentials like badges, certificates, or achievements to your users.',
         descriptionKey: 'developerPortal.guides.useCases.issueCredentials.description',
         icon: 'award',
         color: 'text-violet-600',
@@ -141,7 +142,8 @@ export const USE_CASES: Record<UseCaseId, Omit<UseCaseConfig, 'steps'>> = {
         titleKey: 'developerPortal.guides.useCases.embedClaim.title',
         subtitle: 'Issue from your site',
         subtitleKey: 'developerPortal.guides.useCases.embedClaim.subtitle',
-        description: 'Add a "Claim Credential" button to your website so users can claim badges without leaving your page.',
+        description:
+            'Add a "Claim Credential" button to your website so users can claim badges without leaving your page.',
         descriptionKey: 'developerPortal.guides.useCases.embedClaim.description',
         icon: 'mouse-pointer-click',
         color: 'text-pink-600',
@@ -153,7 +155,8 @@ export const USE_CASES: Record<UseCaseId, Omit<UseCaseConfig, 'steps'>> = {
         titleKey: 'developerPortal.guides.useCases.embedApp.title',
         subtitle: 'Run inside LearnCard',
         subtitleKey: 'developerPortal.guides.useCases.embedApp.subtitle',
-        description: 'Build an app that runs inside the LearnCard wallet with access to user identity and credentials.',
+        description:
+            'Build an app that runs inside the LearnCard wallet with access to user identity and credentials.',
         descriptionKey: 'developerPortal.guides.useCases.embedApp.description',
         icon: 'layout',
         color: 'text-cyan-600',
@@ -165,7 +168,8 @@ export const USE_CASES: Record<UseCaseId, Omit<UseCaseConfig, 'steps'>> = {
         titleKey: 'developerPortal.guides.useCases.consentFlow.title',
         subtitle: 'Connect your website to LearnCard',
         subtitleKey: 'developerPortal.guides.useCases.consentFlow.subtitle',
-        description: 'Set up a consent flow to send and access user data and credentials with their permission.',
+        description:
+            'Set up a consent flow to send and access user data and credentials with their permission.',
         descriptionKey: 'developerPortal.guides.useCases.consentFlow.description',
         icon: 'shield-check',
         color: 'text-emerald-600',
@@ -177,7 +181,8 @@ export const USE_CASES: Record<UseCaseId, Omit<UseCaseConfig, 'steps'>> = {
         titleKey: 'developerPortal.guides.useCases.courseCatalog.title',
         subtitle: 'Enterprise LMS integration',
         subtitleKey: 'developerPortal.guides.useCases.courseCatalog.subtitle',
-        description: 'Full guided setup for LMS partners. Configure webhooks, build credential templates, map your data, and go live with automatic credential issuance.',
+        description:
+            'Full guided setup for LMS partners. Configure webhooks, build credential templates, map your data, and go live with automatic credential issuance.',
         descriptionKey: 'developerPortal.guides.useCases.courseCatalog.description',
         icon: 'rocket',
         color: 'text-violet-600',
@@ -189,7 +194,8 @@ export const USE_CASES: Record<UseCaseId, Omit<UseCaseConfig, 'steps'>> = {
         titleKey: 'developerPortal.guides.useCases.verifyCredentials.title',
         subtitle: 'Accept VCs from users',
         subtitleKey: 'developerPortal.guides.useCases.verifyCredentials.subtitle',
-        description: 'Accept and verify credentials presented by users to prove their achievements or identity.',
+        description:
+            'Accept and verify credentials presented by users to prove their achievements or identity.',
         descriptionKey: 'developerPortal.guides.useCases.verifyCredentials.description',
         icon: 'check-circle',
         color: 'text-blue-600',
@@ -202,11 +208,12 @@ export const USE_CASES: Record<UseCaseId, Omit<UseCaseConfig, 'steps'>> = {
         titleKey: 'developerPortal.guides.useCases.serverWebhooks.title',
         subtitle: 'Backend events',
         subtitleKey: 'developerPortal.guides.useCases.serverWebhooks.subtitle',
-        description: 'Receive real-time notifications when events happen in LearnCard via webhooks.',
+        description:
+            'Receive real-time notifications when events happen in LearnCard via webhooks.',
         descriptionKey: 'developerPortal.guides.useCases.serverWebhooks.description',
         icon: 'webhook',
         color: 'text-orange-600',
         bgColor: 'bg-orange-100',
         comingSoon: true,
-    }
+    },
 };

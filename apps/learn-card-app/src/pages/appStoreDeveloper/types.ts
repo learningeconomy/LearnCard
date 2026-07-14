@@ -63,7 +63,13 @@ export type AppPermission =
     | 'request_consent'
     | 'template_issuance';
 
-export const PERMISSION_OPTIONS: { value: AppPermission; label: string; description: string; labelKey: string; descriptionKey: string }[] = [
+export const PERMISSION_OPTIONS: {
+    value: AppPermission;
+    label: string;
+    description: string;
+    labelKey: string;
+    descriptionKey: string;
+}[] = [
     {
         value: 'request_identity',
         label: 'Request Identity',
@@ -129,7 +135,14 @@ export interface LaunchConfig {
 
 export const LAUNCH_TYPE_INFO: Record<
     LaunchType,
-    { label: string; description: string; icon: string; comingSoon?: boolean; labelKey: string; descriptionKey: string }
+    {
+        label: string;
+        description: string;
+        icon: string;
+        comingSoon?: boolean;
+        labelKey: string;
+        descriptionKey: string;
+    }
 > = {
     EMBEDDED_IFRAME: {
         label: 'Embedded Iframe',
@@ -182,7 +195,11 @@ export const CATEGORY_OPTIONS = [
     { value: 'games', label: 'Games', labelKey: 'developerPortal.categories.games' },
     { value: 'tools', label: 'Tools', labelKey: 'developerPortal.categories.tools' },
     { value: 'employment', label: 'Employment', labelKey: 'developerPortal.categories.employment' },
-    { value: 'credentials', label: 'Credentials', labelKey: 'developerPortal.categories.credentials' },
+    {
+        value: 'credentials',
+        label: 'Credentials',
+        labelKey: 'developerPortal.categories.credentials',
+    },
     { value: 'plugin', label: 'Plugin', labelKey: 'developerPortal.categories.plugin' },
     { value: 'other', label: 'Other', labelKey: 'developerPortal.categories.other' },
 ];
@@ -217,30 +234,32 @@ export const STATUS_INFO: Record<
     },
 };
 
-export const PROMOTION_LEVEL_INFO: Record<PromotionLevel, { label: string; description: string; labelKey: string; descriptionKey: string }> =
-    {
-        FEATURED_CAROUSEL: {
-            label: 'Featured Carousel',
-            description: 'Prominently displayed in the featured section',
-            labelKey: 'developerPortal.promotion.featuredCarousel.label',
-            descriptionKey: 'developerPortal.promotion.featuredCarousel.description',
-        },
-        CURATED_LIST: {
-            label: 'Curated List',
-            description: 'Included in curated collections',
-            labelKey: 'developerPortal.promotion.curatedList.label',
-            descriptionKey: 'developerPortal.promotion.curatedList.description',
-        },
-        STANDARD: {
-            label: 'Standard',
-            description: 'Normal visibility in search and browse',
-            labelKey: 'developerPortal.promotion.standard.label',
-            descriptionKey: 'developerPortal.promotion.standard.description',
-        },
-        DEMOTED: {
-            label: 'Demoted',
-            description: 'Reduced visibility in listings',
-            labelKey: 'developerPortal.promotion.demoted.label',
-            descriptionKey: 'developerPortal.promotion.demoted.description',
-        },
-    };
+export const PROMOTION_LEVEL_INFO: Record<
+    PromotionLevel,
+    { label: string; description: string; labelKey: string; descriptionKey: string }
+> = {
+    FEATURED_CAROUSEL: {
+        label: 'Featured Carousel',
+        description: 'Prominently displayed in the featured section',
+        labelKey: 'developerPortal.promotion.featuredCarousel.label',
+        descriptionKey: 'developerPortal.promotion.featuredCarousel.description',
+    },
+    CURATED_LIST: {
+        label: 'Curated List',
+        description: 'Included in curated collections',
+        labelKey: 'developerPortal.promotion.curatedList.label',
+        descriptionKey: 'developerPortal.promotion.curatedList.description',
+    },
+    STANDARD: {
+        label: 'Standard',
+        description: 'Normal visibility in search and browse',
+        labelKey: 'developerPortal.promotion.standard.label',
+        descriptionKey: 'developerPortal.promotion.standard.description',
+    },
+    DEMOTED: {
+        label: 'Demoted',
+        description: 'Reduced visibility in listings',
+        labelKey: 'developerPortal.promotion.demoted.label',
+        descriptionKey: 'developerPortal.promotion.demoted.description',
+    },
+};

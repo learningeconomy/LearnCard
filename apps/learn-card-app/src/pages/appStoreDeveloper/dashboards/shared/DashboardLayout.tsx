@@ -1,7 +1,7 @@
 import React from 'react';
-import { 
-    ArrowLeft, 
-    RefreshCw, 
+import {
+    ArrowLeft,
+    RefreshCw,
     Award,
     MousePointerClick,
     Layout,
@@ -13,7 +13,10 @@ import {
 import type { LCNIntegration } from '@learncard/types';
 import * as m from '../../../../paraglide/messages.js';
 
-const GUIDE_TYPE_ICONS: Record<string, { icon: React.ElementType; color: string; bgColor: string }> = {
+const GUIDE_TYPE_ICONS: Record<
+    string,
+    { icon: React.ElementType; color: string; bgColor: string }
+> = {
     'issue-credentials': { icon: Award, color: 'text-violet-600', bgColor: 'bg-violet-100' },
     'embed-claim': { icon: MousePointerClick, color: 'text-pink-600', bgColor: 'bg-pink-100' },
     'embed-app': { icon: Layout, color: 'text-cyan-600', bgColor: 'bg-cyan-100' },
@@ -69,37 +72,50 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                     )}
 
                     {/* Guide Type Icon */}
-                    {integration.guideType && GUIDE_TYPE_ICONS[integration.guideType] && (() => {
-                        const { icon: Icon, color, bgColor } = GUIDE_TYPE_ICONS[integration.guideType!];
-                        return (
-                            <div className={`w-10 h-10 ${bgColor} rounded-xl flex items-center justify-center`}>
-                                <Icon className={`w-5 h-5 ${color}`} />
-                            </div>
-                        );
-                    })()}
+                    {integration.guideType &&
+                        GUIDE_TYPE_ICONS[integration.guideType] &&
+                        (() => {
+                            const {
+                                icon: Icon,
+                                color,
+                                bgColor,
+                            } = GUIDE_TYPE_ICONS[integration.guideType!];
+                            return (
+                                <div
+                                    className={`w-10 h-10 ${bgColor} rounded-xl flex items-center justify-center`}
+                                >
+                                    <Icon className={`w-5 h-5 ${color}`} />
+                                </div>
+                            );
+                        })()}
 
                     <div>
                         <div className="flex items-center gap-2">
                             <h1 className="text-xl font-semibold text-gray-800">{title}</h1>
 
-                            {statusBadge || (() => {
-                                const status = (integration.status as string) || 'setup';
-                                if (status === 'active') {
+                            {statusBadge ||
+                                (() => {
+                                    const status = (integration.status as string) || 'setup';
+                                    if (status === 'active') {
+                                        return (
+                                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
+                                                {m['developerPortal.dashboards.status.active']()}
+                                            </span>
+                                        );
+                                    }
                                     return (
-                                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
-                                            {m['developerPortal.dashboards.status.active']()}
+                                        <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-medium capitalize">
+                                            {status === 'setup'
+                                                ? m['developerPortal.dashboards.status.inSetup']()
+                                                : status}
                                         </span>
                                     );
-                                }
-                                return (
-                                    <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-medium capitalize">
-                                        {status === 'setup' ? m['developerPortal.dashboards.status.inSetup']() : status}
-                                    </span>
-                                );
-                            })()}
+                                })()}
                         </div>
 
-                        <p className="text-sm text-gray-500">{subtitle || m['developerPortal.dashboards.subtitle.default']()}</p>
+                        <p className="text-sm text-gray-500">
+                            {subtitle || m['developerPortal.dashboards.subtitle.default']()}
+                        </p>
                     </div>
                 </div>
 
@@ -110,7 +126,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                             disabled={isRefreshing}
                             className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
                         >
-                            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                            <RefreshCw
+                                className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`}
+                            />
                             {m['developerPortal.dashboards.refresh']()}
                         </button>
                     )}
@@ -143,9 +161,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             )}
 
             {/* Content */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6">
-                {children}
-            </div>
+            <div className="bg-white rounded-2xl border border-gray-200 p-6">{children}</div>
         </div>
     );
 };

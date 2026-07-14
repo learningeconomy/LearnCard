@@ -98,11 +98,16 @@ function formatRecipientType(type: string): string {
 function deriveStatus(chain: CredentialActivityRecord[]): string {
     const eventTypes = chain.map(e => e.eventType);
 
-    if (eventTypes.includes('CLAIMED')) return m['developerPortal.dashboards.activity.csvStatus.claimed']();
-    if (eventTypes.includes('FAILED')) return m['developerPortal.dashboards.activity.csvStatus.failed']();
-    if (eventTypes.includes('EXPIRED')) return m['developerPortal.dashboards.activity.csvStatus.expired']();
-    if (eventTypes.includes('DELIVERED')) return m['developerPortal.dashboards.activity.csvStatus.delivered']();
-    if (eventTypes.includes('CREATED')) return m['developerPortal.dashboards.activity.csvStatus.sent']();
+    if (eventTypes.includes('CLAIMED'))
+        return m['developerPortal.dashboards.activity.csvStatus.claimed']();
+    if (eventTypes.includes('FAILED'))
+        return m['developerPortal.dashboards.activity.csvStatus.failed']();
+    if (eventTypes.includes('EXPIRED'))
+        return m['developerPortal.dashboards.activity.csvStatus.expired']();
+    if (eventTypes.includes('DELIVERED'))
+        return m['developerPortal.dashboards.activity.csvStatus.delivered']();
+    if (eventTypes.includes('CREATED'))
+        return m['developerPortal.dashboards.activity.csvStatus.sent']();
 
     return m['developerPortal.dashboards.activity.csvStatus.unknown']();
 }
@@ -241,7 +246,10 @@ async function downloadCsvNative(
         directory: Directory.Documents,
     });
 
-    presentToast(m['developerPortal.dashboards.activity.csvSaved']({ filename }), ToastTypeEnum.Success);
+    presentToast(
+        m['developerPortal.dashboards.activity.csvSaved']({ filename }),
+        ToastTypeEnum.Success
+    );
 }
 
 export function useActivityExport(): {
@@ -405,7 +413,10 @@ export function useActivityExport(): {
                     setState({
                         isExporting: false,
                         progress: null,
-                        error: err instanceof Error ? err : new Error(m['developerPortal.dashboards.export.exportFailed']()),
+                        error:
+                            err instanceof Error
+                                ? err
+                                : new Error(m['developerPortal.dashboards.export.exportFailed']()),
                     });
                 }
                 return false;

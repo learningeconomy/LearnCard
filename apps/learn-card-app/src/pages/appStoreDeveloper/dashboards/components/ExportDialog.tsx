@@ -125,7 +125,9 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
         <div className="bg-white rounded-2xl overflow-hidden w-full max-w-md">
             <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-semibold text-gray-900">{m['developerPortal.dashboards.export.title']()}</h2>
+                    <h2 className="text-xl font-semibold text-gray-900">
+                        {m['developerPortal.dashboards.export.title']()}
+                    </h2>
                     <button
                         onClick={handleCancel}
                         className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -140,7 +142,9 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                         <div className="flex items-center gap-3 p-4 bg-cyan-50 rounded-xl">
                             <Loader2 className="w-6 h-6 text-cyan-600 animate-spin" />
                             <div className="flex-1">
-                                <p className="font-medium text-cyan-900">{m['developerPortal.dashboards.export.downloading']()}</p>
+                                <p className="font-medium text-cyan-900">
+                                    {m['developerPortal.dashboards.export.downloading']()}
+                                </p>
                                 {state.progress && (
                                     <p className="text-sm text-cyan-700">
                                         {state.progress.fetched.toLocaleString()}
@@ -171,12 +175,16 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                         <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl min-h-[76px]">
                             <Download className="w-6 h-6 text-gray-600 flex-shrink-0" />
                             <div className="min-w-0">
-                                <p className="text-sm text-gray-500">{m['developerPortal.dashboards.export.description']()}</p>
+                                <p className="text-sm text-gray-500">
+                                    {m['developerPortal.dashboards.export.description']()}
+                                </p>
                                 <p className="font-medium text-gray-900 flex items-center gap-2 h-6">
                                     {statsError ? (
                                         <span className="text-amber-600 flex items-center gap-2">
                                             <AlertCircle className="w-4 h-4" />
-                                            {m['developerPortal.dashboards.export.couldNotLoadCount']()}
+                                            {m[
+                                                'developerPortal.dashboards.export.couldNotLoadCount'
+                                            ]()}
                                         </span>
                                     ) : (
                                         <>
@@ -187,9 +195,17 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                                             >
                                                 {totalRecords !== null
                                                     ? `${totalRecords.toLocaleString()} ${
-                                                          totalRecords === 1 ? m['developerPortal.dashboards.export.result']({ count: 1 }) : m['developerPortal.dashboards.export.results']({ count: totalRecords })
+                                                          totalRecords === 1
+                                                              ? m[
+                                                                    'developerPortal.dashboards.export.result'
+                                                                ]({ count: 1 })
+                                                              : m[
+                                                                    'developerPortal.dashboards.export.results'
+                                                                ]({ count: totalRecords })
                                                       }`
-                                                    : m['developerPortal.dashboards.export.loading']()}
+                                                    : m[
+                                                          'developerPortal.dashboards.export.loading'
+                                                      ]()}
                                             </span>
                                             {isLoadingStats && totalRecords !== null && (
                                                 <Loader2 className="w-3 h-3 animate-spin text-gray-400" />
@@ -213,7 +229,9 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                                         onChange={e => setListingId(e.target.value)}
                                         className="w-full px-3 py-2 border bg-transparent rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                                     >
-                                        <option value="">{m['developerPortal.dashboards.export.allApps']()}</option>
+                                        <option value="">
+                                            {m['developerPortal.dashboards.export.allApps']()}
+                                        </option>
                                         {appListings.map(listing => (
                                             <option
                                                 key={listing.listing_id}

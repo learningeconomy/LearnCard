@@ -51,7 +51,10 @@ interface CredentialActivityStats {
 export type CredentialEventType = 'CREATED' | 'DELIVERED' | 'CLAIMED' | 'EXPIRED' | 'FAILED';
 
 /** Get filter options for event type dropdown (resolved at render for i18n) */
-export function getEventTypeFilterOptions(): { value: CredentialEventType | 'ALL'; label: string }[] {
+export function getEventTypeFilterOptions(): {
+    value: CredentialEventType | 'ALL';
+    label: string;
+}[] {
     return [
         { value: 'ALL', label: m['developerPortal.dashboards.activity.allEvents']() },
         { value: 'CREATED', label: m['developerPortal.dashboards.activity.sent']() },
@@ -114,7 +117,11 @@ export function isInboxActivity(record: CredentialActivityRecord): boolean {
  * Get display name for recipient
  */
 export function getRecipientDisplayName(record: CredentialActivityRecord): string {
-    return record.recipientProfile?.displayName || record.recipientIdentifier || m['developerPortal.dashboards.activity.recipientUnknown']();
+    return (
+        record.recipientProfile?.displayName ||
+        record.recipientIdentifier ||
+        m['developerPortal.dashboards.activity.recipientUnknown']()
+    );
 }
 
 /**
@@ -294,7 +301,11 @@ export function useIntegrationActivity(
             } catch (err) {
                 if (cancelled) return;
                 log.error('Failed to fetch activity', err);
-                setError(err instanceof Error ? err : new Error(m['developerPortal.dashboards.activity.fetchFailed']()));
+                setError(
+                    err instanceof Error
+                        ? err
+                        : new Error(m['developerPortal.dashboards.activity.fetchFailed']())
+                );
                 setActivity([]);
             } finally {
                 if (!cancelled) {
@@ -342,7 +353,11 @@ export function useIntegrationActivity(
             setCursor(nextCursor);
         } catch (err) {
             log.error('Failed to load more activity', err);
-            setError(err instanceof Error ? err : new Error(m['developerPortal.dashboards.activity.loadMoreFailed']()));
+            setError(
+                err instanceof Error
+                    ? err
+                    : new Error(m['developerPortal.dashboards.activity.loadMoreFailed']())
+            );
         } finally {
             setIsLoadingMore(false);
         }
@@ -363,8 +378,10 @@ export function formatRelativeTime(dateString: string): string {
     const diffDays = Math.floor(diffMs / 86400000);
 
     if (diffMins < 1) return m['developerPortal.dashboards.activity.justNow']();
-    if (diffMins < 60) return m['developerPortal.dashboards.activity.minutesAgo']({ count: diffMins });
-    if (diffHours < 24) return m['developerPortal.dashboards.activity.hoursAgo']({ count: diffHours });
+    if (diffMins < 60)
+        return m['developerPortal.dashboards.activity.minutesAgo']({ count: diffMins });
+    if (diffHours < 24)
+        return m['developerPortal.dashboards.activity.hoursAgo']({ count: diffHours });
     if (diffDays < 7) return m['developerPortal.dashboards.activity.daysAgo']({ count: diffDays });
 
     return date.toLocaleDateString();

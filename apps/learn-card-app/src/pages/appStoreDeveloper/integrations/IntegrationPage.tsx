@@ -34,14 +34,19 @@ const IntegrationPage: React.FC = () => {
     if (isLoadingIntegrations) {
         return (
             <IonPage>
-                <AppStoreHeader title={m['developerPortal.shell.title']()} rightContent={integrationSelector} />
+                <AppStoreHeader
+                    title={m['developerPortal.shell.title']()}
+                    rightContent={integrationSelector}
+                />
 
                 <IonContent className="ion-padding">
                     <div className="max-w-5xl mx-auto">
                         <div className="flex items-center justify-center min-h-[400px]">
                             <div className="text-center">
                                 <Loader2 className="w-10 h-10 text-cyan-500 mx-auto animate-spin" />
-                                <p className="text-sm text-gray-500 mt-3">{m['developerPortal.shell.loadingIntegration']()}</p>
+                                <p className="text-sm text-gray-500 mt-3">
+                                    {m['developerPortal.shell.loadingIntegration']()}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -53,13 +58,18 @@ const IntegrationPage: React.FC = () => {
     if (!currentIntegration) {
         return (
             <IonPage>
-                <AppStoreHeader title={m['developerPortal.shell.title']()} rightContent={integrationSelector} />
+                <AppStoreHeader
+                    title={m['developerPortal.shell.title']()}
+                    rightContent={integrationSelector}
+                />
 
                 <IonContent className="ion-padding">
                     <div className="max-w-5xl mx-auto">
                         <div className="flex items-center justify-center min-h-[400px]">
                             <div className="text-center">
-                                <p className="text-gray-500">{m['developerPortal.shell.integrationNotFoundSimple']()}</p>
+                                <p className="text-gray-500">
+                                    {m['developerPortal.shell.integrationNotFoundSimple']()}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -70,7 +80,10 @@ const IntegrationPage: React.FC = () => {
 
     return (
         <IonPage>
-            <AppStoreHeader title={m['developerPortal.shell.title']()} rightContent={integrationSelector} />
+            <AppStoreHeader
+                title={m['developerPortal.shell.title']()}
+                rightContent={integrationSelector}
+            />
 
             <IonContent className="ion-padding">
                 <div className="max-w-5xl mx-auto py-4">

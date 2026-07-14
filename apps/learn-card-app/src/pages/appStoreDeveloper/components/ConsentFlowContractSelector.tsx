@@ -82,7 +82,9 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
 
     return (
         <div className="relative">
-            <label className="block text-sm font-medium text-gray-600 mb-1">{m['developerPortal.components.consentFlowContractSelector.contractUri']()}</label>
+            <label className="block text-sm font-medium text-gray-600 mb-1">
+                {m['developerPortal.components.consentFlowContractSelector.contractUri']()}
+            </label>
 
             <div className="flex gap-2">
                 {/* Custom dropdown trigger */}
@@ -93,54 +95,60 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
                         error ? 'border-red-300' : 'border-gray-200 hover:border-gray-300'
                     }`}
                 >
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                    {isLoadingContracts ? (
-                        <>
-                            <IonSpinner name="crescent" className="w-5 h-5 text-gray-400" />
-                            <span className="text-sm text-gray-400">{m['developerPortal.components.consentFlowContractSelector.loadingContracts']()}</span>
-                        </>
-                    ) : selectedContract ? (
-                        <>
-                            {selectedContract.image ? (
-                                <img
-                                    src={selectedContract.image}
-                                    alt={selectedContract.name}
-                                    className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                                />
-                            ) : (
-                                <div className="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center flex-shrink-0">
-                                    <FileText className="w-4 h-4 text-cyan-600" />
-                                </div>
-                            )}
-
-                            <div className="min-w-0">
-                                <p className="text-sm font-medium text-gray-700 truncate">
-                                    {selectedContract.name}
-                                </p>
-
-                                {selectedContract.subtitle && (
-                                    <p className="text-xs text-gray-400 truncate">
-                                        {selectedContract.subtitle}
-                                    </p>
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {isLoadingContracts ? (
+                            <>
+                                <IonSpinner name="crescent" className="w-5 h-5 text-gray-400" />
+                                <span className="text-sm text-gray-400">
+                                    {m[
+                                        'developerPortal.components.consentFlowContractSelector.loadingContracts'
+                                    ]()}
+                                </span>
+                            </>
+                        ) : selectedContract ? (
+                            <>
+                                {selectedContract.image ? (
+                                    <img
+                                        src={selectedContract.image}
+                                        alt={selectedContract.name}
+                                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                                    />
+                                ) : (
+                                    <div className="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center flex-shrink-0">
+                                        <FileText className="w-4 h-4 text-cyan-600" />
+                                    </div>
                                 )}
-                            </div>
-                        </>
-                    ) : value ? (
-                        <>
-                            <FileText className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                            <span className="text-sm text-gray-500 truncate">{value}</span>
-                        </>
-                    ) : (
-                        <>
-                            <FileText className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                            <span className="text-sm text-gray-400">
-                                {m['developerPortal.components.consentFlowContractSelector.selectOrCreate']()}
-                            </span>
-                        </>
-                    )}
-                </div>
 
-                <ChevronDown
+                                <div className="min-w-0">
+                                    <p className="text-sm font-medium text-gray-700 truncate">
+                                        {selectedContract.name}
+                                    </p>
+
+                                    {selectedContract.subtitle && (
+                                        <p className="text-xs text-gray-400 truncate">
+                                            {selectedContract.subtitle}
+                                        </p>
+                                    )}
+                                </div>
+                            </>
+                        ) : value ? (
+                            <>
+                                <FileText className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                                <span className="text-sm text-gray-500 truncate">{value}</span>
+                            </>
+                        ) : (
+                            <>
+                                <FileText className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                                <span className="text-sm text-gray-400">
+                                    {m[
+                                        'developerPortal.components.consentFlowContractSelector.selectOrCreate'
+                                    ]()}
+                                </span>
+                            </>
+                        )}
+                    </div>
+
+                    <ChevronDown
                         className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform ${
                             isOpen ? 'rotate-180' : ''
                         }`}
@@ -153,10 +161,14 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
                     onClick={handlePreview}
                     disabled={!selectedContract}
                     className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title={m['developerPortal.components.consentFlowContractSelector.previewContract']()}
+                    title={m[
+                        'developerPortal.components.consentFlowContractSelector.previewContract'
+                    ]()}
                 >
                     <Eye className="w-4 h-4" />
-                    <span className="hidden sm:inline">{m['developerPortal.components.consentFlowContractSelector.preview']()}</span>
+                    <span className="hidden sm:inline">
+                        {m['developerPortal.components.consentFlowContractSelector.preview']()}
+                    </span>
                 </button>
             </div>
 
@@ -177,11 +189,15 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
 
                         <div>
                             <p className="text-sm font-medium text-emerald-700">
-                                {m['developerPortal.components.consentFlowContractSelector.createNewContract']()}
+                                {m[
+                                    'developerPortal.components.consentFlowContractSelector.createNewContract'
+                                ]()}
                             </p>
 
                             <p className="text-xs text-gray-400">
-                                {m['developerPortal.components.consentFlowContractSelector.createNewContractDesc']()}
+                                {m[
+                                    'developerPortal.components.consentFlowContractSelector.createNewContractDesc'
+                                ]()}
                             </p>
                         </div>
                     </button>
@@ -189,14 +205,18 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
                     {/* Manual entry option */}
                     <div className="px-4 py-3 border-b border-gray-100">
                         <label className="block text-xs font-medium text-gray-500 mb-1">
-                            {m['developerPortal.components.consentFlowContractSelector.orEnterUri']()}
+                            {m[
+                                'developerPortal.components.consentFlowContractSelector.orEnterUri'
+                            ]()}
                         </label>
 
                         <input
                             type="text"
                             value={value}
                             onChange={e => onChange(e.target.value)}
-                            placeholder={m['developerPortal.components.consentFlowContractSelector.uriPlaceholder']()}
+                            placeholder={m[
+                                'developerPortal.components.consentFlowContractSelector.uriPlaceholder'
+                            ]()}
                             className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                             onClick={e => e.stopPropagation()}
                         />
@@ -206,7 +226,9 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
                     {contracts.length > 0 && (
                         <div className="py-1">
                             <p className="px-4 py-2 text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                {m['developerPortal.components.consentFlowContractSelector.yourContracts']()}
+                                {m[
+                                    'developerPortal.components.consentFlowContractSelector.yourContracts'
+                                ]()}
                             </p>
 
                             {contracts.map(contract => (
@@ -251,9 +273,15 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
                     {contracts.length === 0 && !isLoadingContracts && (
                         <div className="px-4 py-6 text-center">
                             <FileText className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                            <p className="text-sm text-gray-400">{m['developerPortal.components.consentFlowContractSelector.noContractsFound']()}</p>
+                            <p className="text-sm text-gray-400">
+                                {m[
+                                    'developerPortal.components.consentFlowContractSelector.noContractsFound'
+                                ]()}
+                            </p>
                             <p className="text-xs text-gray-400 mt-1">
-                                {m['developerPortal.components.consentFlowContractSelector.noContractsFoundDesc']()}
+                                {m[
+                                    'developerPortal.components.consentFlowContractSelector.noContractsFoundDesc'
+                                ]()}
                             </p>
                         </div>
                     )}
@@ -261,9 +289,7 @@ export const ConsentFlowContractSelector: React.FC<ConsentFlowContractSelectorPr
             )}
 
             {/* Click outside to close */}
-            {isOpen && (
-                <div className="fixed inset-0 z-0" onClick={() => setIsOpen(false)} />
-            )}
+            {isOpen && <div className="fixed inset-0 z-0" onClick={() => setIsOpen(false)} />}
         </div>
     );
 };

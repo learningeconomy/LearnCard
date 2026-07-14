@@ -114,13 +114,53 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
     // Categories available for custom types (user-friendly subset)
     const walletCategories = useMemo(
         () => [
-            { value: 'Achievement', label: m['developerPortal.credentialBuilder.achievement.walletCategories.achievement'](), walletFolder: 'Achievements' },
-            { value: 'Learning History', label: m['developerPortal.credentialBuilder.achievement.walletCategories.learningHistory'](), walletFolder: 'Studies' },
-            { value: 'Work History', label: m['developerPortal.credentialBuilder.achievement.walletCategories.workHistory'](), walletFolder: 'Experiences' },
-            { value: 'Social Badge', label: m['developerPortal.credentialBuilder.achievement.walletCategories.socialBadge'](), walletFolder: 'Boosts' },
-            { value: 'ID', label: m['developerPortal.credentialBuilder.achievement.walletCategories.id'](), walletFolder: 'IDs' },
-            { value: 'Membership', label: m['developerPortal.credentialBuilder.achievement.walletCategories.membership'](), walletFolder: 'Memberships' },
-            { value: 'Accommodation', label: m['developerPortal.credentialBuilder.achievement.walletCategories.accommodation'](), walletFolder: 'Assistance' },
+            {
+                value: 'Achievement',
+                label: m[
+                    'developerPortal.credentialBuilder.achievement.walletCategories.achievement'
+                ](),
+                walletFolder: 'Achievements',
+            },
+            {
+                value: 'Learning History',
+                label: m[
+                    'developerPortal.credentialBuilder.achievement.walletCategories.learningHistory'
+                ](),
+                walletFolder: 'Studies',
+            },
+            {
+                value: 'Work History',
+                label: m[
+                    'developerPortal.credentialBuilder.achievement.walletCategories.workHistory'
+                ](),
+                walletFolder: 'Experiences',
+            },
+            {
+                value: 'Social Badge',
+                label: m[
+                    'developerPortal.credentialBuilder.achievement.walletCategories.socialBadge'
+                ](),
+                walletFolder: 'Boosts',
+            },
+            {
+                value: 'ID',
+                label: m['developerPortal.credentialBuilder.achievement.walletCategories.id'](),
+                walletFolder: 'IDs',
+            },
+            {
+                value: 'Membership',
+                label: m[
+                    'developerPortal.credentialBuilder.achievement.walletCategories.membership'
+                ](),
+                walletFolder: 'Memberships',
+            },
+            {
+                value: 'Accommodation',
+                label: m[
+                    'developerPortal.credentialBuilder.achievement.walletCategories.accommodation'
+                ](),
+                walletFolder: 'Assistance',
+            },
         ],
         []
     );
@@ -166,7 +206,9 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                 label={m['developerPortal.credentialBuilder.achievement.description']()}
                 field={achievement.description}
                 onChange={f => updateAchievement('description', f)}
-                placeholder={m['developerPortal.credentialBuilder.achievement.descriptionPlaceholder']()}
+                placeholder={m[
+                    'developerPortal.credentialBuilder.achievement.descriptionPlaceholder'
+                ]()}
                 helpText={m['developerPortal.credentialBuilder.achievement.descriptionHelp']()}
                 type="textarea"
                 showDynamicToggle={!disableDynamicFields}
@@ -193,7 +235,9 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                         {/* Category Selector */}
                         <div>
                             <label className="block text-xs text-gray-500 mb-1">
-                                {m['developerPortal.credentialBuilder.achievement.walletCategory']()}
+                                {m[
+                                    'developerPortal.credentialBuilder.achievement.walletCategory'
+                                ]()}
                             </label>
                             <div className="relative">
                                 <select
@@ -203,31 +247,41 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                                 >
                                     {walletCategories.map(cat => (
                                         <option key={cat.value} value={cat.value}>
-                                            {m['developerPortal.credentialBuilder.achievement.walletFolderLabel']({ label: cat.label, folder: cat.walletFolder })}
+                                            {m[
+                                                'developerPortal.credentialBuilder.achievement.walletFolderLabel'
+                                            ]({ label: cat.label, folder: cat.walletFolder })}
                                         </option>
                                     ))}
                                 </select>
                                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                             </div>
                             <p className="text-xs text-gray-400 mt-1">
-                                {m['developerPortal.credentialBuilder.achievement.walletCategoryHelp']()}
+                                {m[
+                                    'developerPortal.credentialBuilder.achievement.walletCategoryHelp'
+                                ]()}
                             </p>
                         </div>
 
                         {/* Custom Type Name */}
                         <div>
                             <label className="block text-xs text-gray-500 mb-1">
-                                {m['developerPortal.credentialBuilder.achievement.customTypeName']()}
+                                {m[
+                                    'developerPortal.credentialBuilder.achievement.customTypeName'
+                                ]()}
                             </label>
                             <input
                                 type="text"
                                 value={customTypeName}
                                 onChange={e => setCustomTypeName(e.target.value)}
-                                placeholder={m['developerPortal.credentialBuilder.achievement.customTypeNamePlaceholder']()}
+                                placeholder={m[
+                                    'developerPortal.credentialBuilder.achievement.customTypeNamePlaceholder'
+                                ]()}
                                 className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                             />
                             <p className="text-xs text-gray-400 mt-1">
-                                {m['developerPortal.credentialBuilder.achievement.customTypeHelp']()}
+                                {m[
+                                    'developerPortal.credentialBuilder.achievement.customTypeHelp'
+                                ]()}
                             </p>
                         </div>
 
@@ -236,7 +290,11 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                             <div className="p-2 bg-amber-50 border border-amber-200 rounded-lg">
                                 <div className="flex items-center gap-2 text-xs text-amber-700">
                                     <Folder className="w-3.5 h-3.5" />
-                                    <span className="font-medium">{m['developerPortal.credentialBuilder.achievement.generatedType']()}</span>
+                                    <span className="font-medium">
+                                        {m[
+                                            'developerPortal.credentialBuilder.achievement.generatedType'
+                                        ]()}
+                                    </span>
                                 </div>
                                 <code className="block mt-1 text-xs text-amber-800 font-mono break-all">
                                     {customTypePreview}
@@ -282,24 +340,36 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
 
             {/* Additional OBv3 Achievement Fields */}
             <div className="mt-4 pt-4 border-t border-gray-100">
-                <h4 className="text-sm font-medium text-gray-700 mb-3">{m['developerPortal.credentialBuilder.achievement.additionalDetails']()}</h4>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">
+                    {m['developerPortal.credentialBuilder.achievement.additionalDetails']()}
+                </h4>
 
                 <div className="grid grid-cols-2 gap-3 xs:flex xs:flex-col">
                     <FieldEditor
                         label={m['developerPortal.credentialBuilder.achievement.humanCode']()}
                         field={achievement.humanCode || staticField('')}
                         onChange={f => updateAchievement('humanCode', f)}
-                        placeholder={m['developerPortal.credentialBuilder.achievement.humanCodePlaceholder']()}
-                        helpText={m['developerPortal.credentialBuilder.achievement.humanCodeHelp']()}
+                        placeholder={m[
+                            'developerPortal.credentialBuilder.achievement.humanCodePlaceholder'
+                        ]()}
+                        helpText={m[
+                            'developerPortal.credentialBuilder.achievement.humanCodeHelp'
+                        ]()}
                         showDynamicToggle={!disableDynamicFields}
                     />
 
                     <FieldEditor
-                        label={m['developerPortal.credentialBuilder.achievement.creditsAvailable']()}
+                        label={m[
+                            'developerPortal.credentialBuilder.achievement.creditsAvailable'
+                        ]()}
                         field={achievement.creditsAvailable || staticField('')}
                         onChange={f => updateAchievement('creditsAvailable', f)}
-                        placeholder={m['developerPortal.credentialBuilder.achievement.creditsAvailablePlaceholder']()}
-                        helpText={m['developerPortal.credentialBuilder.achievement.creditsAvailableHelp']()}
+                        placeholder={m[
+                            'developerPortal.credentialBuilder.achievement.creditsAvailablePlaceholder'
+                        ]()}
+                        helpText={m[
+                            'developerPortal.credentialBuilder.achievement.creditsAvailableHelp'
+                        ]()}
                         showDynamicToggle={!disableDynamicFields}
                     />
 
@@ -307,8 +377,12 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                         label={m['developerPortal.credentialBuilder.achievement.fieldOfStudy']()}
                         field={achievement.fieldOfStudy || staticField('')}
                         onChange={f => updateAchievement('fieldOfStudy', f)}
-                        placeholder={m['developerPortal.credentialBuilder.achievement.fieldOfStudyPlaceholder']()}
-                        helpText={m['developerPortal.credentialBuilder.achievement.fieldOfStudyHelp']()}
+                        placeholder={m[
+                            'developerPortal.credentialBuilder.achievement.fieldOfStudyPlaceholder'
+                        ]()}
+                        helpText={m[
+                            'developerPortal.credentialBuilder.achievement.fieldOfStudyHelp'
+                        ]()}
                         showDynamicToggle={!disableDynamicFields}
                     />
 
@@ -316,8 +390,12 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                         label={m['developerPortal.credentialBuilder.achievement.specialization']()}
                         field={achievement.specialization || staticField('')}
                         onChange={f => updateAchievement('specialization', f)}
-                        placeholder={m['developerPortal.credentialBuilder.achievement.specializationPlaceholder']()}
-                        helpText={m['developerPortal.credentialBuilder.achievement.specializationHelp']()}
+                        placeholder={m[
+                            'developerPortal.credentialBuilder.achievement.specializationPlaceholder'
+                        ]()}
+                        helpText={m[
+                            'developerPortal.credentialBuilder.achievement.specializationHelp'
+                        ]()}
                         showDynamicToggle={!disableDynamicFields}
                     />
 
@@ -325,7 +403,9 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                         label={m['developerPortal.credentialBuilder.achievement.version']()}
                         field={achievement.version || staticField('')}
                         onChange={f => updateAchievement('version', f)}
-                        placeholder={m['developerPortal.credentialBuilder.achievement.versionPlaceholder']()}
+                        placeholder={m[
+                            'developerPortal.credentialBuilder.achievement.versionPlaceholder'
+                        ]()}
                         helpText={m['developerPortal.credentialBuilder.achievement.versionHelp']()}
                         showDynamicToggle={!disableDynamicFields}
                     />
@@ -346,7 +426,9 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                             }
                             updateAchievement('ctid', { ...f, value: ctidValue });
                         }}
-                        placeholder={m['developerPortal.credentialBuilder.achievement.ctidPlaceholder']()}
+                        placeholder={m[
+                            'developerPortal.credentialBuilder.achievement.ctidPlaceholder'
+                        ]()}
                         helpText={m['developerPortal.credentialBuilder.achievement.ctidHelp']()}
                         showDynamicToggle={!disableDynamicFields}
                         error={getFieldError(validationErrors, 'achievement.ctid')}
@@ -391,7 +473,9 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
 
                 {/* Tags */}
                 <div className="mt-3">
-                    <label className="block text-xs font-medium text-gray-600 mb-1">{m['developerPortal.credentialBuilder.achievement.tags']()}</label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                        {m['developerPortal.credentialBuilder.achievement.tags']()}
+                    </label>
                     <div className="flex flex-wrap gap-2 mb-2">
                         {(achievement.tag || []).map((tag, index) => (
                             <span
@@ -415,7 +499,9 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                     </div>
                     <input
                         type="text"
-                        placeholder={m['developerPortal.credentialBuilder.achievement.tagsPlaceholder']()}
+                        placeholder={m[
+                            'developerPortal.credentialBuilder.achievement.tagsPlaceholder'
+                        ]()}
                         className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-amber-500"
                         onKeyDown={e => {
                             if (e.key === 'Enter') {
@@ -432,20 +518,28 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                             }
                         }}
                     />
-                    <p className="text-xs text-gray-400 mt-1">{m['developerPortal.credentialBuilder.achievement.tagsHelp']()}</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                        {m['developerPortal.credentialBuilder.achievement.tagsHelp']()}
+                    </p>
                 </div>
             </div>
 
             {/* Criteria Sub-section */}
             <div className="mt-4 pt-4 border-t border-gray-100">
-                <h4 className="text-sm font-medium text-gray-700 mb-3">{m['developerPortal.credentialBuilder.achievement.criteria']()}</h4>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">
+                    {m['developerPortal.credentialBuilder.achievement.criteria']()}
+                </h4>
 
                 <div className="space-y-3 pl-3 border-l-2 border-amber-200">
                     <FieldEditor
-                        label={m['developerPortal.credentialBuilder.achievement.criteriaNarrative']()}
+                        label={m[
+                            'developerPortal.credentialBuilder.achievement.criteriaNarrative'
+                        ]()}
                         field={achievement.criteria?.narrative || staticField('')}
                         onChange={f => updateCriteria('narrative', f)}
-                        placeholder={m['developerPortal.credentialBuilder.achievement.criteriaNarrativePlaceholder']()}
+                        placeholder={m[
+                            'developerPortal.credentialBuilder.achievement.criteriaNarrativePlaceholder'
+                        ]()}
                         helpText="Human-readable description of the criteria"
                         type="textarea"
                         showDynamicToggle={!disableDynamicFields}
@@ -467,7 +561,9 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
             {/* Alignment Sub-section */}
             <div className="mt-4 pt-4 border-t border-gray-100">
                 <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-medium text-gray-700">{m['developerPortal.credentialBuilder.achievement.alignment']()}</h4>
+                    <h4 className="text-sm font-medium text-gray-700">
+                        {m['developerPortal.credentialBuilder.achievement.alignment']()}
+                    </h4>
 
                     <button
                         type="button"
@@ -484,7 +580,9 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                 </p>
 
                 {(achievement.alignment || []).length === 0 ? (
-                    <p className="text-xs text-gray-400 italic pl-3">{m['developerPortal.credentialBuilder.achievement.noAlignments']()}</p>
+                    <p className="text-xs text-gray-400 italic pl-3">
+                        {m['developerPortal.credentialBuilder.achievement.noAlignments']()}
+                    </p>
                 ) : (
                     <div className="space-y-4">
                         {(achievement.alignment || []).map((alignment, index) => (
@@ -494,7 +592,9 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                             >
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-medium text-amber-700">
-                                        {m['developerPortal.credentialBuilder.achievement.alignmentNumber']({ n: index + 1 })}
+                                        {m[
+                                            'developerPortal.credentialBuilder.achievement.alignmentNumber'
+                                        ]({ n: index + 1 })}
                                     </span>
 
                                     <button
@@ -507,20 +607,32 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                                 </div>
 
                                 <FieldEditor
-                                    label={m['developerPortal.credentialBuilder.achievement.targetName']()}
+                                    label={m[
+                                        'developerPortal.credentialBuilder.achievement.targetName'
+                                    ]()}
                                     field={alignment.targetName}
                                     onChange={f => updateAlignment(index, 'targetName', f)}
-                                    placeholder={m['developerPortal.credentialBuilder.achievement.targetNamePlaceholder']()}
-                                    helpText={m['developerPortal.credentialBuilder.achievement.targetNameHelp']()}
+                                    placeholder={m[
+                                        'developerPortal.credentialBuilder.achievement.targetNamePlaceholder'
+                                    ]()}
+                                    helpText={m[
+                                        'developerPortal.credentialBuilder.achievement.targetNameHelp'
+                                    ]()}
                                     showDynamicToggle={!disableDynamicFields}
                                 />
 
                                 <FieldEditor
-                                    label={m['developerPortal.credentialBuilder.achievement.targetUrl']()}
+                                    label={m[
+                                        'developerPortal.credentialBuilder.achievement.targetUrl'
+                                    ]()}
                                     field={alignment.targetUrl}
                                     onChange={f => updateAlignment(index, 'targetUrl', f)}
-                                    placeholder={m['developerPortal.credentialBuilder.achievement.targetUrlPlaceholder']()}
-                                    helpText={m['developerPortal.credentialBuilder.achievement.targetUrlHelp']()}
+                                    placeholder={m[
+                                        'developerPortal.credentialBuilder.achievement.targetUrlPlaceholder'
+                                    ]()}
+                                    helpText={m[
+                                        'developerPortal.credentialBuilder.achievement.targetUrlHelp'
+                                    ]()}
                                     type="url"
                                     showDynamicToggle={!disableDynamicFields}
                                     error={getFieldError(
@@ -530,20 +642,32 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                                 />
 
                                 <FieldEditor
-                                    label={m['developerPortal.credentialBuilder.achievement.targetFramework']()}
+                                    label={m[
+                                        'developerPortal.credentialBuilder.achievement.targetFramework'
+                                    ]()}
                                     field={alignment.targetFramework || staticField('')}
                                     onChange={f => updateAlignment(index, 'targetFramework', f)}
-                                    placeholder={m['developerPortal.credentialBuilder.achievement.targetFrameworkPlaceholder']()}
-                                    helpText={m['developerPortal.credentialBuilder.achievement.targetFrameworkHelp']()}
+                                    placeholder={m[
+                                        'developerPortal.credentialBuilder.achievement.targetFrameworkPlaceholder'
+                                    ]()}
+                                    helpText={m[
+                                        'developerPortal.credentialBuilder.achievement.targetFrameworkHelp'
+                                    ]()}
                                     showDynamicToggle={!disableDynamicFields}
                                 />
 
                                 <FieldEditor
-                                    label={m['developerPortal.credentialBuilder.achievement.targetCode']()}
+                                    label={m[
+                                        'developerPortal.credentialBuilder.achievement.targetCode'
+                                    ]()}
                                     field={alignment.targetCode || staticField('')}
                                     onChange={f => updateAlignment(index, 'targetCode', f)}
-                                    placeholder={m['developerPortal.credentialBuilder.achievement.targetCodePlaceholder']()}
-                                    helpText={m['developerPortal.credentialBuilder.achievement.targetCodeHelp']()}
+                                    placeholder={m[
+                                        'developerPortal.credentialBuilder.achievement.targetCodePlaceholder'
+                                    ]()}
+                                    helpText={m[
+                                        'developerPortal.credentialBuilder.achievement.targetCodeHelp'
+                                    ]()}
                                     showDynamicToggle={!disableDynamicFields}
                                 />
                             </div>

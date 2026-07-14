@@ -25,7 +25,10 @@ const highlightCode = (code: string): React.ReactNode[] => {
     const patterns: { type: string; regex: RegExp }[] = [
         { type: 'comment', regex: /^(\/\/[^\n]*|\/\*[\s\S]*?\*\/|#[^\n]*)/ },
         { type: 'string', regex: /^(`[\s\S]*?`|'[^']*'|"[^"]*")/ },
-        { type: 'keyword', regex: /^(const|let|var|function|async|await|return|import|export|from|if|else|for|while|class|new|typeof|instanceof|def|import|from|as|try|except|with|async|await)\b/ },
+        {
+            type: 'keyword',
+            regex: /^(const|let|var|function|async|await|return|import|export|from|if|else|for|while|class|new|typeof|instanceof|def|import|from|as|try|except|with|async|await)\b/,
+        },
         { type: 'boolean', regex: /^(true|false|null|undefined|None|True|False)\b/ },
         { type: 'function', regex: /^([a-zA-Z_$][a-zA-Z0-9_$]*)\s*(?=\()/ },
         { type: 'property', regex: /^(\.[a-zA-Z_$][a-zA-Z0-9_$]*)/ },
@@ -131,7 +134,9 @@ export const CodeOutputPanel: React.FC<CodeOutputPanelProps> = ({
                         </button>
                     )}
 
-                    <span className="text-sm font-medium text-gray-300">{title ?? m['developerPortal.guides.codePanel.title']()}</span>
+                    <span className="text-sm font-medium text-gray-300">
+                        {title ?? m['developerPortal.guides.codePanel.title']()}
+                    </span>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -144,9 +149,10 @@ export const CodeOutputPanel: React.FC<CodeOutputPanelProps> = ({
                                     onClick={() => setSelectedLanguage(lang)}
                                     className={`
                                         px-2 py-1 text-xs font-medium rounded-md transition-colors
-                                        ${selectedLanguage === lang
-                                            ? 'bg-gray-600 text-white'
-                                            : 'text-gray-400 hover:text-gray-200'
+                                        ${
+                                            selectedLanguage === lang
+                                                ? 'bg-gray-600 text-white'
+                                                : 'text-gray-400 hover:text-gray-200'
                                         }
                                     `}
                                 >
@@ -164,7 +170,9 @@ export const CodeOutputPanel: React.FC<CodeOutputPanelProps> = ({
                         {copied ? (
                             <>
                                 <Check className="w-3.5 h-3.5 text-green-400" />
-                                <span className="text-green-400">{m['developerPortal.guides.codePanel.copied']()}</span>
+                                <span className="text-green-400">
+                                    {m['developerPortal.guides.codePanel.copied']()}
+                                </span>
                             </>
                         ) : (
                             <>

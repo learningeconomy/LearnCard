@@ -4,7 +4,11 @@ import { Filter, ShieldAlert } from 'lucide-react';
 
 import { useDeveloperPortal } from '../appStoreDeveloper/useDeveloperPortal';
 import { AppStoreHeader } from '../appStoreDeveloper/components/AppStoreHeader';
-import type { AppListingStatus, PromotionLevel, ExtendedAppStoreListing } from '../appStoreDeveloper/types';
+import type {
+    AppListingStatus,
+    PromotionLevel,
+    ExtendedAppStoreListing,
+} from '../appStoreDeveloper/types';
 
 import { ListingSidebar, ListingDetail, type FilterStatus } from './components';
 import * as m from '../../paraglide/messages.js';
@@ -71,8 +75,12 @@ const AdminDashboard: React.FC = () => {
                         <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <ShieldAlert className="w-8 h-8 text-red-500" />
                         </div>
-                        <h2 className="text-xl font-semibold text-gray-700 mb-2">{m['appStoreAdmin.dashboard.accessDenied']()}</h2>
-                        <p className="text-gray-500">{m['appStoreAdmin.dashboard.noPermissions']()}</p>
+                        <h2 className="text-xl font-semibold text-gray-700 mb-2">
+                            {m['appStoreAdmin.dashboard.accessDenied']()}
+                        </h2>
+                        <p className="text-gray-500">
+                            {m['appStoreAdmin.dashboard.noPermissions']()}
+                        </p>
                     </div>
                 </IonContent>
             </IonPage>
@@ -100,14 +108,19 @@ const AdminDashboard: React.FC = () => {
                     />
 
                     {/* Detail Panel */}
-                    <div className={`flex-1 min-w-0 overflow-hidden bg-gray-50 ${!selectedListing ? 'hidden md:block' : ''}`}>
+                    <div
+                        className={`flex-1 min-w-0 overflow-hidden bg-gray-50 ${
+                            !selectedListing ? 'hidden md:block' : ''
+                        }`}
+                    >
                         {selectedListing ? (
                             <ListingDetail
                                 listing={selectedListing}
                                 onStatusChange={handleStatusChange}
                                 onPromotionChange={handlePromotionChange}
                                 isUpdating={
-                                    updateStatusMutation.isPending || updatePromotionMutation.isPending
+                                    updateStatusMutation.isPending ||
+                                    updatePromotionMutation.isPending
                                 }
                                 onBack={() => setSelectedListing(null)}
                             />

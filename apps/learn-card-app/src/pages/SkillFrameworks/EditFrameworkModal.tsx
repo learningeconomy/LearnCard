@@ -93,7 +93,9 @@ const EditFrameworkModal: React.FC<EditFrameworkModalProps> = ({ frameworkId }) 
                 </div>
 
                 {isLoading ? (
-                    <div className="py-[20px] text-center text-grayscale-600">{m['common.loading']()}</div>
+                    <div className="py-[20px] text-center text-grayscale-600">
+                        {m['common.loading']()}
+                    </div>
                 ) : (
                     <>
                         <IonInput

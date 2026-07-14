@@ -71,7 +71,9 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({
                 authority.name
             );
 
-            presentToast(m['developerPortal.onboarding.signingAuthority.createdToast'](), { hasDismissButton: true });
+            presentToast(m['developerPortal.onboarding.signingAuthority.createdToast'](), {
+                hasDismissButton: true,
+            });
             fetchSigningAuthority();
         } catch (err) {
             log.error('Failed to create signing authority:', err);
@@ -172,12 +174,23 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({
 
             {/* Info about what it does */}
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                <h4 className="font-medium text-blue-800 mb-2">{m['developerPortal.onboarding.signingAuthority.whatDoesThisDo']()}</h4>
+                <h4 className="font-medium text-blue-800 mb-2">
+                    {m['developerPortal.onboarding.signingAuthority.whatDoesThisDo']()}
+                </h4>
 
                 <ul className="text-sm text-blue-700 space-y-1">
-                    <li>{'• '}{m['developerPortal.onboarding.signingAuthority.benefit1']()}</li>
-                    <li>{'• '}{m['developerPortal.onboarding.signingAuthority.benefit2']()}</li>
-                    <li>{'• '}{m['developerPortal.onboarding.signingAuthority.benefit3']()}</li>
+                    <li>
+                        {'• '}
+                        {m['developerPortal.onboarding.signingAuthority.benefit1']()}
+                    </li>
+                    <li>
+                        {'• '}
+                        {m['developerPortal.onboarding.signingAuthority.benefit2']()}
+                    </li>
+                    <li>
+                        {'• '}
+                        {m['developerPortal.onboarding.signingAuthority.benefit3']()}
+                    </li>
                 </ul>
             </div>
 

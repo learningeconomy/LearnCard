@@ -40,7 +40,8 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
                 uri: dataConsentConfig.contractUri,
                 type: 'data-consent',
                 name: m['developerPortal.dashboards.tabs.contracts.dataConsentContract'](),
-                description: m['developerPortal.dashboards.tabs.contracts.dataConsentContractDesc'](),
+                description:
+                    m['developerPortal.dashboards.tabs.contracts.dataConsentContractDesc'](),
                 feature: m['developerPortal.dashboards.tabs.contracts.featureRequestDataConsent'](),
             });
         }
@@ -52,19 +53,23 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
                 uri: issueCredentialsConfig.contractUri,
                 type: 'issue-credentials',
                 name: m['developerPortal.dashboards.tabs.contracts.credentialIssuanceContract'](),
-                description: m['developerPortal.dashboards.tabs.contracts.credentialIssuanceContractDesc'](),
+                description:
+                    m['developerPortal.dashboards.tabs.contracts.credentialIssuanceContractDesc'](),
                 feature: m['developerPortal.dashboards.tabs.contracts.featureIssueCredentials'](),
             });
         }
 
         // Check for consent-flow guide contract
-        const consentFlowConfig = guideState?.config?.consentFlowConfig as { contractUri?: string } | undefined;
+        const consentFlowConfig = guideState?.config?.consentFlowConfig as
+            | { contractUri?: string }
+            | undefined;
         if (consentFlowConfig?.contractUri) {
             contracts.push({
                 uri: consentFlowConfig.contractUri,
                 type: 'data-consent',
                 name: m['developerPortal.dashboards.tabs.contracts.consentFlowContract'](),
-                description: m['developerPortal.dashboards.tabs.contracts.consentFlowContractDesc'](),
+                description:
+                    m['developerPortal.dashboards.tabs.contracts.consentFlowContractDesc'](),
                 feature: m['developerPortal.dashboards.tabs.contracts.featureConsentFlow'](),
             });
         }
@@ -76,7 +81,9 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
         await Clipboard.write({ string: uri });
         setCopiedId(uri);
         setTimeout(() => setCopiedId(null), 2000);
-        presentToast(m['developerPortal.dashboards.tabs.contracts.contractUriCopied'](), { hasDismissButton: true });
+        presentToast(m['developerPortal.dashboards.tabs.contracts.contractUriCopied'](), {
+            hasDismissButton: true,
+        });
     };
 
     const getContractIcon = (type: string) => {
@@ -104,7 +111,9 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.contracts.title']()}</h2>
+                <h2 className="text-lg font-semibold text-gray-800">
+                    {m['developerPortal.dashboards.tabs.contracts.title']()}
+                </h2>
                 <p className="text-sm text-gray-500">
                     {m['developerPortal.dashboards.tabs.contracts.description']()}
                 </p>
@@ -113,38 +122,56 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
             {configuredContracts.length === 0 ? (
                 <div className="text-center py-12 border border-dashed border-gray-300 rounded-xl bg-gray-50">
                     <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                    <p className="text-gray-500 font-medium">{m['developerPortal.dashboards.tabs.contracts.noContracts']()}</p>
+                    <p className="text-gray-500 font-medium">
+                        {m['developerPortal.dashboards.tabs.contracts.noContracts']()}
+                    </p>
                     <p className="text-sm text-gray-400 mt-1 max-w-md mx-auto">
                         {m['developerPortal.dashboards.tabs.contracts.noContractsDesc']()}
                     </p>
 
                     <div className="mt-4 p-3 bg-white border border-gray-200 rounded-lg inline-block text-left">
                         <p className="text-xs text-gray-500">
-                            <strong>{m['developerPortal.dashboards.tabs.contracts.howToAddTitle']()}</strong>
+                            <strong>
+                                {m['developerPortal.dashboards.tabs.contracts.howToAddTitle']()}
+                            </strong>
                         </p>
                         <ol className="text-xs text-gray-400 mt-1 space-y-1 list-decimal list-inside">
-                            <li>{m['developerPortal.dashboards.tabs.contracts.howToAddStep1']()}</li>
-                            <li>{m['developerPortal.dashboards.tabs.contracts.howToAddStep2']()}</li>
-                            <li>{m['developerPortal.dashboards.tabs.contracts.howToAddStep3']()}</li>
+                            <li>
+                                {m['developerPortal.dashboards.tabs.contracts.howToAddStep1']()}
+                            </li>
+                            <li>
+                                {m['developerPortal.dashboards.tabs.contracts.howToAddStep2']()}
+                            </li>
+                            <li>
+                                {m['developerPortal.dashboards.tabs.contracts.howToAddStep3']()}
+                            </li>
                         </ol>
                     </div>
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {configuredContracts.map((contract) => (
+                    {configuredContracts.map(contract => (
                         <div
                             key={contract.uri}
                             className="p-4 border border-gray-200 rounded-xl bg-white hover:border-gray-300 transition-colors"
                         >
                             <div className="flex items-start justify-between gap-4">
                                 <div className="flex items-start gap-3">
-                                    <div className={`w-10 h-10 ${getContractColor(contract.type)} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                                    <div
+                                        className={`w-10 h-10 ${getContractColor(
+                                            contract.type
+                                        )} rounded-lg flex items-center justify-center flex-shrink-0`}
+                                    >
                                         {getContractIcon(contract.type)}
                                     </div>
 
                                     <div className="min-w-0">
-                                        <h3 className="font-medium text-gray-800">{contract.name}</h3>
-                                        <p className="text-sm text-gray-500 mt-0.5">{contract.description}</p>
+                                        <h3 className="font-medium text-gray-800">
+                                            {contract.name}
+                                        </h3>
+                                        <p className="text-sm text-gray-500 mt-0.5">
+                                            {contract.description}
+                                        </p>
 
                                         <div className="mt-2 flex items-center gap-2">
                                             <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
@@ -153,7 +180,11 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
                                         </div>
 
                                         <div className="mt-3 p-2 bg-gray-50 rounded-lg">
-                                            <p className="text-xs text-gray-400 mb-1">{m['developerPortal.dashboards.tabs.contracts.contractUri']()}</p>
+                                            <p className="text-xs text-gray-400 mb-1">
+                                                {m[
+                                                    'developerPortal.dashboards.tabs.contracts.contractUri'
+                                                ]()}
+                                            </p>
                                             <code className="text-xs text-gray-700 font-mono break-all">
                                                 {contract.uri}
                                             </code>

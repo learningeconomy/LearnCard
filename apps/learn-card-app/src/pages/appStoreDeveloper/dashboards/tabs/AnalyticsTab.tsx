@@ -21,14 +21,28 @@ interface AnalyticsTabProps {
 }
 
 export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [] }) => {
-    const claimRateColor = stats.claimRate >= 70 ? 'text-emerald-600' : stats.claimRate >= 40 ? 'text-amber-600' : 'text-red-500';
-    const claimRateBg = stats.claimRate >= 70 ? 'bg-emerald-500' : stats.claimRate >= 40 ? 'bg-amber-500' : 'bg-red-500';
+    const claimRateColor =
+        stats.claimRate >= 70
+            ? 'text-emerald-600'
+            : stats.claimRate >= 40
+            ? 'text-amber-600'
+            : 'text-red-500';
+    const claimRateBg =
+        stats.claimRate >= 70
+            ? 'bg-emerald-500'
+            : stats.claimRate >= 40
+            ? 'bg-amber-500'
+            : 'bg-red-500';
 
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.analytics.title']()}</h2>
-                <p className="text-sm text-gray-500">{m['developerPortal.dashboards.tabs.analytics.description']()}</p>
+                <h2 className="text-lg font-semibold text-gray-800">
+                    {m['developerPortal.dashboards.tabs.analytics.title']()}
+                </h2>
+                <p className="text-sm text-gray-500">
+                    {m['developerPortal.dashboards.tabs.analytics.description']()}
+                </p>
             </div>
 
             {/* Hero Stats */}
@@ -36,7 +50,9 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
                 {/* Claim Rate - Large Card */}
                 <div className="md:col-span-1 p-6 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-2xl text-white">
                     <div className="flex items-center justify-between mb-4">
-                        <span className="text-cyan-100 text-sm font-medium">{m['developerPortal.dashboards.tabs.analytics.claimRate']()}</span>
+                        <span className="text-cyan-100 text-sm font-medium">
+                            {m['developerPortal.dashboards.tabs.analytics.claimRate']()}
+                        </span>
                         <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
                             <TrendingUp className="w-5 h-5" />
                         </div>
@@ -51,35 +67,49 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
                         />
                     </div>
 
-                    <p className="text-cyan-100 text-sm mt-3">{m['developerPortal.dashboards.tabs.analytics.claimRateDesc']()}</p>
+                    <p className="text-cyan-100 text-sm mt-3">
+                        {m['developerPortal.dashboards.tabs.analytics.claimRateDesc']()}
+                    </p>
                 </div>
 
                 {/* Total Issued */}
                 <div className="p-6 bg-white border border-gray-200 rounded-2xl">
                     <div className="flex items-center justify-between mb-4">
-                        <span className="text-gray-500 text-sm font-medium">{m['developerPortal.dashboards.tabs.analytics.totalIssued']()}</span>
+                        <span className="text-gray-500 text-sm font-medium">
+                            {m['developerPortal.dashboards.tabs.analytics.totalIssued']()}
+                        </span>
                         <div className="w-10 h-10 bg-violet-100 rounded-xl flex items-center justify-center">
                             <Zap className="w-5 h-5 text-violet-600" />
                         </div>
                     </div>
 
-                    <div className="text-4xl font-bold text-gray-900 mb-1">{stats.totalIssued.toLocaleString()}</div>
+                    <div className="text-4xl font-bold text-gray-900 mb-1">
+                        {stats.totalIssued.toLocaleString()}
+                    </div>
 
-                    <p className="text-gray-500 text-sm">{m['developerPortal.dashboards.tabs.analytics.totalIssuedDesc']()}</p>
+                    <p className="text-gray-500 text-sm">
+                        {m['developerPortal.dashboards.tabs.analytics.totalIssuedDesc']()}
+                    </p>
                 </div>
 
                 {/* Total Claimed */}
                 <div className="p-6 bg-white border border-gray-200 rounded-2xl">
                     <div className="flex items-center justify-between mb-4">
-                        <span className="text-gray-500 text-sm font-medium">{m['developerPortal.dashboards.tabs.analytics.claimed']()}</span>
+                        <span className="text-gray-500 text-sm font-medium">
+                            {m['developerPortal.dashboards.tabs.analytics.claimed']()}
+                        </span>
                         <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
                             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                         </div>
                     </div>
 
-                    <div className="text-4xl font-bold text-gray-900 mb-1">{stats.totalClaimed.toLocaleString()}</div>
+                    <div className="text-4xl font-bold text-gray-900 mb-1">
+                        {stats.totalClaimed.toLocaleString()}
+                    </div>
 
-                    <p className="text-gray-500 text-sm">{m['developerPortal.dashboards.tabs.analytics.claimedDesc']()}</p>
+                    <p className="text-gray-500 text-sm">
+                        {m['developerPortal.dashboards.tabs.analytics.claimedDesc']()}
+                    </p>
                 </div>
             </div>
 
@@ -88,16 +118,22 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
                 <div className="p-4 bg-gray-50 rounded-xl">
                     <div className="flex items-center gap-2 mb-2">
                         <Clock className="w-4 h-4 text-amber-500" />
-                        <span className="text-sm text-gray-600">{m['developerPortal.dashboards.tabs.analytics.pending']()}</span>
+                        <span className="text-sm text-gray-600">
+                            {m['developerPortal.dashboards.tabs.analytics.pending']()}
+                        </span>
                     </div>
 
-                    <div className="text-2xl font-bold text-gray-900">{stats.pendingClaims.toLocaleString()}</div>
+                    <div className="text-2xl font-bold text-gray-900">
+                        {stats.pendingClaims.toLocaleString()}
+                    </div>
                 </div>
 
                 <div className="p-4 bg-gray-50 rounded-xl">
                     <div className="flex items-center gap-2 mb-2">
                         <Award className="w-4 h-4 text-violet-500" />
-                        <span className="text-sm text-gray-600">{m['developerPortal.dashboards.tabs.analytics.templates']()}</span>
+                        <span className="text-sm text-gray-600">
+                            {m['developerPortal.dashboards.tabs.analytics.templates']()}
+                        </span>
                     </div>
 
                     <div className="text-2xl font-bold text-gray-900">{stats.templateCount}</div>
@@ -106,7 +142,9 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
                 <div className="p-4 bg-gray-50 rounded-xl">
                     <div className="flex items-center gap-2 mb-2">
                         <Users className="w-4 h-4 text-cyan-500" />
-                        <span className="text-sm text-gray-600">{m['developerPortal.dashboards.tabs.analytics.connections']()}</span>
+                        <span className="text-sm text-gray-600">
+                            {m['developerPortal.dashboards.tabs.analytics.connections']()}
+                        </span>
                     </div>
 
                     <div className="text-2xl font-bold text-gray-900">{stats.totalConnections}</div>
@@ -115,7 +153,9 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
                 <div className="p-4 bg-gray-50 rounded-xl">
                     <div className="flex items-center gap-2 mb-2">
                         <BarChart3 className="w-4 h-4 text-pink-500" />
-                        <span className="text-sm text-gray-600">{m['developerPortal.dashboards.tabs.analytics.activeTokens']()}</span>
+                        <span className="text-sm text-gray-600">
+                            {m['developerPortal.dashboards.tabs.analytics.activeTokens']()}
+                        </span>
                     </div>
 
                     <div className="text-2xl font-bold text-gray-900">{stats.activeTokens}</div>
@@ -124,32 +164,47 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
 
             {/* Funnel Visualization */}
             <div className="p-6 bg-gray-50 rounded-2xl">
-                <h3 className="font-semibold text-gray-800 mb-4">{m['developerPortal.dashboards.tabs.analytics.credentialFunnel']()}</h3>
+                <h3 className="font-semibold text-gray-800 mb-4">
+                    {m['developerPortal.dashboards.tabs.analytics.credentialFunnel']()}
+                </h3>
 
                 <div className="space-y-3">
                     {/* Issued */}
                     <div className="flex items-center gap-4">
-                        <div className="w-24 text-sm text-gray-600">{m['developerPortal.dashboards.tabs.analytics.issued']()}</div>
+                        <div className="w-24 text-sm text-gray-600">
+                            {m['developerPortal.dashboards.tabs.analytics.issued']()}
+                        </div>
                         <div className="flex-1 h-10 bg-gray-200 rounded-lg overflow-hidden relative">
                             <div
                                 className="h-full bg-gradient-to-r from-violet-500 to-violet-400 rounded-lg flex items-center justify-end pr-3"
                                 style={{ width: '100%' }}
                             >
-                                <span className="text-white font-medium text-sm">{stats.totalIssued}</span>
+                                <span className="text-white font-medium text-sm">
+                                    {stats.totalIssued}
+                                </span>
                             </div>
                         </div>
                     </div>
 
                     {/* Claimed */}
                     <div className="flex items-center gap-4">
-                        <div className="w-24 text-sm text-gray-600">{m['developerPortal.dashboards.tabs.analytics.claimed']()}</div>
+                        <div className="w-24 text-sm text-gray-600">
+                            {m['developerPortal.dashboards.tabs.analytics.claimed']()}
+                        </div>
                         <div className="flex-1 h-10 bg-gray-200 rounded-lg overflow-hidden relative">
                             <div
                                 className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-lg flex items-center justify-end pr-3"
-                                style={{ width: stats.totalIssued > 0 ? `${(stats.totalClaimed / stats.totalIssued) * 100}%` : '0%' }}
+                                style={{
+                                    width:
+                                        stats.totalIssued > 0
+                                            ? `${(stats.totalClaimed / stats.totalIssued) * 100}%`
+                                            : '0%',
+                                }}
                             >
                                 {stats.totalClaimed > 0 && (
-                                    <span className="text-white font-medium text-sm">{stats.totalClaimed}</span>
+                                    <span className="text-white font-medium text-sm">
+                                        {stats.totalClaimed}
+                                    </span>
                                 )}
                             </div>
                         </div>
@@ -157,14 +212,23 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
 
                     {/* Pending */}
                     <div className="flex items-center gap-4">
-                        <div className="w-24 text-sm text-gray-600">{m['developerPortal.dashboards.tabs.analytics.pending']()}</div>
+                        <div className="w-24 text-sm text-gray-600">
+                            {m['developerPortal.dashboards.tabs.analytics.pending']()}
+                        </div>
                         <div className="flex-1 h-10 bg-gray-200 rounded-lg overflow-hidden relative">
                             <div
                                 className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-lg flex items-center justify-end pr-3"
-                                style={{ width: stats.totalIssued > 0 ? `${(stats.pendingClaims / stats.totalIssued) * 100}%` : '0%' }}
+                                style={{
+                                    width:
+                                        stats.totalIssued > 0
+                                            ? `${(stats.pendingClaims / stats.totalIssued) * 100}%`
+                                            : '0%',
+                                }}
                             >
                                 {stats.pendingClaims > 0 && (
-                                    <span className="text-white font-medium text-sm">{stats.pendingClaims}</span>
+                                    <span className="text-white font-medium text-sm">
+                                        {stats.pendingClaims}
+                                    </span>
                                 )}
                             </div>
                         </div>
@@ -175,43 +239,81 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
             {/* Performance Insights */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-6 border border-gray-200 rounded-2xl">
-                    <h3 className="font-semibold text-gray-800 mb-4">{m['developerPortal.dashboards.tabs.analytics.performanceInsights']()}</h3>
+                    <h3 className="font-semibold text-gray-800 mb-4">
+                        {m['developerPortal.dashboards.tabs.analytics.performanceInsights']()}
+                    </h3>
 
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                            <span className="text-gray-600">{m['developerPortal.dashboards.tabs.analytics.claimSuccessRate']()}</span>
+                            <span className="text-gray-600">
+                                {m['developerPortal.dashboards.tabs.analytics.claimSuccessRate']()}
+                            </span>
                             <span className={`font-semibold ${claimRateColor}`}>
-                                {stats.claimRate >= 70 ? m['developerPortal.dashboards.tabs.analytics.excellent']() : stats.claimRate >= 40 ? m['developerPortal.dashboards.tabs.analytics.good']() : m['developerPortal.dashboards.tabs.analytics.needsAttention']()}
+                                {stats.claimRate >= 70
+                                    ? m['developerPortal.dashboards.tabs.analytics.excellent']()
+                                    : stats.claimRate >= 40
+                                    ? m['developerPortal.dashboards.tabs.analytics.good']()
+                                    : m[
+                                          'developerPortal.dashboards.tabs.analytics.needsAttention'
+                                      ]()}
                             </span>
                         </div>
 
                         <div className="flex items-center justify-between">
-                            <span className="text-gray-600">{m['developerPortal.dashboards.tabs.analytics.unclaimedCredentials']()}</span>
-                            <span className={`font-semibold ${stats.pendingClaims > stats.totalClaimed ? 'text-amber-600' : 'text-emerald-600'}`}>
-                                {m['developerPortal.dashboards.tabs.analytics.pendingCount']({ count: stats.pendingClaims })}
+                            <span className="text-gray-600">
+                                {m[
+                                    'developerPortal.dashboards.tabs.analytics.unclaimedCredentials'
+                                ]()}
+                            </span>
+                            <span
+                                className={`font-semibold ${
+                                    stats.pendingClaims > stats.totalClaimed
+                                        ? 'text-amber-600'
+                                        : 'text-emerald-600'
+                                }`}
+                            >
+                                {m['developerPortal.dashboards.tabs.analytics.pendingCount']({
+                                    count: stats.pendingClaims,
+                                })}
                             </span>
                         </div>
 
                         <div className="flex items-center justify-between">
-                            <span className="text-gray-600">{m['developerPortal.dashboards.tabs.analytics.templateUtilization']()}</span>
+                            <span className="text-gray-600">
+                                {m[
+                                    'developerPortal.dashboards.tabs.analytics.templateUtilization'
+                                ]()}
+                            </span>
                             <span className="font-semibold text-gray-800">
-                                {stats.templateCount > 0 ? m['developerPortal.dashboards.tabs.analytics.templateCount']({ count: stats.templateCount }) : m['developerPortal.dashboards.tabs.analytics.noTemplates']()}
+                                {stats.templateCount > 0
+                                    ? m['developerPortal.dashboards.tabs.analytics.templateCount']({
+                                          count: stats.templateCount,
+                                      })
+                                    : m['developerPortal.dashboards.tabs.analytics.noTemplates']()}
                             </span>
                         </div>
                     </div>
                 </div>
 
                 <div className="p-6 border border-gray-200 rounded-2xl">
-                    <h3 className="font-semibold text-gray-800 mb-4">{m['developerPortal.dashboards.tabs.analytics.quickTips']()}</h3>
+                    <h3 className="font-semibold text-gray-800 mb-4">
+                        {m['developerPortal.dashboards.tabs.analytics.quickTips']()}
+                    </h3>
 
                     <div className="space-y-3">
                         {stats.claimRate < 50 && (
                             <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg">
                                 <ArrowUpRight className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                                 <div>
-                                    <p className="text-sm font-medium text-amber-800">{m['developerPortal.dashboards.tabs.analytics.tipImproveClaimRate']()}</p>
+                                    <p className="text-sm font-medium text-amber-800">
+                                        {m[
+                                            'developerPortal.dashboards.tabs.analytics.tipImproveClaimRate'
+                                        ]()}
+                                    </p>
                                     <p className="text-xs text-amber-700 mt-1">
-                                        {m['developerPortal.dashboards.tabs.analytics.tipImproveClaimRateDesc']()}
+                                        {m[
+                                            'developerPortal.dashboards.tabs.analytics.tipImproveClaimRateDesc'
+                                        ]()}
                                     </p>
                                 </div>
                             </div>
@@ -221,9 +323,15 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
                             <div className="flex items-start gap-3 p-3 bg-violet-50 rounded-lg">
                                 <Award className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
                                 <div>
-                                    <p className="text-sm font-medium text-violet-800">{m['developerPortal.dashboards.tabs.analytics.tipCreateTemplates']()}</p>
+                                    <p className="text-sm font-medium text-violet-800">
+                                        {m[
+                                            'developerPortal.dashboards.tabs.analytics.tipCreateTemplates'
+                                        ]()}
+                                    </p>
                                     <p className="text-xs text-violet-700 mt-1">
-                                        {m['developerPortal.dashboards.tabs.analytics.tipCreateTemplatesDesc']()}
+                                        {m[
+                                            'developerPortal.dashboards.tabs.analytics.tipCreateTemplatesDesc'
+                                        ]()}
                                     </p>
                                 </div>
                             </div>
@@ -233,9 +341,15 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
                             <div className="flex items-start gap-3 p-3 bg-cyan-50 rounded-lg">
                                 <Zap className="w-5 h-5 text-cyan-600 flex-shrink-0 mt-0.5" />
                                 <div>
-                                    <p className="text-sm font-medium text-cyan-800">{m['developerPortal.dashboards.tabs.analytics.tipStartIssuing']()}</p>
+                                    <p className="text-sm font-medium text-cyan-800">
+                                        {m[
+                                            'developerPortal.dashboards.tabs.analytics.tipStartIssuing'
+                                        ]()}
+                                    </p>
                                     <p className="text-xs text-cyan-700 mt-1">
-                                        {m['developerPortal.dashboards.tabs.analytics.tipStartIssuingDesc']()}
+                                        {m[
+                                            'developerPortal.dashboards.tabs.analytics.tipStartIssuingDesc'
+                                        ]()}
                                     </p>
                                 </div>
                             </div>
@@ -245,9 +359,15 @@ export const AnalyticsTab: React.FC<AnalyticsTabProps> = ({ stats, templates = [
                             <div className="flex items-start gap-3 p-3 bg-emerald-50 rounded-lg">
                                 <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                                 <div>
-                                    <p className="text-sm font-medium text-emerald-800">{m['developerPortal.dashboards.tabs.analytics.tipGreatPerformance']()}</p>
+                                    <p className="text-sm font-medium text-emerald-800">
+                                        {m[
+                                            'developerPortal.dashboards.tabs.analytics.tipGreatPerformance'
+                                        ]()}
+                                    </p>
                                     <p className="text-xs text-emerald-700 mt-1">
-                                        {m['developerPortal.dashboards.tabs.analytics.tipGreatPerformanceDesc']()}
+                                        {m[
+                                            'developerPortal.dashboards.tabs.analytics.tipGreatPerformanceDesc'
+                                        ]()}
                                     </p>
                                 </div>
                             </div>

@@ -406,7 +406,9 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                             disabled={!canShare}
                             className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                            {pendingSdJwtRows > 0 ? m['common.loadingClaims']() : m['common.share']()}
+                            {pendingSdJwtRows > 0
+                                ? m['common.loadingClaims']()
+                                : m['common.share']()}
                         </button>
 
                         <button

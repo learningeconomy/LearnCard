@@ -114,7 +114,12 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
     };
 
     const tabs = [
-        { id: 'DRAFT' as Tab, label: m['developerPortal.components.partnerDashboard.drafts'](), icon: FileEdit, count: draftListings.length },
+        {
+            id: 'DRAFT' as Tab,
+            label: m['developerPortal.components.partnerDashboard.drafts'](),
+            icon: FileEdit,
+            count: draftListings.length,
+        },
         {
             id: 'PENDING_REVIEW' as Tab,
             label: m['developerPortal.components.partnerDashboard.pending'](),
@@ -127,7 +132,12 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
             icon: CheckCircle2,
             count: listedListings.length,
         },
-        { id: 'ARCHIVED' as Tab, label: m['developerPortal.components.partnerDashboard.rejected'](), icon: Archive, count: archivedListings.length },
+        {
+            id: 'ARCHIVED' as Tab,
+            label: m['developerPortal.components.partnerDashboard.rejected'](),
+            icon: Archive,
+            count: archivedListings.length,
+        },
     ];
 
     // Show welcome/onboarding view when no listings exist
@@ -163,7 +173,9 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                         <Rocket className="w-8 h-8 text-white" />
                     </div>
 
-                    <h2 className="text-2xl font-semibold text-gray-800 mb-2">{m['developerPortal.components.partnerDashboard.publishYourApp']()}</h2>
+                    <h2 className="text-2xl font-semibold text-gray-800 mb-2">
+                        {m['developerPortal.components.partnerDashboard.publishYourApp']()}
+                    </h2>
 
                     <p className="text-gray-500 max-w-md mx-auto">
                         {m['developerPortal.components.partnerDashboard.publishDesc']()}
@@ -185,7 +197,9 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
                                     <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-                                        {m['developerPortal.components.partnerDashboard.stepLabel']({ number: step.number })}
+                                        {m['developerPortal.components.partnerDashboard.stepLabel'](
+                                            { number: step.number }
+                                        )}
                                     </span>
                                 </div>
 
@@ -222,7 +236,9 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
         <div className="space-y-5">
             {/* Header with Create button */}
             <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-700">{m['developerPortal.components.partnerDashboard.yourAppListings']()}</h2>
+                <h2 className="text-lg font-semibold text-gray-700">
+                    {m['developerPortal.components.partnerDashboard.yourAppListings']()}
+                </h2>
 
                 <div className="flex items-center gap-2">
                     <button
@@ -285,7 +301,9 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                         <div className="text-center py-12">
                             <Loader2 className="w-8 h-8 text-cyan-500 mx-auto animate-spin" />
 
-                            <p className="text-sm text-gray-500 mt-3">{m['developerPortal.components.partnerDashboard.loadingListings']()}</p>
+                            <p className="text-sm text-gray-500 mt-3">
+                                {m['developerPortal.components.partnerDashboard.loadingListings']()}
+                            </p>
                         </div>
                     ) : filteredListings.length === 0 ? (
                         <div className="bg-white rounded-xl border border-gray-200 text-center py-12 px-4">
@@ -420,7 +438,9 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-                                        {m['developerPortal.components.partnerDashboard.launchType']()}
+                                        {m[
+                                            'developerPortal.components.partnerDashboard.launchType'
+                                        ]()}
                                     </label>
 
                                     <p className="text-sm text-gray-600 mt-1">
@@ -431,7 +451,9 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                 {selectedListing.category && (
                                     <div>
                                         <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-                                            {m['developerPortal.components.partnerDashboard.category']()}
+                                            {m[
+                                                'developerPortal.components.partnerDashboard.category'
+                                            ]()}
                                         </label>
 
                                         <p className="text-sm text-gray-600 mt-1">
@@ -445,7 +467,9 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                 {selectedListing.age_rating && (
                                     <div>
                                         <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-                                            {m['developerPortal.components.partnerDashboard.ageRating']()}
+                                            {m[
+                                                'developerPortal.components.partnerDashboard.ageRating'
+                                            ]()}
                                         </label>
 
                                         <p className="text-sm text-gray-600 mt-1">
@@ -456,7 +480,9 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                 {selectedListing.min_age && (
                                     <div>
                                         <label className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-                                            {m['developerPortal.components.partnerDashboard.minimumAge']()}
+                                            {m[
+                                                'developerPortal.components.partnerDashboard.minimumAge'
+                                            ]()}
                                         </label>
 
                                         <p className="text-sm text-gray-600 mt-1">
@@ -486,7 +512,9 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                         className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                                     >
                                         <Pencil className="w-4 h-4" />
-                                        {m['developerPortal.components.partnerDashboard.editDraft']()}
+                                        {m[
+                                            'developerPortal.components.partnerDashboard.editDraft'
+                                        ]()}
                                     </button>
 
                                     <button
@@ -494,7 +522,9 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                         className="flex items-center gap-2 px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-200 transition-colors"
                                     >
                                         <Play className="w-4 h-4" />
-                                        {m['developerPortal.components.partnerDashboard.previewButton']()}
+                                        {m[
+                                            'developerPortal.components.partnerDashboard.previewButton'
+                                        ]()}
                                     </button>
 
                                     <button
@@ -509,7 +539,9 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                         ) : (
                                             <>
                                                 <Send className="w-4 h-4" />
-                                                {m['developerPortal.components.partnerDashboard.submitForReview']()}
+                                                {m[
+                                                    'developerPortal.components.partnerDashboard.submitForReview'
+                                                ]()}
                                             </>
                                         )}
                                     </button>
@@ -531,7 +563,9 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                         className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
                                     >
                                         <Pencil className="w-4 h-4" />
-                                        {m['developerPortal.components.partnerDashboard.editButton']()}
+                                        {m[
+                                            'developerPortal.components.partnerDashboard.editButton'
+                                        ]()}
                                     </button>
 
                                     <button
@@ -539,7 +573,9 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                         className="flex items-center gap-2 px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-200 transition-colors"
                                     >
                                         <Play className="w-4 h-4" />
-                                        {m['developerPortal.components.partnerDashboard.previewButton']()}
+                                        {m[
+                                            'developerPortal.components.partnerDashboard.previewButton'
+                                        ]()}
                                     </button>
 
                                     <button
@@ -552,13 +588,19 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                         ) : (
                                             <RefreshCw className="w-4 h-4" />
                                         )}
-                                        {m['developerPortal.components.partnerDashboard.unsubmitButton']()}
+                                        {m[
+                                            'developerPortal.components.partnerDashboard.unsubmitButton'
+                                        ]()}
                                     </button>
 
                                     <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-2 rounded-lg flex-1">
                                         <Clock className="w-4 h-4" />
 
-                                        <span className="text-sm">{m['developerPortal.components.partnerDashboard.waitingForApproval']()}</span>
+                                        <span className="text-sm">
+                                            {m[
+                                                'developerPortal.components.partnerDashboard.waitingForApproval'
+                                            ]()}
+                                        </span>
                                     </div>
                                 </>
                             )}
@@ -570,14 +612,18 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                         className="flex items-center gap-2 px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-200 transition-colors"
                                     >
                                         <Play className="w-4 h-4" />
-                                        {m['developerPortal.components.partnerDashboard.previewButton']()}
+                                        {m[
+                                            'developerPortal.components.partnerDashboard.previewButton'
+                                        ]()}
                                     </button>
 
                                     <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg flex-1">
                                         <CheckCircle2 className="w-4 h-4" />
 
                                         <span className="text-sm">
-                                            {m['developerPortal.components.partnerDashboard.appIsLive']()}
+                                            {m[
+                                                'developerPortal.components.partnerDashboard.appIsLive'
+                                            ]()}
                                         </span>
                                     </div>
                                 </>
@@ -588,7 +634,9 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                                     <Archive className="w-4 h-4" />
 
                                     <span className="text-sm">
-                                        {m['developerPortal.components.partnerDashboard.appRejected']()}
+                                        {m[
+                                            'developerPortal.components.partnerDashboard.appRejected'
+                                        ]()}
                                     </span>
                                 </div>
                             )}

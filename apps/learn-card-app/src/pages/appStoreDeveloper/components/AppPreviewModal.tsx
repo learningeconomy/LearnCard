@@ -153,7 +153,10 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                 } catch (error) {
                     updateDiagnosticEvent(eventId, {
                         status: 'error',
-                        errorMessage: error instanceof Error ? error.message : m['developerPortal.components.appPreviewModal.unknownError'](),
+                        errorMessage:
+                            error instanceof Error
+                                ? error.message
+                                : m['developerPortal.components.appPreviewModal.unknownError'](),
                     });
                     throw error;
                 }
@@ -223,13 +226,23 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                 </div>
 
                                 <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                                    {m['developerPortal.components.appPreviewModal.previewNotAvailable']()}
+                                    {m[
+                                        'developerPortal.components.appPreviewModal.previewNotAvailable'
+                                    ]()}
                                 </h3>
 
                                 <p className="text-gray-500 mb-4">
                                     <TransP
-                                        m={m['developerPortal.components.appPreviewModal.previewNotAvailableDesc']}
-                                        values={{ type: (m as any)[LAUNCH_TYPE_INFO[listing.launch_type]?.labelKey]() }}
+                                        m={
+                                            m[
+                                                'developerPortal.components.appPreviewModal.previewNotAvailableDesc'
+                                            ]
+                                        }
+                                        values={{
+                                            type: (m as any)[
+                                                LAUNCH_TYPE_INFO[listing.launch_type]?.labelKey
+                                            ](),
+                                        }}
                                         components={[<strong />]}
                                     />
                                 </p>
@@ -242,7 +255,9 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                         className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                                     >
                                         <Play className="w-4 h-4" />
-                                        {m['developerPortal.components.appPreviewModal.openAppUrl']()}
+                                        {m[
+                                            'developerPortal.components.appPreviewModal.openAppUrl'
+                                        ]()}
                                     </a>
                                 )}
                             </div>
@@ -301,10 +316,14 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                         </div>
                                         <div className="text-center">
                                             <p className="text-lg font-semibold text-gray-800">
-                                                {m['developerPortal.components.appPreviewModal.loadingApp']({ name: listing.display_name })}
+                                                {m[
+                                                    'developerPortal.components.appPreviewModal.loadingApp'
+                                                ]({ name: listing.display_name })}
                                             </p>
                                             <p className="text-sm text-gray-600 mt-1">
-                                                {m['developerPortal.components.appPreviewModal.pleaseWait']()}
+                                                {m[
+                                                    'developerPortal.components.appPreviewModal.pleaseWait'
+                                                ]()}
                                             </p>
                                         </div>
                                     </div>

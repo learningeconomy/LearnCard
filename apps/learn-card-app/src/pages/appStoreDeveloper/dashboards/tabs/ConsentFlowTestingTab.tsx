@@ -93,9 +93,12 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
 
     const handleSendTest = async () => {
         if (!testDid.trim() || !selectedTemplate?.boostUri) {
-            presentToast(m['developerPortal.dashboards.tabs.consentFlowTesting.enterDidAndTemplate'](), {
-                type: ToastTypeEnum.Error,
-            });
+            presentToast(
+                m['developerPortal.dashboards.tabs.consentFlowTesting.enterDidAndTemplate'](),
+                {
+                    type: ToastTypeEnum.Error,
+                }
+            );
             return;
         }
 
@@ -118,12 +121,20 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                 credentialUri: result?.credentialUri || result?.uri,
             });
 
-            presentToast(m['developerPortal.dashboards.tabs.consentFlowTesting.credentialSentSuccess'](), { type: ToastTypeEnum.Success });
+            presentToast(
+                m['developerPortal.dashboards.tabs.consentFlowTesting.credentialSentSuccess'](),
+                { type: ToastTypeEnum.Success }
+            );
         } catch (err) {
             log.error('Test send failed:', err);
             setTestStatus('error');
             setTestResult({
-                error: err instanceof Error ? err.message : m['developerPortal.dashboards.tabs.consentFlowTesting.sendFailedFallback'](),
+                error:
+                    err instanceof Error
+                        ? err.message
+                        : m[
+                              'developerPortal.dashboards.tabs.consentFlowTesting.sendFailedFallback'
+                          ](),
             });
         }
     };
@@ -139,7 +150,9 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.consentFlowTesting.title']()}</h2>
+                <h2 className="text-lg font-semibold text-gray-800">
+                    {m['developerPortal.dashboards.tabs.consentFlowTesting.title']()}
+                </h2>
                 <p className="text-sm text-gray-500">
                     {m['developerPortal.dashboards.tabs.consentFlowTesting.description']()}
                 </p>
@@ -165,7 +178,11 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                 {consentUrl ? (
                     <div className="space-y-3">
                         <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                            <p className="text-xs text-gray-500 mb-1 font-medium">{m['developerPortal.dashboards.tabs.consentFlowTesting.consentUrl']()}</p>
+                            <p className="text-xs text-gray-500 mb-1 font-medium">
+                                {m[
+                                    'developerPortal.dashboards.tabs.consentFlowTesting.consentUrl'
+                                ]()}
+                            </p>
                             <code className="text-xs text-gray-700 break-all">{consentUrl}</code>
                         </div>
 
@@ -176,13 +193,23 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                             className="inline-flex items-center gap-2 px-4 py-2.5 bg-cyan-500 text-white rounded-xl text-sm font-medium hover:bg-cyan-600 transition-colors"
                         >
                             <ExternalLink className="w-4 h-4" />
-                            {m['developerPortal.dashboards.tabs.consentFlowTesting.openConsentFlow']()}
+                            {m[
+                                'developerPortal.dashboards.tabs.consentFlowTesting.openConsentFlow'
+                            ]()}
                         </a>
                     </div>
                 ) : (
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                         <p className="text-xs text-amber-800">
-                            <strong>{m['developerPortal.dashboards.tabs.consentFlowTesting.missingConfig']()}:</strong> {m['developerPortal.dashboards.tabs.consentFlowTesting.missingConfigDesc']()}
+                            <strong>
+                                {m[
+                                    'developerPortal.dashboards.tabs.consentFlowTesting.missingConfig'
+                                ]()}
+                                :
+                            </strong>{' '}
+                            {m[
+                                'developerPortal.dashboards.tabs.consentFlowTesting.missingConfigDesc'
+                            ]()}
                         </p>
                     </div>
                 )}
@@ -222,7 +249,9 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                 </div>
 
                 <CodeOutputPanel
-                    title={m['developerPortal.dashboards.tabs.consentFlowTesting.exampleCallback']()}
+                    title={m[
+                        'developerPortal.dashboards.tabs.consentFlowTesting.exampleCallback'
+                    ]()}
                     snippets={{
                         curl: `GET ${
                             redirectUrl || 'https://your-app.com/api/learncard/callback'
@@ -251,7 +280,15 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                 {sendableTemplates.length === 0 ? (
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                         <p className="text-xs text-amber-800">
-                            <strong>{m['developerPortal.dashboards.tabs.consentFlowTesting.noSavedTemplates']()}:</strong> {m['developerPortal.dashboards.tabs.consentFlowTesting.noSavedTemplatesDesc']()}
+                            <strong>
+                                {m[
+                                    'developerPortal.dashboards.tabs.consentFlowTesting.noSavedTemplates'
+                                ]()}
+                                :
+                            </strong>{' '}
+                            {m[
+                                'developerPortal.dashboards.tabs.consentFlowTesting.noSavedTemplatesDesc'
+                            ]()}
                         </p>
                     </div>
                 ) : (
@@ -269,7 +306,10 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                                     <Award className="w-4 h-4 text-cyan-600" />
 
                                     <span className="flex-1 text-left text-sm text-gray-800">
-                                        {selectedTemplate?.name || m['developerPortal.dashboards.tabs.consentFlowTesting.selectTemplate']()}
+                                        {selectedTemplate?.name ||
+                                            m[
+                                                'developerPortal.dashboards.tabs.consentFlowTesting.selectTemplate'
+                                            ]()}
                                     </span>
 
                                     <ChevronDown
@@ -309,15 +349,23 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                         {/* DID Input */}
                         <div className="space-y-2">
                             <label className="block text-xs font-medium text-gray-600">
-                                {m['developerPortal.dashboards.tabs.consentFlowTesting.recipientDid']()}{' '}
-                                <span className="text-gray-400">{m['developerPortal.dashboards.tabs.consentFlowTesting.recipientDidHint']()}</span>
+                                {m[
+                                    'developerPortal.dashboards.tabs.consentFlowTesting.recipientDid'
+                                ]()}{' '}
+                                <span className="text-gray-400">
+                                    {m[
+                                        'developerPortal.dashboards.tabs.consentFlowTesting.recipientDidHint'
+                                    ]()}
+                                </span>
                             </label>
 
                             <input
                                 type="text"
                                 value={testDid}
                                 onChange={e => setTestDid(e.target.value)}
-                                placeholder={m['developerPortal.dashboards.tabs.consentFlowTesting.didPlaceholder']()}
+                                placeholder={m[
+                                    'developerPortal.dashboards.tabs.consentFlowTesting.didPlaceholder'
+                                ]()}
                                 className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 font-mono"
                             />
                         </div>
@@ -330,7 +378,9 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                                 className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-emerald-500 text-white rounded-xl font-medium hover:from-cyan-600 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                             >
                                 <Send className="w-4 h-4" />
-                                {m['developerPortal.dashboards.tabs.consentFlowTesting.sendTestCredential']()}
+                                {m[
+                                    'developerPortal.dashboards.tabs.consentFlowTesting.sendTestCredential'
+                                ]()}
                             </button>
                         )}
 
@@ -338,7 +388,9 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                             <div className="flex items-center justify-center gap-3 px-6 py-3 bg-gray-100 rounded-xl">
                                 <Loader2 className="w-5 h-5 text-cyan-600 animate-spin" />
                                 <span className="text-gray-700 font-medium text-sm">
-                                    {m['developerPortal.dashboards.tabs.consentFlowTesting.sendingCredential']()}
+                                    {m[
+                                        'developerPortal.dashboards.tabs.consentFlowTesting.sendingCredential'
+                                    ]()}
                                 </span>
                             </div>
                         )}
@@ -349,14 +401,20 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                                     <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                                     <div className="flex-1">
                                         <p className="font-medium text-emerald-800 text-sm">
-                                            {m['developerPortal.dashboards.tabs.consentFlowTesting.credentialSent']()}
+                                            {m[
+                                                'developerPortal.dashboards.tabs.consentFlowTesting.credentialSent'
+                                            ]()}
                                         </p>
                                         <p className="text-xs text-emerald-700 mt-1">
-                                            {m['developerPortal.dashboards.tabs.consentFlowTesting.credentialSentDesc']()}
+                                            {m[
+                                                'developerPortal.dashboards.tabs.consentFlowTesting.credentialSentDesc'
+                                            ]()}
                                         </p>
                                         {testResult.credentialUri && (
                                             <p className="text-xs text-emerald-600 mt-2 font-mono break-all">
-                                                {m['developerPortal.dashboards.tabs.consentFlowTesting.credentialUri']({ uri: testResult.credentialUri })}
+                                                {m[
+                                                    'developerPortal.dashboards.tabs.consentFlowTesting.credentialUri'
+                                                ]({ uri: testResult.credentialUri })}
                                             </p>
                                         )}
                                     </div>
@@ -370,7 +428,9 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                                     className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
                                 >
                                     <RefreshCw className="w-4 h-4" />
-                                    {m['developerPortal.dashboards.tabs.consentFlowTesting.sendAnother']()}
+                                    {m[
+                                        'developerPortal.dashboards.tabs.consentFlowTesting.sendAnother'
+                                    ]()}
                                 </button>
                             </div>
                         )}
@@ -381,7 +441,9 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                                     <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                                     <div className="flex-1">
                                         <p className="font-medium text-red-800 text-sm">
-                                            {m['developerPortal.dashboards.tabs.consentFlowTesting.sendFailed']()}
+                                            {m[
+                                                'developerPortal.dashboards.tabs.consentFlowTesting.sendFailed'
+                                            ]()}
                                         </p>
                                         <p className="text-xs text-red-700 mt-1">
                                             {testResult.error}
@@ -397,7 +459,9 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                                     className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
                                 >
                                     <RefreshCw className="w-4 h-4" />
-                                    {m['developerPortal.dashboards.tabs.consentFlowTesting.tryAgain']()}
+                                    {m[
+                                        'developerPortal.dashboards.tabs.consentFlowTesting.tryAgain'
+                                    ]()}
                                 </button>
                             </div>
                         )}
@@ -409,26 +473,39 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
                 <div className="flex items-center gap-2 mb-3">
                     <Info className="w-4 h-4 text-amber-500" />
-                    <span className="text-sm font-medium text-gray-700">{m['developerPortal.dashboards.tabs.consentFlowTesting.testingTips']()}</span>
+                    <span className="text-sm font-medium text-gray-700">
+                        {m['developerPortal.dashboards.tabs.consentFlowTesting.testingTips']()}
+                    </span>
                 </div>
 
                 <ul className="text-sm text-gray-600 space-y-2">
                     <li className="flex items-start gap-2">
                         <span className="text-gray-400">•</span>
                         <span>
-                            {m['developerPortal.dashboards.tabs.consentFlowTesting.tipSecondAccount']()}
+                            {m[
+                                'developerPortal.dashboards.tabs.consentFlowTesting.tipSecondAccount'
+                            ]()}
                         </span>
                     </li>
                     <li className="flex items-start gap-2">
                         <span className="text-gray-400">•</span>
                         <span>
-                            <TransP m={m['developerPortal.dashboards.tabs.consentFlowTesting.tipCallbackDid']} components={[<code className="bg-gray-200 px-1 rounded text-xs" />]} />
+                            <TransP
+                                m={
+                                    m[
+                                        'developerPortal.dashboards.tabs.consentFlowTesting.tipCallbackDid'
+                                    ]
+                                }
+                                components={[<code className="bg-gray-200 px-1 rounded text-xs" />]}
+                            />
                         </span>
                     </li>
                     <li className="flex items-start gap-2">
                         <span className="text-gray-400">•</span>
                         <span>
-                            {m['developerPortal.dashboards.tabs.consentFlowTesting.tipConnections']()}
+                            {m[
+                                'developerPortal.dashboards.tabs.consentFlowTesting.tipConnections'
+                            ]()}
                         </span>
                     </li>
                 </ul>

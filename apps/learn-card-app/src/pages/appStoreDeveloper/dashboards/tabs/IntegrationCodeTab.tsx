@@ -294,7 +294,9 @@ export const IntegrationCodeTab: React.FC<IntegrationCodeTabProps> = ({
         await Clipboard.write({ string: uri });
         setCopiedUri(uri);
         setTimeout(() => setCopiedUri(null), 2000);
-        presentToast(m['developerPortal.dashboards.tabs.integrationCode.copied'](), { hasDismissButton: true });
+        presentToast(m['developerPortal.dashboards.tabs.integrationCode.copied'](), {
+            hasDismissButton: true,
+        });
     };
 
     // Generate boost config for export
@@ -585,7 +587,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
         await Clipboard.write({ string: code });
         setApiCopied(true);
         setTimeout(() => setApiCopied(false), 2000);
-        presentToast(m['developerPortal.dashboards.tabs.integrationCode.codeCopied'](), { hasDismissButton: true });
+        presentToast(m['developerPortal.dashboards.tabs.integrationCode.codeCopied'](), {
+            hasDismissButton: true,
+        });
     };
 
     // Download CSV template for selected template
@@ -629,7 +633,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
         a.click();
         URL.revokeObjectURL(url);
 
-        presentToast(m['developerPortal.dashboards.tabs.integrationCode.csvDownloaded'](), { hasDismissButton: true });
+        presentToast(m['developerPortal.dashboards.tabs.integrationCode.csvDownloaded'](), {
+            hasDismissButton: true,
+        });
     };
 
     const hasAdvancedOptions =
@@ -645,7 +651,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
         return (
             <div className="text-center py-12">
                 <FileStack className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p className="text-gray-500 font-medium">{m['developerPortal.dashboards.tabs.integrationCode.noTemplatesTitle']()}</p>
+                <p className="text-gray-500 font-medium">
+                    {m['developerPortal.dashboards.tabs.integrationCode.noTemplatesTitle']()}
+                </p>
                 <p className="text-sm text-gray-400 mt-1">
                     {m['developerPortal.dashboards.tabs.integrationCode.noTemplatesDesc']()}
                 </p>
@@ -665,7 +673,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.integrationCode.title']()}</h2>
+                <h2 className="text-lg font-semibold text-gray-800">
+                    {m['developerPortal.dashboards.tabs.integrationCode.title']()}
+                </h2>
                 <p className="text-sm text-gray-500">
                     {m['developerPortal.dashboards.tabs.integrationCode.description']()}
                 </p>
@@ -704,9 +714,15 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     <div className="flex items-start gap-3 p-4 bg-violet-50 border border-violet-200 rounded-xl">
                         <Zap className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
                         <div className="text-sm text-violet-800">
-                            <p className="font-medium mb-1">{m['developerPortal.dashboards.tabs.integrationCode.referenceTitle']()}</p>
+                            <p className="font-medium mb-1">
+                                {m[
+                                    'developerPortal.dashboards.tabs.integrationCode.referenceTitle'
+                                ]()}
+                            </p>
                             <p>
-                                {m['developerPortal.dashboards.tabs.integrationCode.referenceDesc']()}
+                                {m[
+                                    'developerPortal.dashboards.tabs.integrationCode.referenceDesc'
+                                ]()}
                             </p>
                         </div>
                     </div>
@@ -720,12 +736,16 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             {copiedConfig ? (
                                 <>
                                     <Check className="w-4 h-4" />
-                                    {m['developerPortal.dashboards.tabs.integrationCode.copiedConfig']()}
+                                    {m[
+                                        'developerPortal.dashboards.tabs.integrationCode.copiedConfig'
+                                    ]()}
                                 </>
                             ) : (
                                 <>
                                     <Download className="w-4 h-4" />
-                                    {m['developerPortal.dashboards.tabs.integrationCode.copyAllConfig']({ count: savedTemplateCount })}
+                                    {m[
+                                        'developerPortal.dashboards.tabs.integrationCode.copyAllConfig'
+                                    ]({ count: savedTemplateCount })}
                                 </>
                             )}
                         </button>
@@ -744,7 +764,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     <span className="font-medium text-gray-700">{master.name}</span>
                                     <span className="text-xs text-gray-500">
                                         {master.childTemplates?.filter(c => c.boostUri).length}{' '}
-                                        {m['developerPortal.dashboards.tabs.integrationCode.boosts']()}
+                                        {m[
+                                            'developerPortal.dashboards.tabs.integrationCode.boosts'
+                                        ]()}
                                     </span>
                                 </div>
 
@@ -762,7 +784,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                         </code>
                                                     ) : (
                                                         <span className="text-xs text-amber-600">
-                                                            {m['developerPortal.dashboards.tabs.integrationCode.noBoostUri']()}
+                                                            {m[
+                                                                'developerPortal.dashboards.tabs.integrationCode.noBoostUri'
+                                                            ]()}
                                                         </span>
                                                     )}
                                                 </div>
@@ -797,7 +821,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     <div className="flex items-center gap-3 p-3 bg-gray-50 border-b border-gray-200">
                                         <Award className="w-4 h-4 text-gray-500" />
                                         <span className="font-medium text-gray-700">
-                                            {m['developerPortal.dashboards.tabs.integrationCode.otherTemplates']()}
+                                            {m[
+                                                'developerPortal.dashboards.tabs.integrationCode.otherTemplates'
+                                            ]()}
                                         </span>
                                     </div>
                                 )}
@@ -820,7 +846,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                             </code>
                                                         ) : (
                                                             <span className="text-xs text-amber-600">
-                                                                {m['developerPortal.dashboards.tabs.integrationCode.noBoostUri']()}
+                                                                {m[
+                                                                    'developerPortal.dashboards.tabs.integrationCode.noBoostUri'
+                                                                ]()}
                                                             </span>
                                                         )}
                                                     </div>
@@ -852,11 +880,21 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                             <Code className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                             <div className="text-sm">
-                                <p className="font-medium text-amber-800">{m['developerPortal.dashboards.tabs.integrationCode.apiKeyTitle']()}</p>
+                                <p className="font-medium text-amber-800">
+                                    {m[
+                                        'developerPortal.dashboards.tabs.integrationCode.apiKeyTitle'
+                                    ]()}
+                                </p>
                                 <p className="text-xs text-amber-700 mt-0.5">
                                     <TransP
-                                        m={m['developerPortal.dashboards.tabs.integrationCode.apiKeyDesc']}
-                                        values={{ key: integration.publishableKey.slice(0, 12) + '...' }}
+                                        m={
+                                            m[
+                                                'developerPortal.dashboards.tabs.integrationCode.apiKeyDesc'
+                                            ]
+                                        }
+                                        values={{
+                                            key: integration.publishableKey.slice(0, 12) + '...',
+                                        }}
                                         components={[
                                             <code className="bg-amber-100 px-1 rounded" />,
                                             <code className="bg-amber-100 px-1 rounded ml-1 font-mono" />,
@@ -875,7 +913,11 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     <div className="flex items-start gap-3 p-4 bg-violet-50 border border-violet-200 rounded-xl">
                         <Zap className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
                         <div className="text-sm text-violet-800">
-                            <p className="font-medium mb-1">{m['developerPortal.dashboards.tabs.integrationCode.exampleTitle']()}</p>
+                            <p className="font-medium mb-1">
+                                {m[
+                                    'developerPortal.dashboards.tabs.integrationCode.exampleTitle'
+                                ]()}
+                            </p>
                             <p>
                                 {m['developerPortal.dashboards.tabs.integrationCode.exampleDesc']()}
                             </p>
@@ -899,7 +941,10 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     <div className="flex-1">
                                         <p className="font-medium text-violet-800">{master.name}</p>
                                         <p className="text-xs text-violet-600">
-                                            {master.childTemplates?.length} {m['developerPortal.dashboards.tabs.integrationCode.courseBoosts']()}
+                                            {master.childTemplates?.length}{' '}
+                                            {m[
+                                                'developerPortal.dashboards.tabs.integrationCode.courseBoosts'
+                                            ]()}
                                         </p>
                                     </div>
                                 </div>
@@ -937,7 +982,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                                             {child.boostUri && (
                                                 <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs flex-shrink-0">
-                                                    {m['developerPortal.dashboards.tabs.integrationCode.saved']()}
+                                                    {m[
+                                                        'developerPortal.dashboards.tabs.integrationCode.saved'
+                                                    ]()}
                                                 </span>
                                             )}
 
@@ -957,7 +1004,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <div className="space-y-2">
                                 {masterTemplates.length > 0 && (
                                     <p className="text-xs text-gray-500 font-medium pt-2">
-                                        {m['developerPortal.dashboards.tabs.integrationCode.otherTemplates']()}
+                                        {m[
+                                            'developerPortal.dashboards.tabs.integrationCode.otherTemplates'
+                                        ]()}
                                     </p>
                                 )}
 
@@ -994,13 +1043,18 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                     {template.name}
                                                 </p>
                                                 <p className="text-xs text-gray-500">
-                                                    {template.description || m['developerPortal.dashboards.tabs.integrationCode.noDescription']()}
+                                                    {template.description ||
+                                                        m[
+                                                            'developerPortal.dashboards.tabs.integrationCode.noDescription'
+                                                        ]()}
                                                 </p>
                                             </div>
 
                                             {template.boostUri && (
                                                 <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs">
-                                                    {m['developerPortal.dashboards.tabs.integrationCode.saved']()}
+                                                    {m[
+                                                        'developerPortal.dashboards.tabs.integrationCode.saved'
+                                                    ]()}
                                                 </span>
                                             )}
 
@@ -1018,9 +1072,15 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         <div className="flex items-start gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
                             <Layers className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
                             <div className="text-sm text-emerald-800">
-                                <p className="font-medium">{m['developerPortal.dashboards.tabs.integrationCode.courseDataPrefilledTitle']()}</p>
+                                <p className="font-medium">
+                                    {m[
+                                        'developerPortal.dashboards.tabs.integrationCode.courseDataPrefilledTitle'
+                                    ]()}
+                                </p>
                                 <p className="text-xs text-emerald-700 mt-0.5">
-                                    {m['developerPortal.dashboards.tabs.integrationCode.courseDataPrefilledDesc']()}
+                                    {m[
+                                        'developerPortal.dashboards.tabs.integrationCode.courseDataPrefilledDesc'
+                                    ]()}
                                 </p>
                             </div>
                         </div>
@@ -1031,16 +1091,21 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
                                 <label className="block text-sm font-medium text-gray-700">
-                                    {m['developerPortal.dashboards.tabs.integrationCode.templateData']()}
+                                    {m[
+                                        'developerPortal.dashboards.tabs.integrationCode.templateData'
+                                    ]()}
                                 </label>
                                 <span className="text-xs text-gray-500">
-                                    {m['developerPortal.dashboards.tabs.integrationCode.fieldsCount']({ count: templateVariables.length })}
-                                    
+                                    {m[
+                                        'developerPortal.dashboards.tabs.integrationCode.fieldsCount'
+                                    ]({ count: templateVariables.length })}
                                 </span>
                             </div>
 
                             <p className="text-xs text-gray-500">
-                                {m['developerPortal.dashboards.tabs.integrationCode.templateDataDesc']()}
+                                {m[
+                                    'developerPortal.dashboards.tabs.integrationCode.templateDataDesc'
+                                ]()}
                             </p>
 
                             <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
@@ -1079,13 +1144,17 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                     {/* Recipient Input */}
                     <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">{m['developerPortal.dashboards.tabs.integrationCode.recipient']()}</label>
+                        <label className="block text-sm font-medium text-gray-700">
+                            {m['developerPortal.dashboards.tabs.integrationCode.recipient']()}
+                        </label>
 
                         <input
                             type="text"
                             value={apiRecipientEmail}
                             onChange={e => setApiRecipientEmail(e.target.value)}
-                            placeholder={m['developerPortal.dashboards.tabs.integrationCode.recipientPlaceholder']()}
+                            placeholder={m[
+                                'developerPortal.dashboards.tabs.integrationCode.recipientPlaceholder'
+                            ]()}
                             className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
                         />
 
@@ -1103,16 +1172,24 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 </div>
 
                                 <div>
-                                    <p className="text-sm font-medium text-gray-700">{m['developerPortal.dashboards.tabs.integrationCode.apiToken']()}</p>
+                                    <p className="text-sm font-medium text-gray-700">
+                                        {m[
+                                            'developerPortal.dashboards.tabs.integrationCode.apiToken'
+                                        ]()}
+                                    </p>
                                     <p className="text-xs text-gray-500">
                                         {apiToken ? (
                                             <span className="text-emerald-600 flex items-center gap-1">
                                                 <CheckCircle2 className="w-3 h-3" />
-                                                {m['developerPortal.dashboards.tabs.integrationCode.tokenSelected']()}
+                                                {m[
+                                                    'developerPortal.dashboards.tabs.integrationCode.tokenSelected'
+                                                ]()}
                                             </span>
                                         ) : (
                                             <span className="text-amber-600">
-                                                {m['developerPortal.dashboards.tabs.integrationCode.noTokenSelected']()}
+                                                {m[
+                                                    'developerPortal.dashboards.tabs.integrationCode.noTokenSelected'
+                                                ]()}
                                             </span>
                                         )}
                                     </p>
@@ -1123,7 +1200,11 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 onClick={() => setShowTokenSelector(!showTokenSelector)}
                                 className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1"
                             >
-                                {showTokenSelector ? m['developerPortal.guides.issueCredentials.issueVerifyStep.hideButton']() : m['developerPortal.dashboards.tabs.integrationCode.select']()}
+                                {showTokenSelector
+                                    ? m[
+                                          'developerPortal.guides.issueCredentials.issueVerifyStep.hideButton'
+                                      ]()
+                                    : m['developerPortal.dashboards.tabs.integrationCode.select']()}
                                 {showTokenSelector ? (
                                     <ChevronUp className="w-4 h-4" />
                                 ) : (
@@ -1137,13 +1218,21 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 {loadingGrants ? (
                                     <div className="flex items-center gap-2 text-sm text-gray-500">
                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                        {m['developerPortal.dashboards.tabs.integrationCode.loadingTokens']()}
+                                        {m[
+                                            'developerPortal.dashboards.tabs.integrationCode.loadingTokens'
+                                        ]()}
                                     </div>
                                 ) : authGrants.length === 0 ? (
                                     <p className="text-sm text-gray-500">
                                         <TransP
-                                            m={m['developerPortal.dashboards.tabs.integrationCode.noApiTokens']}
-                                            components={[<span className="text-cyan-600 font-medium" />]}
+                                            m={
+                                                m[
+                                                    'developerPortal.dashboards.tabs.integrationCode.noApiTokens'
+                                                ]
+                                            }
+                                            components={[
+                                                <span className="text-cyan-600 font-medium" />,
+                                            ]}
                                         />
                                     </p>
                                 ) : (
@@ -1163,7 +1252,13 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                         {grant.name}
                                                     </p>
                                                     <p className="text-xs text-gray-500">
-                                                        {m['developerPortal.dashboards.tabs.integrationCode.createdLabel']({ date: new Date(grant.createdAt).toLocaleDateString() })}
+                                                        {m[
+                                                            'developerPortal.dashboards.tabs.integrationCode.createdLabel'
+                                                        ]({
+                                                            date: new Date(
+                                                                grant.createdAt
+                                                            ).toLocaleDateString(),
+                                                        })}
                                                     </p>
                                                 </div>
 
@@ -1185,7 +1280,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
                         >
                             <FileSpreadsheet className="w-4 h-4" />
-                            {m['developerPortal.dashboards.tabs.integrationCode.downloadCsvFor']({ name: selectedTemplate.name })}
+                            {m['developerPortal.dashboards.tabs.integrationCode.downloadCsvFor']({
+                                name: selectedTemplate.name,
+                            })}
                         </button>
                     )}
 
@@ -1199,7 +1296,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         ) : (
                             <ChevronDown className="w-4 h-4" />
                         )}
-                        {showAdvanced ? m['developerPortal.onboarding.dataMapping.hideAdvancedOptions']() : m['developerPortal.onboarding.dataMapping.showAdvancedOptions']()}
+                        {showAdvanced
+                            ? m['developerPortal.onboarding.dataMapping.hideAdvancedOptions']()
+                            : m['developerPortal.onboarding.dataMapping.showAdvancedOptions']()}
                         {hasAdvancedOptions && (
                             <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded text-xs">
                                 {m['developerPortal.shell.statusActive']()}
@@ -1211,14 +1310,18 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     {showAdvanced && (
                         <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-4">
                             <p className="text-sm text-gray-600">
-                                {m['developerPortal.dashboards.tabs.integrationCode.advancedOptionsDesc']()}
+                                {m[
+                                    'developerPortal.dashboards.tabs.integrationCode.advancedOptionsDesc'
+                                ]()}
                             </p>
 
                             {/* Branding Section */}
                             <div className="space-y-3">
                                 <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                                     <Building2 className="w-4 h-4 text-indigo-500" />
-                                    {m['developerPortal.dashboards.tabs.integrationCode.emailBranding']()}
+                                    {m[
+                                        'developerPortal.dashboards.tabs.integrationCode.emailBranding'
+                                    ]()}
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1235,14 +1338,18 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                     issuerName: e.target.value,
                                                 }))
                                             }
-                                            placeholder={m['developerPortal.onboarding.branding.yourOrg']()}
+                                            placeholder={m[
+                                                'developerPortal.onboarding.branding.yourOrg'
+                                            ]()}
                                             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                         />
                                     </div>
 
                                     <div>
                                         <label className="block text-xs font-medium text-gray-600 mb-1">
-                                            {m['developerPortal.dashboards.tabs.integrationCode.logoUrl']()}
+                                            {m[
+                                                'developerPortal.dashboards.tabs.integrationCode.logoUrl'
+                                            ]()}
                                         </label>
                                         <input
                                             type="url"
@@ -1260,7 +1367,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                                     <div>
                                         <label className="block text-xs font-medium text-gray-600 mb-1">
-                                            {m['developerPortal.credentialBuilder.recipient.recipientName']()}
+                                            {m[
+                                                'developerPortal.credentialBuilder.recipient.recipientName'
+                                            ]()}
                                         </label>
                                         <input
                                             type="text"
@@ -1271,7 +1380,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                     recipientName: e.target.value,
                                                 }))
                                             }
-                                            placeholder={m['developerPortal.dashboards.tabs.integrationCode.johnDoe']()}
+                                            placeholder={m[
+                                                'developerPortal.dashboards.tabs.integrationCode.johnDoe'
+                                            ]()}
                                             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                         />
                                     </div>
@@ -1282,12 +1393,16 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <div className="space-y-3 pt-3 border-t border-gray-200">
                                 <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                                     <Webhook className="w-4 h-4 text-emerald-500" />
-                                    {m['developerPortal.dashboards.tabs.integrationCode.webhookNotification']()}
+                                    {m[
+                                        'developerPortal.dashboards.tabs.integrationCode.webhookNotification'
+                                    ]()}
                                 </div>
 
                                 <div>
                                     <label className="block text-xs font-medium text-gray-600 mb-1">
-                                        {m['developerPortal.onboarding.dataMapping.webhookUrlTitle']()}
+                                        {m[
+                                            'developerPortal.onboarding.dataMapping.webhookUrlTitle'
+                                        ]()}
                                     </label>
                                     <input
                                         type="url"
@@ -1302,7 +1417,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                     />
                                     <p className="text-xs text-gray-500 mt-1">
-                                        {m['developerPortal.dashboards.tabs.integrationCode.webhookDesc']()}
+                                        {m[
+                                            'developerPortal.dashboards.tabs.integrationCode.webhookDesc'
+                                        ]()}
                                     </p>
                                 </div>
                             </div>
@@ -1324,12 +1441,16 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     <div className="flex items-center gap-2">
                                         <BellOff className="w-4 h-4 text-amber-500" />
                                         <span className="text-sm font-medium text-gray-700">
-                                            {m['developerPortal.dashboards.tabs.integrationCode.suppressDelivery']()}
+                                            {m[
+                                                'developerPortal.dashboards.tabs.integrationCode.suppressDelivery'
+                                            ]()}
                                         </span>
                                     </div>
                                 </label>
                                 <p className="text-xs text-gray-500 ml-7">
-                                    {m['developerPortal.onboarding.dataMapping.suppressDeliveryDesc']()}
+                                    {m[
+                                        'developerPortal.onboarding.dataMapping.suppressDeliveryDesc'
+                                    ]()}
                                 </p>
                             </div>
                         </div>
@@ -1337,7 +1458,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                     {/* Code Output */}
                     <CodeOutputPanel
-                        title={m['developerPortal.guides.issueCredentials.issueVerifyStep.yourCode']()}
+                        title={m[
+                            'developerPortal.guides.issueCredentials.issueVerifyStep.yourCode'
+                        ]()}
                         snippets={{
                             typescript: generateApiCodeSnippet(),
                             curl: generateCurlCodeSnippet(),

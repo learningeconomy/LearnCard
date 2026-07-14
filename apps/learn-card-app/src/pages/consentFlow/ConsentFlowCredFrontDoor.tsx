@@ -160,7 +160,9 @@ const ConsentFlowCredFrontDoor: React.FC<ConsentFlowCredFrontDoorProps> = ({
                         {!resolvedBoost && (
                             <div className="flex flex-col items-center gap-[10px]">
                                 <IonSpinner className="h-[34px] w-[34px]" />
-                                <span className="text-white text-[18px]">{m['common.loading']()}</span>
+                                <span className="text-white text-[18px]">
+                                    {m['common.loading']()}
+                                </span>
                             </div>
                         )}
                     </>

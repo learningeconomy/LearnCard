@@ -18,11 +18,7 @@ interface IssuerSectionProps {
     disableDynamicFields?: boolean;
 }
 
-export const IssuerSection: React.FC<IssuerSectionProps> = ({
-    template,
-    isExpanded,
-    onToggle,
-}) => {
+export const IssuerSection: React.FC<IssuerSectionProps> = ({ template, isExpanded, onToggle }) => {
     const issuer = template.issuer;
 
     return (
@@ -34,13 +30,21 @@ export const IssuerSection: React.FC<IssuerSectionProps> = ({
         >
             <FieldEditor
                 label={m['developerPortal.credentialBuilder.issuer.did']()}
-                field={{ ...(issuer.id ?? systemField('issuer_did')), systemDescription: m['developerPortal.credentialBuilder.issuer.didHelp']() }}
+                field={{
+                    ...(issuer.id ?? systemField('issuer_did')),
+                    systemDescription: m['developerPortal.credentialBuilder.issuer.didHelp'](),
+                }}
                 onChange={() => {}}
                 helpText={m['developerPortal.credentialBuilder.issuer.didHelp']()}
             />
 
             <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800" dangerouslySetInnerHTML={{ __html: m['developerPortal.credentialBuilder.issuer.note']() }} />
+                <p
+                    className="text-sm text-blue-800"
+                    dangerouslySetInnerHTML={{
+                        __html: m['developerPortal.credentialBuilder.issuer.note'](),
+                    }}
+                />
             </div>
         </CollapsibleSection>
     );

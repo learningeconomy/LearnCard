@@ -37,7 +37,9 @@ export const LaunchTypeStep: React.FC<LaunchTypeStepProps> = ({ data, onChange }
     return (
         <div className="space-y-6">
             <div className="text-center mb-6">
-                <h2 className="text-xl font-semibold text-gray-700">{m['developerPortal.components.launchTypeStep.title']()}</h2>
+                <h2 className="text-xl font-semibold text-gray-700">
+                    {m['developerPortal.components.launchTypeStep.title']()}
+                </h2>
 
                 <p className="text-sm text-gray-500 mt-1">
                     {m['developerPortal.components.launchTypeStep.description']()}
@@ -61,21 +63,23 @@ export const LaunchTypeStep: React.FC<LaunchTypeStepProps> = ({ data, onChange }
                             type="button"
                             onClick={() => handleSelect(type, isComingSoon)}
                             disabled={isComingSoon}
-                            className={`relative w-full p-4 rounded-xl border-2 text-left transition-all duration-200 group ${isComingSoon
+                            className={`relative w-full p-4 rounded-xl border-2 text-left transition-all duration-200 group ${
+                                isComingSoon
                                     ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed'
                                     : isSelected
-                                        ? 'border-cyan-500 bg-cyan-50'
-                                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                                }`}
+                                    ? 'border-cyan-500 bg-cyan-50'
+                                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                            }`}
                         >
                             <div className="flex items-start gap-4">
                                 <div
-                                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isComingSoon
+                                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+                                        isComingSoon
                                             ? 'bg-gray-200 text-gray-400'
                                             : isSelected
-                                                ? 'bg-cyan-500 text-white'
-                                                : 'bg-gray-100 text-gray-500 group-hover:bg-gray-200'
-                                        }`}
+                                            ? 'bg-cyan-500 text-white'
+                                            : 'bg-gray-100 text-gray-500 group-hover:bg-gray-200'
+                                    }`}
                                 >
                                     {IconComponent && <IconComponent className="w-5 h-5" />}
                                 </div>
@@ -83,12 +87,13 @@ export const LaunchTypeStep: React.FC<LaunchTypeStepProps> = ({ data, onChange }
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2">
                                         <h3
-                                            className={`font-semibold text-sm ${isComingSoon
+                                            className={`font-semibold text-sm ${
+                                                isComingSoon
                                                     ? 'text-gray-500'
                                                     : isSelected
-                                                        ? 'text-cyan-700'
-                                                        : 'text-gray-700'
-                                                }`}
+                                                    ? 'text-cyan-700'
+                                                    : 'text-gray-700'
+                                            }`}
                                         >
                                             {(m as any)[info.labelKey]()}
                                         </h3>
@@ -96,14 +101,17 @@ export const LaunchTypeStep: React.FC<LaunchTypeStepProps> = ({ data, onChange }
                                         {isComingSoon && (
                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
                                                 <Clock className="w-3 h-3" />
-                                                {m['developerPortal.components.launchTypeStep.comingSoon']()}
+                                                {m[
+                                                    'developerPortal.components.launchTypeStep.comingSoon'
+                                                ]()}
                                             </span>
                                         )}
                                     </div>
 
                                     <p
-                                        className={`text-xs mt-0.5 ${isComingSoon ? 'text-gray-400' : 'text-gray-500'
-                                            }`}
+                                        className={`text-xs mt-0.5 ${
+                                            isComingSoon ? 'text-gray-400' : 'text-gray-500'
+                                        }`}
                                     >
                                         {(m as any)[info.descriptionKey]()}
                                     </p>

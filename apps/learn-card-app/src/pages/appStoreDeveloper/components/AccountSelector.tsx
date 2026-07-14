@@ -462,7 +462,11 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
 
             onAccountSwitch?.(newOrgProfile);
 
-            presentToast(m['developerPortal.components.accountSelector.organizationCreated']({ name: orgName }));
+            presentToast(
+                m['developerPortal.components.accountSelector.organizationCreated']({
+                    name: orgName,
+                })
+            );
             setMode('select');
 
             // Reset form
@@ -471,9 +475,14 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
             setImage(undefined);
             setShowAdvanced(false);
         } catch (e: any) {
-            presentToast(m['developerPortal.components.accountSelector.failedToCreateOrganization']({ message: e?.message }), {
-                type: ToastTypeEnum.Error,
-            });
+            presentToast(
+                m['developerPortal.components.accountSelector.failedToCreateOrganization']({
+                    message: e?.message,
+                }),
+                {
+                    type: ToastTypeEnum.Error,
+                }
+            );
             log.error('Error creating organization:', e);
         } finally {
             setIsCreating(false);
@@ -486,7 +495,9 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
         return (
             <div className="flex flex-col items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 text-cyan-500 animate-spin mb-4" />
-                <p className="text-gray-500">{m['developerPortal.components.accountSelector.loadingAccounts']()}</p>
+                <p className="text-gray-500">
+                    {m['developerPortal.components.accountSelector.loadingAccounts']()}
+                </p>
             </div>
         );
     }
@@ -498,9 +509,13 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                     <Building className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
 
                     <div className="text-sm text-blue-800">
-                        <p className="font-medium mb-1">{m['developerPortal.components.accountSelector.selectAccount']()}</p>
+                        <p className="font-medium mb-1">
+                            {m['developerPortal.components.accountSelector.selectAccount']()}
+                        </p>
                         <p>
-                            {m['developerPortal.components.accountSelector.selectAccountDescription']()}
+                            {m[
+                                'developerPortal.components.accountSelector.selectAccountDescription'
+                            ]()}
                         </p>
                     </div>
                 </div>
@@ -510,7 +525,9 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                 <>
                     {/* Current Account Option */}
                     <div className="space-y-3">
-                        <h3 className="font-medium text-gray-800 text-sm">{m['developerPortal.components.accountSelector.currentAccount']()}</h3>
+                        <h3 className="font-medium text-gray-800 text-sm">
+                            {m['developerPortal.components.accountSelector.currentAccount']()}
+                        </h3>
 
                         <button
                             onClick={handleUseCurrentAccount}
@@ -533,7 +550,9 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
 
                                     {isCurrentUserServiceProfile && (
                                         <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-xs rounded-full">
-                                            {m['developerPortal.components.accountSelector.organization']()}
+                                            {m[
+                                                'developerPortal.components.accountSelector.organization'
+                                            ]()}
                                         </span>
                                     )}
                                 </div>
@@ -554,7 +573,9 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                     {/* Root Personal Account Option (when on a service profile) */}
                     {isCurrentUserServiceProfile && isSwitchedProfile && parentUser && (
                         <div className="space-y-3">
-                            <h3 className="font-medium text-gray-800 text-sm">{m['developerPortal.components.accountSelector.personalAccount']()}</h3>
+                            <h3 className="font-medium text-gray-800 text-sm">
+                                {m['developerPortal.components.accountSelector.personalAccount']()}
+                            </h3>
 
                             <button
                                 onClick={handleUseParentAccount}
@@ -574,11 +595,17 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                                         </p>
 
                                         <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">
-                                            {m['developerPortal.components.accountSelector.personal']()}
+                                            {m[
+                                                'developerPortal.components.accountSelector.personal'
+                                            ]()}
                                         </span>
                                     </div>
 
-                                    <p className="text-xs text-gray-500">{m['developerPortal.components.accountSelector.yourRootAccount']()}</p>
+                                    <p className="text-xs text-gray-500">
+                                        {m[
+                                            'developerPortal.components.accountSelector.yourRootAccount'
+                                        ]()}
+                                    </p>
                                 </div>
 
                                 {isSwitching && selectedProfile?.did === parentUserDid ? (
@@ -596,7 +623,9 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                     {serviceProfiles.length > 0 && (
                         <div className="space-y-3">
                             <h3 className="font-medium text-gray-800 text-sm">
-                                {m['developerPortal.components.accountSelector.organizationAccounts']()}
+                                {m[
+                                    'developerPortal.components.accountSelector.organizationAccounts'
+                                ]()}
                             </h3>
 
                             <div className="space-y-2">
@@ -631,7 +660,9 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                                                         {profile.displayName}
                                                     </p>
                                                     <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-xs rounded-full">
-                                                        {m['developerPortal.components.accountSelector.organization']()}
+                                                        {m[
+                                                            'developerPortal.components.accountSelector.organization'
+                                                        ]()}
                                                     </span>
                                                 </div>
                                                 <p className="text-xs text-gray-500">
@@ -661,7 +692,9 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                                 className="w-full flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-cyan-400 hover:text-cyan-600 transition-colors text-sm"
                             >
                                 <Plus className="w-4 h-4" />
-                                {m['developerPortal.components.accountSelector.createNewOrganization']()}
+                                {m[
+                                    'developerPortal.components.accountSelector.createNewOrganization'
+                                ]()}
                             </button>
                         </div>
                     )}
@@ -692,7 +725,8 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                     {/* Organization Name */}
                     <div className="space-y-2">
                         <label className="block text-sm font-medium text-gray-700">
-                            {m['developerPortal.components.accountSelector.organizationName']()} <span className="text-red-500">*</span>
+                            {m['developerPortal.components.accountSelector.organizationName']()}{' '}
+                            <span className="text-red-500">*</span>
                         </label>
 
                         <input
@@ -702,7 +736,9 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                                 setOrgName(e.target.value);
                                 setNameError('');
                             }}
-                            placeholder={m['developerPortal.components.accountSelector.organizationNamePlaceholder']()}
+                            placeholder={m[
+                                'developerPortal.components.accountSelector.organizationNamePlaceholder'
+                            ]()}
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none text-sm text-gray-800"
                         />
 
@@ -724,7 +760,9 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                             {image ? (
                                 <img
                                     src={image}
-                                    alt={m['developerPortal.components.accountSelector.logoPreview']()}
+                                    alt={m[
+                                        'developerPortal.components.accountSelector.logoPreview'
+                                    ]()}
                                     className="w-14 h-14 rounded-xl object-cover"
                                 />
                             ) : (
@@ -763,7 +801,8 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                     {showAdvanced && (
                         <div className="space-y-2 p-4 bg-gray-50 rounded-xl">
                             <label className="block text-sm font-medium text-gray-700">
-                                {m['developerPortal.components.accountSelector.profileId']()} <span className="text-red-500">*</span>
+                                {m['developerPortal.components.accountSelector.profileId']()}{' '}
+                                <span className="text-red-500">*</span>
                             </label>
 
                             <div className="flex items-center gap-2">
@@ -794,7 +833,9 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                                             : 'bg-gray-100 text-gray-500'
                                     }`}
                                 >
-                                    {m['developerPortal.components.accountSelector.lettersNumbersDashesOnly']()}
+                                    {m[
+                                        'developerPortal.components.accountSelector.lettersNumbersDashesOnly'
+                                    ]()}
                                 </span>
                                 <span
                                     className={`text-xs px-2 py-1 rounded ${
@@ -836,7 +877,9 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
                         ) : (
                             <>
                                 <Building className="w-4 h-4" />
-                                {m['developerPortal.components.accountSelector.createOrganization']()}
+                                {m[
+                                    'developerPortal.components.accountSelector.createOrganization'
+                                ]()}
                             </>
                         )}
                     </button>

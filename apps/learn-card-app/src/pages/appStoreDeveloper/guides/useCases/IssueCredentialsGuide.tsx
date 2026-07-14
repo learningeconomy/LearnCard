@@ -43,18 +43,29 @@ type AuthGrant = {
 
 const STEPS = [
     { id: 'api-token', title: m['developerPortal.guides.issueCredentials.steps.apiToken']() },
-    { id: 'signing-authority', title: m['developerPortal.guides.issueCredentials.steps.signingAuthority']() },
-    { id: 'create-templates', title: m['developerPortal.guides.issueCredentials.steps.createTemplates']() },
+    {
+        id: 'signing-authority',
+        title: m['developerPortal.guides.issueCredentials.steps.signingAuthority'](),
+    },
+    {
+        id: 'create-templates',
+        title: m['developerPortal.guides.issueCredentials.steps.createTemplates'](),
+    },
     { id: 'issue', title: m['developerPortal.guides.issueCredentials.steps.issue']() },
     { id: 'go-live', title: m['developerPortal.guides.issueCredentials.steps.goLive']() },
 ];
 
 const SCOPE_OPTIONS = [
-    { label: m['developerPortal.guides.issueCredentials.scopeOptions.fullAccess'](), value: '*:*', description: m['developerPortal.guides.issueCredentials.scopeOptions.fullAccessDesc']() },
+    {
+        label: m['developerPortal.guides.issueCredentials.scopeOptions.fullAccess'](),
+        value: '*:*',
+        description: m['developerPortal.guides.issueCredentials.scopeOptions.fullAccessDesc'](),
+    },
     {
         label: m['developerPortal.guides.issueCredentials.scopeOptions.credentialsOnly'](),
         value: 'credential:* presentation:*',
-        description: m['developerPortal.guides.issueCredentials.scopeOptions.credentialsOnlyDesc'](),
+        description:
+            m['developerPortal.guides.issueCredentials.scopeOptions.credentialsOnlyDesc'](),
     },
 ];
 
@@ -101,7 +112,8 @@ const ApiTokenStep: React.FC<{
 
             await wallet.invoke.addAuthGrant({
                 name: newTokenName.trim(),
-                description: m['developerPortal.guides.issueCredentials.apiTokenStep.createdFromGuide'](),
+                description:
+                    m['developerPortal.guides.issueCredentials.apiTokenStep.createdFromGuide'](),
                 scope: selectedScope,
             });
 
@@ -173,7 +185,9 @@ const ApiTokenStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.issueCredentials.apiTokenStep.title']()}</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.issueCredentials.apiTokenStep.title']()}
+                </h3>
 
                 <p className="text-gray-600">
                     {m['developerPortal.guides.issueCredentials.apiTokenStep.description']()}
@@ -200,7 +214,9 @@ const ApiTokenStep: React.FC<{
                 <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {m['developerPortal.guides.issueCredentials.apiTokenStep.tokenNameLabel']()}
+                            {m[
+                                'developerPortal.guides.issueCredentials.apiTokenStep.tokenNameLabel'
+                            ]()}
                         </label>
 
                         <input
@@ -214,7 +230,9 @@ const ApiTokenStep: React.FC<{
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {m['developerPortal.guides.issueCredentials.apiTokenStep.permissionsLabel']()}
+                            {m[
+                                'developerPortal.guides.issueCredentials.apiTokenStep.permissionsLabel'
+                            ]()}
                         </label>
 
                         <select
@@ -240,7 +258,13 @@ const ApiTokenStep: React.FC<{
                             disabled={creating || !newTokenName.trim()}
                             className="flex-1 px-4 py-2.5 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 disabled:opacity-50 transition-colors"
                         >
-                            {creating ? m['developerPortal.guides.issueCredentials.apiTokenStep.creatingButton']() : m['developerPortal.guides.issueCredentials.apiTokenStep.createTokenButton']()}
+                            {creating
+                                ? m[
+                                      'developerPortal.guides.issueCredentials.apiTokenStep.creatingButton'
+                                  ]()
+                                : m[
+                                      'developerPortal.guides.issueCredentials.apiTokenStep.createTokenButton'
+                                  ]()}
                         </button>
 
                         <button
@@ -250,7 +274,9 @@ const ApiTokenStep: React.FC<{
                             }}
                             className="px-4 py-2.5 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition-colors"
                         >
-                            {m['developerPortal.guides.issueCredentials.apiTokenStep.cancelButton']()}
+                            {m[
+                                'developerPortal.guides.issueCredentials.apiTokenStep.cancelButton'
+                            ]()}
                         </button>
                     </div>
                 </div>
@@ -268,7 +294,9 @@ const ApiTokenStep: React.FC<{
                                 <p className="font-medium text-gray-800">{grant.name}</p>
 
                                 <p className="text-sm text-gray-500">
-                                    {m['developerPortal.guides.issueCredentials.apiTokenStep.createdLabel']({ date: new Date(grant.createdAt!).toLocaleDateString() })}
+                                    {m[
+                                        'developerPortal.guides.issueCredentials.apiTokenStep.createdLabel'
+                                    ]({ date: new Date(grant.createdAt!).toLocaleDateString() })}
                                 </p>
                             </div>
 
@@ -282,7 +310,9 @@ const ApiTokenStep: React.FC<{
                                     ) : (
                                         <Copy className="w-4 h-4" />
                                     )}
-                                    {m['developerPortal.guides.issueCredentials.apiTokenStep.copyTokenButton']()}
+                                    {m[
+                                        'developerPortal.guides.issueCredentials.apiTokenStep.copyTokenButton'
+                                    ]()}
                                 </button>
 
                                 <button
@@ -412,7 +442,9 @@ const SigningAuthorityStep: React.FC<{
                 </h3>
 
                 <p className="text-gray-600">
-                    {m['developerPortal.guides.issueCredentials.signingAuthorityStep.description']()}
+                    {m[
+                        'developerPortal.guides.issueCredentials.signingAuthorityStep.description'
+                    ]()}
                 </p>
             </div>
 
@@ -421,15 +453,25 @@ const SigningAuthorityStep: React.FC<{
                 status={loading ? 'loading' : hasSigningAuthority ? 'ready' : 'warning'}
                 label={
                     loading
-                        ? m['developerPortal.guides.issueCredentials.signingAuthorityStep.statusChecking']()
+                        ? m[
+                              'developerPortal.guides.issueCredentials.signingAuthorityStep.statusChecking'
+                          ]()
                         : hasSigningAuthority
-                        ? m['developerPortal.guides.issueCredentials.signingAuthorityStep.statusReady']()
-                        : m['developerPortal.guides.issueCredentials.signingAuthorityStep.statusWarning']()
+                        ? m[
+                              'developerPortal.guides.issueCredentials.signingAuthorityStep.statusReady'
+                          ]()
+                        : m[
+                              'developerPortal.guides.issueCredentials.signingAuthorityStep.statusWarning'
+                          ]()
                 }
                 description={
                     hasSigningAuthority
-                        ? m['developerPortal.guides.issueCredentials.signingAuthorityStep.statusReadyHint']({ name: primarySA?.name })
-                        : m['developerPortal.guides.issueCredentials.signingAuthorityStep.statusWarningHint']()
+                        ? m[
+                              'developerPortal.guides.issueCredentials.signingAuthorityStep.statusReadyHint'
+                          ]({ name: primarySA?.name })
+                        : m[
+                              'developerPortal.guides.issueCredentials.signingAuthorityStep.statusWarningHint'
+                          ]()
                 }
             />
 
@@ -443,12 +485,16 @@ const SigningAuthorityStep: React.FC<{
                     {creating ? (
                         <>
                             <Loader2 className="w-4 h-4 animate-spin" />
-                            {m['developerPortal.guides.issueCredentials.signingAuthorityStep.creatingButton']()}
+                            {m[
+                                'developerPortal.guides.issueCredentials.signingAuthorityStep.creatingButton'
+                            ]()}
                         </>
                     ) : (
                         <>
                             <Shield className="w-4 h-4" />
-                            {m['developerPortal.guides.issueCredentials.signingAuthorityStep.createButton']()}
+                            {m[
+                                'developerPortal.guides.issueCredentials.signingAuthorityStep.createButton'
+                            ]()}
                         </>
                     )}
                 </button>
@@ -464,12 +510,16 @@ const SigningAuthorityStep: React.FC<{
                     {creating ? (
                         <>
                             <Loader2 className="w-4 h-4 animate-spin" />
-                            {m['developerPortal.guides.issueCredentials.signingAuthorityStep.recreatingButton']()}
+                            {m[
+                                'developerPortal.guides.issueCredentials.signingAuthorityStep.recreatingButton'
+                            ]()}
                         </>
                     ) : (
                         <>
                             <RefreshCw className="w-4 h-4" />
-                            {m['developerPortal.guides.issueCredentials.signingAuthorityStep.recreateButton']()}
+                            {m[
+                                'developerPortal.guides.issueCredentials.signingAuthorityStep.recreateButton'
+                            ]()}
                         </>
                     )}
                 </button>
@@ -477,12 +527,29 @@ const SigningAuthorityStep: React.FC<{
 
             {/* Info about what it does */}
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                <h4 className="font-medium text-blue-800 mb-2">{m['developerPortal.guides.issueCredentials.signingAuthorityStep.infoTitle']()}</h4>
+                <h4 className="font-medium text-blue-800 mb-2">
+                    {m['developerPortal.guides.issueCredentials.signingAuthorityStep.infoTitle']()}
+                </h4>
 
                 <ul className="text-sm text-blue-700 space-y-1">
-                    <li>{'•'} {m['developerPortal.guides.issueCredentials.signingAuthorityStep.infoItem1']()}</li>
-                    <li>{'•'} {m['developerPortal.guides.issueCredentials.signingAuthorityStep.infoItem2']()}</li>
-                    <li>{'•'} {m['developerPortal.guides.issueCredentials.signingAuthorityStep.infoItem3']()}</li>
+                    <li>
+                        {'•'}{' '}
+                        {m[
+                            'developerPortal.guides.issueCredentials.signingAuthorityStep.infoItem1'
+                        ]()}
+                    </li>
+                    <li>
+                        {'•'}{' '}
+                        {m[
+                            'developerPortal.guides.issueCredentials.signingAuthorityStep.infoItem2'
+                        ]()}
+                    </li>
+                    <li>
+                        {'•'}{' '}
+                        {m[
+                            'developerPortal.guides.issueCredentials.signingAuthorityStep.infoItem3'
+                        ]()}
+                    </li>
                 </ul>
             </div>
 
@@ -501,7 +568,9 @@ const SigningAuthorityStep: React.FC<{
                     disabled={!hasSigningAuthority}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                    {m['developerPortal.guides.issueCredentials.signingAuthorityStep.continueButton']()}
+                    {m[
+                        'developerPortal.guides.issueCredentials.signingAuthorityStep.continueButton'
+                    ]()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
@@ -522,7 +591,9 @@ const CreateTemplatesStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.issueCredentials.createTemplatesStep.title']()}</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.issueCredentials.createTemplatesStep.title']()}
+                </h3>
 
                 <p className="text-gray-600">
                     {m['developerPortal.guides.issueCredentials.createTemplatesStep.description']()}
@@ -549,7 +620,9 @@ const CreateTemplatesStep: React.FC<{
                         className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        {m['developerPortal.guides.issueCredentials.createTemplatesStep.backButton']()}
+                        {m[
+                            'developerPortal.guides.issueCredentials.createTemplatesStep.backButton'
+                        ]()}
                     </button>
 
                     <button
@@ -557,14 +630,18 @@ const CreateTemplatesStep: React.FC<{
                         disabled={!hasTemplates || isBuilderOpen}
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                        {m['developerPortal.guides.issueCredentials.createTemplatesStep.continueButton']()}
+                        {m[
+                            'developerPortal.guides.issueCredentials.createTemplatesStep.continueButton'
+                        ]()}
                         <ArrowRight className="w-4 h-4" />
                     </button>
                 </div>
 
                 {isBuilderOpen && (
                     <p className="text-xs text-amber-600 text-center">
-                        {m['developerPortal.guides.issueCredentials.createTemplatesStep.builderOpenWarning']()}
+                        {m[
+                            'developerPortal.guides.issueCredentials.createTemplatesStep.builderOpenWarning'
+                        ]()}
                     </p>
                 )}
             </div>
@@ -834,7 +911,9 @@ else:
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">{m['developerPortal.guides.issueCredentials.issueVerifyStep.title']()}</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.issueCredentials.issueVerifyStep.title']()}
+                </h3>
 
                 <p className="text-gray-600">
                     {m['developerPortal.guides.issueCredentials.issueVerifyStep.description']()}
@@ -852,7 +931,9 @@ else:
 
                             <div>
                                 <p className="text-sm font-medium text-gray-700">
-                                    {m['developerPortal.guides.issueCredentials.issueVerifyStep.credentialTemplate']()}
+                                    {m[
+                                        'developerPortal.guides.issueCredentials.issueVerifyStep.credentialTemplate'
+                                    ]()}
                                 </p>
 
                                 <p className="text-xs text-cyan-700 font-medium">
@@ -866,7 +947,13 @@ else:
                                 onClick={() => setShowTemplateSelector(!showTemplateSelector)}
                                 className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1"
                             >
-                                {showTemplateSelector ? m['developerPortal.guides.issueCredentials.issueVerifyStep.hideButton']() : m['developerPortal.guides.issueCredentials.issueVerifyStep.changeButton']()}
+                                {showTemplateSelector
+                                    ? m[
+                                          'developerPortal.guides.issueCredentials.issueVerifyStep.hideButton'
+                                      ]()
+                                    : m[
+                                          'developerPortal.guides.issueCredentials.issueVerifyStep.changeButton'
+                                      ]()}
                                 {showTemplateSelector ? (
                                     <ChevronUp className="w-4 h-4" />
                                 ) : (
@@ -878,7 +965,9 @@ else:
 
                     {selectedTemplate && (
                         <p className="text-xs text-gray-500 mt-2 font-mono truncate">
-                            {m['developerPortal.guides.issueCredentials.issueVerifyStep.uriLabel']({ uri: selectedTemplate.boostUri })}
+                            {m['developerPortal.guides.issueCredentials.issueVerifyStep.uriLabel']({
+                                uri: selectedTemplate.boostUri,
+                            })}
                         </p>
                     )}
 
@@ -922,12 +1011,16 @@ else:
                     <div className="flex items-center gap-2">
                         <AlertCircle className="w-5 h-5 text-amber-600" />
                         <p className="text-sm text-amber-800">
-                            {m['developerPortal.guides.issueCredentials.issueVerifyStep.noTemplatesFound']()}{' '}
+                            {m[
+                                'developerPortal.guides.issueCredentials.issueVerifyStep.noTemplatesFound'
+                            ]()}{' '}
                             <button
                                 onClick={onBack}
                                 className="text-cyan-600 hover:underline font-medium"
                             >
-                                {m['developerPortal.guides.issueCredentials.issueVerifyStep.goBackToCreate']()}
+                                {m[
+                                    'developerPortal.guides.issueCredentials.issueVerifyStep.goBackToCreate'
+                                ]()}
                             </button>
                             .
                         </p>
@@ -944,7 +1037,11 @@ else:
                         </div>
 
                         <div>
-                            <p className="text-sm font-medium text-gray-700">{m['developerPortal.guides.issueCredentials.issueVerifyStep.apiTokenLabel']()}</p>
+                            <p className="text-sm font-medium text-gray-700">
+                                {m[
+                                    'developerPortal.guides.issueCredentials.issueVerifyStep.apiTokenLabel'
+                                ]()}
+                            </p>
 
                             <p className="text-xs text-gray-500">
                                 {apiToken ? (
@@ -953,7 +1050,11 @@ else:
                                         {displayTokenName}
                                     </span>
                                 ) : (
-                                    <span className="text-amber-600">{m['developerPortal.guides.issueCredentials.issueVerifyStep.selectTokenHint']()}</span>
+                                    <span className="text-amber-600">
+                                        {m[
+                                            'developerPortal.guides.issueCredentials.issueVerifyStep.selectTokenHint'
+                                        ]()}
+                                    </span>
                                 )}
                             </p>
                         </div>
@@ -977,13 +1078,19 @@ else:
                         {loadingGrants ? (
                             <div className="flex items-center gap-2 text-sm text-gray-500">
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                {m['developerPortal.guides.issueCredentials.issueVerifyStep.loadingTokens']()}
+                                {m[
+                                    'developerPortal.guides.issueCredentials.issueVerifyStep.loadingTokens'
+                                ]()}
                             </div>
                         ) : authGrants.length === 0 ? (
                             <p className="text-sm text-gray-500">
-                                {m['developerPortal.guides.issueCredentials.issueVerifyStep.noApiTokensFound']()}{' '}
+                                {m[
+                                    'developerPortal.guides.issueCredentials.issueVerifyStep.noApiTokensFound'
+                                ]()}{' '}
                                 <button onClick={onBack} className="text-cyan-600 hover:underline">
-                                    {m['developerPortal.guides.issueCredentials.issueVerifyStep.goBackToCreate']()}
+                                    {m[
+                                        'developerPortal.guides.issueCredentials.issueVerifyStep.goBackToCreate'
+                                    ]()}
                                 </button>
                                 .
                             </p>
@@ -1005,7 +1112,13 @@ else:
                                             </p>
 
                                             <p className="text-xs text-gray-500">
-                                                {m['developerPortal.guides.issueCredentials.apiTokenStep.createdLabel']({ date: new Date(grant.createdAt!).toLocaleDateString() })}
+                                                {m[
+                                                    'developerPortal.guides.issueCredentials.apiTokenStep.createdLabel'
+                                                ]({
+                                                    date: new Date(
+                                                        grant.createdAt!
+                                                    ).toLocaleDateString(),
+                                                })}
                                             </p>
                                         </div>
 
@@ -1024,14 +1137,20 @@ else:
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                     {m['developerPortal.guides.issueCredentials.issueVerifyStep.recipientLabel']()}
-                    <span className="text-gray-400 font-normal">{m['developerPortal.guides.issueCredentials.issueVerifyStep.recipientHint']()}</span>
+                    <span className="text-gray-400 font-normal">
+                        {m[
+                            'developerPortal.guides.issueCredentials.issueVerifyStep.recipientHint'
+                        ]()}
+                    </span>
                 </label>
 
                 <input
                     type="text"
                     value={recipientEmail}
                     onChange={e => setRecipientEmail(e.target.value)}
-                    placeholder={m['developerPortal.guides.issueCredentials.issueVerifyStep.recipientPlaceholder']()}
+                    placeholder={m[
+                        'developerPortal.guides.issueCredentials.issueVerifyStep.recipientPlaceholder'
+                    ]()}
                     className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
                     style={{ colorScheme: 'light' }}
                 />
@@ -1043,7 +1162,7 @@ else:
 
             {/* Code output */}
             <CodeOutputPanel
-                title={m["developerPortal.guides.issueCredentials.issueVerifyStep.yourCode"]()}
+                title={m['developerPortal.guides.issueCredentials.issueVerifyStep.yourCode']()}
                 snippets={{
                     typescript: codeSnippet,
                     python: pythonSnippet,
@@ -1060,11 +1179,15 @@ else:
 
                     <div className="flex-1">
                         <h4 className="font-medium text-gray-800 mb-1">
-                            {m['developerPortal.guides.issueCredentials.issueVerifyStep.checkCredentials']()}
+                            {m[
+                                'developerPortal.guides.issueCredentials.issueVerifyStep.checkCredentials'
+                            ]()}
                         </h4>
 
                         <p className="text-sm text-gray-600 mb-3">
-                            {m['developerPortal.guides.issueCredentials.issueVerifyStep.checkCredentialsDesc']()}
+                            {m[
+                                'developerPortal.guides.issueCredentials.issueVerifyStep.checkCredentialsDesc'
+                            ]()}
                         </p>
 
                         {!isPolling && !pollResult && (
@@ -1074,7 +1197,9 @@ else:
                                 className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
                                 <RefreshCw className="w-4 h-4" />
-                                {m['developerPortal.guides.issueCredentials.issueVerifyStep.checkButton']()}
+                                {m[
+                                    'developerPortal.guides.issueCredentials.issueVerifyStep.checkButton'
+                                ]()}
                             </button>
                         )}
 
@@ -1083,7 +1208,9 @@ else:
                                 <div className="flex items-center gap-2 text-indigo-600">
                                     <Loader2 className="w-4 h-4 animate-spin" />
                                     <span className="text-sm font-medium">
-                                        {m['developerPortal.guides.issueCredentials.issueVerifyStep.checkingLabel']()}
+                                        {m[
+                                            'developerPortal.guides.issueCredentials.issueVerifyStep.checkingLabel'
+                                        ]()}
                                     </span>
                                 </div>
 
@@ -1091,7 +1218,9 @@ else:
                                     onClick={stopPolling}
                                     className="text-sm text-gray-500 hover:text-gray-700"
                                 >
-                                    {m['developerPortal.guides.issueCredentials.issueVerifyStep.cancelButton']()}
+                                    {m[
+                                        'developerPortal.guides.issueCredentials.issueVerifyStep.cancelButton'
+                                    ]()}
                                 </button>
                             </div>
                         )}
@@ -1124,7 +1253,9 @@ else:
                                             onClick={startPolling}
                                             className="text-sm text-indigo-600 hover:underline mt-1"
                                         >
-                                            {m['developerPortal.guides.issueCredentials.issueVerifyStep.tryAgain']()}
+                                            {m[
+                                                'developerPortal.guides.issueCredentials.issueVerifyStep.tryAgain'
+                                            ]()}
                                         </button>
                                     )}
                                 </div>
@@ -1133,7 +1264,10 @@ else:
 
                         {!apiToken && (
                             <p className="text-xs text-amber-600 mt-2">
-                                {'⚠️'} {m['developerPortal.guides.issueCredentials.issueVerifyStep.noTokenWarning']()}
+                                {'⚠️'}{' '}
+                                {m[
+                                    'developerPortal.guides.issueCredentials.issueVerifyStep.noTokenWarning'
+                                ]()}
                             </p>
                         )}
                     </div>

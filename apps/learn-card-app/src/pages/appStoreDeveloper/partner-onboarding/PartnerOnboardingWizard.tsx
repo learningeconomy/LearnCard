@@ -62,7 +62,16 @@ interface StepIndicatorProps {
     onStepClick: (index: number) => void;
 }
 
-const STEP_TITLE_KEYS = ['developerPortal.onboarding.steps.step1.title','developerPortal.onboarding.steps.step2.title','developerPortal.onboarding.steps.step3.title','developerPortal.onboarding.steps.step4.title','developerPortal.onboarding.steps.step5.title','developerPortal.onboarding.steps.step6.title','developerPortal.onboarding.steps.step7.title','developerPortal.onboarding.steps.step8.title'];
+const STEP_TITLE_KEYS = [
+    'developerPortal.onboarding.steps.step1.title',
+    'developerPortal.onboarding.steps.step2.title',
+    'developerPortal.onboarding.steps.step3.title',
+    'developerPortal.onboarding.steps.step4.title',
+    'developerPortal.onboarding.steps.step5.title',
+    'developerPortal.onboarding.steps.step6.title',
+    'developerPortal.onboarding.steps.step7.title',
+    'developerPortal.onboarding.steps.step8.title',
+];
 
 const StepIndicator: React.FC<StepIndicatorProps> = ({ steps, currentStep, onStepClick }) => {
     return (
@@ -98,7 +107,9 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ steps, currentStep, onSte
                                 {isComplete ? <Check className="w-3.5 h-3.5" /> : index + 1}
                             </div>
 
-                            <span className="text-sm hidden sm:inline">{(m as any)[STEP_TITLE_KEYS[index]]()}</span>
+                            <span className="text-sm hidden sm:inline">
+                                {(m as any)[STEP_TITLE_KEYS[index]]()}
+                            </span>
 
                             <Icon className="w-4 h-4 sm:hidden" />
                         </button>
@@ -483,7 +494,9 @@ const PartnerOnboardingWizard: React.FC = () => {
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
             >
                 <ArrowLeft className="w-4 h-4" />
-                <span className="hidden sm:inline">{m['developerPortal.onboarding.wizard.allGuides']()}</span>
+                <span className="hidden sm:inline">
+                    {m['developerPortal.onboarding.wizard.allGuides']()}
+                </span>
             </button>
 
             <HeaderIntegrationSelector
@@ -502,7 +515,9 @@ const PartnerOnboardingWizard: React.FC = () => {
                 <div className="flex items-center justify-center min-h-[400px]">
                     <div className="text-center">
                         <Loader2 className="w-10 h-10 text-cyan-500 mx-auto animate-spin" />
-                        <p className="text-sm text-gray-500 mt-3">{m['developerPortal.onboarding.wizard.loadingIntegration']()}</p>
+                        <p className="text-sm text-gray-500 mt-3">
+                            {m['developerPortal.onboarding.wizard.loadingIntegration']()}
+                        </p>
                     </div>
                 </div>
             ) : state.isLive && state.project && currentIntegration ? (
@@ -526,10 +541,38 @@ const PartnerOnboardingWizard: React.FC = () => {
                     {/* Step Header */}
                     <div className="mb-6">
                         <h1 className="text-2xl font-bold text-gray-900 mb-1">
-                            {(() => { const idx = state.currentStep; const keys = ['developerPortal.onboarding.steps.step1','developerPortal.onboarding.steps.step2','developerPortal.onboarding.steps.step3','developerPortal.onboarding.steps.step4','developerPortal.onboarding.steps.step5','developerPortal.onboarding.steps.step6','developerPortal.onboarding.steps.step7','developerPortal.onboarding.steps.step8']; return (m as any)[keys[idx] + '.title'](); })()}
+                            {(() => {
+                                const idx = state.currentStep;
+                                const keys = [
+                                    'developerPortal.onboarding.steps.step1',
+                                    'developerPortal.onboarding.steps.step2',
+                                    'developerPortal.onboarding.steps.step3',
+                                    'developerPortal.onboarding.steps.step4',
+                                    'developerPortal.onboarding.steps.step5',
+                                    'developerPortal.onboarding.steps.step6',
+                                    'developerPortal.onboarding.steps.step7',
+                                    'developerPortal.onboarding.steps.step8',
+                                ];
+                                return (m as any)[keys[idx] + '.title']();
+                            })()}
                         </h1>
 
-                        <p className="text-gray-600">{(() => { const idx = state.currentStep; const keys = ['developerPortal.onboarding.steps.step1','developerPortal.onboarding.steps.step2','developerPortal.onboarding.steps.step3','developerPortal.onboarding.steps.step4','developerPortal.onboarding.steps.step5','developerPortal.onboarding.steps.step6','developerPortal.onboarding.steps.step7','developerPortal.onboarding.steps.step8']; return (m as any)[keys[idx] + '.description'](); })()}</p>
+                        <p className="text-gray-600">
+                            {(() => {
+                                const idx = state.currentStep;
+                                const keys = [
+                                    'developerPortal.onboarding.steps.step1',
+                                    'developerPortal.onboarding.steps.step2',
+                                    'developerPortal.onboarding.steps.step3',
+                                    'developerPortal.onboarding.steps.step4',
+                                    'developerPortal.onboarding.steps.step5',
+                                    'developerPortal.onboarding.steps.step6',
+                                    'developerPortal.onboarding.steps.step7',
+                                    'developerPortal.onboarding.steps.step8',
+                                ];
+                                return (m as any)[keys[idx] + '.description']();
+                            })()}
+                        </p>
                     </div>
 
                     {/* Step Content */}
@@ -543,7 +586,10 @@ const PartnerOnboardingWizard: React.FC = () => {
 
     return (
         <IonPage>
-            <AppStoreHeader title={m['developerPortal.onboarding.wizard.title']()} rightContent={headerContent} />
+            <AppStoreHeader
+                title={m['developerPortal.onboarding.wizard.title']()}
+                rightContent={headerContent}
+            />
 
             <IonContent>{wizardContent}</IonContent>
         </IonPage>
@@ -893,7 +939,9 @@ export const PartnerOnboardingWizardContent: React.FC<{
             <div className="flex items-center justify-center min-h-[400px]">
                 <div className="text-center">
                     <Loader2 className="w-10 h-10 text-cyan-500 mx-auto animate-spin" />
-                    <p className="text-sm text-gray-500 mt-3">{m['developerPortal.shell.loadingIntegration']()}</p>
+                    <p className="text-sm text-gray-500 mt-3">
+                        {m['developerPortal.shell.loadingIntegration']()}
+                    </p>
                 </div>
             </div>
         );
@@ -923,7 +971,9 @@ export const PartnerOnboardingWizardContent: React.FC<{
 
             {/* Step Header */}
             <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900 mb-1">{(m as any)[currentStepInfo.titleKey]()}</h1>
+                <h1 className="text-2xl font-bold text-gray-900 mb-1">
+                    {(m as any)[currentStepInfo.titleKey]()}
+                </h1>
 
                 <p className="text-gray-600">{(m as any)[currentStepInfo.descriptionKey]()}</p>
             </div>

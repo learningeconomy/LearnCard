@@ -1363,13 +1363,19 @@ export const validateTemplate = (template: OBv3CredentialTemplate): FieldValidat
             if (assoc.sourceAchievementId && !validIds.has(assoc.sourceAchievementId)) {
                 errors.push({
                     field: `associations.${i}.source`,
-                    message: m['developerPortal.credentialBuilder.validation.sourceAchievementNotFound'](),
+                    message:
+                        m[
+                            'developerPortal.credentialBuilder.validation.sourceAchievementNotFound'
+                        ](),
                 });
             }
             if (assoc.targetAchievementId && !validIds.has(assoc.targetAchievementId)) {
                 errors.push({
                     field: `associations.${i}.target`,
-                    message: m['developerPortal.credentialBuilder.validation.targetAchievementNotFound'](),
+                    message:
+                        m[
+                            'developerPortal.credentialBuilder.validation.targetAchievementNotFound'
+                        ](),
                 });
             }
         }
@@ -1399,7 +1405,10 @@ export const validateTemplate = (template: OBv3CredentialTemplate): FieldValidat
         !template.credentialSubject.achievement.name.value &&
         !template.credentialSubject.achievement.name.isDynamic
     ) {
-        errors.push({ field: 'achievement.name', message: m['developerPortal.credentialBuilder.validation.achievementNameRequired']() });
+        errors.push({
+            field: 'achievement.name',
+            message: m['developerPortal.credentialBuilder.validation.achievementNameRequired'](),
+        });
     }
 
     errors.push(...validateAchievementUrls(template.credentialSubject.achievement, 'achievement'));

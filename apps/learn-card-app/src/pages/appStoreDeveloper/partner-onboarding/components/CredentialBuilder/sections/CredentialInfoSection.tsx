@@ -39,8 +39,10 @@ export const CredentialInfoSection: React.FC<CredentialInfoSectionProps> = ({
             <FieldEditor
                 label={m['developerPortal.credentialBuilder.credentialInfo.name']()}
                 field={template.name || staticField('')}
-                onChange={(f) => updateField('name', f)}
-                placeholder={m['developerPortal.credentialBuilder.credentialInfo.namePlaceholder']()}
+                onChange={f => updateField('name', f)}
+                placeholder={m[
+                    'developerPortal.credentialBuilder.credentialInfo.namePlaceholder'
+                ]()}
                 helpText={m['developerPortal.credentialBuilder.credentialInfo.nameHelp']()}
                 required
                 showDynamicToggle={!disableDynamicFields}
@@ -49,8 +51,10 @@ export const CredentialInfoSection: React.FC<CredentialInfoSectionProps> = ({
             <FieldEditor
                 label={m['developerPortal.credentialBuilder.credentialInfo.description']()}
                 field={template.description || staticField('')}
-                onChange={(f) => updateField('description', f)}
-                placeholder={m['developerPortal.credentialBuilder.credentialInfo.descriptionPlaceholder']()}
+                onChange={f => updateField('description', f)}
+                placeholder={m[
+                    'developerPortal.credentialBuilder.credentialInfo.descriptionPlaceholder'
+                ]()}
                 helpText={m['developerPortal.credentialBuilder.credentialInfo.descriptionHelp']()}
                 type="textarea"
                 showDynamicToggle={!disableDynamicFields}
@@ -59,8 +63,10 @@ export const CredentialInfoSection: React.FC<CredentialInfoSectionProps> = ({
             <FieldEditor
                 label={m['developerPortal.credentialBuilder.credentialInfo.image']()}
                 field={template.image || staticField('')}
-                onChange={(f) => updateField('image', f)}
-                placeholder={m['developerPortal.credentialBuilder.credentialInfo.imagePlaceholder']()}
+                onChange={f => updateField('image', f)}
+                placeholder={m[
+                    'developerPortal.credentialBuilder.credentialInfo.imagePlaceholder'
+                ]()}
                 helpText={m['developerPortal.credentialBuilder.credentialInfo.imageHelp']()}
                 type="url"
                 enableFileUpload
@@ -70,7 +76,7 @@ export const CredentialInfoSection: React.FC<CredentialInfoSectionProps> = ({
             <FieldEditor
                 label={m['developerPortal.credentialBuilder.credentialInfo.id']()}
                 field={template.id || staticField('')}
-                onChange={(f) => updateField('id', f)}
+                onChange={f => updateField('id', f)}
                 placeholder={m['developerPortal.credentialBuilder.credentialInfo.idPlaceholder']()}
                 helpText={m['developerPortal.credentialBuilder.credentialInfo.idHelp']()}
                 showDynamicToggle={!disableDynamicFields}

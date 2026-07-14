@@ -7,13 +7,13 @@ import { User, Plus, X } from 'lucide-react';
 
 import * as m from '../../../../../../paraglide/messages.js';
 
-import { 
-    OBv3CredentialTemplate, 
-    CredentialSubjectTemplate, 
-    TemplateFieldValue, 
+import {
+    OBv3CredentialTemplate,
+    CredentialSubjectTemplate,
+    TemplateFieldValue,
     ResultTemplate,
-    staticField, 
-    systemField 
+    staticField,
+    systemField,
 } from '../types';
 import { FieldEditor, CollapsibleSection } from '../FieldEditor';
 
@@ -34,7 +34,10 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
 }) => {
     const subject = template.credentialSubject;
 
-    const updateSubject = (key: keyof CredentialSubjectTemplate, value: TemplateFieldValue | ResultTemplate[]) => {
+    const updateSubject = (
+        key: keyof CredentialSubjectTemplate,
+        value: TemplateFieldValue | ResultTemplate[]
+    ) => {
         onChange({
             ...template,
             credentialSubject: { ...subject, [key]: value },
@@ -49,7 +52,11 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
         updateSubject('result', [...(subject.result || []), newResult]);
     };
 
-    const updateResult = (index: number, field: keyof ResultTemplate, value: TemplateFieldValue) => {
+    const updateResult = (
+        index: number,
+        field: keyof ResultTemplate,
+        value: TemplateFieldValue
+    ) => {
         const results = [...(subject.result || [])];
         results[index] = { ...results[index], [field]: value };
         updateSubject('result', results);
@@ -71,38 +78,50 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
             <FieldEditor
                 label={m['developerPortal.credentialBuilder.recipient.recipientName']()}
                 field={subject.name || staticField('')}
-                onChange={(f) => updateSubject('name', f)}
-                placeholder={m['developerPortal.credentialBuilder.recipient.recipientNamePlaceholder']()}
+                onChange={f => updateSubject('name', f)}
+                placeholder={m[
+                    'developerPortal.credentialBuilder.recipient.recipientNamePlaceholder'
+                ]()}
                 helpText={m['developerPortal.credentialBuilder.recipient.recipientNameHelp']()}
                 showDynamicToggle={!disableDynamicFields}
             />
 
             <FieldEditor
                 label={m['developerPortal.credentialBuilder.recipient.recipientDid']()}
-                field={systemField('The recipient\'s Decentralized Identifier (DID) resolved from their email or wallet')}
+                field={systemField(
+                    "The recipient's Decentralized Identifier (DID) resolved from their email or wallet"
+                )}
                 onChange={() => {}}
                 helpText={m['developerPortal.credentialBuilder.recipient.recipientDidHelp']()}
             />
 
             {/* Activity Details */}
             <div className="mt-4 pt-4 border-t border-gray-100">
-                <h4 className="text-sm font-medium text-gray-700 mb-3">{m['developerPortal.credentialBuilder.recipient.activityDetails']()}</h4>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">
+                    {m['developerPortal.credentialBuilder.recipient.activityDetails']()}
+                </h4>
 
                 <div className="grid grid-cols-2 gap-3">
                     <FieldEditor
                         label={m['developerPortal.credentialBuilder.recipient.creditsEarned']()}
                         field={subject.creditsEarned || staticField('')}
-                        onChange={(f) => updateSubject('creditsEarned', f)}
-                        placeholder={m['developerPortal.credentialBuilder.recipient.creditsEarnedPlaceholder']()}
-                        helpText={m['developerPortal.credentialBuilder.recipient.creditsEarnedHelp']()}
+                        onChange={f => updateSubject('creditsEarned', f)}
+                        placeholder={m[
+                            'developerPortal.credentialBuilder.recipient.creditsEarnedPlaceholder'
+                        ]()}
+                        helpText={m[
+                            'developerPortal.credentialBuilder.recipient.creditsEarnedHelp'
+                        ]()}
                         showDynamicToggle={!disableDynamicFields}
                     />
 
                     <FieldEditor
                         label={m['developerPortal.credentialBuilder.recipient.term']()}
                         field={subject.term || staticField('')}
-                        onChange={(f) => updateSubject('term', f)}
-                        placeholder={m['developerPortal.credentialBuilder.recipient.termPlaceholder']()}
+                        onChange={f => updateSubject('term', f)}
+                        placeholder={m[
+                            'developerPortal.credentialBuilder.recipient.termPlaceholder'
+                        ]()}
                         helpText={m['developerPortal.credentialBuilder.recipient.termHelp']()}
                         showDynamicToggle={!disableDynamicFields}
                     />
@@ -110,35 +129,49 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
                     <FieldEditor
                         label={m['developerPortal.credentialBuilder.recipient.activityStartDate']()}
                         field={subject.activityStartDate || staticField('')}
-                        onChange={(f) => updateSubject('activityStartDate', f)}
-                        placeholder={m['developerPortal.credentialBuilder.recipient.activityStartDatePlaceholder']()}
-                        helpText={m['developerPortal.credentialBuilder.recipient.activityStartDateHelp']()}
+                        onChange={f => updateSubject('activityStartDate', f)}
+                        placeholder={m[
+                            'developerPortal.credentialBuilder.recipient.activityStartDatePlaceholder'
+                        ]()}
+                        helpText={m[
+                            'developerPortal.credentialBuilder.recipient.activityStartDateHelp'
+                        ]()}
                         showDynamicToggle={!disableDynamicFields}
                     />
 
                     <FieldEditor
                         label={m['developerPortal.credentialBuilder.recipient.activityEndDate']()}
                         field={subject.activityEndDate || staticField('')}
-                        onChange={(f) => updateSubject('activityEndDate', f)}
-                        placeholder={m['developerPortal.credentialBuilder.recipient.activityEndDatePlaceholder']()}
-                        helpText={m['developerPortal.credentialBuilder.recipient.activityEndDateHelp']()}
+                        onChange={f => updateSubject('activityEndDate', f)}
+                        placeholder={m[
+                            'developerPortal.credentialBuilder.recipient.activityEndDatePlaceholder'
+                        ]()}
+                        helpText={m[
+                            'developerPortal.credentialBuilder.recipient.activityEndDateHelp'
+                        ]()}
                         showDynamicToggle={!disableDynamicFields}
                     />
 
                     <FieldEditor
                         label={m['developerPortal.credentialBuilder.recipient.licenseNumber']()}
                         field={subject.licenseNumber || staticField('')}
-                        onChange={(f) => updateSubject('licenseNumber', f)}
-                        placeholder={m['developerPortal.credentialBuilder.recipient.licenseNumberPlaceholder']()}
-                        helpText={m['developerPortal.credentialBuilder.recipient.licenseNumberHelp']()}
+                        onChange={f => updateSubject('licenseNumber', f)}
+                        placeholder={m[
+                            'developerPortal.credentialBuilder.recipient.licenseNumberPlaceholder'
+                        ]()}
+                        helpText={m[
+                            'developerPortal.credentialBuilder.recipient.licenseNumberHelp'
+                        ]()}
                         showDynamicToggle={!disableDynamicFields}
                     />
 
                     <FieldEditor
                         label={m['developerPortal.credentialBuilder.recipient.role']()}
                         field={subject.role || staticField('')}
-                        onChange={(f) => updateSubject('role', f)}
-                        placeholder={m['developerPortal.credentialBuilder.recipient.rolePlaceholder']()}
+                        onChange={f => updateSubject('role', f)}
+                        placeholder={m[
+                            'developerPortal.credentialBuilder.recipient.rolePlaceholder'
+                        ]()}
                         helpText={m['developerPortal.credentialBuilder.recipient.roleHelp']()}
                         showDynamicToggle={!disableDynamicFields}
                     />
@@ -148,7 +181,9 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
             {/* Results (Grades/Scores) */}
             <div className="mt-4 pt-4 border-t border-gray-100">
                 <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-medium text-gray-700">{m['developerPortal.credentialBuilder.recipient.results']()}</h4>
+                    <h4 className="text-sm font-medium text-gray-700">
+                        {m['developerPortal.credentialBuilder.recipient.results']()}
+                    </h4>
 
                     <button
                         type="button"
@@ -165,14 +200,21 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
                 </p>
 
                 {(subject.result || []).length === 0 ? (
-                    <p className="text-xs text-gray-400 italic pl-3">{m['developerPortal.credentialBuilder.recipient.noResults']()}</p>
+                    <p className="text-xs text-gray-400 italic pl-3">
+                        {m['developerPortal.credentialBuilder.recipient.noResults']()}
+                    </p>
                 ) : (
                     <div className="space-y-4">
                         {(subject.result || []).map((result, index) => (
-                            <div key={result.id} className="pl-3 border-l-2 border-emerald-200 space-y-2">
+                            <div
+                                key={result.id}
+                                className="pl-3 border-l-2 border-emerald-200 space-y-2"
+                            >
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-medium text-emerald-700">
-                                        {m['developerPortal.credentialBuilder.recipient.resultCount']({ count: index + 1 })}
+                                        {m[
+                                            'developerPortal.credentialBuilder.recipient.resultCount'
+                                        ]({ count: index + 1 })}
                                     </span>
 
                                     <button
@@ -185,20 +227,32 @@ export const RecipientSection: React.FC<RecipientSectionProps> = ({
                                 </div>
 
                                 <FieldEditor
-                                    label={m['developerPortal.credentialBuilder.recipient.resultValue']()}
+                                    label={m[
+                                        'developerPortal.credentialBuilder.recipient.resultValue'
+                                    ]()}
                                     field={result.value || staticField('')}
-                                    onChange={(f) => updateResult(index, 'value', f)}
-                                    placeholder={m['developerPortal.credentialBuilder.recipient.resultValuePlaceholder']()}
-                                    helpText={m['developerPortal.credentialBuilder.recipient.resultValueHelp']()}
+                                    onChange={f => updateResult(index, 'value', f)}
+                                    placeholder={m[
+                                        'developerPortal.credentialBuilder.recipient.resultValuePlaceholder'
+                                    ]()}
+                                    helpText={m[
+                                        'developerPortal.credentialBuilder.recipient.resultValueHelp'
+                                    ]()}
                                     showDynamicToggle={!disableDynamicFields}
                                 />
 
                                 <FieldEditor
-                                    label={m['developerPortal.credentialBuilder.recipient.resultStatus']()}
+                                    label={m[
+                                        'developerPortal.credentialBuilder.recipient.resultStatus'
+                                    ]()}
                                     field={result.status || staticField('')}
-                                    onChange={(f) => updateResult(index, 'status', f)}
-                                    placeholder={m['developerPortal.credentialBuilder.recipient.resultStatusPlaceholder']()}
-                                    helpText={m['developerPortal.credentialBuilder.recipient.resultStatusHelp']()}
+                                    onChange={f => updateResult(index, 'status', f)}
+                                    placeholder={m[
+                                        'developerPortal.credentialBuilder.recipient.resultStatusPlaceholder'
+                                    ]()}
+                                    helpText={m[
+                                        'developerPortal.credentialBuilder.recipient.resultStatusHelp'
+                                    ]()}
                                     showDynamicToggle={!disableDynamicFields}
                                 />
                             </div>

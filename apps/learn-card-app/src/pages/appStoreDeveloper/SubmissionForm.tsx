@@ -337,7 +337,9 @@ const SubmissionForm: React.FC = () => {
             return true;
         } catch (error) {
             setSubmitError(
-                error instanceof Error ? error.message : m['developerPortal.submissionForm.failedToSaveDraft']()
+                error instanceof Error
+                    ? error.message
+                    : m['developerPortal.submissionForm.failedToSaveDraft']()
             );
             setIsSavingDraft(false);
             return false;
@@ -397,7 +399,9 @@ const SubmissionForm: React.FC = () => {
             setIsSubmitted(true);
         } catch (error) {
             setSubmitError(
-                error instanceof Error ? error.message : m['developerPortal.submissionForm.failedToSubmit']()
+                error instanceof Error
+                    ? error.message
+                    : m['developerPortal.submissionForm.failedToSubmit']()
             );
             setIsSubmitting(false);
         }
@@ -441,8 +445,12 @@ const SubmissionForm: React.FC = () => {
                         </h2>
                         <p className="text-gray-500 text-sm mb-6">
                             {isEditMode
-                                ? m['developerPortal.submissionForm.appUpdated']({ appName: formData.display_name })
-                                : m['developerPortal.submissionForm.appSavedAsDraft']({ appName: formData.display_name })}
+                                ? m['developerPortal.submissionForm.appUpdated']({
+                                      appName: formData.display_name,
+                                  })
+                                : m['developerPortal.submissionForm.appSavedAsDraft']({
+                                      appName: formData.display_name,
+                                  })}
                         </p>
                         <button
                             onClick={navigateToDashboard}
@@ -468,7 +476,9 @@ const SubmissionForm: React.FC = () => {
                             {m['developerPortal.submissionForm.submissionReceived']()}
                         </h2>
                         <p className="text-gray-500 text-sm mb-6">
-                            {m['developerPortal.submissionForm.appSubmittedForReview']({ appName: formData.display_name })}
+                            {m['developerPortal.submissionForm.appSubmittedForReview']({
+                                appName: formData.display_name,
+                            })}
                         </p>
                         <div className="flex gap-3 justify-center">
                             <button
@@ -512,7 +522,9 @@ const SubmissionForm: React.FC = () => {
                         <div className="mb-5 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
                             <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                             <div>
-                                <p className="text-sm font-medium text-red-800">{m['developerPortal.submissionForm.error']()}</p>
+                                <p className="text-sm font-medium text-red-800">
+                                    {m['developerPortal.submissionForm.error']()}
+                                </p>
                                 <p className="text-sm text-red-700 mt-0.5">{submitError}</p>
                             </div>
                         </div>
@@ -600,7 +612,9 @@ const SubmissionForm: React.FC = () => {
                                             </>
                                         ) : (
                                             <>
-                                                {m['developerPortal.components.partnerDashboard.submitForReview']()}
+                                                {m[
+                                                    'developerPortal.components.partnerDashboard.submitForReview'
+                                                ]()}
                                                 <Send className="w-4 h-4" />
                                             </>
                                         )}

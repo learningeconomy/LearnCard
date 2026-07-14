@@ -89,11 +89,15 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
 
                         <div>
                             <label className="block text-sm font-medium text-gray-600 mb-1">
-                                {m['developerPortal.components.launchConfigStep.permissionsNeeded']()}
+                                {m[
+                                    'developerPortal.components.launchConfigStep.permissionsNeeded'
+                                ]()}
                             </label>
 
                             <p className="text-xs text-gray-400 mb-2">
-                                {m['developerPortal.components.launchConfigStep.permissionsNeededDesc']()}
+                                {m[
+                                    'developerPortal.components.launchConfigStep.permissionsNeededDesc'
+                                ]()}
                             </p>
 
                             <div className="space-y-2">
@@ -137,12 +141,20 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
 
                         <div>
                             <label className="block text-sm font-medium text-gray-600 mb-1">
-                                {m['developerPortal.components.launchConfigStep.consentFlowContract']()}{' '}
-                                <span className="text-gray-400 font-normal">{m['developerPortal.components.createConsentContractModal.optional']()}</span>
+                                {m[
+                                    'developerPortal.components.launchConfigStep.consentFlowContract'
+                                ]()}{' '}
+                                <span className="text-gray-400 font-normal">
+                                    {m[
+                                        'developerPortal.components.createConsentContractModal.optional'
+                                    ]()}
+                                </span>
                             </label>
 
                             <p className="text-xs text-gray-400 mb-2">
-                                {m['developerPortal.components.launchConfigStep.consentFlowContractDesc']()}
+                                {m[
+                                    'developerPortal.components.launchConfigStep.consentFlowContractDesc'
+                                ]()}
                             </p>
 
                             <ConsentFlowContractSelector
@@ -155,11 +167,25 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                             {selectedContract && (
                                 <div className="mt-3 p-3 bg-cyan-50 border border-cyan-100 rounded-lg">
                                     <p className="text-xs text-cyan-700">
-                                        <strong>{m['developerPortal.components.launchConfigStep.onInstall']()}</strong> {m['developerPortal.components.launchConfigStep.onInstallDesc']()}
+                                        <strong>
+                                            {m[
+                                                'developerPortal.components.launchConfigStep.onInstall'
+                                            ]()}
+                                        </strong>{' '}
+                                        {m[
+                                            'developerPortal.components.launchConfigStep.onInstallDesc'
+                                        ]()}
                                     </p>
 
                                     <p className="text-xs text-cyan-700 mt-1">
-                                        <strong>{m['developerPortal.components.launchConfigStep.onUninstall']()}</strong> {m['developerPortal.components.launchConfigStep.onUninstallDesc']()}
+                                        <strong>
+                                            {m[
+                                                'developerPortal.components.launchConfigStep.onUninstall'
+                                            ]()}
+                                        </strong>{' '}
+                                        {m[
+                                            'developerPortal.components.launchConfigStep.onUninstallDesc'
+                                        ]()}
                                     </p>
                                 </div>
                             )}
@@ -224,10 +250,14 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                             <div className="flex items-center justify-between gap-4">
                                 <div className="flex-1 pr-4">
                                     <p className="text-sm font-medium text-gray-700">
-                                        {m['developerPortal.components.launchConfigStep.skipInstallation']()}
+                                        {m[
+                                            'developerPortal.components.launchConfigStep.skipInstallation'
+                                        ]()}
                                     </p>
                                     <p className="text-xs text-gray-500 mt-0.5">
-                                        {m['developerPortal.components.launchConfigStep.skipInstallationDesc']()}
+                                        {m[
+                                            'developerPortal.components.launchConfigStep.skipInstallationDesc'
+                                        ]()}
                                     </p>
                                 </div>
                                 <IonToggle
@@ -235,7 +265,9 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                     onIonChange={e =>
                                         updateConfig({ skipInstallation: e.detail.checked })
                                     }
-                                    aria-label={m['developerPortal.components.launchConfigStep.skipInstallation']()}
+                                    aria-label={m[
+                                        'developerPortal.components.launchConfigStep.skipInstallation'
+                                    ]()}
                                 />
                             </div>
                         )}
@@ -287,7 +319,9 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                         {selectedContract && (
                             <div className="space-y-4">
                                 <label className="block text-sm font-medium text-gray-600">
-                                    {m['developerPortal.components.launchConfigStep.contractPermissions']()}
+                                    {m[
+                                        'developerPortal.components.launchConfigStep.contractPermissions'
+                                    ]()}
                                 </label>
 
                                 {/* Read Permissions */}
@@ -295,7 +329,9 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                     <div className="flex items-center gap-2 mb-3">
                                         <BookOpen className="w-4 h-4 text-cyan-600" />
                                         <span className="text-sm font-medium text-cyan-700">
-                                            {m['developerPortal.components.launchConfigStep.readAccess']()}
+                                            {m[
+                                                'developerPortal.components.launchConfigStep.readAccess'
+                                            ]()}
                                         </span>
                                     </div>
 
@@ -321,7 +357,9 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                         </div>
                                     ) : (
                                         <p className="text-xs text-cyan-600 italic">
-                                            {m['developerPortal.components.launchConfigStep.noReadPermissions']()}
+                                            {m[
+                                                'developerPortal.components.launchConfigStep.noReadPermissions'
+                                            ]()}
                                         </p>
                                     )}
                                 </div>
@@ -331,7 +369,9 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                     <div className="flex items-center gap-2 mb-3">
                                         <PenTool className="w-4 h-4 text-emerald-600" />
                                         <span className="text-sm font-medium text-emerald-700">
-                                            {m['developerPortal.components.launchConfigStep.writeAccess']()}
+                                            {m[
+                                                'developerPortal.components.launchConfigStep.writeAccess'
+                                            ]()}
                                         </span>
                                     </div>
 
@@ -357,7 +397,9 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                         </div>
                                     ) : (
                                         <p className="text-xs text-emerald-600 italic">
-                                            {m['developerPortal.components.launchConfigStep.noWritePermissions']()}
+                                            {m[
+                                                'developerPortal.components.launchConfigStep.noWritePermissions'
+                                            ]()}
                                         </p>
                                     )}
                                 </div>
@@ -367,7 +409,9 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                         {!selectedContract && config.contractUri && (
                             <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                                 <p className="text-sm text-gray-500 italic">
-                                    {m['developerPortal.components.launchConfigStep.selectContractToView']()}
+                                    {m[
+                                        'developerPortal.components.launchConfigStep.selectContractToView'
+                                    ]()}
                                 </p>
                             </div>
                         )}
@@ -382,10 +426,16 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                 <Server className="w-5 h-5 text-emerald-600 flex-shrink-0" />
 
                                 <div className="text-sm text-emerald-800">
-                                    <p className="font-medium">{m['developerPortal.components.launchConfigStep.serverToServer']()}</p>
+                                    <p className="font-medium">
+                                        {m[
+                                            'developerPortal.components.launchConfigStep.serverToServer'
+                                        ]()}
+                                    </p>
 
                                     <p className="mt-1">
-                                        {m['developerPortal.components.launchConfigStep.serverToServerDesc']()}
+                                        {m[
+                                            'developerPortal.components.launchConfigStep.serverToServerDesc'
+                                        ]()}
                                     </p>
                                 </div>
                             </div>
@@ -401,10 +451,16 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                 <Sparkles className="w-5 h-5 text-violet-600 flex-shrink-0" />
 
                                 <div className="text-sm text-violet-800">
-                                    <p className="font-medium">{m['developerPortal.components.launchConfigStep.aiTutorIntegration']()}</p>
+                                    <p className="font-medium">
+                                        {m[
+                                            'developerPortal.components.launchConfigStep.aiTutorIntegration'
+                                        ]()}
+                                    </p>
 
                                     <p className="mt-1">
-                                        {m['developerPortal.components.launchConfigStep.aiTutorIntegrationDesc']()}
+                                        {m[
+                                            'developerPortal.components.launchConfigStep.aiTutorIntegrationDesc'
+                                        ]()}
                                     </p>
                                 </div>
                             </div>
@@ -412,7 +468,8 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
 
                         <div>
                             <label className="block text-sm font-medium text-gray-600 mb-1">
-                                {m['developerPortal.components.launchConfigStep.aiTutorUrl']()} <span className="text-red-500">*</span>
+                                {m['developerPortal.components.launchConfigStep.aiTutorUrl']()}{' '}
+                                <span className="text-red-500">*</span>
                             </label>
 
                             <input
@@ -450,13 +507,33 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                                 <Info className="w-5 h-5 text-gray-500 flex-shrink-0" />
 
                                 <div className="text-sm text-gray-600">
-                                    <p className="font-medium">{m['developerPortal.components.launchConfigStep.howAiTutorWorks']()}</p>
+                                    <p className="font-medium">
+                                        {m[
+                                            'developerPortal.components.launchConfigStep.howAiTutorWorks'
+                                        ]()}
+                                    </p>
 
                                     <ol className="mt-2 space-y-1 list-decimal list-inside text-xs">
-                                        <li>{m['developerPortal.components.launchConfigStep.aiTutorStep1']()}</li>
-                                        <li>{m['developerPortal.components.launchConfigStep.aiTutorStep2']()}</li>
-                                        <li>{m['developerPortal.components.launchConfigStep.aiTutorStep3']()}</li>
-                                        <li>{m['developerPortal.components.launchConfigStep.aiTutorStep4']()}</li>
+                                        <li>
+                                            {m[
+                                                'developerPortal.components.launchConfigStep.aiTutorStep1'
+                                            ]()}
+                                        </li>
+                                        <li>
+                                            {m[
+                                                'developerPortal.components.launchConfigStep.aiTutorStep2'
+                                            ]()}
+                                        </li>
+                                        <li>
+                                            {m[
+                                                'developerPortal.components.launchConfigStep.aiTutorStep3'
+                                            ]()}
+                                        </li>
+                                        <li>
+                                            {m[
+                                                'developerPortal.components.launchConfigStep.aiTutorStep4'
+                                            ]()}
+                                        </li>
                                     </ol>
                                 </div>
                             </div>
@@ -473,13 +550,17 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
         <div className="space-y-6">
             <div className="text-center mb-6">
                 <div className="flex items-center justify-center gap-2">
-                    <h2 className="text-xl font-semibold text-gray-700">{m['developerPortal.components.launchConfigStep.title']()}</h2>
+                    <h2 className="text-xl font-semibold text-gray-700">
+                        {m['developerPortal.components.launchConfigStep.title']()}
+                    </h2>
 
                     {data.launch_type && (
                         <button
                             onClick={() => setShowGuide(true)}
                             className="p-1.5 text-cyan-600 hover:bg-cyan-50 rounded-lg transition-colors"
-                            title={m['developerPortal.components.launchConfigStep.viewIntegrationGuide']()}
+                            title={m[
+                                'developerPortal.components.launchConfigStep.viewIntegrationGuide'
+                            ]()}
                         >
                             <HelpCircle className="w-5 h-5" />
                         </button>
@@ -507,7 +588,9 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                         </h4>
 
                         <p className="text-xs text-gray-500 mt-0.5">
-                            {m['developerPortal.components.launchConfigStep.needHelpIntegratingDesc']()}
+                            {m[
+                                'developerPortal.components.launchConfigStep.needHelpIntegratingDesc'
+                            ]()}
                         </p>
                     </div>
 
@@ -524,7 +607,9 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                 <div className="flex items-center gap-2 mb-2">
                     <Code className="w-4 h-4 text-gray-400" />
 
-                    <span className="text-sm font-medium text-gray-500">{m['developerPortal.components.launchConfigStep.configPreview']()}</span>
+                    <span className="text-sm font-medium text-gray-500">
+                        {m['developerPortal.components.launchConfigStep.configPreview']()}
+                    </span>
                 </div>
 
                 <pre className="p-4 bg-gray-800 text-gray-100 rounded-xl text-xs overflow-x-auto">
@@ -538,10 +623,14 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
                     <div className="flex items-center justify-between">
                         <div>
                             <h4 className="text-sm font-medium text-indigo-800">
-                                {m['developerPortal.components.launchConfigStep.testYourIntegration']()}
+                                {m[
+                                    'developerPortal.components.launchConfigStep.testYourIntegration'
+                                ]()}
                             </h4>
                             <p className="text-xs text-indigo-600 mt-0.5">
-                                {m['developerPortal.components.launchConfigStep.testYourIntegrationDesc']()}
+                                {m[
+                                    'developerPortal.components.launchConfigStep.testYourIntegrationDesc'
+                                ]()}
                             </p>
                         </div>
 

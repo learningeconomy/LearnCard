@@ -222,7 +222,9 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-gray-800">{m['developerPortal.onboarding.branding.profileImage']()}</h3>
+                        <h3 className="font-semibold text-gray-800">
+                            {m['developerPortal.onboarding.branding.profileImage']()}
+                        </h3>
                         <p className="text-sm text-gray-500">
                             {m['developerPortal.onboarding.branding.profileImageDesc']()}
                         </p>
@@ -256,7 +258,9 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
                             ) : (
                                 <>
                                     <Upload className="w-6 h-6" />
-                                    <span className="text-xs">{m['developerPortal.onboarding.branding.upload']()}</span>
+                                    <span className="text-xs">
+                                        {m['developerPortal.onboarding.branding.upload']()}
+                                    </span>
                                 </>
                             )}
                         </button>
@@ -277,7 +281,9 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-gray-800">{m['developerPortal.onboarding.branding.profileInfo']()}</h3>
+                        <h3 className="font-semibold text-gray-800">
+                            {m['developerPortal.onboarding.branding.profileInfo']()}
+                        </h3>
                         <p className="text-sm text-gray-500">
                             {m['developerPortal.onboarding.branding.profileInfoDesc']()}
                         </p>
@@ -287,7 +293,8 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
                 <div className="space-y-3">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {m['developerPortal.onboarding.branding.displayName']()} <span className="text-red-500">*</span>
+                            {m['developerPortal.onboarding.branding.displayName']()}{' '}
+                            <span className="text-red-500">*</span>
                         </label>
 
                         <input
@@ -308,7 +315,9 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
                             type="text"
                             value={shortBio}
                             onChange={e => setShortBio(e.target.value)}
-                            placeholder={m['developerPortal.onboarding.branding.shortBioPlaceholder']()}
+                            placeholder={m[
+                                'developerPortal.onboarding.branding.shortBioPlaceholder'
+                            ]()}
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
                         />
                     </div>
@@ -321,7 +330,9 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
                         <textarea
                             value={bio}
                             onChange={e => setBio(e.target.value)}
-                            placeholder={m['developerPortal.onboarding.branding.fullBioPlaceholder']()}
+                            placeholder={m[
+                                'developerPortal.onboarding.branding.fullBioPlaceholder'
+                            ]()}
                             rows={3}
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none resize-none"
                         />
@@ -337,7 +348,9 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-gray-800">{m['developerPortal.onboarding.branding.cardColors']()}</h3>
+                        <h3 className="font-semibold text-gray-800">
+                            {m['developerPortal.onboarding.branding.cardColors']()}
+                        </h3>
                         <p className="text-sm text-gray-500">
                             {m['developerPortal.onboarding.branding.cardColorsDesc']()}
                         </p>
@@ -360,14 +373,18 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
                                 style={{ backgroundColor: color.primary }}
                             />
 
-                            <span className="text-xs text-gray-600">{getColorLabel(color.name)}</span>
+                            <span className="text-xs text-gray-600">
+                                {getColorLabel(color.name)}
+                            </span>
                         </button>
                     ))}
                 </div>
 
                 <div className="flex gap-3">
                     <div className="flex-1">
-                        <label className="block text-xs text-gray-500 mb-1">{m['developerPortal.onboarding.branding.cardBgInput']()}</label>
+                        <label className="block text-xs text-gray-500 mb-1">
+                            {m['developerPortal.onboarding.branding.cardBgInput']()}
+                        </label>
 
                         <div className="flex items-center gap-2">
                             <input
@@ -397,7 +414,9 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
                     </div>
 
                     <div className="flex-1">
-                        <label className="block text-xs text-gray-500 mb-1">{m['developerPortal.onboarding.branding.accentColorInput']()}</label>
+                        <label className="block text-xs text-gray-500 mb-1">
+                            {m['developerPortal.onboarding.branding.accentColorInput']()}
+                        </label>
 
                         <div className="flex items-center gap-2">
                             <input
@@ -430,7 +449,9 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-gray-800">{m['developerPortal.onboarding.branding.cardBackground']()}</h3>
+                        <h3 className="font-semibold text-gray-800">
+                            {m['developerPortal.onboarding.branding.cardBackground']()}
+                        </h3>
                         <p className="text-sm text-gray-500">
                             {m['developerPortal.onboarding.branding.cardBackgroundDesc']()}
                         </p>
@@ -483,7 +504,9 @@ export const BrandingStep: React.FC<BrandingStepProps> = ({ branding, onComplete
 
             {/* Preview */}
             <div className="p-4 bg-gray-50 rounded-xl">
-                <p className="text-xs text-gray-500 mb-3">{m['developerPortal.onboarding.branding.preview']()}</p>
+                <p className="text-xs text-gray-500 mb-3">
+                    {m['developerPortal.onboarding.branding.preview']()}
+                </p>
 
                 <div
                     className="p-4 rounded-xl relative overflow-hidden"

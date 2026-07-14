@@ -238,7 +238,9 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-lg font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.appListings.title']()}</h2>
+                    <h2 className="text-lg font-semibold text-gray-800">
+                        {m['developerPortal.dashboards.tabs.appListings.title']()}
+                    </h2>
                     <p className="text-sm text-gray-500">
                         {m['developerPortal.dashboards.tabs.appListings.description']()}
                     </p>
@@ -274,7 +276,9 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                             type="text"
                             value={newListingName}
                             onChange={e => setNewListingName(e.target.value)}
-                            placeholder={m['developerPortal.dashboards.tabs.appListings.appNamePlaceholder']()}
+                            placeholder={m[
+                                'developerPortal.dashboards.tabs.appListings.appNamePlaceholder'
+                            ]()}
                             className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             autoFocus
                             onKeyDown={e => {
@@ -324,7 +328,9 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
             {!isLoading && (!listings || listings.length === 0) && !isCreating && (
                 <div className="p-8 bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl text-center">
                     <Layout className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-600 font-medium mb-1">{m['developerPortal.dashboards.tabs.appListings.noAppsYet']()}</p>
+                    <p className="text-gray-600 font-medium mb-1">
+                        {m['developerPortal.dashboards.tabs.appListings.noAppsYet']()}
+                    </p>
                     <p className="text-sm text-gray-500 mb-4">
                         {m['developerPortal.dashboards.tabs.appListings.noAppsYetDesc']()}
                     </p>
@@ -462,7 +468,9 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                             <div>
                                                 <label className="text-xs font-medium text-gray-500">
-                                                    {m['developerPortal.dashboards.tabs.appListings.listingId']()}
+                                                    {m[
+                                                        'developerPortal.dashboards.tabs.appListings.listingId'
+                                                    ]()}
                                                 </label>
                                                 <div className="flex items-center gap-2 mt-1">
                                                     <code className="text-sm text-gray-700 font-mono truncate">
@@ -488,7 +496,9 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
 
                                             <div>
                                                 <label className="text-xs font-medium text-gray-500">
-                                                    {m['developerPortal.dashboards.tabs.appListings.launchUrl']()}
+                                                    {m[
+                                                        'developerPortal.dashboards.tabs.appListings.launchUrl'
+                                                    ]()}
                                                 </label>
                                                 <div className="flex items-center gap-2 mt-1">
                                                     {launchUrl ? (
@@ -507,7 +517,9 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                                         </>
                                                     ) : (
                                                         <span className="text-sm text-amber-600">
-                                                            {m['developerPortal.dashboards.tabs.appListings.notConfigured']()}
+                                                            {m[
+                                                                'developerPortal.dashboards.tabs.appListings.notConfigured'
+                                                            ]()}
                                                         </span>
                                                     )}
                                                 </div>
@@ -517,7 +529,9 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                         {listing.full_description && (
                                             <div>
                                                 <label className="text-xs font-medium text-gray-500">
-                                                    {m['developerPortal.dashboards.tabs.appListings.descriptionLabel']()}
+                                                    {m[
+                                                        'developerPortal.dashboards.tabs.appListings.descriptionLabel'
+                                                    ]()}
                                                 </label>
                                                 <p className="text-sm text-gray-600 mt-1">
                                                     {listing.full_description}
@@ -533,7 +547,9 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    {m['developerPortal.dashboards.tabs.appListings.appName']()}
+                                                    {m[
+                                                        'developerPortal.dashboards.tabs.appListings.appName'
+                                                    ]()}
                                                 </label>
                                                 <input
                                                     type="text"
@@ -550,7 +566,9 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
 
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    {m['developerPortal.dashboards.tabs.appListings.tagline']()}
+                                                    {m[
+                                                        'developerPortal.dashboards.tabs.appListings.tagline'
+                                                    ]()}
                                                 </label>
                                                 <input
                                                     type="text"
@@ -561,7 +579,9 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                                             tagline: e.target.value,
                                                         }))
                                                     }
-                                                    placeholder={m['developerPortal.dashboards.tabs.appListings.taglinePlaceholder']()}
+                                                    placeholder={m[
+                                                        'developerPortal.dashboards.tabs.appListings.taglinePlaceholder'
+                                                    ]()}
                                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                                 />
                                             </div>
@@ -569,7 +589,9 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
 
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                {m['developerPortal.dashboards.tabs.appListings.launchUrl']()}
+                                                {m[
+                                                    'developerPortal.dashboards.tabs.appListings.launchUrl'
+                                                ]()}
                                             </label>
                                             <div className="flex items-center gap-2">
                                                 <Globe className="w-4 h-4 text-gray-400" />
@@ -587,13 +609,17 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                                 />
                                             </div>
                                             <p className="text-xs text-gray-500 mt-1">
-                                                {m['developerPortal.dashboards.tabs.appListings.launchUrlHint']()}
+                                                {m[
+                                                    'developerPortal.dashboards.tabs.appListings.launchUrlHint'
+                                                ]()}
                                             </p>
                                         </div>
 
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                {m['developerPortal.dashboards.tabs.appListings.descriptionLabel']()}
+                                                {m[
+                                                    'developerPortal.dashboards.tabs.appListings.descriptionLabel'
+                                                ]()}
                                             </label>
                                             <textarea
                                                 value={editForm.full_description}
@@ -604,21 +630,27 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                                     }))
                                                 }
                                                 rows={3}
-                                                placeholder={m['developerPortal.dashboards.tabs.appListings.descriptionPlaceholder']()}
+                                                placeholder={m[
+                                                    'developerPortal.dashboards.tabs.appListings.descriptionPlaceholder'
+                                                ]()}
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                             />
                                         </div>
 
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                {m['developerPortal.dashboards.tabs.appListings.appIconUrl']()}
+                                                {m[
+                                                    'developerPortal.dashboards.tabs.appListings.appIconUrl'
+                                                ]()}
                                             </label>
                                             <div className="flex items-center gap-3">
                                                 <div className="w-16 h-16 rounded-xl bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                                                     {editForm.icon_url ? (
                                                         <img
                                                             src={editForm.icon_url}
-                                                            alt={m['developerPortal.dashboards.tabs.appListings.iconAlt']()}
+                                                            alt={m[
+                                                                'developerPortal.dashboards.tabs.appListings.iconAlt'
+                                                            ]()}
                                                             className="w-full h-full object-cover"
                                                         />
                                                     ) : (
@@ -641,7 +673,9 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                                 onClick={() => setEditingListing(null)}
                                                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
                                             >
-                                                {m['developerPortal.dashboards.tabs.appListings.cancel']()}
+                                                {m[
+                                                    'developerPortal.dashboards.tabs.appListings.cancel'
+                                                ]()}
                                             </button>
 
                                             <button
@@ -654,7 +688,9 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                                 ) : (
                                                     <Check className="w-4 h-4" />
                                                 )}
-                                                {m['developerPortal.dashboards.tabs.appListings.saveChanges']()}
+                                                {m[
+                                                    'developerPortal.dashboards.tabs.appListings.saveChanges'
+                                                ]()}
                                             </button>
                                         </div>
                                     </div>
@@ -672,7 +708,9 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                         <Layout className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
                         <div>
                             <p className="font-medium text-violet-800">
-                                {m['developerPortal.dashboards.tabs.appListings.selectedApp']({ name: selectedListing.display_name })}
+                                {m['developerPortal.dashboards.tabs.appListings.selectedApp']({
+                                    name: selectedListing.display_name,
+                                })}
                             </p>
                             <p className="text-sm text-violet-700 mt-0.5">
                                 {m['developerPortal.dashboards.tabs.appListings.selectedAppHint']()}

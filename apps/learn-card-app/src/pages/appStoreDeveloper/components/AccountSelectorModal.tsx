@@ -29,7 +29,10 @@ export const AccountSelectorModal: React.FC<AccountSelectorModalProps> = ({
             <div className="flex flex-col h-full bg-white rounded-t-3xl">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-100">
-                    <h2 className="text-lg font-semibold text-gray-800">{title || m['developerPortal.components.accountSelectorModal.switchAccount']()}</h2>
+                    <h2 className="text-lg font-semibold text-gray-800">
+                        {title ||
+                            m['developerPortal.components.accountSelectorModal.switchAccount']()}
+                    </h2>
 
                     <button
                         onClick={onClose}
@@ -41,11 +44,7 @@ export const AccountSelectorModal: React.FC<AccountSelectorModalProps> = ({
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-4">
-                    <AccountSelector
-                        {...selectorProps}
-                        compact={true}
-                        showInfoBanner={false}
-                    />
+                    <AccountSelector {...selectorProps} compact={true} showInfoBanner={false} />
                 </div>
             </div>
         </IonModal>

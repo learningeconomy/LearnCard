@@ -36,7 +36,8 @@ export const GoLiveStep: React.FC<GoLiveStepProps> = ({
     const [isComplete, setIsComplete] = useState(false);
 
     const resolvedTitle = title ?? m['developerPortal.guides.goLive.defaultTitle']();
-    const resolvedDescription = description ?? m['developerPortal.guides.goLive.defaultDescription']();
+    const resolvedDescription =
+        description ?? m['developerPortal.guides.goLive.defaultDescription']();
 
     const handleGoLive = async () => {
         if (!integration) {
@@ -85,7 +86,9 @@ export const GoLiveStep: React.FC<GoLiveStepProps> = ({
                     <PartyPopper className="w-10 h-10 text-emerald-600" />
                 </div>
 
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">{m['developerPortal.guides.goLive.successTitle']()}</h2>
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                    {m['developerPortal.guides.goLive.successTitle']()}
+                </h2>
 
                 <p className="text-gray-500 mb-6">
                     {m['developerPortal.guides.goLive.successDescription']()}
@@ -111,7 +114,9 @@ export const GoLiveStep: React.FC<GoLiveStepProps> = ({
             {/* Completed Items Checklist */}
             {completedItems.length > 0 && (
                 <div className="bg-gray-50 rounded-xl p-6">
-                    <h3 className="font-medium text-gray-800 mb-4">{m['developerPortal.guides.goLive.setupComplete']()}</h3>
+                    <h3 className="font-medium text-gray-800 mb-4">
+                        {m['developerPortal.guides.goLive.setupComplete']()}
+                    </h3>
 
                     <div className="space-y-3">
                         {completedItems.map((item, index) => (
@@ -134,7 +139,9 @@ export const GoLiveStep: React.FC<GoLiveStepProps> = ({
 
                         <div>
                             <p className="font-medium text-gray-800">{integration.name}</p>
-                            <p className="text-sm text-cyan-700">{m['developerPortal.guides.goLive.readyToActivate']()}</p>
+                            <p className="text-sm text-cyan-700">
+                                {m['developerPortal.guides.goLive.readyToActivate']()}
+                            </p>
                         </div>
                     </div>
                 </div>

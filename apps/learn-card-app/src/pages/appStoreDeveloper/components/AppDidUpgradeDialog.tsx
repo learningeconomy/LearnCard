@@ -44,7 +44,9 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
         } catch (error) {
             log.error('Upgrade failed:', error);
             setUpgradeError(
-                error instanceof Error ? error.message : m['developerPortal.components.appDidUpgradeDialog.unexpectedError']()
+                error instanceof Error
+                    ? error.message
+                    : m['developerPortal.components.appDidUpgradeDialog.unexpectedError']()
             );
         } finally {
             setIsUpgrading(false);
@@ -64,7 +66,9 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
                             {m['developerPortal.components.appDidUpgradeDialog.upgradeComplete']()}
                         </h2>
                         <p className="text-sm text-gray-500">
-                            {m['developerPortal.components.appDidUpgradeDialog.upgradeCompleteDesc']({ name: listing.display_name })}
+                            {m[
+                                'developerPortal.components.appDidUpgradeDialog.upgradeCompleteDesc'
+                            ]({ name: listing.display_name })}
                         </p>
                     </div>
                 </div>
@@ -100,9 +104,13 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
                         </div>
                         <div>
                             <h2 className="text-lg font-semibold text-gray-800">
-                                {m['developerPortal.components.appDidUpgradeDialog.upgradeYourApp']()}
+                                {m[
+                                    'developerPortal.components.appDidUpgradeDialog.upgradeYourApp'
+                                ]()}
                             </h2>
-                            <p className="text-sm text-gray-500">{m['developerPortal.components.appDidUpgradeDialog.oneTimeSetup']()}</p>
+                            <p className="text-sm text-gray-500">
+                                {m['developerPortal.components.appDidUpgradeDialog.oneTimeSetup']()}
+                            </p>
                         </div>
                     </div>
 
@@ -128,7 +136,9 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
 
                     <div className="space-y-3 mb-6">
                         <p className="text-sm text-gray-600">
-                            {m['developerPortal.components.appDidUpgradeDialog.upgradeDescription']()}
+                            {m[
+                                'developerPortal.components.appDidUpgradeDialog.upgradeDescription'
+                            ]()}
                         </p>
 
                         <div className="p-3 bg-violet-50 border border-violet-100 rounded-xl">
@@ -138,15 +148,27 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
                             <ul className="text-sm text-violet-700 space-y-1">
                                 <li className="flex items-start gap-2">
                                     <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                    <span>{m['developerPortal.components.appDidUpgradeDialog.generateUniqueId']()}</span>
+                                    <span>
+                                        {m[
+                                            'developerPortal.components.appDidUpgradeDialog.generateUniqueId'
+                                        ]()}
+                                    </span>
                                 </li>
                                 <li className="flex items-start gap-2">
                                     <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                    <span>{m['developerPortal.components.appDidUpgradeDialog.createDedicatedSigning']()}</span>
+                                    <span>
+                                        {m[
+                                            'developerPortal.components.appDidUpgradeDialog.createDedicatedSigning'
+                                        ]()}
+                                    </span>
                                 </li>
                                 <li className="flex items-start gap-2">
                                     <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                    <span>{m['developerPortal.components.appDidUpgradeDialog.enableAppIssuance']()}</span>
+                                    <span>
+                                        {m[
+                                            'developerPortal.components.appDidUpgradeDialog.enableAppIssuance'
+                                        ]()}
+                                    </span>
                                 </li>
                             </ul>
                         </div>
@@ -173,12 +195,16 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
                             {isUpgrading ? (
                                 <>
                                     <Loader2 className="w-4 h-4 animate-spin" />
-                                    {m['developerPortal.components.appDidUpgradeDialog.upgrading']()}
+                                    {m[
+                                        'developerPortal.components.appDidUpgradeDialog.upgrading'
+                                    ]()}
                                 </>
                             ) : (
                                 <>
                                     <ArrowUpCircle className="w-4 h-4" />
-                                    {m['developerPortal.components.appDidUpgradeDialog.upgradeNow']()}
+                                    {m[
+                                        'developerPortal.components.appDidUpgradeDialog.upgradeNow'
+                                    ]()}
                                 </>
                             )}
                         </button>

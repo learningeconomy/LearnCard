@@ -113,7 +113,9 @@ export const ListingSidebar: React.FC<ListingSidebarProps> = ({
                 ) : filteredListings.length === 0 ? (
                     <div className="text-center py-12">
                         <Inbox className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                        <p className="text-gray-500 text-sm">{m['appStoreAdmin.sidebar.noListingsFound']()}</p>
+                        <p className="text-gray-500 text-sm">
+                            {m['appStoreAdmin.sidebar.noListingsFound']()}
+                        </p>
                     </div>
                 ) : (
                     filteredListings.map(listing => (
@@ -142,7 +144,9 @@ export const ListingSidebar: React.FC<ListingSidebarProps> = ({
                                         <h4 className="font-medium text-gray-700 text-sm truncate">
                                             {listing.display_name}
                                         </h4>
-                                        <StatusBadge status={listing.app_listing_status as AppListingStatus} />
+                                        <StatusBadge
+                                            status={listing.app_listing_status as AppListingStatus}
+                                        />
                                     </div>
 
                                     <p className="text-xs text-gray-400 truncate mt-0.5">

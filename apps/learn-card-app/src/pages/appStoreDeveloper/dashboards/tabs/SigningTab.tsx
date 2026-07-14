@@ -68,7 +68,9 @@ export const SigningTab: React.FC<SigningTabProps> = ({ integration: _integratio
                 authority.name
             );
 
-            presentToast(m['developerPortal.dashboards.tabs.signing.createSuccess'](), { hasDismissButton: true });
+            presentToast(m['developerPortal.dashboards.tabs.signing.createSuccess'](), {
+                hasDismissButton: true,
+            });
             fetchSigningAuthority();
         } catch (err) {
             log.error('Failed to create signing authority:', err);
@@ -86,8 +88,12 @@ export const SigningTab: React.FC<SigningTabProps> = ({ integration: _integratio
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.signing.title']()}</h2>
-                <p className="text-sm text-gray-500">{m['developerPortal.dashboards.tabs.signing.description']()}</p>
+                <h2 className="text-lg font-semibold text-gray-800">
+                    {m['developerPortal.dashboards.tabs.signing.title']()}
+                </h2>
+                <p className="text-sm text-gray-500">
+                    {m['developerPortal.dashboards.tabs.signing.description']()}
+                </p>
             </div>
 
             {/* Status */}
@@ -132,7 +138,9 @@ export const SigningTab: React.FC<SigningTabProps> = ({ integration: _integratio
                             }`}
                         >
                             {hasSigningAuthority
-                                ? m['developerPortal.dashboards.tabs.signing.using']({ name: primarySA?.name || '' })
+                                ? m['developerPortal.dashboards.tabs.signing.using']({
+                                      name: primarySA?.name || '',
+                                  })
                                 : m['developerPortal.dashboards.tabs.signing.createOne']()}
                         </p>
                     )}
@@ -182,9 +190,7 @@ export const SigningTab: React.FC<SigningTabProps> = ({ integration: _integratio
             )}
 
             <div className="text-sm text-gray-500 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                <p>
-                    {m['developerPortal.dashboards.tabs.signing.infoText']()}
-                </p>
+                <p>{m['developerPortal.dashboards.tabs.signing.infoText']()}</p>
             </div>
         </div>
     );

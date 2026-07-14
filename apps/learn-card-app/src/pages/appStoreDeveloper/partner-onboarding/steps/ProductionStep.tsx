@@ -49,10 +49,26 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
 
     // Setup checklist - things completed in previous steps
     const setupChecklist = [
-        { icon: Shield, label: m['developerPortal.onboarding.production.checklistSigning'](), done: true },
-        { icon: Palette, label: m['developerPortal.onboarding.production.checklistBranding'](), done: true },
-        { icon: FileStack, label: m['developerPortal.onboarding.production.checklistTemplates'](), done: true },
-        { icon: Code2, label: m['developerPortal.onboarding.production.checklistIntegration'](), done: true },
+        {
+            icon: Shield,
+            label: m['developerPortal.onboarding.production.checklistSigning'](),
+            done: true,
+        },
+        {
+            icon: Palette,
+            label: m['developerPortal.onboarding.production.checklistBranding'](),
+            done: true,
+        },
+        {
+            icon: FileStack,
+            label: m['developerPortal.onboarding.production.checklistTemplates'](),
+            done: true,
+        },
+        {
+            icon: Code2,
+            label: m['developerPortal.onboarding.production.checklistIntegration'](),
+            done: true,
+        },
     ];
 
     return (
@@ -64,7 +80,9 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
                 </div>
 
                 <div className="flex-1">
-                    <h2 className="text-lg font-semibold text-gray-800">{m['developerPortal.onboarding.production.readyTitle']()}</h2>
+                    <h2 className="text-lg font-semibold text-gray-800">
+                        {m['developerPortal.onboarding.production.readyTitle']()}
+                    </h2>
 
                     <p className="text-sm text-gray-600 mt-1">
                         {m['developerPortal.onboarding.production.readyDesc']()}
@@ -74,7 +92,9 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
 
             {/* Setup Summary */}
             <div className="p-5 border border-gray-200 rounded-xl">
-                <h3 className="font-medium text-gray-800 mb-4">{m['developerPortal.onboarding.production.setupComplete']()}</h3>
+                <h3 className="font-medium text-gray-800 mb-4">
+                    {m['developerPortal.onboarding.production.setupComplete']()}
+                </h3>
 
                 <div className="space-y-3">
                     {setupChecklist.map((item, index) => (
@@ -93,24 +113,32 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
 
             {/* What Happens Next */}
             <div className="p-5 bg-blue-50 border border-blue-200 rounded-xl">
-                <h3 className="font-medium text-blue-800 mb-2">{m['developerPortal.onboarding.production.whatHappens']()}</h3>
+                <h3 className="font-medium text-blue-800 mb-2">
+                    {m['developerPortal.onboarding.production.whatHappens']()}
+                </h3>
 
                 <ul className="text-sm text-blue-700 space-y-2">
                     <li className="flex items-start gap-2">
                         {/* eslint-disable-next-line i18next/no-literal-string -- decorative bullet SKIP */}
-                        <span className="text-blue-400 mt-0.5" aria-hidden="true">•</span>
+                        <span className="text-blue-400 mt-0.5" aria-hidden="true">
+                            •
+                        </span>
                         <span>{m['developerPortal.onboarding.production.whatHappens1']()}</span>
                     </li>
 
                     <li className="flex items-start gap-2">
                         {/* eslint-disable-next-line i18next/no-literal-string -- decorative bullet SKIP */}
-                        <span className="text-blue-400 mt-0.5" aria-hidden="true">•</span>
+                        <span className="text-blue-400 mt-0.5" aria-hidden="true">
+                            •
+                        </span>
                         <span>{m['developerPortal.onboarding.production.whatHappens2']()}</span>
                     </li>
 
                     <li className="flex items-start gap-2">
                         {/* eslint-disable-next-line i18next/no-literal-string -- decorative bullet SKIP */}
-                        <span className="text-blue-400 mt-0.5" aria-hidden="true">•</span>
+                        <span className="text-blue-400 mt-0.5" aria-hidden="true">
+                            •
+                        </span>
                         <span>{m['developerPortal.onboarding.production.whatHappens3']()}</span>
                     </li>
                 </ul>
@@ -135,8 +163,12 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
                             </div>
 
                             <div>
-                                <h3 className="text-lg font-semibold text-gray-800">{m['developerPortal.onboarding.production.confirmTitle']()}</h3>
-                                <p className="text-sm text-gray-500">{m['developerPortal.onboarding.production.confirmDesc']()}</p>
+                                <h3 className="text-lg font-semibold text-gray-800">
+                                    {m['developerPortal.onboarding.production.confirmTitle']()}
+                                </h3>
+                                <p className="text-sm text-gray-500">
+                                    {m['developerPortal.onboarding.production.confirmDesc']()}
+                                </p>
                             </div>
                         </div>
 
@@ -145,22 +177,44 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
                                 <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
 
                                 <div className="text-sm text-amber-800">
-                                    <p className="font-medium mb-1">{m['developerPortal.onboarding.production.confirmWarning']()}</p>
+                                    <p className="font-medium mb-1">
+                                        {m[
+                                            'developerPortal.onboarding.production.confirmWarning'
+                                        ]()}
+                                    </p>
                                     <ul className="space-y-1 text-amber-700">
                                         <li className="flex items-start gap-2">
                                             {/* eslint-disable-next-line i18next/no-literal-string -- decorative bullet SKIP */}
-                                            <span className="text-amber-700" aria-hidden="true">•</span>
-                                            <span>{m['developerPortal.onboarding.production.confirmCheck1']()}</span>
+                                            <span className="text-amber-700" aria-hidden="true">
+                                                •
+                                            </span>
+                                            <span>
+                                                {m[
+                                                    'developerPortal.onboarding.production.confirmCheck1'
+                                                ]()}
+                                            </span>
                                         </li>
                                         <li className="flex items-start gap-2">
                                             {/* eslint-disable-next-line i18next/no-literal-string -- decorative bullet SKIP */}
-                                            <span className="text-amber-700" aria-hidden="true">•</span>
-                                            <span>{m['developerPortal.onboarding.production.confirmCheck2']()}</span>
+                                            <span className="text-amber-700" aria-hidden="true">
+                                                •
+                                            </span>
+                                            <span>
+                                                {m[
+                                                    'developerPortal.onboarding.production.confirmCheck2'
+                                                ]()}
+                                            </span>
                                         </li>
                                         <li className="flex items-start gap-2">
                                             {/* eslint-disable-next-line i18next/no-literal-string -- decorative bullet SKIP */}
-                                            <span className="text-amber-700" aria-hidden="true">•</span>
-                                            <span>{m['developerPortal.onboarding.production.confirmCheck3']()}</span>
+                                            <span className="text-amber-700" aria-hidden="true">
+                                                •
+                                            </span>
+                                            <span>
+                                                {m[
+                                                    'developerPortal.onboarding.production.confirmCheck3'
+                                                ]()}
+                                            </span>
                                         </li>
                                     </ul>
                                 </div>

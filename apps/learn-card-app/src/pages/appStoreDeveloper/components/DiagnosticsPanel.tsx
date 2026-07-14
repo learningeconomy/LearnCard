@@ -1,5 +1,13 @@
 import React from 'react';
-import { CheckCircle, XCircle, AlertTriangle, Activity, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+    CheckCircle,
+    XCircle,
+    AlertTriangle,
+    Activity,
+    Clock,
+    ChevronDown,
+    ChevronUp,
+} from 'lucide-react';
 
 import * as m from '../../../paraglide/messages.js';
 
@@ -70,7 +78,9 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({
             >
                 <div className="flex items-center gap-2">
                     <Activity className="w-4 h-4 text-cyan-400" />
-                    <span className="text-sm font-medium">{m['developerPortal.components.diagnosticsPanel.title']()}</span>
+                    <span className="text-sm font-medium">
+                        {m['developerPortal.components.diagnosticsPanel.title']()}
+                    </span>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -107,10 +117,18 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({
                 <>
                     {/* Requested Permissions */}
                     <div className="px-3 py-2 border-b border-gray-700">
-                        <div className="text-xs text-gray-400 mb-1.5">{m['developerPortal.components.diagnosticsPanel.requestedPermissions']()}</div>
+                        <div className="text-xs text-gray-400 mb-1.5">
+                            {m[
+                                'developerPortal.components.diagnosticsPanel.requestedPermissions'
+                            ]()}
+                        </div>
                         <div className="flex flex-wrap gap-1.5">
                             {requestedPermissions.length === 0 ? (
-                                <span className="text-xs text-gray-500 italic">{m['developerPortal.components.diagnosticsPanel.noneRequested']()}</span>
+                                <span className="text-xs text-gray-500 italic">
+                                    {m[
+                                        'developerPortal.components.diagnosticsPanel.noneRequested'
+                                    ]()}
+                                </span>
                             ) : (
                                 requestedPermissions.map(permission => (
                                     <span
@@ -170,7 +188,11 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({
 
                                         {event.permission && (
                                             <div className="mt-1 ml-5 flex items-center gap-2">
-                                                <span className="text-gray-400">{m['developerPortal.components.diagnosticsPanel.permission']()}</span>
+                                                <span className="text-gray-400">
+                                                    {m[
+                                                        'developerPortal.components.diagnosticsPanel.permission'
+                                                    ]()}
+                                                </span>
                                                 <span
                                                     className={`px-1.5 py-0.5 rounded ${
                                                         event.authorized
@@ -179,14 +201,19 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({
                                                     }`}
                                                 >
                                                     {getPermissionLabel(event.permission)}
-                                                    {!event.authorized && m['developerPortal.components.diagnosticsPanel.notRequested']()}
+                                                    {!event.authorized &&
+                                                        m[
+                                                            'developerPortal.components.diagnosticsPanel.notRequested'
+                                                        ]()}
                                                 </span>
                                             </div>
                                         )}
 
                                         {event.errorMessage && (
                                             <div className="mt-1 ml-5 text-red-400">
-                                                {m['developerPortal.components.diagnosticsPanel.error']({ message: event.errorMessage })}
+                                                {m[
+                                                    'developerPortal.components.diagnosticsPanel.error'
+                                                ]({ message: event.errorMessage })}
                                             </div>
                                         )}
                                     </div>
@@ -201,7 +228,12 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({
                             <div className="flex items-start gap-2">
                                 <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
                                 <div className="text-xs text-amber-200">
-                                    <strong>{m['developerPortal.components.diagnosticsPanel.warning']()}</strong> {m['developerPortal.components.diagnosticsPanel.warningDesc']({ count: unauthorizedCount })}
+                                    <strong>
+                                        {m['developerPortal.components.diagnosticsPanel.warning']()}
+                                    </strong>{' '}
+                                    {m['developerPortal.components.diagnosticsPanel.warningDesc']({
+                                        count: unauthorizedCount,
+                                    })}
                                 </div>
                             </div>
                         </div>

@@ -213,7 +213,10 @@ export const TestingTab: React.FC<TestingTabProps> = ({
             log.error('Test send failed:', err);
             setTestStatus('error');
             setTestResult({
-                error: err instanceof Error ? err.message : m['developerPortal.dashboards.tabs.testing.sendFailedFallback'](),
+                error:
+                    err instanceof Error
+                        ? err.message
+                        : m['developerPortal.dashboards.tabs.testing.sendFailedFallback'](),
             });
         }
     };
@@ -242,7 +245,9 @@ export const TestingTab: React.FC<TestingTabProps> = ({
         return (
             <div className="text-center py-12">
                 <TestTube2 className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p className="text-gray-500 font-medium">{m['developerPortal.dashboards.tabs.testing.noTemplatesToTest']()}</p>
+                <p className="text-gray-500 font-medium">
+                    {m['developerPortal.dashboards.tabs.testing.noTemplatesToTest']()}
+                </p>
                 <p className="text-sm text-gray-400 mt-1">
                     {m['developerPortal.dashboards.tabs.testing.noTemplatesToTestDesc']()}
                 </p>
@@ -253,7 +258,9 @@ export const TestingTab: React.FC<TestingTabProps> = ({
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.testing.title']()}</h2>
+                <h2 className="text-lg font-semibold text-gray-800">
+                    {m['developerPortal.dashboards.tabs.testing.title']()}
+                </h2>
                 <p className="text-sm text-gray-500">
                     {m['developerPortal.dashboards.tabs.testing.description']()}
                 </p>
@@ -263,10 +270,10 @@ export const TestingTab: React.FC<TestingTabProps> = ({
             <div className="flex items-start gap-3 p-4 bg-violet-50 border border-violet-200 rounded-xl">
                 <TestTube2 className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-violet-800">
-                    <p className="font-medium mb-1">{m['developerPortal.dashboards.tabs.testing.sandboxTesting']()}</p>
-                    <p>
-                        {m['developerPortal.dashboards.tabs.testing.sandboxTestingDesc']()}
+                    <p className="font-medium mb-1">
+                        {m['developerPortal.dashboards.tabs.testing.sandboxTesting']()}
                     </p>
+                    <p>{m['developerPortal.dashboards.tabs.testing.sandboxTestingDesc']()}</p>
                 </div>
             </div>
 
@@ -275,7 +282,9 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                 <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
                     <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                     <div className="text-sm text-amber-800">
-                        <p className="font-medium">{m['developerPortal.dashboards.tabs.testing.templatesNotSaved']()}</p>
+                        <p className="font-medium">
+                            {m['developerPortal.dashboards.tabs.testing.templatesNotSaved']()}
+                        </p>
                         <p className="text-amber-700 mt-0.5">
                             {m['developerPortal.dashboards.tabs.testing.templatesNotSavedDesc']()}
                         </p>
@@ -303,9 +312,13 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                                 {selectedTemplate?.name || 'Select a template'}
                             </p>
                             {selectedTemplate?.boostUri ? (
-                                <p className="text-xs text-emerald-600">{m['developerPortal.dashboards.tabs.testing.readyToTest']()}</p>
+                                <p className="text-xs text-emerald-600">
+                                    {m['developerPortal.dashboards.tabs.testing.readyToTest']()}
+                                </p>
                             ) : (
-                                <p className="text-xs text-amber-600">{m['developerPortal.dashboards.tabs.testing.notSavedYet']()}</p>
+                                <p className="text-xs text-amber-600">
+                                    {m['developerPortal.dashboards.tabs.testing.notSavedYet']()}
+                                </p>
                             )}
                         </div>
 
@@ -365,7 +378,10 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                 {masterTemplateCount > 0 && (
                     <p className="text-xs text-gray-500 flex items-center gap-1">
                         <FileStack className="w-3 h-3" />
-                        {m['developerPortal.dashboards.tabs.testing.courseBoostsCount']({ count: issuableTemplates.length, masterCount: masterTemplateCount })}
+                        {m['developerPortal.dashboards.tabs.testing.courseBoostsCount']({
+                            count: issuableTemplates.length,
+                            masterCount: masterTemplateCount,
+                        })}
                     </p>
                 )}
             </div>
@@ -402,7 +418,9 @@ export const TestingTab: React.FC<TestingTabProps> = ({
 
             {/* Recipient Input */}
             <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray-700">{m['developerPortal.dashboards.tabs.testing.testRecipient']()}</label>
+                <label className="block text-sm font-medium text-gray-700">
+                    {m['developerPortal.dashboards.tabs.testing.testRecipient']()}
+                </label>
 
                 {/* Mode toggle */}
                 <div className="flex rounded-lg border border-gray-200 overflow-hidden">
@@ -480,7 +498,9 @@ export const TestingTab: React.FC<TestingTabProps> = ({
             {testStatus === 'sending' && (
                 <div className="flex items-center justify-center gap-3 px-6 py-4 bg-gray-100 rounded-xl">
                     <Loader2 className="w-5 h-5 text-cyan-600 animate-spin" />
-                    <span className="text-gray-700 font-medium">{m['developerPortal.dashboards.tabs.testing.sendingTest']()}</span>
+                    <span className="text-gray-700 font-medium">
+                        {m['developerPortal.dashboards.tabs.testing.sendingTest']()}
+                    </span>
                 </div>
             )}
 
@@ -489,17 +509,27 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                     <div className="flex items-start gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
                         <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                         <div className="flex-1">
-                            <p className="font-medium text-emerald-800">{m['developerPortal.dashboards.tabs.testing.testSent']()}</p>
+                            <p className="font-medium text-emerald-800">
+                                {m['developerPortal.dashboards.tabs.testing.testSent']()}
+                            </p>
                             <p className="text-sm text-emerald-700 mt-1">
                                 {recipientMode === 'email' ? (
                                     <TransP
-                                        m={m['developerPortal.dashboards.tabs.testing.testSentEmail']}
+                                        m={
+                                            m[
+                                                'developerPortal.dashboards.tabs.testing.testSentEmail'
+                                            ]
+                                        }
                                         values={{ email: testEmail }}
                                         components={[<strong />]}
                                     />
                                 ) : (
                                     <TransP
-                                        m={m['developerPortal.dashboards.tabs.testing.testSentDirect']}
+                                        m={
+                                            m[
+                                                'developerPortal.dashboards.tabs.testing.testSentDirect'
+                                            ]
+                                        }
                                         values={{ userId: testUserId }}
                                         components={[<strong />]}
                                     />
@@ -507,7 +537,9 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                             </p>
                             {testResult.credentialId && (
                                 <p className="text-xs text-emerald-600 mt-2 font-mono">
-                                    {m['developerPortal.dashboards.tabs.testing.credentialId']({ id: testResult.credentialId })}
+                                    {m['developerPortal.dashboards.tabs.testing.credentialId']({
+                                        id: testResult.credentialId,
+                                    })}
                                 </p>
                             )}
                         </div>
@@ -553,7 +585,9 @@ export const TestingTab: React.FC<TestingTabProps> = ({
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
                 <div className="flex items-center gap-2 mb-3">
                     <Sparkles className="w-4 h-4 text-amber-500" />
-                    <span className="text-sm font-medium text-gray-700">{m['developerPortal.dashboards.tabs.testing.testingTips']()}</span>
+                    <span className="text-sm font-medium text-gray-700">
+                        {m['developerPortal.dashboards.tabs.testing.testingTips']()}
+                    </span>
                 </div>
 
                 <ul className="text-sm text-gray-600 space-y-2">

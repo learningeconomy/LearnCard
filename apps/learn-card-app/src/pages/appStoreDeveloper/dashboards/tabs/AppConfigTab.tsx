@@ -108,9 +108,24 @@ const PERMISSIONS: Permission[] = [
  */
 const checkUrl = async (url: string): Promise<UrlCheckResult[]> => {
     const results: UrlCheckResult[] = [
-        { id: 'https', label: '', status: 'pending', messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.https' },
-        { id: 'valid', label: '', status: 'pending', messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.valid' },
-        { id: 'iframe', label: '', status: 'pending', messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.iframe' },
+        {
+            id: 'https',
+            label: '',
+            status: 'pending',
+            messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.https',
+        },
+        {
+            id: 'valid',
+            label: '',
+            status: 'pending',
+            messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.valid',
+        },
+        {
+            id: 'iframe',
+            label: '',
+            status: 'pending',
+            messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.iframe',
+        },
     ];
 
     // Check URL format
@@ -118,20 +133,44 @@ const checkUrl = async (url: string): Promise<UrlCheckResult[]> => {
 
     try {
         parsed = new URL(url);
-        results[1] = { ...results[1], status: 'pass', messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.urlValid' };
+        results[1] = {
+            ...results[1],
+            status: 'pass',
+            messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.urlValid',
+        };
     } catch {
-        results[0] = { ...results[0], status: 'fail', messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.invalidUrl' };
-        results[1] = { ...results[1], status: 'fail', messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.invalidFormat' };
-        results[2] = { ...results[2], status: 'fail', messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.cannotCheck' };
+        results[0] = {
+            ...results[0],
+            status: 'fail',
+            messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.invalidUrl',
+        };
+        results[1] = {
+            ...results[1],
+            status: 'fail',
+            messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.invalidFormat',
+        };
+        results[2] = {
+            ...results[2],
+            status: 'fail',
+            messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.cannotCheck',
+        };
         return results;
     }
 
     // Check HTTPS
     if (parsed.protocol === 'https:') {
-        results[0] = { ...results[0], status: 'pass', messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.httpsPass' };
+        results[0] = {
+            ...results[0],
+            status: 'pass',
+            messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.httpsPass',
+        };
     } else if (parsed.protocol === 'http:') {
         if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
-            results[0] = { ...results[0], status: 'warn', messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.httpLocalhost' };
+            results[0] = {
+                ...results[0],
+                status: 'warn',
+                messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.httpLocalhost',
+            };
         } else {
             results[0] = {
                 ...results[0],
@@ -140,7 +179,11 @@ const checkUrl = async (url: string): Promise<UrlCheckResult[]> => {
             };
         }
     } else {
-        results[0] = { ...results[0], status: 'fail', messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.mustBeHttps' };
+        results[0] = {
+            ...results[0],
+            status: 'fail',
+            messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.mustBeHttps',
+        };
     }
 
     // For iframe embedding, we can't reliably check X-Frame-Options from the browser
@@ -186,13 +229,21 @@ export const AppConfigTab: React.FC<AppConfigTabProps> = ({
     // Helper: localize permission name by ID
     const getPermissionName = (id: string): string => {
         const key = `developerPortal.dashboards.tabs.appConfig.permissions.items.${id}.name`;
-        try { return (m as any)[key](); } catch { return id; }
+        try {
+            return (m as any)[key]();
+        } catch {
+            return id;
+        }
     };
 
     // Helper: localize permission description by ID
     const getPermissionDesc = (id: string): string => {
         const key = `developerPortal.dashboards.tabs.appConfig.permissions.items.${id}.desc`;
-        try { return (m as any)[key](); } catch { return id; }
+        try {
+            return (m as any)[key]();
+        } catch {
+            return id;
+        }
     };
 
     // ============================================================
@@ -367,7 +418,9 @@ export const AppConfigTab: React.FC<AppConfigTabProps> = ({
         await Clipboard.write({ string: code });
         setCopied(id);
         setTimeout(() => setCopied(null), 2000);
-        presentToast(m['developerPortal.dashboards.tabs.appConfig.copied'](), { hasDismissButton: true });
+        presentToast(m['developerPortal.dashboards.tabs.appConfig.copied'](), {
+            hasDismissButton: true,
+        });
     };
 
     const handlePreview = () => {
@@ -461,7 +514,9 @@ module.exports = nextConfig;`;
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.appConfig.title']()}</h2>
+                <h2 className="text-lg font-semibold text-gray-800">
+                    {m['developerPortal.dashboards.tabs.appConfig.title']()}
+                </h2>
                 <p className="text-sm text-gray-500">
                     {m['developerPortal.dashboards.tabs.appConfig.description']()}
                 </p>
@@ -504,7 +559,9 @@ module.exports = nextConfig;`;
             {/* No Listings Warning */}
             {(!listings || listings.length === 0) && (
                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                    <p className="text-amber-800 font-medium">{m['developerPortal.dashboards.tabs.appConfig.noListingsTitle']()}</p>
+                    <p className="text-amber-800 font-medium">
+                        {m['developerPortal.dashboards.tabs.appConfig.noListingsTitle']()}
+                    </p>
                     <p className="text-sm text-amber-700 mt-1">
                         {m['developerPortal.dashboards.tabs.appConfig.noListingsDesc']()}
                     </p>
@@ -515,7 +572,9 @@ module.exports = nextConfig;`;
                 <>
                     {/* URL Configuration */}
                     <div className="space-y-3">
-                        <label className="block text-sm font-medium text-gray-700">{m['developerPortal.dashboards.tabs.appConfig.appUrl']()}</label>
+                        <label className="block text-sm font-medium text-gray-700">
+                            {m['developerPortal.dashboards.tabs.appConfig.appUrl']()}
+                        </label>
 
                         <div className="flex gap-2">
                             <div className="flex-1 flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus-within:ring-2 focus-within:ring-cyan-500 focus-within:border-cyan-500">
@@ -589,12 +648,20 @@ module.exports = nextConfig;`;
                                     }`}
                                 >
                                     {isChecking
-                                        ? m['developerPortal.dashboards.tabs.appConfig.checkResults.checking']()
+                                        ? m[
+                                              'developerPortal.dashboards.tabs.appConfig.checkResults.checking'
+                                          ]()
                                         : allPassed
-                                        ? m['developerPortal.dashboards.tabs.appConfig.checkResults.allPassed']()
+                                        ? m[
+                                              'developerPortal.dashboards.tabs.appConfig.checkResults.allPassed'
+                                          ]()
                                         : hasFailed
-                                        ? m['developerPortal.dashboards.tabs.appConfig.checkResults.issuesFound']()
-                                        : m['developerPortal.dashboards.tabs.appConfig.checkResults.resultsTitle']()}
+                                        ? m[
+                                              'developerPortal.dashboards.tabs.appConfig.checkResults.issuesFound'
+                                          ]()
+                                        : m[
+                                              'developerPortal.dashboards.tabs.appConfig.checkResults.resultsTitle'
+                                          ]()}
                                 </h4>
                             </div>
 
@@ -605,7 +672,9 @@ module.exports = nextConfig;`;
 
                                         <div className="flex-1">
                                             <span className="text-sm font-medium text-gray-700">
-                                                {result.messageKey ? m[result.messageKey]() : result.label}
+                                                {result.messageKey
+                                                    ? m[result.messageKey]()
+                                                    : result.label}
                                             </span>
                                         </div>
 
@@ -622,7 +691,9 @@ module.exports = nextConfig;`;
                                                             : 'text-gray-500'
                                                     }`}
                                                 >
-                                                    {result.messageKey ? m[result.messageKey]() : result.message}
+                                                    {result.messageKey
+                                                        ? m[result.messageKey]()
+                                                        : result.message}
                                                 </span>
                                             )}
 
@@ -638,13 +709,17 @@ module.exports = nextConfig;`;
 
                             {!isChecking && hasFailed && (
                                 <p className="mt-3 text-xs text-red-600">
-                                    {m['developerPortal.dashboards.tabs.appConfig.checkResults.fixIssues']()}
+                                    {m[
+                                        'developerPortal.dashboards.tabs.appConfig.checkResults.fixIssues'
+                                    ]()}
                                 </p>
                             )}
 
                             {!isChecking && allPassed && (
                                 <p className="mt-3 text-xs text-emerald-600">
-                                    {m['developerPortal.dashboards.tabs.appConfig.checkResults.passedChecks']()}
+                                    {m[
+                                        'developerPortal.dashboards.tabs.appConfig.checkResults.passedChecks'
+                                    ]()}
                                 </p>
                             )}
                         </div>
@@ -660,10 +735,14 @@ module.exports = nextConfig;`;
                                 <Shield className="w-5 h-5 text-amber-600" />
                                 <div className="text-left">
                                     <h3 className="font-medium text-gray-800">
-                                        {m['developerPortal.dashboards.tabs.appConfig.requiredHeaders.title']()}
+                                        {m[
+                                            'developerPortal.dashboards.tabs.appConfig.requiredHeaders.title'
+                                        ]()}
                                     </h3>
                                     <p className="text-xs text-gray-500">
-                                        {m['developerPortal.dashboards.tabs.appConfig.requiredHeaders.desc']()}
+                                        {m[
+                                            'developerPortal.dashboards.tabs.appConfig.requiredHeaders.desc'
+                                        ]()}
                                     </p>
                                 </div>
                             </div>
@@ -742,16 +821,22 @@ module.exports = nextConfig;`;
                         <div className="flex items-center justify-between">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">
-                                    {m['developerPortal.dashboards.tabs.appConfig.permissions.title']()}
+                                    {m[
+                                        'developerPortal.dashboards.tabs.appConfig.permissions.title'
+                                    ]()}
                                 </label>
                                 <p className="text-xs text-gray-500">
-                                    {m['developerPortal.dashboards.tabs.appConfig.permissions.desc']()}
+                                    {m[
+                                        'developerPortal.dashboards.tabs.appConfig.permissions.desc'
+                                    ]()}
                                 </p>
                             </div>
 
                             {guideSelections.selectedFeatures.length > 0 && (
                                 <div className="text-xs text-cyan-600 bg-cyan-50 px-2 py-1 rounded-lg">
-                                    {m['developerPortal.dashboards.tabs.appConfig.permissions.fromGuideCount']({ count: guidePermissions.length })}
+                                    {m[
+                                        'developerPortal.dashboards.tabs.appConfig.permissions.fromGuideCount'
+                                    ]({ count: guidePermissions.length })}
                                 </div>
                             )}
                         </div>
@@ -795,12 +880,16 @@ module.exports = nextConfig;`;
                                                 </span>
                                                 {perm.required && (
                                                     <span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 text-xs rounded">
-                                                        {m['developerPortal.dashboards.tabs.appConfig.permissions.required']()}
+                                                        {m[
+                                                            'developerPortal.dashboards.tabs.appConfig.permissions.required'
+                                                        ]()}
                                                     </span>
                                                 )}
                                                 {isFromGuide && !perm.required && (
                                                     <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-600 text-xs rounded">
-                                                        {m['developerPortal.dashboards.tabs.appConfig.permissions.fromGuide']()}
+                                                        {m[
+                                                            'developerPortal.dashboards.tabs.appConfig.permissions.fromGuide'
+                                                        ]()}
                                                     </span>
                                                 )}
                                             </div>
@@ -862,9 +951,13 @@ module.exports = nextConfig;`;
                     <div className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">!</span>
                         <div>
-                            <strong className="text-gray-700">{m['developerPortal.dashboards.tabs.appConfig.blankIframe']()}</strong>
+                            <strong className="text-gray-700">
+                                {m['developerPortal.dashboards.tabs.appConfig.blankIframe']()}
+                            </strong>
                             <span className="text-gray-600">
-                                {m['developerPortal.dashboards.tabs.appConfig.commonIssues.blankIframeDesc']()}
+                                {m[
+                                    'developerPortal.dashboards.tabs.appConfig.commonIssues.blankIframeDesc'
+                                ]()}
                             </span>
                         </div>
                     </div>
@@ -872,9 +965,13 @@ module.exports = nextConfig;`;
                     <div className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">!</span>
                         <div>
-                            <strong className="text-gray-700">{m['developerPortal.dashboards.tabs.appConfig.mixedContentError']()}</strong>
+                            <strong className="text-gray-700">
+                                {m['developerPortal.dashboards.tabs.appConfig.mixedContentError']()}
+                            </strong>
                             <span className="text-gray-600">
-                                {m['developerPortal.dashboards.tabs.appConfig.commonIssues.mixedContentDesc']()}
+                                {m[
+                                    'developerPortal.dashboards.tabs.appConfig.commonIssues.mixedContentDesc'
+                                ]()}
                             </span>
                         </div>
                     </div>
@@ -882,9 +979,13 @@ module.exports = nextConfig;`;
                     <div className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">!</span>
                         <div>
-                            <strong className="text-gray-700">{m['developerPortal.dashboards.tabs.appConfig.corsErrors']()}</strong>
+                            <strong className="text-gray-700">
+                                {m['developerPortal.dashboards.tabs.appConfig.corsErrors']()}
+                            </strong>
                             <span className="text-gray-600">
-                                {m['developerPortal.dashboards.tabs.appConfig.commonIssues.corsErrorsDesc']()}
+                                {m[
+                                    'developerPortal.dashboards.tabs.appConfig.commonIssues.corsErrorsDesc'
+                                ]()}
                             </span>
                         </div>
                     </div>

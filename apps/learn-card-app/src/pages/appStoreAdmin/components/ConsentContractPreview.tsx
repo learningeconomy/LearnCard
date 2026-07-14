@@ -67,7 +67,9 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
     return (
         <div>
             <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-medium text-gray-600">{m['appStoreAdmin.listing.contractTitle']()}</h3>
+                <h3 className="text-sm font-medium text-gray-600">
+                    {m['appStoreAdmin.listing.contractTitle']()}
+                </h3>
 
                 {selectedContract && (
                     <button
@@ -83,7 +85,9 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
             {isLoadingContract ? (
                 <div className="p-4 bg-gray-50 rounded-lg flex items-center justify-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                    <span className="text-sm text-gray-500">{m['appStoreAdmin.listing.loadingContract']()}</span>
+                    <span className="text-sm text-gray-500">
+                        {m['appStoreAdmin.listing.loadingContract']()}
+                    </span>
                 </div>
             ) : selectedContract ? (
                 <div className="space-y-3">
@@ -115,7 +119,9 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
                     <div className="bg-cyan-50 border border-cyan-100 rounded-lg p-3">
                         <div className="flex items-center gap-2 mb-2">
                             <BookOpen className="w-4 h-4 text-cyan-600" />
-                            <span className="text-xs font-medium text-cyan-700">{m['appStoreAdmin.listing.readAccess']()}</span>
+                            <span className="text-xs font-medium text-cyan-700">
+                                {m['appStoreAdmin.listing.readAccess']()}
+                            </span>
                         </div>
 
                         {hasReadCategories ? (

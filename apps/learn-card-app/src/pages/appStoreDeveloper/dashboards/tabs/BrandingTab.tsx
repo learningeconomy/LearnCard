@@ -41,12 +41,42 @@ interface BrandingTabProps {
 }
 
 const DEFAULT_COLORS = [
-    { name: 'Cyan', nameKey: 'developerPortal.dashboards.tabs.branding.colors.cyan', primary: '#06B6D4', accent: '#2DD4BF' },
-    { name: 'Blue', nameKey: 'developerPortal.dashboards.tabs.branding.colors.blue', primary: '#3B82F6', accent: '#60A5FA' },
-    { name: 'Violet', nameKey: 'developerPortal.dashboards.tabs.branding.colors.violet', primary: '#8B5CF6', accent: '#A78BFA' },
-    { name: 'Emerald', nameKey: 'developerPortal.dashboards.tabs.branding.colors.emerald', primary: '#10B981', accent: '#34D399' },
-    { name: 'Rose', nameKey: 'developerPortal.dashboards.tabs.branding.colors.rose', primary: '#F43F5E', accent: '#FB7185' },
-    { name: 'Amber', nameKey: 'developerPortal.dashboards.tabs.branding.colors.amber', primary: '#F59E0B', accent: '#FBBF24' },
+    {
+        name: 'Cyan',
+        nameKey: 'developerPortal.dashboards.tabs.branding.colors.cyan',
+        primary: '#06B6D4',
+        accent: '#2DD4BF',
+    },
+    {
+        name: 'Blue',
+        nameKey: 'developerPortal.dashboards.tabs.branding.colors.blue',
+        primary: '#3B82F6',
+        accent: '#60A5FA',
+    },
+    {
+        name: 'Violet',
+        nameKey: 'developerPortal.dashboards.tabs.branding.colors.violet',
+        primary: '#8B5CF6',
+        accent: '#A78BFA',
+    },
+    {
+        name: 'Emerald',
+        nameKey: 'developerPortal.dashboards.tabs.branding.colors.emerald',
+        primary: '#10B981',
+        accent: '#34D399',
+    },
+    {
+        name: 'Rose',
+        nameKey: 'developerPortal.dashboards.tabs.branding.colors.rose',
+        primary: '#F43F5E',
+        accent: '#FB7185',
+    },
+    {
+        name: 'Amber',
+        nameKey: 'developerPortal.dashboards.tabs.branding.colors.amber',
+        primary: '#F59E0B',
+        accent: '#FBBF24',
+    },
 ];
 
 const DEFAULT_WALLPAPERS = [
@@ -208,10 +238,16 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-lg font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.branding.title']()}</h2>
+                    <h2 className="text-lg font-semibold text-gray-800">
+                        {m['developerPortal.dashboards.tabs.branding.title']()}
+                    </h2>
                     <p className="text-sm text-gray-500">
                         {m['developerPortal.dashboards.tabs.branding.description']()}
-                        {isDirty && <span className="text-amber-500 ml-2">{m['developerPortal.dashboards.tabs.branding.unsavedChanges']()}</span>}
+                        {isDirty && (
+                            <span className="text-amber-500 ml-2">
+                                {m['developerPortal.dashboards.tabs.branding.unsavedChanges']()}
+                            </span>
+                        )}
                     </p>
                 </div>
 
@@ -237,8 +273,12 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.branding.profileImage']()}</h3>
-                        <p className="text-sm text-gray-500">{m['developerPortal.dashboards.tabs.branding.profileImageDesc']()}</p>
+                        <h3 className="font-semibold text-gray-800">
+                            {m['developerPortal.dashboards.tabs.branding.profileImage']()}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                            {m['developerPortal.dashboards.tabs.branding.profileImageDesc']()}
+                        </p>
                     </div>
                 </div>
 
@@ -272,7 +312,9 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                             ) : (
                                 <>
                                     <Upload className="w-6 h-6" />
-                                    <span className="text-xs">{m['developerPortal.dashboards.tabs.branding.upload']()}</span>
+                                    <span className="text-xs">
+                                        {m['developerPortal.dashboards.tabs.branding.upload']()}
+                                    </span>
                                 </>
                             )}
                         </button>
@@ -292,7 +334,9 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.branding.profileInformation']()}</h3>
+                        <h3 className="font-semibold text-gray-800">
+                            {m['developerPortal.dashboards.tabs.branding.profileInformation']()}
+                        </h3>
                         <p className="text-sm text-gray-500">
                             {m['developerPortal.dashboards.tabs.branding.profileInformationDesc']()}
                         </p>
@@ -302,7 +346,8 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                 <div className="space-y-3">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            {m['developerPortal.dashboards.tabs.branding.displayName']()} <span className="text-red-500">*</span>
+                            {m['developerPortal.dashboards.tabs.branding.displayName']()}{' '}
+                            <span className="text-red-500">*</span>
                         </label>
 
                         <input
@@ -329,7 +374,9 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                                 setShortBio(e.target.value);
                                 setIsDirty(true);
                             }}
-                            placeholder={m['developerPortal.dashboards.tabs.branding.shortBioPlaceholder']()}
+                            placeholder={m[
+                                'developerPortal.dashboards.tabs.branding.shortBioPlaceholder'
+                            ]()}
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
                         />
                     </div>
@@ -345,7 +392,9 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                                 setBio(e.target.value);
                                 setIsDirty(true);
                             }}
-                            placeholder={m['developerPortal.dashboards.tabs.branding.fullBioPlaceholder']()}
+                            placeholder={m[
+                                'developerPortal.dashboards.tabs.branding.fullBioPlaceholder'
+                            ]()}
                             rows={3}
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none resize-none"
                         />
@@ -361,7 +410,9 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.branding.cardColors']()}</h3>
+                        <h3 className="font-semibold text-gray-800">
+                            {m['developerPortal.dashboards.tabs.branding.cardColors']()}
+                        </h3>
                         <p className="text-sm text-gray-500">
                             {m['developerPortal.dashboards.tabs.branding.cardColorsDesc']()}
                         </p>
@@ -391,7 +442,9 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
 
                 <div className="flex gap-3">
                     <div className="flex-1">
-                        <label className="block text-xs text-gray-500 mb-1">{m['developerPortal.dashboards.tabs.branding.cardBackground']()}</label>
+                        <label className="block text-xs text-gray-500 mb-1">
+                            {m['developerPortal.dashboards.tabs.branding.cardBackground']()}
+                        </label>
 
                         <div className="flex items-center gap-2">
                             <input
@@ -423,7 +476,9 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                     </div>
 
                     <div className="flex-1">
-                        <label className="block text-xs text-gray-500 mb-1">{m['developerPortal.dashboards.tabs.branding.accentColor']()}</label>
+                        <label className="block text-xs text-gray-500 mb-1">
+                            {m['developerPortal.dashboards.tabs.branding.accentColor']()}
+                        </label>
 
                         <div className="flex items-center gap-2">
                             <input
@@ -458,9 +513,13 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-gray-800">{m['developerPortal.dashboards.tabs.branding.cardBackgroundImage']()}</h3>
+                        <h3 className="font-semibold text-gray-800">
+                            {m['developerPortal.dashboards.tabs.branding.cardBackgroundImage']()}
+                        </h3>
                         <p className="text-sm text-gray-500">
-                            {m['developerPortal.dashboards.tabs.branding.cardBackgroundImageDesc']()}
+                            {m[
+                                'developerPortal.dashboards.tabs.branding.cardBackgroundImageDesc'
+                            ]()}
                         </p>
                     </div>
                 </div>
@@ -515,7 +574,9 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
 
             {/* Preview */}
             <div className="p-4 bg-gray-50 rounded-xl">
-                <p className="text-sm font-medium text-gray-700 mb-3">{m['developerPortal.dashboards.tabs.branding.preview']()}</p>
+                <p className="text-sm font-medium text-gray-700 mb-3">
+                    {m['developerPortal.dashboards.tabs.branding.preview']()}
+                </p>
 
                 <div
                     className="p-4 rounded-xl relative overflow-hidden"
@@ -547,11 +608,17 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
 
                         <div>
                             <p className="font-semibold text-white">
-                                {displayName || m['developerPortal.dashboards.tabs.branding.yourOrganization']()}
+                                {displayName ||
+                                    m[
+                                        'developerPortal.dashboards.tabs.branding.yourOrganization'
+                                    ]()}
                             </p>
 
                             <p className="text-sm text-white/80">
-                                {shortBio || m['developerPortal.dashboards.tabs.branding.organizationTagline']()}
+                                {shortBio ||
+                                    m[
+                                        'developerPortal.dashboards.tabs.branding.organizationTagline'
+                                    ]()}
                             </p>
                         </div>
                     </div>
