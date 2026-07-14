@@ -42,7 +42,12 @@ export const buildPreviewCredential = (input: {
     const json = templateToJson(template) as Record<string, any>;
 
     json.validFrom = new Date().toISOString();
-    if (json.issuer) {
+    // serializeIssuer emits a bare `{{issuer_did}}` string (not an object) when
+    // the issuer has no name/url/image/email — e.g. a user without an LCN profile.
+    // Assigning `.id` to that string throws, so replace/patch based on shape.
+    if (typeof json.issuer === 'string') {
+        json.issuer = 'did:key:preview';
+    } else if (json.issuer && typeof json.issuer === 'object') {
         json.issuer.id = 'did:key:preview';
     }
     if (json.credentialSubject) {
