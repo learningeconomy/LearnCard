@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { auth } from '../../../firebase/firebase';
@@ -39,13 +40,13 @@ import { isEUCountry, requiresEUParentalConsent } from '../onboardingNetworkForm
 import { getDefaultPrivacyPreferences, OnboardingPrivacyPreferences } from '../privacyPreferences';
 import { ProfileIDStateValidator } from '../onboardingNetworkForm/helpers/validators';
 import { generateHandle, generateRandomSuffix } from './handleGenerator';
+import { inferCountryCode } from './countryInference';
 
 import BirthdayPicker from './BirthdayPicker';
 import CountrySelectorModal from '../onboardingNetworkForm/components/CountrySelectorModal';
 import LocationIcon from '../../svgs/LocationIcon';
 import UnderageModalContent from '../onboardingNetworkForm/components/UnderageModalContent';
 import GuardianLinkedModal from '../GuardianLinkedModal';
-import OnboardingSwiperForSlides from '../onboardingRoles/OnboardingSwiperForSlides';
 import { Confetti } from '../../../pages/issue/components/Confetti';
 
 import useLogout from '../../../hooks/useLogout';
@@ -84,6 +85,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
     const brandingConfig = useBrandingConfig();
     const brandName = brandingConfig?.name || 'LearnCard';
+    const history = useHistory();
 
     const currentUser = useCurrentUser();
     const authToken = getAuthToken();
@@ -103,19 +105,12 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const [isPreparingKey, setIsPreparingKey] = useState(false);
     const didPrepareNewKeyRef = useRef(false);
     const prepareNewKeyPromiseRef = useRef<Promise<boolean> | null>(null);
+    const handleLockedRef = useRef(false);
 
     // Form State
     const [dob, setDob] = useState<string>('');
     const [country, setCountry] = useState<string>('');
     const [usMinorConsent, setUsMinorConsent] = useState(false);
-
-    const inferCountryCode = () => {
-        try {
-            return Intl.DateTimeFormat().resolvedOptions().locale.split('-')[1];
-        } catch (e) {
-            return null;
-        }
-    };
 
     useEffect(() => {
         setCountry(prev => prev || inferCountryCode() || '');
@@ -147,6 +142,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     );
 
     useEffect(() => {
+        if (handleLockedRef.current) return;
         if (!uniqueProfileFetching && profileId) {
             setIsUniqueValid(uniqueProfile === null);
         }
@@ -166,7 +162,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     }, [profileId]);
 
     useEffect(() => {
-        if (isHandleManuallyEdited) return;
+        if (handleLockedRef.current || isHandleManuallyEdited) return;
 
         const trimmed = name.trim();
         if (!trimmed) {
@@ -187,6 +183,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     // Handle collision resolution
     useEffect(() => {
         if (
+            !handleLockedRef.current &&
             !isHandleManuallyEdited &&
             profileId &&
             !uniqueProfileFetching &&
@@ -444,6 +441,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                     });
                 }
 
+                handleLockedRef.current = true;
                 await refetchIsCurrentUserLCNUser();
                 await wallet.invoke.resetLCAClient();
                 await queryClient.resetQueries();
@@ -481,23 +479,22 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     // Screen 3 Logic
     const handleExplore = async () => {
         closeModal();
-        await onSuccess?.();
 
-        newModal(
-            <OnboardingSwiperForSlides
-                roleItem={LearnCardRoles?.find(r => r.type === role) ?? null}
-                dob={dob}
-            />,
-            { sectionClassName: '!max-w-full' },
-            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
-        );
+        if (onSuccess) {
+            await onSuccess();
+        } else {
+            history.push('/dashboard');
+        }
     };
 
     const handleRoleSelect = async (selectedRole: LearnCardRolesEnum) => {
         setRole(selectedRole);
         try {
             const wallet = await initWallet();
-            await wallet?.invoke?.updateProfile({ role: selectedRole });
+            const updated = await wallet?.invoke?.updateProfile({ role: selectedRole });
+            if (updated) {
+                await queryClient.invalidateQueries({ queryKey: ['getProfile'] });
+            }
         } catch (e) {
             log.error('Failed to update role:', e);
         }
@@ -812,6 +809,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                 </p>
                                             )}
                                             {profileId &&
+                                            !isCreating &&
                                             !(
                                                 isLengthValid &&
                                                 isFormatValid &&
@@ -1045,7 +1043,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
                     <div className="w-full max-w-sm space-y-4 mb-8">
                         <p className="text-sm font-medium text-grayscale-700 text-center">
-                            What brings you here? (Optional)
+                            Who are you? (Optional)
                         </p>
                         <div className="flex flex-wrap justify-center gap-2">
                             {LearnCardRoles.map(r => (
@@ -1055,7 +1053,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                     className={`px-4 py-2 rounded-full text-sm font-medium transition-all motion-safe:hover:-translate-y-0.5 active:scale-[0.97] shadow-sm ${
                                         role === r.type
                                             ? 'bg-grayscale-900 text-white shadow-md'
-                                            : 'bg-white/80 backdrop-blur-sm border border-grayscale-200/60 text-grayscale-700 hover:bg-white'
+                                            : 'bg-grayscale-100 border border-grayscale-200 text-grayscale-700 hover:bg-grayscale-200'
                                     }`}
                                 >
                                     {r.title}
@@ -1064,7 +1062,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                         </div>
                     </div>
 
-                    <div className="w-full max-w-sm mt-auto">
+                    <div className="w-full max-w-sm mt-2">
                         <button
                             type="button"
                             onClick={handleExplore}
