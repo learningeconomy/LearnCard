@@ -521,7 +521,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
             {step === 'age-country' && (
                 <div className="relative z-10 w-full h-full flex flex-col">
-                    <div className="flex-1 flex flex-col justify-center items-center px-4 py-8">
+                    <div className="flex-1 flex flex-col justify-center items-center px-4 pt-[calc(env(safe-area-inset-top)_+_2rem)] pb-8">
                         <div className="w-full max-w-[420px] animate-fade-in-up">
                             {renderProgress(1)}
 
@@ -632,7 +632,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                         </div>
                     </div>
 
-                    <div className="w-full bg-white/70 backdrop-blur-xl border-t border-grayscale-200/60 p-4 pb-[env(safe-area-inset-bottom,20px)]">
+                    <div className="w-full bg-white/70 backdrop-blur-xl border-t border-grayscale-200/60 px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)_+_1.5rem)]">
                         <div className="max-w-[420px] mx-auto">
                             <button
                                 type="button"
@@ -653,7 +653,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
             {step === 'profile' && (
                 <div className="relative z-10 w-full h-full flex flex-col">
-                    <div className="flex-1 flex flex-col items-center px-4 py-8 overflow-y-auto">
+                    <div className="flex-1 flex flex-col items-center px-4 pt-[calc(env(safe-area-inset-top)_+_2rem)] pb-8 overflow-y-auto">
                         <div className="w-full max-w-[420px] animate-fade-in-up">
                             {renderProgress(2)}
 
@@ -923,7 +923,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                         </div>
                     </div>
 
-                    <div className="w-full bg-white/70 backdrop-blur-xl border-t border-grayscale-200/60 p-4 pb-[env(safe-area-inset-bottom,20px)]">
+                    <div className="w-full bg-white/70 backdrop-blur-xl border-t border-grayscale-200/60 px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)_+_1.5rem)]">
                         <div className="max-w-[420px] mx-auto">
                             <button
                                 type="button"
@@ -951,7 +951,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
             )}
 
             {step === 'celebrate' && (
-                <div className="relative z-10 max-w-[600px] mx-auto pt-[50px] px-4 w-full h-full flex flex-col justify-center items-center animate-pop-in pb-[env(safe-area-inset-bottom,20px)]">
+                <div className="relative z-10 max-w-[600px] mx-auto pt-[calc(env(safe-area-inset-top)_+_2.5rem)] px-4 w-full h-full flex flex-col justify-center items-center animate-pop-in pb-[calc(env(safe-area-inset-bottom)_+_1.5rem)]">
                     <Confetti />
 
                     <div className="text-center mb-8">
