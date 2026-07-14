@@ -33,11 +33,12 @@ export const UserQRCode: React.FC<{
                     value={link}
                     data-testid="qrcode-card"
                     bgColor="transparent"
+                    level="H"
                     imageSettings={{
                         src: brandingAssets.brandMark,
                         height: 35,
                         width: 35,
-                        excavate: false,
+                        excavate: true,
                     }}
                 />
 
