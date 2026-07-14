@@ -124,8 +124,12 @@ const BoostAFriendPage: React.FC = () => {
 
         // Every send mode needs an LCN profile. If the user has none, open
         // onboarding and resume this same send once it completes.
-        const { prompted } = await gate(() => {
-            void handleIssue();
+        const { prompted } = await gate(async () => {
+            try {
+                await handleIssue();
+            } catch (err) {
+                setError(getFriendlyIssueError(err, recipientMode).message);
+            }
         });
         if (prompted) return;
 

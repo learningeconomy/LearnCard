@@ -33,7 +33,7 @@ export const UserQRCode: React.FC<{
 
         if (!url) return;
 
-        fetch(url)
+        fetch(url, { mode: 'cors', credentials: 'omit' })
             .then(response => response.blob())
             .then(
                 blob =>

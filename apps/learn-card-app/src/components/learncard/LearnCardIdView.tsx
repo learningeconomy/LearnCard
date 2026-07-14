@@ -89,7 +89,8 @@ const LearnCardIdView: React.FC<LearnCardIdViewProps> = ({ user }) => {
                     alt="Brand mark"
                     className="rounded-full h-[50px] w-[50px]"
                     onError={e => {
-                        if (e.currentTarget.src !== DEFAULT_BRAND_MARK) {
+                        if (!e.currentTarget.dataset.fallbackApplied) {
+                            e.currentTarget.dataset.fallbackApplied = 'true';
                             e.currentTarget.src = DEFAULT_BRAND_MARK;
                         }
                     }}
