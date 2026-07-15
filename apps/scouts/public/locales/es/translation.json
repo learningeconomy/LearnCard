@@ -114,7 +114,17 @@
         "savedToPhotos": "¡Código QR guardado en Fotos!",
         "saveFailed": "Error al guardar el código QR.",
         "savedToDocuments": "¡Código QR guardado en Documentos!",
-        "savePdfFailed": "Error al guardar el código QR en PDF."
+        "savePdfFailed": "Error al guardar el código QR en PDF.",
+        "shareLink": "Share Link",
+        "eek": "Eeek!",
+        "errOcurred": "An error occurred!",
+        "editInfo": "Edit Info",
+        "logout": "Logout",
+        "scanConnect": "Scan to connect",
+        "contacts": "Contacts",
+        "myAccount": "My Account",
+        "camPermFor": "Enable camera permissions for:",
+        "camPermDesc": "New connection requests, New boosts (like achievements, credentials, and badges) via QR codes."
     },
     "share": {
         "addContact": "Agregar contacto",
@@ -128,7 +138,10 @@
         "link": "Enlace",
         "shareProfile": "Compartir perfil",
         "generateInviteLink": "Generar enlace de invitación",
-        "noCredentialsToShare": "No hay credenciales para compartir."
+        "noCredentialsToShare": "No hay credenciales para compartir.",
+        "or": "or",
+        "sendInvLink": "Send invite link to connect",
+        "genLink": "Generating Link..."
     },
     "verification": {
         "title": "Verificaciones de credenciales",

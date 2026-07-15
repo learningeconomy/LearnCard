@@ -114,7 +114,17 @@
         "savedToPhotos": "تم حفظ رمز QR في الصور!",
         "saveFailed": "فشل حفظ رمز QR.",
         "savedToDocuments": "تم حفظ رمز QR في المستندات!",
-        "savePdfFailed": "فشل حفظ رمز QR كـ PDF."
+        "savePdfFailed": "فشل حفظ رمز QR كـ PDF.",
+        "shareLink": "Share Link",
+        "eek": "Eeek!",
+        "errOcurred": "An error occurred!",
+        "editInfo": "Edit Info",
+        "logout": "Logout",
+        "scanConnect": "Scan to connect",
+        "contacts": "Contacts",
+        "myAccount": "My Account",
+        "camPermFor": "Enable camera permissions for:",
+        "camPermDesc": "New connection requests, New boosts (like achievements, credentials, and badges) via QR codes."
     },
     "share": {
         "addContact": "إضافة جهة اتصال",
@@ -128,7 +138,10 @@
         "link": "الرابط",
         "shareProfile": "مشاركة الملف الشخصي",
         "generateInviteLink": "إنشاء رابط دعوة",
-        "noCredentialsToShare": "لا توجد بيانات اعتماد للمشاركة."
+        "noCredentialsToShare": "لا توجد بيانات اعتماد للمشاركة.",
+        "or": "or",
+        "sendInvLink": "Send invite link to connect",
+        "genLink": "Generating Link..."
     },
     "verification": {
         "title": "التحقق من الاعتمادات",

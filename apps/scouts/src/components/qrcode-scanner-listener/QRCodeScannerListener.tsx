@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import * as m from '../../paraglide/messages.js';
 import { BarcodeScanner, BarcodeFormat, LensFacing } from '@capacitor-mlkit/barcode-scanning';
 import { Capacitor } from '@capacitor/core';
 
@@ -147,7 +148,7 @@ export const QRCodeScannerListener: React.FC = () => {
                         {loading && (
                             <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
                                 <IonSpinner color="black" />
-                                <p className="mt-2 font-bold text-lg">Loading...</p>
+                                <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                             </section>
                         )}
                         {!loading && contact && (
@@ -165,17 +166,17 @@ export const QRCodeScannerListener: React.FC = () => {
                                     className="relative max-w-[250px] m-auto mb-0"
                                 />
                                 <h1 className="text-center text-3xl font-bold text-grayscale-800 m-0 p-0 mt-4">
-                                    Eeek!
+                                    {m['scanner.eek']()}
                                 </h1>
                                 <strong className="text-center font-medium text-grayscale-600 m-0 p-0">
-                                    An error ocurred!
+                                    {m['scanner.errOcurred']()}
                                 </strong>
                                 <div className="w-full flex items-center justify-center mt-8">
                                     <button
                                         onClick={() => setIsOpen(false)}
                                         className="text-grayscale-900 text-center text-sm"
                                     >
-                                        Cancel
+                                        {m['common.cancel']()}
                                     </button>
                                 </div>
                             </section>

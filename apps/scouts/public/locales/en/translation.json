@@ -114,7 +114,17 @@
         "savedToPhotos": "QR Code saved to Photos!",
         "saveFailed": "Failed to save QR Code.",
         "savedToDocuments": "QR Code saved to Documents!",
-        "savePdfFailed": "Failed to save QR Code PDF."
+        "savePdfFailed": "Failed to save QR Code PDF.",
+        "shareLink": "Share Link",
+        "eek": "Eeek!",
+        "errOcurred": "An error occurred!",
+        "editInfo": "Edit Info",
+        "logout": "Logout",
+        "scanConnect": "Scan to connect",
+        "contacts": "Contacts",
+        "myAccount": "My Account",
+        "camPermFor": "Enable camera permissions for:",
+        "camPermDesc": "New connection requests, New boosts (like achievements, credentials, and badges) via QR codes."
     },
     "share": {
         "addContact": "Add contact",
@@ -128,7 +138,10 @@
         "profileLinkCopyFailed": "Unable to copy Profile link to clipboard",
         "shareProfile": "Share Profile",
         "generateInviteLink": "Generate Invite Link",
-        "noCredentialsToShare": "No credentials to share."
+        "noCredentialsToShare": "No credentials to share.",
+        "or": "or",
+        "sendInvLink": "Send invite link to connect",
+        "genLink": "Generating Link..."
     },
     "verification": {
         "title": "Credential Verifications",
