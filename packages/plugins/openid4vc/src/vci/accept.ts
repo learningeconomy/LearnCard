@@ -166,11 +166,9 @@ const requestCredentialsFromPreAuthTokenCore = async (args: {
                 accessToken: tokenResponse.access_token,
                 tokenType: tokenResponse.token_type,
                 credentialIdentifier: requestDescriptor.credentialIdentifier,
-                // When we have an identifier, format + extras MUST NOT be sent.
-                format: requestDescriptor.credentialIdentifier ? undefined : format,
-                extra: requestDescriptor.credentialIdentifier
+                credentialConfigurationId: requestDescriptor.credentialIdentifier
                     ? undefined
-                    : buildFormatSpecificBody(configDef, format),
+                    : configurationId,
                 fetchImpl,
             };
 
@@ -367,33 +365,6 @@ const inferFormatFromDefinition = (configDef: Record<string, unknown> | undefine
     }
 
     return 'jwt_vc_json';
-};
-
-/**
- * Build the format-specific portion of the credential request body by
- * copying Draft 13 §7.2 — required fields from the issuer's advertised
- * configuration. For `jwt_vc_json` / `jwt_vc_json-ld` / `ldp_vc` that
- * means echoing `credential_definition` so the issuer knows which
- * credential type to mint.
- *
- * Falls back to `undefined` when no format-specific fields are needed
- * (e.g. formats the plugin doesn't yet support explicitly — the server
- * either accepts a bare `format` or surfaces a clear error).
- */
-const buildFormatSpecificBody = (
-    configDef: Record<string, unknown> | undefined,
-    format: string
-): Record<string, unknown> | undefined => {
-    if (!configDef) return undefined;
-
-    if (format === 'jwt_vc_json' || format === 'jwt_vc_json-ld' || format === 'ldp_vc') {
-        const def = configDef.credential_definition;
-        if (def && typeof def === 'object') {
-            return { credential_definition: def };
-        }
-    }
-
-    return undefined;
 };
 
 /**

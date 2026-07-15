@@ -159,12 +159,11 @@ describe('acceptCredentialOffer', () => {
         ]);
     });
 
-    it('sends credential_definition from issuer metadata (NOT credential_identifier) in the credential request', async () => {
-        // Regression: WaltID demo rejected us with "No matching issuance
-        // request found for this session" because we were sending
-        // `credential_identifier: <config id>` alongside `format`. Per
-        // Draft 13 §7.2, those are mutually exclusive and credential_identifier
-        // is only valid when returned via authorization_details.
+    it('sends credential_configuration_id + proofs array (NOT credential_identifier) in the credential request', async () => {
+        // Regression: credential_identifier and credential_configuration_id are
+        // mutually exclusive (OID4VCI 1.0 Final §8.2); credential_identifier is
+        // only valid when returned via authorization_details. The Draft 13
+        // `format` + `credential_definition` request shape is no longer sent.
         const fetchMock = makeFetch([
             mockResponse(issuerMetadata),
             mockResponse(asMetadata),
@@ -182,11 +181,12 @@ describe('acceptCredentialOffer', () => {
         const credentialCall = (fetchMock as unknown as jest.Mock).mock.calls[3];
         const body = JSON.parse(credentialCall[1].body);
 
-        expect(body.format).toBe('jwt_vc_json');
-        expect(body.credential_definition).toEqual({
-            type: ['VerifiableCredential', 'UniversityDegree'],
-        });
-        expect(body.proof).toEqual({ proof_type: 'jwt', jwt: 'proof.jwt.sig' });
+        expect(body.credential_configuration_id).toBe('UniversityDegree_jwt_vc_json');
+        expect(body.proofs).toEqual({ jwt: ['proof.jwt.sig'] });
+        // Draft 13 fields MUST NOT be present.
+        expect(body.format).toBeUndefined();
+        expect(body.credential_definition).toBeUndefined();
+        expect(body.proof).toBeUndefined();
         // Must NOT be present — we didn't get an authorization_details identifier.
         expect(body.credential_identifier).toBeUndefined();
     });
@@ -224,11 +224,11 @@ describe('acceptCredentialOffer', () => {
         const call2Body = JSON.parse((fetchMock as unknown as jest.Mock).mock.calls[4][1].body);
 
         expect(call1Body.credential_identifier).toBe('issuer-scoped-id-1');
-        expect(call1Body.format).toBeUndefined();
+        expect(call1Body.credential_configuration_id).toBeUndefined();
         expect(call1Body.credential_definition).toBeUndefined();
 
         expect(call2Body.credential_identifier).toBe('issuer-scoped-id-2');
-        expect(call2Body.format).toBeUndefined();
+        expect(call2Body.credential_configuration_id).toBeUndefined();
     });
 
     it('throws unsupported_grant when offer lacks pre-authorized_code grant', async () => {

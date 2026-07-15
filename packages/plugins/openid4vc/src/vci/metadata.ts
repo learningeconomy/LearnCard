@@ -1,7 +1,4 @@
-import {
-    AuthorizationServerMetadata,
-    CredentialIssuerMetadata,
-} from './types';
+import { AuthorizationServerMetadata, CredentialIssuerMetadata } from './types';
 import { VciError } from './errors';
 
 const ISSUER_WELL_KNOWN = '/.well-known/openid-credential-issuer';
@@ -26,7 +23,7 @@ export const fetchCredentialIssuerMetadata = async (
         );
     }
 
-    const url = joinWellKnown(credentialIssuer, ISSUER_WELL_KNOWN);
+    const url = insertWellKnown(credentialIssuer, ISSUER_WELL_KNOWN);
 
     const json = await getJson(url, fetchImpl, 'metadata_fetch_failed');
 
@@ -37,19 +34,15 @@ export const fetchCredentialIssuerMetadata = async (
     }
 
     if (typeof json.credential_issuer !== 'string' || json.credential_issuer.length === 0) {
-        throw new VciError(
-            'metadata_invalid',
-            'Issuer metadata is missing `credential_issuer`',
-            { body: json }
-        );
+        throw new VciError('metadata_invalid', 'Issuer metadata is missing `credential_issuer`', {
+            body: json,
+        });
     }
 
     if (typeof json.credential_endpoint !== 'string' || json.credential_endpoint.length === 0) {
-        throw new VciError(
-            'metadata_invalid',
-            'Issuer metadata is missing `credential_endpoint`',
-            { body: json }
-        );
+        throw new VciError('metadata_invalid', 'Issuer metadata is missing `credential_endpoint`', {
+            body: json,
+        });
     }
 
     if (!originsMatch(json.credential_issuer, credentialIssuer)) {
@@ -78,7 +71,7 @@ export const fetchAuthorizationServerMetadata = async (
         );
     }
 
-    const oauthUrl = joinWellKnown(authServer, OAUTH_AS_WELL_KNOWN);
+    const oauthUrl = insertWellKnown(authServer, OAUTH_AS_WELL_KNOWN);
 
     const tryUrl = async (url: string): Promise<unknown | null> => {
         let response: Response;
@@ -101,7 +94,7 @@ export const fetchAuthorizationServerMetadata = async (
     let json = await tryUrl(oauthUrl);
 
     if (json == null) {
-        const oidcUrl = joinWellKnown(authServer, OIDC_WELL_KNOWN);
+        const oidcUrl = appendWellKnown(authServer, OIDC_WELL_KNOWN);
         json = await tryUrl(oidcUrl);
     }
 
@@ -159,7 +152,48 @@ export const resolveAuthorizationServer = (
 
 // ---------- helpers ----------
 
-const joinWellKnown = (base: string, path: string): string => {
+/**
+ * Insert a well-known path segment between the origin (scheme + host +
+ * optional port) and the path component of an identifier.
+ *
+ * This is the construction mandated by OID4VCI 1.0 Final §12.2.2 for the
+ * Credential Issuer well-known endpoint, and by RFC 8414 §3 for the
+ * `oauth-authorization-server` endpoint:
+ *
+ *   `https://issuer.example.com/tenant`
+ *     → `https://issuer.example.com/.well-known/openid-credential-issuer/tenant`
+ *   `https://issuer.example.com`
+ *     → `https://issuer.example.com/.well-known/openid-credential-issuer`
+ *
+ * Credential Issuer Identifiers carry no query or fragment (§12.2.1), so we
+ * only preserve scheme/host/port and path. Falls back to append semantics
+ * if the identifier can't be parsed as a URL.
+ */
+const insertWellKnown = (base: string, wellKnown: string): string => {
+    let url: URL;
+
+    try {
+        url = new URL(base);
+    } catch {
+        return appendWellKnown(base, wellKnown);
+    }
+
+    // Strip trailing slashes from the path (character-wise loop — linear, no
+    // regex, to keep static analyzers happy on network-sourced input).
+    let path = url.pathname;
+    let end = path.length;
+    while (end > 0 && path.charCodeAt(end - 1) === 0x2f /* '/' */) end--;
+    path = path.slice(0, end);
+
+    return path.length > 0 ? `${url.origin}${wellKnown}${path}` : `${url.origin}${wellKnown}`;
+};
+
+/**
+ * Append a well-known path segment to the end of an identifier, stripping any
+ * terminating slash first. This is the OpenID Connect Discovery 1.0 rule and
+ * is retained for the `openid-configuration` authorization-server fallback.
+ */
+const appendWellKnown = (base: string, path: string): string => {
     // Strip any trailing slashes from the base, then append the well-known path.
     // Implemented as a loop rather than `base.replace(/\/+$/, '')` to silence
     // CodeQL's polynomial-ReDoS heuristic (the regex is linear, but static
@@ -218,7 +252,10 @@ const getJson = async (
     let response: Response;
 
     try {
-        response = await fetchImpl(url, { method: 'GET' });
+        response = await fetchImpl(url, {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+        });
     } catch (e) {
         throw new VciError(
             failCode,
@@ -228,9 +265,13 @@ const getJson = async (
     }
 
     if (!response.ok) {
-        throw new VciError(failCode, `Fetch of ${url} returned ${response.status} ${response.statusText}`, {
-            status: response.status,
-        });
+        throw new VciError(
+            failCode,
+            `Fetch of ${url} returned ${response.status} ${response.statusText}`,
+            {
+                status: response.status,
+            }
+        );
     }
 
     try {

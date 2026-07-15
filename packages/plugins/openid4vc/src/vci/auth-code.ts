@@ -484,10 +484,9 @@ export const fetchCredentialsForToken = async (
                 accessToken: args.tokenResponse.access_token,
                 tokenType: args.tokenResponse.token_type,
                 credentialIdentifier: descriptor.credentialIdentifier,
-                format: descriptor.credentialIdentifier ? undefined : format,
-                extra: descriptor.credentialIdentifier
+                credentialConfigurationId: descriptor.credentialIdentifier
                     ? undefined
-                    : formatSpecificBody(configDef, format),
+                    : configurationId,
                 fetchImpl: args.fetchImpl,
             };
 
@@ -645,20 +644,6 @@ const inferFormat = (configDef: unknown): string => {
         return (configDef as { format: string }).format;
     }
     return 'jwt_vc_json';
-};
-
-const formatSpecificBody = (
-    configDef: unknown,
-    format: string
-): Record<string, unknown> | undefined => {
-    if (!configDef || typeof configDef !== 'object') return undefined;
-    if (format === 'jwt_vc_json' || format === 'jwt_vc_json-ld' || format === 'ldp_vc') {
-        const def = (configDef as { credential_definition?: unknown }).credential_definition;
-        if (def && typeof def === 'object') {
-            return { credential_definition: def };
-        }
-    }
-    return undefined;
 };
 
 const indexAuthorizationDetails = (raw: unknown): Map<string, string[]> => {
