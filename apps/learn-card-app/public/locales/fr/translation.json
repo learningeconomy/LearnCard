@@ -530,7 +530,8 @@
                 "accomplishment": "Élément de portfolio",
                 "accommodation": "Assistance",
                 "workHistory": "Expérience",
-                "credential": "Justificatif"
+                "credential": "Justificatif",
+                "id": "Pièce d'identité"
             },
             "categoriesPlural": {
                 "all": "Tout",
@@ -552,7 +553,39 @@
             "allCreds": "Tous les justificatifs",
             "emptyAll": "Rien dans votre passeport pour l'instant.",
             "recent": "AJOUTÉ RÉCEMMENT",
-            "seeAll": "Voir tout"
+            "seeAll": "Voir tout",
+            "article": {
+                "socialBadge": "un",
+                "achievement": "une",
+                "learningHistory": "un",
+                "accomplishment": "un",
+                "accommodation": "une",
+                "workHistory": "une",
+                "id": "une",
+                "credential": "un"
+            },
+            "status": {
+                "sent": "Envoyé",
+                "claimed": "Récupéré",
+                "expired": "Expiré",
+                "notDelivered": "Non livré"
+            },
+            "title": {
+                "selfAdded": "Vous avez ajouté {{article}} {{label}} à votre passeport",
+                "received": "{{actor}} vous a envoyé {{article}} {{label}}",
+                "claimedBy": "{{label}} récupéré par",
+                "expiredFor": "{{label}} expiré pour",
+                "failedTo": "Impossible de livrer {{label}} à",
+                "sentTo": "Vous avez envoyé {{article}} {{label}} à"
+            },
+            "when": {
+                "earlier": "Plus tôt",
+                "today": "Aujourd'hui",
+                "yesterday": "Hier",
+                "thisWeek": "Plus tôt cette semaine",
+                "lastWeek": "La semaine dernière",
+                "thisMonth": "Plus tôt ce mois-ci"
+            }
         }
     },
     "launchpad": {
@@ -817,7 +850,9 @@
             "colorful": "Colorful",
             "formal": "Formal",
             "vetpass": "VetPass"
-        }
+        },
+        "colorfulMode": "Mode coloré",
+        "neutralMode": "Mode neutre"
     },
     "language": {
         "select": "Sélectionner la langue",
@@ -3595,7 +3630,9 @@
             "browsePathwaysLabel": "Parcourir les itinéraires",
             "browsePathwaysCaption": "Découvrez les itinéraires disponibles",
             "discoverAppsLabel": "Découvrir des apps",
-            "discoverAppsCaption": "Trouvez des apps pour démarrer"
+            "discoverAppsCaption": "Trouvez des apps pour démarrer",
+            "addToPassportLabel": "Ajouter au passeport",
+            "addToPassportCaption": "Scannez, collez ou téléversez"
         },
         "skillProfile": {
             "eyebrow": "Faites de {{brand}} le vôtre",
@@ -7496,5 +7533,23 @@
     "testStep": {},
     "configureStep": {},
     "issueCredentials": {},
-    "issueVerifyStep": {}
+    "issueVerifyStep": {},
+    "myAppsPage": {
+        "browseMore": "Voir plus",
+        "searchPlaceholder": "Rechercher...",
+        "searchAria": "Rechercher des apps",
+        "learnCardApps": "Apps LearnCard",
+        "moreApps": "Plus d'apps",
+        "noResults": "Aucune app à afficher pour l'instant.",
+        "noResultsFor": "Aucun résultat pour \"{{query}}\"",
+        "oneResult": "1 résultat pour \"{{query}}\"",
+        "manyResults": "{{count}} résultats pour \"{{query}}\""
+    },
+    "addToPassport": {
+        "subtitle": "Ajoutez une certification à votre passeport.",
+        "receive": "Recevoir",
+        "addYourOwn": "Ajoutez la vôtre",
+        "uploadCredential": "Téléverser une certification",
+        "buildMyBrand": "Créez mon {{brand}}"
+    }
 }
