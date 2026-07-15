@@ -40,7 +40,6 @@ export const ClaimBoostLoggedOutPrompt: React.FC<{
                         <IonCol className="w-full flex flex-col items-center justify-center h-full p-0 m-0">
                             {isDesktop ? (
                                 <ClaimBoostLoggedOutPromptDesktop
-                                    handleRedirectTo={handleRedirectTo}
                                     logo={ScoutPassLogo}
                                     textLogo={ScoutPassTextLogo}
                                 />
@@ -60,10 +59,9 @@ export const ClaimBoostLoggedOutPrompt: React.FC<{
 };
 
 const ClaimBoostLoggedOutPromptDesktop: React.FC<{
-    handleRedirectTo: () => void;
     logo: string;
     textLogo: string;
-}> = ({ handleRedirectTo, logo, textLogo }) => {
+}> = ({ logo, textLogo }) => {
     return (
         <div className="relative grid h-full w-full grid-cols-2 overflow-hidden text-white">
             <ScoutsLoginColumn />
@@ -74,16 +72,9 @@ const ClaimBoostLoggedOutPromptDesktop: React.FC<{
                     <img src={textLogo} alt="ScoutPass text logo" className="max-w-[200px]" />
                 </div>
 
-                <h1 className="mb-2 max-w-[320px] text-[24px] font-semibold leading-snug text-white drop-shadow-sm">
+                <h1 className="max-w-[320px] text-[24px] font-semibold leading-snug text-white drop-shadow-sm">
                     Someone sent you a credential
                 </h1>
-
-                <button
-                    onClick={handleRedirectTo}
-                    className="mt-[24px] flex h-[54px] w-full items-center justify-center rounded-[20px] bg-white px-[24px] text-[17px] font-semibold text-grayscale-900 shadow-lg transition-opacity hover:opacity-90"
-                >
-                    Sign In to View and Claim
-                </button>
             </div>
         </div>
     );
@@ -229,7 +220,7 @@ const ClaimBoostLoggedOutPromptMobile: React.FC<{
 
                 <button
                     onClick={handleRedirectTo}
-                    className="mt-[18px] flex h-[50px] w-full items-center justify-center rounded-[20px] bg-white px-[18px] text-[15px] font-semibold text-grayscale-900 shadow-lg transition-opacity hover:opacity-90"
+                    className="mt-[18px] flex h-[50px] w-full max-w-[340px] px-[30px] items-center justify-center rounded-[20px] bg-white text-[15px] font-semibold text-grayscale-900 shadow-lg transition-opacity hover:opacity-90"
                 >
                     Sign In to View and Claim
                 </button>
