@@ -236,6 +236,49 @@ if (learnCard.isMocked()) {
 }
 ```
 
+### Coherent state: reads reflect writes
+
+The mock keeps a small session store so it behaves like a real host, not a set of
+disconnected stubs. Anything you do in a session shows up in later reads:
+
+```typescript
+await learnCard.sendCredential({ templateAlias: 'course-completion' });
+
+// Now reflects the credential you just issued:
+await learnCard.checkUserHasCredential({ templateAlias: 'course-completion' }); // { hasCredential: true, ... }
+await learnCard.requestLearnerContext(); // raw.credentials includes it
+```
+
+This means happy-path UI (e.g. a "you already earned this" banner) actually
+lights up standalone. Counters persist to `localStorage`; issued credentials and
+identity live for the session (a reload re-applies your seeds — see below). Mock
+credentials are clearly marked (`_mock: true`) and never cryptographically valid,
+so they can't be mistaken for real ones.
+
+### Seeding data for demos
+
+To demo a pre-populated state (a returning user who already has credentials, a
+starting coin balance) without performing actions first, seed via `mockOptions`:
+
+```typescript
+createPartnerConnect({
+    mockOptions: {
+        identity: { did: 'did:web:example.com:me', name: 'Ada' },
+        credentials: [
+            { templateAlias: 'course-completion', name: 'Algebra 101' },
+            // Model a credential you issued to someone else:
+            { boostUri: 'lc:boost:team-badge', recipient: 'alice', status: 'pending' },
+        ],
+        counters: { coins: 50 },
+    },
+});
+```
+
+Seeded credentials feed `checkUserHasCredential`, `getTemplateRecipients`,
+`getTemplateIssuanceStatus`, `requestLearnerContext`, and `askCredentialSearch`.
+Seeded counters are applied only when a counter has no persisted value yet, so
+incremented values survive reloads.
+
 ## Detecting the Embed Context
 
 Use `isEmbedded()` to branch your own logic based on whether your app is running

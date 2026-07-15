@@ -123,6 +123,90 @@ describe('mock counters', () => {
     });
 });
 
+describe('mock coherence (reads reflect this session writes)', () => {
+    it('checkUserHasCredential reflects a template credential issued this session', async () => {
+        const lc = createPartnerConnect({ mockOptions: { ui: false } });
+
+        const before = await lc.checkUserHasCredential({ templateAlias: 'algebra' });
+        expect(before.hasCredential).toBe(false);
+
+        await lc.sendCredential({ templateAlias: 'algebra' });
+
+        const after = await lc.checkUserHasCredential({ templateAlias: 'algebra' });
+        expect(after.hasCredential).toBe(true);
+        expect(after.credentialUri).toBeDefined();
+    });
+
+    it('learner context and credential search include issued credentials', async () => {
+        const lc = createPartnerConnect({ mockOptions: { ui: false } });
+        await lc.sendCredential({ templateAlias: 'algebra' });
+
+        const context = await lc.requestLearnerContext();
+        expect(context.raw?.credentials.length).toBe(1);
+
+        const search = await lc.askCredentialSearch({ query: [], challenge: 'c', domain: 'd' });
+        expect(search.verifiablePresentation?.verifiableCredential.length).toBe(1);
+    });
+
+    it('preventDuplicateClaim returns the existing credential', async () => {
+        const lc = createPartnerConnect({ mockOptions: { ui: false } });
+        const first = (await lc.sendCredential({
+            templateAlias: 'algebra',
+            preventDuplicateClaim: true,
+        })) as { credentialUri: string };
+        const second = (await lc.sendCredential({
+            templateAlias: 'algebra',
+            preventDuplicateClaim: true,
+        })) as { credentialUri: string; alreadyClaimed?: boolean };
+
+        expect(second.alreadyClaimed).toBe(true);
+        expect(second.credentialUri).toBe(first.credentialUri);
+    });
+
+    it('initiateTemplateIssue populates recipients and issuance status', async () => {
+        const lc = createPartnerConnect({ mockOptions: { ui: false } });
+        await lc.initiateTemplateIssue('boost-xyz', ['alice', 'bob']);
+
+        const recipients = await lc.getTemplateRecipients({ boostUri: 'boost-xyz' });
+        expect(recipients.total).toBe(2);
+
+        const status = await lc.getTemplateIssuanceStatus({
+            boostUri: 'boost-xyz',
+            recipient: 'alice',
+        });
+        expect(status.sent).toBe(true);
+        expect(status.status).toBe('pending');
+    });
+});
+
+describe('mock seeding', () => {
+    it('seeds identity did returned by requestIdentity', async () => {
+        const lc = createPartnerConnect({
+            mockOptions: { ui: false, identity: { did: 'did:web:seed:me', name: 'Ada' } },
+        });
+        const identity = await lc.requestIdentity();
+        expect(identity.user.did).toBe('did:web:seed:me');
+        expect((identity.user as { name?: string }).name).toBe('Ada');
+    });
+
+    it('seeds held credentials so happy-path reads work immediately', async () => {
+        const lc = createPartnerConnect({
+            mockOptions: {
+                ui: false,
+                credentials: [{ templateAlias: 'algebra', name: 'Algebra 101' }],
+            },
+        });
+        const check = await lc.checkUserHasCredential({ templateAlias: 'algebra' });
+        expect(check.hasCredential).toBe(true);
+    });
+
+    it('seeds initial counter values', async () => {
+        const lc = createPartnerConnect({ mockOptions: { ui: false, counters: { coins: 50 } } });
+        const { value } = await lc.getCounter('coins');
+        expect(value).toBe(50);
+    });
+});
+
 describe('mock UI', () => {
     const toastCount = (): number => document.querySelectorAll('.lc-mock-toast').length;
     const toastText = (): string =>

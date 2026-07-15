@@ -910,13 +910,23 @@ createPartnerConnect({
         ui: true, // toasts/banners (default true)
         log: true, // console logging (default true)
         persist: true, // save counters to the browser (default true)
-        did: 'did:web:example.com:me', // fake identity
         namespace: 'my-app-mock', // storage namespace for mock data
+        // Seed data for demos / happy-path UI:
+        identity: { did: 'did:web:example.com:me', name: 'Ada' },
+        credentials: [{ templateAlias: 'course-completion', name: 'Algebra 101' }],
+        counters: { coins: 50 },
     },
 });
 ```
 
 Use `learnCard.isMocked()` to check whether an instance is currently mocking.
+
+The mock keeps a small session store, so **reads reflect writes**: after
+`sendCredential(...)`, calls like `checkUserHasCredential`, `getTemplateRecipients`,
+`requestLearnerContext`, and `askCredentialSearch` return that credential — so
+happy-path UI actually lights up standalone. Use `mockOptions.credentials` /
+`identity` / `counters` to pre-populate state without performing an action first.
+Mock credentials are marked `_mock: true` and are never cryptographically valid.
 
 ## Security Model
 

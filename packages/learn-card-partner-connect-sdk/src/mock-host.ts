@@ -21,13 +21,32 @@ interface ResolvedMockOptions {
     ui: boolean;
     log: boolean;
     persist: boolean;
-    did: string;
     namespace: string;
 }
 
 interface StoredCounter {
     value: number;
     updatedAt: string;
+}
+
+type MockStatus = 'pending' | 'claimed' | 'revoked';
+
+interface MockCredential {
+    credentialUri: string;
+    boostUri?: string;
+    templateAlias?: string;
+    name: string;
+    recipient: string;
+    status: MockStatus;
+    sentDate: string;
+    claimedDate?: string;
+    receivedDate?: string;
+    credential: unknown;
+}
+
+interface TemplateQuery {
+    templateAlias?: unknown;
+    boostUri?: unknown;
 }
 
 type ToastTone = 'default' | 'positive';
@@ -94,12 +113,18 @@ export class MockHost {
     /** In-memory counter fallback used when persistence is off/unavailable. */
     private readonly memoryCounters = new Map<string, StoredCounter>();
 
+    /** Session-scoped credential store; reads reflect writes and seeds. */
+    private readonly credentials: MockCredential[] = [];
+
+    private readonly identity: { did: string; [key: string]: unknown };
+
     /** DOM nodes injected for visual feedback, tracked for cleanup. */
     private readonly domNodes = new Set<HTMLElement>();
 
     private styleEl: HTMLStyleElement | null = null;
     private stackEl: HTMLElement | null = null;
     private readonly activeToasts = new Map<string, ActiveToast>();
+    private idSeq = 0;
     private destroyed = false;
 
     constructor(options?: MockHostOptions) {
@@ -107,9 +132,27 @@ export class MockHost {
             ui: options?.ui ?? true,
             log: options?.log ?? true,
             persist: options?.persist ?? true,
-            did: options?.did || DEFAULT_DID,
             namespace: options?.namespace || DEFAULT_NAMESPACE,
         };
+
+        this.identity = {
+            ...(options?.identity ?? {}),
+            did: options?.identity?.did || options?.did || DEFAULT_DID,
+        };
+
+        for (const seed of options?.credentials ?? []) {
+            this.addCredential({
+                name: seed.name || seed.templateAlias || 'Mock Credential',
+                templateAlias: seed.templateAlias,
+                boostUri: seed.boostUri,
+                recipient: seed.recipient,
+                status: seed.status,
+            });
+        }
+
+        for (const [key, value] of Object.entries(options?.counters ?? {})) {
+            if (this.readCounter(key) === undefined) this.writeCounter(key, value);
+        }
 
         this.announce();
     }
@@ -140,16 +183,19 @@ export class MockHost {
                 });
                 return Promise.resolve({
                     token: `mock-token-${Date.now()}`,
-                    user: { did: this.options.did },
+                    user: { ...this.identity },
                 });
 
             case 'SEND_CREDENTIAL': {
                 const name = readAchievementName(payload);
-                this.showClaimToast(name);
-                return Promise.resolve({
-                    credentialId: `mock-credential-${Date.now()}`,
-                    stored: true,
+                const credentialId = `mock-credential-${Date.now()}-${(this.idSeq += 1)}`;
+                this.addCredential({
+                    name,
+                    credentialUri: credentialId,
+                    credential: (payload as { credential?: unknown } | undefined)?.credential,
                 });
+                this.showClaimToast(name);
+                return Promise.resolve({ credentialId, stored: true });
             }
 
             case 'REQUEST_CONSENT':
@@ -168,46 +214,85 @@ export class MockHost {
                 return Promise.resolve({ launched: true, featurePath });
             }
 
-            case 'ASK_CREDENTIAL_SEARCH':
+            case 'ASK_CREDENTIAL_SEARCH': {
+                const held = this.selfCredentials();
                 this.toast({
                     icon: '🔍',
-                    segments: [
-                        'In LearnCard, the user would be asked to share matching credentials. None in mock.',
-                    ],
+                    segments: held.length
+                        ? ['The user could share ', { b: String(held.length) }, ' credential(s).']
+                        : [
+                              'In LearnCard, the user would be asked to share matching credentials. None in mock.',
+                          ],
                 });
                 return Promise.resolve({
-                    verifiablePresentation: { verifiableCredential: [] },
+                    verifiablePresentation: {
+                        verifiableCredential: held.map(c => c.credential),
+                    },
                 });
+            }
 
-            case 'ASK_CREDENTIAL_SPECIFIC':
+            case 'ASK_CREDENTIAL_SPECIFIC': {
+                const credentialId = (payload as { credentialId?: string } | undefined)
+                    ?.credentialId;
+                const found = this.credentials.find(c => c.credentialUri === credentialId);
                 this.toast({
                     icon: '🔍',
-                    segments: [
-                        'In LearnCard, the user would be asked to share a credential. None in mock.',
-                    ],
+                    segments: found
+                        ? ['Sharing ', { b: found.name }, '.']
+                        : [
+                              'In LearnCard, the user would be asked to share a credential. Not found in mock.',
+                          ],
                 });
-                return Promise.resolve({ credential: undefined });
+                return Promise.resolve({ credential: found?.credential });
+            }
 
-            case 'INITIATE_TEMPLATE_ISSUE':
+            case 'INITIATE_TEMPLATE_ISSUE': {
+                const input = payload as
+                    | { templateId?: string; draftRecipients?: string[] }
+                    | undefined;
+                const templateId = input?.templateId ?? '';
+                const recipients = Array.isArray(input?.draftRecipients)
+                    ? (input?.draftRecipients as string[])
+                    : [];
+                for (const recipient of recipients) {
+                    this.addCredential({
+                        name: templateId || 'Boost',
+                        boostUri: templateId,
+                        recipient,
+                        status: 'pending',
+                    });
+                }
                 this.toast({
                     icon: '📤',
-                    segments: ['In LearnCard, this would open the Send Boost flow.'],
+                    segments: recipients.length
+                        ? [
+                              'This would issue to ',
+                              { b: String(recipients.length) },
+                              ' recipient(s).',
+                          ]
+                        : ['In LearnCard, this would open the Send Boost flow.'],
                 });
                 return Promise.resolve({ issued: true });
+            }
 
-            case 'REQUEST_LEARNER_CONTEXT':
+            case 'REQUEST_LEARNER_CONTEXT': {
+                const held = this.selfCredentials();
                 this.toast({
                     icon: '🧠',
-                    segments: [
-                        "In LearnCard, the user's learner profile would load. Empty in mock.",
-                    ],
+                    segments: held.length
+                        ? ['Learner profile: ', { b: String(held.length) }, ' credential(s).']
+                        : ["In LearnCard, the user's learner profile would load. Empty in mock."],
                 });
+                const prompt = held.length
+                    ? `Mock learner context. Credentials held: ${held.map(c => c.name).join(', ')}.`
+                    : 'Mock learner context: this user has no credentials in standalone mode.';
                 return Promise.resolve({
                     status: 'ready',
-                    prompt: 'Mock learner context: this user has no credentials in standalone mode.',
-                    did: this.options.did,
-                    raw: { credentials: [] },
+                    prompt,
+                    did: this.identity.did,
+                    raw: { credentials: held.map(c => c.credential) },
                 });
+            }
 
             case 'GET_SYNC_STATUS':
                 this.toast({
@@ -256,6 +341,7 @@ export class MockHost {
         }
 
         this.memoryCounters.clear();
+        this.credentials.length = 0;
     }
 
     private handleAppEvent(event: Record<string, unknown>): Promise<unknown> {
@@ -264,39 +350,109 @@ export class MockHost {
         switch (type) {
             case 'send-credential': {
                 const name = readAchievementName(event);
+                const templateAlias =
+                    typeof event.templateAlias === 'string' ? event.templateAlias : undefined;
+                const boostUri = `lc:mock:boost:${String(event.templateAlias ?? 'template')}`;
+
+                if (event.preventDuplicateClaim) {
+                    const existing = this.selfCredentials().find(c =>
+                        this.matchesTemplate(c, { templateAlias, boostUri })
+                    );
+                    if (existing) {
+                        this.toast({
+                            icon: '✅',
+                            segments: ['The user already has ', { b: existing.name }, '.'],
+                        });
+                        return Promise.resolve({
+                            credentialUri: existing.credentialUri,
+                            boostUri: existing.boostUri ?? boostUri,
+                            alreadyClaimed: true,
+                            hasCredential: true,
+                            status: existing.status,
+                            receivedDate: existing.receivedDate,
+                        });
+                    }
+                }
+
+                const record = this.addCredential({
+                    name,
+                    templateAlias,
+                    boostUri,
+                    status: 'claimed',
+                });
                 this.showClaimToast(name);
                 return Promise.resolve({
-                    credentialUri: `lc:mock:credential:${Date.now()}`,
-                    boostUri: `lc:mock:boost:${String(event.templateAlias ?? 'template')}`,
+                    credentialUri: record.credentialUri,
+                    boostUri: record.boostUri ?? boostUri,
                     alreadyClaimed: false,
                     hasCredential: true,
                     status: 'claimed',
-                    receivedDate: new Date().toISOString(),
+                    receivedDate: record.receivedDate,
                 });
             }
 
-            case 'check-credential':
+            case 'check-credential': {
+                const held = this.selfCredentials().find(c => this.matchesTemplate(c, event));
                 this.toast({
                     icon: '🔎',
-                    segments: [
-                        'In LearnCard, this checks if the user already has the credential. Mock: not yet.',
-                    ],
+                    segments: held
+                        ? ['The user already has ', { b: held.name }, '.']
+                        : ["Mock: the user doesn't have this credential yet."],
                 });
-                return Promise.resolve({ hasCredential: false });
+                return Promise.resolve(
+                    held
+                        ? {
+                              hasCredential: true,
+                              credentialUri: held.credentialUri,
+                              receivedDate: held.receivedDate,
+                              status: held.status,
+                          }
+                        : { hasCredential: false }
+                );
+            }
 
-            case 'check-issuance-status':
+            case 'check-issuance-status': {
+                const recipient = typeof event.recipient === 'string' ? event.recipient : '';
+                const match = this.credentials.find(
+                    c => this.matchesTemplate(c, event) && c.recipient === recipient
+                );
                 this.toast({
                     icon: '🔎',
-                    segments: ['In LearnCard, this checks issuance status. Mock: not sent.'],
+                    segments: match
+                        ? ['Issued to ', { b: recipient }, ' — ', { b: match.status }, '.']
+                        : ['Mock: not sent to this recipient yet.'],
                 });
-                return Promise.resolve({ sent: false });
+                return Promise.resolve(
+                    match
+                        ? {
+                              sent: true,
+                              credentialUri: match.credentialUri,
+                              sentDate: match.sentDate,
+                              claimedDate: match.claimedDate,
+                              status: match.status,
+                          }
+                        : { sent: false }
+                );
+            }
 
-            case 'get-template-recipients':
+            case 'get-template-recipients': {
+                const matched = this.credentials.filter(c => this.matchesTemplate(c, event));
+                const limit = typeof event.limit === 'number' ? event.limit : undefined;
+                const page = limit ? matched.slice(0, limit) : matched;
                 this.toast({
                     icon: '👥',
-                    segments: ['In LearnCard, this lists credential recipients. None in mock.'],
+                    segments: [
+                        'In LearnCard, this lists recipients. ',
+                        { b: String(matched.length) },
+                        ' in mock.',
+                    ],
                 });
-                return Promise.resolve({ records: [], hasMore: false, total: 0 });
+                return Promise.resolve({
+                    records: page.map(c => this.toRecipientRecord(c)),
+                    hasMore: limit ? matched.length > limit : false,
+                    total: matched.length,
+                });
+            }
 
             case 'send-notification': {
                 const title = typeof event.title === 'string' ? event.title : '';
@@ -359,6 +515,12 @@ export class MockHost {
                     typeof event.sessionTitle === 'string' && event.sessionTitle
                         ? event.sessionTitle
                         : 'AI session';
+                const sessionBoostUri = this.nextUri('lc:mock:session-boost');
+                const record = this.addCredential({
+                    name: sessionTitle,
+                    boostUri: sessionBoostUri,
+                    status: 'claimed',
+                });
                 this.toast({
                     icon: '✅',
                     segments: [
@@ -367,9 +529,9 @@ export class MockHost {
                     ],
                 });
                 return Promise.resolve({
-                    topicUri: `lc:mock:topic:${Date.now()}`,
-                    sessionCredentialUri: `lc:mock:session-credential:${Date.now()}`,
-                    sessionBoostUri: `lc:mock:session-boost:${Date.now()}`,
+                    topicUri: this.nextUri('lc:mock:topic'),
+                    sessionCredentialUri: record.credentialUri,
+                    sessionBoostUri,
                     isNewTopic: true,
                 });
             }
@@ -381,6 +543,78 @@ export class MockHost {
                 });
                 return Promise.resolve({});
         }
+    }
+
+    private nextUri(prefix: string): string {
+        this.idSeq += 1;
+        return `${prefix}:${Date.now()}-${this.idSeq}`;
+    }
+
+    private buildMockVc(name: string, id: string): Record<string, unknown> {
+        return {
+            '@context': ['https://www.w3.org/2018/credentials/v1'],
+            id,
+            type: ['VerifiableCredential'],
+            issuer: this.identity.did,
+            credentialSubject: { id: this.identity.did, achievement: { name } },
+            _mock: true,
+        };
+    }
+
+    private addCredential(input: {
+        name: string;
+        templateAlias?: string;
+        boostUri?: string;
+        recipient?: string;
+        status?: MockStatus;
+        credentialUri?: string;
+        credential?: unknown;
+    }): MockCredential {
+        const now = new Date().toISOString();
+        const status: MockStatus = input.status ?? 'claimed';
+        const credentialUri = input.credentialUri ?? this.nextUri('lc:mock:credential');
+        const record: MockCredential = {
+            credentialUri,
+            boostUri: input.boostUri,
+            templateAlias: input.templateAlias,
+            name: input.name,
+            recipient: input.recipient || this.identity.did,
+            status,
+            sentDate: now,
+            claimedDate: status === 'claimed' ? now : undefined,
+            receivedDate: status === 'claimed' ? now : undefined,
+            credential: input.credential ?? this.buildMockVc(input.name, credentialUri),
+        };
+        this.credentials.push(record);
+        return record;
+    }
+
+    private selfCredentials(): MockCredential[] {
+        return this.credentials.filter(c => c.recipient === this.identity.did);
+    }
+
+    private matchesTemplate(c: MockCredential, q: TemplateQuery): boolean {
+        if (typeof q.templateAlias === 'string') return c.templateAlias === q.templateAlias;
+        if (typeof q.boostUri === 'string') return c.boostUri === q.boostUri;
+        return false;
+    }
+
+    private toRecipientRecord(c: MockCredential): {
+        recipientProfileId: string;
+        recipientDisplayName: string;
+        sentDate: string;
+        claimedDate?: string;
+        credentialUri: string;
+        status: MockStatus;
+    } {
+        return {
+            recipientProfileId: c.recipient,
+            recipientDisplayName: c.recipient,
+            sentDate: c.sentDate,
+            claimedDate: c.claimedDate,
+            credentialUri: c.credentialUri,
+            status: c.status,
+        };
     }
 
     private counterStorageKey(): string {

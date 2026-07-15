@@ -178,6 +178,61 @@ export interface MockHostOptions {
      * @default 'lc-mock'
      */
     namespace?: string;
+
+    /**
+     * Seed the mock user's identity. Superseded per-field over the legacy
+     * `did` option. Extra fields are returned as-is from `requestIdentity()`.
+     */
+    identity?: MockIdentitySeed;
+
+    /**
+     * Pre-populate the mock with credentials the user already holds (or has
+     * issued to others). This lets you demo "happy path" states — e.g. a
+     * "you already earned this" banner — without performing an action first.
+     * Reads like `checkUserHasCredential`, `getTemplateRecipients`,
+     * `requestLearnerContext`, and `askCredentialSearch` reflect these.
+     */
+    credentials?: MockCredentialSeed[];
+
+    /**
+     * Initial counter values, applied only when a counter has no persisted
+     * value yet (so incremented values survive reloads).
+     */
+    counters?: Record<string, number>;
+}
+
+/**
+ * Seed shape for the mock user's identity (see {@link MockHostOptions.identity}).
+ */
+export interface MockIdentitySeed {
+    did?: string;
+    name?: string;
+    [key: string]: unknown;
+}
+
+/**
+ * Seed shape for a pre-populated mock credential (see
+ * {@link MockHostOptions.credentials}).
+ */
+export interface MockCredentialSeed {
+    /** Template alias this credential was issued from. */
+    templateAlias?: string;
+
+    /** Boost URI this credential was issued from. */
+    boostUri?: string;
+
+    /** Human-readable credential name (used in toasts and mock VC data). */
+    name?: string;
+
+    /**
+     * Recipient identifier (profileId or DID). Defaults to the mock user
+     * (i.e. a credential the user holds). Set this to model credentials the
+     * user has issued to other people.
+     */
+    recipient?: string;
+
+    /** Claim status. @default 'claimed' */
+    status?: 'pending' | 'claimed' | 'revoked';
 }
 
 /**
