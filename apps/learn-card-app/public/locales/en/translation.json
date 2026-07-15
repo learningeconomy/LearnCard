@@ -3735,7 +3735,11 @@
         "noResults": "No apps to show yet.",
         "noResultsFor": "No results for \"{{query}}\"",
         "oneResult": "1 result for \"{{query}}\"",
-        "manyResults": "{{count}} results for \"{{query}}\""
+        "manyResults": "{{count}} results for \"{{query}}\"",
+        "shortcuts": {
+            "skillInsights": "Skill Insights",
+            "boostAFriend": "Boost a Friend"
+        }
     },
     "addToPassport": {
         "subtitle": "Bring a credential into your passport.",
