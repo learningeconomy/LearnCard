@@ -1,4 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import * as m from '../../paraglide/messages.js';
 import { SkillFramework, SkillFrameworkNode } from 'apps/scouts/src/components/boost/boost';
 import { IonFooter } from '@ionic/react';
 import { useModal } from 'learn-card-base';
@@ -201,7 +202,7 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
         <div className="h-full relative bg-grayscale-100">
             <section className="h-full bg-grayscale-100 pt-[30px] px-[20px] pb-[200px] overflow-y-auto z-0">
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-[18px] font-semibold text-grayscale-900">Skills</h2>
+                    <h2 className="text-[18px] font-semibold text-grayscale-900">{m['skillFrameworks.skills']()}</h2>
                     <div className="inline-flex rounded-full bg-white p-1 shadow-button-bottom border border-grayscale-200">
                         <button
                             className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -211,7 +212,7 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                             }`}
                             onClick={() => setMode('sheet')}
                         >
-                            Sheet
+                            {m['skillFrameworks.sheet']()}
                         </button>
                         <button
                             className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -219,7 +220,7 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                             }`}
                             onClick={() => setMode('grid')}
                         >
-                            Grid
+                            {m['skillFrameworks.grid']()}
                         </button>
                     </div>
                 </div>
@@ -231,19 +232,19 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                                 <thead className="bg-grayscale-50 border-b border-grayscale-200">
                                     <tr>
                                         <th className="text-left text-[12px] font-semibold text-grayscale-600 uppercase tracking-wide px-3 py-2 w-[28%]">
-                                            Name
+                                            {m['skillFrameworks.name']()}
                                         </th>
                                         <th className="text-left text-[12px] font-semibold text-grayscale-600 uppercase tracking-wide px-3 py-2 w-[18%]">
-                                            Framework
+                                            {m['skillFrameworks.framework']()}
                                         </th>
                                         <th className="text-left text-[12px] font-semibold text-grayscale-600 uppercase tracking-wide px-3 py-2 w-[34%]">
-                                            Description
+                                            {m['skillFrameworks.descLabel']()}
                                         </th>
                                         <th className="text-left text-[12px] font-semibold text-grayscale-600 uppercase tracking-wide px-3 py-2 w-[12%]">
-                                            Code
+                                            {m['skillFrameworks.codeLabel']()}
                                         </th>
                                         <th className="text-left text-[12px] font-semibold text-grayscale-600 uppercase tracking-wide px-3 py-2 w-[8%]">
-                                            Type
+                                            {m['skillFrameworks.type']()}
                                         </th>
                                     </tr>
                                 </thead>
@@ -266,7 +267,7 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                                                                 e.target.value
                                                             )
                                                         }
-                                                        placeholder="Name"
+                                                        placeholder={m['skillFrameworks.name']()}
                                                     />
                                                 </div>
                                             </td>
@@ -281,7 +282,7 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                                                             e.target.value
                                                         )
                                                     }
-                                                    placeholder="Framework"
+                                                    placeholder={m['skillFrameworks.framework']()}
                                                 />
                                             </td>
                                             <td className="px-3 py-2">
@@ -295,7 +296,7 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                                                             e.target.value
                                                         )
                                                     }
-                                                    placeholder="Description"
+                                                    placeholder={m['skillFrameworks.descLabel']()}
                                                 />
                                             </td>
                                             <td className="px-3 py-2">
@@ -309,7 +310,7 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                                                             e.target.value
                                                         )
                                                     }
-                                                    placeholder="Code"
+                                                    placeholder={m['skillFrameworks.codeLabel']()}
                                                 />
                                             </td>
                                             <td className="px-3 py-2">
@@ -323,7 +324,7 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                                                             e.target.value
                                                         )
                                                     }
-                                                    placeholder="Type"
+                                                    placeholder={m['skillFrameworks.type']()}
                                                 />
                                             </td>
                                         </tr>
@@ -374,7 +375,7 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                                         skill.subskills.length > 0 && (
                                             <div className="mt-3">
                                                 <div className="text-[12px] font-semibold text-grayscale-600 mb-1">
-                                                    Subskills
+                                                    {m['skillFrameworks.subskills']()}
                                                 </div>
                                                 <ul className="flex flex-col gap-2">
                                                     {skill.subskills.map((sub, i) => (
@@ -409,7 +410,7 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
                         onClick={closeModal}
                         className="px-[15px] py-[7px] bg-emerald-700 text-white rounded-[30px] text-[17px] font-[600] font-poppins leading-[24px] tracking-[0.25px] shadow-button-bottom h-[44px] flex-1"
                     >
-                        Import Skills
+                        {m['skillFrameworks.importSkills']()}
                     </button>
                     <button
                         // onClick={closeModal}

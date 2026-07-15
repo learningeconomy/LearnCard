@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import * as m from '../../paraglide/messages.js';
 import { useModal, useGetCurrentUserTroopIdsResolved, useGetMultipleBoosts } from 'learn-card-base';
 import { IonSpinner } from '@ionic/react';
 import CaretDown from 'apps/scouts/src/components/svgs/CaretDown';
@@ -70,7 +71,7 @@ const SkillsFrameworkNetworkSelector: React.FC<SkillsFrameworkNetworkSelectorPro
 
             resolvedNetworks.push({
                 uri: boostId,
-                name: boost.name || (credType === 'global' ? 'Global Network' : 'National Network'),
+                name: boost.name || (credType === 'global' ? m['skillFrameworks.globalNetwork']() : m['skillFrameworks.nationalNetwork']()),
                 image: (boost.meta as any)?.image,
                 type: credType === 'global' ? 'Global Network' : 'National Network',
             });
@@ -93,7 +94,7 @@ const SkillsFrameworkNetworkSelector: React.FC<SkillsFrameworkNetworkSelectorPro
     return (
         <section className="bg-white rounded-[20px] flex flex-col max-w-[600px] py-[">
             <h1 className="text-grayscale-800 font-poppins text-[24px] leading-[130%] pt-[20px] px-[15px]">
-                Add Networks
+                {m['skillFrameworks.addNetworks']()}
             </h1>
             <div className="grow p-[15px] min-h-[300px] max-h-[500px] overflow-y-auto">
                 {isLoading ? (
@@ -103,8 +104,7 @@ const SkillsFrameworkNetworkSelector: React.FC<SkillsFrameworkNetworkSelectorPro
                 ) : networks.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center p-[20px]">
                         <p className="text-grayscale-600 font-poppins text-[16px]">
-                            No networks found. Create a Global or National network first from the
-                            Troops page.
+                            {m['skillFrameworks.noNetworksFoundTroops']()}
                         </p>
                     </div>
                 ) : (
@@ -130,13 +130,13 @@ const SkillsFrameworkNetworkSelector: React.FC<SkillsFrameworkNetworkSelectorPro
                     onClick={closeModal}
                     className="bg-white text-grayscale-900 px-[20px] py-[7px] rounded-[30px] text-[17px] font-poppins flex-1 shadow-button-bottom"
                 >
-                    Close
+                    {m['common.close']()}
                 </button>
                 <button
                     onClick={handleSave}
                     className="bg-emerald-700 text-white px-[20px] py-[7px] rounded-[30px] text-[17px] font-poppins flex-1 font-[600] leading-[130%] tracking-[-0.25px] shadow-button-bottom"
                 >
-                    Save ({selected.length})
+                    {m['skillFrameworks.saveWithCount']({ count: selected.length })}
                 </button>
             </div>
         </section>

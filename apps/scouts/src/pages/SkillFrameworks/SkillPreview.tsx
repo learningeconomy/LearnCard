@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import * as m from '../../paraglide/messages.js';
 import { useModal } from 'learn-card-base';
 import { IonFooter, IonInput } from '@ionic/react';
 import {
@@ -166,10 +167,12 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
                             {previousNode?.targetName || framework.name}
                         </h5>
                         <span className="text-grayscale-800 font-poppins font-[700] text-[12px] flex items-center gap-[5px]">
-                            {isTopLevel && 'Framework • '}
+                            {isTopLevel && m['skillFrameworks.fwTierBullet']()}
                             <span className="flex items-center gap-[2px]">
                                 <PuzzlePiece version="filled" />
-                                {isTopLevel ? totalCompetencies : competenciesInCurrentNode} Skills
+                                {m['skillFrameworks.skillsCount']({
+                                    count: isTopLevel ? totalCompetencies : competenciesInCurrentNode,
+                                })}
                             </span>
                         </span>
                     </div>
@@ -246,7 +249,7 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
             <section className="h-full flex flex-col gap-[10px] pt-[15px] px-[20px] pb-[170px] overflow-y-auto z-0">
                 <IonInput
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-poppins text-[14px] w-full"
-                    placeholder="Search framework..."
+                    placeholder={m['skillFrameworks.searchPlh']()}
                     value={search}
                     onIonInput={e => setSearch(e.detail.value)}
                 />
@@ -289,7 +292,7 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
                         onClick={closeModal}
                         className="p-[11px] bg-white rounded-full text-grayscale-900 shadow-button-bottom flex-1 font-poppins text-[17px]"
                     >
-                        Close
+                        {m['common.close']()}
                     </button>
                     <button
                         onClick={() => {

@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import * as m from '../../paraglide/messages.js';
 import { ModalTypes, useModal } from 'learn-card-base';
 
 import Refresh from '../../components/svgs/Refresh';
@@ -60,7 +61,7 @@ const ManageSkillsJsonUploadedBody: React.FC<ManageSkillsJsonUploadedBodyProps> 
     return (
         <div className="bg-white max-w-[800px] w-full rounded-[20px] p-[15px] shadow-box-bottom flex flex-col gap-[10px]">
             <h4 className="text-[19px] text-grayscale-900 font-poppins font-[500]">
-                Review & Edit Framework
+                {m['skillFrameworks.reviewEditFw']()}
             </h4>
 
             {isFileUploading && <ManageSkillsUploadingButton />}
@@ -69,7 +70,7 @@ const ManageSkillsJsonUploadedBody: React.FC<ManageSkillsJsonUploadedBodyProps> 
                 <>
                     {!isError && (
                         <p className="text-[19px] font-poppins text-emerald-500 font-[500]">
-                            File upload successful.
+                            {m['skillFrameworks.fileUploadSuccess']()}
                         </p>
                     )}
 
@@ -100,7 +101,7 @@ const ManageSkillsJsonUploadedBody: React.FC<ManageSkillsJsonUploadedBodyProps> 
                                         }`}
                                     >
                                         <ExclamationCircle />
-                                        Review & Approve Before Saving
+                                        {m['skillFrameworks.reviewApproveBeforeSave']()}
                                     </p>
 
                                     <div
@@ -108,28 +109,27 @@ const ManageSkillsJsonUploadedBody: React.FC<ManageSkillsJsonUploadedBodyProps> 
                                             isPrematureSave ? 'text-orange-700' : 'text-indigo-500'
                                         }`}
                                     >
-                                        <p className="font-poppins">You will be importing:</p>
+                                        <p className="font-poppins">{m['skillFrameworks.willImport']()}</p>
 
                                         <ul className="list-disc list-inside pl-[8px]">
                                             <li className="font-poppins">
                                                 <span className="font-bold font-poppins">
                                                     {numberOfTiers}
                                                 </span>{' '}
-                                                Framework Tiers
+                                                {numberOfTiers === 1
+                                                    ? m['skillFrameworks.tier_one']()
+                                                    : m['skillFrameworks.tier_other']({ count: numberOfTiers })}
                                             </li>
                                             <li className="font-poppins">
                                                 <span className="font-bold font-poppins">
                                                     {numberOfCompetencies}
                                                 </span>{' '}
-                                                Competencies
+                                                {m['skillFrameworks.compCount']()}
                                             </li>
                                         </ul>
 
                                         <p className="mt-[10px] font-poppins text-[14px]">
-                                            <span className="font-bold font-poppins">
-                                                Icons have been automatically assigned
-                                            </span>{' '}
-                                            and can be manually edited.
+                                            {m['skillFrameworks.iconsAutoAssigned']()}
                                         </p>
                                     </div>
                                 </div>
@@ -142,24 +142,26 @@ const ManageSkillsJsonUploadedBody: React.FC<ManageSkillsJsonUploadedBodyProps> 
                                             className="w-[25px] h-[25px]"
                                             color="currentColor"
                                         />
-                                        Framework Approved
+                                        {m['skillFrameworks.frameworkApproved']()}
                                     </p>
 
                                     <div className="text-emerald-501 text-[14px]">
-                                        <p className="font-poppins">You will be importing:</p>
+                                        <p className="font-poppins">{m['skillFrameworks.willImport']()}</p>
 
                                         <ul className="list-disc list-inside pl-[8px]">
                                             <li className="font-poppins">
                                                 <span className="font-bold font-poppins">
                                                     {numberOfTiers}
                                                 </span>{' '}
-                                                Framework Tiers
+                                                {numberOfTiers === 1
+                                                    ? m['skillFrameworks.tier_one']()
+                                                    : m['skillFrameworks.tier_other']({ count: numberOfTiers })}
                                             </li>
                                             <li className="font-poppins">
                                                 <span className="font-bold font-poppins">
                                                     {numberOfCompetencies}
                                                 </span>{' '}
-                                                Competencies
+                                                {m['skillFrameworks.compCount']()}
                                             </li>
                                         </ul>
                                     </div>
@@ -170,7 +172,7 @@ const ManageSkillsJsonUploadedBody: React.FC<ManageSkillsJsonUploadedBodyProps> 
                                 <div className="p-[10px] rounded-[10px] flex flex-col gap-[5px] bg-orange-100">
                                     <p className="flex items-center gap-[8px] font-poppins font-[600] text-[18px] text-orange-700">
                                         <WarningIcon className="w-[24px] h-[24px]" />
-                                        Errors
+                                        {m['skillFrameworks.errors']()}
                                     </p>
 
                                     <ul className="pl-[6px] text-[14px] text-orange-700">
@@ -201,7 +203,7 @@ const ManageSkillsJsonUploadedBody: React.FC<ManageSkillsJsonUploadedBodyProps> 
                                 className="bg-indigo-500 text-white pl-[20px] pr-[15px] py-[7px] rounded-[30px] flex gap-[10px] items-center justify-center text-[17px] font-[600] font-notoSans leading-[24px] tracking-[0.25px]"
                             >
                                 <Refresh className="w-[25px] h-[25px]" color="currentColor" />
-                                Try Again
+                                {m['error.retry']()}
                             </button>
                         )}
 
@@ -213,9 +215,9 @@ const ManageSkillsJsonUploadedBody: React.FC<ManageSkillsJsonUploadedBodyProps> 
                                 } else {
                                     newModal(
                                         <ManageSkillsConfirmationModal
-                                            mainText="Replace JSON file?"
-                                            secondaryText="Uploading a new file will replace your current file and discard your changes."
-                                            confirmationButtonText="Yes, Replace JSON"
+                                            mainText={m['skillFrameworks.replaceJsonQ']()}
+                                            secondaryText={m['skillFrameworks.replaceJsonDesc']()}
+                                            confirmationButtonText={m['skillFrameworks.yesReplaceJson']()}
                                             onConfirm={triggerFileInput}
                                         />,
                                         {
@@ -233,7 +235,7 @@ const ManageSkillsJsonUploadedBody: React.FC<ManageSkillsJsonUploadedBodyProps> 
                             } pl-[20px] pr-[15px] py-[7px] rounded-[30px] flex gap-[10px] items-center justify-center text-[17px] font-[600] font-notoSans leading-[24px] tracking-[0.25px]`}
                         >
                             <Refresh className="w-[25px] h-[25px]" color="currentColor" />
-                            Replace File
+                            {m['skillFrameworks.replaceFile']()}
                         </button>
                     </div>
                 </>
