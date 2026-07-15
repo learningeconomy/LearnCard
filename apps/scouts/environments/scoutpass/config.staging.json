@@ -9,9 +9,7 @@
         "xapi": "https://staging.cloud.scoutnetwork.org/xapi"
     },
     "auth": {
-        "sss": {
-            "serverUrl": "https://staging.api.scoutnetwork.org/api"
-        }
+        "keyDerivation": "web3auth"
     },
     "features": {
         "analytics": false

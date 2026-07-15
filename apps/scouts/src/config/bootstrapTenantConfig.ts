@@ -42,7 +42,7 @@ export const SCOUTS_TENANT_CONFIG: TenantConfig = {
     auth: {
         ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth,
         provider: 'firebase',
-        keyDerivation: 'sss',
+        keyDerivation: 'web3auth',
         firebase: {
             apiKey: 'AIzaSyCdh1fKaZgk3lKbMkzmiQ26k8aKRQQemjM',
             authDomain: 'scoutpass-9a67e.firebaseapp.com',
@@ -54,12 +54,7 @@ export const SCOUTS_TENANT_CONFIG: TenantConfig = {
             redirectDomain: 'pass.scout.org',
             dynamicLinkDomain: 'pass.scout.org',
         },
-        sss: {
-            ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth.sss,
-            serverUrl: SCOUTPASS_API_ENDPOINT,
-            enableEmailBackupShare: true,
-            requireEmailForPhoneUsers: true,
-        },
+        sss: DEFAULT_LEARNCARD_TENANT_CONFIG.auth.sss,
     },
     branding: {
         ...DEFAULT_LEARNCARD_TENANT_CONFIG.branding,
