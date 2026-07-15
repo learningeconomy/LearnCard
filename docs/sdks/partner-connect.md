@@ -885,11 +885,11 @@ The SDK only does real work when it's embedded inside LearnCard — that's what 
 
 Mock mode fixes this automatically. When the SDK sees it isn't embedded, it stands in for LearnCard so your app stays fully usable:
 
--   `sendCredential(...)` shows a toast — _"✅ In LearnCard, the user would receive **[name]** here"_ — and resolves with a mock result.
--   `requestConsent(...)` grants automatically and shows a visible "mock consent" banner.
--   `incrementCounter` / `getCounter` / `getCounters` save to the browser, so values survive reloads.
+-   **Every method shows a branded toast** describing what would happen once embedded — e.g. `sendCredential` → _"✅ In LearnCard, the user would receive **[name]** here"_, `incrementCounter` → _"Counter **coins** → **10**"_, `launchFeature` → _"Would open **/wallet**"_. Strong, visible feedback for every call.
+-   `requestConsent(...)` grants automatically and shows a "mock consent" toast; counters (`incrementCounter` / `getCounter` / `getCounters`) save to the browser and survive reloads.
+-   Identical or polled calls coalesce into one toast with a ×N counter, so nothing spams the screen.
 -   `requestIdentity`, notifications, learner context, and sync status return sensible placeholder data.
--   Everything is logged to the console with a `[LearnCard SDK · MOCK]` prefix.
+-   Everything is also logged to the console with a `[LearnCard SDK · MOCK]` prefix.
 
 No flags, no separate build. Your app is demo-able standalone and behaves exactly the same against the real host once embedded.
 

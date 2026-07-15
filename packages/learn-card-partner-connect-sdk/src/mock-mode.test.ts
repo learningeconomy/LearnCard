@@ -19,7 +19,7 @@ beforeEach(() => {
 
 afterEach(() => {
     jest.restoreAllMocks();
-    document.querySelectorAll('.lc-mock-toast, .lc-mock-banner').forEach(node => node.remove());
+    document.querySelectorAll('.lc-mock-toast, .lc-mock-stack').forEach(node => node.remove());
 });
 
 describe('isEmbedded', () => {
@@ -124,18 +124,55 @@ describe('mock counters', () => {
 });
 
 describe('mock UI', () => {
+    const toastCount = (): number => document.querySelectorAll('.lc-mock-toast').length;
+    const toastText = (): string =>
+        Array.from(document.querySelectorAll('.lc-mock-toast'))
+            .map(n => n.textContent ?? '')
+            .join('\n');
+
     it('renders a claim toast for sendCredential when ui is enabled', async () => {
         const lc = createPartnerConnect({ mockOptions: { ui: true } });
         await lc.sendCredential({ templateAlias: 'badge' });
         await flush();
-        expect(document.querySelector('.lc-mock-toast')).not.toBeNull();
+        expect(toastCount()).toBe(1);
     });
 
-    it('renders a consent banner for requestConsent when ui is enabled', async () => {
+    it('renders a positive-tone toast for requestConsent', async () => {
         const lc = createPartnerConnect({ mockOptions: { ui: true } });
         await lc.requestConsent();
         await flush();
-        expect(document.querySelector('.lc-mock-banner')).not.toBeNull();
+        expect(document.querySelector('.lc-mock-toast--positive')).not.toBeNull();
+    });
+
+    it('surfaces a toast for every mocked action (not just console)', async () => {
+        const lc = createPartnerConnect({ mockOptions: { ui: true } });
+
+        await lc.requestIdentity();
+        await lc.launchFeature('/wallet');
+        await lc.askCredentialSearch({ query: [], challenge: 'c', domain: 'd' });
+        await lc.askCredentialSpecific('id');
+        await lc.initiateTemplateIssue('boost');
+        await lc.requestLearnerContext();
+        await lc.getSyncStatus();
+        await lc.checkUserHasCredential({ templateAlias: 't' });
+        await lc.getTemplateIssuanceStatus({ templateAlias: 't', recipient: 'r' });
+        await lc.getTemplateRecipients({ templateAlias: 't' });
+        await lc.sendNotification({ title: 'Hi' });
+        await lc.getCounter('coins');
+        await flush();
+
+        expect(toastCount()).toBe(12);
+        expect(toastText()).toContain('/wallet');
+    });
+
+    it('coalesces identical repeated toasts into one with a count', async () => {
+        const lc = createPartnerConnect({ mockOptions: { ui: true } });
+        await lc.getSyncStatus();
+        await lc.getSyncStatus();
+        await lc.getSyncStatus();
+        await flush();
+        expect(toastCount()).toBe(1);
+        expect(toastText()).toContain('×3');
     });
 
     it('cleans up injected DOM on destroy', async () => {
@@ -143,6 +180,6 @@ describe('mock UI', () => {
         await lc.requestConsent();
         await flush();
         lc.destroy();
-        expect(document.querySelector('.lc-mock-banner')).toBeNull();
+        expect(toastCount()).toBe(0);
     });
 });

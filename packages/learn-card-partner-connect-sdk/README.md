@@ -187,11 +187,11 @@ until it times out.
 **Mock mode fixes this automatically.** When the SDK detects it is _not_ embedded
 in a LearnCard host, it simulates the host locally:
 
--   `sendCredential(...)` shows a toast — _"✅ In LearnCard, the user would receive **[name]** here."_ — and resolves with a mock credential id/URI.
--   `requestConsent(...)` auto-grants and shows a visible **"mock consent"** banner.
--   `incrementCounter` / `getCounter` / `getCounters` persist to `localStorage`, so values survive reloads just like the real host.
+-   **Every method shows a branded toast** describing what would happen once embedded — e.g. `sendCredential` → _"✅ In LearnCard, the user would receive **[name]** here."_, `incrementCounter` → _"Counter **coins** → **10**."_, `launchFeature` → _"Would open **/wallet**."_ So you get strong, visible feedback for every call, not just console logs.
+-   `requestConsent(...)` auto-grants and shows a "mock consent" toast; `incrementCounter` / `getCounter` / `getCounters` persist to `localStorage` so values survive reloads.
+-   Identical or polled calls **coalesce** into a single toast with a ×N counter, so nothing spams the screen.
 -   `requestIdentity`, notifications, learner context, sync status, etc. all resolve with sensible fake data.
--   Every simulated interaction is logged to the console with a `[LearnCard SDK · MOCK]` prefix.
+-   Every simulated interaction is also logged to the console with a `[LearnCard SDK · MOCK]` prefix.
 
 **No code changes, no environment flags.** Your app is fully buildable and
 demo-able standalone, and behaves identically against the real host once

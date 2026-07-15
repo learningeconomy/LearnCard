@@ -30,6 +30,25 @@ interface StoredCounter {
     updatedAt: string;
 }
 
+type ToastTone = 'default' | 'positive';
+
+/** A toast body is a list of plain strings and bold (`{ b }`) segments. */
+type ToastSegment = string | { b: string };
+
+interface ToastSpec {
+    icon: string;
+    segments: ToastSegment[];
+    tone?: ToastTone;
+    ttl?: number;
+}
+
+interface ActiveToast {
+    node: HTMLElement;
+    timeoutId: ReturnType<typeof setTimeout>;
+    count: number;
+    countEl: HTMLElement;
+}
+
 const hasDocument = (): boolean =>
     typeof document !== 'undefined' && typeof document.createElement === 'function';
 
@@ -79,6 +98,8 @@ export class MockHost {
     private readonly domNodes = new Set<HTMLElement>();
 
     private styleEl: HTMLStyleElement | null = null;
+    private stackEl: HTMLElement | null = null;
+    private readonly activeToasts = new Map<string, ActiveToast>();
     private destroyed = false;
 
     constructor(options?: MockHostOptions) {
@@ -113,6 +134,10 @@ export class MockHost {
 
         switch (action) {
             case 'REQUEST_IDENTITY':
+                this.toast({
+                    icon: '👤',
+                    segments: ['In LearnCard, the user would sign in. Returning a mock identity.'],
+                });
                 return Promise.resolve({
                     token: `mock-token-${Date.now()}`,
                     user: { did: this.options.did },
@@ -134,23 +159,49 @@ export class MockHost {
             case 'LAUNCH_FEATURE': {
                 const featurePath =
                     (payload as { featurePath?: string } | undefined)?.featurePath ?? '';
-                this.showToast(`Would launch feature: ${featurePath || '(unspecified)'}`);
+                this.toast({
+                    icon: '🚀',
+                    segments: featurePath
+                        ? ['In LearnCard, this would open ', { b: featurePath }, '.']
+                        : ['In LearnCard, this would open a feature screen.'],
+                });
                 return Promise.resolve({ launched: true, featurePath });
             }
 
             case 'ASK_CREDENTIAL_SEARCH':
+                this.toast({
+                    icon: '🔍',
+                    segments: [
+                        'In LearnCard, the user would be asked to share matching credentials. None in mock.',
+                    ],
+                });
                 return Promise.resolve({
                     verifiablePresentation: { verifiableCredential: [] },
                 });
 
             case 'ASK_CREDENTIAL_SPECIFIC':
+                this.toast({
+                    icon: '🔍',
+                    segments: [
+                        'In LearnCard, the user would be asked to share a credential. None in mock.',
+                    ],
+                });
                 return Promise.resolve({ credential: undefined });
 
             case 'INITIATE_TEMPLATE_ISSUE':
-                this.showToast('Would open the Send Boost flow');
+                this.toast({
+                    icon: '📤',
+                    segments: ['In LearnCard, this would open the Send Boost flow.'],
+                });
                 return Promise.resolve({ issued: true });
 
             case 'REQUEST_LEARNER_CONTEXT':
+                this.toast({
+                    icon: '🧠',
+                    segments: [
+                        "In LearnCard, the user's learner profile would load. Empty in mock.",
+                    ],
+                });
                 return Promise.resolve({
                     status: 'ready',
                     prompt: 'Mock learner context: this user has no credentials in standalone mode.',
@@ -159,6 +210,12 @@ export class MockHost {
                 });
 
             case 'GET_SYNC_STATUS':
+                this.toast({
+                    icon: '🔄',
+                    segments: [
+                        'In LearnCard, this reports data sync progress. Mock reports ready.',
+                    ],
+                });
                 return Promise.resolve({
                     status: 'ready',
                     progress: {
@@ -170,6 +227,10 @@ export class MockHost {
                 });
 
             default:
+                this.toast({
+                    icon: '✨',
+                    segments: ['In LearnCard, this would run ', { b: action }, '.'],
+                });
                 return Promise.resolve({});
         }
     }
@@ -178,8 +239,16 @@ export class MockHost {
     public destroy(): void {
         this.destroyed = true;
 
+        for (const entry of this.activeToasts.values()) clearTimeout(entry.timeoutId);
+        this.activeToasts.clear();
+
         for (const node of this.domNodes) node.remove();
         this.domNodes.clear();
+
+        if (this.stackEl) {
+            this.stackEl.remove();
+            this.stackEl = null;
+        }
 
         if (this.styleEl) {
             this.styleEl.remove();
@@ -207,18 +276,38 @@ export class MockHost {
             }
 
             case 'check-credential':
+                this.toast({
+                    icon: '🔎',
+                    segments: [
+                        'In LearnCard, this checks if the user already has the credential. Mock: not yet.',
+                    ],
+                });
                 return Promise.resolve({ hasCredential: false });
 
             case 'check-issuance-status':
+                this.toast({
+                    icon: '🔎',
+                    segments: ['In LearnCard, this checks issuance status. Mock: not sent.'],
+                });
                 return Promise.resolve({ sent: false });
 
             case 'get-template-recipients':
+                this.toast({
+                    icon: '👥',
+                    segments: ['In LearnCard, this lists credential recipients. None in mock.'],
+                });
                 return Promise.resolve({ records: [], hasMore: false, total: 0 });
 
             case 'send-notification': {
                 const title = typeof event.title === 'string' ? event.title : '';
                 const body = typeof event.body === 'string' ? event.body : '';
-                this.showToast(`Notification: ${[title, body].filter(Boolean).join(' — ')}`);
+                const text = [title, body].filter(Boolean).join(' — ');
+                this.toast({
+                    icon: '🔔',
+                    segments: text
+                        ? ['The user would be notified: ', { b: text }]
+                        : ['In LearnCard, the user would receive a notification.'],
+                });
                 return Promise.resolve({ sent: true });
             }
 
@@ -228,15 +317,24 @@ export class MockHost {
                 const previous = this.readCounter(key)?.value ?? 0;
                 const next = previous + amount;
                 this.writeCounter(key, next);
+                this.toast({
+                    icon: '🔢',
+                    segments: ['Counter ', { b: key }, ' → ', { b: String(next) }, '.'],
+                });
                 return Promise.resolve({ key, previousValue: previous, newValue: next });
             }
 
             case 'get-counter': {
                 const key = String(event.key ?? '');
                 const stored = this.readCounter(key);
+                const value = stored?.value ?? 0;
+                this.toast({
+                    icon: '🔢',
+                    segments: ['Counter ', { b: key }, ' is ', { b: String(value) }, '.'],
+                });
                 return Promise.resolve({
                     key,
-                    value: stored?.value ?? 0,
+                    value,
                     updatedAt: stored?.updatedAt ?? null,
                 });
             }
@@ -249,18 +347,38 @@ export class MockHost {
                     const stored = this.readCounter(key);
                     return { key, value: stored?.value ?? 0, updatedAt: stored?.updatedAt ?? null };
                 });
+                this.toast({
+                    icon: '🔢',
+                    segments: ['Read ', { b: String(counters.length) }, ' counter(s).'],
+                });
                 return Promise.resolve({ counters });
             }
 
-            case 'send-ai-session-credential':
+            case 'send-ai-session-credential': {
+                const sessionTitle =
+                    typeof event.sessionTitle === 'string' && event.sessionTitle
+                        ? event.sessionTitle
+                        : 'AI session';
+                this.toast({
+                    icon: '✅',
+                    segments: [
+                        'In LearnCard, an AI session credential would be saved: ',
+                        { b: sessionTitle },
+                    ],
+                });
                 return Promise.resolve({
                     topicUri: `lc:mock:topic:${Date.now()}`,
                     sessionCredentialUri: `lc:mock:session-credential:${Date.now()}`,
                     sessionBoostUri: `lc:mock:session-boost:${Date.now()}`,
                     isNewTopic: true,
                 });
+            }
 
             default:
+                this.toast({
+                    icon: '✨',
+                    segments: ['In LearnCard, this would run ', { b: type }, '.'],
+                });
                 return Promise.resolve({});
         }
     }
@@ -325,75 +443,143 @@ export class MockHost {
         );
     }
 
+    private showClaimToast(credentialName: string): void {
+        this.toast({
+            icon: '✅',
+            ttl: 5200,
+            segments: ['In LearnCard, the user would receive ', { b: credentialName }, ' here.'],
+        });
+    }
+
+    private showConsentBanner(): void {
+        this.toast({
+            icon: '🔓',
+            tone: 'positive',
+            segments: ['The user would review and grant consent. Auto-granted in mock.'],
+        });
+    }
+
+    /**
+     * Show a branded toast describing what the real host would do. Identical
+     * messages coalesce into one toast with a ×N counter so repeated or polled
+     * calls never spam the screen.
+     */
+    private toast(spec: ToastSpec): void {
+        if (!this.options.ui || !hasDocument()) return;
+
+        const tone = spec.tone ?? 'default';
+        const ttl = spec.ttl ?? 4200;
+        const text = spec.segments.map(s => (typeof s === 'string' ? s : s.b)).join('');
+        const key = `${tone}|${spec.icon}|${text}`;
+
+        const existing = this.activeToasts.get(key);
+        if (existing) {
+            existing.count += 1;
+            existing.countEl.textContent = `×${existing.count}`;
+            existing.countEl.style.display = '';
+            clearTimeout(existing.timeoutId);
+            existing.timeoutId = setTimeout(() => this.dismissToast(key), ttl);
+            return;
+        }
+
+        this.ensureStyles();
+        const stack = this.ensureStack();
+
+        const toast = document.createElement('div');
+        toast.className = `lc-mock-toast lc-mock-toast--${tone}`;
+
+        const badge = document.createElement('div');
+        badge.className = 'lc-mock-badge';
+        const name = document.createElement('span');
+        name.className = 'lc-mock-badge-name';
+        name.textContent = `${spec.icon} LearnCard`;
+        const pill = document.createElement('span');
+        pill.className = 'lc-mock-pill';
+        pill.textContent = 'MOCK';
+        badge.append(name, pill);
+
+        const body = document.createElement('div');
+        body.className = 'lc-mock-body';
+        for (const seg of spec.segments) {
+            if (typeof seg === 'string') {
+                body.append(seg);
+            } else {
+                const strong = document.createElement('strong');
+                strong.textContent = seg.b;
+                body.appendChild(strong);
+            }
+        }
+
+        const countEl = document.createElement('span');
+        countEl.className = 'lc-mock-count';
+        countEl.style.display = 'none';
+        body.appendChild(countEl);
+
+        toast.append(badge, body);
+        stack.appendChild(toast);
+        this.domNodes.add(toast);
+
+        const timeoutId = setTimeout(() => this.dismissToast(key), ttl);
+        this.activeToasts.set(key, { node: toast, timeoutId, count: 1, countEl });
+    }
+
+    private dismissToast(key: string): void {
+        const entry = this.activeToasts.get(key);
+        if (!entry) return;
+
+        this.activeToasts.delete(key);
+        clearTimeout(entry.timeoutId);
+
+        const { node } = entry;
+        node.classList.add('lc-mock-out');
+        setTimeout(() => {
+            node.remove();
+            this.domNodes.delete(node);
+        }, 200);
+    }
+
+    private ensureStack(): HTMLElement {
+        if (this.stackEl && document.body.contains(this.stackEl)) return this.stackEl;
+
+        const stack = document.createElement('div');
+        stack.className = 'lc-mock-stack';
+        document.body.appendChild(stack);
+        this.stackEl = stack;
+        return stack;
+    }
+
     private ensureStyles(): void {
         if (!this.options.ui || !hasDocument() || this.styleEl) return;
 
         const style = document.createElement('style');
         style.textContent = `
-@keyframes lc-mock-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-.lc-mock-toast, .lc-mock-banner {
-  position: fixed; z-index: 2147483647; left: 50%; transform: translateX(-50%);
-  max-width: 90vw; box-sizing: border-box; padding: 12px 16px; border-radius: 12px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px;
-  line-height: 1.4; box-shadow: 0 8px 24px rgba(24,34,78,0.18); animation: lc-mock-in 160ms ease-out;
+@keyframes lc-mock-in { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes lc-mock-out { to { opacity: 0; transform: translateY(6px); } }
+.lc-mock-stack {
+  position: fixed; bottom: 20px; right: 20px; z-index: 2147483647;
+  display: flex; flex-direction: column; gap: 10px; align-items: flex-end;
+  pointer-events: none; max-width: min(360px, calc(100vw - 40px));
 }
-.lc-mock-toast { bottom: 24px; background: #18224E; color: #fff; }
-.lc-mock-toast strong { font-weight: 600; }
-.lc-mock-banner { top: 24px; background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
+.lc-mock-toast {
+  pointer-events: auto; width: 100%; box-sizing: border-box; padding: 11px 14px; border-radius: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13.5px;
+  line-height: 1.45; box-shadow: 0 10px 30px rgba(24,34,78,0.22); animation: lc-mock-in 180ms cubic-bezier(0.2,0.8,0.2,1);
+}
+.lc-mock-toast.lc-mock-out { animation: lc-mock-out 180ms ease-in forwards; }
+.lc-mock-toast--default { background: #18224E; color: #fff; }
+.lc-mock-toast--positive { background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
+.lc-mock-badge {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px;
+  font-size: 11px; letter-spacing: 0.02em; text-transform: uppercase; opacity: 0.72;
+}
+.lc-mock-badge-name { font-weight: 600; }
+.lc-mock-pill { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 999px; background: rgba(255,255,255,0.16); }
+.lc-mock-toast--positive .lc-mock-pill { background: rgba(6,95,70,0.12); }
+.lc-mock-body strong { font-weight: 700; }
+.lc-mock-count { margin-left: 6px; font-weight: 700; opacity: 0.75; }
 `.trim();
 
         document.head.appendChild(style);
         this.styleEl = style;
-    }
-
-    private mount(node: HTMLElement, ttlMs: number): void {
-        if (!hasDocument()) return;
-
-        this.ensureStyles();
-        document.body.appendChild(node);
-        this.domNodes.add(node);
-
-        setTimeout(() => {
-            node.remove();
-            this.domNodes.delete(node);
-        }, ttlMs);
-    }
-
-    private showToast(message: string): void {
-        if (!this.options.ui || !hasDocument()) return;
-
-        const toast = document.createElement('div');
-        toast.className = 'lc-mock-toast';
-        toast.textContent = message;
-        this.mount(toast, 4000);
-    }
-
-    private showClaimToast(credentialName: string): void {
-        if (!this.options.ui || !hasDocument()) return;
-
-        const toast = document.createElement('div');
-        toast.className = 'lc-mock-toast';
-
-        const check = document.createElement('span');
-        check.textContent = '✅ ';
-
-        const strong = document.createElement('strong');
-        strong.textContent = credentialName;
-
-        toast.appendChild(check);
-        toast.append('In LearnCard, the user would receive ');
-        toast.appendChild(strong);
-        toast.append(' here.');
-
-        this.mount(toast, 5000);
-    }
-
-    private showConsentBanner(): void {
-        if (!this.options.ui || !hasDocument()) return;
-
-        const banner = document.createElement('div');
-        banner.className = 'lc-mock-banner';
-        banner.textContent = '🔓 Mock consent granted automatically (standalone mode).';
-        this.mount(banner, 4000);
     }
 }
