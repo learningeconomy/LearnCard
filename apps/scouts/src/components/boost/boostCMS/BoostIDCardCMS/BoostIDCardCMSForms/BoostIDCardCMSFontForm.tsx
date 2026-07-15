@@ -6,6 +6,7 @@ import X from 'learn-card-base/svgs/X';
 
 import { BoostCMSState } from '../../../boost';
 import { useModal, ModalTypes } from 'learn-card-base';
+import * as m from '../../../../../../paraglide/messages.js';
 
 const BoostIDCardFontForm: React.FC<{
     state: BoostCMSState;
@@ -64,7 +65,7 @@ const BoostIDCardFontForm: React.FC<{
         <>
             <IonCol size="12" className="w-full bg-white flex items-center justify-between">
                 <h3 className="text-grayscale-700 text-left w-full font-medium text-lg">
-                    Font Color
+                    {m.boostCMSFontColor()}
                 </h3>
             </IonCol>
 
@@ -74,7 +75,7 @@ const BoostIDCardFontForm: React.FC<{
                         value={state?.appearance?.fontColor}
                         onChange={e => handleColorInputOnChange(e.target.value)}
                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base w-full pr-10"
-                        placeholder="Color Hex Code"
+                        placeholder={m.boostCMSColorHex()}
                         type="text"
                         disabled={disabled}
                     />

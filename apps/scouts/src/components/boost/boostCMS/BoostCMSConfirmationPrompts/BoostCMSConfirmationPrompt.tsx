@@ -80,7 +80,7 @@ export const BoostCMSConfirmationPrompt: React.FC<{
                             </h6>
                         </div>
                     </div>
-                    <h6 className="font-semi-bold text-black text-2xl mb-4 mt-4">Are you sure?</h6>
+                    <h6 className="font-semi-bold text-black text-2xl mb-4 mt-4">{m.boostCMSAreYouSure()}</h6>
                     {promptText}
                     {currentStep !== BoostCMSStepsEnum.confirmation &&
                         currentStep !== BoostCMSStepsEnum.issueTo &&
@@ -90,7 +90,7 @@ export const BoostCMSConfirmationPrompt: React.FC<{
                                 onClick={handleQuitAndSave}
                                 className="flex items-center font-medium justify-center text-white rounded-full px-[64px] py-[10px] bg-sp-purple-base text-lg w-full shadow-lg"
                             >
-                                Save & Quit
+                                {m.boostCMSSaveQuit()}
                             </button>
                         )}
                     <button
@@ -111,7 +111,7 @@ export const BoostCMSConfirmationPrompt: React.FC<{
                             }}
                             className="flex items-center justify-center text-white rounded-full px-[64px] py-[10px] bg-indigo-500 text-lg w-full shadow-lg mt-4"
                         >
-                            Return to Wallet
+                            {m.boostCMSWallet()}
                         </button>
                     )}
                 </div>

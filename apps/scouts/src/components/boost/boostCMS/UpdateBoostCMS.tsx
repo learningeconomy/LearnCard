@@ -499,7 +499,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
         } catch (e) {
             setIsSaveLoading(false);
             log.debug('error::savingBoost', e);
-            presentToast('Unable to save boost', {
+            presentToast(m.boostCMSBoostFailed(), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -537,7 +537,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
             } catch (e) {
                 setIsPublishLoading(false);
                 log.debug('error::boosting::someone', e);
-                presentToast('Error issuing boost', {
+                presentToast(m.boostCMSIssueErr(), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
@@ -799,7 +799,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                     isLoading={loading}
                     collectionPropName="admins"
                     showContactOptions={false}
-                    title="Assign Admins"
+                    title={m.boostCMSAssignAdmins()}
                     hideBoostShareableCode
                 />
                 {/* <BoostCMSAdvancedSettingsForm
@@ -865,13 +865,13 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
 
     let loadingText = '';
     if (isBoostLoading) {
-        loadingText = 'Loading...';
+        loadingText = m.commonLoading();
     } else if (isLoading) {
-        loadingText = 'Sending...';
+        loadingText = m.boostSending();
     } else if (isPublishLoading) {
-        loadingText = 'Publishing...';
+        loadingText = m.boostCMSPublishing();
     } else if (isSaveLoading) {
-        loadingText = 'Saving...';
+        loadingText = m.commonSaving();
     }
 
     return (
@@ -901,7 +901,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                     <IonRow className="w-full flex items-center justify-center pb-[200px]">
                         <IonCol className="w-full flex items-center justify-center">
                             <button onClick={handleConfirmationModal} className="mt-4 pb-4">
-                                Quit
+                                {m.boostCMSQuit()}
                             </button>
                         </IonCol>
                     </IonRow>

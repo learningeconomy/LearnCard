@@ -10,6 +10,7 @@ import EmptyImage from 'learn-card-base/assets/images/empty-image.png';
 import TrashBin from '../../../../svgs/TrashBin';
 
 import { BoostCMSState } from '../../../boost';
+import * as m from '../../../../../../paraglide/messages.js';
 
 const BoostIDCardCMSIssuerThumbnailForm: React.FC<{
     state: BoostCMSState;
@@ -51,7 +52,7 @@ const BoostIDCardCMSIssuerThumbnailForm: React.FC<{
     return (
         <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-2 mb-4 rounded-[20px]">
             <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
-                <p className="text-grayscale-900 font-medium w-10/12">Show Issuer Thumbnail</p>
+                <p className="text-grayscale-900 font-medium w-10/12">{m.boostCMSShowIssuer()}</p>
                 <IonToggle
                     mode="ios"
                     color="emerald-700"
@@ -102,7 +103,7 @@ const BoostIDCardCMSIssuerThumbnailForm: React.FC<{
                             )}
                         </div>
                         {!state?.appearance?.idIssuerThumbnail && (
-                            <p className="ml-[10px] text-grayscale-700">Empty</p>
+                            <p className="ml-[10px] text-grayscale-700">{m.boostCMSEmpty()}</p>
                         )}
                     </div>
 

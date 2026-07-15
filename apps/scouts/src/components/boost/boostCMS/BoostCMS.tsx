@@ -468,7 +468,7 @@ const BoostCMS: React.FC<{
         } catch (e) {
             setIsPublishLoading(false);
             log.debug('error::boosting::someone', e);
-            presentToast('Error issuing boost', {
+            presentToast(m.boostCMSIssueErr(), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -565,7 +565,7 @@ const BoostCMS: React.FC<{
         } catch (e) {
             setIsLoading(false);
             log.debug('error::boosting::someone', e);
-            presentToast('Error issuing boost', {
+            presentToast(m.boostCMSIssueErr(), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -649,7 +649,7 @@ const BoostCMS: React.FC<{
 
     const handleConfirmationModal = () => {
         const buttonText =
-            currentStep === BoostCMSStepsEnum.issueTo ? 'Continue Issuing' : 'Continue Editing';
+            currentStep === BoostCMSStepsEnum.issueTo ? m.boostCMSContinueIssue() : m.boostCMSContinueEdit();
         newModal(
             <BoostCMSConfirmationPrompt
                 state={state}
@@ -732,7 +732,7 @@ const BoostCMS: React.FC<{
                     boostUri={publishedBoostUri}
                     collectionPropName="admins"
                     showContactOptions={false}
-                    title="Assign Admins"
+                    title={m.boostCMSAssignAdmins()}
                     hideBoostShareableCode
                 />
             </>
@@ -771,13 +771,13 @@ const BoostCMS: React.FC<{
 
     let loadingText = '';
     if (isLoading) {
-        loadingText = 'Sending...';
+        loadingText = m.boostSending();
     } else if (isPublishLoading) {
-        loadingText = 'Sending...';
+        loadingText = m.boostSending();
     } else if (isSaveLoading) {
-        loadingText = 'Saving...';
+        loadingText = m.commonSaving();
     } else if (stylePackLoading) {
-        loadingText = 'Loading...';
+        loadingText = m.commonLoading();
     }
 
     return (
@@ -807,7 +807,7 @@ const BoostCMS: React.FC<{
                     <IonRow className="w-full flex items-center justify-center pb-[200px]">
                         <IonCol className="w-full flex items-center justify-center">
                             <button onClick={handleConfirmationModal} className="mt-4 pb-4">
-                                Quit
+                                {m.boostCMSQuit()}
                             </button>
                         </IonCol>
                     </IonRow>
