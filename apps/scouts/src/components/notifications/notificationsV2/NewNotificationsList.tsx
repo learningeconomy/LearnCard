@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 
 import Lottie from 'react-lottie-player';
+import * as m from '../../../paraglide/messages.js';
 import HourGlass from '../../../assets/lotties/hourglass.json';
 import lizardflame from '../../../assets/lotties/lizardflame.json';
 import NotificationCardContainer from './NotificationCardContainer';
@@ -87,12 +88,12 @@ const NewNotificationsList: React.FC<NewNotificationsListProps> = ({
                             style={{ width: '100%', height: '100%' }}
                         />
                     </div>
-                    <p className="font-bold text-grayscale-800 mt-[20px]">No notifications found</p>
+                    <p className="font-bold text-grayscale-800 mt-[20px]">{m['notifications.noNotificationsFound']()}</p>
                     <button
                         className="flex items-center mt-[20px] justify-center max-w-[200px] bg-indigo-500 rounded-full w-full px-[18px] py-[12px] text-white text-[20px] font-medium"
                         onClick={handleRefetch}
                     >
-                        Check again!
+                        {m['notifications.checkAgain']()}
                     </button>
                 </div>
             )}

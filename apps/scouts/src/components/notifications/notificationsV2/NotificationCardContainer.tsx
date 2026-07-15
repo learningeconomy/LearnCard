@@ -1,5 +1,6 @@
 import React from 'react';
 import moment from 'moment';
+import * as m from '../../../paraglide/messages.js';
 import {
     useUpdateNotification,
     useAcceptConnectionRequestMutation,
@@ -166,10 +167,10 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
                         presentAlert({
                             backdropDismiss: false,
                             cssClass: 'boost-confirmation-alert',
-                            header: 'You are already connected.',
+                            header: m['notifications.alreadyConnected'](),
                             buttons: [
                                 {
-                                    text: 'Okay',
+                                    text: m['notifications.okay'](),
                                     role: 'confirm',
                                     handler: async () => {
                                         //extract to helper function....
@@ -293,7 +294,7 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
         <div
             className={`flex justify-start max-w-[600px] items-start relative w-full rounded-3xl shadow-bottom py-[10px] px-[10px] bg-white ${className}`}
         >
-            Notification
+            {m['notifications.fallbackNotification']()}
         </div>
     );
 };

@@ -495,5 +495,33 @@
         "toasts": {
             "lostConn": "Oops! It seems you’ve lost your connection. The app may not function properly and you will not be able to send boosts."
         }
+    },
+    "notifications": {
+        "alerts": "Alerts",
+        "archiveAll": "Archive All",
+        "all": "All",
+        "archived": "Archived",
+        "archivedWithCount": "{{count}} Archived",
+        "noNotificationsFound": "No notifications found",
+        "checkAgain": "Check again!",
+        "accepted": "Accepted",
+        "claimed": "Claimed",
+        "fallbackNotification": "Notification",
+        "alreadyConnected": "You are already connected.",
+        "okay": "Okay",
+        "backButton": "Back button",
+        "stayInTheLoop": "Stay in the Loop?",
+        "receivePushFor": "Receive push notifications for:",
+        "pushDescription": "New connection requests, New boosts (like achievements, credentials, and badges).",
+        "notYet": "Not Yet",
+        "editSettings": "Edit Notification Settings",
+        "settingConnectionRequests": "New Connection Requests",
+        "settingConnectionRequestsDesc": "When someone scans your code or clicks your user links it will initiate a network request that you can accept or deny.",
+        "settingNewBoosts": "New Boosts",
+        "settingNewBoostsDesc": "Boosts include all types of credentials including:  Skills, IDs, Achievements, Learning History, Work History, Currency, and Badges.",
+        "toasts": {
+            "successfullyClaimed": "Successfully claimed Credential!"
+        },
+        "notificationIcon": "notification icon"
     }
 }

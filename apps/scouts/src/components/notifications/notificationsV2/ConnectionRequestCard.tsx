@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 import X from 'learn-card-base/svgs/X';
+import * as m from '../../../paraglide/messages.js';
 import { UserProfilePicture } from 'learn-card-base';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import NotificationSkeleton from './NotificationSkeleton';
@@ -65,9 +66,9 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
     let buttonText: string = '';
 
     if (isAccepted) {
-        buttonText = 'Accepted';
+        buttonText = m['notifications.accepted']();
     } else if (!isAccepted) {
-        buttonText = 'Accept';
+        buttonText = m['common.accept']();
     }
 
     const handleAcceptConnection = async () => {
@@ -129,7 +130,7 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
                                 className="text-grayscale-600 normal-case font-normal text-[12px] notification-card-type-issue-date"
                                 data-testid="notification-cred-issue-date"
                             >
-                                • {issueDate}
+                                {'• '}{issueDate}
                             </span>
                         )}
                     </p>
@@ -140,7 +141,7 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
                             onClick={handleAcceptConnection}
                             name="notification-claim-button"
                         >
-                            {isLoading ? 'Loading...' : buttonText}
+                            {isLoading ? m['common.loading']() : buttonText}
                             {isAccepted && <Checkmark className="h-[24px] p-0 m-0" />}{' '}
                         </button>
 
@@ -155,7 +156,7 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
                             {isArchived && (
                                 <img
                                     src={ArrowArcLeft ?? ''}
-                                    alt="Cancel"
+                                    alt={m['common.cancel']()}
                                     className="notification-card-x"
                                 />
                             )}

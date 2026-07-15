@@ -4,6 +4,7 @@ import { Capacitor } from '@capacitor/core';
 import { useHistory } from 'react-router-dom';
 
 import { IonCol, IonGrid, IonRow } from '@ionic/react';
+import * as m from '../../paraglide/messages.js';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import X from 'learn-card-base/svgs/X';
 
@@ -105,11 +106,11 @@ export const NotificationsSubHeader: React.FC<{
                         onClick={() => {
                             history.goBack();
                         }}
-                        aria-label="Back button"
+                        aria-label={m['notifications.backButton']()}
                     >
                         <LeftArrow className="w-6 mr-[10px] h-auto text-black desktop:hidden" />
                         <span className="text-grayscale-900 text-[25px] font-semibold font-rubik tracking-[0.01rem]">
-                            Alerts
+                            {m['notifications.alerts']()}
                         </span>
                     </button>
 
@@ -141,7 +142,7 @@ export const NotificationsSubHeader: React.FC<{
                         onClick={handleMarkAllRead}
                         className="text-[14px] text-grayscale-800 flex items-center justify-center font-semibold min-w-[140px] rounded-[36px] border-solid border-[1px] border-grayscale-200 py-[7px] px-[20px]"
                     >
-                        Archive All <X className="ml-[5px] w-[15px] h-[15px]" />
+                        {m['notifications.archiveAll']()} <X className="ml-[5px] w-[15px] h-[15px]" />
                     </button>
                 )}
             </IonGrid>
@@ -158,7 +159,7 @@ export const NotificationsSubHeader: React.FC<{
                                     : ''
                             }`}
                         >
-                            All
+                            {m['notifications.all']()}
                         </button>
                         <button
                             onClick={() => {
@@ -170,7 +171,7 @@ export const NotificationsSubHeader: React.FC<{
                                     : ''
                             }`}
                         >
-                            {!isLoading ? numberArchived : ''} Archived
+                            {!isLoading ? m['notifications.archivedWithCount']({ count: numberArchived ?? 0 }) : m['notifications.archived']()}
                         </button>
                     </IonCol>
                 </IonRow>
