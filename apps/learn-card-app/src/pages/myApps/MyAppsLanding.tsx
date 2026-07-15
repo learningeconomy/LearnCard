@@ -4,6 +4,8 @@ import { IonPage, IonContent } from '@ionic/react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useDeviceTypeByWidth } from 'learn-card-base';
 
+import * as m from '../../paraglide/messages.js';
+
 import Search from 'learn-card-base/svgs/Search';
 
 import MainHeader from '../../components/main-header/MainHeader';
@@ -147,14 +149,15 @@ const MyAppsLanding: React.FC = () => {
                     <div className="flex w-full max-w-[820px] flex-col gap-3 md:flex-row md:items-center md:gap-4">
                         <div className="flex items-center justify-between gap-3 md:contents">
                             <h1 className="font-poppins text-[30px] font-normal text-[#18224E] md:order-1">
-                                My Apps
+                                {m['launchpad.tabs.myApps']()}
                             </h1>
                             <button
                                 type="button"
                                 onClick={() => history.push('/launchpad/browse?tab=All')}
                                 className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[10px] border border-[#E2E3E9] bg-[#FBFBFC] px-4 py-2.5 font-poppins text-[15px] font-medium text-[#6366F1] md:order-3 md:text-[17px]"
                             >
-                                Browse More <span className="text-[18px] leading-none">+</span>
+                                {m['myAppsPage.browseMore']()}{' '}
+                                <span className="text-[18px] leading-none">+</span>
                             </button>
                         </div>
                         <div className="relative w-full md:order-2 md:max-w-[320px] md:flex-1">
@@ -162,8 +165,8 @@ const MyAppsLanding: React.FC = () => {
                             <input
                                 value={searchInput}
                                 onChange={e => setSearchInput(e.target.value)}
-                                placeholder="Search..."
-                                aria-label="Search apps"
+                                placeholder={m['myAppsPage.searchPlaceholder']()}
+                                aria-label={m['myAppsPage.searchAria']()}
                                 className="w-full rounded-[10px] bg-[#E2E3E9] py-2.5 pl-11 pr-4 font-notoSans text-[16px] text-[#18224E] placeholder:text-[#6F7590] focus:outline-none"
                             />
                         </div>
@@ -173,10 +176,13 @@ const MyAppsLanding: React.FC = () => {
                         <div className="w-full max-w-[820px]">
                             <p className="mb-4 font-poppins text-[15px] text-[#6F7590] md:mb-6">
                                 {resultsCount === 0
-                                    ? `No results for "${searchInput.trim()}"`
-                                    : `${resultsCount} result${
-                                          resultsCount === 1 ? '' : 's'
-                                      } for "${searchInput.trim()}"`}
+                                    ? m['myAppsPage.noResultsFor']({ query: searchInput.trim() })
+                                    : resultsCount === 1
+                                    ? m['myAppsPage.oneResult']({ query: searchInput.trim() })
+                                    : m['myAppsPage.manyResults']({
+                                          count: resultsCount,
+                                          query: searchInput.trim(),
+                                      })}
                             </p>
                             {resultsCount > 0 && (
                                 <AppGrid>{matchedApps.map(renderAppTile)}</AppGrid>
@@ -184,14 +190,14 @@ const MyAppsLanding: React.FC = () => {
                         </div>
                     ) : (
                         <>
-                            <AppGrid heading="LearnCard Apps">
+                            <AppGrid heading={m['myAppsPage.learnCardApps']()}>
                                 {shortcuts.map(renderShortcutTile)}
                             </AppGrid>
 
-                            <AppGrid heading="More Apps">
+                            <AppGrid heading={m['myAppsPage.moreApps']()}>
                                 {hasNoMoreApps ? (
                                     <p className="col-span-full py-8 text-center font-poppins text-[15px] text-[#6F7590]">
-                                        No apps to show yet.
+                                        {m['myAppsPage.noResults']()}
                                     </p>
                                 ) : (
                                     moreAppsTiles
