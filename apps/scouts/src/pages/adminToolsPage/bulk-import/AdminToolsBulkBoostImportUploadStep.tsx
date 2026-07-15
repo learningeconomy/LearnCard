@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 import DocIcon from 'learn-card-base/svgs/DocIcon';
 import CsvIcon from 'learn-card-base/svgs/CsvIcon';
@@ -87,24 +88,21 @@ export const AdminToolsBulkBoostImportUploadStep: React.FC<{
         <section className="bg-white max-w-[800px] w-full rounded-[20px]">
             <div className="flex flex-col items-start justify-center w-full ion-padding">
                 <h4 className="text-indigo-500 font-notoSans text-left mb-2 text-sm font-semibold">
-                    Step 2
+                    {m['adminTools.bulkImport.step2']()}
                 </h4>
-                <p className="text-xl text-grayscale-900 text-left mb-4">Upload Your .csv File</p>
+                <p className="text-xl text-grayscale-900 text-left mb-4">{m['adminTools.bulkImport.uploadCsv']()}</p>
 
                 <p className="text-left text-grayscale-700 text-sm">
-                    If you used filenames instead of URLs, upload a ZIP file containing those image
-                    files.
+                    {m['adminTools.bulkImport.zipDescription']()}
                 </p>
 
                 <div className="w-full flex gap-[5px] rounded-[10px] bg-indigo-100 justify-center ion-padding mt-4">
                     <div className="flex flex-col">
                         <p className="flex items-center justify-start text-[18px] text-indigo-600 font-poppins font-[600]">
-                            <CircleCheckOutlineIcon className="inline mr-2" /> Check Before
-                            Uploading
+                            <CircleCheckOutlineIcon className="inline mr-2" /> {m['adminTools.bulkImport.checkBeforeUploading']()}
                         </p>
                         <p className="text-xs text-indigo-600 font-poppins mt-2">
-                            Ensure all images are in place and any file errors are fixed before
-                            continuing.
+                            {m['adminTools.bulkImport.checkBeforeUploadingDesc']()}
                         </p>
                     </div>
                 </div>
@@ -122,7 +120,7 @@ export const AdminToolsBulkBoostImportUploadStep: React.FC<{
                             onClick={triggerFileInput}
                             className={`w-full flex rounded-[30px] items-center justify-center  py-2 font-semibold text-[17px] bg-indigo-500 text-white mt-4`}
                         >
-                            <UploadIcon className="inline mr-2" strokeWidth="2" /> Upload
+                            <UploadIcon className="inline mr-2" strokeWidth="2" /> {m['common.upload']()}
                         </button>
                     </>
                 )}
@@ -175,7 +173,7 @@ export const AdminToolsBulkBoostImportUploadStep: React.FC<{
                             ) : (
                                 <UploadIcon className="inline mr-2" strokeWidth="2" />
                             )}
-                            {showLoader ? 'Uploading...' : 'Upload Images Zip'}
+                            {showLoader ? m['common.loading']() + '...' : m['adminTools.bulkImport.uploadImagesZip']()}
                         </button>
                     </>
                 )}
@@ -211,7 +209,7 @@ export const AdminToolsBulkBoostImportUploadStep: React.FC<{
                         onClick={handlePreviewAllCredentials}
                         className={`w-full flex rounded-[30px] items-center justify-center  py-2 font-semibold text-[17px] bg-emerald-700 text-white mt-4`}
                     >
-                        <EyeIcon className="inline mr-2" /> Preview {csvData.length} Credentials
+                        <EyeIcon className="inline mr-2" /> {m['adminTools.bulkImport.previewCredentials']({ count: csvData.length })}
                     </button>
                 )}
             </div>

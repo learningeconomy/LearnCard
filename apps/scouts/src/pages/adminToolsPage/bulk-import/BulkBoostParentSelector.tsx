@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 import { IonSpinner } from '@ionic/react';
 import CaretDown from '../../../components/svgs/CaretDown';
@@ -57,7 +58,7 @@ const BulkBoostParentSelector: React.FC<BulkBoostParentSelectorProps> = ({
         >
             {!parentUri && (
                 <p className="m-0 pl-[10px] p-0 text-lg font-notoSans text-grayscale-600 line-clamp-1">
-                    Select a network...
+                    {m['adminTools.bulkImport.selectNetwork']()}
                 </p>
             )}
             {parentUri && (
@@ -82,7 +83,7 @@ const BulkBoostParentSelector: React.FC<BulkBoostParentSelectorProps> = ({
                         </div>
                         <div className="flex flex-col items-start justify-center">
                             <h4 className="text-sp-fire-red font-bold p-0 m-0 text-xs font-notoSans">
-                                Network
+                                {m['adminTools.bulkImport.network']()}
                             </h4>
 
                             {isLoading ? (

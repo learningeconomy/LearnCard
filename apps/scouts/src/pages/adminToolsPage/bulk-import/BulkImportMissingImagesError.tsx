@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../../paraglide/messages.js';
 import { BadgeDataRow, DataKeys, ImageStatus, ImageTrackingType } from './BulkBoostImportPage';
 import X from 'learn-card-base/svgs/X';
 
@@ -45,9 +46,9 @@ const BulkImportMissingImagesError: React.FC<BulkImportMissingImagesErrorProps> 
     return (
         <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6 max-w-[800px] mx-auto">
             <h3 className="text-red-700 font-medium flex items-center">
-                <X className="h-5 w-5 mr-2" /> Missing Images
+                <X className="h-5 w-5 mr-2" /> {m['adminTools.bulkImport.missingImages']()}
             </h3>
-            <p className="text-red-600 mb-2">The following records are missing image URLs:</p>
+            <p className="text-red-600 mb-2">{m['adminTools.bulkImport.missingImagesDesc']()}</p>
             <ul className="text-red-600 list-disc pl-6 mb-4">
                 {missingImages.slice(0, 5).map((item, index) => (
                     <li key={index}>
@@ -55,12 +56,11 @@ const BulkImportMissingImagesError: React.FC<BulkImportMissingImagesErrorProps> 
                     </li>
                 ))}
                 {missingImages.length > 5 && (
-                    <li>...and {missingImages.length - 5} more records</li>
+                    <li>{m['adminTools.bulkImport.moreRecords']({ count: missingImages.length - 5 })}</li>
                 )}
             </ul>
             <p className="text-red-700">
-                Please upload a ZIP file containing these images or provide direct URLs in the
-                spreadsheet.
+                {m['adminTools.bulkImport.missingImagesHelp']()}
             </p>
         </div>
     );

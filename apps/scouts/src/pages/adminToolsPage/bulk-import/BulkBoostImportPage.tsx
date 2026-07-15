@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
+import * as m from '../../../paraglide/messages.js';
 import { useHistory } from 'react-router';
 import Papa from 'papaparse';
 import JSZip from 'jszip';
@@ -218,7 +219,7 @@ const BulkBoostImportPage: React.FC = () => {
     const handleZipUpload = async event => {
         const file = event.target.files[0];
         if (!file || !file.name.endsWith('.zip')) {
-            presentToast('Please upload a valid ZIP file', {
+            presentToast(m['adminTools.toasts.validZip'](), {
                 type: ToastTypeEnum.Error,
             });
             return;
@@ -262,12 +263,12 @@ const BulkBoostImportPage: React.FC = () => {
             await uploadZipImages(imageMap);
 
             setZipUploaded(true);
-            presentToast(`Successfully processed ${imageMap.size} images from ZIP file`, {
+            presentToast(m['adminTools.toasts.imagesProcessed']({ count: imageMap.size }), {
                 type: ToastTypeEnum.Success,
             });
         } catch (error) {
             log.error('Error extracting ZIP file:', error);
-            presentToast('Error extracting ZIP file', {
+            presentToast(m['adminTools.toasts.zipExtractError'](), {
                 type: ToastTypeEnum.Error,
             });
         } finally {
@@ -408,7 +409,7 @@ const BulkBoostImportPage: React.FC = () => {
     const confirmImport = async () => {
         // Check for missing images
         if (hasMissingImages) {
-            presentToast('Please upload all required images before publishing', {
+            presentToast(m['adminTools.toasts.uploadAllImages'](), {
                 type: ToastTypeEnum.Error,
                 duration: 5000,
             });
@@ -418,10 +419,11 @@ const BulkBoostImportPage: React.FC = () => {
         const numBoosts = csvData.filter(data => data[DataKeys.category] === 'Social Boost').length;
         const numBadges = csvData.filter(data => data[DataKeys.category] === 'Merit Badge').length;
         await confirm({
-            text: `Are you sure you want to upload ${conditionalPluralize(
-                numBadges,
-                'Merit Badge'
-            )} and ${conditionalPluralize(numBoosts, 'Social Boost')} to ${networkName}?`,
+            text: m['adminTools.bulkImport.confirmUpload']({
+                badges: conditionalPluralize(numBadges, 'Merit Badge'),
+                boosts: conditionalPluralize(numBoosts, 'Social Boost'),
+                network: networkName,
+            }),
             onConfirm: handleBulkImport,
         });
     };
@@ -505,7 +507,7 @@ const BulkBoostImportPage: React.FC = () => {
                 })
             );
 
-            presentToast('Boosts imported successfully!', {
+            presentToast(m['adminTools.toasts.importSuccess'](), {
                 duration: 5000,
                 hasDismissButton: true,
                 type: ToastTypeEnum.Success,
@@ -515,7 +517,7 @@ const BulkBoostImportPage: React.FC = () => {
         } catch (e) {
             log.error('Failed to bulk import boosts: ', e.message);
 
-            presentToast(`Bulk boost import failed! ${e.message}`, {
+            presentToast(m['adminTools.toasts.importFailed']({ message: e.message }), {
                 duration: 5000,
                 hasDismissButton: true,
                 type: ToastTypeEnum.Error,
@@ -597,15 +599,15 @@ const BulkBoostImportPage: React.FC = () => {
     };
 
     const loadingText = isUploadingImages
-        ? `Uploading images (${uploadProgress}%)...`
-        : `Importing boosts (${numBoostsCreated}/${csvData.length})...`;
+        ? m['adminTools.bulkImport.uploadingImages']({ progress: uploadProgress })
+        : m['adminTools.bulkImport.importingBoosts']({ created: numBoostsCreated, total: csvData.length });
 
     const showZipInput = zipUploaded || (fileUploaded && hasMissingImages);
 
     const showLoader = isLoading || isUploadingImages;
 
     return (
-        <AdminPageStructure title="Bulk Boost Import">
+        <AdminPageStructure title={m['adminTools.bulkImport.pageTitle']()}>
             {showLoader && <BoostLoader text={loadingText} />}
             <section
                 className={
@@ -618,7 +620,7 @@ const BulkBoostImportPage: React.FC = () => {
 
                 <div className="flex flex-col gap-[20px] max-w-[600px] mx-auto">
                     <div className="flex gap-[10px] items-center">
-                        <span className="font-[600] w-[100px]">CSV Data:</span>
+                        <span className="font-[600] w-[100px]">{m['adminTools.bulkImport.csvData']()}</span>
                         <input
                             ref={fileInputRef}
                             type="file"
@@ -638,7 +640,7 @@ const BulkBoostImportPage: React.FC = () => {
 
                     {showZipInput && (
                         <div className="flex gap-[10px] items-center">
-                            <span className="font-[600] w-[100px]">Images ZIP:</span>
+                            <span className="font-[600] w-[100px]">{m['adminTools.bulkImport.imagesZip']()}</span>
                             <input
                                 ref={zipInputRef}
                                 type="file"
@@ -660,7 +662,7 @@ const BulkBoostImportPage: React.FC = () => {
                     {zipUploaded && (
                         <div className="pl-[100px] text-sm text-green-700 flex items-center">
                             <Checkmark className="h-4 w-4 mr-1" />
-                            Found {zipImages.size} images in ZIP file
+                            {m['adminTools.bulkImport.foundZipImages']({ count: zipImages.size })}
                         </div>
                     )}
 
@@ -688,7 +690,7 @@ const BulkBoostImportPage: React.FC = () => {
                         onClick={confirmImport}
                         className="px-4 py-3 bg-sp-purple-base text-white text-[22px] rounded max-w-[400px] mx-auto disabled:opacity-60"
                     >
-                        Upload!
+                        {m['adminTools.bulkImport.uploadButton']()}
                     </button>
                 )}
 

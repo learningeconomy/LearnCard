@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 import X from 'learn-card-base/svgs/X';
 import Checkmark from '../../../components/svgs/Checkmark';
@@ -84,13 +85,13 @@ const BulkImportDataRow: React.FC<BulkImportDataRowProps> = ({
                         onClick={handlePreview}
                         className="shadow-box-bottom px-[5px] py-[2px] rounded-full"
                     >
-                        Preview
+                        {m['common.preview']()}
                     </button>
                     <button
                         onClick={handleDeleteRow}
                         className="shadow-box-bottom px-[5px] py-[2px] rounded-full"
                     >
-                        Delete
+                        {m['common.delete']()}
                     </button>
                 </div>
             </td>
@@ -126,7 +127,7 @@ const BulkImportDataRow: React.FC<BulkImportDataRowProps> = ({
                     )}
                     {!mainImageValue && (
                         <div className="h-[100px] w-[100px] flex items-center justify-center bg-gray-100 text-gray-500 text-xs">
-                            [none]
+                            {m['adminTools.bulkImport.none']()}
                         </div>
                     )}
                 </div>
@@ -160,7 +161,7 @@ const BulkImportDataRow: React.FC<BulkImportDataRowProps> = ({
                     )}
                     {!bgImageValue && (
                         <div className="h-[100px] w-[100px] flex items-center justify-center bg-gray-100 text-gray-500 text-xs">
-                            [none]
+                            {m['adminTools.bulkImport.none']()}
                         </div>
                     )}
                 </div>
