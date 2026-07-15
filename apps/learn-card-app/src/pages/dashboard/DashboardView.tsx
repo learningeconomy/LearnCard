@@ -49,13 +49,11 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
                         heroImage={header.heroImage}
                         profileRole={header.profileRole}
                         shortBio={header.shortBio}
-                        affiliation={header.affiliation}
-                        stats={header.stats}
                         professionalTitle={header.professionalTitle}
-                        experience={header.experience ?? null}
-                        skills={header.skills}
-                        onSkillPillClick={header.onSkillPillClick}
                         onAvatarClick={header.onAvatarClick}
+                        onNotificationsClick={header.onNotificationsClick}
+                        unreadCount={header.unreadCount}
+                        roleSwitcher={header.roleSwitcher}
                         topRightAction={
                             <button
                                 type="button"

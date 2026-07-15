@@ -1,6 +1,6 @@
 {
     "name": "@learncard/network-plugin",
-    "version": "2.13.7",
+    "version": "2.13.9",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",

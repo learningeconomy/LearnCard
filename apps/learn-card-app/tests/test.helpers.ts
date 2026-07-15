@@ -89,8 +89,13 @@ export const clickPublishAndIssueIfPresent = async (page: Page) => {
 export const issueCredentialToSelf = async (page: Page, timeout = 60_000) => {
     await openBoostTemplateSelector(page);
 
-    // Select the first available template
-    await page.getByText('LearnCard Template').first().click({ timeout: 30_000 });
+    // Select the first available template. The subtitle is branding-derived
+    // ("{brandingConfig.name} Template") since the multi-tenant refactor
+    // (LC-1558), so match the branding-agnostic suffix instead of a literal.
+    await page
+        .getByText(/Template$/)
+        .first()
+        .click({ timeout: 30_000 });
 
     // Fill in credential title and description
     await page.getByRole('textbox', { name: /0\// }).fill(TEST_CREDENTIAL_TITLE);

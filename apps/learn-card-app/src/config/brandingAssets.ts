@@ -16,6 +16,8 @@ import type { BrandingAssets } from 'learn-card-base/config/TenantConfigProvider
 import DefaultTextLogo from '../assets/images/learncard-text-logo.svg';
 import DefaultBrandMark from '../assets/images/lca-brandmark.png';
 import DefaultAppIcon from '../assets/images/lca-icon-v2.png';
+
+export const DEFAULT_BRAND_MARK = DefaultBrandMark;
 // DefaultDesktopLoginBg and DefaultDesktopLoginBgAlt removed —
 // tenants without custom desktop bg images now show LoginWelcomePanel instead.
 
@@ -74,16 +76,19 @@ export const resolveAssets = (assets: BrandingAssets): ResolvedBrandingAssets =>
 export const useTenantBrandingAssets = (): ResolvedBrandingAssets => {
     const assets = useBrandingAssets();
 
-    return useMemo(() => resolveAssets(assets), [
-        assets.textLogoUrl,
-        assets.textLogoDarkUrl,
-        assets.brandMarkUrl,
-        assets.brandMarkLightUrl,
-        assets.appIconUrl,
-        assets.desktopLoginBgUrl,
-        assets.desktopLoginBgAltUrl,
-        assets.fullLogoUrl,
-        assets.fullLogoDarkUrl,
-        assets.logoUrl,
-    ]);
+    return useMemo(
+        () => resolveAssets(assets),
+        [
+            assets.textLogoUrl,
+            assets.textLogoDarkUrl,
+            assets.brandMarkUrl,
+            assets.brandMarkLightUrl,
+            assets.appIconUrl,
+            assets.desktopLoginBgUrl,
+            assets.desktopLoginBgAltUrl,
+            assets.fullLogoUrl,
+            assets.fullLogoDarkUrl,
+            assets.logoUrl,
+        ]
+    );
 };

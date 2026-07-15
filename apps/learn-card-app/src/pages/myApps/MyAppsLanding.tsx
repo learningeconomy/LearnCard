@@ -1,15 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
-import { useModal, ModalTypes, useDeviceTypeByWidth } from 'learn-card-base';
+import { useFlags } from 'launchdarkly-react-client-sdk';
+import { useDeviceTypeByWidth } from 'learn-card-base';
 
 import Search from 'learn-card-base/svgs/Search';
 
 import MainHeader from '../../components/main-header/MainHeader';
 import ProfileAlertsIsland from '../../components/main-header/ProfileAlertsIsland';
-import AppStoreDetailModal from '../launchPad/AppStoreDetailModal';
 import AppGrid from './AppGrid';
 import AppGridTile from './AppGridTile';
+import MoreAppTile from './MoreAppTile';
 import {
     LEARNCARD_APP_SHORTCUTS,
     JOURNEYS_SHORTCUT,
@@ -35,13 +36,20 @@ const MOBILE_HEADER_STYLE: React.CSSProperties = {
 const MyAppsLanding: React.FC = () => {
     const history = useHistory();
     const { search } = useLocation();
-    // Initialize with a modal type so newModal renders (mirrors AppStoreListItem).
-    const { newModal } = useModal({ desktop: ModalTypes.Right, mobile: ModalTypes.Right });
     const { isMobile } = useDeviceTypeByWidth();
     const openBoost = useOpenBoostTemplateSelector();
     const { apps: moreApps, isSuggested, isLoading: isLoadingMore } = useMoreApps();
     const [searchInput, setSearchInput] = useState('');
     const pathwaysEnabled = usePathwaysEnabled();
+    const flags = useFlags();
+
+    const openBoostAFriend = useMemo(
+        () => () => {
+            if (flags?.boostAFriendV2 === true) history.push('/boost-a-friend');
+            else openBoost();
+        },
+        [flags?.boostAFriendV2, history, openBoost]
+    );
 
     const shortcuts = useMemo(
         () =>
@@ -63,8 +71,8 @@ const MyAppsLanding: React.FC = () => {
     }, [hasDeepLink, search, history]);
 
     const helpers = useMemo(
-        () => ({ push: (path: string) => history.push(path), openBoost }),
-        [history, openBoost]
+        () => ({ push: (path: string) => history.push(path), openBoost, openBoostAFriend }),
+        [history, openBoost, openBoostAFriend]
     );
 
     const query = searchInput.trim().toLowerCase();
@@ -99,14 +107,7 @@ const MyAppsLanding: React.FC = () => {
     );
 
     const renderAppTile = (app: (typeof moreApps)[number]) => (
-        <AppGridTile
-            key={app.listing_id}
-            title={app.display_name}
-            icon={app.icon_url}
-            onClick={() =>
-                newModal(<AppStoreDetailModal listing={app} isInstalled={!isSuggested} />)
-            }
-        />
+        <MoreAppTile key={app.listing_id} listing={app} isInstalled={!isSuggested} />
     );
 
     const renderSkeletonTile = (key: string) => (

@@ -54,3 +54,8 @@ services/learn-card-network/*/didkit-native-layer/
 # Local environment configuration
 .envrc
 services/learn-card-network/lca-api/.env.scouts
+/apps/scouts/.vite-local
+/apps/scouts/.vite-docker
+
+# Sisyphus agent working directory (local only)
+.sisyphus/

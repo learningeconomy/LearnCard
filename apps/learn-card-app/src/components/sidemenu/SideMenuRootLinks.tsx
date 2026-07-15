@@ -17,6 +17,7 @@ import AiPassportPersonalizationContainer from '../ai-passport/AiPassportPersona
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useModal, ModalTypes } from 'learn-card-base';
 import { useDeviceTypeByWidth } from 'learn-card-base/hooks/useDeviceTypeByWidth';
+import useOpenNotifications from '../notifications/useOpenNotifications';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../theme/icons/index';
@@ -61,6 +62,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
     const dashboardAsHome = useDashboardAsHome();
 
     const { newModal } = useModal();
+    const openNotifications = useOpenNotifications();
 
     const handlePersonalizeMyAi = () => {
         newModal(
@@ -83,8 +85,13 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
 
     const isPathActive = (tab: string) => {
         const isAdminToolsActive = tab === '/admin-tools' && activeTab.startsWith(tab);
+        const isPassportActive =
+            tab === '/passport' &&
+            ['/passport', '/wallet', '/home'].some(
+                prefix => activeTab === prefix || activeTab.startsWith(prefix + '/')
+            );
 
-        if (tab === activeTab || isAdminToolsActive) return true;
+        if (tab === activeTab || isAdminToolsActive || isPassportActive) return true;
         return false;
     };
 
@@ -157,10 +164,14 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
         }
 
         if (linkPath === '/notifications') {
+            // Alerts uses the shared open handler (same as the header button):
+            // right-side modal on web, and a route to the /notifications page on
+            // native — see useOpenNotifications.
             linkEl = (
-                <PreloadingLink
-                    to={linkPath}
-                    className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
+                <button
+                    type="button"
+                    onClick={() => openNotifications()}
+                    className={`cursor-pointer learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
                 >
                     <div className={`flex relative mr-[10px] text-[14px] ${textStyles}`}>
                         <IconComponent
@@ -177,7 +188,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
                     </div>
 
                     {link.label}
-                </PreloadingLink>
+                </button>
             );
         }
 
@@ -209,10 +220,17 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
             );
         }
 
+        // Alerts opens a modal (web) or routes to /notifications (native); in
+        // neither case should it be marked as the active tab here — on web the
+        // visible page is unchanged, and on native the IonMenuToggle closes the
+        // menu on tap anyway.
+        const handleTabClick =
+            linkPath === '/notifications' ? undefined : () => setActiveTab(linkPath);
+
         return (
             <IonMenuToggle key={link.id} autoHide={false} className="w-full">
                 <div
-                    onClick={() => setActiveTab(linkPath)}
+                    onClick={handleTabClick}
                     className="flex items-center justify-center px-0 py-[3px]"
                 >
                     {linkEl}
