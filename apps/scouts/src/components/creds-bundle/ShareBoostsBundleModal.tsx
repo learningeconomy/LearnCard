@@ -16,6 +16,7 @@ import {
 } from '@ionic/react';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import ProfilePicture from 'learn-card-base/components/profilePicture/ProfilePicture';
+import * as m from '../../paraglide/messages.js';
 import { VP, UnsignedVP } from '@learncard/types';
 import { useWallet, SelectedCredsStoreState, useToast, ToastTypeEnum } from 'learn-card-base';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
@@ -191,12 +192,12 @@ const ShareBoostsBundleModal = ({
             await Clipboard.write({
                 string: link,
             });
-            presentToast('Verified resume link copied to clipboard', {
+            presentToast(m['credsBundle.toast.linkCopied'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy verified resume link to clipboard', {
+            presentToast(m['credsBundle.toast.linkCopyFail'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -235,7 +236,7 @@ const ShareBoostsBundleModal = ({
                     <div className="flex flex-col justify-center items-center w-full h-full">
                         <div className="flex flex-col justify-center items-center w-full h-full mt-[-100px]">
                             <IonSpinner name="crescent" color="dark" className="scale-[1.75]" />
-                            <p className="mt-[30px]">Creating your boost bundle....</p>
+                            <p className="mt-[30px]">{m['credsBundle.creatingBundle']()}</p>
                         </div>
                     </div>
                 )}
@@ -243,8 +244,7 @@ const ShareBoostsBundleModal = ({
                 {page === 'success' && !loading && (
                     <section className="text-center flex flex-col p-[20px] max-w-[600px] m-auto">
                         <h1 className="text-emerald-700 text-[24px] font-bold mt-[20px]">
-                            {' '}
-                            Created Boost Bundle
+                            {m['credsBundle.createdBundle']()}
                         </h1>
                         <div></div>
 
@@ -261,26 +261,26 @@ const ShareBoostsBundleModal = ({
                             </section>
 
                             <div className="text-left">
-                                <p className="text-[14px] uppercase">Boost bundle created </p>
+                                <p className="text-[14px] uppercase">{m['credsBundle.bundleCreated']()}</p>
 
                                 <br />
-                                <strong className="text-[20px]">Your PIN is: {pinNum} </strong>
+                                <strong className="text-[20px]">{m['credsBundle.yourPin']({ pin: pinNum })}</strong>
                                 <br />
                                 <br />
                                 <strong className="text-[14px] mt-[20px] text-left">
-                                    Share your PIN and this link:{' '}
+                                    {m['credsBundle.sharePinLink']()}{' '}
                                     <div className="py-[10px] flex flex-wrap">
                                         <button
                                             onClick={handleCopy}
                                             className="mt-[5px] bg-cyan-700 py-[15px] px-[25px] rounded-[40px] text-grayscale-50 text-[17px] font-bold"
                                         >
-                                            Copy link
+                                            {m['credsBundle.copyLink']()}
                                         </button>
                                         <button
                                             onClick={handleViewLink}
                                             className="mt-[5px] bg-cyan-700 py-[15px] px-[25px] ml-[10px] rounded-[40px] text-grayscale-50 text-[17px] font-bold"
                                         >
-                                            View Link
+                                            {m['credsBundle.viewLink']()}
                                         </button>
                                     </div>
                                 </strong>

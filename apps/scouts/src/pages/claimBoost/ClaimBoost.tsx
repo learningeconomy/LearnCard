@@ -33,6 +33,8 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 import { getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 import {
     isTroopCredential,
@@ -84,7 +86,7 @@ const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) =
                 <div className="vc-issue-details mt-[10px] flex flex-col items-center font-montserrat text-[14px] leading-[20px]">
                     <span className="created-at text-grayscale-700">{issueDate}</span>
                     <span className="issued-by text-grayscale-900 font-[500]">
-                        by <strong className="font-[700] capitalize">{data?.displayName}</strong>
+                        <TransP m={m['claimBoost.issuedBy']} values={{ name: data?.displayName }} components={[<strong key="b" className="font-[700] capitalize" />]} />
                     </span>
                 </div>
             </>
@@ -106,7 +108,7 @@ const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) =
             <div className="vc-issue-details mt-[10px] flex flex-col items-center font-montserrat text-[14px] leading-[20px]">
                 <span className="created-at text-grayscale-700">{issueDate}</span>
                 <span className="issued-by text-grayscale-900 font-[500]">
-                    by <strong className="font-[700] capitalize">{data?.displayName}</strong>
+                    <TransP m={m['claimBoost.issuedBy']} values={{ name: data?.displayName }} components={[<strong key="b" className="font-[700] capitalize" />]} />
                 </span>
             </div>
         </>
@@ -247,7 +249,7 @@ export const ClaimBoostModal: React.FC<{
 
             history?.push('/');
 
-            presentToast(`Successfully claimed Credential!`, {
+            presentToast(m['notifications.toasts.successfullyClaimed'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
@@ -259,7 +261,7 @@ export const ClaimBoostModal: React.FC<{
             const isExpired =
                 errorMsg.includes('Challenge not found') || errorMsg.includes('expired');
 
-            presentToast(`Unable to claim Credential`, {
+            presentToast(m['claimBoost.toast.claimFail'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -268,8 +270,8 @@ export const ClaimBoostModal: React.FC<{
                 backdropDismiss: false,
                 cssClass: 'boost-confirmation-alert',
                 header: isExpired
-                    ? 'The boost claim link has expired or has reached the maximum number of times it can be claimed.'
-                    : 'Something went wrong while claiming this credential. Please try again.',
+                    ? m['claimBoost.expiredAlert']()
+                    : m['claimBoost.errorAlert'](),
                 buttons: [
                     {
                         text: 'Okay',
@@ -300,14 +302,14 @@ export const ClaimBoostModal: React.FC<{
             openLoggedOutModal();
         }
     };
-    let actionButtonText = 'Accept';
+    let actionButtonText = m['common.accept']();
 
     if (isClaimLoading) {
-        actionButtonText = 'Loading...';
+        actionButtonText = m['common.loading']();
     } else if (!isClaimLoading && isClaimed) {
-        actionButtonText = 'Accepted';
+        actionButtonText = m['notifications.accepted']();
     } else {
-        actionButtonText = 'Accept';
+        actionButtonText = m['common.accept']();
     }
 
     const isTroopIdClaim = isTroopCredential(boost);
@@ -326,7 +328,7 @@ export const ClaimBoostModal: React.FC<{
                     {!boostExists && (
                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-full w-full">
                             <IonSpinner color="black" />
-                            <p className="mt-2 font-bold text-lg">Loading...</p>
+                            <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                         </section>
                     )}
                     {!loading && !boost && (
@@ -337,10 +339,10 @@ export const ClaimBoostModal: React.FC<{
                                 className="relative max-w-[250px] m-auto"
                             />
                             <h1 className="text-center text-3xl font-bold text-grayscale-800">
-                                Eeek!
+                                {m['scanner.eek']()}
                             </h1>
                             <strong className="text-center font-medium text-grayscale-600">
-                                Unable to find boost
+                                {m['claimBoost.unableToFind']()}
                             </strong>
                         </section>
                     )}

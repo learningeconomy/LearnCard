@@ -36,6 +36,7 @@ import { getWallpaperBackgroundStyles, isTroopCredential } from '../../helpers/t
 import { BrandingEnum, useGetProfile, useIsLoggedIn, useModal, ModalTypes } from 'learn-card-base';
 import { VC, VerificationItem, VP } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 const log = getLogger('view-shared-boost');
 
@@ -195,14 +196,14 @@ const ViewSharedBoost: React.FC = () => {
                                     className="text-grayscale-900 mr-[20px] text-lg"
                                     onClick={redirectHome}
                                 >
-                                    Login
+                                    {m['common.login']()}
                                 </button>
                                 <button
                                     type="button"
                                     className="bg-emerald-600 text-white p-2 rounded-full shadow-bottom tracking-wide share-page-get-learncard-btn"
                                     onClick={redirectHome}
                                 >
-                                    Get ScoutPass
+                                    {m['credsBundle.getScoutPass']()}
                                 </button>
                             </div>
                         </div>

@@ -756,5 +756,53 @@
             "copyBoostLinkFail": "Unable to copy boost link to clipboard"
         },
         "location": "Location"
+    },
+    "credsBundle": {
+        "aboutTitle": "About {title}",
+        "aboutChapi": "About Chapi",
+        "chapiDesc1": "The Credential Handler API (CHAPI) is an open-source solution for communicating Verifiable Credentials on the Web.",
+        "chapiDesc2": "Think, trusted and confidential carrier pigeon, but for Verifiable Credentials.",
+        "chapiDesc3": "It allows your digital wallet to send or receive Verifiable Credentials from an independent third-party verifier or issuer in a way that establishes trust and preserves privacy.",
+        "connectHandler": "Connect Handler",
+        "selectBoostsToShare": "Select Earned Boosts To Share",
+        "createBundleDesc": "This will create a shared boost bundle that can shared and viewed.",
+        "selectedCount": "You have selected {count} {type}s to share",
+        "fetchingBoosts": "Fetching your earned boosts...",
+        "errorFetching": "Sorry! There was an error fetching your {type}s: {error}",
+        "noCredentials": "No Credentials",
+        "emptyQuote": "\"Love doesn't just sit there, like a stone, it has to be made, like bread; remade all the time, made new.\"",
+        "shareAll": "Share all {type}s",
+        "shareBoosts": "Share Boosts",
+        "sharing": "Sharing...",
+        "creatingBundle": "Creating your boost bundle....",
+        "createdBundle": "Created Boost Bundle",
+        "bundleCreated": "Boost bundle created",
+        "yourPin": "Your PIN is: {pin}",
+        "sharePinLink": "Share your PIN and this link:",
+        "copyLink": "Copy link",
+        "viewLink": "View Link",
+        "toast": {
+            "linkCopied": "Verified resume link copied to clipboard",
+            "linkCopyFail": "Unable to copy verified resume link to clipboard"
+        },
+        "footerTagline": "POWERED BY CONSENT FLOW • You own your own data • All connections are <0>encrypted</0>",
+        "getLearnCard": "Get LearnCard",
+        "getScoutPass": "Get ScoutPass",
+        "authenticBoost": "Authentic Boost:",
+        "networkVerified": "Verified by the LearnCard Network",
+        "credStatus": "Credential Status:",
+        "verified": "verified",
+        "credVerifications": "Credential Verifications",
+        "toggle": "toggle"
+    },
+    "claimBoost": {
+        "issuedBy": "by <0>{name}</0>",
+        "unableToFind": "Unable to find boost",
+        "claiming": "Claiming...",
+        "expiredAlert": "The boost claim link has expired or has reached the maximum number of times it can be claimed.",
+        "errorAlert": "Something went wrong while claiming this credential. Please try again.",
+        "toast": {
+            "claimFail": "Unable to claim Credential"
+        }
     }
 }
