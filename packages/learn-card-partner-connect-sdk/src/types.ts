@@ -100,6 +100,84 @@ export interface PartnerConnectOptions {
      * Request timeout in milliseconds (default: 30000)
      */
     requestTimeout?: number;
+
+    /**
+     * Controls automatic **standalone mock mode**.
+     *
+     * When the SDK runs outside of a LearnCard host (i.e. as a top-level page,
+     * not embedded in an iframe), there is no host to answer `postMessage`
+     * requests, so every call would hang until it times out. Mock mode makes
+     * the SDK simulate the host locally so your app is fully buildable,
+     * demo-able, and testable without being embedded — and then behaves
+     * identically (real host) once embedded, with no code changes.
+     *
+     * - `'auto'` **(default)**: mock automatically **only when not embedded**.
+     *    When embedded in a real LearnCard host, real `postMessage` is used.
+     * - `true`: always mock, even when embedded (useful for tests / demos).
+     * - `false`: never mock. Calls go to the real host and will time out if
+     *    no host is present.
+     *
+     * @default 'auto'
+     */
+    mock?: boolean | 'auto';
+
+    /**
+     * Fine-grained configuration for standalone mock mode. Ignored when mock
+     * mode is not active. See {@link MockHostOptions}.
+     */
+    mockOptions?: MockHostOptions;
+}
+
+/**
+ * Options controlling the behavior of standalone mock mode.
+ *
+ * All fields are optional; mock mode works out-of-the-box with sensible
+ * defaults (visible UI, console logging, and localStorage-backed counters).
+ */
+export interface MockHostOptions {
+    /**
+     * Render lightweight visual feedback in the page: a fake credential-claim
+     * modal / toast for `sendCredential`, and a "mock consent" banner for
+     * `requestConsent`. Set to `false` for a headless mock (logs only).
+     *
+     * @default true
+     */
+    ui?: boolean;
+
+    /**
+     * Log every simulated host interaction to the console with a clear
+     * `[LearnCard SDK · MOCK]` prefix.
+     *
+     * @default true
+     */
+    log?: boolean;
+
+    /**
+     * Persist counters (`incrementCounter` / `getCounter` / `getCounters`) to
+     * `localStorage` so values survive page reloads, mirroring the real host's
+     * durable per-user counters. Falls back to in-memory storage when
+     * `localStorage` is unavailable.
+     *
+     * @default true
+     */
+    persist?: boolean;
+
+    /**
+     * The fake DID returned by `requestIdentity()` (and used as the mock
+     * user's identity) while in mock mode.
+     *
+     * @default 'did:web:mock.learncard.app:user'
+     */
+    did?: string;
+
+    /**
+     * Namespace used to scope persisted mock data (counters, claimed
+     * credentials) in `localStorage`. Change this if you run multiple mock
+     * apps on the same origin and want isolated state.
+     *
+     * @default 'lc-mock'
+     */
+    namespace?: string;
 }
 
 /**

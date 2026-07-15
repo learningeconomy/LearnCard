@@ -19,6 +19,7 @@
  */
 
 import { PartnerConnectError } from './types';
+import { MockHost } from './mock-host';
 import type {
     PartnerConnectOptions,
     IdentityResponse,
@@ -57,10 +58,44 @@ import type {
 
 // Re-export the class as a value plus all type exports.
 export { PartnerConnectError } from './types';
+export { MockHost } from './mock-host';
 export type * from './types';
 
 /** Maximum time to poll for sync completion before giving up (10 minutes) */
 const SYNC_STATUS_POLL_MAX_DURATION_MS = 10 * 60 * 1000;
+
+/**
+ * Detect whether the current page is running inside an embedded iframe.
+ *
+ * Returns `true` when the SDK is embedded (e.g. inside the LearnCard host) and
+ * `false` when running as a standalone top-level page. Safe to call in any
+ * environment: returns `false` during server-side rendering (no `window`).
+ *
+ * Partner apps can use this to change behavior without writing their own frame
+ * detection — for example, showing a "Open in LearnCard" prompt when standalone.
+ *
+ * @example
+ * ```typescript
+ * import { isEmbedded } from '@learncard/partner-connect';
+ *
+ * if (isEmbedded()) {
+ *   // Running inside LearnCard — use the SDK against the real host.
+ * } else {
+ *   // Standalone — show a preview banner, or rely on automatic mock mode.
+ * }
+ * ```
+ */
+export function isEmbedded(): boolean {
+    if (typeof window === 'undefined') return false;
+
+    try {
+        // A cross-origin parent still lets us compare WindowProxy references;
+        // when access is blocked entirely the throw means we ARE embedded.
+        return window.self !== window.top;
+    } catch {
+        return true;
+    }
+}
 
 /**
  * LearnCard Partner Connect SDK class
@@ -99,6 +134,7 @@ export class PartnerConnect {
     private isInitialized = false;
     private syncCompleteCallbacks: Set<(status: SyncStatus) => void> = new Set();
     private syncStatusPollId: ReturnType<typeof setInterval> | null = null;
+    private mockHost: MockHost | null = null;
 
     constructor(options?: PartnerConnectOptions) {
         // Normalize hostOrigin to an array for whitelist validation
@@ -120,6 +156,36 @@ export class PartnerConnect {
         this.pendingRequests = new Map();
         this.configureActiveOrigin();
         this.setupMessageListener();
+
+        const mockSetting = options?.mock ?? 'auto';
+        const shouldMock = mockSetting === true || (mockSetting === 'auto' && !isEmbedded());
+        if (shouldMock) {
+            this.mockHost = new MockHost(options?.mockOptions);
+        }
+    }
+
+    /**
+     * Whether this SDK instance is running inside an embedded iframe.
+     * Instance-level convenience wrapper around the standalone {@link isEmbedded}.
+     */
+    public isEmbedded(): boolean {
+        return isEmbedded();
+    }
+
+    /**
+     * Whether the current page is running inside an embedded iframe.
+     * Static convenience wrapper around the standalone {@link isEmbedded}.
+     */
+    public static isEmbedded(): boolean {
+        return isEmbedded();
+    }
+
+    /**
+     * Whether this instance is currently simulating the LearnCard host locally
+     * instead of talking to a real host over `postMessage`.
+     */
+    public isMocked(): boolean {
+        return this.mockHost !== null;
     }
 
     /**
@@ -430,6 +496,15 @@ export class PartnerConnect {
             return Promise.reject(
                 new PartnerConnectError('SDK_NOT_INITIALIZED', 'SDK is not initialized')
             );
+        }
+
+        if (this.mockHost) {
+            return this.mockHost
+                .handle(action, payload)
+                .then(data => data as T)
+                .catch(error => {
+                    throw PartnerConnectError.from(error);
+                });
         }
 
         return new Promise<T>((resolve, reject) => {
@@ -992,6 +1067,11 @@ export class PartnerConnect {
             this.syncStatusPollId = null;
         }
         this.syncCompleteCallbacks.clear();
+
+        if (this.mockHost) {
+            this.mockHost.destroy();
+            this.mockHost = null;
+        }
 
         this.isInitialized = false;
     }

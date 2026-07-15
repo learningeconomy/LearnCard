@@ -77,6 +77,17 @@ interface PartnerConnectOptions {
      * Request timeout in milliseconds (default: 30000)
      */
     requestTimeout?: number;
+
+    /**
+     * Controls automatic standalone mock mode.
+     * 'auto' (default) mocks only when NOT embedded; true always mocks; false never mocks.
+     */
+    mock?: boolean | 'auto';
+
+    /**
+     * Fine-grained mock behavior (UI, logging, persistence, fake DID).
+     */
+    mockOptions?: MockHostOptions;
 }
 ```
 
@@ -165,6 +176,91 @@ The SDK enforces an exact match between incoming message origins and the active 
 // ❌ Rejects: messages from https://evil.com
 // ❌ Rejects: messages from any other origin
 ```
+
+## Standalone / Mock Mode
+
+The SDK only works when embedded inside a LearnCard host — that's the host that
+answers its `postMessage` requests. When you run your app on its own (local dev,
+Storybook, a preview deploy, CI), there is no host, so every call would hang
+until it times out.
+
+**Mock mode fixes this automatically.** When the SDK detects it is _not_ embedded
+in a LearnCard host, it simulates the host locally:
+
+-   `sendCredential(...)` shows a toast — _"✅ In LearnCard, the user would receive **[name]** here."_ — and resolves with a mock credential id/URI.
+-   `requestConsent(...)` auto-grants and shows a visible **"mock consent"** banner.
+-   `incrementCounter` / `getCounter` / `getCounters` persist to `localStorage`, so values survive reloads just like the real host.
+-   `requestIdentity`, notifications, learner context, sync status, etc. all resolve with sensible fake data.
+-   Every simulated interaction is logged to the console with a `[LearnCard SDK · MOCK]` prefix.
+
+**No code changes, no environment flags.** Your app is fully buildable and
+demo-able standalone, and behaves identically against the real host once
+embedded.
+
+```typescript
+// Just works everywhere — mocks standalone, real host when embedded.
+const learnCard = createPartnerConnect({ hostOrigin: 'https://learncard.app' });
+
+const res = await learnCard.sendCredential({ templateAlias: 'course-completion' });
+// Standalone: resolves with a mock URI + shows a toast.
+// Embedded:   goes to the real LearnCard host.
+```
+
+Override the default behavior when needed:
+
+```typescript
+// Force mock even while embedded (useful in tests):
+createPartnerConnect({ mock: true });
+
+// Never mock (calls will time out if no host is present):
+createPartnerConnect({ mock: false });
+
+// Configure mock behavior:
+createPartnerConnect({
+    mock: 'auto',
+    mockOptions: {
+        ui: true, // show toasts/banners (default true)
+        log: true, // console logging (default true)
+        persist: true, // localStorage-backed counters (default true)
+        did: 'did:web:example.com:me', // fake identity DID
+        namespace: 'my-app-mock', // localStorage namespace for mock state
+    },
+});
+```
+
+Check whether an instance is currently mocking:
+
+```typescript
+if (learnCard.isMocked()) {
+    console.log('Running against the local mock host.');
+}
+```
+
+## Detecting the Embed Context
+
+Use `isEmbedded()` to branch your own logic based on whether your app is running
+inside a LearnCard iframe or as a standalone page — no need to write your own
+frame detection.
+
+```typescript
+import { isEmbedded, createPartnerConnect } from '@learncard/partner-connect';
+
+if (isEmbedded()) {
+    // Inside LearnCard — hide your standalone header, enable SDK-backed features.
+} else {
+    // Standalone — show an "Open in LearnCard" prompt, or lean on mock mode.
+}
+```
+
+It is also available as a static and instance method:
+
+```typescript
+PartnerConnect.isEmbedded(); // static
+createPartnerConnect().isEmbedded(); // instance
+```
+
+`isEmbedded()` returns `false` during server-side rendering (no `window`) and is
+safe to call anywhere.
 
 ## API Reference
 
