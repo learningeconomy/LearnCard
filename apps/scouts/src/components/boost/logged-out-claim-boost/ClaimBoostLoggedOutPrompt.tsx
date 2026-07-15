@@ -199,8 +199,11 @@ const ScoutsLoginColumn: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="w-full max-w-[500px] pt-10 flex justify-center">
-                    <LoginFooter />
+                <div className="w-full max-w-[500px] flex justify-center">
+                    <LoginFooter
+                        className="w-full text-center"
+                        wrapperClassName="flex flex-col items-center"
+                    />
                 </div>
             </div>
         </div>

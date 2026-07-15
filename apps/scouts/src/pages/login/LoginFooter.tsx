@@ -5,15 +5,20 @@ import Web3AuthLogo from '../../assets/images/web3auth-logo.svg';
 import ExternalLinkIcon from 'learn-card-base/svgs/ExternalLink';
 import { openToS, openPP, openContactLink, openLCwebsite } from '../../helpers/externalLinkHelpers';
 
-const LoginFooter: React.FC = () => {
+interface LoginFooterProps {
+    className?: string;
+    wrapperClassName?: string;
+}
+
+const LoginFooter: React.FC<LoginFooterProps> = ({
+    className = 'login-footer-container',
+    wrapperClassName = 'login-footer-wrap',
+}) => {
     return (
-        <div className="login-footer-container">
-            <div className="ion-padding pl-6 w-full login-footer-wrap">
-                <IonCol
-                    size="12"
-                    className="w-full flex-col items-center justify-start login-footer-title-wrap"
-                >
-                    <p className="w-full flex items-center mr-3 text-grayscale-600 font-medium text-base">
+        <div className={`${className}`}>
+            <div className={`ion-padding pl-6 w-full ${wrapperClassName}`}>
+                <IonCol size="12" className="login-footer-title-wrap">
+                    <p className="text-grayscale-600 font-medium text-base">
                         Self-custodial login.
                     </p>
                 </IonCol>
@@ -27,7 +32,7 @@ const LoginFooter: React.FC = () => {
                 </button>
                 <IonCol
                     size="12"
-                    className="w-full flex items-start justify-start p-0 mt-2 login-footer-links-wrap"
+                    className="w-full flex items-center justify-center p-0 mt-2 login-footer-links-wrap"
                 >
                     <button
                         onClick={openToS}
