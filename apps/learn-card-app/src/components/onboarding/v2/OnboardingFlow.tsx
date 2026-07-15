@@ -95,6 +95,9 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     );
 
     useEffect(() => {
+        if (!localStorage.getItem(ONBOARDING_STARTED_AT_KEY)) {
+            localStorage.setItem(ONBOARDING_STARTED_AT_KEY, String(flowStartedAt.current));
+        }
         redirectStore.set.isOnboardingOpen(true);
         return () => {
             redirectStore.set.isOnboardingOpen(false);
@@ -143,7 +146,9 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
     useEffect(() => {
         if (handleLockedRef.current) return;
-        if (!uniqueProfileFetching && profileId) {
+        if (uniqueProfileFetching) {
+            setIsUniqueValid(false);
+        } else if (profileId) {
             setIsUniqueValid(uniqueProfile === null);
         }
     }, [uniqueProfile, uniqueProfileFetching, profileId]);
@@ -272,7 +277,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
     const canContinueScreen1 = useMemo(() => {
         if (!dob || !country) return false;
-        if (age !== null && age < 13) return true;
+        if (age === null) return false;
+        if (age < 13) return true;
         if (needsEUConsent && (!guardianEmail || !/^\S+@\S+\.\S+$/.test(guardianEmail)))
             return false;
         if (needsUSConsent && !usMinorConsent) return false;
@@ -916,7 +922,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                             </div>
                                             {privacyPreferences?.isMinor && (
                                                 <p className="text-xs text-amber-700 bg-amber-50/80 backdrop-blur-sm p-2.5 rounded-xl border border-amber-100/50">
-                                                    AI features are disabled for users under 18.
+                                                    AI features are disabled for minors.
                                                 </p>
                                             )}
                                             <div className="flex items-center justify-between">

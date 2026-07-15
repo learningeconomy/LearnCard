@@ -226,6 +226,34 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
         }
     };
 
+    const handleKeyDown = (
+        type: 'month' | 'day' | 'year',
+        ref: React.RefObject<HTMLDivElement>,
+        options: number[],
+        currentVal: number,
+        setter: (val: number) => void,
+        e: React.KeyboardEvent
+    ) => {
+        if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+        e.preventDefault();
+        if (!hasInteracted) setHasInteracted(true);
+
+        const currentIndex = options.indexOf(currentVal);
+        const delta = e.key === 'ArrowDown' ? 1 : -1;
+        const nextIndex = Math.max(0, Math.min(options.length - 1, currentIndex + delta));
+        const nextVal = options[nextIndex];
+        if (nextVal === undefined || nextVal === currentVal) return;
+
+        setter(nextVal);
+        if (ref.current) {
+            isProgrammaticScroll.current[type] = true;
+            ref.current.scrollTo({ top: nextIndex * ITEM_HEIGHT, behavior: 'smooth' });
+            setTimeout(() => {
+                isProgrammaticScroll.current[type] = false;
+            }, 300);
+        }
+    };
+
     const renderColumn = (
         type: 'month' | 'day' | 'year',
         ref: React.RefObject<HTMLDivElement>,
@@ -237,12 +265,16 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
         return (
             <div
                 ref={ref}
-                className="flex-1 h-[200px] overflow-y-auto snap-y snap-mandatory relative z-10 [&::-webkit-scrollbar]:hidden"
+                role="listbox"
+                aria-label={type.charAt(0).toUpperCase() + type.slice(1)}
+                tabIndex={0}
+                className="flex-1 h-[200px] overflow-y-auto snap-y snap-mandatory relative z-10 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 [&::-webkit-scrollbar]:hidden"
                 style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}
                 onScroll={() => {
                     if (isProgrammaticScroll.current[type]) return;
                     handleScroll(type, ref, options, selectedVal, setter);
                 }}
+                onKeyDown={e => handleKeyDown(type, ref, options, selectedVal, setter, e)}
             >
                 {Array.from({ length: SPACER_COUNT }).map((_, i) => (
                     <div key={`start-${i}`} style={{ height: ITEM_HEIGHT }} />
@@ -252,6 +284,8 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
                     return (
                         <div
                             key={opt}
+                            role="option"
+                            aria-selected={isSelected}
                             onClick={() => handleItemClick(type, ref, index, opt, setter)}
                             className={`flex items-center justify-center snap-center cursor-pointer tabular-nums transition-all duration-200 ${
                                 isSelected
@@ -272,7 +306,11 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
     };
 
     return (
-        <div className={`flex flex-col items-center w-full font-poppins ${className}`}>
+        <div
+            role="group"
+            aria-label="Date of birth"
+            className={`flex flex-col items-center w-full font-poppins ${className}`}
+        >
             {!hasInteracted && (
                 <p className="text-xs text-grayscale-500 mb-2 animate-fade-in-up">
                     Scroll to choose
