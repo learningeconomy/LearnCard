@@ -4,6 +4,7 @@ import { BoostCategoryOptionsEnum, isCustomBoostType } from 'learn-card-base';
 
 import { IonRow, IonCol, IonHeader, IonToolbar } from '@ionic/react';
 
+import * as m from '../../../../../../paraglide/messages.js';
 import X from 'learn-card-base/svgs/X';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import BoostCMSCategoryTypeSwiper from './BoostCMSCategoryTypeSwiper';
@@ -133,14 +134,14 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
     let titleStyles = 'flex-1';
 
     if (activeForm === BoostCMSActiveAppearanceForm.achievementTypeForm) {
-        formTitle = 'Type';
+        formTitle = m['boostCMS.type']();
         headerContainerStyles = 'items-center justify-between';
         headerBackButtonStyles = 'w-[86px] h-[44px]';
     } else if (activeForm === BoostCMSActiveAppearanceForm.badgeForm) {
-        formTitle = 'Select Image';
+        formTitle = m['boostCMS.selectImage']();
         headerContainerStyles = 'items-center justify-center';
     } else {
-        formTitle = 'Appearance';
+        formTitle = m['boostCMS.appearance']();
         titleStyles = 'flex-none';
         headerContainerStyles = 'items-center justify-between px-4 pb-2';
     }
@@ -188,7 +189,7 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
                                 className={`rounded-full font-medium ion-no-padding p-0 shadow-3xl text-xl px-4 py-2 font-notoSans bg-emerald-700 text-white`}
                                 disabled={disabled}
                             >
-                                Save
+                                {m['common.save']()}
                             </button>
                         )}
                         {activeForm === BoostCMSActiveAppearanceForm.achievementTypeForm && (
@@ -202,7 +203,7 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
                                 }`}
                                 disabled={saveDisabled}
                             >
-                                Save
+                                {m['common.save']()}
                             </button>
                         )}
                     </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Keyboard } from '@capacitor/keyboard';
+import * as m from '../../../../../../paraglide/messages.js';
 import { useFilestack, UploadRes, BoostCMSMediaState } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { IonCol, IonRow, IonInput } from '@ionic/react';
@@ -115,7 +116,7 @@ const BoostCMSMediaPhotoUpload: React.FC<{
                 <IonInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base font-notoSans`}
-                    placeholder="Title"
+                    placeholder={m['boostCMS.titleField']()}
                     type="text"
                     value={state.photos?.[currentIndex]?.title}
                     onIonInput={e => {
@@ -140,11 +141,11 @@ const BoostCMSMediaPhotoUpload: React.FC<{
                     }}
                     className={`flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg font-notoSans`}
                 >
-                    Save
+                    {m['common.save']()}
                 </button>
             ) : (
                 <button className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg font-notoSans">
-                    {imageUploadLoading ? 'Uploading...' : 'Upload'}
+                    {m['boostCMS.uploading']()}
                 </button>
             )}
 
@@ -153,7 +154,7 @@ const BoostCMSMediaPhotoUpload: React.FC<{
                     onClick={handleImageSelect}
                     className="flex items-center mt-[20px] justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg font-notoSans"
                 >
-                    Change Photo
+                    {m['boostCMS.changePhoto']()}
                 </button>
             )}
             <div className="w-full flex items-center justify-center mt-[20px]">
@@ -167,7 +168,7 @@ const BoostCMSMediaPhotoUpload: React.FC<{
                     }}
                     className="text-grayscale-900 text-center text-sm font-notoSans"
                 >
-                    Cancel
+                    {m['common.cancel']()}
                 </button>
             </div>
         </>

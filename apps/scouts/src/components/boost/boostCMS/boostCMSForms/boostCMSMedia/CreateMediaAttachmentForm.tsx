@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { IonCol, IonRow } from '@ionic/react';
+import * as m from '../../../../../../paraglide/messages.js';
 import {
     BoostCMSMediaAttachment,
     BoostCMSState,
@@ -239,7 +240,7 @@ const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps> = ({
                 <div className="flex items-center justify-between w-full mb-4 bg-grayscale-100 ion-padding rounded-[20px]">
                     <div className="flex items-center justify-start w-[80%]">
                         <p className="font-medium text-[#FF3636]">
-                            {uploadProgress?.toString?.()}% uploaded
+                            {m['boostCMS.uploadProgress']({ progress: uploadProgress as number })}
                         </p>
                     </div>
                 </div>
@@ -257,7 +258,7 @@ const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps> = ({
                     onClick={() => handleCloseModal?.()}
                     className="text-grayscale-900 text-center text-sm"
                 >
-                    Cancel
+                    {m['common.cancel']()}
                 </button>
             </div>
         </>

@@ -1,5 +1,7 @@
 import React from 'react';
 
+import * as m from '../../../../../../paraglide/messages.js';
+
 import {
     IonCol,
     IonContent,
@@ -48,7 +50,7 @@ const BoostCMSAppearanceBadgeSelector: React.FC<{
                         onClick={() => handleCloseModal()}
                         className="text-grayscale-900 text-center text-sm"
                     >
-                        Cancel
+                        {m['common.cancel']()}
                     </button>
                 </div>
             </IonContent>

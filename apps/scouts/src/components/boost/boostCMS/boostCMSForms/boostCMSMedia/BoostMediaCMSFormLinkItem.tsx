@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../../../../../paraglide/messages.js';
 import { BoostMediaOptionsEnum } from '../../../boost';
 import Pencil from '../../../../svgs/Pencil';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
@@ -31,7 +32,7 @@ const BoostMediaCMSFormLinkItem: React.FC<BoostMediaCMSFormItemProps> = ({
                 showCloseButton={false}
                 title={
                     <p className="flex items-center justify-center text-xl w-full h-full text-grayscale-900">
-                        Media Attachment
+                        {m['boostCMS.mediaAttachment']()}
                     </p>
                 }
             />
@@ -57,7 +58,7 @@ const BoostMediaCMSFormLinkItem: React.FC<BoostMediaCMSFormItemProps> = ({
                             {media.title}
                         </p>
                         <span className="line-clamp-1 text-indigo-600 text-base font-semibold font-notoSans">
-                            Visit Link
+                            {m['boostCMS.visitLink']()}
                         </span>
                     </div>
                 </div>

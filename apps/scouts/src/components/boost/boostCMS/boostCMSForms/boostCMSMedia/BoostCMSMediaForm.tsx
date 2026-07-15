@@ -1,6 +1,7 @@
 import React from 'react';
 import { IonCol, IonRow } from '@ionic/react';
 
+import * as m from '../../../../../../paraglide/messages.js';
 import Plus from 'learn-card-base/svgs/Plus';
 import BoostCMSMediaOptions from './BoostCMSMediaOptions';
 import { BoostCMSState, BoostMediaOptionsEnum, BoostCMSMediaAttachment } from '../../../boost';
@@ -43,7 +44,7 @@ export const BoostCMSMediaForm: React.FC<{
                 showCloseButton={true}
                 title={
                     <p className="flex items-center justify-center text-2xl w-full h-full text-grayscale-900 font-notoSans">
-                        Media Attachment
+                        {m['boostCMS.mediaAttachment']()}
                     </p>
                 }
             />
@@ -59,7 +60,7 @@ export const BoostCMSMediaForm: React.FC<{
                 showCloseButton={false}
                 title={
                     <p className="flex items-center justify-center text-2xl w-full h-full text-grayscale-900 font-notoSans">
-                        Media Attachment
+                        {m['boostCMS.mediaAttachment']()}
                     </p>
                 }
             />
@@ -103,7 +104,7 @@ export const BoostCMSMediaForm: React.FC<{
                     disabled={disabled}
                 >
                     <h1 className="text-black text-xl p-0 m-0 flex items-center justify-center font-notoSans">
-                        <PaperClip className="h-[30px] w-[30px] mr-1" /> Media Attachments
+                        <PaperClip className="h-[30px] w-[30px] mr-1" /> {m['boostCMS.mediaAttachments']()}
                     </h1>
 
                     <div className="flex items-center justify-center text-grayscale-800 rounded-full bg-white w-12 h-12 shadow-3xl modal-btn-desktop">
