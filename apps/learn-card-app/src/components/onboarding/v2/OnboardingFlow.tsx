@@ -192,7 +192,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
             !isHandleManuallyEdited &&
             profileId &&
             !uniqueProfileFetching &&
-            uniqueProfile !== null
+            uniqueProfile != null
         ) {
             setProfileId(prev => {
                 const base = prev.replace(/-[a-z0-9]{4}$/, '');
@@ -429,17 +429,20 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
                 if (authToken !== 'dummy') {
                     try {
-                        await updateProfile(auth()?.currentUser!, {
-                            displayName: name,
-                            photoURL: photo,
-                        });
+                        const fbUser = auth()?.currentUser;
+                        if (fbUser) {
+                            await updateProfile(fbUser, {
+                                displayName: name,
+                                photoURL: photo,
+                            });
+                        }
                     } catch (e) {
                         log.error('Firebase updateProfile error:', e);
                     }
                 }
 
                 if (currentUser?.privateKey) {
-                    await updateCurrentUser(currentUser.privateKey, { name, profileImage: photo });
+                    await updateCurrentUser(currentUser.uid, { name, profileImage: photo });
                     currentUserStore.set.currentUser({
                         ...currentUser,
                         name,
