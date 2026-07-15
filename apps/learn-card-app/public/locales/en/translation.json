@@ -3747,5 +3747,230 @@
         "addYourOwn": "Add your own",
         "uploadCredential": "Upload a Credential",
         "buildMyBrand": "Build My {{brand}}"
+    },
+    "badgeSummit": {
+        "cat": {
+            "vibes": {
+                "label": "Vibes & Community",
+                "desc": "For the mood-shapers and memory-keepers."
+            },
+            "standards": {
+                "label": "Standards & Specs",
+                "desc": "For the spec-keepers and interop builders."
+            },
+            "leaders": {
+                "label": "Leaders & Changemakers",
+                "desc": "For the ones who move everyone forward."
+            },
+            "mastery": {
+                "label": "Brains & Mastery",
+                "desc": "For deep skill and know-how."
+            },
+            "heart": {
+                "label": "Heart & Team",
+                "desc": "For the glue that holds people together."
+            },
+            "bold": {
+                "label": "Bold & Adventurous",
+                "desc": "For the fearless and the first."
+            },
+            "culture": {
+                "label": "Culture & Cool",
+                "desc": "For taste, trends, and star power."
+            },
+            "fun": {
+                "label": "Fun & Energy",
+                "desc": "For the life of the party."
+            },
+            "other": {
+                "label": "Other",
+                "desc": "Everything else."
+            }
+        },
+        "badge": {
+            "Risktaker": {
+                "desc": "For the person who leans into the uncertain moment and moves first, even when the safer choice is right there on the table."
+            },
+            "Opportunist": {
+                "desc": "Reserved for the person who sees the opening three seconds before anyone else and quietly walks through it."
+            },
+            "CoolCat": {
+                "desc": "For the person whose calm makes hard rooms easier and whose vibe is somehow always dialed in."
+            },
+            "Trailblazer": {
+                "desc": "Reserved for the person who goes first, cuts the path, and turns around to wave everyone else through."
+            },
+            "Influencer": {
+                "desc": "For the person whose opinions shape what the rest of the group ends up caring about."
+            },
+            "Connector": {
+                "desc": "Reserved for the person who somehow knows exactly who you should meet and makes the introduction before you finish the sentence."
+            },
+            "Trendsetter": {
+                "desc": "For the person who was into it six months before it was a thing, and will be onto the next thing by the time you catch up."
+            },
+            "Organizer": {
+                "desc": "Reserved for the person who turns a vague group idea into an actual date, place, plan, and shared calendar invite."
+            },
+            "Moderator": {
+                "desc": "For the person who keeps the conversation fair, the tone kind, and the space usable for everyone in it."
+            },
+            "Leader": {
+                "desc": "Reserved for the person others quietly look to when it's time to decide, commit, or move."
+            },
+            "Expert": {
+                "desc": "For the person you text when you need the actual answer, not the guess."
+            },
+            "Aficionado": {
+                "desc": "Reserved for the person whose love for a niche runs deep enough to change how the rest of us appreciate it."
+            },
+            "Psychic": {
+                "desc": "For the person who calls the outcome before it happens and then pretends they didn't."
+            },
+            "Magician": {
+                "desc": "Reserved for the person who pulls off the thing that shouldn't have been possible and won't quite explain how."
+            },
+            "Charmer": {
+                "desc": "For the person who could probably convince a locked door to open on its own."
+            },
+            "Cowboy": {
+                "desc": "Reserved for the person who rides in, does the thing their own way, and rides back out before the rules catch up."
+            },
+            "Perfectionist": {
+                "desc": "For the person who notices the one pixel that's off and cannot rest until it isn't."
+            },
+            "Wanderer": {
+                "desc": "Reserved for the person whose latest location update is somehow always a place you had to look up."
+            },
+            "TeamPlayer": {
+                "desc": "For the person who makes the group stronger just by being in it and never needs to be asked twice."
+            },
+            "Star": {
+                "desc": "Reserved for the person the room notices without them having to try."
+            },
+            "PartyAnimal": {
+                "desc": "For the person still going strong three hours after everyone said they were leaving."
+            },
+            "TroubleMaker": {
+                "desc": "Reserved for the person whose bad ideas make the best stories later."
+            },
+            "Doer": {
+                "desc": "For the person who stops talking about it around the time everyone else is still forming opinions, and just does it."
+            },
+            "Entertainer": {
+                "desc": "Reserved for the person who could make a delayed flight fun and probably has."
+            },
+            "Connoisseur": {
+                "desc": "For the person whose taste is educated enough that you just trust the pick."
+            },
+            "ChangeMaker": {
+                "desc": "Reserved for the person who looks at how things are and quietly starts building how they should be."
+            },
+            "Ambassador": {
+                "desc": "For the person who represents the group well wherever they go, without ever making it feel like a pitch."
+            },
+            "Catalyst": {
+                "desc": "Reserved for the person whose presence in a conversation makes something new actually happen."
+            },
+            "ChallengeMaker": {
+                "desc": "For the person who invents the dare, the game, or the goal that pulls everyone else up a level."
+            },
+            "Challenger": {
+                "desc": "Reserved for the person who pushes the assumption, asks the harder question, and won't let a lazy answer pass."
+            },
+            "Enabler": {
+                "desc": "For the person who quietly clears the path so someone else can do their best work."
+            },
+            "Enthusiast": {
+                "desc": "Reserved for the person whose genuine excitement makes you care about things you didn't know you could care about."
+            },
+            "HotShot": {
+                "desc": "For the person on the streak, delivering the win, and making it look easier than it is."
+            },
+            "Informer": {
+                "desc": "Reserved for the person who reliably shows up with the article, the update, or the heads-up before you needed it."
+            },
+            "Maven": {
+                "desc": "For the person whose accumulated know-how in a domain is basically a public utility at this point."
+            },
+            "Maverick": {
+                "desc": "Reserved for the person who plays their own game and somehow keeps winning it."
+            },
+            "PartyPlanner": {
+                "desc": "For the person who thinks in guest lists, playlists, and vibe curves, and always seems to nail all three."
+            },
+            "Promoter": {
+                "desc": "Reserved for the person whose enthusiastic sharing has quietly built more audiences than they'll ever admit."
+            },
+            "Propagator": {
+                "desc": "For the person who takes a small idea and helps it grow roots in five other communities."
+            },
+            "Sage": {
+                "desc": "Reserved for the person whose considered advice tends to age extremely well."
+            },
+            "Tastemaker": {
+                "desc": "For the person whose picks quietly define what the rest of the group ends up loving."
+            },
+            "VibeCurator": {
+                "desc": "Reserved for the community members who know exactly how to make a room feel better, warmer, stranger, or more alive."
+            },
+            "ChaosCoordinator": {
+                "desc": "For the person who somehow turns confusion, missed messages, late arrivals, and half-formed plans into an actual functioning experience."
+            },
+            "HypeArchitect": {
+                "desc": "Reserved for the rare friend who makes other people feel braver, cooler, funnier, and more capable than they did five minutes ago."
+            },
+            "LoreKeeper": {
+                "desc": "For the community member who remembers every inside joke, legendary night, strange detail, and oddly important piece of group history."
+            },
+            "SideQuestSpecialist": {
+                "desc": "Reserved for the person who can turn a normal day into an unexpected adventure with one suspiciously casual suggestion."
+            },
+            "QuietGenius": {
+                "desc": "For the person who may not always take the spotlight, but regularly drops the exact idea, fix, or observation everyone needed."
+            },
+            "CommunityHelper": {
+                "desc": "Reserved for the community members who show up when someone needs a hand, a pointer, a fix, or just a little extra kindness."
+            },
+            "FoodSniper": {
+                "desc": "Reserved for the community members with impeccable taste and a talent for discovering the best culinary spots."
+            },
+            "VisualStoryteller": {
+                "desc": "For the community member who turns ideas, data, moments, and messy concepts into visuals that people can actually feel and understand."
+            },
+            "LogicMaster": {
+                "desc": "Reserved for the person who brings structure to complexity, catches the hidden flaw, and makes the whole system make sense."
+            },
+            "SchemaWhisperer": {
+                "desc": "Reserved for the community member who can stare into a tangled credential payload and somehow emerge with elegance, order, and valid JSON-LD."
+            },
+            "AlignmentWizard": {
+                "desc": "For the person who can connect a badge to a skill, a skill to a framework, a framework to a job, and somehow make it all seem obvious."
+            },
+            "CLRCartographer": {
+                "desc": "Reserved for the brave soul who helps communities navigate the wild territory between transcripts, credentials, skills, evidence, and learner records."
+            },
+            "VerifiableVibes": {
+                "desc": "For the community member who believes trust is beautiful, signatures are poetry, and verification should work before anyone starts the demo."
+            },
+            "BadgeGoblin": {
+                "desc": "Reserved for the person who wants everything to be a badge, and is usually, annoyingly, kind of right."
+            },
+            "MetadataMystic": {
+                "desc": "For the person who understands that the visible badge is only the charm on the necklace. The real magic is in the structured data underneath."
+            },
+            "InteropDiplomat": {
+                "desc": "Reserved for the patient negotiator who can bring platforms, vendors, wallets, registries, and institutions into the same room without causing a standards incident."
+            },
+            "BackpackElder": {
+                "desc": "For the community member who remembers where the badges came from, why they mattered, and which conversations everyone keeps accidentally rediscovering."
+            },
+            "IssuerTherapist": {
+                "desc": "Reserved for the person who gently helps organizations admit that their badge criteria are unclear, their evidence is vibes, and their taxonomy needs love."
+            },
+            "SpecGremlin": {
+                "desc": "For the person who reads the implementation notes, finds the edge case, asks the terrifying question, and saves everyone six months of pain."
+            }
+        }
     }
 }

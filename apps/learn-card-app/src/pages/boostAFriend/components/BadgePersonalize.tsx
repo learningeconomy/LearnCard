@@ -14,6 +14,7 @@ import {
 } from 'learn-card-base';
 import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEarnedCard';
 import * as m from '../../../paraglide/messages.js';
+import { tBadgeDesc } from '../badgePackI18n';
 
 interface BadgePersonalizeProps {
     badge: BadgePreset;
@@ -68,7 +69,8 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
         return buildPreviewCredential({
             title: displayTitle,
             subtype: subtype.trim() || displayTitle,
-            description,
+            description:
+                description !== undefined ? tBadgeDesc(badge.type, description) : description,
             note: note.trim() || notePlaceholder,
             vibeColor,
             imageUrl: effectiveImageUrl,
@@ -77,6 +79,7 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
     }, [
         title,
         subtype,
+        badge.type,
         description,
         note,
         notePlaceholder,
