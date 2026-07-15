@@ -7543,7 +7543,11 @@
         "noResults": "لا توجد تطبيقات لعرضها بعد.",
         "noResultsFor": "لا نتائج لـ \"{{query}}\"",
         "oneResult": "نتيجة واحدة لـ \"{{query}}\"",
-        "manyResults": "{{count}} نتائج لـ \"{{query}}\""
+        "manyResults": "{{count}} نتائج لـ \"{{query}}\"",
+        "shortcuts": {
+            "skillInsights": "رؤى المهارات",
+            "boostAFriend": "عزّز صديقًا"
+        }
     },
     "addToPassport": {
         "subtitle": "أضف شهادة إلى جواز سفرك.",

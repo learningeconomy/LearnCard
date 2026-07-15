@@ -24,6 +24,25 @@ import { usePathwaysEnabled } from '../pathways/hooks/usePathwaysEnabled';
 
 const DEEP_LINK_PARAMS = ['connectTo', 'uri', 'embedUrl'];
 
+// Localized display titles for the first-party LearnCard app tiles, keyed by the
+// shortcut's stable `key`. Reuses each feature's existing translated label where
+// one exists; only Skill Insights and Boost a Friend needed new keys. The source
+// `title` in learnCardAppShortcuts stays English (a stable id used by tests).
+const SHORTCUT_TITLE: Record<string, () => string> = {
+    journeys: m['sidemenu.links.pathways'],
+    'skill-insights': m['myAppsPage.shortcuts.skillInsights'],
+    pathways: m['pathways.title'],
+    'ai-sessions': m['launchpad.header.aiSessions'],
+    'resume-builder': m['passport.resumeBuilder.title'],
+    'skills-hub': m['aiFeatureLinks.skillsHub'],
+    'data-sharing': m['dataSharing.title'],
+    families: m['family.title'],
+    'boost-a-friend': m['myAppsPage.shortcuts.boostAFriend'],
+};
+
+const shortcutTitle = (shortcut: LearnCardAppShortcut): string =>
+    (SHORTCUT_TITLE[shortcut.key] ?? (() => shortcut.title))();
+
 // Mobile: the header is a frosted-glass bar (white gradient + backdrop blur),
 // matching the bottom nav. Desktop: the header bar is transparent so it doesn't
 // chop the tops of tiles that scroll under it — the gray content shows through,
@@ -100,7 +119,7 @@ const MyAppsLanding: React.FC = () => {
     const renderShortcutTile = (shortcut: LearnCardAppShortcut) => (
         <AppGridTile
             key={shortcut.key}
-            title={shortcut.title}
+            title={shortcutTitle(shortcut)}
             icon={<shortcut.Icon className="h-full w-full" />}
             gradientFrom={shortcut.gradientFrom}
             gradientTo={shortcut.gradientTo}
