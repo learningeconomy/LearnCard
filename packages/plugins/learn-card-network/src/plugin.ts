@@ -417,10 +417,12 @@ export async function getLearnCardNetworkPlugin(
             // ignore; initialQuery errors are non-fatal in API-key mode
         }
 
-        // Retry once in API-token mode in case the initial query raced with method calls
-        if (!userData && apiToken) {
+        // Retry once in case the initial query raced with method calls or failed transiently
+        if (!userData) {
             try {
-                learnCard?.debug?.('LCN ensureUser: retrying getProfile with apiToken');
+                learnCard?.debug?.('LCN ensureUser: retrying getProfile', {
+                    hasApiToken: !!apiToken,
+                });
                 const res = await client.profile.getProfile.query();
                 userData = res;
                 if (userData?.did) did = userData.did;

@@ -14,19 +14,8 @@ import {
 } from '../svgs/attachmentTypes/attachmentIcons';
 import { BoostMediaOptionsEnum } from 'learn-card-base/components/boost/boost';
 
-export enum DisplayTypeEnum {
-    Badge = 'badge',
-    Certificate = 'certificate',
-    ID = 'id',
-    Course = 'course',
-    Award = 'award',
-    Media = 'media',
-}
-
-export enum PreviewTypeEnum {
-    Default = 'default',
-    Media = 'media',
-}
+export { DisplayTypeEnum, PreviewTypeEnum } from './display-types';
+import { DisplayTypeEnum } from './display-types';
 
 /**
  * Map from achievementType directly to its semantically-obvious display type.
@@ -45,8 +34,11 @@ const ACHIEVEMENT_TYPE_TO_DISPLAY_TYPE: Record<string, DisplayTypeEnum> = {
 
 export const getDefaultDisplayType = (
     category: string,
-    achievementType?: string
+    achievementType?: string,
+    displayTypeHint?: DisplayTypeEnum
 ): DisplayTypeEnum => {
+    if (displayTypeHint) return displayTypeHint;
+
     if (achievementType) {
         const directMatch =
             ACHIEVEMENT_TYPE_TO_DISPLAY_TYPE[

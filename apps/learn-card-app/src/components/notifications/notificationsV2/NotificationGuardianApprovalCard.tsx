@@ -5,6 +5,7 @@ import { UserProfilePicture, useWallet, useUpdateNotification } from 'learn-card
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import X from 'learn-card-base/svgs/X';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
+import { notificationCardStyles } from './types';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('notification-guardian-approval-card');
 
@@ -90,14 +91,14 @@ const NotificationGuardianApprovalCard: React.FC<NotificationGuardianApprovalCar
     return (
         <ErrorBoundary
             fallback={
-                <div className="flex min-h-[120px] justify-start max-w-[600px] items-start relative w-full py-[10px] px-[10px] bg-white my-[15px]">
+                <div className={notificationCardStyles.fallbackShell}>
                     Unable to load notification
                 </div>
             }
         >
             <div
                 onClick={handleMarkRead}
-                className="flex min-h-[120px] justify-start max-w-[600px] items-start relative w-full py-[10px] px-[10px] bg-white my-[15px]"
+                className={`${notificationCardStyles.shell} min-h-[120px]`}
             >
                 <div className="notification-card-left-side px-[0px] flex cursor-pointer shrink-0">
                     <div className="overflow-hidden cursor-pointer w-[90px] h-[90px] flex items-start notification-card-thumbnail">
@@ -113,18 +114,18 @@ const NotificationGuardianApprovalCard: React.FC<NotificationGuardianApprovalCar
                 <div className="flex flex-col justify-center items-start relative w-full">
                     <div className="text-left ml-3 flex flex-col items-start justify-start w-full">
                         <h4
-                            className="cursor-pointer font-semibold tracking-wide line-clamp-2 text-grayscale-900 text-[14px] pr-[20px] notification-card-title"
+                            className={`cursor-pointer ${notificationCardStyles.title}`}
                             data-testid="notification-title"
                         >
                             {credentialName} for {childDisplayName} from {issuerDisplayName}
                         </h4>
                         <p
-                            className="font-bold p-0 mt-[10px] leading-none tracking-wide text-[12px] text-indigo-600 notification-card-type-text"
+                            className={`${notificationCardStyles.meta} mt-[10px] text-indigo-600`}
                             data-testid="notification-type"
                         >
                             Guardian Approval{' '}
                             {transactionDate && (
-                                <span className="text-grayscale-600 normal-case font-normal text-[12px]">
+                                <span className={notificationCardStyles.date}>
                                     • {formattedDate}
                                 </span>
                             )}
@@ -133,7 +134,7 @@ const NotificationGuardianApprovalCard: React.FC<NotificationGuardianApprovalCar
                         {!isResolved && (
                             <div className="relative flex items-center justify-between mt-3 w-full">
                                 <button
-                                    className={`notification-claim-btn flex items-center mr-[10px] justify-center flex-1 rounded-[24px] border-2 border-solid font-semibold py-2 px-3 tracking-wide text-[13px] transition-colors ${
+                                    className={`${notificationCardStyles.primaryButton} mr-[10px] ${
                                         isProcessing
                                             ? 'border-grayscale-300 text-grayscale-400 bg-grayscale-100 cursor-not-allowed'
                                             : 'border-emerald-600 text-white bg-emerald-600 hover:bg-emerald-700'
@@ -144,7 +145,7 @@ const NotificationGuardianApprovalCard: React.FC<NotificationGuardianApprovalCar
                                     {actionState === 'approving' ? 'Approving...' : 'Approve'}
                                 </button>
                                 <button
-                                    className={`notification-claim-btn flex items-center justify-center flex-1 rounded-[24px] border-2 border-solid font-semibold py-2 px-3 tracking-wide text-[13px] transition-colors ${
+                                    className={`${notificationCardStyles.primaryButton} ${
                                         isProcessing
                                             ? 'border-grayscale-300 text-grayscale-400 bg-white cursor-not-allowed'
                                             : 'border-grayscale-300 text-grayscale-600 bg-white hover:bg-grayscale-50'
@@ -159,7 +160,9 @@ const NotificationGuardianApprovalCard: React.FC<NotificationGuardianApprovalCar
 
                         {actionState === 'approved' && (
                             <div className="relative flex items-center mt-3 w-full">
-                                <div className="notification-claim-btn flex items-center justify-center flex-1 rounded-[24px] border-2 border-solid border-emerald-600 text-emerald-600 bg-white font-semibold py-2 px-3 tracking-wide text-[13px]">
+                                <div
+                                    className={`${notificationCardStyles.primaryButton} border-emerald-600 text-emerald-600 bg-white`}
+                                >
                                     Approved <Checkmark className="h-[24px] p-0 m-0" />
                                 </div>
                             </div>
@@ -167,7 +170,9 @@ const NotificationGuardianApprovalCard: React.FC<NotificationGuardianApprovalCar
 
                         {actionState === 'rejected' && (
                             <div className="relative flex items-center mt-3 w-full">
-                                <div className="notification-claim-btn flex items-center justify-center flex-1 rounded-[24px] border-2 border-solid border-grayscale-300 text-grayscale-500 bg-white font-semibold py-2 px-3 tracking-wide text-[13px]">
+                                <div
+                                    className={`${notificationCardStyles.primaryButton} border-grayscale-300 text-grayscale-500 bg-white`}
+                                >
                                     Rejected <X className="h-[14px] w-[14px] ml-1" />
                                 </div>
                             </div>

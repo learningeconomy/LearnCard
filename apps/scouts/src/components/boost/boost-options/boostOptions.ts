@@ -166,7 +166,7 @@ export const CATEGORY_TO_SUBCATEGORY_LIST: {
             type: AchievementTypes.Award,
         },
         {
-            title: 'Online Badge',
+            title: 'Badge',
             type: AchievementTypes.Badge,
         },
         {

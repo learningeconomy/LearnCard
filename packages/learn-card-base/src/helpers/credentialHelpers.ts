@@ -39,6 +39,7 @@ import { BoostCMSMediaAttachment, BoostEvidenceSpec } from 'learn-card-base/comp
 import { getVideoMetadata } from './video.helpers';
 import { getFileMetadata } from './attachment.helpers';
 import { getLogger } from '../logging/logger';
+import { parseLcTags } from './displayTags.helpers';
 const log = getLogger('credential-helpers');
 
 type CredentialType =
@@ -141,7 +142,7 @@ export const CATEGORY_MAP: Record<
 > = {
     Achievement: 'Achievement',
     Award: 'Achievement',
-    Badge: 'Achievement',
+    Badge: 'Social Badge',
     CommunityService: 'Achievement',
     MovieTicketCredential: 'Achievement',
 
@@ -538,6 +539,11 @@ export const getDefaultCategoryForCredential = (
     options?: { skipValidation?: boolean }
 ): CredentialCategory => {
     const _credential = unwrapBoostCredential(credential);
+
+    // An explicit `lc:category` display-hint tag is a deliberate issuer choice and takes priority over all type inference below.
+    const lcCategory = parseLcTags(getCredentialSubjectAchievement(_credential)?.tag).category;
+    if (lcCategory) return lcCategory as CredentialCategory;
+
     // course meta VC is a metaversity specific case for now
     if (isCourseMetaVC(_credential)) return 'Learning History';
     if (isEntryVC(_credential) && _credential.id.split('|')[0] === 'course') return 'Hidden';
@@ -790,7 +796,7 @@ export const getFallBackImage = (credCategory: string) => {
     if (credCategory === 'Work History')
         return 'https://cdn.filestackcontent.com/5r2T383T0mic3wrSbi3W';
     if (credCategory === 'Social Badge')
-        return 'https://cdn.filestackcontent.com/ynPzjedXTn2JBUNQHeEm';
+        return 'https://cdn.filestackcontent.com/DRPwxXjSWKl6TTkd2OCF';
     if (credCategory === 'Learning History')
         return 'https://cdn.filestackcontent.com/OSTqZlxSCe6B62jwPm7O';
     if (credCategory === 'Accomplishment')
