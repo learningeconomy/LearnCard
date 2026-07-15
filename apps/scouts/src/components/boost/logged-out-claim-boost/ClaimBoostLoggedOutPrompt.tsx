@@ -53,24 +53,6 @@ const ClaimBoostLoggedOutPromptDesktop: React.FC<{
 }> = ({ handleRedirectTo, logo, textLogo }) => {
     return (
         <div className="relative flex h-full w-full flex-row overflow-hidden text-white">
-            <div className="flex min-h-0 flex-1 flex-col items-center justify-center border-r border-white/15 px-[50px] py-[22px] text-center">
-                <div className="mb-[16px] flex w-full items-center justify-center gap-2">
-                    <img src={logo} alt="ScoutPass logo" className="w-[55px]" />
-                    <img src={textLogo} alt="ScoutPass text logo" className="max-w-[200px]" />
-                </div>
-
-                <h1 className="mb-2 max-w-[320px] text-[24px] font-semibold leading-snug text-white drop-shadow-sm">
-                    Someone sent you a credential
-                </h1>
-
-                <button
-                    onClick={handleRedirectTo}
-                    className="mt-[24px] flex h-[54px] w-full items-center justify-center rounded-[20px] bg-white px-[24px] text-[17px] font-semibold text-grayscale-900 shadow-lg transition-opacity hover:opacity-90"
-                >
-                    Sign In to View and Claim
-                </button>
-            </div>
-
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center bg-white px-[50px] py-[22px] text-center text-grayscale-900">
                 <div className="flex w-full max-w-[240px] flex-col items-center justify-center">
                     <h2 className="text-lg font-semibold text-grayscale-900">SCOUTPASS</h2>
@@ -90,6 +72,24 @@ const ClaimBoostLoggedOutPromptDesktop: React.FC<{
                         </button>
                     </div>
                 </div>
+            </div>
+
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center border-l border-white/15 px-[50px] py-[22px] text-center">
+                <div className="mb-[16px] flex w-full items-center justify-center gap-2">
+                    <img src={logo} alt="ScoutPass logo" className="w-[55px]" />
+                    <img src={textLogo} alt="ScoutPass text logo" className="max-w-[200px]" />
+                </div>
+
+                <h1 className="mb-2 max-w-[320px] text-[24px] font-semibold leading-snug text-white drop-shadow-sm">
+                    Someone sent you a credential
+                </h1>
+
+                <button
+                    onClick={handleRedirectTo}
+                    className="mt-[24px] flex h-[54px] w-full items-center justify-center rounded-[20px] bg-white px-[24px] text-[17px] font-semibold text-grayscale-900 shadow-lg transition-opacity hover:opacity-90"
+                >
+                    Sign In to View and Claim
+                </button>
             </div>
         </div>
     );
