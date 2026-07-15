@@ -3726,7 +3726,11 @@
         "noResults": "Aucune app à afficher pour l'instant.",
         "noResultsFor": "Aucun résultat pour \"{{query}}\"",
         "oneResult": "1 résultat pour \"{{query}}\"",
-        "manyResults": "{{count}} résultats pour \"{{query}}\""
+        "manyResults": "{{count}} résultats pour \"{{query}}\"",
+        "shortcuts": {
+            "skillInsights": "Aperçus des compétences",
+            "boostAFriend": "Encourager un ami"
+        }
     },
     "addToPassport": {
         "subtitle": "Ajoutez une certification à votre passeport.",
