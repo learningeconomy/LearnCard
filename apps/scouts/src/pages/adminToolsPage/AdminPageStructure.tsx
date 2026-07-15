@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../paraglide/messages.js';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useHistory } from 'react-router';
 
@@ -47,10 +48,10 @@ const AdminPageStructure: React.FC<AdminPageStructureProps> = ({
                     {!hasAdminAccess && (
                         <>
                             <h1 className="text-grayscale-900 text-[28px] font-notoSans font-[600]">
-                                Heyyyy, wait a minute. You shouldn't be here 🙅
+                                {m['adminTools.noAccessTitle']()}
                             </h1>
 
-                            <span className="text-grayscale-400">sneaky sneaky...</span>
+                            <span className="text-grayscale-400">{m['adminTools.noAccessSubtitle']()}</span>
                         </>
                     )}
                 </IonCol>

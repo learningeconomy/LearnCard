@@ -1,3 +1,5 @@
+import * as m from '../../../paraglide/messages.js';
+
 export enum AdminToolOptionsEnum {
     API_TOKENS = 'API Tokens',
     SIGNING_AUTHORITY = 'Signing Authority',
@@ -23,10 +25,10 @@ export type AdminToolOption = {
 export const adminToolOptions: AdminToolOption[] = [
     {
         id: 1,
-        label: 'Import Credentials',
-        title: 'Bulk Import Credentials',
-        description: 'Upload multiple credentials at once.',
-        actionLabel: 'Add Credentials',
+        label: m['adminTools.importCredentialsLabel'](),
+        title: m['adminTools.importCredentialsTitle'](),
+        description: m['adminTools.importCredentialsDesc'](),
+        actionLabel: m['adminTools.importCredentialsAction'](),
 
         type: AdminToolOptionsEnum.BULK_UPLOAD,
     },
@@ -40,12 +42,12 @@ export const adminToolOptions: AdminToolOption[] = [
     // },
     {
         id: 3,
-        label: 'Manage Skill Frameworks',
-        title: 'Manage Skill Frameworks',
-        description: 'Manage and import skill frameworks.',
-        actionLabel: 'Manage',
+        label: m['adminTools.manageSkillFrameworksLabel'](),
+        title: m['adminTools.manageSkillFrameworksTitle'](),
+        description: m['adminTools.manageSkillFrameworksDesc'](),
+        actionLabel: m['adminTools.manageSkillFrameworksAction'](),
         type: AdminToolOptionsEnum.SKILL_FRAMEWORKS,
-        footerTextOverride: 'Back',
+        footerTextOverride: m['common.back'](),
     },
 ];
 

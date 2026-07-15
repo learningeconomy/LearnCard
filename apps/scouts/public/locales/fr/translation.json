@@ -1241,5 +1241,28 @@
         "count": "Skills",
         "listTitle": "Boosts",
         "emptyBoosts": "You don't have any Boosts yet."
+    },
+    "adminTools": {
+        "issue": "Issue",
+        "noAccessTitle": "Heyyyy, wait a minute. You shouldn't be here 🙅",
+        "noAccessSubtitle": "sneaky sneaky...",
+        "wantToLearnMore": "Want to learn more?",
+        "devDocsDescription": "Check out the LearnCard developer docs to learn how to build and integrate with our SDKs and APIs.",
+        "launchDevDocs": "Launch Developer Docs",
+        "advancedTools": "Advanced Tools",
+        "adminToolsHeading": "Admin Tools",
+        "viewAllManagedBoosts": "View All Managed Boosts and Badges",
+        "bulkImportBadges": "Bulk Import Badges + Boosts",
+        "troops": "Troops",
+        "whatWouldYouLike": "What you would you like to do, O Admin?",
+        "allManagedBoostsTitle": "All Managed Boosts and Badges",
+        "importCredentialsLabel": "Import Credentials",
+        "importCredentialsTitle": "Bulk Import Credentials",
+        "importCredentialsDesc": "Upload multiple credentials at once.",
+        "importCredentialsAction": "Add Credentials",
+        "manageSkillFrameworksLabel": "Manage Skill Frameworks",
+        "manageSkillFrameworksTitle": "Manage Skill Frameworks",
+        "manageSkillFrameworksDesc": "Manage and import skill frameworks.",
+        "manageSkillFrameworksAction": "Manage"
     }
 }
