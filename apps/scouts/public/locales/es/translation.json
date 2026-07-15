@@ -1055,5 +1055,11 @@
         "wouldYouLikeToBoost": "Would you like to <1>boost {{name}}</1>?",
         "hasRequestedToConnect": "{{name}} has requested<1/>to connect with you?",
         "wouldYouLikeToConnect": "Would you like to<1/>connect with {{name}}?"
+    },
+    "connect": {
+        "eek": "Eeek!",
+        "notFound": "Unable to find user",
+        "altGhost": "ghost",
+        "altCurrencies": "currencies"
     }
 }
