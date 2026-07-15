@@ -651,7 +651,7 @@ jobs:
             (
                 (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-frontend == 'true') ||
                 (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.lca_app_changed == 'true') ||
-                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.target-environment == 'scouts')
+                (needs.determine-affected.outputs.is_manual == 'true' && (github.event.inputs.target-environment == 'scouts' || github.event.inputs.target-environment == 'scouts-staging'))
             ) &&
             !contains(needs.deploy-brain-service.result, 'failure') &&
             !contains(needs.deploy-learn-cloud.result, 'failure') &&
@@ -693,7 +693,7 @@ jobs:
             - name: Push to production branch
               if: |
                   needs.determine-affected.outputs.is_release == 'true' ||
-                  (github.event_name == 'workflow_dispatch' && (github.event.inputs.target-environment == 'production' || github.event.inputs.target-environment == 'scouts'))
+                  (github.event_name == 'workflow_dispatch' && (github.event.inputs.target-environment == 'production' || github.event.inputs.target-environment == 'scouts' || github.event.inputs.target-environment == 'scouts-staging'))
               run: |
                   BRANCH="${{ steps.vars.outputs.netlify_branch }}"
                   git fetch origin "$BRANCH" || true

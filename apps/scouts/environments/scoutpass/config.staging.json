@@ -1,0 +1,23 @@
+{
+    "_comment": "Staging overrides for ScoutPass. Points at dedicated ScoutPass staging backend services; Firebase remains scoutpass-9a67e.",
+    "domain": "staging.pass.scout.org",
+    "apis": {
+        "brainService": "https://staging.scoutnetwork.org/trpc",
+        "brainServiceApi": "https://staging.scoutnetwork.org/api",
+        "cloudService": "https://staging.cloud.scoutnetwork.org/trpc",
+        "lcaApi": "https://staging.api.scoutnetwork.org/trpc",
+        "xapi": "https://staging.cloud.scoutnetwork.org/xapi"
+    },
+    "auth": {
+        "sss": {
+            "serverUrl": "https://staging.api.scoutnetwork.org/api"
+        }
+    },
+    "features": {
+        "analytics": false
+    },
+    "observability": {
+        "sentryEnv": "scouts-staging",
+        "launchDarklyClientId": "64b5aeeb41628613abcf2af0"
+    }
+}

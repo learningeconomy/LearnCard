@@ -13,11 +13,19 @@ import {
 
 import { initializeFirebaseFromTenant } from '../firebase/firebase';
 
-const SCOUTS_LAUNCH_DARKLY_CLIENT_ID = IS_PRODUCTION
+const resolveScoutsSentryEnv = (): string => {
+    if (typeof SENTRY_ENV !== 'undefined') return SENTRY_ENV;
+    if (IS_PRODUCTION) return 'scouts-production';
+    return 'scouts-development';
+};
+
+const SCOUTS_SENTRY_ENV = resolveScoutsSentryEnv();
+
+const IS_SCOUTS_PRODUCTION_ENV = SCOUTS_SENTRY_ENV === 'scouts-production';
+
+const SCOUTS_LAUNCH_DARKLY_CLIENT_ID = IS_SCOUTS_PRODUCTION_ENV
     ? '64b59e8227d2d212ef8e8968'
     : '64b5aeeb41628613abcf2af0';
-
-const SCOUTS_SENTRY_ENV = IS_PRODUCTION ? 'scouts-production' : 'scouts-development';
 
 export const SCOUTS_TENANT_CONFIG: TenantConfig = {
     ...DEFAULT_LEARNCARD_TENANT_CONFIG,
@@ -70,7 +78,7 @@ export const SCOUTS_TENANT_CONFIG: TenantConfig = {
     },
     features: {
         ...DEFAULT_LEARNCARD_TENANT_CONFIG.features,
-        analytics: true,
+        analytics: IS_SCOUTS_PRODUCTION_ENV,
         themeSwitching: false,
         introSlides: true,
         launchPadQuickActions: false,
@@ -82,7 +90,14 @@ export const SCOUTS_TENANT_CONFIG: TenantConfig = {
         sentryDsn:
             'https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704',
         sentryEnv: SCOUTS_SENTRY_ENV,
-        sentryTraceDomains: ['pass.scout.org', 'api.scoutnetwork.org', 'cloud.scoutnetwork.org'],
+        sentryTraceDomains: [
+            'pass.scout.org',
+            'api.scoutnetwork.org',
+            'cloud.scoutnetwork.org',
+            'staging.pass.scout.org',
+            'staging.api.scoutnetwork.org',
+            'staging.cloud.scoutnetwork.org',
+        ],
         launchDarklyClientId: SCOUTS_LAUNCH_DARKLY_CLIENT_ID,
         userflowToken: '',
         analyticsProvider: 'firebase',
