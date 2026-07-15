@@ -122,7 +122,7 @@ const PrivacySettingsPage: React.FC = () => {
                       checked: false,
                       disabled: true,
                       showConsentWarning: false,
-                      lockedNote: 'Turned off to keep you safe. A guardian can enable this.',
+                      lockedNote: m['dataShareCenter.aiLockedNote'](),
                       onToggle: handleAiToggle,
                       onRetryConsent: () => handleAiToggle(true),
                   }
@@ -162,9 +162,7 @@ const PrivacySettingsPage: React.FC = () => {
                 analyticsEnabled,
                 bugReportsEnabled,
                 disabled: isMinor,
-                lockedNote: isMinor
-                    ? 'Turned off to keep you safe. A guardian can change this.'
-                    : undefined,
+                lockedNote: isMinor ? m['dataShareCenter.diagLockedNote']() : undefined,
                 onToggleAnalytics: enabled => {
                     updatePreferences({ analyticsEnabled: enabled });
                     setAnalyticsEnabled(enabled);
