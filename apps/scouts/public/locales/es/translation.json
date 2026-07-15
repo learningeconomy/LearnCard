@@ -243,7 +243,26 @@
         "continueWithGoogle": "Continue with Google",
         "continueWithApple": "Continue with Apple",
         "dismiss": "Dismiss",
-        "uidMismatch": "You signed in with a different account. Please try again with the correct account."
+        "uidMismatch": "You signed in with a different account. Please try again with the correct account.",
+        "prepLink": "Preparing secure link...",
+        "noDeviceKey": "No device key available",
+        "keyFail": "Failed to retrieve device key",
+        "upgradeAcct": "Upgrading Account",
+        "upgradeDesc": "We're upgrading your account security. This may take a moment.",
+        "verifySess": "Verifying session...",
+        "curVersion": "Current Version: {{version}}",
+        "updateVer": "Update to {{version}}",
+        "locPlace": "Enter your location...",
+        "noResults": "No search results yet",
+        "poweredBy": "powered by",
+        "myContacts": "My Contacts",
+        "myAccount": "My Account",
+        "editCard": "Edit Contact Card",
+        "acctRecover": "Account Recovery",
+        "linkDevice": "Link a Device",
+        "logout": "Logout",
+        "handleLabel": "@{{profileId}}",
+        "adminTools": "Admin Tools"
     },
     "login": {
         "selfCustodial": "Self-custodial login.",
@@ -1423,5 +1442,8 @@
     },
     "workHistory": {
         "noHistory": "No work history yet"
+    },
+    "scoutNews": {
+        "viewPost": "View Post"
     }
 }

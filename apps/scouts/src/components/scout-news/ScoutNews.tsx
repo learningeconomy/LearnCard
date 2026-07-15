@@ -1,4 +1,5 @@
 //query for getting scouts data from their api
+import * as m from '../../paraglide/messages.js';
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueries } from '@tanstack/react-query';
 import moment from 'moment';
@@ -170,7 +171,7 @@ export const ScoutNewsListItem: React.FC<ScoutNewsListItemProps> = ({ data }) =>
                         onClick={handleNewsLink}
                         className="text-xs font-semibold uppercase subpixel-antialiased text-right"
                     >
-                        View Post
+                        {m['scoutNews.viewPost']()}
                     </button>
                 </div>
             </div>
