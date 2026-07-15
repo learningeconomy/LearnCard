@@ -29,6 +29,7 @@ import HandshakeIcon from '../svgs/HandshakeIcon';
 
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import DeleteUserConfirmationPrompt from '../userOptions/DeleteUserConfirmationPrompt';
+import * as m from '../../paraglide/messages.js';
 import { JoinNetworkModalWrapper } from '../network-prompts/hooks/useJoinLCNetworkModal';
 
 import { useFilestack, UploadRes } from 'learn-card-base';
@@ -261,12 +262,12 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
             await Clipboard.write({
                 string: walletDid,
             });
-            presentToast('DID copied to clipboard', {
+            presentToast(m['userProfile.toasts.didCopied'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy DID to clipboard', {
+            presentToast(m['userProfile.toasts.didCopyError'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -319,7 +320,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         onClick={installChapi}
                         className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-grayscale-900 text-xl w-[85%] shadow-lg"
                     >
-                        <HandshakeIcon className="mr-2" /> Connect Handler
+                        <HandshakeIcon className="mr-2" /> {m['userProfile.connectHandler']()}
                     </button>
                     <button
                         onClick={handleChapiInfo}
@@ -349,7 +350,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                             autocapitalize="on"
                             className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mb-4`}
                             value={`@${lcNetworkProfile?.profileId}`}
-                            placeholder="User ID"
+                            placeholder={m['userProfile.userID']()}
                             type="text"
                             disabled={true}
                         />
@@ -362,7 +363,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                             }`}
                             onIonInput={e => setName(e.detail.value)}
                             value={name as string}
-                            placeholder="Full Name"
+                            placeholder={m['userProfile.fullName']()}
                             type="text"
                         />
                         {errors.name && (
@@ -377,7 +378,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                             <IonCol className="w-full flex items-center justify-between px-4 rounded-2xl">
                                 <div className="w-[80%] flex flex-col justify-center items-start text-left">
                                     <p className="text-grayscale-500 font-medium text-sm">
-                                        ScoutPass Number (DID)
+                                        {m['userProfile.scoutpassNumber']()}
                                     </p>
                                     <p className="w-full text-grayscale-900 line-clamp-1 tracking-widest">
                                         {walletDid}
@@ -398,7 +399,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                             className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mb-4`}
                             onIonInput={e => setEmail(e.detail.value)}
                             value={email as string}
-                            placeholder="Email address"
+                            placeholder={m['userProfile.emailAddress']()}
                             type="email"
                             disabled={true}
                         />
@@ -409,7 +410,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                             className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mb-4`}
                             onIonInput={e => setPhone(e.detail.value)}
                             value={phone as string}
-                            placeholder="Phone Number"
+                            placeholder={m['userProfile.phoneNumber']()}
                             type="tel"
                             disabled={true}
                         />
@@ -427,7 +428,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                             className="flex items-center justify-center bg-white rounded-full px-[18px] py-[12px] text-grayscale-900 text-2xl w-full shadow-lg"
                         >
                             <TrashBin className="ml-[5px] h-[30px] w-[30px] mr-2" />
-                            Delete Account
+                            {m['userProfile.deleteAccount']()}
                         </button>
                     </IonRow>
                 )}
@@ -438,7 +439,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         type="submit"
                         className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-grayscale-900 text-2xl w-full shadow-lg"
                     >
-                        {isLoading ? 'Saving...' : 'Save'}
+                        {isLoading ? m['common.saving']() : m['common.save']()}
                     </button>
                 </IonRow>
             </form>

@@ -3,6 +3,7 @@ import { useHistory } from 'react-router-dom';
 
 import { IonModal } from '@ionic/react';
 import NewJoinNetworkPrompt from '../network-prompts/NewJoinNetworkPrompt';
+import * as m from '../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('user-profile-setup-listener');
 import {
@@ -32,7 +33,7 @@ export const UserProfileSetupListener: React.FC<{ loading: boolean }> = ({ loadi
     const presentCenterModal = () => {
         newModal(
             <NewJoinNetworkPrompt
-                title="Setup Your Profile"
+                title={m['userProfile.setupYourProfile']()}
                 handleCloseModal={() => closeModal}
                 handleLogout={() => {}}
                 showCancelButton={false}

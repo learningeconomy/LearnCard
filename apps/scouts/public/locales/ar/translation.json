@@ -254,5 +254,34 @@
         "signInFromDevice": "Sign in from another device",
         "worldScoutsAccount": "Login with your <0>World Scouts Account</0>",
         "verificationSentToast": "A verification code has been sent"
+    },
+    "sidemenu": {
+        "viewSharedBoosts": "View Shared Boosts",
+        "version": "V {{version}}"
+    },
+    "userProfile": {
+        "notifications": "Notifications",
+        "connectHandler": "Connect Handler",
+        "scoutpassNumber": "ScoutPass Number (DID)",
+        "deleteAccount": "Delete Account",
+        "deleteAccountTitle": "Delete Account?",
+        "deleteWarning": "Deleting your account will permanently delete your identity on ScoutPass and all of your credentials. <0>Warning, this action cannot be undone!</0>",
+        "confirmByTyping": "Confirm by typing",
+        "confirmBelow": "{{phrase}} below.",
+        "reauthenticateHere": "Reauthenticate here",
+        "deletingAccount": "Deleting Account...",
+        "deleteForever": "Delete Forever",
+        "fullName": "Full Name",
+        "emailAddress": "Email address",
+        "phoneNumber": "Phone Number",
+        "userID": "User ID",
+        "setupYourProfile": "Setup Your Profile",
+        "toasts": {
+            "didCopied": "DID copied to clipboard",
+            "didCopyError": "Unable to copy DID to clipboard"
+        },
+        "errors": {
+            "recentLoginRequired": "A recent login is required!"
+        }
     }
 }
