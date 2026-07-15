@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import moment from 'moment';
 import { ErrorBoundary } from 'react-error-boundary';
 import { VC } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
 
 // @ts-ignore
 import EmptySocialBoostIcon from '../../assets/images/emptySocialBoost.svg';
@@ -92,7 +93,7 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
 
     const openPreviewModal = () => {
         newPreviewModal(
-            <ErrorBoundary fallback={<div>Something went wrong</div>}>
+            <ErrorBoundary fallback={<div>{m['boost.somethingWentWrong']()}</div>}>
                 {isBoost ? (
                     <BoostPreview
                         credential={cred as any}
@@ -317,7 +318,7 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
 
     if (!useWrapper) {
         return (
-            <ErrorBoundary fallback={<div>Something went wrong</div>}>
+            <ErrorBoundary fallback={<div>{m['boost.somethingWentWrong']()}</div>}>
                 <BoostGenericCard
                     innerOnClick={
                         !showChecked && !showSkeleton
@@ -360,7 +361,7 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
     }
 
     return (
-        <ErrorBoundary fallback={<div>Something went wrong</div>}>
+        <ErrorBoundary fallback={<div>{m['boost.somethingWentWrong']()}</div>}>
             <IdDisplayContainer
                 showQRCode
                 handleQRCodeClick={() => {

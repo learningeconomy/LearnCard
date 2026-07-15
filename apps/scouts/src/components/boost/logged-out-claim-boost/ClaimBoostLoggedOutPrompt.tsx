@@ -1,5 +1,6 @@
 import React from 'react';
 import { IonCol, IonContent, IonGrid, IonHeader, IonPage, IonRow } from '@ionic/react';
+import * as m from '../../../paraglide/messages.js';
 
 export const ClaimBoostLoggedOutPrompt: React.FC<{
     handleCloseModal: () => void;
@@ -21,28 +22,28 @@ export const ClaimBoostLoggedOutPrompt: React.FC<{
                     <IonRow className="flex flex-col items-center justify-center">
                         <IonCol className="w-full flex flex-col items-center justify-center">
                             <h6 className="font-semi-bold text-black text-2xl mb-[25px]">
-                                One more step!
+                                {m['boost.oneMoreStep']()}
                             </h6>
                             <p className="w-full text-center text-sm mb-4 text-grayscale-600 mb-[25px]">
-                                Please login to claim your <br /> boost/credential.
+                                {m['boost.pleaseLoginToClaim']()}
                             </p>
                             <button
                                 onClick={handleRedirectTo}
                                 className="flex items-center justify-center text-white font-medium rounded-full px-[64px] py-[10px] bg-sp-purple-base  text-2xl w-full shadow-lg"
                             >
-                                Login
+                                {m['common.login']()}
                             </button>
                             <button
                                 onClick={handleRedirectTo}
                                 className="mt-4 text-grayscale-900 font-medium"
                             >
-                                Signup
+                                {m['boost.signup']()}
                             </button>
                             <button
                                 onClick={handleCloseModal}
                                 className="mt-2 text-grayscale-900 font-medium"
                             >
-                                Skip for now
+                                {m['common.skipForNow']()}
                             </button>
                         </IonCol>
                     </IonRow>

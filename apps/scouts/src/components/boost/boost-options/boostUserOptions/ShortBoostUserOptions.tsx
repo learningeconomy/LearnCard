@@ -24,6 +24,7 @@ import { BoostIssuanceLoading } from '../../boostLoader/BoostLoader';
 import BoostShareableCode from '../../boostCMS/boostCMSForms/boostCMSIssueTo/BoostShareableCode';
 import ShortBoostSomeoneScreen from './ShortBoostSomeoneScreen';
 import useFirebaseAnalytics from '../../../../hooks/useFirebaseAnalytics';
+import * as m from '../../../../paraglide/messages.js';
 
 export enum ShortBoostStepsEnum {
     boostUserTypeOptions = 'boostUserTypeOptions',
@@ -189,7 +190,7 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
                                 className="flex items-center justify-center bg-indigo-500 rounded-full px-[18px] py-[12px] font-medium text-white text-2xl w-full shadow-lg"
                             >
                                 <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
-                                Boost Myself
+                                {m['boost.boostMyself']()}
                             </button>
                         </IonCol>
                         <IonCol className="w-full flex items-center justify-center mt-1">
@@ -200,7 +201,7 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
                                 className="flex items-center justify-center bg-indigo-500 font-medium rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg"
                             >
                                 <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
-                                Boost Others
+                                {m['boost.boostOthers']()}
                             </button>
                         </IonCol>
                         {boost.status === 'LIVE' && (
@@ -212,7 +213,7 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
                                     className="flex items-center font-medium justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg"
                                 >
                                     <LinkChain className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
-                                    Generate Link
+                                    {m['boost.generateLink']()}
                                 </button>
                             </IonCol>
                         )}
@@ -221,7 +222,7 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
                                 onClick={() => handleCloseModal()}
                                 className="text-grayscale-900 text-center text-sm"
                             >
-                                Cancel
+                                {m['common.cancel']()}
                             </button>
                         </div>
                     </IonGrid>
@@ -256,7 +257,7 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
                             onClick={() => handleCloseModal()}
                             className="text-grayscale-900 text-center text-sm"
                         >
-                            Cancel
+                            {m['common.cancel']()}
                         </button>
                     </div>
                 </section>

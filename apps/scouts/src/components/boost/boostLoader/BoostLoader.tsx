@@ -1,5 +1,6 @@
 import React from 'react';
 import Lottie from 'react-lottie-player';
+import * as m from '../../../paraglide/messages.js';
 
 import FactoryMachine from '../../../assets/lotties/factory.json';
 
@@ -27,7 +28,7 @@ export const BoostLoader: React.FC<{ text: string; darkBackground?: boolean }> =
 
 export default BoostLoader;
 
-export const BoostIssuanceLoading: React.FC<{ text?: string }> = ({ text = 'Sending...' }) => {
+export const BoostIssuanceLoading: React.FC<{ text?: string }> = ({ text = m['boost.sending']() }) => {
     return (
         <section className="flex flex-col items-center justify-center h-full w-full">
             <div className="flex flex-col items-center justify-center bg-transparent">

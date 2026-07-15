@@ -13,6 +13,8 @@ import { pluralize } from 'learn-card-base';
 import CaretLeft from '../../svgs/CaretLeft';
 import WorldScoutIcon from '../../svgs/WorldScoutsIcon';
 import Checkmark from '../../svgs/Checkmark';
+import * as m from '../../../paraglide/messages.js';
+import TransP from '../../../i18n/TransP';
 import {
     BadgePackOption,
     badgePackOptions,
@@ -85,7 +87,7 @@ export const BoostPackOptionsModal: React.FC<{
                     <CaretLeft className="text-grayscale-900 h-4 w-auto" />
                 </button>
                 <h1 className="text-grayscale-900 text-[22px] font-notoSans">
-                    Select a Boost Pack
+                    {m['boost.selectBoostPack']()}
                 </h1>
             </header>
 
@@ -107,9 +109,11 @@ export const BoostPackOptionsModal: React.FC<{
                 {hasSearchResults && (
                     <div className="w-full px-4 pb-4">
                         <p className="text-grayscale-700">
-                            0{' '}
-                            {category === BoostCategoryOptionsEnum.socialBadge ? 'Boost' : 'Badge'}{' '}
-                            Packs found for <em className="font-medium not-italic">{search}</em>
+                            <TransP
+                                m={m['boost.noBoostPackFound']}
+                                values={{ type: category === BoostCategoryOptionsEnum.socialBadge ? 'Boost' : 'Badge', search }}
+                                components={[<em key="em" className="font-medium not-italic" />]}
+                            />
                         </p>
                     </div>
                 )}

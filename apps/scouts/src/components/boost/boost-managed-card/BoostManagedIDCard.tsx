@@ -3,6 +3,7 @@ import moment from 'moment';
 import Lottie from 'react-lottie-player';
 import { useHistory } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
+import * as m from '../../../paraglide/messages.js';
 
 import { VC, Boost } from '@learncard/types';
 
@@ -313,7 +314,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
             customBody = (
                 <div className="w-full text-center">
                     <p className="text-grayscale-600 font-semibold text-center text-[14px] leading-none">
-                        No Boosts Yet
+                        {m['boost.noBoostsYet']()}
                     </p>
                     <button
                         className="text-indigo-600 font-semibold text-base leading-snug"
@@ -322,7 +323,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
                             handleEditOnClick();
                         }}
                     >
-                        Edit
+                        {m['common.edit']()}
                     </button>
                 </div>
             );
@@ -362,7 +363,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
     const handleOptionsMenu = async () => handlePresentBoostMenuModal();
 
     return (
-        <ErrorBoundary fallback={<div>Something went wrong</div>}>
+        <ErrorBoundary fallback={<div>{m['boost.somethingWentWrong']()}</div>}>
             <IdDisplayContainer
                 achievementType={boostVC?.credentialSubject?.achievement?.achievementType}
                 title={cardTitle}

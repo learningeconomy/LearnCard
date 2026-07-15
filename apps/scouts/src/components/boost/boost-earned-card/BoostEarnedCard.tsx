@@ -3,6 +3,7 @@ import moment from 'moment';
 import { ErrorBoundary } from 'react-error-boundary';
 import { VC } from '@learncard/types';
 import { IonCol } from '@ionic/react';
+import * as m from '../../../paraglide/messages.js';
 import {
     BoostPageViewMode,
     BoostPageViewModeType,
@@ -233,7 +234,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
 
     if (!useWrapper) {
         return (
-            <ErrorBoundary fallback={<div>Something went wrong</div>}>
+            <ErrorBoundary fallback={<div>{m['boost.somethingWentWrong']()}</div>}>
                 <BoostGenericCardWrapper
                     innerOnClick={
                         cred && !showChecked && !showSkeleton
@@ -287,7 +288,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
 
     if (verifierState) {
         return (
-            <ErrorBoundary fallback={<div>Something went wrong</div>}>
+            <ErrorBoundary fallback={<div>{m['boost.somethingWentWrong']()}</div>}>
                 <IonCol
                     size={isCardView ? '6' : '12'}
                     size-sm={isCardView ? '4' : undefined}
@@ -360,7 +361,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                 </span>
 
                 <span className="text-sp-purple-base text-[12px] font-[600] uppercase font-notoSans">
-                    Merit Badge
+                    {m['boost.meritBadge']()}
                 </span>
                 <span className="px-[10px] text-[11px] line-clamp-1">{parentSourceTitle}</span>
             </div>
@@ -377,7 +378,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     }
 
     return (
-        <ErrorBoundary fallback={<div>Something went wrong</div>}>
+        <ErrorBoundary fallback={<div>{m['boost.somethingWentWrong']()}</div>}>
             <IonCol
                 size={isCardView ? '6' : '12'}
                 size-sm={isCardView ? '4' : undefined}

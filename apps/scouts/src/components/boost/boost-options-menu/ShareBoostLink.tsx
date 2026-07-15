@@ -32,6 +32,7 @@ import { VC } from '@learncard/types';
 import { boostCategoryOptions } from '../boost-options/boostOptions';
 import { getEmojiFromDidString } from 'learn-card-base/helpers/walletHelpers';
 import useFirebaseAnalytics from '../../../hooks/useFirebaseAnalytics';
+import * as m from '../../../paraglide/messages.js';
 
 const ShareBoostLink: React.FC<{
     handleClose: () => void;
@@ -91,15 +92,15 @@ const ShareBoostLink: React.FC<{
     const { data: myProfile, isLoading: myProfileLoading } = useGetProfile();
 
     if (issuerProfileId) {
-        issuerName = issuerProfile ? issuerProfile?.displayName : isIssuerLoading ? 'Loading...' : 'Unknown';
+        issuerName = issuerProfile ? issuerProfile?.displayName : isIssuerLoading ? m['common.loading']() : m['common.unknown']();
     } else {
         issuerName = getIssuerNameNonBoost(cred);
     }
 
     if (issueeProfileId) {
-        issueeName = issueeProfile ? issueeProfile?.displayName : isIssueeLoading ? 'Loading...' : 'Unknown';
+        issueeName = issueeProfile ? issueeProfile?.displayName : isIssueeLoading ? m['common.loading']() : m['common.unknown']();
     } else {
-        issueeName = myProfile ? myProfile?.displayName : myProfileLoading ? 'Loading...' : 'Unknown';
+        issueeName = myProfile ? myProfile?.displayName : myProfileLoading ? m['common.loading']() : m['common.unknown']();
     }
 
     if (issueeProfileId || issueeDid?.includes('did:web:scoutnetwork.org')) {
@@ -145,12 +146,12 @@ const ShareBoostLink: React.FC<{
             await Clipboard.write({
                 string: shareLink,
             });
-            presentToast('Share link copied to clipboard', {
+            presentToast(m['boost.toasts.shareLinkCopied'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy share link to clipboard', {
+            presentToast(m['boost.toasts.unableToCopyLink'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -184,7 +185,7 @@ const ShareBoostLink: React.FC<{
                                 customSize={120}
                             />
 
-                            <p className="text-2xl text-white">Share</p>
+                            <p className="text-2xl text-white">{m['common.share']()}</p>
 
                             <button onClick={handleClose}>
                                 <X className="text-white h-8 w-8" />
@@ -225,7 +226,7 @@ const ShareBoostLink: React.FC<{
                                     onClick={() => copyBoostLinkToClipBoard()}
                                     className="min-w-[88px] flex items-center justify-end text-[#2F99F0]"
                                 >
-                                    Copy Link
+                                    {m['boost.copyLink']()}
                                 </button>
                             </div>
                         )}
@@ -234,7 +235,7 @@ const ShareBoostLink: React.FC<{
                     <div className="w-full flex items-center justify-center">
                         <p className="text-white font-medium text-lg mb-4 flex items-center justify-center w-full">
                             <IconComponent className="mr-1 h-[24px] w-[25px]" />
-                            {categoryTitle ?? 'Achievement'}
+                            {categoryTitle ?? m['boost.achievement']()}
                         </p>
                     </div>
 
@@ -277,11 +278,10 @@ const ShareBoostLink: React.FC<{
                             {title}
                         </p>
                         <p className="w-full text-grayscale-900 font-normal text-sm px-4 text-center">
-                            Issued to {truncateWithEllipsis(issueeName ?? '', 25)}
+                            {m['boost.issuedToName']({ name: truncateWithEllipsis(issueeName ?? '', 25) })}
                         </p>
                         <p className="w-full text-grayscale-900 font-normal text-sm px-4 text-center">
-                            by {truncateWithEllipsis(issuerName ?? '', 25)}{' '}
-                            {issueDate && <span>{issueDate}</span>}
+                            {m['boost.byIssuer']({ name: truncateWithEllipsis(issuerName ?? '', 25), date: issueDate ?? '' })}
                         </p>
                     </div>
 
