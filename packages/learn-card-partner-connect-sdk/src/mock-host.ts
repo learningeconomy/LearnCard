@@ -123,7 +123,6 @@ export class MockHost {
 
     private styleEl: HTMLStyleElement | null = null;
     private stackEl: HTMLElement | null = null;
-    private badgeEl: HTMLElement | null = null;
     private readonly activeToasts = new Map<string, ActiveToast>();
     private idSeq = 0;
     private destroyed = false;
@@ -156,7 +155,6 @@ export class MockHost {
         }
 
         this.announce();
-        this.ensureBadge();
     }
 
     /**
@@ -338,8 +336,6 @@ export class MockHost {
             this.stackEl.remove();
             this.stackEl = null;
         }
-
-        this.badgeEl = null;
 
         if (this.styleEl) {
             this.styleEl.remove();
@@ -722,8 +718,6 @@ export class MockHost {
     private toast(spec: ToastSpec): void {
         if (!this.options.ui || !hasDocument()) return;
 
-        this.ensureBadge();
-
         const tone = spec.tone ?? 'default';
         const ttl = spec.ttl ?? 4200;
         const text = spec.segments.map(s => (typeof s === 'string' ? s : s.b)).join('');
@@ -796,21 +790,6 @@ export class MockHost {
         }, 200);
     }
 
-    private ensureBadge(): void {
-        if (!this.options.ui || !hasDocument() || !document.body) return;
-        if (this.badgeEl && document.body.contains(this.badgeEl)) return;
-
-        this.ensureStyles();
-
-        const badge = document.createElement('div');
-        badge.className = 'lc-mock-persistent-badge';
-        badge.textContent = '🧪 LearnCard Preview — simulating, not live';
-
-        document.body.appendChild(badge);
-        this.badgeEl = badge;
-        this.domNodes.add(badge);
-    }
-
     private ensureStack(): HTMLElement | null {
         if (!document.body) return null;
         if (this.stackEl && document.body.contains(this.stackEl)) return this.stackEl;
@@ -851,13 +830,6 @@ export class MockHost {
 .lc-mock-toast--positive .lc-mock-pill { background: rgba(6,95,70,0.12); }
 .lc-mock-body strong { font-weight: 700; }
 .lc-mock-count { margin-left: 6px; font-weight: 700; opacity: 0.75; }
-.lc-mock-persistent-badge {
-  position: fixed; bottom: 20px; left: 20px; z-index: 2147483646; pointer-events: none;
-  padding: 6px 11px; border-radius: 999px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 11.5px; font-weight: 600; letter-spacing: 0.01em;
-  background: #18224E; color: #fff; opacity: 0.85; box-shadow: 0 4px 14px rgba(24,34,78,0.24);
-}
 `.trim();
 
         document.head.appendChild(style);

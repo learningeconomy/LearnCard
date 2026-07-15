@@ -189,7 +189,6 @@ request timeout), and the SDK logs a one-time hint pointing you to mock mode.
 LearnCard host — local dev, or a deploy preview on Netlify / Lovable / Vercel /
 etc. — it simulates the host locally:
 
--   A **persistent "🧪 LearnCard Preview" badge** stays on screen while mocking, so simulated behavior is never mistaken for the real thing.
 -   **Every method shows a branded toast** describing what would happen once embedded — e.g. `sendCredential` → _"✅ In LearnCard, the user would receive **[name]** here."_, `incrementCounter` → _"Counter **coins** → **10**."_, `launchFeature` → _"Would open **/wallet**."_ So you get strong, visible feedback for every call, not just console logs.
 -   `requestConsent(...)` auto-grants and shows a "mock consent" toast; `incrementCounter` / `getCounter` / `getCounters` persist to `localStorage` so values survive reloads.
 -   Identical or polled calls **coalesce** into a single toast with a ×N counter, so nothing spams the screen.
@@ -211,9 +210,9 @@ const res = await learnCard.sendCredential({ templateAlias: 'course-completion' 
 
 **`'auto'` mocks whenever the SDK is standalone** (not embedded), on any URL —
 so a deploy preview on Netlify, Lovable, Vercel, etc. gets the full mock
-experience with no extra config. A persistent **"🧪 LearnCard Preview —
-simulating, not live"** badge stays on screen the whole time, so mocked behavior
-can never be mistaken for the real thing.
+experience with no extra config. Every mocked call shows a labeled toast and a
+`[LearnCard SDK · MOCK]` console log, so it's clear the SDK is simulating rather
+than talking to a real host.
 
 For a **production build that's meant to run only inside LearnCard**, set
 `mock: false`; standalone calls then reject immediately with `LC_NOT_EMBEDDED`

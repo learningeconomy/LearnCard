@@ -893,7 +893,7 @@ Mock mode fixes this automatically. Whenever the SDK isn't embedded — local de
 
 No flags, no separate build. Your app is demo-able standalone and behaves exactly the same against the real host once embedded.
 
-A persistent **"🧪 LearnCard Preview — simulating, not live"** badge stays on screen the whole time mocking is active, so simulated behavior can never be mistaken for the real thing. For a production build meant to run only inside LearnCard, set `mock: false` — standalone calls then reject immediately with `LC_NOT_EMBEDDED`.
+Every mocked call shows a labeled toast and a `[LearnCard SDK · MOCK]` console log, so it's clear the SDK is simulating rather than talking to a real host. For a production build meant to run only inside LearnCard, set `mock: false` — standalone calls then reject immediately with `LC_NOT_EMBEDDED`.
 
 ```typescript
 // Mocks whenever standalone; real host when embedded.

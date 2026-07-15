@@ -113,9 +113,8 @@ export interface PartnerConnectOptions {
      *
      * - `'auto'` **(default)**: mock automatically whenever the SDK is **not
      *    embedded** in a LearnCard host — local dev, deploy previews (Netlify,
-     *    Lovable, Vercel, …), anywhere standalone. A persistent on-screen
-     *    "Preview" badge makes it unmistakable that the SDK is simulating a
-     *    host rather than talking to a real one.
+     *    Lovable, Vercel, …), anywhere standalone. Each mocked call surfaces a
+     *    labeled toast plus a console log so it's clear the host is simulated.
      * - `true`: always mock, even when embedded (useful in tests).
      * - `false`: never mock. Standalone calls reject immediately with
      *    `LC_NOT_EMBEDDED`. Set this in production builds meant to run only

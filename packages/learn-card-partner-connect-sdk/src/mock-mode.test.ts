@@ -22,9 +22,7 @@ beforeEach(() => {
 
 afterEach(() => {
     jest.restoreAllMocks();
-    document
-        .querySelectorAll('.lc-mock-toast, .lc-mock-stack, .lc-mock-persistent-badge')
-        .forEach(node => node.remove());
+    document.querySelectorAll('.lc-mock-toast, .lc-mock-stack').forEach(node => node.remove());
 });
 
 describe('isEmbedded', () => {
@@ -296,16 +294,6 @@ describe('mock UI', () => {
         await flush();
         expect(toastCount()).toBe(1);
         expect(toastText()).toContain('×3');
-    });
-
-    it('shows a persistent preview badge while mocking and removes it on destroy', async () => {
-        const lc = createPartnerConnect({ mockOptions: { ui: true } });
-        await lc.getSyncStatus();
-        await flush();
-        expect(document.querySelector('.lc-mock-persistent-badge')).not.toBeNull();
-
-        lc.destroy();
-        expect(document.querySelector('.lc-mock-persistent-badge')).toBeNull();
     });
 
     it('cleans up injected DOM on destroy', async () => {
