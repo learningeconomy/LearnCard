@@ -431,10 +431,10 @@ const ClaimBoost: React.FC = () => {
             <ClaimBoostLoggedOutPrompt
                 handleCloseModal={() => history.push('/')}
                 handleRedirectTo={() => {
-                    redirectStore.set.lcnRedirect(
-                        `${history.location.pathname}${history.location.search}`
-                    );
-                    history.push('/login');
+                    const redirectTo = `${history.location.pathname}${history.location.search}`;
+
+                    redirectStore.set.lcnRedirect(redirectTo);
+                    history.push(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
                 }}
             />
         );
