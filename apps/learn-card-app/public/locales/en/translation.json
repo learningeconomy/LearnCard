@@ -520,7 +520,8 @@
                 "accomplishment": "Portfolio item",
                 "accommodation": "Assistance",
                 "workHistory": "Experience",
-                "credential": "Credential"
+                "credential": "Credential",
+                "id": "ID"
             },
             "categoriesPlural": {
                 "all": "All",
@@ -542,7 +543,39 @@
             "allCreds": "All credentials",
             "emptyAll": "Nothing in your passport yet.",
             "recent": "RECENTLY ADDED",
-            "seeAll": "See all"
+            "seeAll": "See all",
+            "article": {
+                "socialBadge": "a",
+                "achievement": "an",
+                "learningHistory": "a",
+                "accomplishment": "a",
+                "accommodation": "an",
+                "workHistory": "an",
+                "id": "an",
+                "credential": "a"
+            },
+            "status": {
+                "sent": "Sent",
+                "claimed": "Claimed",
+                "expired": "Expired",
+                "notDelivered": "Not delivered"
+            },
+            "title": {
+                "selfAdded": "You added {{article}} {{label}} to your passport",
+                "received": "{{actor}} sent you {{article}} {{label}}",
+                "claimedBy": "{{label}} claimed by",
+                "expiredFor": "Expired {{label}} for",
+                "failedTo": "Couldn't deliver {{label}} to",
+                "sentTo": "You sent {{article}} {{label}} to"
+            },
+            "when": {
+                "earlier": "Earlier",
+                "today": "Today",
+                "yesterday": "Yesterday",
+                "thisWeek": "Earlier This Week",
+                "lastWeek": "Last Week",
+                "thisMonth": "Earlier This Month"
+            }
         }
     },
     "launchpad": {
@@ -807,7 +840,9 @@
         },
         "subtitleColorfulFormal": "Switch between our signature, colorful experience and a classic, formal style.",
         "subtitleGeneric": "Choose your preferred visual style.",
-        "title": "Choose Your Theme"
+        "title": "Choose Your Theme",
+        "colorfulMode": "Colorful Mode",
+        "neutralMode": "Neutral Mode"
     },
     "language": {
         "arabic": "العربية",
@@ -3594,7 +3629,9 @@
             "browsePathwaysLabel": "Browse Pathways",
             "browsePathwaysCaption": "Explore available paths",
             "discoverAppsLabel": "Discover Apps",
-            "discoverAppsCaption": "Find apps to get started"
+            "discoverAppsCaption": "Find apps to get started",
+            "addToPassportLabel": "Add to Passport",
+            "addToPassportCaption": "Scan, paste, or upload"
         },
         "skillProfile": {
             "eyebrow": "Make {{brand}} yours",
@@ -3688,5 +3725,23 @@
             "maxClaims": "Max claims (optional)",
             "unlimited": "Unlimited"
         }
+    },
+    "myAppsPage": {
+        "browseMore": "Browse More",
+        "searchPlaceholder": "Search...",
+        "searchAria": "Search apps",
+        "learnCardApps": "LearnCard Apps",
+        "moreApps": "More Apps",
+        "noResults": "No apps to show yet.",
+        "noResultsFor": "No results for \"{{query}}\"",
+        "oneResult": "1 result for \"{{query}}\"",
+        "manyResults": "{{count}} results for \"{{query}}\""
+    },
+    "addToPassport": {
+        "subtitle": "Bring a credential into your passport.",
+        "receive": "Receive",
+        "addYourOwn": "Add your own",
+        "uploadCredential": "Upload a Credential",
+        "buildMyBrand": "Build My {{brand}}"
     }
 }

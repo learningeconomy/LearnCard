@@ -72,7 +72,7 @@ export const ThemeSelector: React.FC<{ viewMode?: themeSelectorViewMode }> = ({
         // If the alternate theme isn't allowed for this tenant, hide it.
         if (!allowedThemeIds.includes(targetTheme)) return null;
 
-        const label = isColorful ? 'Colorful Mode' : 'Neutral Mode';
+        const label = isColorful ? m['theme.colorfulMode']() : m['theme.neutralMode']();
         const onColor = primaryColor ? `bg-${primaryColor}` : 'bg-indigo-500';
 
         return (

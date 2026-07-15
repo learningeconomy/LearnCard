@@ -520,7 +520,8 @@
                 "accomplishment": "عنصر محفظة",
                 "accommodation": "مساعدة",
                 "workHistory": "خبرة",
-                "credential": "بيان اعتماد"
+                "credential": "بيان اعتماد",
+                "id": "بطاقة هوية"
             },
             "categoriesPlural": {
                 "all": "الكل",
@@ -542,7 +543,39 @@
             "allCreds": "جميع الشهادات",
             "emptyAll": "لا يوجد شيء في جواز سفرك بعد.",
             "recent": "أُضيف مؤخراً",
-            "seeAll": "عرض الكل"
+            "seeAll": "عرض الكل",
+            "article": {
+                "socialBadge": "",
+                "achievement": "",
+                "learningHistory": "",
+                "accomplishment": "",
+                "accommodation": "",
+                "workHistory": "",
+                "id": "",
+                "credential": ""
+            },
+            "status": {
+                "sent": "أُرسلت",
+                "claimed": "تمت المطالبة",
+                "expired": "منتهية الصلاحية",
+                "notDelivered": "لم تُسلَّم"
+            },
+            "title": {
+                "selfAdded": "أضفت {{label}} إلى جواز سفرك",
+                "received": "أرسل لك {{actor}} {{label}}",
+                "claimedBy": "تمت المطالبة بـ{{label}} بواسطة",
+                "expiredFor": "انتهت صلاحية {{label}} لـ",
+                "failedTo": "تعذّر تسليم {{label}} إلى",
+                "sentTo": "أرسلت {{label}} إلى"
+            },
+            "when": {
+                "earlier": "سابقًا",
+                "today": "اليوم",
+                "yesterday": "أمس",
+                "thisWeek": "في وقت سابق هذا الأسبوع",
+                "lastWeek": "الأسبوع الماضي",
+                "thisMonth": "في وقت سابق هذا الشهر"
+            }
         }
     },
     "launchpad": {
@@ -807,7 +840,9 @@
             "colorful": "Colorful",
             "formal": "Formal",
             "vetpass": "VetPass"
-        }
+        },
+        "colorfulMode": "الوضع الملوّن",
+        "neutralMode": "الوضع المحايد"
     },
     "language": {
         "select": "اختيار اللغة",
@@ -3585,7 +3620,9 @@
             "browsePathwaysLabel": "تصفح المسارات",
             "browsePathwaysCaption": "اكتشف المسارات المتاحة",
             "discoverAppsLabel": "اكتشف التطبيقات",
-            "discoverAppsCaption": "اعثر على تطبيقات للبدء"
+            "discoverAppsCaption": "اعثر على تطبيقات للبدء",
+            "addToPassportLabel": "إضافة إلى جواز السفر",
+            "addToPassportCaption": "امسح أو الصق أو ارفع"
         },
         "skillProfile": {
             "eyebrow": "اجعل {{brand}} خاصًا بك",
@@ -3679,5 +3716,23 @@
             "maxClaims": "الحد الأقصى للمطالبات (اختياري)",
             "unlimited": "غير محدود"
         }
+    },
+    "myAppsPage": {
+        "browseMore": "تصفح المزيد",
+        "searchPlaceholder": "بحث...",
+        "searchAria": "البحث عن التطبيقات",
+        "learnCardApps": "تطبيقات LearnCard",
+        "moreApps": "المزيد من التطبيقات",
+        "noResults": "لا توجد تطبيقات لعرضها بعد.",
+        "noResultsFor": "لا نتائج لـ \"{{query}}\"",
+        "oneResult": "نتيجة واحدة لـ \"{{query}}\"",
+        "manyResults": "{{count}} نتائج لـ \"{{query}}\""
+    },
+    "addToPassport": {
+        "subtitle": "أضف شهادة إلى جواز سفرك.",
+        "receive": "استلام",
+        "addYourOwn": "أضف الخاصة بك",
+        "uploadCredential": "رفع شهادة",
+        "buildMyBrand": "أنشئ {{brand}} الخاص بي"
     }
 }
