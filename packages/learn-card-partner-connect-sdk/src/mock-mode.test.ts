@@ -22,7 +22,9 @@ beforeEach(() => {
 
 afterEach(() => {
     jest.restoreAllMocks();
-    document.querySelectorAll('.lc-mock-toast, .lc-mock-stack').forEach(node => node.remove());
+    document
+        .querySelectorAll('.lc-mock-toast, .lc-mock-stack, .lc-mock-persistent-badge')
+        .forEach(node => node.remove());
 });
 
 describe('isEmbedded', () => {
@@ -75,16 +77,20 @@ describe('mock mode activation', () => {
         expect(createPartnerConnect({ mock: true }).isMocked()).toBe(true);
     });
 
-    it('does not auto-mock on a production host, but true still forces it', () => {
+    it('auto-mocks on any standalone host, including non-localhost deploy previews', () => {
         const original = Object.getOwnPropertyDescriptor(window, 'location');
         Object.defineProperty(window, 'location', {
             configurable: true,
-            value: { hostname: 'app.example.com', search: '', href: 'https://app.example.com/' },
+            value: {
+                hostname: 'my-app.netlify.app',
+                search: '',
+                href: 'https://my-app.netlify.app/',
+            },
         });
 
         try {
-            expect(createPartnerConnect().isMocked()).toBe(false);
-            expect(createPartnerConnect({ mock: true }).isMocked()).toBe(true);
+            expect(createPartnerConnect().isMocked()).toBe(true);
+            expect(createPartnerConnect({ mock: false }).isMocked()).toBe(false);
         } finally {
             if (original) Object.defineProperty(window, 'location', original);
         }
@@ -290,6 +296,16 @@ describe('mock UI', () => {
         await flush();
         expect(toastCount()).toBe(1);
         expect(toastText()).toContain('×3');
+    });
+
+    it('shows a persistent preview badge while mocking and removes it on destroy', async () => {
+        const lc = createPartnerConnect({ mockOptions: { ui: true } });
+        await lc.getSyncStatus();
+        await flush();
+        expect(document.querySelector('.lc-mock-persistent-badge')).not.toBeNull();
+
+        lc.destroy();
+        expect(document.querySelector('.lc-mock-persistent-badge')).toBeNull();
     });
 
     it('cleans up injected DOM on destroy', async () => {

@@ -185,10 +185,11 @@ Storybook, a preview deploy, CI), there is no host. Standalone calls that aren't
 mocked reject immediately with `LC_NOT_EMBEDDED` (rather than hanging until the
 request timeout), and the SDK logs a one-time hint pointing you to mock mode.
 
-**Mock mode fixes this automatically in local development.** When the SDK is
-standalone on a local dev host (and, on preview deploys, whenever you pass
-`mock: true`), it simulates the host locally:
+**Mock mode fixes this automatically.** Whenever the SDK isn't embedded in a
+LearnCard host — local dev, or a deploy preview on Netlify / Lovable / Vercel /
+etc. — it simulates the host locally:
 
+-   A **persistent "🧪 LearnCard Preview" badge** stays on screen while mocking, so simulated behavior is never mistaken for the real thing.
 -   **Every method shows a branded toast** describing what would happen once embedded — e.g. `sendCredential` → _"✅ In LearnCard, the user would receive **[name]** here."_, `incrementCounter` → _"Counter **coins** → **10**."_, `launchFeature` → _"Would open **/wallet**."_ So you get strong, visible feedback for every call, not just console logs.
 -   `requestConsent(...)` auto-grants and shows a "mock consent" toast; `incrementCounter` / `getCounter` / `getCounters` persist to `localStorage` so values survive reloads.
 -   Identical or polled calls **coalesce** into a single toast with a ×N counter, so nothing spams the screen.
@@ -208,16 +209,20 @@ const res = await learnCard.sendCredential({ templateAlias: 'course-completion' 
 // Embedded:   goes to the real LearnCard host.
 ```
 
-**`'auto'` only mocks on a local dev host** (`localhost`, `127.0.0.1`, `*.local`,
-etc.) when standalone. It deliberately does **not** mock on a production origin,
-so a partner app opened directly by a real user never silently auto-grants
-consent or returns a fake identity. To demo a standalone build on a preview
-deploy (a non-localhost URL), opt in explicitly with `mock: true`.
+**`'auto'` mocks whenever the SDK is standalone** (not embedded), on any URL —
+so a deploy preview on Netlify, Lovable, Vercel, etc. gets the full mock
+experience with no extra config. A persistent **"🧪 LearnCard Preview —
+simulating, not live"** badge stays on screen the whole time, so mocked behavior
+can never be mistaken for the real thing.
+
+For a **production build that's meant to run only inside LearnCard**, set
+`mock: false`; standalone calls then reject immediately with `LC_NOT_EMBEDDED`
+instead of showing simulated data.
 
 Override the default behavior when needed:
 
 ```typescript
-// Force mock anywhere — preview deploys, or even while embedded (and in tests):
+// Always mock, even while embedded (useful in tests):
 createPartnerConnect({ mock: true });
 
 // Never mock (standalone calls reject fast with LC_NOT_EMBEDDED):
