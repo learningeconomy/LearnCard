@@ -156,6 +156,8 @@ export class PartnerConnect {
     private syncCompleteCallbacks: Set<(status: SyncStatus) => void> = new Set();
     private syncStatusPollId: ReturnType<typeof setInterval> | null = null;
     private mockHost: MockHost | null = null;
+    private embedded = false;
+    private warnedNoHost = false;
 
     constructor(options?: PartnerConnectOptions) {
         // Normalize hostOrigin to an array for whitelist validation
@@ -177,10 +179,11 @@ export class PartnerConnect {
         this.pendingRequests = new Map();
         this.configureActiveOrigin();
         this.setupMessageListener();
+        this.embedded = isEmbedded();
 
         const mockSetting = options?.mock ?? 'auto';
         const shouldMock =
-            mockSetting === true || (mockSetting === 'auto' && !isEmbedded() && isLocalDevHost());
+            mockSetting === true || (mockSetting === 'auto' && !this.embedded && isLocalDevHost());
         if (shouldMock) {
             this.mockHost = new MockHost(options?.mockOptions);
         }
@@ -527,6 +530,28 @@ export class PartnerConnect {
                 .catch(error => {
                     throw PartnerConnectError.from(error);
                 });
+        }
+
+        // Not embedded and not mocking: no host will ever answer this message,
+        // so fail immediately with an actionable error instead of hanging until
+        // the request timeout fires.
+        if (!this.embedded) {
+            if (!this.warnedNoHost) {
+                this.warnedNoHost = true;
+                console.error(
+                    '[LearnCard SDK] Not running inside a LearnCard host, so SDK calls cannot ' +
+                        'complete. Embed your app in LearnCard, or pass `mock: true` to simulate ' +
+                        'the host during standalone development. Use isEmbedded() to branch your ' +
+                        'UI before calling.'
+                );
+            }
+
+            return Promise.reject(
+                new PartnerConnectError(
+                    'LC_NOT_EMBEDDED',
+                    `Cannot ${action}: the app is not embedded in a LearnCard host.`
+                )
+            );
         }
 
         return new Promise<T>((resolve, reject) => {

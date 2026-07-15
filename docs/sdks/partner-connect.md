@@ -881,7 +881,7 @@ Also available as `PartnerConnect.isEmbedded()` (static) and `learnCard.isEmbedd
 
 ## Standalone / Mock Mode
 
-The SDK only does real work when it's embedded inside LearnCard — that's what answers its requests. Run your app on its own (local dev, a preview deploy, tests) and there's nothing to answer, so calls would hang until they time out.
+The SDK only does real work when it's embedded inside LearnCard — that's what answers its requests. Run your app on its own (local dev, a preview deploy, tests) and there's nothing to answer. Standalone calls that aren't mocked reject immediately with `LC_NOT_EMBEDDED` (instead of hanging until the request timeout), plus a one-time console hint.
 
 Mock mode fixes this automatically in local development. When the SDK is standalone on a local dev host (`localhost`, `127.0.0.1`, `*.local`), it stands in for LearnCard so your app stays fully usable:
 
@@ -906,7 +906,7 @@ await learnCard.sendCredential({ templateAlias: 'course-completion' });
 
 ```typescript
 createPartnerConnect({ mock: true }); // force mock (preview deploys, tests)
-createPartnerConnect({ mock: false }); // never mock
+createPartnerConnect({ mock: false }); // never mock (standalone → LC_NOT_EMBEDDED)
 createPartnerConnect({
     mockOptions: {
         ui: true, // toasts/banners (default true)
@@ -1014,16 +1014,17 @@ interface LearnCardError {
 
 ### Error Codes
 
-| Code                   | Description                         |
-| ---------------------- | ----------------------------------- |
-| `LC_TIMEOUT`           | Request timed out                   |
-| `LC_UNAUTHENTICATED`   | User not logged in                  |
-| `USER_REJECTED`        | User declined the request           |
-| `CREDENTIAL_NOT_FOUND` | Requested credential doesn't exist  |
-| `UNAUTHORIZED`         | User lacks permission               |
-| `TEMPLATE_NOT_FOUND`   | Template doesn't exist              |
-| `SDK_NOT_INITIALIZED`  | SDK not properly initialized        |
-| `SDK_DESTROYED`        | SDK was destroyed before completion |
+| Code                   | Description                                                |
+| ---------------------- | ---------------------------------------------------------- |
+| `LC_TIMEOUT`           | Request timed out                                          |
+| `LC_NOT_EMBEDDED`      | Not embedded in a LearnCard host (standalone, not mocking) |
+| `LC_UNAUTHENTICATED`   | User not logged in                                         |
+| `USER_REJECTED`        | User declined the request                                  |
+| `CREDENTIAL_NOT_FOUND` | Requested credential doesn't exist                         |
+| `UNAUTHORIZED`         | User lacks permission                                      |
+| `TEMPLATE_NOT_FOUND`   | Template doesn't exist                                     |
+| `SDK_NOT_INITIALIZED`  | SDK not properly initialized                               |
+| `SDK_DESTROYED`        | SDK was destroyed before completion                        |
 
 ### Error Handling Patterns
 
@@ -1444,6 +1445,7 @@ interface SendAiSessionCredentialResponse {
 
 type ErrorCode =
     | 'LC_TIMEOUT'
+    | 'LC_NOT_EMBEDDED'
     | 'LC_UNAUTHENTICATED'
     | 'CREDENTIAL_NOT_FOUND'
     | 'USER_REJECTED'

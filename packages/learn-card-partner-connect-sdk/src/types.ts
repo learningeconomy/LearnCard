@@ -705,6 +705,7 @@ export interface GetCountersResponse {
  */
 export type ErrorCode =
     | 'LC_TIMEOUT'
+    | 'LC_NOT_EMBEDDED'
     | 'LC_UNAUTHENTICATED'
     | 'CREDENTIAL_NOT_FOUND'
     | 'USER_REJECTED'

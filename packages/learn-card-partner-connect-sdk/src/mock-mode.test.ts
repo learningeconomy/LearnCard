@@ -8,8 +8,11 @@ import { PartnerConnect, createPartnerConnect, isEmbedded } from './index';
 
 const flush = (): Promise<void> => new Promise(resolve => setTimeout(resolve, 0));
 
+let errorSpy: jest.SpyInstance;
+
 beforeEach(() => {
     jest.spyOn(console, 'log').mockImplementation(() => undefined);
+    errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     try {
         localStorage.clear();
     } catch {
@@ -41,6 +44,21 @@ describe('isEmbedded', () => {
         } finally {
             if (originalTop) Object.defineProperty(window, 'top', originalTop);
         }
+    });
+});
+
+describe('standalone with no host (not embedded, not mocking)', () => {
+    it('fails fast with LC_NOT_EMBEDDED instead of timing out', async () => {
+        const lc = createPartnerConnect({ mock: false });
+        await expect(lc.requestIdentity()).rejects.toMatchObject({ code: 'LC_NOT_EMBEDDED' });
+    });
+
+    it('logs an actionable breadcrumb once, not per call', async () => {
+        const lc = createPartnerConnect({ mock: false });
+        await lc.requestIdentity().catch(() => undefined);
+        await lc.getSyncStatus().catch(() => undefined);
+        await lc.incrementCounter('coins', 1).catch(() => undefined);
+        expect(errorSpy).toHaveBeenCalledTimes(1);
     });
 });
 

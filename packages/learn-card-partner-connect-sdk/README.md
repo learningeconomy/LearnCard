@@ -181,8 +181,9 @@ The SDK enforces an exact match between incoming message origins and the active 
 
 The SDK only works when embedded inside a LearnCard host — that's the host that
 answers its `postMessage` requests. When you run your app on its own (local dev,
-Storybook, a preview deploy, CI), there is no host, so every call would hang
-until it times out.
+Storybook, a preview deploy, CI), there is no host. Standalone calls that aren't
+mocked reject immediately with `LC_NOT_EMBEDDED` (rather than hanging until the
+request timeout), and the SDK logs a one-time hint pointing you to mock mode.
 
 **Mock mode fixes this automatically in local development.** When the SDK is
 standalone on a local dev host (and, on preview deploys, whenever you pass
@@ -219,7 +220,7 @@ Override the default behavior when needed:
 // Force mock anywhere — preview deploys, or even while embedded (and in tests):
 createPartnerConnect({ mock: true });
 
-// Never mock (calls will time out if no host is present):
+// Never mock (standalone calls reject fast with LC_NOT_EMBEDDED):
 createPartnerConnect({ mock: false });
 
 // Configure mock behavior:
@@ -327,6 +328,7 @@ const identity = await learnCard.requestIdentity();
 
 -   `LC_UNAUTHENTICATED`: User is not logged in to LearnCard
 -   `LC_TIMEOUT`: Request timed out
+-   `LC_NOT_EMBEDDED`: The app is not embedded in a LearnCard host (standalone, not mocking)
 
 ---
 
@@ -747,6 +749,7 @@ interface LearnCardError {
 **Common Error Codes:**
 
 -   `LC_TIMEOUT`: Request timed out
+-   `LC_NOT_EMBEDDED`: Not embedded in a LearnCard host (standalone, not mocking)
 -   `LC_UNAUTHENTICATED`: User not logged in
 -   `USER_REJECTED`: User declined the request
 -   `CREDENTIAL_NOT_FOUND`: Credential doesn't exist
