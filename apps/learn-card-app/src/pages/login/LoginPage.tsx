@@ -111,7 +111,7 @@ export const LoginContent: React.FC = () => {
             {},
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );
-    }, [coordinatorState.status, currentUser, isLoggedIn, newModal]);
+    }, [newModal]);
 
     // Removed unnecessary LC network redirect helper; inline push is sufficient.
 

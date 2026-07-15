@@ -17,5 +17,7 @@ export const generateHandle = (name: string): string => {
 };
 
 export const generateRandomSuffix = (): string => {
-    return Math.random().toString(36).substring(2, 6);
+    return Math.floor(Math.random() * 36 ** 4)
+        .toString(36)
+        .padStart(4, '0');
 };

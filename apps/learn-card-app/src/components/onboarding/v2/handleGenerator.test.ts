@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { generateHandle, generateRandomSuffix } from './handleGenerator';
 
@@ -27,9 +27,23 @@ describe('generateHandle', () => {
 });
 
 describe('generateRandomSuffix', () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
     it('returns a 4-character alphanumeric string', () => {
         for (let i = 0; i < 25; i++) {
             expect(generateRandomSuffix()).toMatch(/^[a-z0-9]{4}$/);
         }
+    });
+
+    it('is exactly 4 characters at the low boundary (Math.random() === 0)', () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0);
+        expect(generateRandomSuffix()).toBe('0000');
+    });
+
+    it('is exactly 4 characters at the high boundary', () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0.9999999999);
+        expect(generateRandomSuffix()).toMatch(/^[a-z0-9]{4}$/);
     });
 });

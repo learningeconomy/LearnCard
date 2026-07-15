@@ -31,7 +31,7 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
     const currentMonth = now.getMonth() + 1;
     const currentDay = now.getDate();
 
-    const [hasInteracted, setHasInteracted] = useState(false);
+    const [hasInteracted, setHasInteracted] = useState(() => Boolean(value));
 
     const initialDate = useMemo(() => {
         if (value) {
@@ -46,12 +46,6 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
     const [selectedYear, setSelectedYear] = useState(initialDate.year);
     const [selectedMonth, setSelectedMonth] = useState(initialDate.month);
     const [selectedDay, setSelectedDay] = useState(initialDate.day);
-
-    useEffect(() => {
-        if (value) {
-            setHasInteracted(true);
-        }
-    }, []);
 
     const years = useMemo(() => {
         const arr = [];
