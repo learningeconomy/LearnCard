@@ -1362,7 +1362,11 @@
             "connectionRequestsDesc": "Décidez qui peut vous envoyer des demandes de connexion.",
             "connectionRequestsAnyone": "Tout le monde",
             "connectionRequestsInviteOnly": "Sur invitation uniquement",
-            "unableToUpdate": "Impossible de mettre à jour les paramètres de confidentialité."
+            "unableToUpdate": "Impossible de mettre à jour les paramètres de confidentialité.",
+            "yourProfile": "Votre profil",
+            "whoCanSeeYou": "Qui peut vous voir sur {{brand}}.",
+            "viewProfileHint": "Choisissez qui peut voir les détails de votre profil.",
+            "showEmailHint": "Permettez aux personnes connectées de voir votre e-mail sur votre profil."
         }
     },
     "contacts": {
@@ -7779,6 +7783,50 @@
             "SpecGremlin": {
                 "desc": "Pour la personne qui lit les notes d'implémentation, trouve le cas limite, pose la question qui fait peur et épargne six mois de souffrance à tout le monde."
             }
+        }
+    },
+    "dataShareCenter": {
+        "aiLockedNote": "Désactivé pour votre sécurité. Un tuteur peut l'activer.",
+        "diagLockedNote": "Désactivé pour votre sécurité. Un tuteur peut le modifier.",
+        "aiHeading": "IA & personnalisation",
+        "aiSubheading": "Une aide intelligente qui apprend de vous — seulement si vous le décidez.",
+        "aiFeaturesDesc": "Tutorat par IA, insights et personnalisation. Cela peut partager des messages et des enregistrements pertinents avec des fournisseurs d'IA.",
+        "aiRefreshNote": "L'IA est activée, mais la connexion doit être actualisée.",
+        "appDiagnostics": "Diagnostics de l'app",
+        "diagnosticsDesc": "Des données anonymes qui nous aident à corriger et à améliorer les choses.",
+        "groups": {
+            "ai": "IA & assistants",
+            "school": "Écoles",
+            "app": "Applications"
+        },
+        "connectedApps": {
+            "heading": "Applications & services connectés",
+            "subtitle": "Tous ceux que vous avez laissés entrer. Appuyez sur l'un d'eux pour voir ce qu'il peut faire — ou le désactiver.",
+            "searchPlaceholder": "Rechercher des applications & services",
+            "emptyTitle": "Aucune application pour le moment",
+            "emptySubtitle": "Lorsque vous connectez une application, elle apparaît ici.",
+            "noMatches": "Aucun résultat",
+            "noMatchesFor": "Rien ne correspond à “{{query}}”."
+        },
+        "minor": {
+            "eyebrow": "Compte protégé",
+            "title": "Des protections de confidentialité supplémentaires sont activées",
+            "subtitle": "Comme il s'agit d'un compte plus jeune, {{brand}} garde tout encore plus en sécurité.",
+            "aiOff": "Les fonctionnalités d'IA sont désactivées",
+            "noTracking": "Aucun suivi d'utilisation ni rapport de plantage",
+            "youChoose": "Vous seul choisissez ce que vous partagez"
+        },
+        "trust": {
+            "eyebrow": "Vos données",
+            "title": "Vos données vous appartiennent",
+            "nothingShared": "Rien n'est encore partagé.",
+            "emptyDetail": "Lorsqu'une application ou une école demande vos données, c'est vous qui décidez — à chaque fois.",
+            "sharingWith": "Partage avec {{count}} {{unit}}.",
+            "place": "endroit",
+            "places": "endroits",
+            "canRead": "{{count}} peuvent lire",
+            "canWriteSuffix": ", {{count}} peuvent aussi écrire",
+            "stopAnytime": ". Vous pouvez arrêter à tout moment."
         }
     }
 }

@@ -56,8 +56,7 @@ const DataSharingCenterView: React.FC<DataSharingCenterViewProps> = ({ vm }) => 
                         <AppDiagnosticsCard {...diagnostics} delay={240} />
 
                         <p className="text-xs text-grayscale-500 text-center px-6 mt-1">
-                            You can change any of this anytime. Turning something off takes effect
-                            right away.
+                            {m['dataSharing.centerFooter']()}
                         </p>
                     </div>
                 </div>

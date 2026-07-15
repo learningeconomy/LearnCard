@@ -1361,7 +1361,11 @@
             "connectionRequestsDesc": "Decide who can send you new connection requests.",
             "connectionRequestsAnyone": "Anyone",
             "connectionRequestsInviteOnly": "Invite only",
-            "unableToUpdate": "Unable to update privacy settings."
+            "unableToUpdate": "Unable to update privacy settings.",
+            "yourProfile": "Your profile",
+            "whoCanSeeYou": "Who can see you on {{brand}}.",
+            "viewProfileHint": "Choose who can view your profile details.",
+            "showEmailHint": "Let connected people see your email on your profile."
         },
         "privacyTitle": "Privacy & Data"
     },
@@ -7788,6 +7792,50 @@
             "SpecGremlin": {
                 "desc": "For the person who reads the implementation notes, finds the edge case, asks the terrifying question, and saves everyone six months of pain."
             }
+        }
+    },
+    "dataShareCenter": {
+        "aiLockedNote": "Turned off to keep you safe. A guardian can enable this.",
+        "diagLockedNote": "Turned off to keep you safe. A guardian can change this.",
+        "aiHeading": "AI & personalization",
+        "aiSubheading": "Smart help that learns from you — only if you say so.",
+        "aiFeaturesDesc": "AI tutoring, insights, and personalization. This may share relevant messages and records with AI providers.",
+        "aiRefreshNote": "AI is on, but the connection needs to be refreshed.",
+        "appDiagnostics": "App diagnostics",
+        "diagnosticsDesc": "Anonymous data that helps us fix and improve things.",
+        "groups": {
+            "ai": "AI & assistants",
+            "school": "Schools",
+            "app": "Apps"
+        },
+        "connectedApps": {
+            "heading": "Connected apps & services",
+            "subtitle": "Everyone you've let in. Tap any to see what they can do — or turn it off.",
+            "searchPlaceholder": "Search apps & services",
+            "emptyTitle": "No apps yet",
+            "emptySubtitle": "When you connect an app, it'll show up here.",
+            "noMatches": "No matches",
+            "noMatchesFor": "Nothing matches “{{query}}”."
+        },
+        "minor": {
+            "eyebrow": "Protected account",
+            "title": "Extra privacy protections are on",
+            "subtitle": "Because this is a younger account, {{brand}} keeps things extra safe.",
+            "aiOff": "AI features are turned off",
+            "noTracking": "No usage tracking or crash reports",
+            "youChoose": "Only you choose what you share"
+        },
+        "trust": {
+            "eyebrow": "Your data",
+            "title": "Your data is yours",
+            "nothingShared": "Nothing is shared yet.",
+            "emptyDetail": "When an app or school asks for your data, you decide — every time.",
+            "sharingWith": "Sharing with {{count}} {{unit}}.",
+            "place": "place",
+            "places": "places",
+            "canRead": "{{count}} can read",
+            "canWriteSuffix": ", {{count}} can also write",
+            "stopAnytime": ". You can stop anytime."
         }
     }
 }
