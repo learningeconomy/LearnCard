@@ -11,6 +11,7 @@ import HandshakeIcon from '../../components/svgs/HandshakeIcon';
 import { getMinimumTermsForContract } from '../../helpers/contract.helpers';
 
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 import {
     useModal,
@@ -223,7 +224,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                 } else history.push(redirectUrl);
                 // } else
             } else {
-                presentToast(`You are now connected with ${contractDetails.name}!`, {
+                presentToast(m['consentFlow.connectedMsg']({ name: contractDetails.name }), {
                     type: ToastTypeEnum.Success,
                 });
                 history.push(`/`);
@@ -238,11 +239,10 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                 newModal(
                     <div className="w-full bg-white rounded-[16px] shadow-3xl p-5 text-center">
                         <h3 className="text-xl font-semibold text-grayscale-900 mb-2">
-                            Already Consented
+                            {m['consentFlow.alreadyConsented']()}
                         </h3>
                         <p className="text-sm text-grayscale-700 mb-5">
-                            You've already consented to this connection. Any new credentials will be
-                            synced to your account soon!
+                            {m['consentFlow.alreadyConsentedDesc']()}
                         </p>
                         <div className="flex items-center justify-center gap-3">
                             {redirectUrl ? (
@@ -267,7 +267,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                         }
                                     }}
                                 >
-                                    Continue
+                                    {m['common.continue']()}
                                 </button>
                             ) : (
                                 <button
@@ -277,7 +277,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                         history.push('/campfire');
                                     }}
                                 >
-                                    Take me Home
+                                    {m['consentFlow.takeMeHome']()}
                                 </button>
                             )}
                         </div>
@@ -293,9 +293,9 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
             // Show generic unknown error modal for all other errors
             newModal(
                 <div className="w-full bg-white rounded-[16px] shadow-3xl p-5 text-center">
-                    <h3 className="text-xl font-semibold text-grayscale-900 mb-2">Unknown Error</h3>
+                    <h3 className="text-xl font-semibold text-grayscale-900 mb-2">{m['consentFlow.unknownError']()}</h3>
                     <p className="text-sm text-grayscale-700 mb-5">
-                        There was an unknown error. Please try again.
+                        {m['consentFlow.unknownErrorDesc']()}
                     </p>
                     <div className="flex items-center justify-center gap-3">
                         <button
@@ -304,7 +304,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                 closeAllModals();
                             }}
                         >
-                            Okay
+                            {m['consentFlow.okay']()}
                         </button>
                     </div>
                 </div>,
@@ -386,7 +386,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                         className="text-indigo-500 font-bold text-base flex mt-2 items-center justify-center disabled:opacity-50"
                         disabled={!contractDetails?.contract || isPreview}
                     >
-                        Edit Access <RightArrow className="w-[20px] h-[20px]" />
+                        {m['consentFlow.editAccess']()} <RightArrow className="w-[20px] h-[20px]" />
                     </button>
                 </div>
 
@@ -397,9 +397,9 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                         className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-sp-purple-base font-poppins text-xl w-full shadow-3xl normal max-w-[320px] disabled:opacity-50"
                         disabled={!contractDetails?.contract || loading || isPreview}
                     >
-                        {loading ? 'Allowing...' : 'Allow'}
+                        {m[loading ? 'consentFlow.allowing' : 'consentFlow.allow']()}
                     </button>
-                    <IonLoading isOpen={isPending} message="Consenting..." mode="ios" />
+                    <IonLoading isOpen={isPending} message={m['consentFlow.consenting']()} mode="ios" />
                     <button
                         onClick={() => {
                             history.push('/');
@@ -407,17 +407,14 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                         type="button"
                         className="text-grayscale-900 text-center text-base w-full font-medium mt-4"
                     >
-                        Cancel
+                        {m['common.cancel']()}
                     </button>
                 </div>
             </div>
             <IonRow className="flex items-center justify-center mt-4 w-full">
                 <IonCol className="flex flex-col items-center justify-center text-center">
                     <p className="text-center text-sm font-normal w-[90%] px-16 text-grayscale-600 border-t border-t-grayscale-200 pb-[30px] pt-[20px]">
-                        All connections are{' '}
-                        <b>
-                            <u>encrypted.</u>
-                        </b>
+                        {m['consentFlow.allConnEncrypted']()}
                     </p>
                 </IonCol>
             </IonRow>

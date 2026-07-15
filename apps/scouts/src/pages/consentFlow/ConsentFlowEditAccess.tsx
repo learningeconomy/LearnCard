@@ -8,6 +8,7 @@ import ConsentFlowReadSharing from './ConsentFlowReadSharing';
 import ConsentFlowWriteSharing from './ConsentFlowWriteSharing';
 
 import { curriedStateSlice } from '@learncard/helpers';
+import * as m from '../../paraglide/messages.js';
 import {
     useModal,
     useToast,
@@ -122,15 +123,15 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                 text: (
                     <div className="flex flex-col gap-[5px] mb-[10px]">
                         <span className="font-[600] text-center">
-                            You will be disconnected from this contract
+                            {m['consentFlow.willDisconnect']()}
                         </span>
                         <span className="text-center">
-                            Do you want to delete all credentials associated with this contract?
+                            {m['consentFlow.delCredsQ']()}
                         </span>
                     </div>
                 ),
-                confirmText: 'Yes',
-                cancelText: 'No',
+                confirmText: m['consentFlow.yes'](),
+                cancelText: m['consentFlow.no'](),
                 onConfirm: () => handleWithdrawConsent({ deleteContractCredentials: true }),
                 onCancel: () => handleWithdrawConsent({ deleteContractCredentials: false }),
             });
@@ -160,7 +161,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                 <IonCol className="flex flex-1 justify-start items-center">
                                     <button
                                         className="text-white p-0 mr-[10px]"
-                                        aria-label="Back button"
+                                        aria-label={m['consentFlow.backBtn']()}
                                         onClick={() => {
                                             saveTerms(terms);
                                             closeModal();
@@ -199,8 +200,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                             className="flex flex-col items-center justify-between w-full bg-white rounded-[20px] ion-padding"
                         >
                             <p className="text-grayscale-900 text-base w-full text-left mb-4 font-medium">
-                                {contractDetails?.owner?.displayName || contractDetails?.name} will
-                                use data to:
+                                {contractDetails?.owner?.displayName || contractDetails?.name} {m['consentFlow.useDataTo']()}
                             </p>
                             <p className="text-grayscale-600 text-sm w-full text-left">
                                 {contractDetails?.reasonForAccessing}
@@ -215,7 +215,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                         className="flex flex-col gap-5 py-2 items-center justify-between w-full"
                     >
                         <h4 className="text-white text-xl tracking-normal w-full text-left mb-4 font-medium font-poppins">
-                            Share Data in Your LearnCard
+                            {m['consentFlow.shareDataInLC']()}
                         </h4>
 
                         {contractReadDataExists && (
@@ -229,10 +229,10 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                                     : 'text-grayscale-400'
                                             }`}
                                         >
-                                            {allReadToggle ? 'Active' : 'Off'}
+                                            {m['consentFlow.' + (allReadToggle ? 'active' : 'off')]()}
                                         </output>
                                         <p className="font-poppins text-grayscale-100 text-xl">
-                                            Live Sync All
+                                            {m['consentFlow.liveSyncAll']()}
                                         </p>
                                     </label>
 
@@ -246,15 +246,13 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                 </section>
 
                                 <p className="text-grayscale-100 text-base font-normal font-poppins">
-                                    Turning on live syncing will continuosly share your credentials
-                                    as you get them. This can be enabled/disabled per category at
-                                    any time.
+                                    {m['consentFlow.liveSyncDesc']()}
                                 </p>
                             </fieldset>
                         )}
                         {!contractReadDataExists && (
                             <p className="text-grayscale-100 text-base font-normal font-poppins">
-                                This contract is not reading any data from your LearnCard
+                                {m['consentFlow.noReadData']()}
                             </p>
                         )}
                     </IonCol>
@@ -282,7 +280,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                         className="flex flex-col gap-5 py-2 items-center justify-between w-full"
                     >
                         <h4 className="text-white text-xl tracking-normal w-full text-left mb-4 font-medium font-poppins">
-                            Allow Data to be Added to Your LearnCard
+                            {m['consentFlow.allowDataToLC']()}
                         </h4>
 
                         {contractWriteDataExists && (
@@ -296,10 +294,10 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                                     : 'text-grayscale-400'
                                             }`}
                                         >
-                                            {allWriteToggle ? 'Active' : 'Off'}
+                                            {m['consentFlow.' + (allWriteToggle ? 'active' : 'off')]()}
                                         </output>
                                         <p className="font-poppins text-grayscale-100 text-xl">
-                                            Allow All
+                                            {m['consentFlow.allowAll']()}
                                         </p>
                                     </label>
 
@@ -315,7 +313,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                         )}
                         {!contractWriteDataExists && (
                             <p className="text-grayscale-100 text-base font-normal font-poppins">
-                                This contract is not writing any data to your LearnCard
+                                {m['consentFlow.noWriteData']()}
                             </p>
                         )}
                     </IonCol>
@@ -344,7 +342,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                         >
                             <div className="flex items-center justify-between w-full">
                                 <h1 className="font-poppins text-black text-lg p-0 m-0 normal">
-                                    Anonymize Data
+                                    {m['consentFlow.anonymize']()}
                                 </h1>
                             </div>
 
@@ -375,7 +373,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                 disabled={isLoadingContractCreds}
                             >
                                 {/* <BrokenLink className="mr-2" />{' '} */}
-                                {isWithdrawingConsent ? 'Disconnecting...' : 'Disconnect'}
+                                {m[isWithdrawingConsent ? 'consentFlow.disconnecting' : 'consentFlow.disconnect']()}
                             </button>
                         </IonCol>
                     </IonRow>

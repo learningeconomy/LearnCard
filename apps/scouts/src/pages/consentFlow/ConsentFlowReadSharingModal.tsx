@@ -31,6 +31,7 @@ import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
 import ConsentFlowSelectiveSharingWarning from './ConsentFlowSelectiveSharingWarning';
+import * as m from '../../paraglide/messages.js';
 import { CredentialMetadata } from 'learn-card-base/types/credential-records';
 
 type ConsentFlowReadSharingModalProps = {
@@ -228,10 +229,10 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                         className="flex flex-col flex-1 gap-1"
                                     >
                                         <h6 className="text-grayscale-900 text-lg font-poppins">
-                                            Live Syncing
+                                            {m['consentFlow.liveSyncing']()}
                                         </h6>
                                         <span className="text-grayscale-700 text-sm font-poppins">
-                                            Continuously share all {plural}.
+                                            {m['consentFlow.contShareAll']({ plural })}
                                         </span>
                                     </label>
 
@@ -259,7 +260,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                             }
                                             className="text-sm font-poppins text-grayscale-900"
                                         >
-                                            Set an expiration date?
+                                            {m['consentFlow.setExpDate']()}
                                         </label>
                                         <IonToggle
                                             color="emerald-700"
@@ -300,10 +301,10 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                         className="flex flex-col flex-1 gap-1"
                                     >
                                         <h6 className="text-grayscale-900 text-lg font-poppins">
-                                            Selective Sharing
+                                            {m['consentFlow.selectiveSharing']()}
                                         </h6>
                                         <span className="text-grayscale-700 text-sm font-poppins">
-                                            Only share selected {plural}.
+                                            {m['consentFlow.onlyShareSel']({ plural })}
                                         </span>
                                     </label>
 
@@ -324,10 +325,10 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                         className="flex flex-col flex-1 gap-1"
                                     >
                                         <h6 className="text-grayscale-900 text-lg font-poppins">
-                                            Not Sharing
+                                            {m['consentFlow.notSharing']()}
                                         </h6>
                                         <span className="text-grayscale-700 text-sm font-poppins">
-                                            Don't share any {plural}.
+                                            {m['consentFlow.dontShare']({ plural })}
                                         </span>
                                     </label>
 
@@ -349,15 +350,16 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                 <header className="w-full flex justify-center sticky -top-1 z-10 p-5 border-t border-solid border-grayscale-300 bg-grayscale-100">
                                     <section className="flex justify-between w-full max-w-[800px]">
                                         <output className="text-lg font-semibold font-poppins">
-                                            Sharing{' '}
-                                            {term.shareAll ? totalCount : term.shared?.length ?? 0}/
-                                            {totalCount}
+                                            {m['consentFlow.sharingCount']({
+                                                count: term.shareAll ? totalCount : term.shared?.length ?? 0,
+                                                total: totalCount
+                                            })}
                                         </output>
 
                                         {term.shareAll && (
                                             <output className="rounded-[20px] pl-4 pr-3 py-1 flex items-center gap-1 bg-grayscale-50 text-emerald-800">
                                                 <span className="font-poppins text-sm font-semibold">
-                                                    Live Syncing All
+                                                    {m['consentFlow.liveSyncingAll']()}
                                                 </span>
                                                 <Checkmark className="h-5 w-5" strokeWidth="3" />
                                             </output>

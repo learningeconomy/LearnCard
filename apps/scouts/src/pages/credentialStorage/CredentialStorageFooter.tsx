@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { IonCol, IonRow, IonFooter, IonInput } from '@ionic/react';
+import * as m from '../../paraglide/messages.js';
 
 const CredentialStorageFooter: React.FC<{
     accept: () => void;
@@ -28,14 +29,14 @@ const CredentialStorageFooter: React.FC<{
                             className="bg-emerald-700 rounded-full text-white font-bold border px-4 py-2 mr-2 w-full max-w-[200px]"
                             onClick={accept}
                         >
-                            {isLoading ? 'Accepting...' : 'Accept'}
+                            {m[isLoading ? 'credentialStorage.accepting' : 'credentialStorage.accept']()}
                         </button>
                         <button
                             type="button"
                             className="bg-rose-600 rounded-full text-white font-bold border px-4 py-2 w-full max-w-[200px]"
                             onClick={reject}
                         >
-                            Reject
+                            {m['credentialStorage.reject']()}
                         </button>
                     </div>
                 </IonCol>

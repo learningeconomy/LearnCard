@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { initLearnCard } from '@learncard/init';
 
 import { useCurrentUser, chapiStore, redirectStore } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 
 import { IonPage, IonContent, IonRow, IonCol } from '@ionic/react';
 import { getLogger } from 'learn-card-base';
@@ -64,9 +65,7 @@ const VprDIDAuth: React.FC = ({ event, currentUser }) => {
                 <IonRow className="w-full flex items-center justify-center h-full">
                     <IonCol className="w-full flex flex-col items-center justify-center text-center">
                         <h2 className="mt-6 font-bold">
-                            {event?.credentialRequestOrigin}
-                            <br />
-                            would like to send you a credential?
+                            {m['credentialStorage.wouldLikeToSend']({ origin: event?.credentialRequestOrigin })}
                         </h2>
                         <div className="flex items-center justify-center w-full mt-4">
                             <button
@@ -74,14 +73,14 @@ const VprDIDAuth: React.FC = ({ event, currentUser }) => {
                                 className="bg-emerald-700 rounded-full text-white font-bold border px-4 py-2 mr-2 w-full max-w-[200px]"
                                 onClick={accept}
                             >
-                                {isLoading ? 'Accepting...' : 'Accept'}
+                                {m[isLoading ? 'credentialStorage.accepting' : 'credentialStorage.accept']()}
                             </button>
                             <button
                                 type="button"
                                 className="bg-rose-600 rounded-full text-white font-bold border px-4 py-2 w-full max-w-[200px]"
                                 onClick={reject}
                             >
-                                Reject
+                                {m['credentialStorage.reject']()}
                             </button>
                         </div>
                     </IonCol>
