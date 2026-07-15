@@ -7555,5 +7555,230 @@
         "addYourOwn": "Agrega la tuya",
         "uploadCredential": "Sube una credencial",
         "buildMyBrand": "Crea mi {{brand}}"
+    },
+    "badgeSummit": {
+        "cat": {
+            "vibes": {
+                "label": "Buena onda y comunidad",
+                "desc": "Para quienes marcan el ánimo y guardan los recuerdos."
+            },
+            "standards": {
+                "label": "Estándares y especificaciones",
+                "desc": "Para quienes cuidan las specs y construyen la interoperabilidad."
+            },
+            "leaders": {
+                "label": "Líderes y agentes de cambio",
+                "desc": "Para quienes nos hacen avanzar a todos."
+            },
+            "mastery": {
+                "label": "Ingenio y maestría",
+                "desc": "Para el talento profundo y el saber hacer."
+            },
+            "heart": {
+                "label": "Corazón y equipo",
+                "desc": "Para el pegamento que mantiene unida a la gente."
+            },
+            "bold": {
+                "label": "Audaces y aventureros",
+                "desc": "Para los valientes y los primeros."
+            },
+            "culture": {
+                "label": "Cultura y estilo",
+                "desc": "Para el buen gusto, las tendencias y el carisma."
+            },
+            "fun": {
+                "label": "Diversión y energía",
+                "desc": "Para el alma de la fiesta."
+            },
+            "other": {
+                "label": "Otros",
+                "desc": "Todo lo demás."
+            }
+        },
+        "badge": {
+            "Risktaker": {
+                "desc": "Para quien se lanza al momento incierto y da el primer paso, aunque la opción segura esté justo ahí sobre la mesa."
+            },
+            "Opportunist": {
+                "desc": "Reservado para quien ve la oportunidad tres segundos antes que nadie y la aprovecha sin hacer ruido."
+            },
+            "CoolCat": {
+                "desc": "Para quien con su calma vuelve más llevaderas las salas difíciles y siempre parece tener el ánimo en su punto."
+            },
+            "Trailblazer": {
+                "desc": "Reservado para quien va primero, abre el camino y se da la vuelta para hacer pasar a todos los demás."
+            },
+            "Influencer": {
+                "desc": "Para quien con sus opiniones moldea lo que al resto del grupo termina importándole."
+            },
+            "Connector": {
+                "desc": "Reservado para quien sabe exactamente a quién deberías conocer y hace la presentación antes de que termines la frase."
+            },
+            "Trendsetter": {
+                "desc": "Para quien ya estaba en eso seis meses antes de que fuera tendencia, y ya andará en lo próximo cuando tú te enteres."
+            },
+            "Organizer": {
+                "desc": "Reservado para quien convierte una idea vaga del grupo en una fecha, un lugar, un plan y una invitación en el calendario compartido."
+            },
+            "Moderator": {
+                "desc": "Para quien mantiene la conversación justa, el tono amable y el espacio cómodo para todos."
+            },
+            "Leader": {
+                "desc": "Reservado para esa persona a quien los demás miran sin decir nada cuando toca decidir, comprometerse o avanzar."
+            },
+            "Expert": {
+                "desc": "Para esa persona a la que le escribes cuando necesitas la respuesta de verdad, no una suposición."
+            },
+            "Aficionado": {
+                "desc": "Reservado para quien ama tanto un tema de nicho que cambia la forma en que los demás lo apreciamos."
+            },
+            "Psychic": {
+                "desc": "Para quien predice el resultado antes de que pase y luego hace como que no fue nada."
+            },
+            "Magician": {
+                "desc": "Reservado para quien logra lo que no debería haber sido posible y no termina de explicar cómo."
+            },
+            "Charmer": {
+                "desc": "Para quien probablemente podría convencer a una puerta cerrada de que se abra sola."
+            },
+            "Cowboy": {
+                "desc": "Reservado para quien llega, hace las cosas a su manera y se marcha antes de que las reglas lo alcancen."
+            },
+            "Perfectionist": {
+                "desc": "Para quien nota ese único píxel descuadrado y no descansa hasta que deja de estarlo."
+            },
+            "Wanderer": {
+                "desc": "Reservado para quien su última ubicación siempre es, no se sabe cómo, un lugar que tuviste que buscar en el mapa."
+            },
+            "TeamPlayer": {
+                "desc": "Para quien hace más fuerte al grupo con solo estar en él y nunca hay que pedírselo dos veces."
+            },
+            "Star": {
+                "desc": "Reservado para esa persona a quien la sala nota sin que tenga que intentarlo."
+            },
+            "PartyAnimal": {
+                "desc": "Para quien sigue a tope tres horas después de que todos dijeron que ya se iban."
+            },
+            "TroubleMaker": {
+                "desc": "Reservado para quien sus malas ideas se convierten después en las mejores anécdotas."
+            },
+            "Doer": {
+                "desc": "Para quien deja de hablar del tema cuando los demás todavía están opinando, y simplemente lo hace."
+            },
+            "Entertainer": {
+                "desc": "Reservado para quien haría divertido hasta un vuelo retrasado, y probablemente ya lo ha hecho."
+            },
+            "Connoisseur": {
+                "desc": "Para quien tiene un gusto tan formado que simplemente confías en lo que elige."
+            },
+            "ChangeMaker": {
+                "desc": "Reservado para quien mira cómo están las cosas y, sin hacer ruido, empieza a construir cómo deberían ser."
+            },
+            "Ambassador": {
+                "desc": "Para quien representa bien al grupo dondequiera que va, sin que nunca parezca un discurso de venta."
+            },
+            "Catalyst": {
+                "desc": "Reservado para quien con su sola presencia en una conversación hace que algo nuevo de verdad ocurra."
+            },
+            "ChallengeMaker": {
+                "desc": "Para quien inventa el reto, el juego o la meta que sube de nivel a todos los demás."
+            },
+            "Challenger": {
+                "desc": "Reservado para quien cuestiona el supuesto, hace la pregunta más difícil y no deja pasar una respuesta perezosa."
+            },
+            "Enabler": {
+                "desc": "Para quien despeja el camino sin hacer ruido para que otra persona haga su mejor trabajo."
+            },
+            "Enthusiast": {
+                "desc": "Reservado para quien con su emoción genuina te hace interesarte por cosas que no sabías que podían importarte."
+            },
+            "HotShot": {
+                "desc": "Para quien está en racha, se lleva la victoria y hace que parezca más fácil de lo que es."
+            },
+            "Informer": {
+                "desc": "Reservado para quien siempre aparece con el artículo, la novedad o el aviso antes de que lo necesitaras."
+            },
+            "Maven": {
+                "desc": "Para quien su saber acumulado en un tema es, a estas alturas, prácticamente un servicio público."
+            },
+            "Maverick": {
+                "desc": "Reservado para quien juega su propio juego y, no se sabe cómo, lo sigue ganando."
+            },
+            "PartyPlanner": {
+                "desc": "Para quien piensa en listas de invitados, playlists y curvas de ambiente, y siempre parece clavar las tres."
+            },
+            "Promoter": {
+                "desc": "Reservado para quien con su forma entusiasta de compartir ha creado más audiencias de las que jamás admitirá."
+            },
+            "Propagator": {
+                "desc": "Para quien toma una pequeña idea y la ayuda a echar raíces en otras cinco comunidades."
+            },
+            "Sage": {
+                "desc": "Reservado para quien sus consejos meditados suelen envejecer extraordinariamente bien."
+            },
+            "Tastemaker": {
+                "desc": "Para quien sus elecciones definen, sin hacer ruido, lo que el resto del grupo termina amando."
+            },
+            "VibeCurator": {
+                "desc": "Reservado para los miembros de la comunidad que saben exactamente cómo hacer que una sala se sienta mejor, más cálida, más curiosa o más viva."
+            },
+            "ChaosCoordinator": {
+                "desc": "Para quien de algún modo convierte la confusión, los mensajes perdidos, las llegadas tarde y los planes a medias en una experiencia que de verdad funciona."
+            },
+            "HypeArchitect": {
+                "desc": "Reservado para ese raro amigo que hace que los demás se sientan más valientes, más geniales, más graciosos y más capaces que hace cinco minutos."
+            },
+            "LoreKeeper": {
+                "desc": "Para el miembro de la comunidad que recuerda cada chiste interno, cada noche legendaria, cada detalle raro y cada pedazo curiosamente importante de la historia del grupo."
+            },
+            "SideQuestSpecialist": {
+                "desc": "Reservado para quien puede convertir un día normal en una aventura inesperada con una sugerencia sospechosamente casual."
+            },
+            "QuietGenius": {
+                "desc": "Para quien quizá no siempre se lleva los reflectores, pero suelta con frecuencia justo la idea, el arreglo o la observación que todos necesitaban."
+            },
+            "CommunityHelper": {
+                "desc": "Reservado para los miembros de la comunidad que aparecen cuando alguien necesita una mano, una pista, un arreglo o un poco más de amabilidad."
+            },
+            "FoodSniper": {
+                "desc": "Reservado para los miembros de la comunidad con un gusto impecable y un talento para descubrir los mejores rincones gastronómicos."
+            },
+            "VisualStoryteller": {
+                "desc": "Para el miembro de la comunidad que convierte ideas, datos, momentos y conceptos enredados en visuales que la gente de verdad puede sentir y entender."
+            },
+            "LogicMaster": {
+                "desc": "Reservado para quien pone orden en la complejidad, detecta el fallo escondido y hace que todo el sistema cobre sentido."
+            },
+            "SchemaWhisperer": {
+                "desc": "Reservado para el miembro de la comunidad que puede clavar la mirada en un payload de credenciales enredado y salir de él con elegancia, orden y un JSON-LD válido."
+            },
+            "AlignmentWizard": {
+                "desc": "Para quien puede conectar una insignia con una habilidad, una habilidad con un marco, un marco con un empleo, y hacer que todo parezca obvio."
+            },
+            "CLRCartographer": {
+                "desc": "Reservado para el alma valiente que ayuda a las comunidades a navegar el territorio salvaje entre expedientes, credenciales, habilidades, evidencias y registros de aprendizaje."
+            },
+            "VerifiableVibes": {
+                "desc": "Para el miembro de la comunidad que cree que la confianza es hermosa, que las firmas son poesía y que la verificación debería funcionar antes de que alguien empiece la demo."
+            },
+            "BadgeGoblin": {
+                "desc": "Reservado para quien quiere que todo sea una insignia y, molestamente, casi siempre tiene algo de razón."
+            },
+            "MetadataMystic": {
+                "desc": "Para quien entiende que la insignia visible es solo el dije del collar. La verdadera magia está en los datos estructurados que hay debajo."
+            },
+            "InteropDiplomat": {
+                "desc": "Reservado para el negociador paciente que puede reunir a plataformas, proveedores, wallets, registros e instituciones en la misma sala sin provocar un incidente de estándares."
+            },
+            "BackpackElder": {
+                "desc": "Para el miembro de la comunidad que recuerda de dónde vinieron las insignias, por qué importaron y qué conversaciones todos siguen redescubriendo por accidente."
+            },
+            "IssuerTherapist": {
+                "desc": "Reservado para quien ayuda con delicadeza a las organizaciones a admitir que sus criterios de insignias no están claros, que su evidencia es pura vibra y que su taxonomía necesita cariño."
+            },
+            "SpecGremlin": {
+                "desc": "Para quien lee las notas de implementación, encuentra el caso límite, hace la pregunta aterradora y le ahorra a todos seis meses de sufrimiento."
+            }
+        }
     }
 }
