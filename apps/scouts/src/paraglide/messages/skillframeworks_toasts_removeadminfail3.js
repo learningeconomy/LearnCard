@@ -18,7 +18,7 @@ const fr_skillframeworks_toasts_removeadminfail3 = /** @type {(inputs: Skillfram
 };
 
 const ar_skillframeworks_toasts_removeadminfail3 = /** @type {(inputs: Skillframeworks_Toasts_Removeadminfail3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Failed to remove admin. Please try again.`)
+	return /** @type {LocalizedString} */ (`فشل إزالة المسؤول. يرجى المحاولة مرة أخرى.`)
 };
 
 /**

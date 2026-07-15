@@ -18,7 +18,7 @@ const fr_boostcms_bgcolorlabel5 = /** @type {(inputs: Boostcms_Bgcolorlabel5Inpu
 };
 
 const ar_boostcms_bgcolorlabel5 = /** @type {(inputs: Boostcms_Bgcolorlabel5Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Background Color`)
+	return /** @type {LocalizedString} */ (`لون الخلفية`)
 };
 
 /**

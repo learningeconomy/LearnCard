@@ -18,7 +18,7 @@ const fr_addressbook_toasts_contactlinkcopied3 = /** @type {(inputs: Addressbook
 };
 
 const ar_addressbook_toasts_contactlinkcopied3 = /** @type {(inputs: Addressbook_Toasts_Contactlinkcopied3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Contact link copied to clipboard`)
+	return /** @type {LocalizedString} */ (`تم نسخ رابط الاتصال إلى الحافظة`)
 };
 
 /**

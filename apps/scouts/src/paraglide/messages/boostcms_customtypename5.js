@@ -18,7 +18,7 @@ const fr_boostcms_customtypename5 = /** @type {(inputs: Boostcms_Customtypename5
 };
 
 const ar_boostcms_customtypename5 = /** @type {(inputs: Boostcms_Customtypename5Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Custom Type Name`)
+	return /** @type {LocalizedString} */ (`اسم النوع المخصص`)
 };
 
 /**

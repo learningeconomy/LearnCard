@@ -18,7 +18,7 @@ const fr_scoutsid_card1 = /** @type {(inputs: Scoutsid_Card1Inputs) => Localized
 };
 
 const ar_scoutsid_card1 = /** @type {(inputs: Scoutsid_Card1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Card`)
+	return /** @type {LocalizedString} */ (`بطاقة`)
 };
 
 /**

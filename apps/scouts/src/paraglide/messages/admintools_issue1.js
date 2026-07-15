@@ -18,7 +18,7 @@ const fr_admintools_issue1 = /** @type {(inputs: Admintools_Issue1Inputs) => Loc
 };
 
 const ar_admintools_issue1 = /** @type {(inputs: Admintools_Issue1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Issue`)
+	return /** @type {LocalizedString} */ (`إصدار`)
 };
 
 /**

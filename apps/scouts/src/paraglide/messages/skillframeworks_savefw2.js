@@ -18,7 +18,7 @@ const fr_skillframeworks_savefw2 = /** @type {(inputs: Skillframeworks_Savefw2In
 };
 
 const ar_skillframeworks_savefw2 = /** @type {(inputs: Skillframeworks_Savefw2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Save Framework`)
+	return /** @type {LocalizedString} */ (`حفظ الإطار`)
 };
 
 /**

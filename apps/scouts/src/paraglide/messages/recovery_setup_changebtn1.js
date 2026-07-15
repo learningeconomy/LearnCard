@@ -18,7 +18,7 @@ const fr_recovery_setup_changebtn1 = /** @type {(inputs: Recovery_Setup_Changebt
 };
 
 const ar_recovery_setup_changebtn1 = /** @type {(inputs: Recovery_Setup_Changebtn1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Change`)
+	return /** @type {LocalizedString} */ (`تغيير`)
 };
 
 /**

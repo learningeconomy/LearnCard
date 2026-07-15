@@ -18,7 +18,7 @@ const fr_skillframeworks_processingerror2 = /** @type {(inputs: Skillframeworks_
 };
 
 const ar_skillframeworks_processingerror2 = /** @type {(inputs: Skillframeworks_Processingerror2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Processing Error`)
+	return /** @type {LocalizedString} */ (`خطأ في المعالجة`)
 };
 
 /**

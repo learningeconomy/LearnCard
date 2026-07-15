@@ -18,7 +18,7 @@ const fr_auth_mycontacts1 = /** @type {(inputs: Auth_Mycontacts1Inputs) => Local
 };
 
 const ar_auth_mycontacts1 = /** @type {(inputs: Auth_Mycontacts1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`My Contacts`)
+	return /** @type {LocalizedString} */ (`جهات اتصالي`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_theme_names_formal = /** @type {(inputs: Theme_Names_FormalInputs) => L
 };
 
 const ar_theme_names_formal = /** @type {(inputs: Theme_Names_FormalInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Formal`)
+	return /** @type {LocalizedString} */ (`رسمي`)
 };
 
 /**

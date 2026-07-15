@@ -18,7 +18,7 @@ const fr_troops_options_leaveconfirm1 = /** @type {(inputs: Troops_Options_Leave
 };
 
 const ar_troops_options_leaveconfirm1 = /** @type {(inputs: Troops_Options_Leaveconfirm1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Are you sure you want to leave {credential}?`)
+	return /** @type {LocalizedString} */ (`هل أنت متأكد من مغادرة {credential}؟`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_admintools_devdocsdescription3 = /** @type {(inputs: Admintools_Devdocs
 };
 
 const ar_admintools_devdocsdescription3 = /** @type {(inputs: Admintools_Devdocsdescription3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Check out the LearnCard developer docs to learn how to build and integrate with our SDKs and APIs.`)
+	return /** @type {LocalizedString} */ (`اطلع على وثائق مطوري LearnCard لتعلم كيفية البناء والتكامل مع SDKs وAPIs الخاصة بنا.`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_boost_yourself = /** @type {(inputs: Boost_YourselfInputs) => Localized
 };
 
 const ar_boost_yourself = /** @type {(inputs: Boost_YourselfInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Yourself`)
+	return /** @type {LocalizedString} */ (`نفسك`)
 };
 
 /**

@@ -47,11 +47,11 @@ const fr_addressbook_wouldyouliketoboost5 = /** @type {((inputs: Addressbook_Wou
 const ar_addressbook_wouldyouliketoboost5 = /** @type {((inputs: Addressbook_Wouldyouliketoboost5Inputs) => LocalizedString) & { parts: (inputs: Addressbook_Wouldyouliketoboost5Inputs) => import('../runtime.js').MessagePart[] }} */ (
 	/* @__PURE__ */ Object.assign(
 		/** @type {(inputs: Addressbook_Wouldyouliketoboost5Inputs) => LocalizedString} */ ((i) => {
-			return /** @type {LocalizedString} */ (`Would you like to boost ${i?.name}?`)
+			return /** @type {LocalizedString} */ (`هل ترغب في تعزيز ${i?.name}؟`)
 		}),
 		{
 			parts: /** @type {(inputs: Addressbook_Wouldyouliketoboost5Inputs) => import('../runtime.js').MessagePart[]} */ ((i) => {
-				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "Would you like to " }, { type: "markup-start", name: "1", options: {}, attributes: {} }, { type: "text", value: "boost " }, { type: "text", value: String(i?.name) }, { type: "markup-end", name: "1", options: {}, attributes: {} }, { type: "text", value: "?" }])
+				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "هل ترغب في " }, { type: "markup-start", name: "1", options: {}, attributes: {} }, { type: "text", value: "تعزيز " }, { type: "text", value: String(i?.name) }, { type: "markup-end", name: "1", options: {}, attributes: {} }, { type: "text", value: "؟" }])
 			})
 		}
 	)

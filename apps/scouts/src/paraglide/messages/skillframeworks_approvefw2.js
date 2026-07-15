@@ -18,7 +18,7 @@ const fr_skillframeworks_approvefw2 = /** @type {(inputs: Skillframeworks_Approv
 };
 
 const ar_skillframeworks_approvefw2 = /** @type {(inputs: Skillframeworks_Approvefw2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Approve Framework`)
+	return /** @type {LocalizedString} */ (`الموافقة على الإطار`)
 };
 
 /**

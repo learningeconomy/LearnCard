@@ -18,7 +18,7 @@ const fr_boostcms_assignadmins4 = /** @type {(inputs: Boostcms_Assignadmins4Inpu
 };
 
 const ar_boostcms_assignadmins4 = /** @type {(inputs: Boostcms_Assignadmins4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Assign Admins`)
+	return /** @type {LocalizedString} */ (`تعيين مسؤولين`)
 };
 
 /**

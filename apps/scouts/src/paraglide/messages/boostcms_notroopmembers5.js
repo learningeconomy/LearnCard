@@ -18,7 +18,7 @@ const fr_boostcms_notroopmembers5 = /** @type {(inputs: Boostcms_Notroopmembers5
 };
 
 const ar_boostcms_notroopmembers5 = /** @type {(inputs: Boostcms_Notroopmembers5Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No troop members`)
+	return /** @type {LocalizedString} */ (`لا يوجد أعضاء فرقة`)
 };
 
 /**

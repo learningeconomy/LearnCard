@@ -18,7 +18,7 @@ const fr_credsbundle_credstatus2 = /** @type {(inputs: Credsbundle_Credstatus2In
 };
 
 const ar_credsbundle_credstatus2 = /** @type {(inputs: Credsbundle_Credstatus2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Credential Status:`)
+	return /** @type {LocalizedString} */ (`حالة المؤهل:`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_skillframeworks_cancelupdq3 = /** @type {(inputs: Skillframeworks_Cance
 };
 
 const ar_skillframeworks_cancelupdq3 = /** @type {(inputs: Skillframeworks_Cancelupdq3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Cancel Update?`)
+	return /** @type {LocalizedString} */ (`إلغاء التحديث؟`)
 };
 
 /**

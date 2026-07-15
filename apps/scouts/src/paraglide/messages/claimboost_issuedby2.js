@@ -47,11 +47,11 @@ const fr_claimboost_issuedby2 = /** @type {((inputs: Claimboost_Issuedby2Inputs)
 const ar_claimboost_issuedby2 = /** @type {((inputs: Claimboost_Issuedby2Inputs) => LocalizedString) & { parts: (inputs: Claimboost_Issuedby2Inputs) => import('../runtime.js').MessagePart[] }} */ (
 	/* @__PURE__ */ Object.assign(
 		/** @type {(inputs: Claimboost_Issuedby2Inputs) => LocalizedString} */ (() => {
-			return /** @type {LocalizedString} */ (`by {name}`)
+			return /** @type {LocalizedString} */ (`بواسطة {name}`)
 		}),
 		{
 			parts: /** @type {(inputs: Claimboost_Issuedby2Inputs) => import('../runtime.js').MessagePart[]} */ (() => {
-				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "by " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: "{name}" }, { type: "markup-end", name: "0", options: {}, attributes: {} }])
+				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "بواسطة " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: "{name}" }, { type: "markup-end", name: "0", options: {}, attributes: {} }])
 			})
 		}
 	)

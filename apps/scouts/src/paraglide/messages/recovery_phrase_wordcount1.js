@@ -18,7 +18,7 @@ const fr_recovery_phrase_wordcount1 = /** @type {(inputs: Recovery_Phrase_Wordco
 };
 
 const ar_recovery_phrase_wordcount1 = /** @type {(inputs: Recovery_Phrase_Wordcount1Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`${i?.count} / 25 words`)
+	return /** @type {LocalizedString} */ (`${i?.count} / 25 كلمة`)
 };
 
 /**

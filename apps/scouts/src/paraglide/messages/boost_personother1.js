@@ -18,7 +18,7 @@ const fr_boost_personother1 = /** @type {(inputs: Boost_Personother1Inputs) => L
 };
 
 const ar_boost_personother1 = /** @type {(inputs: Boost_Personother1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`people`)
+	return /** @type {LocalizedString} */ (`أشخاص`)
 };
 
 /**

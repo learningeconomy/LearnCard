@@ -18,7 +18,7 @@ const fr_recovery_backup_passplaceholder1 = /** @type {(inputs: Recovery_Backup_
 };
 
 const ar_recovery_backup_passplaceholder1 = /** @type {(inputs: Recovery_Backup_Passplaceholder1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Password used when creating backup`)
+	return /** @type {LocalizedString} */ (`كلمة المرور المستخدمة عند إنشاء النسخ الاحتياطي`)
 };
 
 /**

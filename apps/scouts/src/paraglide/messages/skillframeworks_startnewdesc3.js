@@ -18,7 +18,7 @@ const fr_skillframeworks_startnewdesc3 = /** @type {(inputs: Skillframeworks_Sta
 };
 
 const ar_skillframeworks_startnewdesc3 = /** @type {(inputs: Skillframeworks_Startnewdesc3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Start a new framework. You can add skills manually or import a file after creating it.`)
+	return /** @type {LocalizedString} */ (`ابدأ إطاراً جديداً. يمكنك إضافة المهارات يدوياً أو استيراد ملف بعد إنشائه.`)
 };
 
 /**

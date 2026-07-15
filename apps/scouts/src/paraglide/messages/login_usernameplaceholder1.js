@@ -18,7 +18,7 @@ const fr_login_usernameplaceholder1 = /** @type {(inputs: Login_Usernameplacehol
 };
 
 const ar_login_usernameplaceholder1 = /** @type {(inputs: Login_Usernameplaceholder1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Username`)
+	return /** @type {LocalizedString} */ (`اسم المستخدم`)
 };
 
 /**

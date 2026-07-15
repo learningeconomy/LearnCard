@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_fullimageurls4 = /** @type {(inputs: Admintools_B
 };
 
 const ar_admintools_bulkimport_fullimageurls4 = /** @type {(inputs: Admintools_Bulkimport_Fullimageurls4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Full image URLs (https://...) for direct use`)
+	return /** @type {LocalizedString} */ (`روابط الصور الكاملة (https://...) للاستخدام المباشر`)
 };
 
 /**

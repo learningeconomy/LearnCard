@@ -18,7 +18,7 @@ const fr_notifications_nonotificationsfound2 = /** @type {(inputs: Notifications
 };
 
 const ar_notifications_nonotificationsfound2 = /** @type {(inputs: Notifications_Nonotificationsfound2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No notifications found`)
+	return /** @type {LocalizedString} */ (`لم يتم العثور على إشعارات`)
 };
 
 /**

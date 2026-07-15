@@ -18,7 +18,7 @@ const fr_boost_toasts_sharelinkcopied2 = /** @type {(inputs: Boost_Toasts_Sharel
 };
 
 const ar_boost_toasts_sharelinkcopied2 = /** @type {(inputs: Boost_Toasts_Sharelinkcopied2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Share link copied to clipboard`)
+	return /** @type {LocalizedString} */ (`تم نسخ رابط المشاركة إلى الحافظة`)
 };
 
 /**

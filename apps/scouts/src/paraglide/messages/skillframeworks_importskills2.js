@@ -18,7 +18,7 @@ const fr_skillframeworks_importskills2 = /** @type {(inputs: Skillframeworks_Imp
 };
 
 const ar_skillframeworks_importskills2 = /** @type {(inputs: Skillframeworks_Importskills2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Import Skills`)
+	return /** @type {LocalizedString} */ (`استيراد المهارات`)
 };
 
 /**

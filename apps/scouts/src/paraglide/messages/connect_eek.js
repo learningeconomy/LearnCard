@@ -18,7 +18,7 @@ const fr_connect_eek = /** @type {(inputs: Connect_EekInputs) => LocalizedString
 };
 
 const ar_connect_eek = /** @type {(inputs: Connect_EekInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Eeek!`)
+	return /** @type {LocalizedString} */ (`أوه!`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_boostcms_uploadprogress4 = /** @type {(inputs: Boostcms_Uploadprogress4
 };
 
 const ar_boostcms_uploadprogress4 = /** @type {(inputs: Boostcms_Uploadprogress4Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`${i?.progress}% uploaded`)
+	return /** @type {LocalizedString} */ (`تم رفع ${i?.progress}%`)
 };
 
 /**

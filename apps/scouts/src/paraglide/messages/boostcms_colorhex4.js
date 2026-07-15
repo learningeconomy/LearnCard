@@ -18,7 +18,7 @@ const fr_boostcms_colorhex4 = /** @type {(inputs: Boostcms_Colorhex4Inputs) => L
 };
 
 const ar_boostcms_colorhex4 = /** @type {(inputs: Boostcms_Colorhex4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Color Hex Code`)
+	return /** @type {LocalizedString} */ (`رمز اللون السداسي`)
 };
 
 /**

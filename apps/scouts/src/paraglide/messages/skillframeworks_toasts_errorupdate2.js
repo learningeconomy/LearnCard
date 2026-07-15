@@ -18,7 +18,7 @@ const fr_skillframeworks_toasts_errorupdate2 = /** @type {(inputs: Skillframewor
 };
 
 const ar_skillframeworks_toasts_errorupdate2 = /** @type {(inputs: Skillframeworks_Toasts_Errorupdate2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Error updating skills:`)
+	return /** @type {LocalizedString} */ (`خطأ في تحديث المهارات:`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_boost_somethingwentwronglabel3 = /** @type {(inputs: Boost_Somethingwen
 };
 
 const ar_boost_somethingwentwronglabel3 = /** @type {(inputs: Boost_Somethingwentwronglabel3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Something went wrong:`)
+	return /** @type {LocalizedString} */ (`حدث خطأ ما:`)
 };
 
 /**

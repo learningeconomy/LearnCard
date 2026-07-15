@@ -18,7 +18,7 @@ const fr_credsbundle_chapidesc32 = /** @type {(inputs: Credsbundle_Chapidesc32In
 };
 
 const ar_credsbundle_chapidesc32 = /** @type {(inputs: Credsbundle_Chapidesc32Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`It allows your digital wallet to send or receive Verifiable Credentials from an independent third-party verifier or issuer in a way that establishes trust and preserves privacy.`)
+	return /** @type {LocalizedString} */ (`تسمح لمحفظتك الرقمية بإرسال أو استقبال مؤهلات قابلة للتحقق من جهة تحقق أو مصدر خارجي مستقل.`)
 };
 
 /**

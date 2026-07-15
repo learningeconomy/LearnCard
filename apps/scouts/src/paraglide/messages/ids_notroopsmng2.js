@@ -18,7 +18,7 @@ const fr_ids_notroopsmng2 = /** @type {(inputs: Ids_Notroopsmng2Inputs) => Local
 };
 
 const ar_ids_notroopsmng2 = /** @type {(inputs: Ids_Notroopsmng2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No troops to manage yet`)
+	return /** @type {LocalizedString} */ (`لا توجد فرق لإدارتها بعد`)
 };
 
 /**

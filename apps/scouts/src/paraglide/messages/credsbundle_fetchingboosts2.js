@@ -18,7 +18,7 @@ const fr_credsbundle_fetchingboosts2 = /** @type {(inputs: Credsbundle_Fetchingb
 };
 
 const ar_credsbundle_fetchingboosts2 = /** @type {(inputs: Credsbundle_Fetchingboosts2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Fetching your earned boosts...`)
+	return /** @type {LocalizedString} */ (`جاري جلب تعزيزاتك المكتسبة...`)
 };
 
 /**

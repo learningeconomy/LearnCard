@@ -18,7 +18,7 @@ const fr_recovery_setup_tabemail1 = /** @type {(inputs: Recovery_Setup_Tabemail1
 };
 
 const ar_recovery_setup_tabemail1 = /** @type {(inputs: Recovery_Setup_Tabemail1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Email`)
+	return /** @type {LocalizedString} */ (`البريد الإلكتروني`)
 };
 
 /**

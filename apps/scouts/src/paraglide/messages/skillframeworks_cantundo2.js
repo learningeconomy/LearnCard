@@ -18,7 +18,7 @@ const fr_skillframeworks_cantundo2 = /** @type {(inputs: Skillframeworks_Cantund
 };
 
 const ar_skillframeworks_cantundo2 = /** @type {(inputs: Skillframeworks_Cantundo2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`This cannot be undone.`)
+	return /** @type {LocalizedString} */ (`لا يمكن التراجع عن هذا.`)
 };
 
 /**

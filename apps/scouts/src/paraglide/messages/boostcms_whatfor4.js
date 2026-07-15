@@ -18,7 +18,7 @@ const fr_boostcms_whatfor4 = /** @type {(inputs: Boostcms_Whatfor4Inputs) => Loc
 };
 
 const ar_boostcms_whatfor4 = /** @type {(inputs: Boostcms_Whatfor4Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`What is this ${i?.title} for?`)
+	return /** @type {LocalizedString} */ (`ما هو ${i?.title}؟`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_boostcms_selectskills4 = /** @type {(inputs: Boostcms_Selectskills4Inpu
 };
 
 const ar_boostcms_selectskills4 = /** @type {(inputs: Boostcms_Selectskills4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Select Skills`)
+	return /** @type {LocalizedString} */ (`اختر المهارات`)
 };
 
 /**

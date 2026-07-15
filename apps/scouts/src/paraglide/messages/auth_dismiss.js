@@ -18,7 +18,7 @@ const fr_auth_dismiss = /** @type {(inputs: Auth_DismissInputs) => LocalizedStri
 };
 
 const ar_auth_dismiss = /** @type {(inputs: Auth_DismissInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Dismiss`)
+	return /** @type {LocalizedString} */ (`تجاهل`)
 };
 
 /**

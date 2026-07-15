@@ -18,7 +18,7 @@ const fr_recovery_setup_phrase_copybtn1 = /** @type {(inputs: Recovery_Setup_Phr
 };
 
 const ar_recovery_setup_phrase_copybtn1 = /** @type {(inputs: Recovery_Setup_Phrase_Copybtn1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Copy to Clipboard`)
+	return /** @type {LocalizedString} */ (`نسخ إلى الحافظة`)
 };
 
 /**

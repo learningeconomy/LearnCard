@@ -18,7 +18,7 @@ const fr_addressbook_requestscount2 = /** @type {(inputs: Addressbook_Requestsco
 };
 
 const ar_addressbook_requestscount2 = /** @type {(inputs: Addressbook_Requestscount2Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`${i?.count} Requests`)
+	return /** @type {LocalizedString} */ (`${i?.count} طلب`)
 };
 
 /**

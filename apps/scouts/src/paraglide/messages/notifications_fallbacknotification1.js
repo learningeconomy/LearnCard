@@ -18,7 +18,7 @@ const fr_notifications_fallbacknotification1 = /** @type {(inputs: Notifications
 };
 
 const ar_notifications_fallbacknotification1 = /** @type {(inputs: Notifications_Fallbacknotification1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Notification`)
+	return /** @type {LocalizedString} */ (`إشعار`)
 };
 
 /**

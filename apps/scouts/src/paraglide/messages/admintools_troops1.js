@@ -18,7 +18,7 @@ const fr_admintools_troops1 = /** @type {(inputs: Admintools_Troops1Inputs) => L
 };
 
 const ar_admintools_troops1 = /** @type {(inputs: Admintools_Troops1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Troops`)
+	return /** @type {LocalizedString} */ (`الفرق`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_consentflow_livesyncing2 = /** @type {(inputs: Consentflow_Livesyncing2
 };
 
 const ar_consentflow_livesyncing2 = /** @type {(inputs: Consentflow_Livesyncing2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Live Syncing`)
+	return /** @type {LocalizedString} */ (`مزامنة حية`)
 };
 
 /**

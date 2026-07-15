@@ -18,7 +18,7 @@ const fr_addressbook_connected1 = /** @type {(inputs: Addressbook_Connected1Inpu
 };
 
 const ar_addressbook_connected1 = /** @type {(inputs: Addressbook_Connected1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Connected`)
+	return /** @type {LocalizedString} */ (`متصل`)
 };
 
 /**

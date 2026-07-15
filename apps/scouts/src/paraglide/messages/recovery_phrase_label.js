@@ -18,7 +18,7 @@ const fr_recovery_phrase_label = /** @type {(inputs: Recovery_Phrase_LabelInputs
 };
 
 const ar_recovery_phrase_label = /** @type {(inputs: Recovery_Phrase_LabelInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Your phrase`)
+	return /** @type {LocalizedString} */ (`عبارتك`)
 };
 
 /**

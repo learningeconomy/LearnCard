@@ -18,7 +18,7 @@ const fr_admintools_importcredentialstitle3 = /** @type {(inputs: Admintools_Imp
 };
 
 const ar_admintools_importcredentialstitle3 = /** @type {(inputs: Admintools_Importcredentialstitle3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Bulk Import Credentials`)
+	return /** @type {LocalizedString} */ (`استيراد المؤهلات بالجملة`)
 };
 
 /**

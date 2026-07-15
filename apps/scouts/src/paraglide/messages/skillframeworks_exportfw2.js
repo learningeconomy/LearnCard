@@ -18,7 +18,7 @@ const fr_skillframeworks_exportfw2 = /** @type {(inputs: Skillframeworks_Exportf
 };
 
 const ar_skillframeworks_exportfw2 = /** @type {(inputs: Skillframeworks_Exportfw2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Export Framework`)
+	return /** @type {LocalizedString} */ (`تصدير الإطار`)
 };
 
 /**

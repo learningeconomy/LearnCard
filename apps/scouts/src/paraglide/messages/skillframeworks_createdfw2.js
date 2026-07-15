@@ -18,7 +18,7 @@ const fr_skillframeworks_createdfw2 = /** @type {(inputs: Skillframeworks_Create
 };
 
 const ar_skillframeworks_createdfw2 = /** @type {(inputs: Skillframeworks_Createdfw2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Created {date}`)
+	return /** @type {LocalizedString} */ (`تم الإنشاء {date}`)
 };
 
 /**

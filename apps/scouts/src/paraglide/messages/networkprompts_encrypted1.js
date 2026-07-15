@@ -18,7 +18,7 @@ const fr_networkprompts_encrypted1 = /** @type {(inputs: Networkprompts_Encrypte
 };
 
 const ar_networkprompts_encrypted1 = /** @type {(inputs: Networkprompts_Encrypted1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`All connections are encrypted.`)
+	return /** @type {LocalizedString} */ (`جميع الاتصالات مشفرة.`)
 };
 
 /**

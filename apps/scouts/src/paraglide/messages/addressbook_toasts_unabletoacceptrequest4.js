@@ -18,7 +18,7 @@ const fr_addressbook_toasts_unabletoacceptrequest4 = /** @type {(inputs: Address
 };
 
 const ar_addressbook_toasts_unabletoacceptrequest4 = /** @type {(inputs: Addressbook_Toasts_Unabletoacceptrequest4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`An error occurred, unable to accept request`)
+	return /** @type {LocalizedString} */ (`حدث خطأ، تعذر قبول الطلب`)
 };
 
 /**

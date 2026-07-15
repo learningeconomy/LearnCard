@@ -18,7 +18,7 @@ const fr_consentflow_active1 = /** @type {(inputs: Consentflow_Active1Inputs) =>
 };
 
 const ar_consentflow_active1 = /** @type {(inputs: Consentflow_Active1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Active`)
+	return /** @type {LocalizedString} */ (`نشط`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_skillframeworks_pagedesc2 = /** @type {(inputs: Skillframeworks_Pagedes
 };
 
 const ar_skillframeworks_pagedesc2 = /** @type {(inputs: Skillframeworks_Pagedesc2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Manage frameworks and attach them to networks`)
+	return /** @type {LocalizedString} */ (`إدارة الأطر وإرفاقها بالشبكات`)
 };
 
 /**

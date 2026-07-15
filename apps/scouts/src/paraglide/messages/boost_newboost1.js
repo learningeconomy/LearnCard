@@ -18,7 +18,7 @@ const fr_boost_newboost1 = /** @type {(inputs: Boost_Newboost1Inputs) => Localiz
 };
 
 const ar_boost_newboost1 = /** @type {(inputs: Boost_Newboost1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`New Boost`)
+	return /** @type {LocalizedString} */ (`تعزيز جديد`)
 };
 
 /**

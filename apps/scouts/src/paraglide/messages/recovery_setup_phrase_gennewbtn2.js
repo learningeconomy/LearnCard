@@ -18,7 +18,7 @@ const fr_recovery_setup_phrase_gennewbtn2 = /** @type {(inputs: Recovery_Setup_P
 };
 
 const ar_recovery_setup_phrase_gennewbtn2 = /** @type {(inputs: Recovery_Setup_Phrase_Gennewbtn2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Generate New Phrase`)
+	return /** @type {LocalizedString} */ (`إنشاء عبارة جديدة`)
 };
 
 /**

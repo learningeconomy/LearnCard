@@ -18,7 +18,7 @@ const fr_recovery_setup_backup_readydesc1 = /** @type {(inputs: Recovery_Setup_B
 };
 
 const ar_recovery_setup_backup_readydesc1 = /** @type {(inputs: Recovery_Setup_Backup_Readydesc1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Download this file and store it somewhere safe. You'll need it along with your backup password to recover.`)
+	return /** @type {LocalizedString} */ (`نزّل هذا الملف وخزّنه في مكان آمن. ستحتاج إليه مع كلمة مرور النسخ الاحتياطي للاسترداد.`)
 };
 
 /**

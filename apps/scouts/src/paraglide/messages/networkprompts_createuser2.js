@@ -18,7 +18,7 @@ const fr_networkprompts_createuser2 = /** @type {(inputs: Networkprompts_Createu
 };
 
 const ar_networkprompts_createuser2 = /** @type {(inputs: Networkprompts_Createuser2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Create a new username`)
+	return /** @type {LocalizedString} */ (`إنشاء اسم مستخدم جديد`)
 };
 
 /**

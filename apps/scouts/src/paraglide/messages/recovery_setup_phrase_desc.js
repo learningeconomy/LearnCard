@@ -18,7 +18,7 @@ const fr_recovery_setup_phrase_desc = /** @type {(inputs: Recovery_Setup_Phrase_
 };
 
 const ar_recovery_setup_phrase_desc = /** @type {(inputs: Recovery_Setup_Phrase_DescInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Generate a 25-word phrase that can restore your account from anywhere. Write it down and keep it safe.`)
+	return /** @type {LocalizedString} */ (`قم بإنشاء عبارة من 25 كلمة يمكنها استعادة حسابك من أي مكان. اكتبها واحفظها في مكان آمن.`)
 };
 
 /**

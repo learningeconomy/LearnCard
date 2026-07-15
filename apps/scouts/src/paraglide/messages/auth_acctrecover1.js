@@ -18,7 +18,7 @@ const fr_auth_acctrecover1 = /** @type {(inputs: Auth_Acctrecover1Inputs) => Loc
 };
 
 const ar_auth_acctrecover1 = /** @type {(inputs: Auth_Acctrecover1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Account Recovery`)
+	return /** @type {LocalizedString} */ (`استعادة الحساب`)
 };
 
 /**

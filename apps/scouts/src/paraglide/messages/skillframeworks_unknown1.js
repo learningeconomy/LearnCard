@@ -18,7 +18,7 @@ const fr_skillframeworks_unknown1 = /** @type {(inputs: Skillframeworks_Unknown1
 };
 
 const ar_skillframeworks_unknown1 = /** @type {(inputs: Skillframeworks_Unknown1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Unknown`)
+	return /** @type {LocalizedString} */ (`غير معروف`)
 };
 
 /**

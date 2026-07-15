@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_missingimages3 = /** @type {(inputs: Admintools_B
 };
 
 const ar_admintools_bulkimport_missingimages3 = /** @type {(inputs: Admintools_Bulkimport_Missingimages3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Missing Images`)
+	return /** @type {LocalizedString} */ (`صور مفقودة`)
 };
 
 /**

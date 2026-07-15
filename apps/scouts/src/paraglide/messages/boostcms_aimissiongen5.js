@@ -18,7 +18,7 @@ const fr_boostcms_aimissiongen5 = /** @type {(inputs: Boostcms_Aimissiongen5Inpu
 };
 
 const ar_boostcms_aimissiongen5 = /** @type {(inputs: Boostcms_Aimissiongen5Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`AI Mission Generation`)
+	return /** @type {LocalizedString} */ (`توليد المهام بالذكاء الاصطناعي`)
 };
 
 /**

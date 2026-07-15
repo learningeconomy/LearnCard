@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_validurl3 = /** @type {(inputs: Admintools_Bulkim
 };
 
 const ar_admintools_bulkimport_validurl3 = /** @type {(inputs: Admintools_Bulkimport_Validurl3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Valid URL`)
+	return /** @type {LocalizedString} */ (`رابط صالح`)
 };
 
 /**

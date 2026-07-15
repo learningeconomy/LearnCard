@@ -18,7 +18,7 @@ const fr_boostcms_showcode4 = /** @type {(inputs: Boostcms_Showcode4Inputs) => L
 };
 
 const ar_boostcms_showcode4 = /** @type {(inputs: Boostcms_Showcode4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Show Code`)
+	return /** @type {LocalizedString} */ (`إظهار الرمز`)
 };
 
 /**

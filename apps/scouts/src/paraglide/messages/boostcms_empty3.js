@@ -18,7 +18,7 @@ const fr_boostcms_empty3 = /** @type {(inputs: Boostcms_Empty3Inputs) => Localiz
 };
 
 const ar_boostcms_empty3 = /** @type {(inputs: Boostcms_Empty3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Empty`)
+	return /** @type {LocalizedString} */ (`فارغ`)
 };
 
 /**

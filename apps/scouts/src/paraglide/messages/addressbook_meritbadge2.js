@@ -18,7 +18,7 @@ const fr_addressbook_meritbadge2 = /** @type {(inputs: Addressbook_Meritbadge2In
 };
 
 const ar_addressbook_meritbadge2 = /** @type {(inputs: Addressbook_Meritbadge2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Merit Badge`)
+	return /** @type {LocalizedString} */ (`شارة الجدارة`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_recovery_methodpicker_descstalekey3 = /** @type {(inputs: Recovery_Meth
 };
 
 const ar_recovery_methodpicker_descstalekey3 = /** @type {(inputs: Recovery_Methodpicker_Descstalekey3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Your account security was recently updated on another device. Please verify to continue.`)
+	return /** @type {LocalizedString} */ (`تم تحديث أمان حسابك مؤخراً على جهاز آخر. يرجى التحقق للمتابعة.`)
 };
 
 /**

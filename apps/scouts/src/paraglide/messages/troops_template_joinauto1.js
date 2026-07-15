@@ -18,7 +18,7 @@ const fr_troops_template_joinauto1 = /** @type {(inputs: Troops_Template_Joinaut
 };
 
 const ar_troops_template_joinauto1 = /** @type {(inputs: Troops_Template_Joinauto1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Joining this troop will automatically add all its members to your contacts.`)
+	return /** @type {LocalizedString} */ (`الانضمام إلى هذه الفرقة سيضيف تلقائياً جميع أعضائها إلى جهات اتصالك.`)
 };
 
 /**

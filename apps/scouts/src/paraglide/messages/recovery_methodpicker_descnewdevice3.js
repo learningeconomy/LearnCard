@@ -18,7 +18,7 @@ const fr_recovery_methodpicker_descnewdevice3 = /** @type {(inputs: Recovery_Met
 };
 
 const ar_recovery_methodpicker_descnewdevice3 = /** @type {(inputs: Recovery_Methodpicker_Descnewdevice3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`This device hasn't been set up for your account yet. Choose a method to sign in.`)
+	return /** @type {LocalizedString} */ (`لم يتم إعداد هذا الجهاز لحسابك بعد. اختر طريقة لتسجيل الدخول.`)
 };
 
 /**

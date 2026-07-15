@@ -18,7 +18,7 @@ const fr_auth_upgradedesc1 = /** @type {(inputs: Auth_Upgradedesc1Inputs) => Loc
 };
 
 const ar_auth_upgradedesc1 = /** @type {(inputs: Auth_Upgradedesc1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`We're upgrading your account security. This may take a moment.`)
+	return /** @type {LocalizedString} */ (`نحن نرقّي أمان حسابك. قد يستغرق هذا لحظة.`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_credsbundle_viewlink2 = /** @type {(inputs: Credsbundle_Viewlink2Inputs
 };
 
 const ar_credsbundle_viewlink2 = /** @type {(inputs: Credsbundle_Viewlink2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`View Link`)
+	return /** @type {LocalizedString} */ (`عرض الرابط`)
 };
 
 /**

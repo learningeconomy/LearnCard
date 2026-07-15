@@ -18,7 +18,7 @@ const fr_boost_send = /** @type {(inputs: Boost_SendInputs) => LocalizedString} 
 };
 
 const ar_boost_send = /** @type {(inputs: Boost_SendInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Send`)
+	return /** @type {LocalizedString} */ (`إرسال`)
 };
 
 /**

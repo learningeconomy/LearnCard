@@ -18,7 +18,7 @@ const fr_skillframeworks_subskills1 = /** @type {(inputs: Skillframeworks_Subski
 };
 
 const ar_skillframeworks_subskills1 = /** @type {(inputs: Skillframeworks_Subskills1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Subskills`)
+	return /** @type {LocalizedString} */ (`المهارات الفرعية`)
 };
 
 /**

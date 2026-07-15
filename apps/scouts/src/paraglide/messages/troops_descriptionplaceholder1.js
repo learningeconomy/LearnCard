@@ -18,7 +18,7 @@ const fr_troops_descriptionplaceholder1 = /** @type {(inputs: Troops_Description
 };
 
 const ar_troops_descriptionplaceholder1 = /** @type {(inputs: Troops_Descriptionplaceholder1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`{mode} description...`)
+	return /** @type {LocalizedString} */ (`وصف {mode}...`)
 };
 
 /**

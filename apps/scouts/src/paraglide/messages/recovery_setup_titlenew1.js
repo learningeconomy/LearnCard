@@ -18,7 +18,7 @@ const fr_recovery_setup_titlenew1 = /** @type {(inputs: Recovery_Setup_Titlenew1
 };
 
 const ar_recovery_setup_titlenew1 = /** @type {(inputs: Recovery_Setup_Titlenew1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Protect Your Account`)
+	return /** @type {LocalizedString} */ (`حماية حسابك`)
 };
 
 /**

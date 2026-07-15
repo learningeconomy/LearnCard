@@ -18,7 +18,7 @@ const fr_boostcms_notes3 = /** @type {(inputs: Boostcms_Notes3Inputs) => Localiz
 };
 
 const ar_boostcms_notes3 = /** @type {(inputs: Boostcms_Notes3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Notes`)
+	return /** @type {LocalizedString} */ (`ملاحظات`)
 };
 
 /**

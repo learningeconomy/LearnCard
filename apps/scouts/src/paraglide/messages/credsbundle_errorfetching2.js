@@ -18,7 +18,7 @@ const fr_credsbundle_errorfetching2 = /** @type {(inputs: Credsbundle_Errorfetch
 };
 
 const ar_credsbundle_errorfetching2 = /** @type {(inputs: Credsbundle_Errorfetching2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Sorry! There was an error fetching your {type}s: {error}`)
+	return /** @type {LocalizedString} */ (`عذراً! حدث خطأ في جلب {type} الخاصة بك: {error}`)
 };
 
 /**

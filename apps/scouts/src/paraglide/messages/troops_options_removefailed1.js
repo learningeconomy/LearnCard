@@ -18,7 +18,7 @@ const fr_troops_options_removefailed1 = /** @type {(inputs: Troops_Options_Remov
 };
 
 const ar_troops_options_removefailed1 = /** @type {(inputs: Troops_Options_Removefailed1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Failed to remove {owner}. Please try again.`)
+	return /** @type {LocalizedString} */ (`فشل إزالة {owner}. يرجى المحاولة مرة أخرى.`)
 };
 
 /**

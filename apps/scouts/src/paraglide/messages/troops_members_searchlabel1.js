@@ -18,7 +18,7 @@ const fr_troops_members_searchlabel1 = /** @type {(inputs: Troops_Members_Search
 };
 
 const ar_troops_members_searchlabel1 = /** @type {(inputs: Troops_Members_Searchlabel1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Search members`)
+	return /** @type {LocalizedString} */ (`بحث عن أعضاء`)
 };
 
 /**

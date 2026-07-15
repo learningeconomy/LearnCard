@@ -18,7 +18,7 @@ const fr_userprofile_deleteaccount2 = /** @type {(inputs: Userprofile_Deleteacco
 };
 
 const ar_userprofile_deleteaccount2 = /** @type {(inputs: Userprofile_Deleteaccount2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Delete Account`)
+	return /** @type {LocalizedString} */ (`حذف الحساب`)
 };
 
 /**

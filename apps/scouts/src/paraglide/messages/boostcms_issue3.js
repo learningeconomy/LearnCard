@@ -18,7 +18,7 @@ const fr_boostcms_issue3 = /** @type {(inputs: Boostcms_Issue3Inputs) => Localiz
 };
 
 const ar_boostcms_issue3 = /** @type {(inputs: Boostcms_Issue3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Issue`)
+	return /** @type {LocalizedString} */ (`إصدار`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_boostcms_dimbg4 = /** @type {(inputs: Boostcms_Dimbg4Inputs) => Localiz
 };
 
 const ar_boostcms_dimbg4 = /** @type {(inputs: Boostcms_Dimbg4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Dim Background Image`)
+	return /** @type {LocalizedString} */ (`تعتيم صورة الخلفية`)
 };
 
 /**

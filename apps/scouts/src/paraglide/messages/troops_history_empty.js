@@ -18,7 +18,7 @@ const fr_troops_history_empty = /** @type {(inputs: Troops_History_EmptyInputs) 
 };
 
 const ar_troops_history_empty = /** @type {(inputs: Troops_History_EmptyInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No history available`)
+	return /** @type {LocalizedString} */ (`لا يوجد تاريخ متاح`)
 };
 
 /**

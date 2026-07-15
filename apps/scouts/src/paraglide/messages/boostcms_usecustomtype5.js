@@ -18,7 +18,7 @@ const fr_boostcms_usecustomtype5 = /** @type {(inputs: Boostcms_Usecustomtype5In
 };
 
 const ar_boostcms_usecustomtype5 = /** @type {(inputs: Boostcms_Usecustomtype5Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`Use "${i?.search}" anyways!`)
+	return /** @type {LocalizedString} */ (`استخدم "${i?.search}" على أي حال!`)
 };
 
 /**

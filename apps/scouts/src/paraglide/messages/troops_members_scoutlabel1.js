@@ -18,7 +18,7 @@ const fr_troops_members_scoutlabel1 = /** @type {(inputs: Troops_Members_Scoutla
 };
 
 const ar_troops_members_scoutlabel1 = /** @type {(inputs: Troops_Members_Scoutlabel1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Scout`)
+	return /** @type {LocalizedString} */ (`كشاف`)
 };
 
 /**

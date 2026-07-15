@@ -18,7 +18,7 @@ const fr_troops_scoutother1 = /** @type {(inputs: Troops_Scoutother1Inputs) => L
 };
 
 const ar_troops_scoutother1 = /** @type {(inputs: Troops_Scoutother1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Scouts`)
+	return /** @type {LocalizedString} */ (`كشافة`)
 };
 
 /**

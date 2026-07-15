@@ -18,7 +18,7 @@ const fr_meritbadges_emptymsg2 = /** @type {(inputs: Meritbadges_Emptymsg2Inputs
 };
 
 const ar_meritbadges_emptymsg2 = /** @type {(inputs: Meritbadges_Emptymsg2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`You don't have any Merit Badges yet.`)
+	return /** @type {LocalizedString} */ (`ليس لديك أي شارات جدارة بعد.`)
 };
 
 /**

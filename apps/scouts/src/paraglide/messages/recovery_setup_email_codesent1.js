@@ -47,11 +47,11 @@ const fr_recovery_setup_email_codesent1 = /** @type {((inputs: Recovery_Setup_Em
 const ar_recovery_setup_email_codesent1 = /** @type {((inputs: Recovery_Setup_Email_Codesent1Inputs) => LocalizedString) & { parts: (inputs: Recovery_Setup_Email_Codesent1Inputs) => import('../runtime.js').MessagePart[] }} */ (
 	/* @__PURE__ */ Object.assign(
 		/** @type {(inputs: Recovery_Setup_Email_Codesent1Inputs) => LocalizedString} */ ((i) => {
-			return /** @type {LocalizedString} */ (`We sent a 6-digit code to ${i?.email}. Check your inbox.`)
+			return /** @type {LocalizedString} */ (`أرسلنا رمزاً من 6 أرقام إلى ${i?.email}. تحقق من صندوق الوارد الخاص بك.`)
 		}),
 		{
 			parts: /** @type {(inputs: Recovery_Setup_Email_Codesent1Inputs) => import('../runtime.js').MessagePart[]} */ ((i) => {
-				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "We sent a 6-digit code to " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: String(i?.email) }, { type: "markup-end", name: "0", options: {}, attributes: {} }, { type: "text", value: ". Check your inbox." }])
+				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "أرسلنا رمزاً من 6 أرقام إلى " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: String(i?.email) }, { type: "markup-end", name: "0", options: {}, attributes: {} }, { type: "text", value: ". تحقق من صندوق الوارد الخاص بك." }])
 			})
 		}
 	)

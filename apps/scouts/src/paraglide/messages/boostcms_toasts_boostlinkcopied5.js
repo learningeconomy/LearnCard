@@ -18,7 +18,7 @@ const fr_boostcms_toasts_boostlinkcopied5 = /** @type {(inputs: Boostcms_Toasts_
 };
 
 const ar_boostcms_toasts_boostlinkcopied5 = /** @type {(inputs: Boostcms_Toasts_Boostlinkcopied5Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Boost link copied to clipboard`)
+	return /** @type {LocalizedString} */ (`تم نسخ رابط التعزيز إلى الحافظة`)
 };
 
 /**

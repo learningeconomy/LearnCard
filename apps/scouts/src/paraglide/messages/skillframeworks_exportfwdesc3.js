@@ -18,7 +18,7 @@ const fr_skillframeworks_exportfwdesc3 = /** @type {(inputs: Skillframeworks_Exp
 };
 
 const ar_skillframeworks_exportfwdesc3 = /** @type {(inputs: Skillframeworks_Exportfwdesc3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Export your current framework, make changes and re-upload.`)
+	return /** @type {LocalizedString} */ (`صدّر إطارك الحالي، وقم بإجراء تغييرات، وأعد الرفع.`)
 };
 
 /**

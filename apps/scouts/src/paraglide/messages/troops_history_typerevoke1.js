@@ -18,7 +18,7 @@ const fr_troops_history_typerevoke1 = /** @type {(inputs: Troops_History_Typerev
 };
 
 const ar_troops_history_typerevoke1 = /** @type {(inputs: Troops_History_Typerevoke1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Revoked`)
+	return /** @type {LocalizedString} */ (`ملغي`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_skillframeworks_hasremoved2 = /** @type {(inputs: Skillframeworks_Hasre
 };
 
 const ar_skillframeworks_hasremoved2 = /** @type {(inputs: Skillframeworks_Hasremoved2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`has been removed`)
+	return /** @type {LocalizedString} */ (`تمت الإزالة`)
 };
 
 /**

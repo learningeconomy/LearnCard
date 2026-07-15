@@ -18,7 +18,7 @@ const fr_credentialstorage_accept1 = /** @type {(inputs: Credentialstorage_Accep
 };
 
 const ar_credentialstorage_accept1 = /** @type {(inputs: Credentialstorage_Accept1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Accept`)
+	return /** @type {LocalizedString} */ (`قبول`)
 };
 
 /**

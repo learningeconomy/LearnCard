@@ -18,7 +18,7 @@ const fr_auth_sessionexpireddesc2 = /** @type {(inputs: Auth_Sessionexpireddesc2
 };
 
 const ar_auth_sessionexpireddesc2 = /** @type {(inputs: Auth_Sessionexpireddesc2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Your sign-in session has expired. Please sign in again to continue.`)
+	return /** @type {LocalizedString} */ (`انتهت صلاحية جلسة تسجيل الدخول الخاصة بك. يرجى تسجيل الدخول مرة أخرى للمتابعة.`)
 };
 
 /**

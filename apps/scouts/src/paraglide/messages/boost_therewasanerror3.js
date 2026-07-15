@@ -18,7 +18,7 @@ const fr_boost_therewasanerror3 = /** @type {(inputs: Boost_Therewasanerror3Inpu
 };
 
 const ar_boost_therewasanerror3 = /** @type {(inputs: Boost_Therewasanerror3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`There was an error!`)
+	return /** @type {LocalizedString} */ (`حدث خطأ!`)
 };
 
 /**

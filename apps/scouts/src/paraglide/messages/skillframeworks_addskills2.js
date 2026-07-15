@@ -18,7 +18,7 @@ const fr_skillframeworks_addskills2 = /** @type {(inputs: Skillframeworks_Addski
 };
 
 const ar_skillframeworks_addskills2 = /** @type {(inputs: Skillframeworks_Addskills2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Add {count} Skill`)
+	return /** @type {LocalizedString} */ (`إضافة {count} مهارة`)
 };
 
 /**

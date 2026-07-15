@@ -18,7 +18,7 @@ const fr_recovery_method_backuplabel1 = /** @type {(inputs: Recovery_Method_Back
 };
 
 const ar_recovery_method_backuplabel1 = /** @type {(inputs: Recovery_Method_Backuplabel1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Backup File`)
+	return /** @type {LocalizedString} */ (`ملف النسخ الاحتياطي`)
 };
 
 /**

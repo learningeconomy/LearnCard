@@ -18,7 +18,7 @@ const fr_credsbundle_sharing1 = /** @type {(inputs: Credsbundle_Sharing1Inputs) 
 };
 
 const ar_credsbundle_sharing1 = /** @type {(inputs: Credsbundle_Sharing1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Sharing...`)
+	return /** @type {LocalizedString} */ (`جاري المشاركة...`)
 };
 
 /**

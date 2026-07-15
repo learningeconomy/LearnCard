@@ -18,7 +18,7 @@ const fr_skillframeworks_updsuccess2 = /** @type {(inputs: Skillframeworks_Updsu
 };
 
 const ar_skillframeworks_updsuccess2 = /** @type {(inputs: Skillframeworks_Updsuccess2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Update Successful`)
+	return /** @type {LocalizedString} */ (`تم التحديث بنجاح`)
 };
 
 /**

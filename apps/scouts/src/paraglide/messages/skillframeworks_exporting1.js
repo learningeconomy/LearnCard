@@ -18,7 +18,7 @@ const fr_skillframeworks_exporting1 = /** @type {(inputs: Skillframeworks_Export
 };
 
 const ar_skillframeworks_exporting1 = /** @type {(inputs: Skillframeworks_Exporting1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Exporting...`)
+	return /** @type {LocalizedString} */ (`جاري التصدير...`)
 };
 
 /**

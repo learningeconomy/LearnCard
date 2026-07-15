@@ -18,7 +18,7 @@ const fr_auth_downloadscoutpass2 = /** @type {(inputs: Auth_Downloadscoutpass2In
 };
 
 const ar_auth_downloadscoutpass2 = /** @type {(inputs: Auth_Downloadscoutpass2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`You can also download ScoutPass on your smartphone or tablet:`)
+	return /** @type {LocalizedString} */ (`يمكنك أيضًا تنزيل ScoutPass على هاتفك الذكي أو جهازك اللوحي:`)
 };
 
 /**

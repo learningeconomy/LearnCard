@@ -18,7 +18,7 @@ const fr_recovery_backup_passlabel1 = /** @type {(inputs: Recovery_Backup_Passla
 };
 
 const ar_recovery_backup_passlabel1 = /** @type {(inputs: Recovery_Backup_Passlabel1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Backup Password`)
+	return /** @type {LocalizedString} */ (`كلمة مرور النسخ الاحتياطي`)
 };
 
 /**

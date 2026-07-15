@@ -18,7 +18,7 @@ const fr_recovery_setup_email_codelabel1 = /** @type {(inputs: Recovery_Setup_Em
 };
 
 const ar_recovery_setup_email_codelabel1 = /** @type {(inputs: Recovery_Setup_Email_Codelabel1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Verification Code`)
+	return /** @type {LocalizedString} */ (`رمز التحقق`)
 };
 
 /**

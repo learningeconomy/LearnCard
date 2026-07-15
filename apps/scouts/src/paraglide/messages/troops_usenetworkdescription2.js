@@ -18,7 +18,7 @@ const fr_troops_usenetworkdescription2 = /** @type {(inputs: Troops_Usenetworkde
 };
 
 const ar_troops_usenetworkdescription2 = /** @type {(inputs: Troops_Usenetworkdescription2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Use network description`)
+	return /** @type {LocalizedString} */ (`استخدام وصف الشبكة`)
 };
 
 /**

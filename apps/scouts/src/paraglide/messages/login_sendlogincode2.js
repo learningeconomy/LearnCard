@@ -18,7 +18,7 @@ const fr_login_sendlogincode2 = /** @type {(inputs: Login_Sendlogincode2Inputs) 
 };
 
 const ar_login_sendlogincode2 = /** @type {(inputs: Login_Sendlogincode2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Send Login Code`)
+	return /** @type {LocalizedString} */ (`إرسال رمز تسجيل الدخول`)
 };
 
 /**

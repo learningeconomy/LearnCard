@@ -18,7 +18,7 @@ const fr_credsbundle_selectbooststoshare4 = /** @type {(inputs: Credsbundle_Sele
 };
 
 const ar_credsbundle_selectbooststoshare4 = /** @type {(inputs: Credsbundle_Selectbooststoshare4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Select Earned Boosts To Share`)
+	return /** @type {LocalizedString} */ (`اختر التعزيزات المكتسبة للمشاركة`)
 };
 
 /**

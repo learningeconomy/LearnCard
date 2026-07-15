@@ -18,7 +18,7 @@ const fr_boost_meritbadge1 = /** @type {(inputs: Boost_Meritbadge1Inputs) => Loc
 };
 
 const ar_boost_meritbadge1 = /** @type {(inputs: Boost_Meritbadge1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Merit Badge`)
+	return /** @type {LocalizedString} */ (`شارة الجدارة`)
 };
 
 /**

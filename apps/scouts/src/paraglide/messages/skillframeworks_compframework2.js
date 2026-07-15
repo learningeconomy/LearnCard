@@ -18,7 +18,7 @@ const fr_skillframeworks_compframework2 = /** @type {(inputs: Skillframeworks_Co
 };
 
 const ar_skillframeworks_compframework2 = /** @type {(inputs: Skillframeworks_Compframework2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Competencies Framework`)
+	return /** @type {LocalizedString} */ (`إطار الكفاءات`)
 };
 
 /**

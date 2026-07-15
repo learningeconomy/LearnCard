@@ -18,7 +18,7 @@ const fr_troops_issuedtoby2 = /** @type {(inputs: Troops_Issuedtoby2Inputs) => L
 };
 
 const ar_troops_issuedtoby2 = /** @type {(inputs: Troops_Issuedtoby2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Issued to {title} by {name}`)
+	return /** @type {LocalizedString} */ (`صدر لـ {title} بواسطة {name}`)
 };
 
 /**

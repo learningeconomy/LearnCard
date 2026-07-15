@@ -18,7 +18,7 @@ const fr_troops_actions_viewtroopid2 = /** @type {(inputs: Troops_Actions_Viewtr
 };
 
 const ar_troops_actions_viewtroopid2 = /** @type {(inputs: Troops_Actions_Viewtroopid2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`View Troop ID`)
+	return /** @type {LocalizedString} */ (`عرض معرف الفرقة`)
 };
 
 /**

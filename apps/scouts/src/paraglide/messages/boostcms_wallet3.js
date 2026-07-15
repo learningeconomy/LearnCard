@@ -18,7 +18,7 @@ const fr_boostcms_wallet3 = /** @type {(inputs: Boostcms_Wallet3Inputs) => Local
 };
 
 const ar_boostcms_wallet3 = /** @type {(inputs: Boostcms_Wallet3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Return to Wallet`)
+	return /** @type {LocalizedString} */ (`العودة إلى المحفظة`)
 };
 
 /**

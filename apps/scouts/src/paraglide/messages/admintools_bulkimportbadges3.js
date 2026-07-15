@@ -18,7 +18,7 @@ const fr_admintools_bulkimportbadges3 = /** @type {(inputs: Admintools_Bulkimpor
 };
 
 const ar_admintools_bulkimportbadges3 = /** @type {(inputs: Admintools_Bulkimportbadges3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Bulk Import Badges + Boosts`)
+	return /** @type {LocalizedString} */ (`استيراد الشارات + التعزيزات بالجملة`)
 };
 
 /**

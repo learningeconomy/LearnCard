@@ -18,7 +18,7 @@ const fr_skillframeworks_confirmdelskill3 = /** @type {(inputs: Skillframeworks_
 };
 
 const ar_skillframeworks_confirmdelskill3 = /** @type {(inputs: Skillframeworks_Confirmdelskill3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Please confirm deletion of this skill.`)
+	return /** @type {LocalizedString} */ (`يرجى تأكيد حذف هذه المهارة.`)
 };
 
 /**

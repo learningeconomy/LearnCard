@@ -18,7 +18,7 @@ const fr_consentflow_privacypolicy2 = /** @type {(inputs: Consentflow_Privacypol
 };
 
 const ar_consentflow_privacypolicy2 = /** @type {(inputs: Consentflow_Privacypolicy2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Privacy Policy`)
+	return /** @type {LocalizedString} */ (`سياسة الخصوصية`)
 };
 
 /**

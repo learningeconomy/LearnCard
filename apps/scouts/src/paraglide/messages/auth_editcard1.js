@@ -18,7 +18,7 @@ const fr_auth_editcard1 = /** @type {(inputs: Auth_Editcard1Inputs) => Localized
 };
 
 const ar_auth_editcard1 = /** @type {(inputs: Auth_Editcard1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Edit Contact Card`)
+	return /** @type {LocalizedString} */ (`تعديل بطاقة الاتصال`)
 };
 
 /**

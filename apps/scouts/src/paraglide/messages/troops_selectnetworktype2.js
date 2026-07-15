@@ -18,7 +18,7 @@ const fr_troops_selectnetworktype2 = /** @type {(inputs: Troops_Selectnetworktyp
 };
 
 const ar_troops_selectnetworktype2 = /** @type {(inputs: Troops_Selectnetworktype2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Select Network Type`)
+	return /** @type {LocalizedString} */ (`اختر نوع الشبكة`)
 };
 
 /**

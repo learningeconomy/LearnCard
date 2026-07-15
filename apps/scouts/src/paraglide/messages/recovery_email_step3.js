@@ -18,7 +18,7 @@ const fr_recovery_email_step3 = /** @type {(inputs: Recovery_Email_Step3Inputs) 
 };
 
 const ar_recovery_email_step3 = /** @type {(inputs: Recovery_Email_Step3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Copy that entire string and paste it below`)
+	return /** @type {LocalizedString} */ (`انسخ تلك السلسلة بالكامل والصقها أدناه`)
 };
 
 /**

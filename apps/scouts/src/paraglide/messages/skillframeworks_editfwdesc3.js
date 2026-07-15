@@ -18,7 +18,7 @@ const fr_skillframeworks_editfwdesc3 = /** @type {(inputs: Skillframeworks_Editf
 };
 
 const ar_skillframeworks_editfwdesc3 = /** @type {(inputs: Skillframeworks_Editfwdesc3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Update the framework name and description`)
+	return /** @type {LocalizedString} */ (`تحديث اسم الإطار ووصفه`)
 };
 
 /**

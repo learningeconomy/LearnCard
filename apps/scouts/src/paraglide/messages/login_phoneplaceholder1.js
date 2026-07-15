@@ -18,7 +18,7 @@ const fr_login_phoneplaceholder1 = /** @type {(inputs: Login_Phoneplaceholder1In
 };
 
 const ar_login_phoneplaceholder1 = /** @type {(inputs: Login_Phoneplaceholder1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Phone Number`)
+	return /** @type {LocalizedString} */ (`رقم الهاتف`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_boost_somethingwentwrong2 = /** @type {(inputs: Boost_Somethingwentwron
 };
 
 const ar_boost_somethingwentwrong2 = /** @type {(inputs: Boost_Somethingwentwrong2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Something went wrong`)
+	return /** @type {LocalizedString} */ (`حدث خطأ ما`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_boostcms_selectcategory4 = /** @type {(inputs: Boostcms_Selectcategory4
 };
 
 const ar_boostcms_selectcategory4 = /** @type {(inputs: Boostcms_Selectcategory4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Select a Category`)
+	return /** @type {LocalizedString} */ (`اختر فئة`)
 };
 
 /**

@@ -47,11 +47,11 @@ const fr_boost_noresultsfoundfor3 = /** @type {((inputs: Boost_Noresultsfoundfor
 const ar_boost_noresultsfoundfor3 = /** @type {((inputs: Boost_Noresultsfoundfor3Inputs) => LocalizedString) & { parts: (inputs: Boost_Noresultsfoundfor3Inputs) => import('../runtime.js').MessagePart[] }} */ (
 	/* @__PURE__ */ Object.assign(
 		/** @type {(inputs: Boost_Noresultsfoundfor3Inputs) => LocalizedString} */ ((i) => {
-			return /** @type {LocalizedString} */ (`0 ${i?.title}s found for ${i?.search}`)
+			return /** @type {LocalizedString} */ (`لم يتم العثور على 0 ${i?.title} لـ ${i?.search}`)
 		}),
 		{
 			parts: /** @type {(inputs: Boost_Noresultsfoundfor3Inputs) => import('../runtime.js').MessagePart[]} */ ((i) => {
-				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "0 " }, { type: "text", value: String(i?.title) }, { type: "text", value: "s found for " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: String(i?.search) }, { type: "markup-end", name: "0", options: {}, attributes: {} }])
+				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "لم يتم العثور على 0 " }, { type: "text", value: String(i?.title) }, { type: "text", value: " لـ " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: String(i?.search) }, { type: "markup-end", name: "0", options: {}, attributes: {} }])
 			})
 		}
 	)

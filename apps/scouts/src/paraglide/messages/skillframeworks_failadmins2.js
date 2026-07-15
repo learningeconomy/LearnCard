@@ -18,7 +18,7 @@ const fr_skillframeworks_failadmins2 = /** @type {(inputs: Skillframeworks_Faila
 };
 
 const ar_skillframeworks_failadmins2 = /** @type {(inputs: Skillframeworks_Failadmins2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Failed to load admins. Please try again.`)
+	return /** @type {LocalizedString} */ (`فشل تحميل المسؤولين. يرجى المحاولة مرة أخرى.`)
 };
 
 /**

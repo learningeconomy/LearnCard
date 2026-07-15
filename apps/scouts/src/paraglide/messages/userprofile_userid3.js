@@ -18,7 +18,7 @@ const fr_userprofile_userid3 = /** @type {(inputs: Userprofile_Userid3Inputs) =>
 };
 
 const ar_userprofile_userid3 = /** @type {(inputs: Userprofile_Userid3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`User ID`)
+	return /** @type {LocalizedString} */ (`معرف المستخدم`)
 };
 
 /**

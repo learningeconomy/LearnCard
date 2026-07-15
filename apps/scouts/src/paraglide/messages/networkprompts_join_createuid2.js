@@ -18,7 +18,7 @@ const fr_networkprompts_join_createuid2 = /** @type {(inputs: Networkprompts_Joi
 };
 
 const ar_networkprompts_join_createuid2 = /** @type {(inputs: Networkprompts_Join_Createuid2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Create Your User ID`)
+	return /** @type {LocalizedString} */ (`إنشاء معرف المستخدم الخاص بك`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_boost_areyousuredelete3 = /** @type {(inputs: Boost_Areyousuredelete3In
 };
 
 const ar_boost_areyousuredelete3 = /** @type {(inputs: Boost_Areyousuredelete3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Are you sure you want to delete this?`)
+	return /** @type {LocalizedString} */ (`هل أنت متأكد من حذف هذا؟`)
 };
 
 /**

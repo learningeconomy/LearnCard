@@ -18,7 +18,7 @@ const fr_scanner_errocurred1 = /** @type {(inputs: Scanner_Errocurred1Inputs) =>
 };
 
 const ar_scanner_errocurred1 = /** @type {(inputs: Scanner_Errocurred1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`An error occurred!`)
+	return /** @type {LocalizedString} */ (`حدث خطأ!`)
 };
 
 /**

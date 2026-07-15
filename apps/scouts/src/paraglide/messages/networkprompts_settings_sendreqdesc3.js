@@ -18,7 +18,7 @@ const fr_networkprompts_settings_sendreqdesc3 = /** @type {(inputs: Networkpromp
 };
 
 const ar_networkprompts_settings_sendreqdesc3 = /** @type {(inputs: Networkprompts_Settings_Sendreqdesc3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`ScoutPass acts as a gateway that sends encrypted connection requests on your behalf.`)
+	return /** @type {LocalizedString} */ (`يعمل ScoutPass كبوابة ترسل طلبات الاتصال المشفرة نيابة عنك.`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_troops_iddescriptionplaceholder2 = /** @type {(inputs: Troops_Iddescrip
 };
 
 const ar_troops_iddescriptionplaceholder2 = /** @type {(inputs: Troops_Iddescriptionplaceholder2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`{mode} ID description...`)
+	return /** @type {LocalizedString} */ (`وصف معرف {mode}...`)
 };
 
 /**

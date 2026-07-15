@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_uploadzipinstruction4 = /** @type {(inputs: Admin
 };
 
 const ar_admintools_bulkimport_uploadzipinstruction4 = /** @type {(inputs: Admintools_Bulkimport_Uploadzipinstruction4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`4. If you used filenames instead of URLs, upload a ZIP file containing those image files`)
+	return /** @type {LocalizedString} */ (`4. إذا استخدمت أسماء ملفات بدلاً من روابط، فارفع ملف ZIP يحتوي على تلك الصور`)
 };
 
 /**

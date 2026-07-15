@@ -18,7 +18,7 @@ const fr_troops_globaladminpermissions2 = /** @type {(inputs: Troops_Globaladmin
 };
 
 const ar_troops_globaladminpermissions2 = /** @type {(inputs: Troops_Globaladminpermissions2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Global Admin Permissions`)
+	return /** @type {LocalizedString} */ (`صلاحيات المسؤول العام`)
 };
 
 /**

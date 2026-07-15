@@ -18,7 +18,7 @@ const fr_skillframeworks_curadmins2 = /** @type {(inputs: Skillframeworks_Curadm
 };
 
 const ar_skillframeworks_curadmins2 = /** @type {(inputs: Skillframeworks_Curadmins2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Current Admins ({count})`)
+	return /** @type {LocalizedString} */ (`المسؤولون الحاليون ({count})`)
 };
 
 /**

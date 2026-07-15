@@ -18,7 +18,7 @@ const fr_boost_network = /** @type {(inputs: Boost_NetworkInputs) => LocalizedSt
 };
 
 const ar_boost_network = /** @type {(inputs: Boost_NetworkInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Network`)
+	return /** @type {LocalizedString} */ (`الشبكة`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_troops_networkname1 = /** @type {(inputs: Troops_Networkname1Inputs) =>
 };
 
 const ar_troops_networkname1 = /** @type {(inputs: Troops_Networkname1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Network Name`)
+	return /** @type {LocalizedString} */ (`اسم الشبكة`)
 };
 
 /**

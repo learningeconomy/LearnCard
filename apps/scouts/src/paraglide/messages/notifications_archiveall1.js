@@ -18,7 +18,7 @@ const fr_notifications_archiveall1 = /** @type {(inputs: Notifications_Archiveal
 };
 
 const ar_notifications_archiveall1 = /** @type {(inputs: Notifications_Archiveall1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Archive All`)
+	return /** @type {LocalizedString} */ (`أرشفة الكل`)
 };
 
 /**

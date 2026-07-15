@@ -18,7 +18,7 @@ const fr_boostcms_updatinglink4 = /** @type {(inputs: Boostcms_Updatinglink4Inpu
 };
 
 const ar_boostcms_updatinglink4 = /** @type {(inputs: Boostcms_Updatinglink4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Updating Link...`)
+	return /** @type {LocalizedString} */ (`جاري تحديث الرابط...`)
 };
 
 /**

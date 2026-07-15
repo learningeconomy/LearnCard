@@ -18,7 +18,7 @@ const fr_boostcms_toasts_contactlinkcopied5 = /** @type {(inputs: Boostcms_Toast
 };
 
 const ar_boostcms_toasts_contactlinkcopied5 = /** @type {(inputs: Boostcms_Toasts_Contactlinkcopied5Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Contact link copied to clipboard`)
+	return /** @type {LocalizedString} */ (`تم نسخ رابط الاتصال إلى الحافظة`)
 };
 
 /**

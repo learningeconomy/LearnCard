@@ -18,7 +18,7 @@ const fr_admintools_toasts_uploadallimages3 = /** @type {(inputs: Admintools_Toa
 };
 
 const ar_admintools_toasts_uploadallimages3 = /** @type {(inputs: Admintools_Toasts_Uploadallimages3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Please upload all required images before publishing`)
+	return /** @type {LocalizedString} */ (`يرجى رفع جميع الصور المطلوبة قبل النشر`)
 };
 
 /**

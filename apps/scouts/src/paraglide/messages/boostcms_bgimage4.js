@@ -18,7 +18,7 @@ const fr_boostcms_bgimage4 = /** @type {(inputs: Boostcms_Bgimage4Inputs) => Loc
 };
 
 const ar_boostcms_bgimage4 = /** @type {(inputs: Boostcms_Bgimage4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Background Image`)
+	return /** @type {LocalizedString} */ (`صورة الخلفية`)
 };
 
 /**

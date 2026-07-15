@@ -18,7 +18,7 @@ const fr_skillframeworks_updfwq3 = /** @type {(inputs: Skillframeworks_Updfwq3In
 };
 
 const ar_skillframeworks_updfwq3 = /** @type {(inputs: Skillframeworks_Updfwq3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Update Framework?`)
+	return /** @type {LocalizedString} */ (`تحديث الإطار؟`)
 };
 
 /**

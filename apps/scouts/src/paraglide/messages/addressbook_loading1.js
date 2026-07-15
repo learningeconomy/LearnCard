@@ -18,7 +18,7 @@ const fr_addressbook_loading1 = /** @type {(inputs: Addressbook_Loading1Inputs) 
 };
 
 const ar_addressbook_loading1 = /** @type {(inputs: Addressbook_Loading1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Loading...`)
+	return /** @type {LocalizedString} */ (`جاري التحميل...`)
 };
 
 /**

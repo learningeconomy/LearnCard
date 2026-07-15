@@ -18,7 +18,7 @@ const fr_scoutsid_send1 = /** @type {(inputs: Scoutsid_Send1Inputs) => Localized
 };
 
 const ar_scoutsid_send1 = /** @type {(inputs: Scoutsid_Send1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Send`)
+	return /** @type {LocalizedString} */ (`إرسال`)
 };
 
 /**

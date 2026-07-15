@@ -18,7 +18,7 @@ const fr_troops_viewid_sharebtn2 = /** @type {(inputs: Troops_Viewid_Sharebtn2In
 };
 
 const ar_troops_viewid_sharebtn2 = /** @type {(inputs: Troops_Viewid_Sharebtn2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Share`)
+	return /** @type {LocalizedString} */ (`مشاركة`)
 };
 
 /**

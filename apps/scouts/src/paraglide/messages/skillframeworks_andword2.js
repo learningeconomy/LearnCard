@@ -18,7 +18,7 @@ const fr_skillframeworks_andword2 = /** @type {(inputs: Skillframeworks_Andword2
 };
 
 const ar_skillframeworks_andword2 = /** @type {(inputs: Skillframeworks_Andword2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (` and `)
+	return /** @type {LocalizedString} */ (` و `)
 };
 
 /**

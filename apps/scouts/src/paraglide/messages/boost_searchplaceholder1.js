@@ -18,7 +18,7 @@ const fr_boost_searchplaceholder1 = /** @type {(inputs: Boost_Searchplaceholder1
 };
 
 const ar_boost_searchplaceholder1 = /** @type {(inputs: Boost_Searchplaceholder1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Search...`)
+	return /** @type {LocalizedString} */ (`بحث...`)
 };
 
 /**

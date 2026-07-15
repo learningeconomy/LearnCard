@@ -18,7 +18,7 @@ const fr_auth_preplink1 = /** @type {(inputs: Auth_Preplink1Inputs) => Localized
 };
 
 const ar_auth_preplink1 = /** @type {(inputs: Auth_Preplink1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Preparing secure link...`)
+	return /** @type {LocalizedString} */ (`جاري تجهيز الرابط الآمن...`)
 };
 
 /**

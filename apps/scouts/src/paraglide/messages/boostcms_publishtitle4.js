@@ -18,7 +18,7 @@ const fr_boostcms_publishtitle4 = /** @type {(inputs: Boostcms_Publishtitle4Inpu
 };
 
 const ar_boostcms_publishtitle4 = /** @type {(inputs: Boostcms_Publishtitle4Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`Publish ${i?.title}`)
+	return /** @type {LocalizedString} */ (`نشر ${i?.title}`)
 };
 
 /**

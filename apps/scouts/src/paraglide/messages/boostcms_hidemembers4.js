@@ -18,7 +18,7 @@ const fr_boostcms_hidemembers4 = /** @type {(inputs: Boostcms_Hidemembers4Inputs
 };
 
 const ar_boostcms_hidemembers4 = /** @type {(inputs: Boostcms_Hidemembers4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Hide members`)
+	return /** @type {LocalizedString} */ (`إخفاء الأعضاء`)
 };
 
 /**

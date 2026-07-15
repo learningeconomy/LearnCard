@@ -18,7 +18,7 @@ const fr_addressbook_noconnections2 = /** @type {(inputs: Addressbook_Noconnecti
 };
 
 const ar_addressbook_noconnections2 = /** @type {(inputs: Addressbook_Noconnections2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No connections yet.`)
+	return /** @type {LocalizedString} */ (`لا توجد اتصالات بعد.`)
 };
 
 /**

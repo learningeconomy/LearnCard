@@ -18,7 +18,7 @@ const fr_recovery_method_emaildesc1 = /** @type {(inputs: Recovery_Method_Emaild
 };
 
 const ar_recovery_method_emaildesc1 = /** @type {(inputs: Recovery_Method_Emaildesc1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Paste the key sent to your email`)
+	return /** @type {LocalizedString} */ (`الصق المفتاح المرسل إلى بريدك الإلكتروني`)
 };
 
 /**

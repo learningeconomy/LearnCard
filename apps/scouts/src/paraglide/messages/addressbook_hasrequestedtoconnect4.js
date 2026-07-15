@@ -47,11 +47,11 @@ const fr_addressbook_hasrequestedtoconnect4 = /** @type {((inputs: Addressbook_H
 const ar_addressbook_hasrequestedtoconnect4 = /** @type {((inputs: Addressbook_Hasrequestedtoconnect4Inputs) => LocalizedString) & { parts: (inputs: Addressbook_Hasrequestedtoconnect4Inputs) => import('../runtime.js').MessagePart[] }} */ (
 	/* @__PURE__ */ Object.assign(
 		/** @type {(inputs: Addressbook_Hasrequestedtoconnect4Inputs) => LocalizedString} */ ((i) => {
-			return /** @type {LocalizedString} */ (`${i?.name} has requestedto connect with you?`)
+			return /** @type {LocalizedString} */ (`طلب ${i?.name}التواصل معك؟`)
 		}),
 		{
 			parts: /** @type {(inputs: Addressbook_Hasrequestedtoconnect4Inputs) => import('../runtime.js').MessagePart[]} */ ((i) => {
-				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: String(i?.name) }, { type: "text", value: " has requested" }, { type: "markup-standalone", name: "1", options: {}, attributes: {} }, { type: "text", value: "to connect with you?" }])
+				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "طلب " }, { type: "text", value: String(i?.name) }, { type: "markup-standalone", name: "1", options: {}, attributes: {} }, { type: "text", value: "التواصل معك؟" }])
 			})
 		}
 	)

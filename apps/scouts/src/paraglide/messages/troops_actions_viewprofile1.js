@@ -18,7 +18,7 @@ const fr_troops_actions_viewprofile1 = /** @type {(inputs: Troops_Actions_Viewpr
 };
 
 const ar_troops_actions_viewprofile1 = /** @type {(inputs: Troops_Actions_Viewprofile1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`View Profile`)
+	return /** @type {LocalizedString} */ (`عرض الملف الشخصي`)
 };
 
 /**

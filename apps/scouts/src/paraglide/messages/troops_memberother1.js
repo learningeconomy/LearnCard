@@ -18,7 +18,7 @@ const fr_troops_memberother1 = /** @type {(inputs: Troops_Memberother1Inputs) =>
 };
 
 const ar_troops_memberother1 = /** @type {(inputs: Troops_Memberother1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Members`)
+	return /** @type {LocalizedString} */ (`أعضاء`)
 };
 
 /**

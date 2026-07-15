@@ -18,7 +18,7 @@ const fr_skillframeworks_managefw2 = /** @type {(inputs: Skillframeworks_Managef
 };
 
 const ar_skillframeworks_managefw2 = /** @type {(inputs: Skillframeworks_Managefw2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Manage Skill Frameworks`)
+	return /** @type {LocalizedString} */ (`إدارة أطر المهارات`)
 };
 
 /**

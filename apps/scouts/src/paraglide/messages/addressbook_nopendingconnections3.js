@@ -18,7 +18,7 @@ const fr_addressbook_nopendingconnections3 = /** @type {(inputs: Addressbook_Nop
 };
 
 const ar_addressbook_nopendingconnections3 = /** @type {(inputs: Addressbook_Nopendingconnections3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No pending connections yet.`)
+	return /** @type {LocalizedString} */ (`لا توجد اتصالات معلقة بعد.`)
 };
 
 /**

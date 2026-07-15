@@ -18,7 +18,7 @@ const fr_login_termsofservice2 = /** @type {(inputs: Login_Termsofservice2Inputs
 };
 
 const ar_login_termsofservice2 = /** @type {(inputs: Login_Termsofservice2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Terms of Service`)
+	return /** @type {LocalizedString} */ (`شروط الخدمة`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_recovery_device_desc = /** @type {(inputs: Recovery_Device_DescInputs) 
 };
 
 const ar_recovery_device_desc = /** @type {(inputs: Recovery_Device_DescInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Scan the QR code below with a device that's already signed in to your account.`)
+	return /** @type {LocalizedString} */ (`امسح رمز QR أدناه باستخدام جهاز مسجل الدخول إلى حسابك بالفعل.`)
 };
 
 /**

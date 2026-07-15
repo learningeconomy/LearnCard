@@ -18,7 +18,7 @@ const fr_scoutsid_display1 = /** @type {(inputs: Scoutsid_Display1Inputs) => Loc
 };
 
 const ar_scoutsid_display1 = /** @type {(inputs: Scoutsid_Display1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`DISPLAY`)
+	return /** @type {LocalizedString} */ (`عرض`)
 };
 
 /**

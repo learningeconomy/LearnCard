@@ -18,7 +18,7 @@ const fr_skillframeworks_confirmremadmin3 = /** @type {(inputs: Skillframeworks_
 };
 
 const ar_skillframeworks_confirmremadmin3 = /** @type {(inputs: Skillframeworks_Confirmremadmin3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Are you sure you want to remove this admin? They will lose management access to this framework.`)
+	return /** @type {LocalizedString} */ (`هل أنت متأكد من إزالة هذا المسؤول؟ سيفقد وصول الإدارة لهذا الإطار.`)
 };
 
 /**

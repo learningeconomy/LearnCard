@@ -18,7 +18,7 @@ const fr_boostcms_publishing3 = /** @type {(inputs: Boostcms_Publishing3Inputs) 
 };
 
 const ar_boostcms_publishing3 = /** @type {(inputs: Boostcms_Publishing3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Publishing...`)
+	return /** @type {LocalizedString} */ (`جاري النشر...`)
 };
 
 /**

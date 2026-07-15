@@ -18,7 +18,7 @@ const fr_recovery_setup_email_updatewarning1 = /** @type {(inputs: Recovery_Setu
 };
 
 const ar_recovery_setup_email_updatewarning1 = /** @type {(inputs: Recovery_Setup_Email_Updatewarning1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`This will replace your current recovery email.`)
+	return /** @type {LocalizedString} */ (`سيؤدي هذا إلى استبدال بريدك الإلكتروني الحالي للاسترداد.`)
 };
 
 /**

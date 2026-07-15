@@ -18,7 +18,7 @@ const fr_addressbook_mycontactcard3 = /** @type {(inputs: Addressbook_Mycontactc
 };
 
 const ar_addressbook_mycontactcard3 = /** @type {(inputs: Addressbook_Mycontactcard3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`My Contact Card`)
+	return /** @type {LocalizedString} */ (`بطاقة الاتصال الخاصة بي`)
 };
 
 /**

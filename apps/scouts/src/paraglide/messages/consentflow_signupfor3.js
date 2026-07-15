@@ -18,7 +18,7 @@ const fr_consentflow_signupfor3 = /** @type {(inputs: Consentflow_Signupfor3Inpu
 };
 
 const ar_consentflow_signupfor3 = /** @type {(inputs: Consentflow_Signupfor3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Sign up for LearnCard`)
+	return /** @type {LocalizedString} */ (`التسجيل في LearnCard`)
 };
 
 /**

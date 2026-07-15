@@ -18,7 +18,7 @@ const fr_skillframeworks_codelabel2 = /** @type {(inputs: Skillframeworks_Codela
 };
 
 const ar_skillframeworks_codelabel2 = /** @type {(inputs: Skillframeworks_Codelabel2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Code`)
+	return /** @type {LocalizedString} */ (`الرمز`)
 };
 
 /**

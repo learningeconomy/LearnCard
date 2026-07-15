@@ -18,7 +18,7 @@ const fr_troops_invite_lleader1 = /** @type {(inputs: Troops_Invite_Lleader1Inpu
 };
 
 const ar_troops_invite_lleader1 = /** @type {(inputs: Troops_Invite_Lleader1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Invite Troop Leader`)
+	return /** @type {LocalizedString} */ (`دعوة قائد فرقة`)
 };
 
 /**

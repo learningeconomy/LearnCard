@@ -18,7 +18,7 @@ const fr_troops_actions_removefrom1 = /** @type {(inputs: Troops_Actions_Removef
 };
 
 const ar_troops_actions_removefrom1 = /** @type {(inputs: Troops_Actions_Removefrom1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Remove from {name}`)
+	return /** @type {LocalizedString} */ (`إزالة من {name}`)
 };
 
 /**

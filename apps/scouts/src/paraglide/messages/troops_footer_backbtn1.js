@@ -18,7 +18,7 @@ const fr_troops_footer_backbtn1 = /** @type {(inputs: Troops_Footer_Backbtn1Inpu
 };
 
 const ar_troops_footer_backbtn1 = /** @type {(inputs: Troops_Footer_Backbtn1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Back`)
+	return /** @type {LocalizedString} */ (`رجوع`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_troops_members_heading = /** @type {(inputs: Troops_Members_HeadingInpu
 };
 
 const ar_troops_members_heading = /** @type {(inputs: Troops_Members_HeadingInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`{count} Member`)
+	return /** @type {LocalizedString} */ (`{count} عضو`)
 };
 
 /**

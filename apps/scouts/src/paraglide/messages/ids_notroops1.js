@@ -18,7 +18,7 @@ const fr_ids_notroops1 = /** @type {(inputs: Ids_Notroops1Inputs) => LocalizedSt
 };
 
 const ar_ids_notroops1 = /** @type {(inputs: Ids_Notroops1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No troops yet`)
+	return /** @type {LocalizedString} */ (`لا توجد فرق بعد`)
 };
 
 /**

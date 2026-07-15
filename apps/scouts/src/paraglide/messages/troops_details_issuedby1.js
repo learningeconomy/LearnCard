@@ -18,7 +18,7 @@ const fr_troops_details_issuedby1 = /** @type {(inputs: Troops_Details_Issuedby1
 };
 
 const ar_troops_details_issuedby1 = /** @type {(inputs: Troops_Details_Issuedby1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Issued by:`)
+	return /** @type {LocalizedString} */ (`صادر عن:`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_troops_actions_viewjson1 = /** @type {(inputs: Troops_Actions_Viewjson1
 };
 
 const ar_troops_actions_viewjson1 = /** @type {(inputs: Troops_Actions_Viewjson1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`View ID JSON`)
+	return /** @type {LocalizedString} */ (`عرض JSON المعرف`)
 };
 
 /**

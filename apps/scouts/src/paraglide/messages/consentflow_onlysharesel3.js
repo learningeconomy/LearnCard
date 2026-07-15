@@ -18,7 +18,7 @@ const fr_consentflow_onlysharesel3 = /** @type {(inputs: Consentflow_Onlysharese
 };
 
 const ar_consentflow_onlysharesel3 = /** @type {(inputs: Consentflow_Onlysharesel3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Only share selected {plural}.`)
+	return /** @type {LocalizedString} */ (`مشاركة {plural} المحددة فقط.`)
 };
 
 /**

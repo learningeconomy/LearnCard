@@ -18,7 +18,7 @@ const fr_recovery_setup_hintonemissing2 = /** @type {(inputs: Recovery_Setup_Hin
 };
 
 const ar_recovery_setup_hintonemissing2 = /** @type {(inputs: Recovery_Setup_Hintonemissing2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`We recommend setting up at least two recovery methods.`)
+	return /** @type {LocalizedString} */ (`نوصي بإعداد طريقتين استرداد على الأقل.`)
 };
 
 /**

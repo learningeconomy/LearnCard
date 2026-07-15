@@ -18,7 +18,7 @@ const fr_credsbundle_copylink2 = /** @type {(inputs: Credsbundle_Copylink2Inputs
 };
 
 const ar_credsbundle_copylink2 = /** @type {(inputs: Credsbundle_Copylink2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Copy link`)
+	return /** @type {LocalizedString} */ (`نسخ الرابط`)
 };
 
 /**

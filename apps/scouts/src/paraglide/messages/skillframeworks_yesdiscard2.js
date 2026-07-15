@@ -18,7 +18,7 @@ const fr_skillframeworks_yesdiscard2 = /** @type {(inputs: Skillframeworks_Yesdi
 };
 
 const ar_skillframeworks_yesdiscard2 = /** @type {(inputs: Skillframeworks_Yesdiscard2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Yes, Discard Changes`)
+	return /** @type {LocalizedString} */ (`نعم، تجاهل التغييرات`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_boostcms_publicmembers4 = /** @type {(inputs: Boostcms_Publicmembers4In
 };
 
 const ar_boostcms_publicmembers4 = /** @type {(inputs: Boostcms_Publicmembers4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Publicly display members`)
+	return /** @type {LocalizedString} */ (`عرض الأعضاء للجمهور`)
 };
 
 /**

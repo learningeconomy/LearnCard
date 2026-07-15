@@ -18,7 +18,7 @@ const fr_credsbundle_toast_linkcopyfail3 = /** @type {(inputs: Credsbundle_Toast
 };
 
 const ar_credsbundle_toast_linkcopyfail3 = /** @type {(inputs: Credsbundle_Toast_Linkcopyfail3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Unable to copy verified resume link to clipboard`)
+	return /** @type {LocalizedString} */ (`تعذر نسخ رابط السيرة الذاتية الموثقة إلى الحافظة`)
 };
 
 /**

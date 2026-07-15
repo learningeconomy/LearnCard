@@ -18,7 +18,7 @@ const fr_recovery_setup_tabphrase1 = /** @type {(inputs: Recovery_Setup_Tabphras
 };
 
 const ar_recovery_setup_tabphrase1 = /** @type {(inputs: Recovery_Setup_Tabphrase1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Phrase`)
+	return /** @type {LocalizedString} */ (`العبارة`)
 };
 
 /**

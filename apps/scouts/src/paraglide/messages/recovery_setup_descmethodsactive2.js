@@ -18,7 +18,7 @@ const fr_recovery_setup_descmethodsactive2 = /** @type {(inputs: Recovery_Setup_
 };
 
 const ar_recovery_setup_descmethodsactive2 = /** @type {(inputs: Recovery_Setup_Descmethodsactive2Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`${i?.count} recovery method(s) active`)
+	return /** @type {LocalizedString} */ (`${i?.count} طريقة استرداد نشطة`)
 };
 
 /**

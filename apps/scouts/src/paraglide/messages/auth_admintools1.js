@@ -18,7 +18,7 @@ const fr_auth_admintools1 = /** @type {(inputs: Auth_Admintools1Inputs) => Local
 };
 
 const ar_auth_admintools1 = /** @type {(inputs: Auth_Admintools1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Admin Tools`)
+	return /** @type {LocalizedString} */ (`أدوات المسؤول`)
 };
 
 /**

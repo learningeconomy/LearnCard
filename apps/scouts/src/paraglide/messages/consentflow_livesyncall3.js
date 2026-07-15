@@ -18,7 +18,7 @@ const fr_consentflow_livesyncall3 = /** @type {(inputs: Consentflow_Livesyncall3
 };
 
 const ar_consentflow_livesyncall3 = /** @type {(inputs: Consentflow_Livesyncall3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Live Sync All`)
+	return /** @type {LocalizedString} */ (`مزامنة حية للكل`)
 };
 
 /**

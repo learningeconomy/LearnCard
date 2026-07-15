@@ -18,7 +18,7 @@ const fr_currencies_none = /** @type {(inputs: Currencies_NoneInputs) => Localiz
 };
 
 const ar_currencies_none = /** @type {(inputs: Currencies_NoneInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No currencies yet.`)
+	return /** @type {LocalizedString} */ (`لا توجد عملات بعد.`)
 };
 
 /**

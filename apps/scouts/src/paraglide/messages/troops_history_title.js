@@ -18,7 +18,7 @@ const fr_troops_history_title = /** @type {(inputs: Troops_History_TitleInputs) 
 };
 
 const ar_troops_history_title = /** @type {(inputs: Troops_History_TitleInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`History`)
+	return /** @type {LocalizedString} */ (`السجل`)
 };
 
 /**

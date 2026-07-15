@@ -18,7 +18,7 @@ const fr_launchpad_boost1 = /** @type {(inputs: Launchpad_Boost1Inputs) => Local
 };
 
 const ar_launchpad_boost1 = /** @type {(inputs: Launchpad_Boost1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Boost`)
+	return /** @type {LocalizedString} */ (`تعزيز`)
 };
 
 /**

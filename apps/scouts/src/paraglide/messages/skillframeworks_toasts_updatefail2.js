@@ -18,7 +18,7 @@ const fr_skillframeworks_toasts_updatefail2 = /** @type {(inputs: Skillframework
 };
 
 const ar_skillframeworks_toasts_updatefail2 = /** @type {(inputs: Skillframeworks_Toasts_Updatefail2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Failed to update framework. Please try again.`)
+	return /** @type {LocalizedString} */ (`فشل تحديث الإطار. يرجى المحاولة مرة أخرى.`)
 };
 
 /**

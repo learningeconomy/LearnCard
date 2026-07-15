@@ -18,7 +18,7 @@ const fr_networkprompts_optout_joinlater3 = /** @type {(inputs: Networkprompts_O
 };
 
 const ar_networkprompts_optout_joinlater3 = /** @type {(inputs: Networkprompts_Optout_Joinlater3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`You can still use ScoutPass without joining the network.`)
+	return /** @type {LocalizedString} */ (`لا يزال بإمكانك استخدام ScoutPass دون الانضمام إلى الشبكة.`)
 };
 
 /**

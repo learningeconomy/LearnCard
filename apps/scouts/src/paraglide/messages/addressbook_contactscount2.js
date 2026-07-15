@@ -18,7 +18,7 @@ const fr_addressbook_contactscount2 = /** @type {(inputs: Addressbook_Contactsco
 };
 
 const ar_addressbook_contactscount2 = /** @type {(inputs: Addressbook_Contactscount2Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`${i?.count} Contacts`)
+	return /** @type {LocalizedString} */ (`${i?.count} جهة اتصال`)
 };
 
 /**

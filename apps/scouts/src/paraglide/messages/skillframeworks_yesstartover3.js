@@ -18,7 +18,7 @@ const fr_skillframeworks_yesstartover3 = /** @type {(inputs: Skillframeworks_Yes
 };
 
 const ar_skillframeworks_yesstartover3 = /** @type {(inputs: Skillframeworks_Yesstartover3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Yes, Start Over`)
+	return /** @type {LocalizedString} */ (`نعم، بدء من جديد`)
 };
 
 /**

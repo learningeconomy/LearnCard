@@ -18,7 +18,7 @@ const fr_consentflow_termsofservice3 = /** @type {(inputs: Consentflow_Termsofse
 };
 
 const ar_consentflow_termsofservice3 = /** @type {(inputs: Consentflow_Termsofservice3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Terms of Service`)
+	return /** @type {LocalizedString} */ (`شروط الخدمة`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_recovery_setup_errors_passlength1 = /** @type {(inputs: Recovery_Setup_
 };
 
 const ar_recovery_setup_errors_passlength1 = /** @type {(inputs: Recovery_Setup_Errors_Passlength1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Password must be at least 8 characters.`)
+	return /** @type {LocalizedString} */ (`يجب أن تتكون كلمة المرور من 8 أحرف على الأقل.`)
 };
 
 /**

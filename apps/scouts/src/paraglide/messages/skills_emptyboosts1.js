@@ -18,7 +18,7 @@ const fr_skills_emptyboosts1 = /** @type {(inputs: Skills_Emptyboosts1Inputs) =>
 };
 
 const ar_skills_emptyboosts1 = /** @type {(inputs: Skills_Emptyboosts1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`You don't have any Boosts yet.`)
+	return /** @type {LocalizedString} */ (`ليس لديك أي تعزيزات بعد.`)
 };
 
 /**

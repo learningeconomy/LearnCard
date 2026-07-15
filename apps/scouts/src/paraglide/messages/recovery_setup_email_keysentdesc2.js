@@ -18,7 +18,7 @@ const fr_recovery_setup_email_keysentdesc2 = /** @type {(inputs: Recovery_Setup_
 };
 
 const ar_recovery_setup_email_keysentdesc2 = /** @type {(inputs: Recovery_Setup_Email_Keysentdesc2Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`Check your inbox at ${i?.email}. Keep that email safe — you'll need the recovery key if you ever lose access.`)
+	return /** @type {LocalizedString} */ (`تحقق من صندوق الوارد الخاص بك على ${i?.email}. احتفظ بهذا البريد الإلكتروني في مكان آمن — ستحتاج إلى مفتاح الاسترداد إذا فقدت الوصول.`)
 };
 
 /**

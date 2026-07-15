@@ -18,7 +18,7 @@ const fr_meritbadges_createbtn2 = /** @type {(inputs: Meritbadges_Createbtn2Inpu
 };
 
 const ar_meritbadges_createbtn2 = /** @type {(inputs: Meritbadges_Createbtn2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Create new merit badge`)
+	return /** @type {LocalizedString} */ (`إنشاء شارة جدارة جديدة`)
 };
 
 /**

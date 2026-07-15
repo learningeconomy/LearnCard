@@ -18,7 +18,7 @@ const fr_notifications_notyet1 = /** @type {(inputs: Notifications_Notyet1Inputs
 };
 
 const ar_notifications_notyet1 = /** @type {(inputs: Notifications_Notyet1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Not Yet`)
+	return /** @type {LocalizedString} */ (`ليس بعد`)
 };
 
 /**

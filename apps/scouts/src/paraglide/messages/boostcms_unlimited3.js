@@ -18,7 +18,7 @@ const fr_boostcms_unlimited3 = /** @type {(inputs: Boostcms_Unlimited3Inputs) =>
 };
 
 const ar_boostcms_unlimited3 = /** @type {(inputs: Boostcms_Unlimited3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Unlimited`)
+	return /** @type {LocalizedString} */ (`غير محدود`)
 };
 
 /**

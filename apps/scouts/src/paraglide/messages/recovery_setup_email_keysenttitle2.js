@@ -18,7 +18,7 @@ const fr_recovery_setup_email_keysenttitle2 = /** @type {(inputs: Recovery_Setup
 };
 
 const ar_recovery_setup_email_keysenttitle2 = /** @type {(inputs: Recovery_Setup_Email_Keysenttitle2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Recovery key sent`)
+	return /** @type {LocalizedString} */ (`تم إرسال مفتاح الاسترداد`)
 };
 
 /**

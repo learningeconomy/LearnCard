@@ -18,7 +18,7 @@ const fr_boostcms_quit3 = /** @type {(inputs: Boostcms_Quit3Inputs) => Localized
 };
 
 const ar_boostcms_quit3 = /** @type {(inputs: Boostcms_Quit3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Quit`)
+	return /** @type {LocalizedString} */ (`إنهاء`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_skillframeworks_fwcreatedmsg3 = /** @type {(inputs: Skillframeworks_Fwc
 };
 
 const ar_skillframeworks_fwcreatedmsg3 = /** @type {(inputs: Skillframeworks_Fwcreatedmsg3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`has been successfully created.`)
+	return /** @type {LocalizedString} */ (`تم إنشاؤه بنجاح.`)
 };
 
 /**

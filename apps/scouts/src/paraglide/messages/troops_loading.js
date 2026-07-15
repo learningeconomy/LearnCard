@@ -18,7 +18,7 @@ const fr_troops_loading = /** @type {(inputs: Troops_LoadingInputs) => Localized
 };
 
 const ar_troops_loading = /** @type {(inputs: Troops_LoadingInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Loading...`)
+	return /** @type {LocalizedString} */ (`جاري التحميل...`)
 };
 
 /**

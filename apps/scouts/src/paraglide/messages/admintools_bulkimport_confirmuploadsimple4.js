@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_confirmuploadsimple4 = /** @type {(inputs: Admint
 };
 
 const ar_admintools_bulkimport_confirmuploadsimple4 = /** @type {(inputs: Admintools_Bulkimport_Confirmuploadsimple4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Are you sure you want to upload {count} {boosts}?`)
+	return /** @type {LocalizedString} */ (`هل أنت متأكد من رفع {count} {boosts}؟`)
 };
 
 /**

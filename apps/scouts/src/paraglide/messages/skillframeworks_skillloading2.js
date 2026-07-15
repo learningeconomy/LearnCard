@@ -18,7 +18,7 @@ const fr_skillframeworks_skillloading2 = /** @type {(inputs: Skillframeworks_Ski
 };
 
 const ar_skillframeworks_skillloading2 = /** @type {(inputs: Skillframeworks_Skillloading2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`... competencies`)
+	return /** @type {LocalizedString} */ (`... كفاءات`)
 };
 
 /**

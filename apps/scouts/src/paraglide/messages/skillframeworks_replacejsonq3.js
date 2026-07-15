@@ -18,7 +18,7 @@ const fr_skillframeworks_replacejsonq3 = /** @type {(inputs: Skillframeworks_Rep
 };
 
 const ar_skillframeworks_replacejsonq3 = /** @type {(inputs: Skillframeworks_Replacejsonq3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Replace JSON file?`)
+	return /** @type {LocalizedString} */ (`استبدال ملف JSON؟`)
 };
 
 /**

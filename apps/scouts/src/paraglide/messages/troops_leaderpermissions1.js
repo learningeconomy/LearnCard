@@ -18,7 +18,7 @@ const fr_troops_leaderpermissions1 = /** @type {(inputs: Troops_Leaderpermission
 };
 
 const ar_troops_leaderpermissions1 = /** @type {(inputs: Troops_Leaderpermissions1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Leader Permissions`)
+	return /** @type {LocalizedString} */ (`صلاحيات القائد`)
 };
 
 /**

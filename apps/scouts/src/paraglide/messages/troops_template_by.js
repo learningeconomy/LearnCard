@@ -18,7 +18,7 @@ const fr_troops_template_by = /** @type {(inputs: Troops_Template_ByInputs) => L
 };
 
 const ar_troops_template_by = /** @type {(inputs: Troops_Template_ByInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`by {issuer}`)
+	return /** @type {LocalizedString} */ (`بواسطة {issuer}`)
 };
 
 /**

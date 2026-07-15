@@ -18,7 +18,7 @@ const fr_boost_yourselfexclamation1 = /** @type {(inputs: Boost_Yourselfexclamat
 };
 
 const ar_boost_yourselfexclamation1 = /** @type {(inputs: Boost_Yourselfexclamation1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Yourself!`)
+	return /** @type {LocalizedString} */ (`نفسك!`)
 };
 
 /**

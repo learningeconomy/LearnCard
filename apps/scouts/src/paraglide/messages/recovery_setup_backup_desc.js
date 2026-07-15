@@ -18,7 +18,7 @@ const fr_recovery_setup_backup_desc = /** @type {(inputs: Recovery_Setup_Backup_
 };
 
 const ar_recovery_setup_backup_desc = /** @type {(inputs: Recovery_Setup_Backup_DescInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Generate an encrypted backup file protected by a password. Store it somewhere safe — you'll need both the file and the password to recover.`)
+	return /** @type {LocalizedString} */ (`إنشاء ملف نسخ احتياطي مشفر محمي بكلمة مرور. خزنه في مكان آمن — ستحتاج لكل من الملف وكلمة المرور للاسترداد.`)
 };
 
 /**

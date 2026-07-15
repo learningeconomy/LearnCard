@@ -18,7 +18,7 @@ const fr_membership_joinwait1 = /** @type {(inputs: Membership_Joinwait1Inputs) 
 };
 
 const ar_membership_joinwait1 = /** @type {(inputs: Membership_Joinwait1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Join Waiting List`)
+	return /** @type {LocalizedString} */ (`الانضمام لقائمة الانتظار`)
 };
 
 /**

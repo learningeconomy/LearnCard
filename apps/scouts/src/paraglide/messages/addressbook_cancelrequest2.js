@@ -18,7 +18,7 @@ const fr_addressbook_cancelrequest2 = /** @type {(inputs: Addressbook_Cancelrequ
 };
 
 const ar_addressbook_cancelrequest2 = /** @type {(inputs: Addressbook_Cancelrequest2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Cancel Request`)
+	return /** @type {LocalizedString} */ (`إلغاء الطلب`)
 };
 
 /**

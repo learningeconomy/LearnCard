@@ -18,7 +18,7 @@ const fr_admintools_toasts_imagesprocessed2 = /** @type {(inputs: Admintools_Toa
 };
 
 const ar_admintools_toasts_imagesprocessed2 = /** @type {(inputs: Admintools_Toasts_Imagesprocessed2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Successfully processed {count} images from ZIP file`)
+	return /** @type {LocalizedString} */ (`تمت معالجة {count} صورة من ملف ZIP بنجاح`)
 };
 
 /**

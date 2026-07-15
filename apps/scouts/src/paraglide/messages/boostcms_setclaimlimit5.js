@@ -18,7 +18,7 @@ const fr_boostcms_setclaimlimit5 = /** @type {(inputs: Boostcms_Setclaimlimit5In
 };
 
 const ar_boostcms_setclaimlimit5 = /** @type {(inputs: Boostcms_Setclaimlimit5Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Set Claim Limit?`)
+	return /** @type {LocalizedString} */ (`تعيين حد الاستلام؟`)
 };
 
 /**

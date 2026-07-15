@@ -18,7 +18,7 @@ const fr_skillframeworks_failloadfw3 = /** @type {(inputs: Skillframeworks_Faill
 };
 
 const ar_skillframeworks_failloadfw3 = /** @type {(inputs: Skillframeworks_Failloadfw3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Failed to load frameworks. Please try again.`)
+	return /** @type {LocalizedString} */ (`فشل تحميل الأطر. يرجى المحاولة مرة أخرى.`)
 };
 
 /**

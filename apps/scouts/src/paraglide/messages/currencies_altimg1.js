@@ -18,7 +18,7 @@ const fr_currencies_altimg1 = /** @type {(inputs: Currencies_Altimg1Inputs) => L
 };
 
 const ar_currencies_altimg1 = /** @type {(inputs: Currencies_Altimg1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`currencies`)
+	return /** @type {LocalizedString} */ (`عملات`)
 };
 
 /**

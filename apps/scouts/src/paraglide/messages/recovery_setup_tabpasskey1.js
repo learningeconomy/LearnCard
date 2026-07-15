@@ -18,7 +18,7 @@ const fr_recovery_setup_tabpasskey1 = /** @type {(inputs: Recovery_Setup_Tabpass
 };
 
 const ar_recovery_setup_tabpasskey1 = /** @type {(inputs: Recovery_Setup_Tabpasskey1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Passkey`)
+	return /** @type {LocalizedString} */ (`مفتاح المرور`)
 };
 
 /**

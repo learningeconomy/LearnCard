@@ -18,7 +18,7 @@ const fr_skillframeworks_replacewarning2 = /** @type {(inputs: Skillframeworks_R
 };
 
 const ar_skillframeworks_replacewarning2 = /** @type {(inputs: Skillframeworks_Replacewarning2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Saving will permanently replace your current framework and cannot be undone.`)
+	return /** @type {LocalizedString} */ (`الحفظ سيحل محل إطارك الحالي بشكل دائم ولا يمكن التراجع عنه.`)
 };
 
 /**

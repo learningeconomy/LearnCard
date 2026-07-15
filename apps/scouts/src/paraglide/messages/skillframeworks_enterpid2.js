@@ -18,7 +18,7 @@ const fr_skillframeworks_enterpid2 = /** @type {(inputs: Skillframeworks_Enterpi
 };
 
 const ar_skillframeworks_enterpid2 = /** @type {(inputs: Skillframeworks_Enterpid2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Enter Profile ID`)
+	return /** @type {LocalizedString} */ (`أدخل معرف الملف الشخصي`)
 };
 
 /**

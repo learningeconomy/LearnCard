@@ -18,7 +18,7 @@ const fr_boostcms_areyousure5 = /** @type {(inputs: Boostcms_Areyousure5Inputs) 
 };
 
 const ar_boostcms_areyousure5 = /** @type {(inputs: Boostcms_Areyousure5Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Are you sure?`)
+	return /** @type {LocalizedString} */ (`هل أنت متأكد؟`)
 };
 
 /**

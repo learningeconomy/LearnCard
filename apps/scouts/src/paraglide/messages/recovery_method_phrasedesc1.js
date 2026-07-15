@@ -18,7 +18,7 @@ const fr_recovery_method_phrasedesc1 = /** @type {(inputs: Recovery_Method_Phras
 };
 
 const ar_recovery_method_phrasedesc1 = /** @type {(inputs: Recovery_Method_Phrasedesc1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Enter your 25-word phrase`)
+	return /** @type {LocalizedString} */ (`أدخل عبارتك المكونة من 25 كلمة`)
 };
 
 /**

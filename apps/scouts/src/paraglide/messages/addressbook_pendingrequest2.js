@@ -18,7 +18,7 @@ const fr_addressbook_pendingrequest2 = /** @type {(inputs: Addressbook_Pendingre
 };
 
 const ar_addressbook_pendingrequest2 = /** @type {(inputs: Addressbook_Pendingrequest2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Pending request`)
+	return /** @type {LocalizedString} */ (`طلب معلق`)
 };
 
 /**

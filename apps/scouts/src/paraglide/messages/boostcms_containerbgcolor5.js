@@ -18,7 +18,7 @@ const fr_boostcms_containerbgcolor5 = /** @type {(inputs: Boostcms_Containerbgco
 };
 
 const ar_boostcms_containerbgcolor5 = /** @type {(inputs: Boostcms_Containerbgcolor5Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Container Background Color`)
+	return /** @type {LocalizedString} */ (`لون خلفية الحاوية`)
 };
 
 /**

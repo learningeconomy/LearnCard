@@ -18,7 +18,7 @@ const fr_boostcms_networkmember4 = /** @type {(inputs: Boostcms_Networkmember4In
 };
 
 const ar_boostcms_networkmember4 = /** @type {(inputs: Boostcms_Networkmember4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Network Member`)
+	return /** @type {LocalizedString} */ (`عضو الشبكة`)
 };
 
 /**

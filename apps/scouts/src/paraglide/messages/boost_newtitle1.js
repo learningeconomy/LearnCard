@@ -18,7 +18,7 @@ const fr_boost_newtitle1 = /** @type {(inputs: Boost_Newtitle1Inputs) => Localiz
 };
 
 const ar_boost_newtitle1 = /** @type {(inputs: Boost_Newtitle1Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`New ${i?.title}`)
+	return /** @type {LocalizedString} */ (`${i?.title} جديد`)
 };
 
 /**

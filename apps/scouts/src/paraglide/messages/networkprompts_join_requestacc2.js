@@ -18,7 +18,7 @@ const fr_networkprompts_join_requestacc2 = /** @type {(inputs: Networkprompts_Jo
 };
 
 const ar_networkprompts_join_requestacc2 = /** @type {(inputs: Networkprompts_Join_Requestacc2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Requesting access to:`)
+	return /** @type {LocalizedString} */ (`طلب الوصول إلى:`)
 };
 
 /**

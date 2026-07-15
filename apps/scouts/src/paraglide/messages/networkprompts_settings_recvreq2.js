@@ -18,7 +18,7 @@ const fr_networkprompts_settings_recvreq2 = /** @type {(inputs: Networkprompts_S
 };
 
 const ar_networkprompts_settings_recvreq2 = /** @type {(inputs: Networkprompts_Settings_Recvreq2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Receive connection requests.`)
+	return /** @type {LocalizedString} */ (`استلام طلبات الاتصال.`)
 };
 
 /**

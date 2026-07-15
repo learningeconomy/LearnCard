@@ -18,7 +18,7 @@ const fr_boostcms_boostothers4 = /** @type {(inputs: Boostcms_Boostothers4Inputs
 };
 
 const ar_boostcms_boostothers4 = /** @type {(inputs: Boostcms_Boostothers4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Boost Others`)
+	return /** @type {LocalizedString} */ (`تعزيز الآخرين`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_share_sendinvlink2 = /** @type {(inputs: Share_Sendinvlink2Inputs) => L
 };
 
 const ar_share_sendinvlink2 = /** @type {(inputs: Share_Sendinvlink2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Send invite link to connect`)
+	return /** @type {LocalizedString} */ (`إرسال رابط دعوة للتواصل`)
 };
 
 /**

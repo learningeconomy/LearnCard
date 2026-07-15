@@ -18,7 +18,7 @@ const fr_auth_androidlink1 = /** @type {(inputs: Auth_Androidlink1Inputs) => Loc
 };
 
 const ar_auth_androidlink1 = /** @type {(inputs: Auth_Androidlink1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`ScoutPass for Android`)
+	return /** @type {LocalizedString} */ (`ScoutPass لأندرويد`)
 };
 
 /**

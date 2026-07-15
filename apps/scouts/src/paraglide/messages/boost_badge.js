@@ -18,7 +18,7 @@ const fr_boost_badge = /** @type {(inputs: Boost_BadgeInputs) => LocalizedString
 };
 
 const ar_boost_badge = /** @type {(inputs: Boost_BadgeInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Badge`)
+	return /** @type {LocalizedString} */ (`شارة`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_addressbook_unblockcontact2 = /** @type {(inputs: Addressbook_Unblockco
 };
 
 const ar_addressbook_unblockcontact2 = /** @type {(inputs: Addressbook_Unblockcontact2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Unblock Contact`)
+	return /** @type {LocalizedString} */ (`إلغاء حظر جهة الاتصال`)
 };
 
 /**

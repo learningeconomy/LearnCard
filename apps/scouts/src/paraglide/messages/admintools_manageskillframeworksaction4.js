@@ -18,7 +18,7 @@ const fr_admintools_manageskillframeworksaction4 = /** @type {(inputs: Admintool
 };
 
 const ar_admintools_manageskillframeworksaction4 = /** @type {(inputs: Admintools_Manageskillframeworksaction4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Manage`)
+	return /** @type {LocalizedString} */ (`إدارة`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_skillframeworks_searchplh2 = /** @type {(inputs: Skillframeworks_Search
 };
 
 const ar_skillframeworks_searchplh2 = /** @type {(inputs: Skillframeworks_Searchplh2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Search framework...`)
+	return /** @type {LocalizedString} */ (`بحث في الإطار...`)
 };
 
 /**

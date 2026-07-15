@@ -18,7 +18,7 @@ const fr_recovery_setup_email_differentemail1 = /** @type {(inputs: Recovery_Set
 };
 
 const ar_recovery_setup_email_differentemail1 = /** @type {(inputs: Recovery_Setup_Email_Differentemail1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Use a different email`)
+	return /** @type {LocalizedString} */ (`استخدم بريداً إلكترونياً مختلفاً`)
 };
 
 /**

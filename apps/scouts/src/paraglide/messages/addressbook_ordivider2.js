@@ -18,7 +18,7 @@ const fr_addressbook_ordivider2 = /** @type {(inputs: Addressbook_Ordivider2Inpu
 };
 
 const ar_addressbook_ordivider2 = /** @type {(inputs: Addressbook_Ordivider2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`or`)
+	return /** @type {LocalizedString} */ (`أو`)
 };
 
 /**

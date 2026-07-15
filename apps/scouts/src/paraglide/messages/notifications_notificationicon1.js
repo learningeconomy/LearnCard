@@ -18,7 +18,7 @@ const fr_notifications_notificationicon1 = /** @type {(inputs: Notifications_Not
 };
 
 const ar_notifications_notificationicon1 = /** @type {(inputs: Notifications_Notificationicon1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`notification icon`)
+	return /** @type {LocalizedString} */ (`أيقونة الإشعار`)
 };
 
 /**

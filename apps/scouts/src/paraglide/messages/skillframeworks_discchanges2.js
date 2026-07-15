@@ -18,7 +18,7 @@ const fr_skillframeworks_discchanges2 = /** @type {(inputs: Skillframeworks_Disc
 };
 
 const ar_skillframeworks_discchanges2 = /** @type {(inputs: Skillframeworks_Discchanges2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Do you want to discard your changes?`)
+	return /** @type {LocalizedString} */ (`هل تريد تجاهل تغييراتك؟`)
 };
 
 /**

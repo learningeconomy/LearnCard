@@ -18,7 +18,7 @@ const fr_boostcms_readypublish4 = /** @type {(inputs: Boostcms_Readypublish4Inpu
 };
 
 const ar_boostcms_readypublish4 = /** @type {(inputs: Boostcms_Readypublish4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Are you ready to publish?`)
+	return /** @type {LocalizedString} */ (`هل أنت مستعد للنشر؟`)
 };
 
 /**

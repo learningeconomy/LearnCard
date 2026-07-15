@@ -18,7 +18,7 @@ const fr_boost_existingboosts1 = /** @type {(inputs: Boost_Existingboosts1Inputs
 };
 
 const ar_boost_existingboosts1 = /** @type {(inputs: Boost_Existingboosts1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Existing boosts`)
+	return /** @type {LocalizedString} */ (`التعزيزات الموجودة`)
 };
 
 /**

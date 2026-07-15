@@ -18,7 +18,7 @@ const fr_recovery_errors_decryptfailed1 = /** @type {(inputs: Recovery_Errors_De
 };
 
 const ar_recovery_errors_decryptfailed1 = /** @type {(inputs: Recovery_Errors_Decryptfailed1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Incorrect password or corrupted data. Please try again.`)
+	return /** @type {LocalizedString} */ (`كلمة مرور غير صحيحة أو بيانات تالفة. يرجى المحاولة مرة أخرى.`)
 };
 
 /**

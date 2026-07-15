@@ -18,7 +18,7 @@ const fr_membership_empty = /** @type {(inputs: Membership_EmptyInputs) => Local
 };
 
 const ar_membership_empty = /** @type {(inputs: Membership_EmptyInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`You don't have any Troops yet.`)
+	return /** @type {LocalizedString} */ (`ليس لديك أي فرق بعد.`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_recovery_backup_taptochoose2 = /** @type {(inputs: Recovery_Backup_Tapt
 };
 
 const ar_recovery_backup_taptochoose2 = /** @type {(inputs: Recovery_Backup_Taptochoose2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Tap to choose backup file`)
+	return /** @type {LocalizedString} */ (`اضغط لاختيار ملف النسخ الاحتياطي`)
 };
 
 /**

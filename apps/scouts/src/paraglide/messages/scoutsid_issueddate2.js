@@ -18,7 +18,7 @@ const fr_scoutsid_issueddate2 = /** @type {(inputs: Scoutsid_Issueddate2Inputs) 
 };
 
 const ar_scoutsid_issueddate2 = /** @type {(inputs: Scoutsid_Issueddate2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Issued (Date)`)
+	return /** @type {LocalizedString} */ (`تاريخ الإصدار`)
 };
 
 /**

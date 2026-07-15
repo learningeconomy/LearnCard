@@ -18,7 +18,7 @@ const fr_skillframeworks_reviewfw2 = /** @type {(inputs: Skillframeworks_Reviewf
 };
 
 const ar_skillframeworks_reviewfw2 = /** @type {(inputs: Skillframeworks_Reviewfw2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Review Framework`)
+	return /** @type {LocalizedString} */ (`مراجعة الإطار`)
 };
 
 /**

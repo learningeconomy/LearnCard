@@ -18,7 +18,7 @@ const fr_userprofile_fullname2 = /** @type {(inputs: Userprofile_Fullname2Inputs
 };
 
 const ar_userprofile_fullname2 = /** @type {(inputs: Userprofile_Fullname2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Full Name`)
+	return /** @type {LocalizedString} */ (`الاسم الكامل`)
 };
 
 /**

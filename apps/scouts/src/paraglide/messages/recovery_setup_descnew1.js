@@ -18,7 +18,7 @@ const fr_recovery_setup_descnew1 = /** @type {(inputs: Recovery_Setup_Descnew1In
 };
 
 const ar_recovery_setup_descnew1 = /** @type {(inputs: Recovery_Setup_Descnew1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Set up a recovery method so you can get back in if you lose access to this device.`)
+	return /** @type {LocalizedString} */ (`قم بإعداد طريقة استرداد لتتمكن من العودة إذا فقدت الوصول إلى هذا الجهاز.`)
 };
 
 /**

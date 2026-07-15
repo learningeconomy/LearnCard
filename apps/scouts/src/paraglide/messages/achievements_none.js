@@ -18,7 +18,7 @@ const fr_achievements_none = /** @type {(inputs: Achievements_NoneInputs) => Loc
 };
 
 const ar_achievements_none = /** @type {(inputs: Achievements_NoneInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No achievements yet`)
+	return /** @type {LocalizedString} */ (`لا توجد إنجازات بعد`)
 };
 
 /**

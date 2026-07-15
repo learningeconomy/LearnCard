@@ -18,7 +18,7 @@ const fr_recovery_setup_passkey_updatewarning1 = /** @type {(inputs: Recovery_Se
 };
 
 const ar_recovery_setup_passkey_updatewarning1 = /** @type {(inputs: Recovery_Setup_Passkey_Updatewarning1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`This will replace your current passkey.`)
+	return /** @type {LocalizedString} */ (`سيؤدي هذا إلى استبدال مفتاح المرور الحالي الخاص بك.`)
 };
 
 /**

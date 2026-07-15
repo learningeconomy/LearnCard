@@ -18,7 +18,7 @@ const fr_consentflow_willdisconnect2 = /** @type {(inputs: Consentflow_Willdisco
 };
 
 const ar_consentflow_willdisconnect2 = /** @type {(inputs: Consentflow_Willdisconnect2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`You will be disconnected from this contract`)
+	return /** @type {LocalizedString} */ (`سيتم قطع اتصالك من هذا العقد`)
 };
 
 /**

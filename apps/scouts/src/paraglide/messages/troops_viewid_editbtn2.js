@@ -18,7 +18,7 @@ const fr_troops_viewid_editbtn2 = /** @type {(inputs: Troops_Viewid_Editbtn2Inpu
 };
 
 const ar_troops_viewid_editbtn2 = /** @type {(inputs: Troops_Viewid_Editbtn2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Edit`)
+	return /** @type {LocalizedString} */ (`تعديل`)
 };
 
 /**

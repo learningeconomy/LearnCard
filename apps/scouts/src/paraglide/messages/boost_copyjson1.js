@@ -18,7 +18,7 @@ const fr_boost_copyjson1 = /** @type {(inputs: Boost_Copyjson1Inputs) => Localiz
 };
 
 const ar_boost_copyjson1 = /** @type {(inputs: Boost_Copyjson1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Copy JSON`)
+	return /** @type {LocalizedString} */ (`نسخ JSON`)
 };
 
 /**

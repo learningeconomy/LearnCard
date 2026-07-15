@@ -18,7 +18,7 @@ const fr_boost_award = /** @type {(inputs: Boost_AwardInputs) => LocalizedString
 };
 
 const ar_boost_award = /** @type {(inputs: Boost_AwardInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Award`)
+	return /** @type {LocalizedString} */ (`منح`)
 };
 
 /**

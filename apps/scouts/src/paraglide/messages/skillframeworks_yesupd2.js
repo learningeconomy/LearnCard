@@ -18,7 +18,7 @@ const fr_skillframeworks_yesupd2 = /** @type {(inputs: Skillframeworks_Yesupd2In
 };
 
 const ar_skillframeworks_yesupd2 = /** @type {(inputs: Skillframeworks_Yesupd2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Yes, Update`)
+	return /** @type {LocalizedString} */ (`نعم، تحديث`)
 };
 
 /**

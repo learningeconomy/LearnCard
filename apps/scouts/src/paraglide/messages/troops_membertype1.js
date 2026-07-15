@@ -18,7 +18,7 @@ const fr_troops_membertype1 = /** @type {(inputs: Troops_Membertype1Inputs) => L
 };
 
 const ar_troops_membertype1 = /** @type {(inputs: Troops_Membertype1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Member Type`)
+	return /** @type {LocalizedString} */ (`نوع العضو`)
 };
 
 /**

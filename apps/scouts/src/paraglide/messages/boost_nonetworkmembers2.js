@@ -18,7 +18,7 @@ const fr_boost_nonetworkmembers2 = /** @type {(inputs: Boost_Nonetworkmembers2In
 };
 
 const ar_boost_nonetworkmembers2 = /** @type {(inputs: Boost_Nonetworkmembers2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No network members`)
+	return /** @type {LocalizedString} */ (`لا يوجد أعضاء شبكة`)
 };
 
 /**

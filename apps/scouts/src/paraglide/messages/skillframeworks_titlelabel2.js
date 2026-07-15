@@ -18,7 +18,7 @@ const fr_skillframeworks_titlelabel2 = /** @type {(inputs: Skillframeworks_Title
 };
 
 const ar_skillframeworks_titlelabel2 = /** @type {(inputs: Skillframeworks_Titlelabel2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Title*`)
+	return /** @type {LocalizedString} */ (`العنوان*`)
 };
 
 /**

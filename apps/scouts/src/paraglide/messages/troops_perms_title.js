@@ -18,7 +18,7 @@ const fr_troops_perms_title = /** @type {(inputs: Troops_Perms_TitleInputs) => L
 };
 
 const ar_troops_perms_title = /** @type {(inputs: Troops_Perms_TitleInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Permissions`)
+	return /** @type {LocalizedString} */ (`الصلاحيات`)
 };
 
 /**

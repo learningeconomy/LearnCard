@@ -18,7 +18,7 @@ const fr_skillframeworks_admincomingsoon3 = /** @type {(inputs: Skillframeworks_
 };
 
 const ar_skillframeworks_admincomingsoon3 = /** @type {(inputs: Skillframeworks_Admincomingsoon3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Admin selection coming soon...`)
+	return /** @type {LocalizedString} */ (`اختيار المسؤول قريباً...`)
 };
 
 /**

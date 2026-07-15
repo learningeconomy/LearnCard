@@ -18,7 +18,7 @@ const fr_admintools_toasts_importsuccess2 = /** @type {(inputs: Admintools_Toast
 };
 
 const ar_admintools_toasts_importsuccess2 = /** @type {(inputs: Admintools_Toasts_Importsuccess2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Boosts imported successfully!`)
+	return /** @type {LocalizedString} */ (`تم استيراد التعزيزات بنجاح!`)
 };
 
 /**

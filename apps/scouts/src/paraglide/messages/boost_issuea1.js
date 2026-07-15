@@ -18,7 +18,7 @@ const fr_boost_issuea1 = /** @type {(inputs: Boost_Issuea1Inputs) => LocalizedSt
 };
 
 const ar_boost_issuea1 = /** @type {(inputs: Boost_Issuea1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Issue a`)
+	return /** @type {LocalizedString} */ (`إصدار`)
 };
 
 /**

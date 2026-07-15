@@ -18,7 +18,7 @@ const fr_boost_toasts_unabletocopylink3 = /** @type {(inputs: Boost_Toasts_Unabl
 };
 
 const ar_boost_toasts_unabletocopylink3 = /** @type {(inputs: Boost_Toasts_Unabletocopylink3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Unable to copy share link to clipboard`)
+	return /** @type {LocalizedString} */ (`تعذر نسخ رابط المشاركة إلى الحافظة`)
 };
 
 /**

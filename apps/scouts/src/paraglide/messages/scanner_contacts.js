@@ -18,7 +18,7 @@ const fr_scanner_contacts = /** @type {(inputs: Scanner_ContactsInputs) => Local
 };
 
 const ar_scanner_contacts = /** @type {(inputs: Scanner_ContactsInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Contacts`)
+	return /** @type {LocalizedString} */ (`جهات الاتصال`)
 };
 
 /**

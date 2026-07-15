@@ -18,7 +18,7 @@ const fr_boost_pleaselogintoclaim3 = /** @type {(inputs: Boost_Pleaselogintoclai
 };
 
 const ar_boost_pleaselogintoclaim3 = /** @type {(inputs: Boost_Pleaselogintoclaim3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Please login to claim your boost/credential.`)
+	return /** @type {LocalizedString} */ (`يرجى تسجيل الدخول لاستلام تعزيزك/مؤهلك.`)
 };
 
 /**

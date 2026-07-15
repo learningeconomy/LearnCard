@@ -18,7 +18,7 @@ const fr_credsbundle_emptyquote2 = /** @type {(inputs: Credsbundle_Emptyquote2In
 };
 
 const ar_credsbundle_emptyquote2 = /** @type {(inputs: Credsbundle_Emptyquote2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`"Love doesn't just sit there, like a stone, it has to be made, like bread; remade all the time, made new."`)
+	return /** @type {LocalizedString} */ (`"الحب لا يجلس مثل حجر، بل يجب صنعه مثل الخبز؛ يُصنع طوال الوقت، يُصنع من جديد."`)
 };
 
 /**

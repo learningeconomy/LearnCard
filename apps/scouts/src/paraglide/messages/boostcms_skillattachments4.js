@@ -18,7 +18,7 @@ const fr_boostcms_skillattachments4 = /** @type {(inputs: Boostcms_Skillattachme
 };
 
 const ar_boostcms_skillattachments4 = /** @type {(inputs: Boostcms_Skillattachments4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Skill Attachments`)
+	return /** @type {LocalizedString} */ (`مرفقات المهارات`)
 };
 
 /**

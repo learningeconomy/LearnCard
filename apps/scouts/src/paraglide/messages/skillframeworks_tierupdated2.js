@@ -18,7 +18,7 @@ const fr_skillframeworks_tierupdated2 = /** @type {(inputs: Skillframeworks_Tier
 };
 
 const ar_skillframeworks_tierupdated2 = /** @type {(inputs: Skillframeworks_Tierupdated2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`{count} tiers`)
+	return /** @type {LocalizedString} */ (`{count} مستويات`)
 };
 
 /**

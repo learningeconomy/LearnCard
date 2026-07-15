@@ -18,7 +18,7 @@ const fr_introslides_badgesdesc2 = /** @type {(inputs: Introslides_Badgesdesc2In
 };
 
 const ar_introslides_badgesdesc2 = /** @type {(inputs: Introslides_Badgesdesc2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Badges help to recognize values, talents, participation and contributions.`)
+	return /** @type {LocalizedString} */ (`الشارات تساعد في التعرف على القيم والمواهب والمشاركة والمساهمات.`)
 };
 
 /**

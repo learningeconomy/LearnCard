@@ -18,7 +18,7 @@ const fr_consentflow_okay1 = /** @type {(inputs: Consentflow_Okay1Inputs) => Loc
 };
 
 const ar_consentflow_okay1 = /** @type {(inputs: Consentflow_Okay1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Okay`)
+	return /** @type {LocalizedString} */ (`حسناً`)
 };
 
 /**

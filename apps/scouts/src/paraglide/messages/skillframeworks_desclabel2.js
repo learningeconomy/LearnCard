@@ -18,7 +18,7 @@ const fr_skillframeworks_desclabel2 = /** @type {(inputs: Skillframeworks_Descla
 };
 
 const ar_skillframeworks_desclabel2 = /** @type {(inputs: Skillframeworks_Desclabel2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Description`)
+	return /** @type {LocalizedString} */ (`الوصف`)
 };
 
 /**

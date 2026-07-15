@@ -47,11 +47,11 @@ const fr_skillframeworks_confirmdeltier3 = /** @type {((inputs: Skillframeworks_
 const ar_skillframeworks_confirmdeltier3 = /** @type {((inputs: Skillframeworks_Confirmdeltier3Inputs) => LocalizedString) & { parts: (inputs: Skillframeworks_Confirmdeltier3Inputs) => import('../runtime.js').MessagePart[] }} */ (
 	/* @__PURE__ */ Object.assign(
 		/** @type {(inputs: Skillframeworks_Confirmdeltier3Inputs) => LocalizedString} */ ((i) => {
-			return /** @type {LocalizedString} */ (`Please confirm deletion of this framework tier and everything inside it including ${i?.count} skill/skills.`)
+			return /** @type {LocalizedString} */ (`يرجى تأكيد حذف مستوى الإطار هذا وكل ما فيه بما في ذلك ${i?.count} مهارة/مهارات.`)
 		}),
 		{
 			parts: /** @type {(inputs: Skillframeworks_Confirmdeltier3Inputs) => import('../runtime.js').MessagePart[]} */ ((i) => {
-				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "Please confirm deletion of this framework tier and everything inside it including " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: String(i?.count) }, { type: "text", value: " skill/skills." }, { type: "markup-end", name: "0", options: {}, attributes: {} }])
+				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "يرجى تأكيد حذف مستوى الإطار هذا وكل ما فيه بما في ذلك " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: String(i?.count) }, { type: "text", value: " مهارة/مهارات." }, { type: "markup-end", name: "0", options: {}, attributes: {} }])
 			})
 		}
 	)

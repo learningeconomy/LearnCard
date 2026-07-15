@@ -18,7 +18,7 @@ const fr_addressbook_toasts_requestsenttoboost4 = /** @type {(inputs: Addressboo
 };
 
 const ar_addressbook_toasts_requestsenttoboost4 = /** @type {(inputs: Addressbook_Toasts_Requestsenttoboost4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Connection Request sent`)
+	return /** @type {LocalizedString} */ (`تم إرسال طلب الاتصال`)
 };
 
 /**

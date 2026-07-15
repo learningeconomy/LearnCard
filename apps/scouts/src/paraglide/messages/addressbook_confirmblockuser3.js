@@ -18,7 +18,7 @@ const fr_addressbook_confirmblockuser3 = /** @type {(inputs: Addressbook_Confirm
 };
 
 const ar_addressbook_confirmblockuser3 = /** @type {(inputs: Addressbook_Confirmblockuser3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Are you sure you want to block this user?`)
+	return /** @type {LocalizedString} */ (`هل أنت متأكد من حظر هذا المستخدم؟`)
 };
 
 /**

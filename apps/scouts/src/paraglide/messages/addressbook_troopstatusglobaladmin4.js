@@ -18,7 +18,7 @@ const fr_addressbook_troopstatusglobaladmin4 = /** @type {(inputs: Addressbook_T
 };
 
 const ar_addressbook_troopstatusglobaladmin4 = /** @type {(inputs: Addressbook_Troopstatusglobaladmin4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Global Admin`)
+	return /** @type {LocalizedString} */ (`مسؤول عام`)
 };
 
 /**

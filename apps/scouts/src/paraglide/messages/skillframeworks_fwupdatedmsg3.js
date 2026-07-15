@@ -18,7 +18,7 @@ const fr_skillframeworks_fwupdatedmsg3 = /** @type {(inputs: Skillframeworks_Fwu
 };
 
 const ar_skillframeworks_fwupdatedmsg3 = /** @type {(inputs: Skillframeworks_Fwupdatedmsg3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Framework has been successfully updated.`)
+	return /** @type {LocalizedString} */ (`تم تحديث الإطار بنجاح.`)
 };
 
 /**

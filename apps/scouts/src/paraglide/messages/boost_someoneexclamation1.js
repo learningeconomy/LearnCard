@@ -18,7 +18,7 @@ const fr_boost_someoneexclamation1 = /** @type {(inputs: Boost_Someoneexclamatio
 };
 
 const ar_boost_someoneexclamation1 = /** @type {(inputs: Boost_Someoneexclamation1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Someone!`)
+	return /** @type {LocalizedString} */ (`شخص ما!`)
 };
 
 /**

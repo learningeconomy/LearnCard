@@ -18,7 +18,7 @@ const fr_troops_details_createdby1 = /** @type {(inputs: Troops_Details_Createdb
 };
 
 const ar_troops_details_createdby1 = /** @type {(inputs: Troops_Details_Createdby1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Created by {name}`)
+	return /** @type {LocalizedString} */ (`أنشأه {name}`)
 };
 
 /**

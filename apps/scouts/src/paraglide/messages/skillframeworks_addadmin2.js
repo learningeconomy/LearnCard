@@ -18,7 +18,7 @@ const fr_skillframeworks_addadmin2 = /** @type {(inputs: Skillframeworks_Addadmi
 };
 
 const ar_skillframeworks_addadmin2 = /** @type {(inputs: Skillframeworks_Addadmin2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Add Admin`)
+	return /** @type {LocalizedString} */ (`إضافة مسؤول`)
 };
 
 /**

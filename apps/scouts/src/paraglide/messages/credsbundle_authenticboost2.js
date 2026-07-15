@@ -18,7 +18,7 @@ const fr_credsbundle_authenticboost2 = /** @type {(inputs: Credsbundle_Authentic
 };
 
 const ar_credsbundle_authenticboost2 = /** @type {(inputs: Credsbundle_Authenticboost2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Authentic Boost:`)
+	return /** @type {LocalizedString} */ (`تعزيز أصيل:`)
 };
 
 /**

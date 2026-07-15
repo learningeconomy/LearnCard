@@ -18,7 +18,7 @@ const fr_addressbook_toasts_unabletounblockuser4 = /** @type {(inputs: Addressbo
 };
 
 const ar_addressbook_toasts_unabletounblockuser4 = /** @type {(inputs: Addressbook_Toasts_Unabletounblockuser4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`An error occurred, unable to unblock user`)
+	return /** @type {LocalizedString} */ (`حدث خطأ، تعذر إلغاء حظر المستخدم`)
 };
 
 /**

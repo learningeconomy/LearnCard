@@ -18,7 +18,7 @@ const fr_credentialstorage_sharing1 = /** @type {(inputs: Credentialstorage_Shar
 };
 
 const ar_credentialstorage_sharing1 = /** @type {(inputs: Credentialstorage_Sharing1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Sharing...`)
+	return /** @type {LocalizedString} */ (`جاري المشاركة...`)
 };
 
 /**

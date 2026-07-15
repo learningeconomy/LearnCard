@@ -18,7 +18,7 @@ const fr_scanner_scanconnect1 = /** @type {(inputs: Scanner_Scanconnect1Inputs) 
 };
 
 const ar_scanner_scanconnect1 = /** @type {(inputs: Scanner_Scanconnect1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Scan to connect`)
+	return /** @type {LocalizedString} */ (`امسح للتواصل`)
 };
 
 /**

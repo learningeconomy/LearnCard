@@ -18,7 +18,7 @@ const fr_userprofile_emailaddress2 = /** @type {(inputs: Userprofile_Emailaddres
 };
 
 const ar_userprofile_emailaddress2 = /** @type {(inputs: Userprofile_Emailaddress2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Email address`)
+	return /** @type {LocalizedString} */ (`البريد الإلكتروني`)
 };
 
 /**

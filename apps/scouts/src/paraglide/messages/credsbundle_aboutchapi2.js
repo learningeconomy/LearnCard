@@ -18,7 +18,7 @@ const fr_credsbundle_aboutchapi2 = /** @type {(inputs: Credsbundle_Aboutchapi2In
 };
 
 const ar_credsbundle_aboutchapi2 = /** @type {(inputs: Credsbundle_Aboutchapi2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`About Chapi`)
+	return /** @type {LocalizedString} */ (`حول Chapi`)
 };
 
 /**

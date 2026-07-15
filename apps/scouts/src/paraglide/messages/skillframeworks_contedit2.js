@@ -18,7 +18,7 @@ const fr_skillframeworks_contedit2 = /** @type {(inputs: Skillframeworks_Contedi
 };
 
 const ar_skillframeworks_contedit2 = /** @type {(inputs: Skillframeworks_Contedit2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Continue Editing`)
+	return /** @type {LocalizedString} */ (`متابعة التعديل`)
 };
 
 /**

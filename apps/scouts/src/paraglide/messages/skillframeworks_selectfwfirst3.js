@@ -18,7 +18,7 @@ const fr_skillframeworks_selectfwfirst3 = /** @type {(inputs: Skillframeworks_Se
 };
 
 const ar_skillframeworks_selectfwfirst3 = /** @type {(inputs: Skillframeworks_Selectfwfirst3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Please select a framework first`)
+	return /** @type {LocalizedString} */ (`يرجى اختيار إطار أولاً`)
 };
 
 /**

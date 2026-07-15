@@ -18,7 +18,7 @@ const fr_boostcms_continueedit4 = /** @type {(inputs: Boostcms_Continueedit4Inpu
 };
 
 const ar_boostcms_continueedit4 = /** @type {(inputs: Boostcms_Continueedit4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Continue Editing`)
+	return /** @type {LocalizedString} */ (`متابعة التعديل`)
 };
 
 /**

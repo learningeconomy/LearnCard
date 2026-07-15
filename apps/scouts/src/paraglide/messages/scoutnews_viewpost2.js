@@ -18,7 +18,7 @@ const fr_scoutnews_viewpost2 = /** @type {(inputs: Scoutnews_Viewpost2Inputs) =>
 };
 
 const ar_scoutnews_viewpost2 = /** @type {(inputs: Scoutnews_Viewpost2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`View Post`)
+	return /** @type {LocalizedString} */ (`عرض المنشور`)
 };
 
 /**

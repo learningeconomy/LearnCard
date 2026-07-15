@@ -18,7 +18,7 @@ const fr_claimboost_unabletofind3 = /** @type {(inputs: Claimboost_Unabletofind3
 };
 
 const ar_claimboost_unabletofind3 = /** @type {(inputs: Claimboost_Unabletofind3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Unable to find boost`)
+	return /** @type {LocalizedString} */ (`تعذر العثور على التعزيز`)
 };
 
 /**

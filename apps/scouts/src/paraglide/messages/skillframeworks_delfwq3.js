@@ -18,7 +18,7 @@ const fr_skillframeworks_delfwq3 = /** @type {(inputs: Skillframeworks_Delfwq3In
 };
 
 const ar_skillframeworks_delfwq3 = /** @type {(inputs: Skillframeworks_Delfwq3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Delete Framework?`)
+	return /** @type {LocalizedString} */ (`حذف الإطار؟`)
 };
 
 /**

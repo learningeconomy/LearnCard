@@ -18,7 +18,7 @@ const fr_credsbundle_credverifications2 = /** @type {(inputs: Credsbundle_Credve
 };
 
 const ar_credsbundle_credverifications2 = /** @type {(inputs: Credsbundle_Credverifications2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Credential Verifications`)
+	return /** @type {LocalizedString} */ (`التحقق من المؤهلات`)
 };
 
 /**

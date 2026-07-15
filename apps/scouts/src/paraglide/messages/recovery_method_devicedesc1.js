@@ -18,7 +18,7 @@ const fr_recovery_method_devicedesc1 = /** @type {(inputs: Recovery_Method_Devic
 };
 
 const ar_recovery_method_devicedesc1 = /** @type {(inputs: Recovery_Method_Devicedesc1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Scan a code from a signed-in device`)
+	return /** @type {LocalizedString} */ (`امسح رمزاً من جهاز مسجل الدخول`)
 };
 
 /**

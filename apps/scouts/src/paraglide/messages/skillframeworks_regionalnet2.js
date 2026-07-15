@@ -18,7 +18,7 @@ const fr_skillframeworks_regionalnet2 = /** @type {(inputs: Skillframeworks_Regi
 };
 
 const ar_skillframeworks_regionalnet2 = /** @type {(inputs: Skillframeworks_Regionalnet2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Regional Network`)
+	return /** @type {LocalizedString} */ (`شبكة إقليمية`)
 };
 
 /**

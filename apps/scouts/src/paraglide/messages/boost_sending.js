@@ -18,7 +18,7 @@ const fr_boost_sending = /** @type {(inputs: Boost_SendingInputs) => LocalizedSt
 };
 
 const ar_boost_sending = /** @type {(inputs: Boost_SendingInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Sending...`)
+	return /** @type {LocalizedString} */ (`جاري الإرسال...`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_boost_noconnectionsyet2 = /** @type {(inputs: Boost_Noconnectionsyet2In
 };
 
 const ar_boost_noconnectionsyet2 = /** @type {(inputs: Boost_Noconnectionsyet2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No connections yet`)
+	return /** @type {LocalizedString} */ (`لا توجد اتصالات بعد`)
 };
 
 /**

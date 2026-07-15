@@ -18,7 +18,7 @@ const fr_addressbook_noblockedusers3 = /** @type {(inputs: Addressbook_Noblocked
 };
 
 const ar_addressbook_noblockedusers3 = /** @type {(inputs: Addressbook_Noblockedusers3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No blocked users yet.`)
+	return /** @type {LocalizedString} */ (`لا يوجد مستخدمون محظورون بعد.`)
 };
 
 /**

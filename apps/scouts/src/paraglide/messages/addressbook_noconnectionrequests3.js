@@ -18,7 +18,7 @@ const fr_addressbook_noconnectionrequests3 = /** @type {(inputs: Addressbook_Noc
 };
 
 const ar_addressbook_noconnectionrequests3 = /** @type {(inputs: Addressbook_Noconnectionrequests3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No connection requests yet.`)
+	return /** @type {LocalizedString} */ (`لا توجد طلبات اتصال بعد.`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_troops_nationaladminpermissions2 = /** @type {(inputs: Troops_Nationala
 };
 
 const ar_troops_nationaladminpermissions2 = /** @type {(inputs: Troops_Nationaladminpermissions2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`National Admin Permissions`)
+	return /** @type {LocalizedString} */ (`صلاحيات المسؤول الوطني`)
 };
 
 /**

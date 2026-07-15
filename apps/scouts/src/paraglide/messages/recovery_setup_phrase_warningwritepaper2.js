@@ -18,7 +18,7 @@ const fr_recovery_setup_phrase_warningwritepaper2 = /** @type {(inputs: Recovery
 };
 
 const ar_recovery_setup_phrase_warningwritepaper2 = /** @type {(inputs: Recovery_Setup_Phrase_Warningwritepaper2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Write it on paper and store it securely`)
+	return /** @type {LocalizedString} */ (`اكتبها على ورق وخزّنها بشكل آمن`)
 };
 
 /**

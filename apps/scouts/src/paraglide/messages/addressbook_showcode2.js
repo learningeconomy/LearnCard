@@ -18,7 +18,7 @@ const fr_addressbook_showcode2 = /** @type {(inputs: Addressbook_Showcode2Inputs
 };
 
 const ar_addressbook_showcode2 = /** @type {(inputs: Addressbook_Showcode2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Show Code`)
+	return /** @type {LocalizedString} */ (`إظهار الرمز`)
 };
 
 /**

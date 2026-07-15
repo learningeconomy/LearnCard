@@ -18,7 +18,7 @@ const fr_scoutsid_custom1 = /** @type {(inputs: Scoutsid_Custom1Inputs) => Local
 };
 
 const ar_scoutsid_custom1 = /** @type {(inputs: Scoutsid_Custom1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Custom`)
+	return /** @type {LocalizedString} */ (`مخصص`)
 };
 
 /**

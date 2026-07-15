@@ -18,7 +18,7 @@ const fr_skillframeworks_toasts_addadminfail3 = /** @type {(inputs: Skillframewo
 };
 
 const ar_skillframeworks_toasts_addadminfail3 = /** @type {(inputs: Skillframeworks_Toasts_Addadminfail3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Failed to add admin. Please check the Profile ID and try again.`)
+	return /** @type {LocalizedString} */ (`فشل إضافة المسؤول. يرجى التحقق من معرف الملف الشخصي والمحاولة مرة أخرى.`)
 };
 
 /**

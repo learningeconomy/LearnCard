@@ -18,7 +18,7 @@ const fr_consentflow_continueas2 = /** @type {(inputs: Consentflow_Continueas2In
 };
 
 const ar_consentflow_continueas2 = /** @type {(inputs: Consentflow_Continueas2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Continue as {name}`)
+	return /** @type {LocalizedString} */ (`المتابعة كـ {name}`)
 };
 
 /**

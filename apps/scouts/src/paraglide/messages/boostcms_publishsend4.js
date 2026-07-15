@@ -18,7 +18,7 @@ const fr_boostcms_publishsend4 = /** @type {(inputs: Boostcms_Publishsend4Inputs
 };
 
 const ar_boostcms_publishsend4 = /** @type {(inputs: Boostcms_Publishsend4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Publish & Send`)
+	return /** @type {LocalizedString} */ (`نشر وإرسال`)
 };
 
 /**

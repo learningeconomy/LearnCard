@@ -18,7 +18,7 @@ const fr_recovery_passkey_tapdesc1 = /** @type {(inputs: Recovery_Passkey_Tapdes
 };
 
 const ar_recovery_passkey_tapdesc1 = /** @type {(inputs: Recovery_Passkey_Tapdesc1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Tap below to verify with Face ID, Touch ID, or your device passkey.`)
+	return /** @type {LocalizedString} */ (`اضغط أدناه للتحقق باستخدام Face ID أو Touch ID أو مفتاح مرور جهازك.`)
 };
 
 /**

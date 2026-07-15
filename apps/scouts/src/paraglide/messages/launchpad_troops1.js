@@ -18,7 +18,7 @@ const fr_launchpad_troops1 = /** @type {(inputs: Launchpad_Troops1Inputs) => Loc
 };
 
 const ar_launchpad_troops1 = /** @type {(inputs: Launchpad_Troops1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Troops`)
+	return /** @type {LocalizedString} */ (`الفرق`)
 };
 
 /**

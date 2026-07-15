@@ -18,7 +18,7 @@ const fr_troops_connect_showqr1 = /** @type {(inputs: Troops_Connect_Showqr1Inpu
 };
 
 const ar_troops_connect_showqr1 = /** @type {(inputs: Troops_Connect_Showqr1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Show QR Code`)
+	return /** @type {LocalizedString} */ (`إظهار رمز QR`)
 };
 
 /**

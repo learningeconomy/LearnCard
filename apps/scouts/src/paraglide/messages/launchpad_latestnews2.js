@@ -18,7 +18,7 @@ const fr_launchpad_latestnews2 = /** @type {(inputs: Launchpad_Latestnews2Inputs
 };
 
 const ar_launchpad_latestnews2 = /** @type {(inputs: Launchpad_Latestnews2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Latest News`)
+	return /** @type {LocalizedString} */ (`آخر الأخبار`)
 };
 
 /**

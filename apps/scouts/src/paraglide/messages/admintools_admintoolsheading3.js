@@ -18,7 +18,7 @@ const fr_admintools_admintoolsheading3 = /** @type {(inputs: Admintools_Admintoo
 };
 
 const ar_admintools_admintoolsheading3 = /** @type {(inputs: Admintools_Admintoolsheading3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Admin Tools`)
+	return /** @type {LocalizedString} */ (`أدوات المسؤول`)
 };
 
 /**

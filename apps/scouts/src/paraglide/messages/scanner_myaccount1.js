@@ -18,7 +18,7 @@ const fr_scanner_myaccount1 = /** @type {(inputs: Scanner_Myaccount1Inputs) => L
 };
 
 const ar_scanner_myaccount1 = /** @type {(inputs: Scanner_Myaccount1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`My Account`)
+	return /** @type {LocalizedString} */ (`حسابي`)
 };
 
 /**

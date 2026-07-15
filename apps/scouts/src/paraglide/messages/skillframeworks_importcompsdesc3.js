@@ -18,7 +18,7 @@ const fr_skillframeworks_importcompsdesc3 = /** @type {(inputs: Skillframeworks_
 };
 
 const ar_skillframeworks_importcompsdesc3 = /** @type {(inputs: Skillframeworks_Importcompsdesc3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Import competencies using our template or upload a JSON file.`)
+	return /** @type {LocalizedString} */ (`استورد الكفاءات باستخدام قالبنا أو ارفع ملف JSON.`)
 };
 
 /**

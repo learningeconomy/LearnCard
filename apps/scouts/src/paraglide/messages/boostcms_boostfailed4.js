@@ -18,7 +18,7 @@ const fr_boostcms_boostfailed4 = /** @type {(inputs: Boostcms_Boostfailed4Inputs
 };
 
 const ar_boostcms_boostfailed4 = /** @type {(inputs: Boostcms_Boostfailed4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Unable to save boost`)
+	return /** @type {LocalizedString} */ (`تعذر حفظ التعزيز`)
 };
 
 /**

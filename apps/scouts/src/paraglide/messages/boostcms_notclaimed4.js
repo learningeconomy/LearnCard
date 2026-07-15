@@ -18,7 +18,7 @@ const fr_boostcms_notclaimed4 = /** @type {(inputs: Boostcms_Notclaimed4Inputs) 
 };
 
 const ar_boostcms_notclaimed4 = /** @type {(inputs: Boostcms_Notclaimed4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Not yet claimed.`)
+	return /** @type {LocalizedString} */ (`لم يتم استلامه بعد.`)
 };
 
 /**

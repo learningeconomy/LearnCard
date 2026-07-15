@@ -18,7 +18,7 @@ const fr_userprofile_confirmbelow2 = /** @type {(inputs: Userprofile_Confirmbelo
 };
 
 const ar_userprofile_confirmbelow2 = /** @type {(inputs: Userprofile_Confirmbelow2Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`${i?.phrase} below.`)
+	return /** @type {LocalizedString} */ (`${i?.phrase} أدناه.`)
 };
 
 /**

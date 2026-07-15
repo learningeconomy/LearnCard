@@ -18,7 +18,7 @@ const fr_addressbook_addcontact2 = /** @type {(inputs: Addressbook_Addcontact2In
 };
 
 const ar_addressbook_addcontact2 = /** @type {(inputs: Addressbook_Addcontact2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Add Contact`)
+	return /** @type {LocalizedString} */ (`إضافة جهة اتصال`)
 };
 
 /**

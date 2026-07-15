@@ -18,7 +18,7 @@ const fr_credsbundle_chapidesc12 = /** @type {(inputs: Credsbundle_Chapidesc12In
 };
 
 const ar_credsbundle_chapidesc12 = /** @type {(inputs: Credsbundle_Chapidesc12Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`The Credential Handler API (CHAPI) is an open-source solution for communicating Verifiable Credentials on the Web.`)
+	return /** @type {LocalizedString} */ (`واجهة برمجة معالج المؤهلات (CHAPI) هي حل مفتوح المصدر للتواصل بشأن المؤهلات القابلة للتحقق على الويب.`)
 };
 
 /**

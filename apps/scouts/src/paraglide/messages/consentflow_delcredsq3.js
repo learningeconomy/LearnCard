@@ -18,7 +18,7 @@ const fr_consentflow_delcredsq3 = /** @type {(inputs: Consentflow_Delcredsq3Inpu
 };
 
 const ar_consentflow_delcredsq3 = /** @type {(inputs: Consentflow_Delcredsq3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Do you want to delete all credentials associated with this contract?`)
+	return /** @type {LocalizedString} */ (`هل تريد حذف جميع المؤهلات المرتبطة بهذا العقد؟`)
 };
 
 /**

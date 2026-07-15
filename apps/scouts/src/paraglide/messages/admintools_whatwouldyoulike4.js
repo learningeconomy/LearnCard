@@ -18,7 +18,7 @@ const fr_admintools_whatwouldyoulike4 = /** @type {(inputs: Admintools_Whatwould
 };
 
 const ar_admintools_whatwouldyoulike4 = /** @type {(inputs: Admintools_Whatwouldyoulike4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`What you would you like to do, O Admin?`)
+	return /** @type {LocalizedString} */ (`ماذا تريد أن تفعل أيها المسؤول؟`)
 };
 
 /**

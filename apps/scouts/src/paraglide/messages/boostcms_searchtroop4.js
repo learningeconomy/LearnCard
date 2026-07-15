@@ -18,7 +18,7 @@ const fr_boostcms_searchtroop4 = /** @type {(inputs: Boostcms_Searchtroop4Inputs
 };
 
 const ar_boostcms_searchtroop4 = /** @type {(inputs: Boostcms_Searchtroop4Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`Search ${i?.name}...`)
+	return /** @type {LocalizedString} */ (`بحث في ${i?.name}...`)
 };
 
 /**

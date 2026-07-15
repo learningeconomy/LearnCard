@@ -18,7 +18,7 @@ const fr_troops_toasts_linkcopy1 = /** @type {(inputs: Troops_Toasts_Linkcopy1In
 };
 
 const ar_troops_toasts_linkcopy1 = /** @type {(inputs: Troops_Toasts_Linkcopy1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Unable to copy Troop link`)
+	return /** @type {LocalizedString} */ (`تعذر نسخ رابط الفرقة`)
 };
 
 /**

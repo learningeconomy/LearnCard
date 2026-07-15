@@ -18,7 +18,7 @@ const fr_login_learnmorescoutpass3 = /** @type {(inputs: Login_Learnmorescoutpas
 };
 
 const ar_login_learnmorescoutpass3 = /** @type {(inputs: Login_Learnmorescoutpass3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Learn More about ScoutPass`)
+	return /** @type {LocalizedString} */ (`اعرف المزيد عن ScoutPass`)
 };
 
 /**

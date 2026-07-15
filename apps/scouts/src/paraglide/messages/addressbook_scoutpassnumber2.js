@@ -18,7 +18,7 @@ const fr_addressbook_scoutpassnumber2 = /** @type {(inputs: Addressbook_Scoutpas
 };
 
 const ar_addressbook_scoutpassnumber2 = /** @type {(inputs: Addressbook_Scoutpassnumber2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`ScoutPass Number (DID)`)
+	return /** @type {LocalizedString} */ (`رقم ScoutPass (DID)`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_addressbook_toasts_unabletocancelrequest4 = /** @type {(inputs: Address
 };
 
 const ar_addressbook_toasts_unabletocancelrequest4 = /** @type {(inputs: Addressbook_Toasts_Unabletocancelrequest4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`An error occurred, unable to cancel request`)
+	return /** @type {LocalizedString} */ (`حدث خطأ، تعذر إلغاء الطلب`)
 };
 
 /**

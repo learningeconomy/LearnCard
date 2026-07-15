@@ -18,7 +18,7 @@ const fr_addressbook_toasts_unabletocopydid4 = /** @type {(inputs: Addressbook_T
 };
 
 const ar_addressbook_toasts_unabletocopydid4 = /** @type {(inputs: Addressbook_Toasts_Unabletocopydid4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Unable to copy DID to clipboard`)
+	return /** @type {LocalizedString} */ (`تعذر نسخ DID إلى الحافظة`)
 };
 
 /**

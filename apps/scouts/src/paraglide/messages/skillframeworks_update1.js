@@ -18,7 +18,7 @@ const fr_skillframeworks_update1 = /** @type {(inputs: Skillframeworks_Update1In
 };
 
 const ar_skillframeworks_update1 = /** @type {(inputs: Skillframeworks_Update1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Update`)
+	return /** @type {LocalizedString} */ (`تحديث`)
 };
 
 /**

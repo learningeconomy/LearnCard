@@ -18,7 +18,7 @@ const fr_troops_verify_infotext1 = /** @type {(inputs: Troops_Verify_Infotext1In
 };
 
 const ar_troops_verify_infotext1 = /** @type {(inputs: Troops_Verify_Infotext1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Credential verifications check the cryptographic proof of digital credentials to ensure their authenticity and accuracy.`)
+	return /** @type {LocalizedString} */ (`التحقق من المؤهلات يتحقق من الإثباتات التشفيرية للمؤهلات الرقمية لضمان صحتها ودقتها.`)
 };
 
 /**

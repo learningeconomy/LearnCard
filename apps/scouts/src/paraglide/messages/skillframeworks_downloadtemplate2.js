@@ -18,7 +18,7 @@ const fr_skillframeworks_downloadtemplate2 = /** @type {(inputs: Skillframeworks
 };
 
 const ar_skillframeworks_downloadtemplate2 = /** @type {(inputs: Skillframeworks_Downloadtemplate2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Download Blank Template`)
+	return /** @type {LocalizedString} */ (`تنزيل قالب فارغ`)
 };
 
 /**

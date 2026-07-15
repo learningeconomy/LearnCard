@@ -18,7 +18,7 @@ const fr_wallet_title = /** @type {(inputs: Wallet_TitleInputs) => LocalizedStri
 };
 
 const ar_wallet_title = /** @type {(inputs: Wallet_TitleInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Wallet`)
+	return /** @type {LocalizedString} */ (`المحفظة`)
 };
 
 /**

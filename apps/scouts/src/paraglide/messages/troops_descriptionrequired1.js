@@ -18,7 +18,7 @@ const fr_troops_descriptionrequired1 = /** @type {(inputs: Troops_Descriptionreq
 };
 
 const ar_troops_descriptionrequired1 = /** @type {(inputs: Troops_Descriptionrequired1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Description is required!`)
+	return /** @type {LocalizedString} */ (`الوصف مطلوب!`)
 };
 
 /**

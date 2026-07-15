@@ -18,7 +18,7 @@ const fr_credsbundle_bundlecreated2 = /** @type {(inputs: Credsbundle_Bundlecrea
 };
 
 const ar_credsbundle_bundlecreated2 = /** @type {(inputs: Credsbundle_Bundlecreated2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Boost bundle created`)
+	return /** @type {LocalizedString} */ (`تم إنشاء حزمة التعزيز`)
 };
 
 /**

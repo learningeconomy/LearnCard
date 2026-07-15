@@ -18,7 +18,7 @@ const fr_recovery_setup_phrase_generating = /** @type {(inputs: Recovery_Setup_P
 };
 
 const ar_recovery_setup_phrase_generating = /** @type {(inputs: Recovery_Setup_Phrase_GeneratingInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Generating...`)
+	return /** @type {LocalizedString} */ (`جاري الإنشاء...`)
 };
 
 /**

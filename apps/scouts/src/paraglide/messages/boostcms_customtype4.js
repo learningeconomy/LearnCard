@@ -18,7 +18,7 @@ const fr_boostcms_customtype4 = /** @type {(inputs: Boostcms_Customtype4Inputs) 
 };
 
 const ar_boostcms_customtype4 = /** @type {(inputs: Boostcms_Customtype4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Custom Type`)
+	return /** @type {LocalizedString} */ (`نوع مخصص`)
 };
 
 /**

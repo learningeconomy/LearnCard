@@ -18,7 +18,7 @@ const fr_consentflow_sharingcount2 = /** @type {(inputs: Consentflow_Sharingcoun
 };
 
 const ar_consentflow_sharingcount2 = /** @type {(inputs: Consentflow_Sharingcount2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Sharing {count}/{total}`)
+	return /** @type {LocalizedString} */ (`مشاركة {count}/{total}`)
 };
 
 /**

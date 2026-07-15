@@ -18,7 +18,7 @@ const fr_networkprompts_settings_showname2 = /** @type {(inputs: Networkprompts_
 };
 
 const ar_networkprompts_settings_showname2 = /** @type {(inputs: Networkprompts_Settings_Showname2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Display name in your connections’ contact lists.`)
+	return /** @type {LocalizedString} */ (`عرض الاسم في قوائم جهات اتصال من تتواصل معهم.`)
 };
 
 /**

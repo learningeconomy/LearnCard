@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_missing2 = /** @type {(inputs: Admintools_Bulkimp
 };
 
 const ar_admintools_bulkimport_missing2 = /** @type {(inputs: Admintools_Bulkimport_Missing2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Missing`)
+	return /** @type {LocalizedString} */ (`مفقود`)
 };
 
 /**

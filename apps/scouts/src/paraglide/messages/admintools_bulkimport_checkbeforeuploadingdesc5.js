@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_checkbeforeuploadingdesc5 = /** @type {(inputs: A
 };
 
 const ar_admintools_bulkimport_checkbeforeuploadingdesc5 = /** @type {(inputs: Admintools_Bulkimport_Checkbeforeuploadingdesc5Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Ensure all images are in place and any file errors are fixed before continuing.`)
+	return /** @type {LocalizedString} */ (`تأكد من وجود جميع الصور وإصلاح أخطاء الملفات قبل المتابعة.`)
 };
 
 /**

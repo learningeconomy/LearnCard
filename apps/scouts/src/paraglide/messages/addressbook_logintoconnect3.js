@@ -18,7 +18,7 @@ const fr_addressbook_logintoconnect3 = /** @type {(inputs: Addressbook_Logintoco
 };
 
 const ar_addressbook_logintoconnect3 = /** @type {(inputs: Addressbook_Logintoconnect3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Login to Connect`)
+	return /** @type {LocalizedString} */ (`تسجيل الدخول للتواصل`)
 };
 
 /**

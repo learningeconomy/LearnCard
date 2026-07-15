@@ -18,7 +18,7 @@ const fr_recovery_method_devicelabel1 = /** @type {(inputs: Recovery_Method_Devi
 };
 
 const ar_recovery_method_devicelabel1 = /** @type {(inputs: Recovery_Method_Devicelabel1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Another Device`)
+	return /** @type {LocalizedString} */ (`جهاز آخر`)
 };
 
 /**

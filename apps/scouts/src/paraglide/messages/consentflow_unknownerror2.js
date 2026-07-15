@@ -18,7 +18,7 @@ const fr_consentflow_unknownerror2 = /** @type {(inputs: Consentflow_Unknownerro
 };
 
 const ar_consentflow_unknownerror2 = /** @type {(inputs: Consentflow_Unknownerror2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Unknown Error`)
+	return /** @type {LocalizedString} */ (`خطأ غير معروف`)
 };
 
 /**

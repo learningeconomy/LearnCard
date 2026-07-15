@@ -18,7 +18,7 @@ const fr_consentflow_editaccess2 = /** @type {(inputs: Consentflow_Editaccess2In
 };
 
 const ar_consentflow_editaccess2 = /** @type {(inputs: Consentflow_Editaccess2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Edit Access`)
+	return /** @type {LocalizedString} */ (`تعديل الوصول`)
 };
 
 /**

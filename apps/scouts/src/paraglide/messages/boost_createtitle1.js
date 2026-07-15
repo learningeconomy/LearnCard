@@ -18,7 +18,7 @@ const fr_boost_createtitle1 = /** @type {(inputs: Boost_Createtitle1Inputs) => L
 };
 
 const ar_boost_createtitle1 = /** @type {(inputs: Boost_Createtitle1Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`Create a ${i?.title}`)
+	return /** @type {LocalizedString} */ (`إنشاء ${i?.title}`)
 };
 
 /**

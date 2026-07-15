@@ -18,7 +18,7 @@ const fr_boostcms_contact3 = /** @type {(inputs: Boostcms_Contact3Inputs) => Loc
 };
 
 const ar_boostcms_contact3 = /** @type {(inputs: Boostcms_Contact3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Contact`)
+	return /** @type {LocalizedString} */ (`جهة اتصال`)
 };
 
 /**

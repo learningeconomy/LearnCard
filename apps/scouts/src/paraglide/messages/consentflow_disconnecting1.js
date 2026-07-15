@@ -18,7 +18,7 @@ const fr_consentflow_disconnecting1 = /** @type {(inputs: Consentflow_Disconnect
 };
 
 const ar_consentflow_disconnecting1 = /** @type {(inputs: Consentflow_Disconnecting1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Disconnecting...`)
+	return /** @type {LocalizedString} */ (`جاري قطع الاتصال...`)
 };
 
 /**

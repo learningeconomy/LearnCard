@@ -18,7 +18,7 @@ const fr_credsbundle_verified1 = /** @type {(inputs: Credsbundle_Verified1Inputs
 };
 
 const ar_credsbundle_verified1 = /** @type {(inputs: Credsbundle_Verified1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`verified`)
+	return /** @type {LocalizedString} */ (`تم التحقق`)
 };
 
 /**

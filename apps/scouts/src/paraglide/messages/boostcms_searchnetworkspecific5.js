@@ -18,7 +18,7 @@ const fr_boostcms_searchnetworkspecific5 = /** @type {(inputs: Boostcms_Searchne
 };
 
 const ar_boostcms_searchnetworkspecific5 = /** @type {(inputs: Boostcms_Searchnetworkspecific5Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`Search ${i?.name}...`)
+	return /** @type {LocalizedString} */ (`بحث في ${i?.name}...`)
 };
 
 /**

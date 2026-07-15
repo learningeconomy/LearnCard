@@ -18,7 +18,7 @@ const fr_recovery_errors_phraseincomplete1 = /** @type {(inputs: Recovery_Errors
 };
 
 const ar_recovery_errors_phraseincomplete1 = /** @type {(inputs: Recovery_Errors_Phraseincomplete1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Please enter all 25 words of your recovery phrase.`)
+	return /** @type {LocalizedString} */ (`يرجى إدخال جميع كلمات عبارة الاسترداد الـ 25.`)
 };
 
 /**

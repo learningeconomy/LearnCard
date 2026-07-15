@@ -18,7 +18,7 @@ const fr_skillframeworks_untitledfw2 = /** @type {(inputs: Skillframeworks_Untit
 };
 
 const ar_skillframeworks_untitledfw2 = /** @type {(inputs: Skillframeworks_Untitledfw2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Untitled Framework`)
+	return /** @type {LocalizedString} */ (`إطار بدون عنوان`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_uploadcsv3 = /** @type {(inputs: Admintools_Bulki
 };
 
 const ar_admintools_bulkimport_uploadcsv3 = /** @type {(inputs: Admintools_Bulkimport_Uploadcsv3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Upload Your .csv File`)
+	return /** @type {LocalizedString} */ (`رفع ملف .CSV الخاص بك`)
 };
 
 /**

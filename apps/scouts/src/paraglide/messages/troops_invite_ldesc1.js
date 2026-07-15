@@ -18,7 +18,7 @@ const fr_troops_invite_ldesc1 = /** @type {(inputs: Troops_Invite_Ldesc1Inputs) 
 };
 
 const ar_troops_invite_ldesc1 = /** @type {(inputs: Troops_Invite_Ldesc1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Add a scout leader to this troop`)
+	return /** @type {LocalizedString} */ (`أضف قائد كشافة إلى هذه الفرقة`)
 };
 
 /**

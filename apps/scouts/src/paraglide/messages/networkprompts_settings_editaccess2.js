@@ -18,7 +18,7 @@ const fr_networkprompts_settings_editaccess2 = /** @type {(inputs: Networkprompt
 };
 
 const ar_networkprompts_settings_editaccess2 = /** @type {(inputs: Networkprompts_Settings_Editaccess2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Edit Requested Access`)
+	return /** @type {LocalizedString} */ (`تعديل الوصول المطلوب`)
 };
 
 /**

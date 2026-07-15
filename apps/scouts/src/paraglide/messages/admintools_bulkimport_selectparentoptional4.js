@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_selectparentoptional4 = /** @type {(inputs: Admin
 };
 
 const ar_admintools_bulkimport_selectparentoptional4 = /** @type {(inputs: Admintools_Bulkimport_Selectparentoptional4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`5. (Optional) Select the parent boost that these boosts will be created under`)
+	return /** @type {LocalizedString} */ (`5. (اختياري) اختر التعزيز الأصلي الذي سيتم إنشاء هذه التعزيزات تحته`)
 };
 
 /**

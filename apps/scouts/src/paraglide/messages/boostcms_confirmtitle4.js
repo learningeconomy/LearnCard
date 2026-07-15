@@ -18,7 +18,7 @@ const fr_boostcms_confirmtitle4 = /** @type {(inputs: Boostcms_Confirmtitle4Inpu
 };
 
 const ar_boostcms_confirmtitle4 = /** @type {(inputs: Boostcms_Confirmtitle4Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`${i?.title} Confirmation`)
+	return /** @type {LocalizedString} */ (`تأكيد ${i?.title}`)
 };
 
 /**

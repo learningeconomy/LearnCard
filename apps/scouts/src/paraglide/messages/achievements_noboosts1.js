@@ -18,7 +18,7 @@ const fr_achievements_noboosts1 = /** @type {(inputs: Achievements_Noboosts1Inpu
 };
 
 const ar_achievements_noboosts1 = /** @type {(inputs: Achievements_Noboosts1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No boosts to manage yet`)
+	return /** @type {LocalizedString} */ (`لا توجد تعزيزات لإدارتها بعد`)
 };
 
 /**

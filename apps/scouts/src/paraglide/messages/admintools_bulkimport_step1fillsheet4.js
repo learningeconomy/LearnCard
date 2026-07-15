@@ -47,11 +47,11 @@ const fr_admintools_bulkimport_step1fillsheet4 = /** @type {((inputs: Admintools
 const ar_admintools_bulkimport_step1fillsheet4 = /** @type {((inputs: Admintools_Bulkimport_Step1fillsheet4Inputs) => LocalizedString) & { parts: (inputs: Admintools_Bulkimport_Step1fillsheet4Inputs) => import('../runtime.js').MessagePart[] }} */ (
 	/* @__PURE__ */ Object.assign(
 		/** @type {(inputs: Admintools_Bulkimport_Step1fillsheet4Inputs) => LocalizedString} */ (() => {
-			return /** @type {LocalizedString} */ (`1. Fill out this Google Sheet using:`)
+			return /** @type {LocalizedString} */ (`1. املأ جداول بيانات Google هذه باستخدام:`)
 		}),
 		{
 			parts: /** @type {(inputs: Admintools_Bulkimport_Step1fillsheet4Inputs) => import('../runtime.js').MessagePart[]} */ (() => {
-				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "1. Fill out this " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: "Google Sheet" }, { type: "markup-end", name: "0", options: {}, attributes: {} }, { type: "text", value: " using:" }])
+				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "1. املأ " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: "جداول بيانات Google" }, { type: "markup-end", name: "0", options: {}, attributes: {} }, { type: "text", value: " هذه باستخدام:" }])
 			})
 		}
 	)

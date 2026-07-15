@@ -18,7 +18,7 @@ const fr_skillframeworks_addcompsq3 = /** @type {(inputs: Skillframeworks_Addcom
 };
 
 const ar_skillframeworks_addcompsq3 = /** @type {(inputs: Skillframeworks_Addcompsq3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Would you like to add competencies now?`)
+	return /** @type {LocalizedString} */ (`هل ترغب في إضافة كفاءات الآن؟`)
 };
 
 /**

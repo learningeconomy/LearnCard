@@ -18,7 +18,7 @@ const fr_notifications_toasts_successfullyclaimed1 = /** @type {(inputs: Notific
 };
 
 const ar_notifications_toasts_successfullyclaimed1 = /** @type {(inputs: Notifications_Toasts_Successfullyclaimed1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Successfully claimed Credential!`)
+	return /** @type {LocalizedString} */ (`تم استلام المؤهل بنجاح!`)
 };
 
 /**

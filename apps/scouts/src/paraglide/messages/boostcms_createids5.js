@@ -18,7 +18,7 @@ const fr_boostcms_createids5 = /** @type {(inputs: Boostcms_Createids5Inputs) =>
 };
 
 const ar_boostcms_createids5 = /** @type {(inputs: Boostcms_Createids5Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Create IDs`)
+	return /** @type {LocalizedString} */ (`إنشاء معرفات`)
 };
 
 /**

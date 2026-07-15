@@ -47,11 +47,11 @@ const fr_userprofile_deletewarning2 = /** @type {((inputs: Userprofile_Deletewar
 const ar_userprofile_deletewarning2 = /** @type {((inputs: Userprofile_Deletewarning2Inputs) => LocalizedString) & { parts: (inputs: Userprofile_Deletewarning2Inputs) => import('../runtime.js').MessagePart[] }} */ (
 	/* @__PURE__ */ Object.assign(
 		/** @type {(inputs: Userprofile_Deletewarning2Inputs) => LocalizedString} */ (() => {
-			return /** @type {LocalizedString} */ (`Deleting your account will permanently delete your identity on ScoutPass and all of your credentials. Warning, this action cannot be undone!`)
+			return /** @type {LocalizedString} */ (`حذف حسابك سيحذف هويتك على ScoutPass وجميع مؤهلاتك نهائياً. تحذير، هذا إجراء`)
 		}),
 		{
 			parts: /** @type {(inputs: Userprofile_Deletewarning2Inputs) => import('../runtime.js').MessagePart[]} */ (() => {
-				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "Deleting your account will permanently delete your identity on ScoutPass and all of your credentials. " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: "Warning, this action cannot be undone!" }, { type: "markup-end", name: "0", options: {}, attributes: {} }])
+				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "حذف حسابك سيحذف هويتك على ScoutPass وجميع مؤهلاتك نهائياً. " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: "تحذير، هذا إجراء" }, { type: "markup-end", name: "0", options: {}, attributes: {} }])
 			})
 		}
 	)

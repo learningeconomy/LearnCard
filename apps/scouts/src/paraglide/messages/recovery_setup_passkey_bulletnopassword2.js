@@ -18,7 +18,7 @@ const fr_recovery_setup_passkey_bulletnopassword2 = /** @type {(inputs: Recovery
 };
 
 const ar_recovery_setup_passkey_bulletnopassword2 = /** @type {(inputs: Recovery_Setup_Passkey_Bulletnopassword2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No password to remember`)
+	return /** @type {LocalizedString} */ (`لا توجد كلمة مرور لحفظها`)
 };
 
 /**

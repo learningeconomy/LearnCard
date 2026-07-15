@@ -18,7 +18,7 @@ const fr_consentflow_haveaccount2 = /** @type {(inputs: Consentflow_Haveaccount2
 };
 
 const ar_consentflow_haveaccount2 = /** @type {(inputs: Consentflow_Haveaccount2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Have an account?`)
+	return /** @type {LocalizedString} */ (`لديك حساب؟`)
 };
 
 /**

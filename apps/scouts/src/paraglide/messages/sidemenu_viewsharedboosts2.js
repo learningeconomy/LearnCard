@@ -18,7 +18,7 @@ const fr_sidemenu_viewsharedboosts2 = /** @type {(inputs: Sidemenu_Viewsharedboo
 };
 
 const ar_sidemenu_viewsharedboosts2 = /** @type {(inputs: Sidemenu_Viewsharedboosts2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`View Shared Boosts`)
+	return /** @type {LocalizedString} */ (`عرض التعزيزات المشتركة`)
 };
 
 /**

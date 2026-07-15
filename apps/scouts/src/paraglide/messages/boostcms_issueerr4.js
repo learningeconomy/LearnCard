@@ -18,7 +18,7 @@ const fr_boostcms_issueerr4 = /** @type {(inputs: Boostcms_Issueerr4Inputs) => L
 };
 
 const ar_boostcms_issueerr4 = /** @type {(inputs: Boostcms_Issueerr4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Error issuing boost`)
+	return /** @type {LocalizedString} */ (`خطأ في إصدار التعزيز`)
 };
 
 /**

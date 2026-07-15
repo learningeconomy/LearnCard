@@ -18,7 +18,7 @@ const fr_recovery_setup_phrase_keepsafe1 = /** @type {(inputs: Recovery_Setup_Ph
 };
 
 const ar_recovery_setup_phrase_keepsafe1 = /** @type {(inputs: Recovery_Setup_Phrase_Keepsafe1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Keep it safe`)
+	return /** @type {LocalizedString} */ (`احفظها في مكان آمن`)
 };
 
 /**

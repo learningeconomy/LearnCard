@@ -18,7 +18,7 @@ const fr_troops_repeatimage1 = /** @type {(inputs: Troops_Repeatimage1Inputs) =>
 };
 
 const ar_troops_repeatimage1 = /** @type {(inputs: Troops_Repeatimage1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Repeat Image`)
+	return /** @type {LocalizedString} */ (`تكرار الصورة`)
 };
 
 /**

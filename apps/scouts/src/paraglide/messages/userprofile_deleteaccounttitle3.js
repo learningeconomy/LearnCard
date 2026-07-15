@@ -18,7 +18,7 @@ const fr_userprofile_deleteaccounttitle3 = /** @type {(inputs: Userprofile_Delet
 };
 
 const ar_userprofile_deleteaccounttitle3 = /** @type {(inputs: Userprofile_Deleteaccounttitle3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Delete Account?`)
+	return /** @type {LocalizedString} */ (`حذف الحساب؟`)
 };
 
 /**

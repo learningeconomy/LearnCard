@@ -18,7 +18,7 @@ const fr_recovery_method_notsetup2 = /** @type {(inputs: Recovery_Method_Notsetu
 };
 
 const ar_recovery_method_notsetup2 = /** @type {(inputs: Recovery_Method_Notsetup2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Not set up`)
+	return /** @type {LocalizedString} */ (`لم يتم الإعداد`)
 };
 
 /**

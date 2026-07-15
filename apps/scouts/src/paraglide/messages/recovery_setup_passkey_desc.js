@@ -18,7 +18,7 @@ const fr_recovery_setup_passkey_desc = /** @type {(inputs: Recovery_Setup_Passke
 };
 
 const ar_recovery_setup_passkey_desc = /** @type {(inputs: Recovery_Setup_Passkey_DescInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Use Face ID, Touch ID, or Windows Hello as your recovery method. Nothing to remember.`)
+	return /** @type {LocalizedString} */ (`استخدم Face ID أو Touch ID أو Windows Hello كطريقة استرداد. لا شيء لتتذكره.`)
 };
 
 /**

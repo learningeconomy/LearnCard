@@ -18,7 +18,7 @@ const fr_recovery_setup_backup_gennewbtn2 = /** @type {(inputs: Recovery_Setup_B
 };
 
 const ar_recovery_setup_backup_gennewbtn2 = /** @type {(inputs: Recovery_Setup_Backup_Gennewbtn2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Generate New Backup`)
+	return /** @type {LocalizedString} */ (`إنشاء نسخ احتياطي جديد`)
 };
 
 /**

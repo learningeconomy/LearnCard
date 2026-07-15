@@ -18,7 +18,7 @@ const fr_skillframeworks_managefwdesc3 = /** @type {(inputs: Skillframeworks_Man
 };
 
 const ar_skillframeworks_managefwdesc3 = /** @type {(inputs: Skillframeworks_Managefwdesc3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Manage and import skill frameworks.`)
+	return /** @type {LocalizedString} */ (`إدارة واستيراد أطر المهارات.`)
 };
 
 /**

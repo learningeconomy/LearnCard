@@ -18,7 +18,7 @@ const fr_boostcms_noconnections4 = /** @type {(inputs: Boostcms_Noconnections4In
 };
 
 const ar_boostcms_noconnections4 = /** @type {(inputs: Boostcms_Noconnections4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No connections yet`)
+	return /** @type {LocalizedString} */ (`لا توجد اتصالات بعد`)
 };
 
 /**

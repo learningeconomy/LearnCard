@@ -18,7 +18,7 @@ const fr_membership_troops = /** @type {(inputs: Membership_TroopsInputs) => Loc
 };
 
 const ar_membership_troops = /** @type {(inputs: Membership_TroopsInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Troops`)
+	return /** @type {LocalizedString} */ (`الفرق`)
 };
 
 /**

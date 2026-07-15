@@ -18,7 +18,7 @@ const fr_consentflow_noreaddata3 = /** @type {(inputs: Consentflow_Noreaddata3In
 };
 
 const ar_consentflow_noreaddata3 = /** @type {(inputs: Consentflow_Noreaddata3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`This contract is not reading any data from your LearnCard`)
+	return /** @type {LocalizedString} */ (`هذا العقد لا يقرأ أي بيانات من LearnCard الخاص بك`)
 };
 
 /**

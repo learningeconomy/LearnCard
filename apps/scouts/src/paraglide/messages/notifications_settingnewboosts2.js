@@ -18,7 +18,7 @@ const fr_notifications_settingnewboosts2 = /** @type {(inputs: Notifications_Set
 };
 
 const ar_notifications_settingnewboosts2 = /** @type {(inputs: Notifications_Settingnewboosts2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`New Boosts`)
+	return /** @type {LocalizedString} */ (`التعزيزات الجديدة`)
 };
 
 /**

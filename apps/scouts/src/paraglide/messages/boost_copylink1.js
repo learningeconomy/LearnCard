@@ -18,7 +18,7 @@ const fr_boost_copylink1 = /** @type {(inputs: Boost_Copylink1Inputs) => Localiz
 };
 
 const ar_boost_copylink1 = /** @type {(inputs: Boost_Copylink1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Copy Link`)
+	return /** @type {LocalizedString} */ (`نسخ الرابط`)
 };
 
 /**

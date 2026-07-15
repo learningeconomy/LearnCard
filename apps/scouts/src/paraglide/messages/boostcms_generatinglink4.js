@@ -18,7 +18,7 @@ const fr_boostcms_generatinglink4 = /** @type {(inputs: Boostcms_Generatinglink4
 };
 
 const ar_boostcms_generatinglink4 = /** @type {(inputs: Boostcms_Generatinglink4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Generating Link...`)
+	return /** @type {LocalizedString} */ (`جاري إنشاء الرابط...`)
 };
 
 /**

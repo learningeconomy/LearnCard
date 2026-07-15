@@ -18,7 +18,7 @@ const fr_addressbook_unblock1 = /** @type {(inputs: Addressbook_Unblock1Inputs) 
 };
 
 const ar_addressbook_unblock1 = /** @type {(inputs: Addressbook_Unblock1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Unblock`)
+	return /** @type {LocalizedString} */ (`إلغاء الحظر`)
 };
 
 /**

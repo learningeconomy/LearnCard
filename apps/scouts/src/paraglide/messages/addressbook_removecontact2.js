@@ -18,7 +18,7 @@ const fr_addressbook_removecontact2 = /** @type {(inputs: Addressbook_Removecont
 };
 
 const ar_addressbook_removecontact2 = /** @type {(inputs: Addressbook_Removecontact2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Remove Contact`)
+	return /** @type {LocalizedString} */ (`إزالة جهة الاتصال`)
 };
 
 /**

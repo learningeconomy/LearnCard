@@ -18,7 +18,7 @@ const fr_skillframeworks_yesdel2 = /** @type {(inputs: Skillframeworks_Yesdel2In
 };
 
 const ar_skillframeworks_yesdel2 = /** @type {(inputs: Skillframeworks_Yesdel2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Yes, Delete`)
+	return /** @type {LocalizedString} */ (`نعم، حذف`)
 };
 
 /**

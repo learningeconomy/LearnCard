@@ -18,7 +18,7 @@ const fr_troops_toasts_linkcopied1 = /** @type {(inputs: Troops_Toasts_Linkcopie
 };
 
 const ar_troops_toasts_linkcopied1 = /** @type {(inputs: Troops_Toasts_Linkcopied1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Troop link copied to clipboard`)
+	return /** @type {LocalizedString} */ (`تم نسخ رابط الفرقة إلى الحافظة`)
 };
 
 /**

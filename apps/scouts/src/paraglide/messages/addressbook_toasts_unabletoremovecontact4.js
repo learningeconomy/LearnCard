@@ -18,7 +18,7 @@ const fr_addressbook_toasts_unabletoremovecontact4 = /** @type {(inputs: Address
 };
 
 const ar_addressbook_toasts_unabletoremovecontact4 = /** @type {(inputs: Addressbook_Toasts_Unabletoremovecontact4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`An error occurred, unable to remove contact`)
+	return /** @type {LocalizedString} */ (`حدث خطأ، تعذر إزالة جهة الاتصال`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_troops_globalnetworklabel2 = /** @type {(inputs: Troops_Globalnetworkla
 };
 
 const ar_troops_globalnetworklabel2 = /** @type {(inputs: Troops_Globalnetworklabel2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Global Network`)
+	return /** @type {LocalizedString} */ (`الشبكة العالمية`)
 };
 
 /**

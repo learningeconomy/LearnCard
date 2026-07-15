@@ -18,7 +18,7 @@ const fr_boostcms_issuelater4 = /** @type {(inputs: Boostcms_Issuelater4Inputs) 
 };
 
 const ar_boostcms_issuelater4 = /** @type {(inputs: Boostcms_Issuelater4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Issue Later`)
+	return /** @type {LocalizedString} */ (`الإصدار لاحقاً`)
 };
 
 /**

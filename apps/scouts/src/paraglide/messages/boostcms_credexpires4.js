@@ -18,7 +18,7 @@ const fr_boostcms_credexpires4 = /** @type {(inputs: Boostcms_Credexpires4Inputs
 };
 
 const ar_boostcms_credexpires4 = /** @type {(inputs: Boostcms_Credexpires4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Credential Expires`)
+	return /** @type {LocalizedString} */ (`صلاحية المؤهل`)
 };
 
 /**

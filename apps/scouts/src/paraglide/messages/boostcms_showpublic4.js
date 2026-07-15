@@ -18,7 +18,7 @@ const fr_boostcms_showpublic4 = /** @type {(inputs: Boostcms_Showpublic4Inputs) 
 };
 
 const ar_boostcms_showpublic4 = /** @type {(inputs: Boostcms_Showpublic4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Show to public`)
+	return /** @type {LocalizedString} */ (`عرض للعامة`)
 };
 
 /**

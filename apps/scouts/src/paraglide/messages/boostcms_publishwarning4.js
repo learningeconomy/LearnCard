@@ -18,7 +18,7 @@ const fr_boostcms_publishwarning4 = /** @type {(inputs: Boostcms_Publishwarning4
 };
 
 const ar_boostcms_publishwarning4 = /** @type {(inputs: Boostcms_Publishwarning4Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`This ${i?.title} will be locked in a verifiable seal forever and can’t be changed after you publish.`)
+	return /** @type {LocalizedString} */ (`سيتم تأمين ${i?.title} في ختم قابل للتحقق للأبد ولا يمكن تغييره بعد النشر.`)
 };
 
 /**

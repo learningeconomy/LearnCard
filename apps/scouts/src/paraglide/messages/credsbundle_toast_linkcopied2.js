@@ -18,7 +18,7 @@ const fr_credsbundle_toast_linkcopied2 = /** @type {(inputs: Credsbundle_Toast_L
 };
 
 const ar_credsbundle_toast_linkcopied2 = /** @type {(inputs: Credsbundle_Toast_Linkcopied2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Verified resume link copied to clipboard`)
+	return /** @type {LocalizedString} */ (`تم نسخ رابط السيرة الذاتية الموثقة إلى الحافظة`)
 };
 
 /**

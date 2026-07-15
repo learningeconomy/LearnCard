@@ -18,7 +18,7 @@ const fr_troops_leaderone1 = /** @type {(inputs: Troops_Leaderone1Inputs) => Loc
 };
 
 const ar_troops_leaderone1 = /** @type {(inputs: Troops_Leaderone1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Leader`)
+	return /** @type {LocalizedString} */ (`قائد`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_networkprompts_optout_limit2 = /** @type {(inputs: Networkprompts_Optou
 };
 
 const ar_networkprompts_optout_limit2 = /** @type {(inputs: Networkprompts_Optout_Limit2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`You won’t be able to send Boosts or connect with others, but you can still sync credentials. You can join later anytime.`)
+	return /** @type {LocalizedString} */ (`لن تتمكن من إرسال التعزيزات أو التواصل مع الآخرين، لكن لا يزال بإمكانك مزامنة المؤهلات. يمكنك الانضمام لاحقاً في أي وقت.`)
 };
 
 /**

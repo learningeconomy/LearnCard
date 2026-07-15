@@ -18,7 +18,7 @@ const fr_troops_contenttab1 = /** @type {(inputs: Troops_Contenttab1Inputs) => L
 };
 
 const ar_troops_contenttab1 = /** @type {(inputs: Troops_Contenttab1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Content`)
+	return /** @type {LocalizedString} */ (`المحتوى`)
 };
 
 /**

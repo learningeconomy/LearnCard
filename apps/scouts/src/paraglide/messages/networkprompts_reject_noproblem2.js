@@ -18,7 +18,7 @@ const fr_networkprompts_reject_noproblem2 = /** @type {(inputs: Networkprompts_R
 };
 
 const ar_networkprompts_reject_noproblem2 = /** @type {(inputs: Networkprompts_Reject_Noproblem2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No Problem!`)
+	return /** @type {LocalizedString} */ (`لا مشكلة!`)
 };
 
 /**

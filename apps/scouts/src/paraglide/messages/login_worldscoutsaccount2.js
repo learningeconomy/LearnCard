@@ -47,11 +47,11 @@ const fr_login_worldscoutsaccount2 = /** @type {((inputs: Login_Worldscoutsaccou
 const ar_login_worldscoutsaccount2 = /** @type {((inputs: Login_Worldscoutsaccount2Inputs) => LocalizedString) & { parts: (inputs: Login_Worldscoutsaccount2Inputs) => import('../runtime.js').MessagePart[] }} */ (
 	/* @__PURE__ */ Object.assign(
 		/** @type {(inputs: Login_Worldscoutsaccount2Inputs) => LocalizedString} */ (() => {
-			return /** @type {LocalizedString} */ (`Login with your World Scouts Account`)
+			return /** @type {LocalizedString} */ (`تسجيل الدخول باستخدام حساب الكشافة العالمي الخاص بك`)
 		}),
 		{
 			parts: /** @type {(inputs: Login_Worldscoutsaccount2Inputs) => import('../runtime.js').MessagePart[]} */ (() => {
-				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "Login with your " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: "World Scouts Account" }, { type: "markup-end", name: "0", options: {}, attributes: {} }])
+				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "تسجيل الدخول باستخدام " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: "حساب الكشافة العالمي" }, { type: "markup-end", name: "0", options: {}, attributes: {} }, { type: "text", value: " الخاص بك" }])
 			})
 		}
 	)

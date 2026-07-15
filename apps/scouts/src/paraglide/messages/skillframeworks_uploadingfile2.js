@@ -18,7 +18,7 @@ const fr_skillframeworks_uploadingfile2 = /** @type {(inputs: Skillframeworks_Up
 };
 
 const ar_skillframeworks_uploadingfile2 = /** @type {(inputs: Skillframeworks_Uploadingfile2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Uploading file...`)
+	return /** @type {LocalizedString} */ (`جاري رفع الملف...`)
 };
 
 /**

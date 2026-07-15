@@ -18,7 +18,7 @@ const fr_auth_poweredby1 = /** @type {(inputs: Auth_Poweredby1Inputs) => Localiz
 };
 
 const ar_auth_poweredby1 = /** @type {(inputs: Auth_Poweredby1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`powered by`)
+	return /** @type {LocalizedString} */ (`مدعوم من`)
 };
 
 /**

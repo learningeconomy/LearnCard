@@ -18,7 +18,7 @@ const fr_auth_linkdevice1 = /** @type {(inputs: Auth_Linkdevice1Inputs) => Local
 };
 
 const ar_auth_linkdevice1 = /** @type {(inputs: Auth_Linkdevice1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Link a Device`)
+	return /** @type {LocalizedString} */ (`ربط جهاز`)
 };
 
 /**

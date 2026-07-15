@@ -18,7 +18,7 @@ const fr_recovery_method_passkeydesc1 = /** @type {(inputs: Recovery_Method_Pass
 };
 
 const ar_recovery_method_passkeydesc1 = /** @type {(inputs: Recovery_Method_Passkeydesc1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Use Face ID, Touch ID, or similar`)
+	return /** @type {LocalizedString} */ (`استخدم Face ID أو Touch ID أو ما شابه`)
 };
 
 /**

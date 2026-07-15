@@ -18,7 +18,7 @@ const fr_theme_names_colorful = /** @type {(inputs: Theme_Names_ColorfulInputs) 
 };
 
 const ar_theme_names_colorful = /** @type {(inputs: Theme_Names_ColorfulInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Colorful`)
+	return /** @type {LocalizedString} */ (`ملون`)
 };
 
 /**

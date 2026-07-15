@@ -18,7 +18,7 @@ const fr_skillframeworks_hasadded2 = /** @type {(inputs: Skillframeworks_Hasadde
 };
 
 const ar_skillframeworks_hasadded2 = /** @type {(inputs: Skillframeworks_Hasadded2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`has been added`)
+	return /** @type {LocalizedString} */ (`تمت الإضافة`)
 };
 
 /**

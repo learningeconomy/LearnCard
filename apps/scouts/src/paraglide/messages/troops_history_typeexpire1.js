@@ -18,7 +18,7 @@ const fr_troops_history_typeexpire1 = /** @type {(inputs: Troops_History_Typeexp
 };
 
 const ar_troops_history_typeexpire1 = /** @type {(inputs: Troops_History_Typeexpire1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Expired`)
+	return /** @type {LocalizedString} */ (`منتهي`)
 };
 
 /**

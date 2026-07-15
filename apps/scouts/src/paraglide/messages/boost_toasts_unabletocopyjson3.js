@@ -18,7 +18,7 @@ const fr_boost_toasts_unabletocopyjson3 = /** @type {(inputs: Boost_Toasts_Unabl
 };
 
 const ar_boost_toasts_unabletocopyjson3 = /** @type {(inputs: Boost_Toasts_Unabletocopyjson3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Unable to copy JSON to clipboard`)
+	return /** @type {LocalizedString} */ (`تعذر نسخ JSON إلى الحافظة`)
 };
 
 /**

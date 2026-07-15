@@ -18,7 +18,7 @@ const fr_credsbundle_createbundledesc3 = /** @type {(inputs: Credsbundle_Createb
 };
 
 const ar_credsbundle_createbundledesc3 = /** @type {(inputs: Credsbundle_Createbundledesc3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`This will create a shared boost bundle that can shared and viewed.`)
+	return /** @type {LocalizedString} */ (`سينشئ هذا حزمة تعزيز مشتركة يمكن مشاركتها وعرضها.`)
 };
 
 /**

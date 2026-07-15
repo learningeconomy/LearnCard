@@ -18,7 +18,7 @@ const fr_troops_analytics_failedmsg1 = /** @type {(inputs: Troops_Analytics_Fail
 };
 
 const ar_troops_analytics_failedmsg1 = /** @type {(inputs: Troops_Analytics_Failedmsg1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Failed to load analytics`)
+	return /** @type {LocalizedString} */ (`فشل تحميل التحليلات`)
 };
 
 /**

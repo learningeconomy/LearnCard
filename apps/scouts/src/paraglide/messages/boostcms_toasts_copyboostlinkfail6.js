@@ -18,7 +18,7 @@ const fr_boostcms_toasts_copyboostlinkfail6 = /** @type {(inputs: Boostcms_Toast
 };
 
 const ar_boostcms_toasts_copyboostlinkfail6 = /** @type {(inputs: Boostcms_Toasts_Copyboostlinkfail6Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Unable to copy boost link to clipboard`)
+	return /** @type {LocalizedString} */ (`تعذر نسخ رابط التعزيز إلى الحافظة`)
 };
 
 /**

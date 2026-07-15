@@ -18,7 +18,7 @@ const fr_login_youreallsettitle3 = /** @type {(inputs: Login_Youreallsettitle3In
 };
 
 const ar_login_youreallsettitle3 = /** @type {(inputs: Login_Youreallsettitle3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`You're all set!`)
+	return /** @type {LocalizedString} */ (`كل شيء جاهز!`)
 };
 
 /**

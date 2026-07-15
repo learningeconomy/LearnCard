@@ -18,7 +18,7 @@ const fr_skillframeworks_fwlabel2 = /** @type {(inputs: Skillframeworks_Fwlabel2
 };
 
 const ar_skillframeworks_fwlabel2 = /** @type {(inputs: Skillframeworks_Fwlabel2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Framework`)
+	return /** @type {LocalizedString} */ (`الإطار`)
 };
 
 /**

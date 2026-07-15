@@ -18,7 +18,7 @@ const fr_recovery_phrase_placeholder = /** @type {(inputs: Recovery_Phrase_Place
 };
 
 const ar_recovery_phrase_placeholder = /** @type {(inputs: Recovery_Phrase_PlaceholderInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`word1 word2 word3 ...`)
+	return /** @type {LocalizedString} */ (`كلمة1 كلمة2 كلمة3 ...`)
 };
 
 /**

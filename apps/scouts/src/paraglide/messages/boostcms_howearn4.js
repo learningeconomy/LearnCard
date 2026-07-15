@@ -18,7 +18,7 @@ const fr_boostcms_howearn4 = /** @type {(inputs: Boostcms_Howearn4Inputs) => Loc
 };
 
 const ar_boostcms_howearn4 = /** @type {(inputs: Boostcms_Howearn4Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`How do you earn this ${i?.title}?`)
+	return /** @type {LocalizedString} */ (`كيف تحصل على ${i?.title}؟`)
 };
 
 /**

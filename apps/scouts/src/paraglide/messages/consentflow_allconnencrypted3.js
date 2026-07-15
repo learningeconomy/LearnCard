@@ -18,7 +18,7 @@ const fr_consentflow_allconnencrypted3 = /** @type {(inputs: Consentflow_Allconn
 };
 
 const ar_consentflow_allconnencrypted3 = /** @type {(inputs: Consentflow_Allconnencrypted3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`All connections are encrypted.`)
+	return /** @type {LocalizedString} */ (`جميع الاتصالات مشفرة.`)
 };
 
 /**

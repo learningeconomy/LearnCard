@@ -18,7 +18,7 @@ const fr_troops_toasts_erroreditingboost2 = /** @type {(inputs: Troops_Toasts_Er
 };
 
 const ar_troops_toasts_erroreditingboost2 = /** @type {(inputs: Troops_Toasts_Erroreditingboost2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Error editing boost`)
+	return /** @type {LocalizedString} */ (`خطأ في تعديل التعزيز`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_addressbook_newlabel2 = /** @type {(inputs: Addressbook_Newlabel2Inputs
 };
 
 const ar_addressbook_newlabel2 = /** @type {(inputs: Addressbook_Newlabel2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`New`)
+	return /** @type {LocalizedString} */ (`جديد`)
 };
 
 /**

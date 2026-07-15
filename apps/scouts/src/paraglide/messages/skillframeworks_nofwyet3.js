@@ -18,7 +18,7 @@ const fr_skillframeworks_nofwyet3 = /** @type {(inputs: Skillframeworks_Nofwyet3
 };
 
 const ar_skillframeworks_nofwyet3 = /** @type {(inputs: Skillframeworks_Nofwyet3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No frameworks yet. Create one to get started!`)
+	return /** @type {LocalizedString} */ (`لا توجد أطر بعد. أنشئ واحداً للبدء!`)
 };
 
 /**

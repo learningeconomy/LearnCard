@@ -47,11 +47,11 @@ const fr_skillframeworks_tierdesc2 = /** @type {((inputs: Skillframeworks_Tierde
 const ar_skillframeworks_tierdesc2 = /** @type {((inputs: Skillframeworks_Tierdesc2Inputs) => LocalizedString) & { parts: (inputs: Skillframeworks_Tierdesc2Inputs) => import('../runtime.js').MessagePart[] }} */ (
 	/* @__PURE__ */ Object.assign(
 		/** @type {(inputs: Skillframeworks_Tierdesc2Inputs) => LocalizedString} */ (() => {
-			return /** @type {LocalizedString} */ (`A framework tier serves as a structural container for competencies.`)
+			return /** @type {LocalizedString} */ (`مستوى الإطار يعمل كحاوية هيكلية للكفاءات.`)
 		}),
 		{
 			parts: /** @type {(inputs: Skillframeworks_Tierdesc2Inputs) => import('../runtime.js').MessagePart[]} */ (() => {
-				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "A " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: "framework tier" }, { type: "markup-end", name: "0", options: {}, attributes: {} }, { type: "text", value: " serves as a structural container for competencies." }])
+				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: "مستوى الإطار" }, { type: "markup-end", name: "0", options: {}, attributes: {} }, { type: "text", value: " يعمل كحاوية هيكلية للكفاءات." }])
 			})
 		}
 	)

@@ -18,7 +18,7 @@ const fr_boostcms_adminsdesc4 = /** @type {(inputs: Boostcms_Adminsdesc4Inputs) 
 };
 
 const ar_boostcms_adminsdesc4 = /** @type {(inputs: Boostcms_Adminsdesc4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Admins are granted permission to send and edit this Boost.`)
+	return /** @type {LocalizedString} */ (`يُمنح المسؤولون صلاحية إرسال وتعديل هذا التعزيز.`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_recovery_phrase_loading = /** @type {(inputs: Recovery_Phrase_LoadingIn
 };
 
 const ar_recovery_phrase_loading = /** @type {(inputs: Recovery_Phrase_LoadingInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Recovering...`)
+	return /** @type {LocalizedString} */ (`جاري الاسترداد...`)
 };
 
 /**

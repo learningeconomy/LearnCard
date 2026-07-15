@@ -47,11 +47,11 @@ const fr_skillframeworks_compdesc2 = /** @type {((inputs: Skillframeworks_Compde
 const ar_skillframeworks_compdesc2 = /** @type {((inputs: Skillframeworks_Compdesc2Inputs) => LocalizedString) & { parts: (inputs: Skillframeworks_Compdesc2Inputs) => import('../runtime.js').MessagePart[] }} */ (
 	/* @__PURE__ */ Object.assign(
 		/** @type {(inputs: Skillframeworks_Compdesc2Inputs) => LocalizedString} */ (() => {
-			return /** @type {LocalizedString} */ (`A competency is a verified credential that can be awarded and earned.`)
+			return /** @type {LocalizedString} */ (`الكفاءة هي مؤهل قابل للتحقق يمكن منحه واكتسابه.`)
 		}),
 		{
 			parts: /** @type {(inputs: Skillframeworks_Compdesc2Inputs) => import('../runtime.js').MessagePart[]} */ (() => {
-				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "A " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: "competency" }, { type: "markup-end", name: "0", options: {}, attributes: {} }, { type: "text", value: " is a verified credential that can be awarded and earned." }])
+				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: "الكفاءة" }, { type: "markup-end", name: "0", options: {}, attributes: {} }, { type: "text", value: " هي مؤهل قابل للتحقق يمكن منحه واكتسابه." }])
 			})
 		}
 	)

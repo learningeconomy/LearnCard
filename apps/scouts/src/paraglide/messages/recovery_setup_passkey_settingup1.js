@@ -18,7 +18,7 @@ const fr_recovery_setup_passkey_settingup1 = /** @type {(inputs: Recovery_Setup_
 };
 
 const ar_recovery_setup_passkey_settingup1 = /** @type {(inputs: Recovery_Setup_Passkey_Settingup1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Setting up...`)
+	return /** @type {LocalizedString} */ (`جاري الإعداد...`)
 };
 
 /**

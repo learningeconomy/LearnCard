@@ -18,7 +18,7 @@ const fr_boostcms_selectimage4 = /** @type {(inputs: Boostcms_Selectimage4Inputs
 };
 
 const ar_boostcms_selectimage4 = /** @type {(inputs: Boostcms_Selectimage4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Select Image`)
+	return /** @type {LocalizedString} */ (`اختر صورة`)
 };
 
 /**

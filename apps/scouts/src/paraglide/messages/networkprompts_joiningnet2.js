@@ -18,7 +18,7 @@ const fr_networkprompts_joiningnet2 = /** @type {(inputs: Networkprompts_Joining
 };
 
 const ar_networkprompts_joiningnet2 = /** @type {(inputs: Networkprompts_Joiningnet2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Joining Network...`)
+	return /** @type {LocalizedString} */ (`جاري الانضمام إلى الشبكة...`)
 };
 
 /**

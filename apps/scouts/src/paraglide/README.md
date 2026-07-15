@@ -2,7 +2,7 @@
 
 > Auto-generated i18n message functions. Import `messages.js` to use translated strings.
 
-Compiled from: `/Users/donny/.claude/dispatch/worktrees/2026-07-15-lc-1903-scouts-26-translate-fr/apps/scouts/project.inlang`
+Compiled from: `/Users/donny/.claude/dispatch/worktrees/2026-07-15-lc-1903-scouts-27-translate-ar/apps/scouts/project.inlang`
 
 
 ## What is this folder?

@@ -18,7 +18,7 @@ const fr_troops_toasts_boostfail1 = /** @type {(inputs: Troops_Toasts_Boostfail1
 };
 
 const ar_troops_toasts_boostfail1 = /** @type {(inputs: Troops_Toasts_Boostfail1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Failed to process boost`)
+	return /** @type {LocalizedString} */ (`فشل معالجة التعزيز`)
 };
 
 /**

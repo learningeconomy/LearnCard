@@ -18,7 +18,7 @@ const fr_consentflow_loading1 = /** @type {(inputs: Consentflow_Loading1Inputs) 
 };
 
 const ar_consentflow_loading1 = /** @type {(inputs: Consentflow_Loading1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Loading...`)
+	return /** @type {LocalizedString} */ (`جاري التحميل...`)
 };
 
 /**

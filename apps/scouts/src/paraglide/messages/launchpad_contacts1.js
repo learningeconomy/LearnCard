@@ -18,7 +18,7 @@ const fr_launchpad_contacts1 = /** @type {(inputs: Launchpad_Contacts1Inputs) =>
 };
 
 const ar_launchpad_contacts1 = /** @type {(inputs: Launchpad_Contacts1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Contacts`)
+	return /** @type {LocalizedString} */ (`جهات الاتصال`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_troops_history_viewid1 = /** @type {(inputs: Troops_History_Viewid1Inpu
 };
 
 const ar_troops_history_viewid1 = /** @type {(inputs: Troops_History_Viewid1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`View ID`)
+	return /** @type {LocalizedString} */ (`عرض المعرف`)
 };
 
 /**

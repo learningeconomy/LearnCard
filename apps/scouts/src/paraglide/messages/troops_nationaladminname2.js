@@ -18,7 +18,7 @@ const fr_troops_nationaladminname2 = /** @type {(inputs: Troops_Nationaladminnam
 };
 
 const ar_troops_nationaladminname2 = /** @type {(inputs: Troops_Nationaladminname2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`National Admin Name`)
+	return /** @type {LocalizedString} */ (`اسم المسؤول الوطني`)
 };
 
 /**

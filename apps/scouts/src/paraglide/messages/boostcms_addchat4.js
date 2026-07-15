@@ -18,7 +18,7 @@ const fr_boostcms_addchat4 = /** @type {(inputs: Boostcms_Addchat4Inputs) => Loc
 };
 
 const ar_boostcms_addchat4 = /** @type {(inputs: Boostcms_Addchat4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Add Chat`)
+	return /** @type {LocalizedString} */ (`إضافة محادثة`)
 };
 
 /**

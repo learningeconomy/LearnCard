@@ -18,7 +18,7 @@ const fr_networkprompts_usernameplh2 = /** @type {(inputs: Networkprompts_Userna
 };
 
 const ar_networkprompts_usernameplh2 = /** @type {(inputs: Networkprompts_Usernameplh2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`username`)
+	return /** @type {LocalizedString} */ (`اسم المستخدم`)
 };
 
 /**

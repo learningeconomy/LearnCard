@@ -18,7 +18,7 @@ const fr_notifications_alerts = /** @type {(inputs: Notifications_AlertsInputs) 
 };
 
 const ar_notifications_alerts = /** @type {(inputs: Notifications_AlertsInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Alerts`)
+	return /** @type {LocalizedString} */ (`التنبيهات`)
 };
 
 /**

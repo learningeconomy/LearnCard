@@ -18,7 +18,7 @@ const fr_auth_sessionrestored1 = /** @type {(inputs: Auth_Sessionrestored1Inputs
 };
 
 const ar_auth_sessionrestored1 = /** @type {(inputs: Auth_Sessionrestored1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Session Restored`)
+	return /** @type {LocalizedString} */ (`تم استعادة الجلسة`)
 };
 
 /**

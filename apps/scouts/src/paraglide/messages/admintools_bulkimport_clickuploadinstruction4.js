@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_clickuploadinstruction4 = /** @type {(inputs: Adm
 };
 
 const ar_admintools_bulkimport_clickuploadinstruction4 = /** @type {(inputs: Admintools_Bulkimport_Clickuploadinstruction4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`6. Click "Upload!" once all image issues are resolved`)
+	return /** @type {LocalizedString} */ (`6. انقر "رفع!" بعد حل جميع مشكلات الصور`)
 };
 
 /**

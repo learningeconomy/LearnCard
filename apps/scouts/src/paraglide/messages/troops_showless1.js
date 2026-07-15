@@ -18,7 +18,7 @@ const fr_troops_showless1 = /** @type {(inputs: Troops_Showless1Inputs) => Local
 };
 
 const ar_troops_showless1 = /** @type {(inputs: Troops_Showless1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Show less`)
+	return /** @type {LocalizedString} */ (`إظهار أقل`)
 };
 
 /**

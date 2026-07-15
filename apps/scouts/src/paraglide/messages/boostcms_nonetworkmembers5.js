@@ -18,7 +18,7 @@ const fr_boostcms_nonetworkmembers5 = /** @type {(inputs: Boostcms_Nonetworkmemb
 };
 
 const ar_boostcms_nonetworkmembers5 = /** @type {(inputs: Boostcms_Nonetworkmembers5Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No network members`)
+	return /** @type {LocalizedString} */ (`لا يوجد أعضاء شبكة`)
 };
 
 /**

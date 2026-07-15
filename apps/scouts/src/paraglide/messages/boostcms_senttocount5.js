@@ -47,11 +47,11 @@ const fr_boostcms_senttocount5 = /** @type {((inputs: Boostcms_Senttocount5Input
 const ar_boostcms_senttocount5 = /** @type {((inputs: Boostcms_Senttocount5Inputs) => LocalizedString) & { parts: (inputs: Boostcms_Senttocount5Inputs) => import('../runtime.js').MessagePart[] }} */ (
 	/* @__PURE__ */ Object.assign(
 		/** @type {(inputs: Boostcms_Senttocount5Inputs) => LocalizedString} */ ((i) => {
-			return /** @type {LocalizedString} */ (`${i?.type} issued to ${i?.count} ${i?.person}`)
+			return /** @type {LocalizedString} */ (`${i?.type} صدر لـ ${i?.count} ${i?.person}`)
 		}),
 		{
 			parts: /** @type {(inputs: Boostcms_Senttocount5Inputs) => import('../runtime.js').MessagePart[]} */ ((i) => {
-				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: String(i?.type) }, { type: "markup-end", name: "0", options: {}, attributes: {} }, { type: "text", value: " issued to " }, { type: "markup-start", name: "1", options: {}, attributes: {} }, { type: "text", value: String(i?.count) }, { type: "text", value: " " }, { type: "text", value: String(i?.person) }, { type: "markup-end", name: "1", options: {}, attributes: {} }])
+				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: String(i?.type) }, { type: "markup-end", name: "0", options: {}, attributes: {} }, { type: "text", value: " صدر لـ " }, { type: "markup-start", name: "1", options: {}, attributes: {} }, { type: "text", value: String(i?.count) }, { type: "text", value: " " }, { type: "text", value: String(i?.person) }, { type: "markup-end", name: "1", options: {}, attributes: {} }])
 			})
 		}
 	)

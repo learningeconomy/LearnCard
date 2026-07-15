@@ -18,7 +18,7 @@ const fr_boostcms_issuelog4 = /** @type {(inputs: Boostcms_Issuelog4Inputs) => L
 };
 
 const ar_boostcms_issuelog4 = /** @type {(inputs: Boostcms_Issuelog4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Issue Log`)
+	return /** @type {LocalizedString} */ (`سجل الإصدار`)
 };
 
 /**

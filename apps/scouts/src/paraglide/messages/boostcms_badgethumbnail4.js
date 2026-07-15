@@ -18,7 +18,7 @@ const fr_boostcms_badgethumbnail4 = /** @type {(inputs: Boostcms_Badgethumbnail4
 };
 
 const ar_boostcms_badgethumbnail4 = /** @type {(inputs: Boostcms_Badgethumbnail4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Badge Thumbnail`)
+	return /** @type {LocalizedString} */ (`صورة الشارة المصغرة`)
 };
 
 /**

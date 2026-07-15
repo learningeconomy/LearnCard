@@ -18,7 +18,7 @@ const fr_networkprompts_join_desc1 = /** @type {(inputs: Networkprompts_Join_Des
 };
 
 const ar_networkprompts_join_desc1 = /** @type {(inputs: Networkprompts_Join_Desc1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`The ScoutPass Network allows you to exchange credentials and badges with other members.`)
+	return /** @type {LocalizedString} */ (`تتيح لك شبكة ScoutPass تبادل المؤهلات والشارات مع الأعضاء الآخرين.`)
 };
 
 /**

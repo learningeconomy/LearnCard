@@ -18,7 +18,7 @@ const fr_skillframeworks_savechanges2 = /** @type {(inputs: Skillframeworks_Save
 };
 
 const ar_skillframeworks_savechanges2 = /** @type {(inputs: Skillframeworks_Savechanges2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Save Changes`)
+	return /** @type {LocalizedString} */ (`حفظ التغييرات`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_troops_viewid_closebtn2 = /** @type {(inputs: Troops_Viewid_Closebtn2In
 };
 
 const ar_troops_viewid_closebtn2 = /** @type {(inputs: Troops_Viewid_Closebtn2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Close`)
+	return /** @type {LocalizedString} */ (`إغلاق`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_troops_history_typeissued1 = /** @type {(inputs: Troops_History_Typeiss
 };
 
 const ar_troops_history_typeissued1 = /** @type {(inputs: Troops_History_Typeissued1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Issued`)
+	return /** @type {LocalizedString} */ (`صادر`)
 };
 
 /**

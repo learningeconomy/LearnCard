@@ -18,7 +18,7 @@ const fr_troops_options_deleteconfirm1 = /** @type {(inputs: Troops_Options_Dele
 };
 
 const ar_troops_options_deleteconfirm1 = /** @type {(inputs: Troops_Options_Deleteconfirm1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Are you sure you want to delete {credential}?`)
+	return /** @type {LocalizedString} */ (`هل أنت متأكد من حذف {credential}؟`)
 };
 
 /**

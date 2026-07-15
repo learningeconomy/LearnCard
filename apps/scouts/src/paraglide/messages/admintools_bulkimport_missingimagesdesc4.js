@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_missingimagesdesc4 = /** @type {(inputs: Admintoo
 };
 
 const ar_admintools_bulkimport_missingimagesdesc4 = /** @type {(inputs: Admintools_Bulkimport_Missingimagesdesc4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`The following records are missing image URLs:`)
+	return /** @type {LocalizedString} */ (`السجلات التالية تفتقد روابط الصور:`)
 };
 
 /**

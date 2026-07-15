@@ -18,7 +18,7 @@ const fr_troops_analytics_close = /** @type {(inputs: Troops_Analytics_CloseInpu
 };
 
 const ar_troops_analytics_close = /** @type {(inputs: Troops_Analytics_CloseInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Close Analytics`)
+	return /** @type {LocalizedString} */ (`إغلاق التحليلات`)
 };
 
 /**

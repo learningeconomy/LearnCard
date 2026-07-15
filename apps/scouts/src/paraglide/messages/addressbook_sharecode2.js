@@ -18,7 +18,7 @@ const fr_addressbook_sharecode2 = /** @type {(inputs: Addressbook_Sharecode2Inpu
 };
 
 const ar_addressbook_sharecode2 = /** @type {(inputs: Addressbook_Sharecode2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Share Code`)
+	return /** @type {LocalizedString} */ (`مشاركة الرمز`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_notifications_pushdescription1 = /** @type {(inputs: Notifications_Push
 };
 
 const ar_notifications_pushdescription1 = /** @type {(inputs: Notifications_Pushdescription1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`New connection requests, New boosts (like achievements, credentials, and badges).`)
+	return /** @type {LocalizedString} */ (`طلبات اتصال جديدة، تعزيزات جديدة (مثل الإنجازات والمؤهلات والشارات).`)
 };
 
 /**

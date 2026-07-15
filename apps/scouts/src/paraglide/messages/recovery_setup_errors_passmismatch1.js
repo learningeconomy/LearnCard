@@ -18,7 +18,7 @@ const fr_recovery_setup_errors_passmismatch1 = /** @type {(inputs: Recovery_Setu
 };
 
 const ar_recovery_setup_errors_passmismatch1 = /** @type {(inputs: Recovery_Setup_Errors_Passmismatch1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Passwords don't match.`)
+	return /** @type {LocalizedString} */ (`كلمتا المرور غير متطابقتين.`)
 };
 
 /**

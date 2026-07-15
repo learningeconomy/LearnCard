@@ -18,7 +18,7 @@ const fr_claimboost_claiming1 = /** @type {(inputs: Claimboost_Claiming1Inputs) 
 };
 
 const ar_claimboost_claiming1 = /** @type {(inputs: Claimboost_Claiming1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Claiming...`)
+	return /** @type {LocalizedString} */ (`جاري الاستلام...`)
 };
 
 /**

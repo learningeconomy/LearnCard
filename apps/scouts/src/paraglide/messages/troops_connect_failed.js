@@ -18,7 +18,7 @@ const fr_troops_connect_failed = /** @type {(inputs: Troops_Connect_FailedInputs
 };
 
 const ar_troops_connect_failed = /** @type {(inputs: Troops_Connect_FailedInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Failed to generate link`)
+	return /** @type {LocalizedString} */ (`فشل إنشاء الرابط`)
 };
 
 /**

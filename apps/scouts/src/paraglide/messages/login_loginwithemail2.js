@@ -18,7 +18,7 @@ const fr_login_loginwithemail2 = /** @type {(inputs: Login_Loginwithemail2Inputs
 };
 
 const ar_login_loginwithemail2 = /** @type {(inputs: Login_Loginwithemail2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Login with Email`)
+	return /** @type {LocalizedString} */ (`تسجيل الدخول بالبريد الإلكتروني`)
 };
 
 /**

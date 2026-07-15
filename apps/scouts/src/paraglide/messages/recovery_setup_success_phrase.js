@@ -18,7 +18,7 @@ const fr_recovery_setup_success_phrase = /** @type {(inputs: Recovery_Setup_Succ
 };
 
 const ar_recovery_setup_success_phrase = /** @type {(inputs: Recovery_Setup_Success_PhraseInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Recovery phrase saved! Keep it somewhere safe.`)
+	return /** @type {LocalizedString} */ (`تم حفظ عبارة الاسترداد! احتفظ بها في مكان آمن.`)
 };
 
 /**

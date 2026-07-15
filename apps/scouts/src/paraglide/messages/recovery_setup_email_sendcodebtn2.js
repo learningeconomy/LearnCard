@@ -18,7 +18,7 @@ const fr_recovery_setup_email_sendcodebtn2 = /** @type {(inputs: Recovery_Setup_
 };
 
 const ar_recovery_setup_email_sendcodebtn2 = /** @type {(inputs: Recovery_Setup_Email_Sendcodebtn2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Send Verification Code`)
+	return /** @type {LocalizedString} */ (`إرسال رمز التحقق`)
 };
 
 /**

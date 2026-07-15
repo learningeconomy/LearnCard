@@ -18,7 +18,7 @@ const fr_recovery_setup_passkey_replacing = /** @type {(inputs: Recovery_Setup_P
 };
 
 const ar_recovery_setup_passkey_replacing = /** @type {(inputs: Recovery_Setup_Passkey_ReplacingInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Replacing...`)
+	return /** @type {LocalizedString} */ (`جاري الاستبدال...`)
 };
 
 /**

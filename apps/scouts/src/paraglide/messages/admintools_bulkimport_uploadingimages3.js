@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_uploadingimages3 = /** @type {(inputs: Admintools
 };
 
 const ar_admintools_bulkimport_uploadingimages3 = /** @type {(inputs: Admintools_Bulkimport_Uploadingimages3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Uploading images ({progress}%)...`)
+	return /** @type {LocalizedString} */ (`جاري رفع الصور ({progress}%)...`)
 };
 
 /**

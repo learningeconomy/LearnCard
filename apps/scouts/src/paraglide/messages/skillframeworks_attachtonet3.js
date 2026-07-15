@@ -18,7 +18,7 @@ const fr_skillframeworks_attachtonet3 = /** @type {(inputs: Skillframeworks_Atta
 };
 
 const ar_skillframeworks_attachtonet3 = /** @type {(inputs: Skillframeworks_Attachtonet3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Attach to Network`)
+	return /** @type {LocalizedString} */ (`إرفاق بالشبكة`)
 };
 
 /**

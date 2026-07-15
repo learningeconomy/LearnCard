@@ -18,7 +18,7 @@ const fr_boostcms_userperms4 = /** @type {(inputs: Boostcms_Userperms4Inputs) =>
 };
 
 const ar_boostcms_userperms4 = /** @type {(inputs: Boostcms_Userperms4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`User Permissions`)
+	return /** @type {LocalizedString} */ (`صلاحيات المستخدم`)
 };
 
 /**

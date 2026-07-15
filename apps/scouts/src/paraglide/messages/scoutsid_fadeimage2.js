@@ -18,7 +18,7 @@ const fr_scoutsid_fadeimage2 = /** @type {(inputs: Scoutsid_Fadeimage2Inputs) =>
 };
 
 const ar_scoutsid_fadeimage2 = /** @type {(inputs: Scoutsid_Fadeimage2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Fade Image`)
+	return /** @type {LocalizedString} */ (`تعتيم الصورة`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_boost_someoneelse1 = /** @type {(inputs: Boost_Someoneelse1Inputs) => L
 };
 
 const ar_boost_someoneelse1 = /** @type {(inputs: Boost_Someoneelse1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Someone Else`)
+	return /** @type {LocalizedString} */ (`شخص آخر`)
 };
 
 /**

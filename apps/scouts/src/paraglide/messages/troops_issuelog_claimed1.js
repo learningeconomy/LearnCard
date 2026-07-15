@@ -18,7 +18,7 @@ const fr_troops_issuelog_claimed1 = /** @type {(inputs: Troops_Issuelog_Claimed1
 };
 
 const ar_troops_issuelog_claimed1 = /** @type {(inputs: Troops_Issuelog_Claimed1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Claimed {date}`)
+	return /** @type {LocalizedString} */ (`تم الاستلام {date}`)
 };
 
 /**

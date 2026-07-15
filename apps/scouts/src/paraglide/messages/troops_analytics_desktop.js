@@ -18,7 +18,7 @@ const fr_troops_analytics_desktop = /** @type {(inputs: Troops_Analytics_Desktop
 };
 
 const ar_troops_analytics_desktop = /** @type {(inputs: Troops_Analytics_DesktopInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Analytics is only supported on desktop devices. Please view this from a desktop browser.`)
+	return /** @type {LocalizedString} */ (`التحليلات مدعومة فقط على أجهزة الكمبيوتر. يرجى عرضها من متصفح سطح المكتب.`)
 };
 
 /**

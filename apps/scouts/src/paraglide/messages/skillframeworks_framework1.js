@@ -18,7 +18,7 @@ const fr_skillframeworks_framework1 = /** @type {(inputs: Skillframeworks_Framew
 };
 
 const ar_skillframeworks_framework1 = /** @type {(inputs: Skillframeworks_Framework1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Framework`)
+	return /** @type {LocalizedString} */ (`إطار`)
 };
 
 /**

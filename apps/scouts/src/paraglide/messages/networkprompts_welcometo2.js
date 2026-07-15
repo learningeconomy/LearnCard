@@ -18,7 +18,7 @@ const fr_networkprompts_welcometo2 = /** @type {(inputs: Networkprompts_Welcomet
 };
 
 const ar_networkprompts_welcometo2 = /** @type {(inputs: Networkprompts_Welcometo2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Welcome to`)
+	return /** @type {LocalizedString} */ (`مرحباً بك في`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_admintools_wanttolearnmore4 = /** @type {(inputs: Admintools_Wanttolear
 };
 
 const ar_admintools_wanttolearnmore4 = /** @type {(inputs: Admintools_Wanttolearnmore4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Want to learn more?`)
+	return /** @type {LocalizedString} */ (`هل تريد معرفة المزيد؟`)
 };
 
 /**

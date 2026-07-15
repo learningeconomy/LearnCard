@@ -18,7 +18,7 @@ const fr_skillframeworks_addnetworks2 = /** @type {(inputs: Skillframeworks_Addn
 };
 
 const ar_skillframeworks_addnetworks2 = /** @type {(inputs: Skillframeworks_Addnetworks2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Add Networks`)
+	return /** @type {LocalizedString} */ (`إضافة شبكات`)
 };
 
 /**

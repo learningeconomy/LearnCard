@@ -18,7 +18,7 @@ const fr_scoutsid_wallpaper1 = /** @type {(inputs: Scoutsid_Wallpaper1Inputs) =>
 };
 
 const ar_scoutsid_wallpaper1 = /** @type {(inputs: Scoutsid_Wallpaper1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Wallpaper`)
+	return /** @type {LocalizedString} */ (`خلفية`)
 };
 
 /**

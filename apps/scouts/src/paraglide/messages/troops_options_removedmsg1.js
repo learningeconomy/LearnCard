@@ -18,7 +18,7 @@ const fr_troops_options_removedmsg1 = /** @type {(inputs: Troops_Options_Removed
 };
 
 const ar_troops_options_removedmsg1 = /** @type {(inputs: Troops_Options_Removedmsg1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`{owner} has been removed from {credential}`)
+	return /** @type {LocalizedString} */ (`تمت إزالة {owner} من {credential}`)
 };
 
 /**

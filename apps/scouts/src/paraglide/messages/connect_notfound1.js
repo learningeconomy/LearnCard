@@ -18,7 +18,7 @@ const fr_connect_notfound1 = /** @type {(inputs: Connect_Notfound1Inputs) => Loc
 };
 
 const ar_connect_notfound1 = /** @type {(inputs: Connect_Notfound1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Unable to find user`)
+	return /** @type {LocalizedString} */ (`تعذر العثور على المستخدم`)
 };
 
 /**

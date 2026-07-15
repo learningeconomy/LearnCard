@@ -18,7 +18,7 @@ const fr_troops_footer_editbtn1 = /** @type {(inputs: Troops_Footer_Editbtn1Inpu
 };
 
 const ar_troops_footer_editbtn1 = /** @type {(inputs: Troops_Footer_Editbtn1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Edit`)
+	return /** @type {LocalizedString} */ (`تعديل`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_consentflow_allowing1 = /** @type {(inputs: Consentflow_Allowing1Inputs
 };
 
 const ar_consentflow_allowing1 = /** @type {(inputs: Consentflow_Allowing1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Allowing...`)
+	return /** @type {LocalizedString} */ (`جاري السماح...`)
 };
 
 /**

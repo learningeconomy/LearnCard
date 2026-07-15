@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_browsecredentials3 = /** @type {(inputs: Admintoo
 };
 
 const ar_admintools_bulkimport_browsecredentials3 = /** @type {(inputs: Admintools_Bulkimport_Browsecredentials3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Browse Credentials`)
+	return /** @type {LocalizedString} */ (`تصفح المؤهلات`)
 };
 
 /**

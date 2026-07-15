@@ -18,7 +18,7 @@ const fr_skillframeworks_mgadmins2 = /** @type {(inputs: Skillframeworks_Mgadmin
 };
 
 const ar_skillframeworks_mgadmins2 = /** @type {(inputs: Skillframeworks_Mgadmins2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Manage Admins`)
+	return /** @type {LocalizedString} */ (`إدارة المسؤولين`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_consentflow_usedatato3 = /** @type {(inputs: Consentflow_Usedatato3Inpu
 };
 
 const ar_consentflow_usedatato3 = /** @type {(inputs: Consentflow_Usedatato3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`will use data to:`)
+	return /** @type {LocalizedString} */ (`سيستخدم البيانات لـ:`)
 };
 
 /**

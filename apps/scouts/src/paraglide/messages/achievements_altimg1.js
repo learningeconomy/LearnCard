@@ -18,7 +18,7 @@ const fr_achievements_altimg1 = /** @type {(inputs: Achievements_Altimg1Inputs) 
 };
 
 const ar_achievements_altimg1 = /** @type {(inputs: Achievements_Altimg1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Achievements`)
+	return /** @type {LocalizedString} */ (`الإنجازات`)
 };
 
 /**

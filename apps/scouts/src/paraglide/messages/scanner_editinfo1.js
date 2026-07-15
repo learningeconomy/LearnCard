@@ -18,7 +18,7 @@ const fr_scanner_editinfo1 = /** @type {(inputs: Scanner_Editinfo1Inputs) => Loc
 };
 
 const ar_scanner_editinfo1 = /** @type {(inputs: Scanner_Editinfo1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Edit Info`)
+	return /** @type {LocalizedString} */ (`تعديل المعلومات`)
 };
 
 /**

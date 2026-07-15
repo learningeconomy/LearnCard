@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_previewcredentials3 = /** @type {(inputs: Adminto
 };
 
 const ar_admintools_bulkimport_previewcredentials3 = /** @type {(inputs: Admintools_Bulkimport_Previewcredentials3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Preview {count} Credentials`)
+	return /** @type {LocalizedString} */ (`معاينة {count} مؤهل`)
 };
 
 /**

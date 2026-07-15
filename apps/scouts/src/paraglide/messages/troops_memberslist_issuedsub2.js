@@ -18,7 +18,7 @@ const fr_troops_memberslist_issuedsub2 = /** @type {(inputs: Troops_Memberslist_
 };
 
 const ar_troops_memberslist_issuedsub2 = /** @type {(inputs: Troops_Memberslist_Issuedsub2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Issued to {count} {person}`)
+	return /** @type {LocalizedString} */ (`صدر لـ {count} {person}`)
 };
 
 /**

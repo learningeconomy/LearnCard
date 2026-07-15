@@ -18,7 +18,7 @@ const fr_recovery_passkey_verifybtn1 = /** @type {(inputs: Recovery_Passkey_Veri
 };
 
 const ar_recovery_passkey_verifybtn1 = /** @type {(inputs: Recovery_Passkey_Verifybtn1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Verify with Passkey`)
+	return /** @type {LocalizedString} */ (`التحقق باستخدام مفتاح المرور`)
 };
 
 /**

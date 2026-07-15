@@ -18,7 +18,7 @@ const fr_troops_scoutid1 = /** @type {(inputs: Troops_Scoutid1Inputs) => Localiz
 };
 
 const ar_troops_scoutid1 = /** @type {(inputs: Troops_Scoutid1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Scout ID`)
+	return /** @type {LocalizedString} */ (`معرف الكشاف`)
 };
 
 /**

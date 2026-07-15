@@ -18,7 +18,7 @@ const fr_recovery_setup_hintmore1 = /** @type {(inputs: Recovery_Setup_Hintmore1
 };
 
 const ar_recovery_setup_hintmore1 = /** @type {(inputs: Recovery_Setup_Hintmore1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Adding another method improves your security.`)
+	return /** @type {LocalizedString} */ (`إضافة طريقة أخرى يحسن أمانك.`)
 };
 
 /**

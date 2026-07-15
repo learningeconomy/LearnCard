@@ -18,7 +18,7 @@ const fr_notifications_claimed = /** @type {(inputs: Notifications_ClaimedInputs
 };
 
 const ar_notifications_claimed = /** @type {(inputs: Notifications_ClaimedInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Claimed`)
+	return /** @type {LocalizedString} */ (`تم الاستلام`)
 };
 
 /**

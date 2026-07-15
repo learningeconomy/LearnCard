@@ -18,7 +18,7 @@ const fr_recovery_email_keyhint1 = /** @type {(inputs: Recovery_Email_Keyhint1In
 };
 
 const ar_recovery_email_keyhint1 = /** @type {(inputs: Recovery_Email_Keyhint1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`The key is a long string of letters and numbers. Copy and paste it exactly as it appears in the email.`)
+	return /** @type {LocalizedString} */ (`المفتاح هو سلسلة طويلة من الأحرف والأرقام. انسخه والصقه تماماً كما يظهر في البريد الإلكتروني.`)
 };
 
 /**

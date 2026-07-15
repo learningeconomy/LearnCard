@@ -18,7 +18,7 @@ const fr_skillframeworks_toasts_createfail2 = /** @type {(inputs: Skillframework
 };
 
 const ar_skillframeworks_toasts_createfail2 = /** @type {(inputs: Skillframeworks_Toasts_Createfail2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Failed to create framework. Please try again.`)
+	return /** @type {LocalizedString} */ (`فشل إنشاء الإطار. يرجى المحاولة مرة أخرى.`)
 };
 
 /**

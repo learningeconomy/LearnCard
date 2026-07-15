@@ -18,7 +18,7 @@ const fr_skillframeworks_iconsautoassigned3 = /** @type {(inputs: Skillframework
 };
 
 const ar_skillframeworks_iconsautoassigned3 = /** @type {(inputs: Skillframeworks_Iconsautoassigned3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Icons have been automatically assigned and can be manually edited.`)
+	return /** @type {LocalizedString} */ (`تم تعيين الأيقونات تلقائياً ويمكن تعديلها يدوياً.`)
 };
 
 /**

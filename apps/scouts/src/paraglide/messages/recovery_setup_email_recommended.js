@@ -18,7 +18,7 @@ const fr_recovery_setup_email_recommended = /** @type {(inputs: Recovery_Setup_E
 };
 
 const ar_recovery_setup_email_recommended = /** @type {(inputs: Recovery_Setup_Email_RecommendedInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Recommended`)
+	return /** @type {LocalizedString} */ (`موصى به`)
 };
 
 /**

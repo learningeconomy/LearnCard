@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_uploadimageszip4 = /** @type {(inputs: Admintools
 };
 
 const ar_admintools_bulkimport_uploadimageszip4 = /** @type {(inputs: Admintools_Bulkimport_Uploadimageszip4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Upload Images Zip`)
+	return /** @type {LocalizedString} */ (`رفع صور ZIP`)
 };
 
 /**

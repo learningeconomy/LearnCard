@@ -18,7 +18,7 @@ const fr_skillframeworks_hasupdated2 = /** @type {(inputs: Skillframeworks_Hasup
 };
 
 const ar_skillframeworks_hasupdated2 = /** @type {(inputs: Skillframeworks_Hasupdated2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`has been updated`)
+	return /** @type {LocalizedString} */ (`تم التحديث`)
 };
 
 /**

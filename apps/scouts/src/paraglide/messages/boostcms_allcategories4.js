@@ -18,7 +18,7 @@ const fr_boostcms_allcategories4 = /** @type {(inputs: Boostcms_Allcategories4In
 };
 
 const ar_boostcms_allcategories4 = /** @type {(inputs: Boostcms_Allcategories4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`All Categories`)
+	return /** @type {LocalizedString} */ (`جميع الفئات`)
 };
 
 /**

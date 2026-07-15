@@ -18,7 +18,7 @@ const fr_recovery_backup_desc = /** @type {(inputs: Recovery_Backup_DescInputs) 
 };
 
 const ar_recovery_backup_desc = /** @type {(inputs: Recovery_Backup_DescInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Upload your backup file and enter the password you used when creating it.`)
+	return /** @type {LocalizedString} */ (`ارفع ملف النسخ الاحتياطي الخاص بك وأدخل كلمة المرور التي استخدمتها عند إنشائه.`)
 };
 
 /**

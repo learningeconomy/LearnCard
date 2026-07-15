@@ -18,7 +18,7 @@ const fr_login_loginwithphone2 = /** @type {(inputs: Login_Loginwithphone2Inputs
 };
 
 const ar_login_loginwithphone2 = /** @type {(inputs: Login_Loginwithphone2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Login With Phone Number`)
+	return /** @type {LocalizedString} */ (`تسجيل الدخول برقم الهاتف`)
 };
 
 /**

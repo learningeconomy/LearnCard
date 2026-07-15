@@ -18,7 +18,7 @@ const fr_claimboost_expiredalert2 = /** @type {(inputs: Claimboost_Expiredalert2
 };
 
 const ar_claimboost_expiredalert2 = /** @type {(inputs: Claimboost_Expiredalert2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`The boost claim link has expired or has reached the maximum number of times it can be claimed.`)
+	return /** @type {LocalizedString} */ (`انتهت صلاحية رابط استلام التعزيز أو وصل للحد الأقصى لعدد مرات الاستلام.`)
 };
 
 /**

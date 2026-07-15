@@ -18,7 +18,7 @@ const fr_troops_history_entry = /** @type {(inputs: Troops_History_EntryInputs) 
 };
 
 const ar_troops_history_entry = /** @type {(inputs: Troops_History_EntryInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`{type} on {date}`)
+	return /** @type {LocalizedString} */ (`{type} بتاريخ {date}`)
 };
 
 /**

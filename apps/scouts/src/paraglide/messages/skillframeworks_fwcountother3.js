@@ -18,7 +18,7 @@ const fr_skillframeworks_fwcountother3 = /** @type {(inputs: Skillframeworks_Fwc
 };
 
 const ar_skillframeworks_fwcountother3 = /** @type {(inputs: Skillframeworks_Fwcountother3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`{count} Skill Frameworks`)
+	return /** @type {LocalizedString} */ (`{count} أطر مهارات`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_skillframeworks_replacejsondesc3 = /** @type {(inputs: Skillframeworks_
 };
 
 const ar_skillframeworks_replacejsondesc3 = /** @type {(inputs: Skillframeworks_Replacejsondesc3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Uploading a new file will replace your current file and discard your changes.`)
+	return /** @type {LocalizedString} */ (`رفع ملف جديد سيحل محل ملفك الحالي ويتجاهل تغييراتك.`)
 };
 
 /**

@@ -47,11 +47,11 @@ const fr_credsbundle_footertagline2 = /** @type {((inputs: Credsbundle_Footertag
 const ar_credsbundle_footertagline2 = /** @type {((inputs: Credsbundle_Footertagline2Inputs) => LocalizedString) & { parts: (inputs: Credsbundle_Footertagline2Inputs) => import('../runtime.js').MessagePart[] }} */ (
 	/* @__PURE__ */ Object.assign(
 		/** @type {(inputs: Credsbundle_Footertagline2Inputs) => LocalizedString} */ (() => {
-			return /** @type {LocalizedString} */ (`POWERED BY CONSENT FLOW • You own your own data • All connections are encrypted`)
+			return /** @type {LocalizedString} */ (`مدعوم من CONSENT FLOW • أنت تملك بياناتك • جميع الاتصالات مشفرة`)
 		}),
 		{
 			parts: /** @type {(inputs: Credsbundle_Footertagline2Inputs) => import('../runtime.js').MessagePart[]} */ (() => {
-				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "POWERED BY CONSENT FLOW • You own your own data • All connections are " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: "encrypted" }, { type: "markup-end", name: "0", options: {}, attributes: {} }])
+				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "مدعوم من CONSENT FLOW • أنت تملك بياناتك • جميع الاتصالات " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: "مشفرة" }, { type: "markup-end", name: "0", options: {}, attributes: {} }])
 			})
 		}
 	)

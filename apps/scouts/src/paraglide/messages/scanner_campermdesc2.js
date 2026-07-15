@@ -18,7 +18,7 @@ const fr_scanner_campermdesc2 = /** @type {(inputs: Scanner_Campermdesc2Inputs) 
 };
 
 const ar_scanner_campermdesc2 = /** @type {(inputs: Scanner_Campermdesc2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`New connection requests, New boosts (like achievements, credentials, and badges) via QR codes.`)
+	return /** @type {LocalizedString} */ (`طلبات اتصال جديدة، تعزيزات جديدة (مثل الإنجازات والمؤهلات والشارات) عبر رموز QR.`)
 };
 
 /**

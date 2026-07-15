@@ -18,7 +18,7 @@ const fr_boostcms_scout3 = /** @type {(inputs: Boostcms_Scout3Inputs) => Localiz
 };
 
 const ar_boostcms_scout3 = /** @type {(inputs: Boostcms_Scout3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Scout`)
+	return /** @type {LocalizedString} */ (`كشاف`)
 };
 
 /**

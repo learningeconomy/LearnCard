@@ -18,7 +18,7 @@ const fr_skillframeworks_nationalnetwork2 = /** @type {(inputs: Skillframeworks_
 };
 
 const ar_skillframeworks_nationalnetwork2 = /** @type {(inputs: Skillframeworks_Nationalnetwork2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`National Network`)
+	return /** @type {LocalizedString} */ (`الشبكة الوطنية`)
 };
 
 /**

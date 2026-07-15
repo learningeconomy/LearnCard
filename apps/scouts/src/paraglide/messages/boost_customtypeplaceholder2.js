@@ -18,7 +18,7 @@ const fr_boost_customtypeplaceholder2 = /** @type {(inputs: Boost_Customtypeplac
 };
 
 const ar_boost_customtypeplaceholder2 = /** @type {(inputs: Boost_Customtypeplaceholder2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Custom Type...`)
+	return /** @type {LocalizedString} */ (`نوع مخصص...`)
 };
 
 /**

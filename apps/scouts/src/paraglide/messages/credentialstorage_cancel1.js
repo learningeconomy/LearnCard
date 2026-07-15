@@ -18,7 +18,7 @@ const fr_credentialstorage_cancel1 = /** @type {(inputs: Credentialstorage_Cance
 };
 
 const ar_credentialstorage_cancel1 = /** @type {(inputs: Credentialstorage_Cancel1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Cancel`)
+	return /** @type {LocalizedString} */ (`إلغاء`)
 };
 
 /**

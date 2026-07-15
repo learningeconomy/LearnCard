@@ -18,7 +18,7 @@ const fr_notifications_checkagain1 = /** @type {(inputs: Notifications_Checkagai
 };
 
 const ar_notifications_checkagain1 = /** @type {(inputs: Notifications_Checkagain1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Check again!`)
+	return /** @type {LocalizedString} */ (`تحقق مرة أخرى!`)
 };
 
 /**

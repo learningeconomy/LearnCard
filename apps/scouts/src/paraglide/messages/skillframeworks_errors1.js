@@ -18,7 +18,7 @@ const fr_skillframeworks_errors1 = /** @type {(inputs: Skillframeworks_Errors1In
 };
 
 const ar_skillframeworks_errors1 = /** @type {(inputs: Skillframeworks_Errors1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Errors`)
+	return /** @type {LocalizedString} */ (`الأخطاء`)
 };
 
 /**

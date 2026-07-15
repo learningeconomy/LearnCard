@@ -18,7 +18,7 @@ const fr_addressbook_boostlabel2 = /** @type {(inputs: Addressbook_Boostlabel2In
 };
 
 const ar_addressbook_boostlabel2 = /** @type {(inputs: Addressbook_Boostlabel2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Boost`)
+	return /** @type {LocalizedString} */ (`تعزيز`)
 };
 
 /**

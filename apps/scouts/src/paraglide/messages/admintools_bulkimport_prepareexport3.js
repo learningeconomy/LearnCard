@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_prepareexport3 = /** @type {(inputs: Admintools_B
 };
 
 const ar_admintools_bulkimport_prepareexport3 = /** @type {(inputs: Admintools_Bulkimport_Prepareexport3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Prepare & Export Your File`)
+	return /** @type {LocalizedString} */ (`تجهيز وتصدير ملفك`)
 };
 
 /**

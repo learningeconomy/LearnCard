@@ -18,7 +18,7 @@ const fr_auth_youreallset2 = /** @type {(inputs: Auth_Youreallset2Inputs) => Loc
 };
 
 const ar_auth_youreallset2 = /** @type {(inputs: Auth_Youreallset2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`You're all set.`)
+	return /** @type {LocalizedString} */ (`كل شيء جاهز.`)
 };
 
 /**

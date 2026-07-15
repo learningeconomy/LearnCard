@@ -18,7 +18,7 @@ const fr_launchpad_alerts1 = /** @type {(inputs: Launchpad_Alerts1Inputs) => Loc
 };
 
 const ar_launchpad_alerts1 = /** @type {(inputs: Launchpad_Alerts1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Alerts`)
+	return /** @type {LocalizedString} */ (`التنبيهات`)
 };
 
 /**

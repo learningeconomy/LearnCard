@@ -18,7 +18,7 @@ const fr_boostcms_creatememberships4 = /** @type {(inputs: Boostcms_Createmember
 };
 
 const ar_boostcms_creatememberships4 = /** @type {(inputs: Boostcms_Creatememberships4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Create Memberships`)
+	return /** @type {LocalizedString} */ (`إنشاء عضويات`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_boostcms_sent3 = /** @type {(inputs: Boostcms_Sent3Inputs) => Localized
 };
 
 const ar_boostcms_sent3 = /** @type {(inputs: Boostcms_Sent3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Sent!`)
+	return /** @type {LocalizedString} */ (`تم الإرسال!`)
 };
 
 /**

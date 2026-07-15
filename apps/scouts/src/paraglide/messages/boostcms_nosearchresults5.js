@@ -18,7 +18,7 @@ const fr_boostcms_nosearchresults5 = /** @type {(inputs: Boostcms_Nosearchresult
 };
 
 const ar_boostcms_nosearchresults5 = /** @type {(inputs: Boostcms_Nosearchresults5Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No search results`)
+	return /** @type {LocalizedString} */ (`لا توجد نتائج بحث`)
 };
 
 /**

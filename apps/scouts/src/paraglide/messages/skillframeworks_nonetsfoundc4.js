@@ -18,7 +18,7 @@ const fr_skillframeworks_nonetsfoundc4 = /** @type {(inputs: Skillframeworks_Non
 };
 
 const ar_skillframeworks_nonetsfoundc4 = /** @type {(inputs: Skillframeworks_Nonetsfoundc4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No networks found. Create a network (membership/ID boost) first.`)
+	return /** @type {LocalizedString} */ (`لم يتم العثور على شبكات. أنشئ شبكة (عضوية/تعزيز معرف) أولاً.`)
 };
 
 /**

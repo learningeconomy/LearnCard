@@ -18,7 +18,7 @@ const fr_notifications_settingconnectionrequests2 = /** @type {(inputs: Notifica
 };
 
 const ar_notifications_settingconnectionrequests2 = /** @type {(inputs: Notifications_Settingconnectionrequests2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`New Connection Requests`)
+	return /** @type {LocalizedString} */ (`طلبات الاتصال الجديدة`)
 };
 
 /**

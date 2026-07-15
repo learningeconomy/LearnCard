@@ -18,7 +18,7 @@ const fr_notifications_editsettings1 = /** @type {(inputs: Notifications_Editset
 };
 
 const ar_notifications_editsettings1 = /** @type {(inputs: Notifications_Editsettings1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Edit Notification Settings`)
+	return /** @type {LocalizedString} */ (`تعديل إعدادات الإشعارات`)
 };
 
 /**

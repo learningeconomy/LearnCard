@@ -18,7 +18,7 @@ const fr_introslides_organizetroops2 = /** @type {(inputs: Introslides_Organizet
 };
 
 const ar_introslides_organizetroops2 = /** @type {(inputs: Introslides_Organizetroops2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Organize into Troops`)
+	return /** @type {LocalizedString} */ (`التنظيم في فرق`)
 };
 
 /**

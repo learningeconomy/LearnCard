@@ -18,7 +18,7 @@ const fr_skillframeworks_reviewapprovebeforesave4 = /** @type {(inputs: Skillfra
 };
 
 const ar_skillframeworks_reviewapprovebeforesave4 = /** @type {(inputs: Skillframeworks_Reviewapprovebeforesave4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Review & Approve Before Saving`)
+	return /** @type {LocalizedString} */ (`مراجعة والموافقة قبل الحفظ`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_troops_details_ondate1 = /** @type {(inputs: Troops_Details_Ondate1Inpu
 };
 
 const ar_troops_details_ondate1 = /** @type {(inputs: Troops_Details_Ondate1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`on {date}`)
+	return /** @type {LocalizedString} */ (`بتاريخ {date}`)
 };
 
 /**

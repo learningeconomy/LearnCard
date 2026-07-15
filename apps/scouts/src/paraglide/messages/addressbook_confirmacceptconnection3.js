@@ -18,7 +18,7 @@ const fr_addressbook_confirmacceptconnection3 = /** @type {(inputs: Addressbook_
 };
 
 const ar_addressbook_confirmacceptconnection3 = /** @type {(inputs: Addressbook_Confirmacceptconnection3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Are you sure you want to accept the connection request?`)
+	return /** @type {LocalizedString} */ (`هل أنت متأكد من قبول طلب الاتصال؟`)
 };
 
 /**

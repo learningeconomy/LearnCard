@@ -18,7 +18,7 @@ const fr_boost_selectboostpack2 = /** @type {(inputs: Boost_Selectboostpack2Inpu
 };
 
 const ar_boost_selectboostpack2 = /** @type {(inputs: Boost_Selectboostpack2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Select a Boost Pack`)
+	return /** @type {LocalizedString} */ (`اختر حزمة تعزيز`)
 };
 
 /**

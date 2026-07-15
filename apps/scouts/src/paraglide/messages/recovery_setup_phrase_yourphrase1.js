@@ -18,7 +18,7 @@ const fr_recovery_setup_phrase_yourphrase1 = /** @type {(inputs: Recovery_Setup_
 };
 
 const ar_recovery_setup_phrase_yourphrase1 = /** @type {(inputs: Recovery_Setup_Phrase_Yourphrase1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Your Recovery Phrase`)
+	return /** @type {LocalizedString} */ (`عبارة الاسترداد الخاصة بك`)
 };
 
 /**

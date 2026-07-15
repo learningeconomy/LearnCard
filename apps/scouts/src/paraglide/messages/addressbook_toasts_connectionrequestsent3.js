@@ -18,7 +18,7 @@ const fr_addressbook_toasts_connectionrequestsent3 = /** @type {(inputs: Address
 };
 
 const ar_addressbook_toasts_connectionrequestsent3 = /** @type {(inputs: Addressbook_Toasts_Connectionrequestsent3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Connection Request sent`)
+	return /** @type {LocalizedString} */ (`تم إرسال طلب الاتصال`)
 };
 
 /**

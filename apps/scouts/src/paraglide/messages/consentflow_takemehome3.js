@@ -18,7 +18,7 @@ const fr_consentflow_takemehome3 = /** @type {(inputs: Consentflow_Takemehome3In
 };
 
 const ar_consentflow_takemehome3 = /** @type {(inputs: Consentflow_Takemehome3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Take me Home`)
+	return /** @type {LocalizedString} */ (`خذني إلى الرئيسية`)
 };
 
 /**

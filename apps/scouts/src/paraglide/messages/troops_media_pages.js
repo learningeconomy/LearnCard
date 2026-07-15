@@ -18,7 +18,7 @@ const fr_troops_media_pages = /** @type {(inputs: Troops_Media_PagesInputs) => L
 };
 
 const ar_troops_media_pages = /** @type {(inputs: Troops_Media_PagesInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`{count} page`)
+	return /** @type {LocalizedString} */ (`{count} صفحة`)
 };
 
 /**

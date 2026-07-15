@@ -18,7 +18,7 @@ const fr_troops_toasts_linkgenfail2 = /** @type {(inputs: Troops_Toasts_Linkgenf
 };
 
 const ar_troops_toasts_linkgenfail2 = /** @type {(inputs: Troops_Toasts_Linkgenfail2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Failed to generate claim link`)
+	return /** @type {LocalizedString} */ (`فشل إنشاء رابط الاستلام`)
 };
 
 /**

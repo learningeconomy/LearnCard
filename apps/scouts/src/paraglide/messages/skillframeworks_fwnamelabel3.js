@@ -18,7 +18,7 @@ const fr_skillframeworks_fwnamelabel3 = /** @type {(inputs: Skillframeworks_Fwna
 };
 
 const ar_skillframeworks_fwnamelabel3 = /** @type {(inputs: Skillframeworks_Fwnamelabel3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Framework Name *`)
+	return /** @type {LocalizedString} */ (`اسم الإطار *`)
 };
 
 /**

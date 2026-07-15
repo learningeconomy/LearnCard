@@ -18,7 +18,7 @@ const fr_troops_toasts_sharecopied1 = /** @type {(inputs: Troops_Toasts_Sharecop
 };
 
 const ar_troops_toasts_sharecopied1 = /** @type {(inputs: Troops_Toasts_Sharecopied1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Link copied to clipboard!`)
+	return /** @type {LocalizedString} */ (`تم نسخ الرابط إلى الحافظة!`)
 };
 
 /**

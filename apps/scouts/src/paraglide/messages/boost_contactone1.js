@@ -18,7 +18,7 @@ const fr_boost_contactone1 = /** @type {(inputs: Boost_Contactone1Inputs) => Loc
 };
 
 const ar_boost_contactone1 = /** @type {(inputs: Boost_Contactone1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Contact`)
+	return /** @type {LocalizedString} */ (`جهة اتصال`)
 };
 
 /**

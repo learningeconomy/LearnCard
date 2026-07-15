@@ -18,7 +18,7 @@ const fr_networkprompts_join_accessdet2 = /** @type {(inputs: Networkprompts_Joi
 };
 
 const ar_networkprompts_join_accessdet2 = /** @type {(inputs: Networkprompts_Join_Accessdet2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Send and receive connection requests, display your profile photo and name in your connections’ contacts lists.`)
+	return /** @type {LocalizedString} */ (`أرسل واستقبل طلبات الاتصال، واعرض صورتك الشخصية واسمك في قوائم جهات اتصال من تتواصل معهم.`)
 };
 
 /**

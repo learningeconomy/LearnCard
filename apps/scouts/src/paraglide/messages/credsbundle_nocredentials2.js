@@ -18,7 +18,7 @@ const fr_credsbundle_nocredentials2 = /** @type {(inputs: Credsbundle_Nocredenti
 };
 
 const ar_credsbundle_nocredentials2 = /** @type {(inputs: Credsbundle_Nocredentials2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No Credentials`)
+	return /** @type {LocalizedString} */ (`لا توجد مؤهلات`)
 };
 
 /**

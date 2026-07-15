@@ -18,7 +18,7 @@ const fr_troops_members_invitelabel1 = /** @type {(inputs: Troops_Members_Invite
 };
 
 const ar_troops_members_invitelabel1 = /** @type {(inputs: Troops_Members_Invitelabel1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Invite new member`)
+	return /** @type {LocalizedString} */ (`دعوة عضو جديد`)
 };
 
 /**

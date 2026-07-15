@@ -18,7 +18,7 @@ const fr_skillframeworks_sheet1 = /** @type {(inputs: Skillframeworks_Sheet1Inpu
 };
 
 const ar_skillframeworks_sheet1 = /** @type {(inputs: Skillframeworks_Sheet1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Sheet`)
+	return /** @type {LocalizedString} */ (`جدول`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_login_signinbelowaccess3 = /** @type {(inputs: Login_Signinbelowaccess3
 };
 
 const ar_login_signinbelowaccess3 = /** @type {(inputs: Login_Signinbelowaccess3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Now just sign in below to access your account.`)
+	return /** @type {LocalizedString} */ (`الآن فقط سجل الدخول أدناه للوصول إلى حسابك.`)
 };
 
 /**

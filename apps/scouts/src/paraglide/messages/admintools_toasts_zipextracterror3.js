@@ -18,7 +18,7 @@ const fr_admintools_toasts_zipextracterror3 = /** @type {(inputs: Admintools_Toa
 };
 
 const ar_admintools_toasts_zipextracterror3 = /** @type {(inputs: Admintools_Toasts_Zipextracterror3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Error extracting ZIP file`)
+	return /** @type {LocalizedString} */ (`خطأ في استخراج ملف ZIP`)
 };
 
 /**

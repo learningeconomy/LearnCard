@@ -18,7 +18,7 @@ const fr_troops_media_notitle1 = /** @type {(inputs: Troops_Media_Notitle1Inputs
 };
 
 const ar_troops_media_notitle1 = /** @type {(inputs: Troops_Media_Notitle1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No title`)
+	return /** @type {LocalizedString} */ (`بدون عنوان`)
 };
 
 /**

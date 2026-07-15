@@ -18,7 +18,7 @@ const fr_credsbundle_networkverified2 = /** @type {(inputs: Credsbundle_Networkv
 };
 
 const ar_credsbundle_networkverified2 = /** @type {(inputs: Credsbundle_Networkverified2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Verified by the LearnCard Network`)
+	return /** @type {LocalizedString} */ (`تم التحقق منها بواسطة شبكة LearnCard`)
 };
 
 /**

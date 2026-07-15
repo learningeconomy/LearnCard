@@ -18,7 +18,7 @@ const fr_troops_troop = /** @type {(inputs: Troops_TroopInputs) => LocalizedStri
 };
 
 const ar_troops_troop = /** @type {(inputs: Troops_TroopInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Troop`)
+	return /** @type {LocalizedString} */ (`فرقة`)
 };
 
 /**

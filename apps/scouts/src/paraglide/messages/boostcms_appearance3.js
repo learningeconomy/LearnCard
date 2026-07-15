@@ -18,7 +18,7 @@ const fr_boostcms_appearance3 = /** @type {(inputs: Boostcms_Appearance3Inputs) 
 };
 
 const ar_boostcms_appearance3 = /** @type {(inputs: Boostcms_Appearance3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Appearance`)
+	return /** @type {LocalizedString} */ (`المظهر`)
 };
 
 /**

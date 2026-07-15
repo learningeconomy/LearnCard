@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_morerecords3 = /** @type {(inputs: Admintools_Bul
 };
 
 const ar_admintools_bulkimport_morerecords3 = /** @type {(inputs: Admintools_Bulkimport_Morerecords3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`...and {count} more records`)
+	return /** @type {LocalizedString} */ (`... و{count} سجل إضافي`)
 };
 
 /**

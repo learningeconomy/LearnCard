@@ -18,7 +18,7 @@ const fr_addressbook_toasts_unabletoconnect3 = /** @type {(inputs: Addressbook_T
 };
 
 const ar_addressbook_toasts_unabletoconnect3 = /** @type {(inputs: Addressbook_Toasts_Unabletoconnect3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`An error ocurred, unable to connect!`)
+	return /** @type {LocalizedString} */ (`حدث خطأ، تعذر الاتصال!`)
 };
 
 /**

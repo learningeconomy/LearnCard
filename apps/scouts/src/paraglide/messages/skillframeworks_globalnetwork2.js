@@ -18,7 +18,7 @@ const fr_skillframeworks_globalnetwork2 = /** @type {(inputs: Skillframeworks_Gl
 };
 
 const ar_skillframeworks_globalnetwork2 = /** @type {(inputs: Skillframeworks_Globalnetwork2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Global Network`)
+	return /** @type {LocalizedString} */ (`الشبكة العالمية`)
 };
 
 /**

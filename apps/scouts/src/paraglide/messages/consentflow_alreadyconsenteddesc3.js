@@ -18,7 +18,7 @@ const fr_consentflow_alreadyconsenteddesc3 = /** @type {(inputs: Consentflow_Alr
 };
 
 const ar_consentflow_alreadyconsenteddesc3 = /** @type {(inputs: Consentflow_Alreadyconsenteddesc3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`You've already consented to this connection. Any new credentials will be synced to your account soon!`)
+	return /** @type {LocalizedString} */ (`لقد وافقت بالفعل على هذا الاتصال. أي مؤهلات جديدة ستتم مزامنتها مع حسابك قريباً!`)
 };
 
 /**

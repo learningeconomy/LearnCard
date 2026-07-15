@@ -18,7 +18,7 @@ const fr_boostcms_pastelink4 = /** @type {(inputs: Boostcms_Pastelink4Inputs) =>
 };
 
 const ar_boostcms_pastelink4 = /** @type {(inputs: Boostcms_Pastelink4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Paste link...`)
+	return /** @type {LocalizedString} */ (`لصق الرابط...`)
 };
 
 /**

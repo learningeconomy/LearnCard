@@ -18,7 +18,7 @@ const fr_recovery_errors_phraseinvalid1 = /** @type {(inputs: Recovery_Errors_Ph
 };
 
 const ar_recovery_errors_phraseinvalid1 = /** @type {(inputs: Recovery_Errors_Phraseinvalid1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`The recovery phrase doesn't look right. Please check for typos.`)
+	return /** @type {LocalizedString} */ (`عبارة الاسترداد غير صحيحة. يرجى التحقق من الأخطاء الإملائية.`)
 };
 
 /**

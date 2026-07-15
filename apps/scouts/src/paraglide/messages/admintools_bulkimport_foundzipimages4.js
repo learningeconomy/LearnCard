@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_foundzipimages4 = /** @type {(inputs: Admintools_
 };
 
 const ar_admintools_bulkimport_foundzipimages4 = /** @type {(inputs: Admintools_Bulkimport_Foundzipimages4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Found {count} images in ZIP file`)
+	return /** @type {LocalizedString} */ (`تم العثور على {count} صورة في ملف ZIP`)
 };
 
 /**

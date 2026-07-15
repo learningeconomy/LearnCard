@@ -18,7 +18,7 @@ const fr_boostcms_accentcolor4 = /** @type {(inputs: Boostcms_Accentcolor4Inputs
 };
 
 const ar_boostcms_accentcolor4 = /** @type {(inputs: Boostcms_Accentcolor4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Accent Color`)
+	return /** @type {LocalizedString} */ (`لون التمييز`)
 };
 
 /**

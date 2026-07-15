@@ -18,7 +18,7 @@ const fr_skillframeworks_fwtier2 = /** @type {(inputs: Skillframeworks_Fwtier2In
 };
 
 const ar_skillframeworks_fwtier2 = /** @type {(inputs: Skillframeworks_Fwtier2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Framework Tier`)
+	return /** @type {LocalizedString} */ (`مستوى الإطار`)
 };
 
 /**

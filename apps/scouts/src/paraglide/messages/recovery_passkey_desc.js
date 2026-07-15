@@ -18,7 +18,7 @@ const fr_recovery_passkey_desc = /** @type {(inputs: Recovery_Passkey_DescInputs
 };
 
 const ar_recovery_passkey_desc = /** @type {(inputs: Recovery_Passkey_DescInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Use your device's biometric authentication to recover.`)
+	return /** @type {LocalizedString} */ (`استخدم المصادقة البيومترية لجهازك للاسترداد.`)
 };
 
 /**

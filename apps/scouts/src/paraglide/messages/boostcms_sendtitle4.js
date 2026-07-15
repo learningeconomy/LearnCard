@@ -18,7 +18,7 @@ const fr_boostcms_sendtitle4 = /** @type {(inputs: Boostcms_Sendtitle4Inputs) =>
 };
 
 const ar_boostcms_sendtitle4 = /** @type {(inputs: Boostcms_Sendtitle4Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`Send ${i?.title}`)
+	return /** @type {LocalizedString} */ (`إرسال ${i?.title}`)
 };
 
 /**

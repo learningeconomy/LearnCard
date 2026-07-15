@@ -18,7 +18,7 @@ const fr_skillframeworks_deletefail2 = /** @type {(inputs: Skillframeworks_Delet
 };
 
 const ar_skillframeworks_deletefail2 = /** @type {(inputs: Skillframeworks_Deletefail2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Failed to delete framework. Please try again.`)
+	return /** @type {LocalizedString} */ (`فشل حذف الإطار. يرجى المحاولة مرة أخرى.`)
 };
 
 /**

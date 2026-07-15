@@ -18,7 +18,7 @@ const fr_troops_issuelog_title1 = /** @type {(inputs: Troops_Issuelog_Title1Inpu
 };
 
 const ar_troops_issuelog_title1 = /** @type {(inputs: Troops_Issuelog_Title1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Issue Log`)
+	return /** @type {LocalizedString} */ (`سجل الإصدار`)
 };
 
 /**

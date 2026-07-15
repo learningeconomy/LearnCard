@@ -18,7 +18,7 @@ const fr_networkprompts_settings_sendreq2 = /** @type {(inputs: Networkprompts_S
 };
 
 const ar_networkprompts_settings_sendreq2 = /** @type {(inputs: Networkprompts_Settings_Sendreq2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Send Connection Requests.`)
+	return /** @type {LocalizedString} */ (`إرسال طلبات الاتصال.`)
 };
 
 /**

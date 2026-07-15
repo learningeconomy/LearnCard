@@ -18,7 +18,7 @@ const fr_addressbook_acceptrequest2 = /** @type {(inputs: Addressbook_Acceptrequ
 };
 
 const ar_addressbook_acceptrequest2 = /** @type {(inputs: Addressbook_Acceptrequest2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Accept Request`)
+	return /** @type {LocalizedString} */ (`قبول الطلب`)
 };
 
 /**

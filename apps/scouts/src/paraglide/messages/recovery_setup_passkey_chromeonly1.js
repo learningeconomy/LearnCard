@@ -18,7 +18,7 @@ const fr_recovery_setup_passkey_chromeonly1 = /** @type {(inputs: Recovery_Setup
 };
 
 const ar_recovery_setup_passkey_chromeonly1 = /** @type {(inputs: Recovery_Setup_Passkey_Chromeonly1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Passkeys with encryption are currently supported on desktop Chrome and Edge only.`)
+	return /** @type {LocalizedString} */ (`مفاتيح المرور مع التشفير مدعومة حالياً على متصفحي Chrome وEdge لأجهزة الكمبيوتر فقط.`)
 };
 
 /**

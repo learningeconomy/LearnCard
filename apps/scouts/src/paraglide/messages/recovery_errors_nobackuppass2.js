@@ -18,7 +18,7 @@ const fr_recovery_errors_nobackuppass2 = /** @type {(inputs: Recovery_Errors_Nob
 };
 
 const ar_recovery_errors_nobackuppass2 = /** @type {(inputs: Recovery_Errors_Nobackuppass2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Please enter the password for your backup file.`)
+	return /** @type {LocalizedString} */ (`يرجى إدخال كلمة مرور ملف النسخ الاحتياطي الخاص بك.`)
 };
 
 /**

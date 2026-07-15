@@ -18,7 +18,7 @@ const fr_troops_connect_share = /** @type {(inputs: Troops_Connect_ShareInputs) 
 };
 
 const ar_troops_connect_share = /** @type {(inputs: Troops_Connect_ShareInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Share Link`)
+	return /** @type {LocalizedString} */ (`مشاركة الرابط`)
 };
 
 /**

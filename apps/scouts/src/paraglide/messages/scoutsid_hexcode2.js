@@ -18,7 +18,7 @@ const fr_scoutsid_hexcode2 = /** @type {(inputs: Scoutsid_Hexcode2Inputs) => Loc
 };
 
 const ar_scoutsid_hexcode2 = /** @type {(inputs: Scoutsid_Hexcode2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Color Hex Code`)
+	return /** @type {LocalizedString} */ (`رمز اللون السداسي`)
 };
 
 /**

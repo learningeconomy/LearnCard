@@ -18,7 +18,7 @@ const fr_skillframeworks_replacefwdesc3 = /** @type {(inputs: Skillframeworks_Re
 };
 
 const ar_skillframeworks_replacefwdesc3 = /** @type {(inputs: Skillframeworks_Replacefwdesc3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`To replace your current framework, you can upload a new JSON file.`)
+	return /** @type {LocalizedString} */ (`لاستبدال إطارك الحالي، يمكنك رفع ملف JSON جديد.`)
 };
 
 /**

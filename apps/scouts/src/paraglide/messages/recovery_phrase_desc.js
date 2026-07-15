@@ -18,7 +18,7 @@ const fr_recovery_phrase_desc = /** @type {(inputs: Recovery_Phrase_DescInputs) 
 };
 
 const ar_recovery_phrase_desc = /** @type {(inputs: Recovery_Phrase_DescInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Enter your 25-word recovery phrase, separated by spaces.`)
+	return /** @type {LocalizedString} */ (`أدخل عبارة الاسترداد المكونة من 25 كلمة، مفصولة بمسافات.`)
 };
 
 /**

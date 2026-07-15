@@ -18,7 +18,7 @@ const fr_recovery_email_descwithoutemail2 = /** @type {(inputs: Recovery_Email_D
 };
 
 const ar_recovery_email_descwithoutemail2 = /** @type {(inputs: Recovery_Email_Descwithoutemail2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`We previously sent a recovery email to your recovery address. Open that email and follow the steps below.`)
+	return /** @type {LocalizedString} */ (`لقد أرسلنا سابقاً بريداً إلكترونياً لاستعادة الحساب إلى عنوان الاسترداد الخاص بك. افتح ذلك البريد واتبع الخطوات أدناه.`)
 };
 
 /**

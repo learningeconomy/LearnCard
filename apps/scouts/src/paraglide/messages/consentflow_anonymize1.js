@@ -18,7 +18,7 @@ const fr_consentflow_anonymize1 = /** @type {(inputs: Consentflow_Anonymize1Inpu
 };
 
 const ar_consentflow_anonymize1 = /** @type {(inputs: Consentflow_Anonymize1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Anonymize Data`)
+	return /** @type {LocalizedString} */ (`إخفاء الهوية`)
 };
 
 /**

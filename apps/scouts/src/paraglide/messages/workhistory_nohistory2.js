@@ -18,7 +18,7 @@ const fr_workhistory_nohistory2 = /** @type {(inputs: Workhistory_Nohistory2Inpu
 };
 
 const ar_workhistory_nohistory2 = /** @type {(inputs: Workhistory_Nohistory2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No work history yet`)
+	return /** @type {LocalizedString} */ (`لا يوجد تاريخ عمل بعد`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_consentflow_logout1 = /** @type {(inputs: Consentflow_Logout1Inputs) =>
 };
 
 const ar_consentflow_logout1 = /** @type {(inputs: Consentflow_Logout1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Logout`)
+	return /** @type {LocalizedString} */ (`تسجيل الخروج`)
 };
 
 /**

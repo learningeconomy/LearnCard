@@ -18,7 +18,7 @@ const fr_scoutsid_light1 = /** @type {(inputs: Scoutsid_Light1Inputs) => Localiz
 };
 
 const ar_scoutsid_light1 = /** @type {(inputs: Scoutsid_Light1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Light`)
+	return /** @type {LocalizedString} */ (`فاتح`)
 };
 
 /**

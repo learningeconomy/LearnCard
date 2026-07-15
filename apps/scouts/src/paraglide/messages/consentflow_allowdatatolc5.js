@@ -18,7 +18,7 @@ const fr_consentflow_allowdatatolc5 = /** @type {(inputs: Consentflow_Allowdatat
 };
 
 const ar_consentflow_allowdatatolc5 = /** @type {(inputs: Consentflow_Allowdatatolc5Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Allow Data to be Added to Your LearnCard`)
+	return /** @type {LocalizedString} */ (`السماح بإضافة البيانات إلى LearnCard الخاص بك`)
 };
 
 /**

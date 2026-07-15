@@ -18,7 +18,7 @@ const fr_recovery_setup_phrase_confirmbtn1 = /** @type {(inputs: Recovery_Setup_
 };
 
 const ar_recovery_setup_phrase_confirmbtn1 = /** @type {(inputs: Recovery_Setup_Phrase_Confirmbtn1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`I've Saved It Somewhere Safe`)
+	return /** @type {LocalizedString} */ (`لقد حفظتها في مكان آمن`)
 };
 
 /**

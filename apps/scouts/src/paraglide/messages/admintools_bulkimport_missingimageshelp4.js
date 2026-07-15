@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_missingimageshelp4 = /** @type {(inputs: Admintoo
 };
 
 const ar_admintools_bulkimport_missingimageshelp4 = /** @type {(inputs: Admintools_Bulkimport_Missingimageshelp4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Please upload a ZIP file containing these images or provide direct URLs in the spreadsheet.`)
+	return /** @type {LocalizedString} */ (`يرجى رفع ملف ZIP يحتوي على هذه الصور أو تقديم روابط مباشرة في جدول البيانات.`)
 };
 
 /**

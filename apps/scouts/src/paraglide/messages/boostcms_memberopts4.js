@@ -18,7 +18,7 @@ const fr_boostcms_memberopts4 = /** @type {(inputs: Boostcms_Memberopts4Inputs) 
 };
 
 const ar_boostcms_memberopts4 = /** @type {(inputs: Boostcms_Memberopts4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Member Options`)
+	return /** @type {LocalizedString} */ (`خيارات الأعضاء`)
 };
 
 /**

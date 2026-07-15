@@ -18,7 +18,7 @@ const fr_networkprompts_dataown2 = /** @type {(inputs: Networkprompts_Dataown2In
 };
 
 const ar_networkprompts_dataown2 = /** @type {(inputs: Networkprompts_Dataown2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`You own your own data.`)
+	return /** @type {LocalizedString} */ (`أنت تملك بياناتك.`)
 };
 
 /**

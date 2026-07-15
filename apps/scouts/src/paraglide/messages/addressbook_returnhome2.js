@@ -18,7 +18,7 @@ const fr_addressbook_returnhome2 = /** @type {(inputs: Addressbook_Returnhome2In
 };
 
 const ar_addressbook_returnhome2 = /** @type {(inputs: Addressbook_Returnhome2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Return home`)
+	return /** @type {LocalizedString} */ (`العودة إلى الرئيسية`)
 };
 
 /**

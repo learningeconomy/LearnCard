@@ -18,7 +18,7 @@ const fr_boost_onemorestep2 = /** @type {(inputs: Boost_Onemorestep2Inputs) => L
 };
 
 const ar_boost_onemorestep2 = /** @type {(inputs: Boost_Onemorestep2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`One more step!`)
+	return /** @type {LocalizedString} */ (`خطوة أخرى!`)
 };
 
 /**

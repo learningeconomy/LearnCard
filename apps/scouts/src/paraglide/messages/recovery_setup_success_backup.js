@@ -18,7 +18,7 @@ const fr_recovery_setup_success_backup = /** @type {(inputs: Recovery_Setup_Succ
 };
 
 const ar_recovery_setup_success_backup = /** @type {(inputs: Recovery_Setup_Success_BackupInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Backup file saved! Keep it and your password somewhere safe.`)
+	return /** @type {LocalizedString} */ (`تم حفظ ملف النسخ الاحتياطي! احتفظ به وبكلمة مرورك في مكان آمن.`)
 };
 
 /**

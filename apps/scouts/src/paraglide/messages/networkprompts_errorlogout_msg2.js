@@ -18,7 +18,7 @@ const fr_networkprompts_errorlogout_msg2 = /** @type {(inputs: Networkprompts_Er
 };
 
 const ar_networkprompts_errorlogout_msg2 = /** @type {(inputs: Networkprompts_Errorlogout_Msg2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`There was a sign-in error. Please log out and log back into the app to fix this error.`)
+	return /** @type {LocalizedString} */ (`حدث خطأ في تسجيل الدخول. يرجى تسجيل الخروج وإعادة تسجيل الدخول إلى التطبيق لإصلاح هذا الخطأ.`)
 };
 
 /**

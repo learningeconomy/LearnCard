@@ -18,7 +18,7 @@ const fr_notifications_okay = /** @type {(inputs: Notifications_OkayInputs) => L
 };
 
 const ar_notifications_okay = /** @type {(inputs: Notifications_OkayInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Okay`)
+	return /** @type {LocalizedString} */ (`حسناً`)
 };
 
 /**

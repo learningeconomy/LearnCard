@@ -18,7 +18,7 @@ const fr_troops_template_joined = /** @type {(inputs: Troops_Template_JoinedInpu
 };
 
 const ar_troops_template_joined = /** @type {(inputs: Troops_Template_JoinedInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Joined`)
+	return /** @type {LocalizedString} */ (`تم الانضمام`)
 };
 
 /**

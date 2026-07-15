@@ -18,7 +18,7 @@ const fr_boostcms_mediaattachment4 = /** @type {(inputs: Boostcms_Mediaattachmen
 };
 
 const ar_boostcms_mediaattachment4 = /** @type {(inputs: Boostcms_Mediaattachment4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Media Attachment`)
+	return /** @type {LocalizedString} */ (`مرفق وسائط`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_skillframeworks_browsefw2 = /** @type {(inputs: Skillframeworks_Browsef
 };
 
 const ar_skillframeworks_browsefw2 = /** @type {(inputs: Skillframeworks_Browsefw2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Browse Framework`)
+	return /** @type {LocalizedString} */ (`تصفح الإطار`)
 };
 
 /**

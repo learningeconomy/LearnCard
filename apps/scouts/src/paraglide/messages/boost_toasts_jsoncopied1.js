@@ -18,7 +18,7 @@ const fr_boost_toasts_jsoncopied1 = /** @type {(inputs: Boost_Toasts_Jsoncopied1
 };
 
 const ar_boost_toasts_jsoncopied1 = /** @type {(inputs: Boost_Toasts_Jsoncopied1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`JSON copied to clipboard`)
+	return /** @type {LocalizedString} */ (`تم نسخ JSON إلى الحافظة`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_userprofile_deleteforever2 = /** @type {(inputs: Userprofile_Deletefore
 };
 
 const ar_userprofile_deleteforever2 = /** @type {(inputs: Userprofile_Deleteforever2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Delete Forever`)
+	return /** @type {LocalizedString} */ (`حذف نهائي`)
 };
 
 /**

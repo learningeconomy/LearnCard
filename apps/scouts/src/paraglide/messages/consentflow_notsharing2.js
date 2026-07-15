@@ -18,7 +18,7 @@ const fr_consentflow_notsharing2 = /** @type {(inputs: Consentflow_Notsharing2In
 };
 
 const ar_consentflow_notsharing2 = /** @type {(inputs: Consentflow_Notsharing2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Not Sharing`)
+	return /** @type {LocalizedString} */ (`لا تتم المشاركة`)
 };
 
 /**

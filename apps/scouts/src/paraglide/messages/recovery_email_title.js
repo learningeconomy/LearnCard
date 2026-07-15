@@ -18,7 +18,7 @@ const fr_recovery_email_title = /** @type {(inputs: Recovery_Email_TitleInputs) 
 };
 
 const ar_recovery_email_title = /** @type {(inputs: Recovery_Email_TitleInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Recover via Email`)
+	return /** @type {LocalizedString} */ (`الاسترداد عبر البريد الإلكتروني`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_launchpad_schools1 = /** @type {(inputs: Launchpad_Schools1Inputs) => L
 };
 
 const ar_launchpad_schools1 = /** @type {(inputs: Launchpad_Schools1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Schools`)
+	return /** @type {LocalizedString} */ (`المدارس`)
 };
 
 /**

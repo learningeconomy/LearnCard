@@ -18,7 +18,7 @@ const fr_boostcms_changephoto4 = /** @type {(inputs: Boostcms_Changephoto4Inputs
 };
 
 const ar_boostcms_changephoto4 = /** @type {(inputs: Boostcms_Changephoto4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Change Photo`)
+	return /** @type {LocalizedString} */ (`تغيير الصورة`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_recovery_methodpicker_restoredescmissing3 = /** @type {(inputs: Recover
 };
 
 const ar_recovery_methodpicker_restoredescmissing3 = /** @type {(inputs: Recovery_Methodpicker_Restoredescmissing3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Choose how you'd like to restore access to your account.`)
+	return /** @type {LocalizedString} */ (`اختر كيف ترغب في استعادة الوصول إلى حسابك.`)
 };
 
 /**

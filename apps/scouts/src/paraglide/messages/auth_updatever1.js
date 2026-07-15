@@ -18,7 +18,7 @@ const fr_auth_updatever1 = /** @type {(inputs: Auth_Updatever1Inputs) => Localiz
 };
 
 const ar_auth_updatever1 = /** @type {(inputs: Auth_Updatever1Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`Update to ${i?.version}`)
+	return /** @type {LocalizedString} */ (`تحديث إلى ${i?.version}`)
 };
 
 /**

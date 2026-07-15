@@ -18,7 +18,7 @@ const fr_userprofile_errors_recentloginrequired3 = /** @type {(inputs: Userprofi
 };
 
 const ar_userprofile_errors_recentloginrequired3 = /** @type {(inputs: Userprofile_Errors_Recentloginrequired3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`A recent login is required!`)
+	return /** @type {LocalizedString} */ (`مطلوب تسجيل دخول حديث!`)
 };
 
 /**

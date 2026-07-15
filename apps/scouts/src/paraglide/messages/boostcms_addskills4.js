@@ -18,7 +18,7 @@ const fr_boostcms_addskills4 = /** @type {(inputs: Boostcms_Addskills4Inputs) =>
 };
 
 const ar_boostcms_addskills4 = /** @type {(inputs: Boostcms_Addskills4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Add Skills`)
+	return /** @type {LocalizedString} */ (`إضافة مهارات`)
 };
 
 /**

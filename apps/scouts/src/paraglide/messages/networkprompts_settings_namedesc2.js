@@ -18,7 +18,7 @@ const fr_networkprompts_settings_namedesc2 = /** @type {(inputs: Networkprompts_
 };
 
 const ar_networkprompts_settings_namedesc2 = /** @type {(inputs: Networkprompts_Settings_Namedesc2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Your name will appear in your connection’s contact list, but it is never be displayed publicly or shared otherwise without your express permission.`)
+	return /** @type {LocalizedString} */ (`سيظهر اسمك في قائمة جهات اتصال من تتواصل معهم، لكنه لا يعرض علناً أو يشارك بطريقة أخرى دون موافقتك.`)
 };
 
 /**

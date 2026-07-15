@@ -18,7 +18,7 @@ const fr_troops_selectregion1 = /** @type {(inputs: Troops_Selectregion1Inputs) 
 };
 
 const ar_troops_selectregion1 = /** @type {(inputs: Troops_Selectregion1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Select Region`)
+	return /** @type {LocalizedString} */ (`اختر المنطقة`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_auth_troublesigningin2 = /** @type {(inputs: Auth_Troublesigningin2Inpu
 };
 
 const ar_auth_troublesigningin2 = /** @type {(inputs: Auth_Troublesigningin2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Having trouble signing in?`)
+	return /** @type {LocalizedString} */ (`هل تواجه مشكلة في تسجيل الدخول؟`)
 };
 
 /**

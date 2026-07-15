@@ -18,7 +18,7 @@ const fr_recovery_setup_backup_confirmlabel1 = /** @type {(inputs: Recovery_Setu
 };
 
 const ar_recovery_setup_backup_confirmlabel1 = /** @type {(inputs: Recovery_Setup_Backup_Confirmlabel1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Confirm Password`)
+	return /** @type {LocalizedString} */ (`تأكيد كلمة المرور`)
 };
 
 /**

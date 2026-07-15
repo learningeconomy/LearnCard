@@ -18,7 +18,7 @@ const fr_admintools_noaccesssubtitle3 = /** @type {(inputs: Admintools_Noaccesss
 };
 
 const ar_admintools_noaccesssubtitle3 = /** @type {(inputs: Admintools_Noaccesssubtitle3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`sneaky sneaky...`)
+	return /** @type {LocalizedString} */ (`خلسة خلسة...`)
 };
 
 /**

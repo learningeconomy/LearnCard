@@ -18,7 +18,7 @@ const fr_recovery_setup_backup_downloadagain1 = /** @type {(inputs: Recovery_Set
 };
 
 const ar_recovery_setup_backup_downloadagain1 = /** @type {(inputs: Recovery_Setup_Backup_Downloadagain1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Download Again`)
+	return /** @type {LocalizedString} */ (`تنزيل مرة أخرى`)
 };
 
 /**

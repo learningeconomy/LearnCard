@@ -47,11 +47,11 @@ const fr_recovery_email_descwithemail2 = /** @type {((inputs: Recovery_Email_Des
 const ar_recovery_email_descwithemail2 = /** @type {((inputs: Recovery_Email_Descwithemail2Inputs) => LocalizedString) & { parts: (inputs: Recovery_Email_Descwithemail2Inputs) => import('../runtime.js').MessagePart[] }} */ (
 	/* @__PURE__ */ Object.assign(
 		/** @type {(inputs: Recovery_Email_Descwithemail2Inputs) => LocalizedString} */ ((i) => {
-			return /** @type {LocalizedString} */ (`We previously sent a recovery email to ${i?.email}. Open that email and follow the steps below.`)
+			return /** @type {LocalizedString} */ (`لقد أرسلنا سابقاً بريداً إلكترونياً لاستعادة الحساب إلى ${i?.email}. افتح ذلك البريد واتبع الخطوات أدناه.`)
 		}),
 		{
 			parts: /** @type {(inputs: Recovery_Email_Descwithemail2Inputs) => import('../runtime.js').MessagePart[]} */ ((i) => {
-				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "We previously sent a recovery email to " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: String(i?.email) }, { type: "markup-end", name: "0", options: {}, attributes: {} }, { type: "text", value: ". Open that email and follow the steps below." }])
+				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "لقد أرسلنا سابقاً بريداً إلكترونياً لاستعادة الحساب إلى " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: String(i?.email) }, { type: "markup-end", name: "0", options: {}, attributes: {} }, { type: "text", value: ". افتح ذلك البريد واتبع الخطوات أدناه." }])
 			})
 		}
 	)

@@ -18,7 +18,7 @@ const fr_boostcms_all3 = /** @type {(inputs: Boostcms_All3Inputs) => LocalizedSt
 };
 
 const ar_boostcms_all3 = /** @type {(inputs: Boostcms_All3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`All`)
+	return /** @type {LocalizedString} */ (`الكل`)
 };
 
 /**

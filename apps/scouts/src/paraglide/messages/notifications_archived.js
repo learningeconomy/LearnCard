@@ -18,7 +18,7 @@ const fr_notifications_archived = /** @type {(inputs: Notifications_ArchivedInpu
 };
 
 const ar_notifications_archived = /** @type {(inputs: Notifications_ArchivedInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Archived`)
+	return /** @type {LocalizedString} */ (`مؤرشف`)
 };
 
 /**

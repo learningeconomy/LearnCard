@@ -18,7 +18,7 @@ const fr_addressbook_backbtnaria3 = /** @type {(inputs: Addressbook_Backbtnaria3
 };
 
 const ar_addressbook_backbtnaria3 = /** @type {(inputs: Addressbook_Backbtnaria3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Back button`)
+	return /** @type {LocalizedString} */ (`زر الرجوع`)
 };
 
 /**

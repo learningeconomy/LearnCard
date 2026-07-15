@@ -18,7 +18,7 @@ const fr_recovery_setup_email_emaillabel1 = /** @type {(inputs: Recovery_Setup_E
 };
 
 const ar_recovery_setup_email_emaillabel1 = /** @type {(inputs: Recovery_Setup_Email_Emaillabel1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Recovery Email`)
+	return /** @type {LocalizedString} */ (`البريد الإلكتروني للاسترداد`)
 };
 
 /**

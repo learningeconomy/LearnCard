@@ -18,7 +18,7 @@ const fr_skills_compfwone2 = /** @type {(inputs: Skills_Compfwone2Inputs) => Loc
 };
 
 const ar_skills_compfwone2 = /** @type {(inputs: Skills_Compfwone2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`1 Competency Framework`)
+	return /** @type {LocalizedString} */ (`إطار كفاءات واحد`)
 };
 
 /**

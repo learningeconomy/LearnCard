@@ -18,7 +18,7 @@ const fr_auth_keyfail1 = /** @type {(inputs: Auth_Keyfail1Inputs) => LocalizedSt
 };
 
 const ar_auth_keyfail1 = /** @type {(inputs: Auth_Keyfail1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Failed to retrieve device key`)
+	return /** @type {LocalizedString} */ (`فشل استرجاع مفتاح الجهاز`)
 };
 
 /**

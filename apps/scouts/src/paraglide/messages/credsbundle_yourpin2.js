@@ -18,7 +18,7 @@ const fr_credsbundle_yourpin2 = /** @type {(inputs: Credsbundle_Yourpin2Inputs) 
 };
 
 const ar_credsbundle_yourpin2 = /** @type {(inputs: Credsbundle_Yourpin2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Your PIN is: {pin}`)
+	return /** @type {LocalizedString} */ (`رمز PIN الخاص بك هو: {pin}`)
 };
 
 /**

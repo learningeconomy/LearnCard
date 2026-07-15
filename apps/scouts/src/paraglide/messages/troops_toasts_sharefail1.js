@@ -18,7 +18,7 @@ const fr_troops_toasts_sharefail1 = /** @type {(inputs: Troops_Toasts_Sharefail1
 };
 
 const ar_troops_toasts_sharefail1 = /** @type {(inputs: Troops_Toasts_Sharefail1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Failed to copy link to clipboard`)
+	return /** @type {LocalizedString} */ (`فشل نسخ الرابط إلى الحافظة`)
 };
 
 /**

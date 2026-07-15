@@ -18,7 +18,7 @@ const fr_admintools_allmanagedbooststitle4 = /** @type {(inputs: Admintools_Allm
 };
 
 const ar_admintools_allmanagedbooststitle4 = /** @type {(inputs: Admintools_Allmanagedbooststitle4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`All Managed Boosts and Badges`)
+	return /** @type {LocalizedString} */ (`جميع التعزيزات والشارات المُدارة`)
 };
 
 /**

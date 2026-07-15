@@ -18,7 +18,7 @@ const fr_boostcms_advancedsettings4 = /** @type {(inputs: Boostcms_Advancedsetti
 };
 
 const ar_boostcms_advancedsettings4 = /** @type {(inputs: Boostcms_Advancedsettings4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Advanced Settings`)
+	return /** @type {LocalizedString} */ (`الإعدادات المتقدمة`)
 };
 
 /**

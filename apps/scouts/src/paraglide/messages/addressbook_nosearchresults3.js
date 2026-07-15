@@ -18,7 +18,7 @@ const fr_addressbook_nosearchresults3 = /** @type {(inputs: Addressbook_Nosearch
 };
 
 const ar_addressbook_nosearchresults3 = /** @type {(inputs: Addressbook_Nosearchresults3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No Search Results`)
+	return /** @type {LocalizedString} */ (`لا توجد نتائج بحث`)
 };
 
 /**

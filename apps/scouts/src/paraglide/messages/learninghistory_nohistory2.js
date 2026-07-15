@@ -18,7 +18,7 @@ const fr_learninghistory_nohistory2 = /** @type {(inputs: Learninghistory_Nohist
 };
 
 const ar_learninghistory_nohistory2 = /** @type {(inputs: Learninghistory_Nohistory2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No learning history yet`)
+	return /** @type {LocalizedString} */ (`لا يوجد تاريخ تعلم بعد`)
 };
 
 /**

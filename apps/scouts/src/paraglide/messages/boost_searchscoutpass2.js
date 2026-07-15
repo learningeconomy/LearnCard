@@ -18,7 +18,7 @@ const fr_boost_searchscoutpass2 = /** @type {(inputs: Boost_Searchscoutpass2Inpu
 };
 
 const ar_boost_searchscoutpass2 = /** @type {(inputs: Boost_Searchscoutpass2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Search ScoutPass Network...`)
+	return /** @type {LocalizedString} */ (`بحث في شبكة ScoutPass...`)
 };
 
 /**

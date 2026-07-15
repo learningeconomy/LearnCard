@@ -18,7 +18,7 @@ const fr_boost_selfsubtext1 = /** @type {(inputs: Boost_Selfsubtext1Inputs) => L
 };
 
 const ar_boost_selfsubtext1 = /** @type {(inputs: Boost_Selfsubtext1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`You can issue yourself credentials to tell your story. Your skills are currencies for your future.`)
+	return /** @type {LocalizedString} */ (`يمكنك إصدار مؤهلات لنفسك لتروي قصتك. مهاراتك هي عملة لمستقبلك.`)
 };
 
 /**

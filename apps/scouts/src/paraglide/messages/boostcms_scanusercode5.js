@@ -18,7 +18,7 @@ const fr_boostcms_scanusercode5 = /** @type {(inputs: Boostcms_Scanusercode5Inpu
 };
 
 const ar_boostcms_scanusercode5 = /** @type {(inputs: Boostcms_Scanusercode5Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Scan User Code`)
+	return /** @type {LocalizedString} */ (`مسح رمز المستخدم`)
 };
 
 /**

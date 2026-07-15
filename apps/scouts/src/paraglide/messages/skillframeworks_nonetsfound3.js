@@ -18,7 +18,7 @@ const fr_skillframeworks_nonetsfound3 = /** @type {(inputs: Skillframeworks_None
 };
 
 const ar_skillframeworks_nonetsfound3 = /** @type {(inputs: Skillframeworks_Nonetsfound3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No networks found. Create a Global or Regional network first from the Membership page.`)
+	return /** @type {LocalizedString} */ (`لم يتم العثور على شبكات. أنشئ شبكة عالمية أو إقليمية أولاً من صفحة العضوية.`)
 };
 
 /**

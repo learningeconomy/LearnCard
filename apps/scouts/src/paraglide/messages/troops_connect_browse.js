@@ -18,7 +18,7 @@ const fr_troops_connect_browse = /** @type {(inputs: Troops_Connect_BrowseInputs
 };
 
 const ar_troops_connect_browse = /** @type {(inputs: Troops_Connect_BrowseInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Browse Contacts`)
+	return /** @type {LocalizedString} */ (`تصفح جهات الاتصال`)
 };
 
 /**

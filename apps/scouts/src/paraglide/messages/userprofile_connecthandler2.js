@@ -18,7 +18,7 @@ const fr_userprofile_connecthandler2 = /** @type {(inputs: Userprofile_Connectha
 };
 
 const ar_userprofile_connecthandler2 = /** @type {(inputs: Userprofile_Connecthandler2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Connect Handler`)
+	return /** @type {LocalizedString} */ (`ربط المعالج`)
 };
 
 /**

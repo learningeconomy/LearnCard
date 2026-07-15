@@ -18,7 +18,7 @@ const fr_skillframeworks_done1 = /** @type {(inputs: Skillframeworks_Done1Inputs
 };
 
 const ar_skillframeworks_done1 = /** @type {(inputs: Skillframeworks_Done1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Done`)
+	return /** @type {LocalizedString} */ (`تم`)
 };
 
 /**

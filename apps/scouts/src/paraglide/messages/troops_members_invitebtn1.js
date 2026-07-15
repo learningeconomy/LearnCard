@@ -18,7 +18,7 @@ const fr_troops_members_invitebtn1 = /** @type {(inputs: Troops_Members_Invitebt
 };
 
 const ar_troops_members_invitebtn1 = /** @type {(inputs: Troops_Members_Invitebtn1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Invite`)
+	return /** @type {LocalizedString} */ (`دعوة`)
 };
 
 /**

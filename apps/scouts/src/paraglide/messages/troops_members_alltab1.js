@@ -18,7 +18,7 @@ const fr_troops_members_alltab1 = /** @type {(inputs: Troops_Members_Alltab1Inpu
 };
 
 const ar_troops_members_alltab1 = /** @type {(inputs: Troops_Members_Alltab1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`All`)
+	return /** @type {LocalizedString} */ (`الكل`)
 };
 
 /**

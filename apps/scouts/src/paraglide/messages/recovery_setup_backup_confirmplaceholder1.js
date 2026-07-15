@@ -18,7 +18,7 @@ const fr_recovery_setup_backup_confirmplaceholder1 = /** @type {(inputs: Recover
 };
 
 const ar_recovery_setup_backup_confirmplaceholder1 = /** @type {(inputs: Recovery_Setup_Backup_Confirmplaceholder1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Type it again`)
+	return /** @type {LocalizedString} */ (`أعد كتابتها`)
 };
 
 /**

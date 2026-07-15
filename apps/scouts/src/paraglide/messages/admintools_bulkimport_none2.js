@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_none2 = /** @type {(inputs: Admintools_Bulkimport
 };
 
 const ar_admintools_bulkimport_none2 = /** @type {(inputs: Admintools_Bulkimport_None2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`[none]`)
+	return /** @type {LocalizedString} */ (`[لا شيء]`)
 };
 
 /**

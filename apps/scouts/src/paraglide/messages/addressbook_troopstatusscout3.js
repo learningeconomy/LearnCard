@@ -18,7 +18,7 @@ const fr_addressbook_troopstatusscout3 = /** @type {(inputs: Addressbook_Troopst
 };
 
 const ar_addressbook_troopstatusscout3 = /** @type {(inputs: Addressbook_Troopstatusscout3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Scout`)
+	return /** @type {LocalizedString} */ (`كشاف`)
 };
 
 /**

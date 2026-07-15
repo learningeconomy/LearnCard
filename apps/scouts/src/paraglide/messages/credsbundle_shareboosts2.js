@@ -18,7 +18,7 @@ const fr_credsbundle_shareboosts2 = /** @type {(inputs: Credsbundle_Shareboosts2
 };
 
 const ar_credsbundle_shareboosts2 = /** @type {(inputs: Credsbundle_Shareboosts2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Share Boosts`)
+	return /** @type {LocalizedString} */ (`مشاركة التعزيزات`)
 };
 
 /**

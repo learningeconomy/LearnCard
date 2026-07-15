@@ -18,7 +18,7 @@ const fr_boost_titlepack1 = /** @type {(inputs: Boost_Titlepack1Inputs) => Local
 };
 
 const ar_boost_titlepack1 = /** @type {(inputs: Boost_Titlepack1Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`${i?.title} Pack`)
+	return /** @type {LocalizedString} */ (`حزمة ${i?.title}`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_login_verificationsenttoast2 = /** @type {(inputs: Login_Verificationse
 };
 
 const ar_login_verificationsenttoast2 = /** @type {(inputs: Login_Verificationsenttoast2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`A verification code has been sent`)
+	return /** @type {LocalizedString} */ (`تم إرسال رمز التحقق`)
 };
 
 /**

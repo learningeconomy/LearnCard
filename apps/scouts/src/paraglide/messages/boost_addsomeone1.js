@@ -18,7 +18,7 @@ const fr_boost_addsomeone1 = /** @type {(inputs: Boost_Addsomeone1Inputs) => Loc
 };
 
 const ar_boost_addsomeone1 = /** @type {(inputs: Boost_Addsomeone1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Add Someone`)
+	return /** @type {LocalizedString} */ (`إضافة شخص`)
 };
 
 /**

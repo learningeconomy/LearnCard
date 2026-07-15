@@ -18,7 +18,7 @@ const fr_consentflow_notyou2 = /** @type {(inputs: Consentflow_Notyou2Inputs) =>
 };
 
 const ar_consentflow_notyou2 = /** @type {(inputs: Consentflow_Notyou2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Not you?`)
+	return /** @type {LocalizedString} */ (`لست أنت؟`)
 };
 
 /**

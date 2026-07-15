@@ -18,7 +18,7 @@ const fr_recovery_setup_phrase_warningnevershare2 = /** @type {(inputs: Recovery
 };
 
 const ar_recovery_setup_phrase_warningnevershare2 = /** @type {(inputs: Recovery_Setup_Phrase_Warningnevershare2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Never share it — anyone with this phrase has full access`)
+	return /** @type {LocalizedString} */ (`لا تشاركها أبداً — أي شخص لديه هذه العبارة لديه وصول كامل`)
 };
 
 /**

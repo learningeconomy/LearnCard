@@ -18,7 +18,7 @@ const fr_auth_locplace1 = /** @type {(inputs: Auth_Locplace1Inputs) => Localized
 };
 
 const ar_auth_locplace1 = /** @type {(inputs: Auth_Locplace1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Enter your location...`)
+	return /** @type {LocalizedString} */ (`أدخل موقعك...`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_addressbook_confirmconnection2 = /** @type {(inputs: Addressbook_Confir
 };
 
 const ar_addressbook_confirmconnection2 = /** @type {(inputs: Addressbook_Confirmconnection2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Are you sure you want to send a connection request?`)
+	return /** @type {LocalizedString} */ (`هل أنت متأكد من إرسال طلب اتصال؟`)
 };
 
 /**

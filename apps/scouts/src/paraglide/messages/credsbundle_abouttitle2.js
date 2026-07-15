@@ -18,7 +18,7 @@ const fr_credsbundle_abouttitle2 = /** @type {(inputs: Credsbundle_Abouttitle2In
 };
 
 const ar_credsbundle_abouttitle2 = /** @type {(inputs: Credsbundle_Abouttitle2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`About {title}`)
+	return /** @type {LocalizedString} */ (`حول {title}`)
 };
 
 /**

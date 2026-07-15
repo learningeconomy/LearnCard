@@ -18,7 +18,7 @@ const fr_notifications_settingnewboostsdesc3 = /** @type {(inputs: Notifications
 };
 
 const ar_notifications_settingnewboostsdesc3 = /** @type {(inputs: Notifications_Settingnewboostsdesc3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Boosts include all types of credentials including:  Skills, IDs, Achievements, Learning History, Work History, Currency, and Badges.`)
+	return /** @type {LocalizedString} */ (`تتضمن التعزيزات جميع أنواع المؤهلات بما في ذلك: المهارات، المعرفات، الإنجازات، تاريخ التعلم، تاريخ العمل، العملات.`)
 };
 
 /**

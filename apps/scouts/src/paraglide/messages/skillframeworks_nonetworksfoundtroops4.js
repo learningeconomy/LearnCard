@@ -18,7 +18,7 @@ const fr_skillframeworks_nonetworksfoundtroops4 = /** @type {(inputs: Skillframe
 };
 
 const ar_skillframeworks_nonetworksfoundtroops4 = /** @type {(inputs: Skillframeworks_Nonetworksfoundtroops4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No networks found. Create a Global or National network first from the Troops page.`)
+	return /** @type {LocalizedString} */ (`لم يتم العثور على شبكات. أنشئ شبكة عالمية أو وطنية أولاً من صفحة الفرق.`)
 };
 
 /**

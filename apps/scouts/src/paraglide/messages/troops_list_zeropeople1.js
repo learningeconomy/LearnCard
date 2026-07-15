@@ -18,7 +18,7 @@ const fr_troops_list_zeropeople1 = /** @type {(inputs: Troops_List_Zeropeople1In
 };
 
 const ar_troops_list_zeropeople1 = /** @type {(inputs: Troops_List_Zeropeople1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`0 People`)
+	return /** @type {LocalizedString} */ (`0 شخص`)
 };
 
 /**

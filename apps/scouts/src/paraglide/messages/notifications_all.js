@@ -18,7 +18,7 @@ const fr_notifications_all = /** @type {(inputs: Notifications_AllInputs) => Loc
 };
 
 const ar_notifications_all = /** @type {(inputs: Notifications_AllInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`All`)
+	return /** @type {LocalizedString} */ (`الكل`)
 };
 
 /**

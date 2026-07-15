@@ -18,7 +18,7 @@ const fr_troops_issuelog_issued1 = /** @type {(inputs: Troops_Issuelog_Issued1In
 };
 
 const ar_troops_issuelog_issued1 = /** @type {(inputs: Troops_Issuelog_Issued1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Issued to {name}`)
+	return /** @type {LocalizedString} */ (`صدر لـ {name}`)
 };
 
 /**

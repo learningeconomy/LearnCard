@@ -18,7 +18,7 @@ const fr_auth_logout = /** @type {(inputs: Auth_LogoutInputs) => LocalizedString
 };
 
 const ar_auth_logout = /** @type {(inputs: Auth_LogoutInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Logout`)
+	return /** @type {LocalizedString} */ (`تسجيل الخروج`)
 };
 
 /**

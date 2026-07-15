@@ -18,7 +18,7 @@ const fr_recovery_setup_errors_incorrectcode1 = /** @type {(inputs: Recovery_Set
 };
 
 const ar_recovery_setup_errors_incorrectcode1 = /** @type {(inputs: Recovery_Setup_Errors_Incorrectcode1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Incorrect code. Please try again.`)
+	return /** @type {LocalizedString} */ (`رمز غير صحيح. يرجى المحاولة مرة أخرى.`)
 };
 
 /**

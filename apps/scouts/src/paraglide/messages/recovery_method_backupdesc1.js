@@ -18,7 +18,7 @@ const fr_recovery_method_backupdesc1 = /** @type {(inputs: Recovery_Method_Backu
 };
 
 const ar_recovery_method_backupdesc1 = /** @type {(inputs: Recovery_Method_Backupdesc1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Upload your backup file`)
+	return /** @type {LocalizedString} */ (`ارفع ملف النسخ الاحتياطي الخاص بك`)
 };
 
 /**

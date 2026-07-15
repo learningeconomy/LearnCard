@@ -18,7 +18,7 @@ const fr_credentialstorage_wouldliketosend4 = /** @type {(inputs: Credentialstor
 };
 
 const ar_credentialstorage_wouldliketosend4 = /** @type {(inputs: Credentialstorage_Wouldliketosend4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`{origin} would like to send you a credential?`)
+	return /** @type {LocalizedString} */ (`يرغب {origin} في إرسال مؤهل لك؟`)
 };
 
 /**

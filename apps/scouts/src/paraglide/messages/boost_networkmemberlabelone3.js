@@ -18,7 +18,7 @@ const fr_boost_networkmemberlabelone3 = /** @type {(inputs: Boost_Networkmemberl
 };
 
 const ar_boost_networkmemberlabelone3 = /** @type {(inputs: Boost_Networkmemberlabelone3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Network Member`)
+	return /** @type {LocalizedString} */ (`عضو الشبكة`)
 };
 
 /**

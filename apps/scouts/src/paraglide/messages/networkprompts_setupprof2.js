@@ -18,7 +18,7 @@ const fr_networkprompts_setupprof2 = /** @type {(inputs: Networkprompts_Setuppro
 };
 
 const ar_networkprompts_setupprof2 = /** @type {(inputs: Networkprompts_Setupprof2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Set up your profile to get started!`)
+	return /** @type {LocalizedString} */ (`قم بإعداد ملفك الشخصي للبدء!`)
 };
 
 /**

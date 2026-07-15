@@ -18,7 +18,7 @@ const fr_scanner_logout = /** @type {(inputs: Scanner_LogoutInputs) => Localized
 };
 
 const ar_scanner_logout = /** @type {(inputs: Scanner_LogoutInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Logout`)
+	return /** @type {LocalizedString} */ (`تسجيل الخروج`)
 };
 
 /**

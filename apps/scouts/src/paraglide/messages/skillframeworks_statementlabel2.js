@@ -18,7 +18,7 @@ const fr_skillframeworks_statementlabel2 = /** @type {(inputs: Skillframeworks_S
 };
 
 const ar_skillframeworks_statementlabel2 = /** @type {(inputs: Skillframeworks_Statementlabel2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Statement`)
+	return /** @type {LocalizedString} */ (`البيان`)
 };
 
 /**

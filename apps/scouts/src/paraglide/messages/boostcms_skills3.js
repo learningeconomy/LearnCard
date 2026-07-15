@@ -18,7 +18,7 @@ const fr_boostcms_skills3 = /** @type {(inputs: Boostcms_Skills3Inputs) => Local
 };
 
 const ar_boostcms_skills3 = /** @type {(inputs: Boostcms_Skills3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Skills`)
+	return /** @type {LocalizedString} */ (`المهارات`)
 };
 
 /**

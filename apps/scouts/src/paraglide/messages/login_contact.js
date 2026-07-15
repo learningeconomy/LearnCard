@@ -18,7 +18,7 @@ const fr_login_contact = /** @type {(inputs: Login_ContactInputs) => LocalizedSt
 };
 
 const ar_login_contact = /** @type {(inputs: Login_ContactInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Contact`)
+	return /** @type {LocalizedString} */ (`جهة اتصال`)
 };
 
 /**

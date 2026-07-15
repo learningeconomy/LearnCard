@@ -18,7 +18,7 @@ const fr_troops_analytics_title = /** @type {(inputs: Troops_Analytics_TitleInpu
 };
 
 const ar_troops_analytics_title = /** @type {(inputs: Troops_Analytics_TitleInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Analytics Dashboard`)
+	return /** @type {LocalizedString} */ (`لوحة التحليلات`)
 };
 
 /**

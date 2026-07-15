@@ -18,7 +18,7 @@ const fr_admintools_launchdevdocs3 = /** @type {(inputs: Admintools_Launchdevdoc
 };
 
 const ar_admintools_launchdevdocs3 = /** @type {(inputs: Admintools_Launchdevdocs3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Launch Developer Docs`)
+	return /** @type {LocalizedString} */ (`فتح وثائق المطورين`)
 };
 
 /**

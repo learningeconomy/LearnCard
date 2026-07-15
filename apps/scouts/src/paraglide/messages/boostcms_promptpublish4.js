@@ -18,7 +18,7 @@ const fr_boostcms_promptpublish4 = /** @type {(inputs: Boostcms_Promptpublish4In
 };
 
 const ar_boostcms_promptpublish4 = /** @type {(inputs: Boostcms_Promptpublish4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Your boost is published and no more edits can be made. You can return to issuing or quit to start over.`)
+	return /** @type {LocalizedString} */ (`تم نشر تعزيزك ولا يمكن إجراء مزيد من التعديلات. يمكنك العودة للإصدار أو الإنهاء للبدء من جديد.`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_auth_upgradeacct1 = /** @type {(inputs: Auth_Upgradeacct1Inputs) => Loc
 };
 
 const ar_auth_upgradeacct1 = /** @type {(inputs: Auth_Upgradeacct1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Upgrading Account`)
+	return /** @type {LocalizedString} */ (`ترقية الحساب`)
 };
 
 /**

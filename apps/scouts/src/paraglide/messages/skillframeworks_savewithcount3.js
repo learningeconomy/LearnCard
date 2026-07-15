@@ -18,7 +18,7 @@ const fr_skillframeworks_savewithcount3 = /** @type {(inputs: Skillframeworks_Sa
 };
 
 const ar_skillframeworks_savewithcount3 = /** @type {(inputs: Skillframeworks_Savewithcount3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Save ({count})`)
+	return /** @type {LocalizedString} */ (`حفظ ({count})`)
 };
 
 /**

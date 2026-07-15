@@ -18,7 +18,7 @@ const fr_auth_noresults1 = /** @type {(inputs: Auth_Noresults1Inputs) => Localiz
 };
 
 const ar_auth_noresults1 = /** @type {(inputs: Auth_Noresults1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No search results yet`)
+	return /** @type {LocalizedString} */ (`لا توجد نتائج بحث بعد`)
 };
 
 /**

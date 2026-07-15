@@ -18,7 +18,7 @@ const fr_sociallogins_loginwith2 = /** @type {(inputs: Sociallogins_Loginwith2In
 };
 
 const ar_sociallogins_loginwith2 = /** @type {(inputs: Sociallogins_Loginwith2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Login With`)
+	return /** @type {LocalizedString} */ (`تسجيل الدخول باستخدام`)
 };
 
 /**

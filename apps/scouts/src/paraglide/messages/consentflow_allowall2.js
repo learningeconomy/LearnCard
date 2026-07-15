@@ -18,7 +18,7 @@ const fr_consentflow_allowall2 = /** @type {(inputs: Consentflow_Allowall2Inputs
 };
 
 const ar_consentflow_allowall2 = /** @type {(inputs: Consentflow_Allowall2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Allow All`)
+	return /** @type {LocalizedString} */ (`السماح بالكل`)
 };
 
 /**

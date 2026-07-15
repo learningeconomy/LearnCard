@@ -18,7 +18,7 @@ const fr_credsbundle_chapidesc22 = /** @type {(inputs: Credsbundle_Chapidesc22In
 };
 
 const ar_credsbundle_chapidesc22 = /** @type {(inputs: Credsbundle_Chapidesc22Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Think, trusted and confidential carrier pigeon, but for Verifiable Credentials.`)
+	return /** @type {LocalizedString} */ (`فكر فيها كحمامة زاجل موثوقة وسرية، لكن للمؤهلات القابلة للتحقق.`)
 };
 
 /**

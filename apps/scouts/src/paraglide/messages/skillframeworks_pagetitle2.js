@@ -18,7 +18,7 @@ const fr_skillframeworks_pagetitle2 = /** @type {(inputs: Skillframeworks_Pageti
 };
 
 const ar_skillframeworks_pagetitle2 = /** @type {(inputs: Skillframeworks_Pagetitle2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Skill Frameworks`)
+	return /** @type {LocalizedString} */ (`أطر المهارات`)
 };
 
 /**

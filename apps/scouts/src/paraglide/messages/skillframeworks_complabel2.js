@@ -18,7 +18,7 @@ const fr_skillframeworks_complabel2 = /** @type {(inputs: Skillframeworks_Compla
 };
 
 const ar_skillframeworks_complabel2 = /** @type {(inputs: Skillframeworks_Complabel2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Competency`)
+	return /** @type {LocalizedString} */ (`كفاءة`)
 };
 
 /**

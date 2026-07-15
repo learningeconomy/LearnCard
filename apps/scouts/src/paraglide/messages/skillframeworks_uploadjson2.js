@@ -18,7 +18,7 @@ const fr_skillframeworks_uploadjson2 = /** @type {(inputs: Skillframeworks_Uploa
 };
 
 const ar_skillframeworks_uploadjson2 = /** @type {(inputs: Skillframeworks_Uploadjson2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Upload JSON`)
+	return /** @type {LocalizedString} */ (`رفع JSON`)
 };
 
 /**

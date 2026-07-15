@@ -18,7 +18,7 @@ const fr_admintools_manageskillframeworkstitle4 = /** @type {(inputs: Admintools
 };
 
 const ar_admintools_manageskillframeworkstitle4 = /** @type {(inputs: Admintools_Manageskillframeworkstitle4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Manage Skill Frameworks`)
+	return /** @type {LocalizedString} */ (`إدارة أُطر المهارات`)
 };
 
 /**

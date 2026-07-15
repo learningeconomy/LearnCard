@@ -18,7 +18,7 @@ const fr_troops_worldscoutingregion2 = /** @type {(inputs: Troops_Worldscoutingr
 };
 
 const ar_troops_worldscoutingregion2 = /** @type {(inputs: Troops_Worldscoutingregion2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`World Scouting Region`)
+	return /** @type {LocalizedString} */ (`المنطقة الكشفية العالمية`)
 };
 
 /**

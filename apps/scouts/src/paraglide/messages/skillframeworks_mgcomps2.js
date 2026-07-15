@@ -18,7 +18,7 @@ const fr_skillframeworks_mgcomps2 = /** @type {(inputs: Skillframeworks_Mgcomps2
 };
 
 const ar_skillframeworks_mgcomps2 = /** @type {(inputs: Skillframeworks_Mgcomps2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Manage Competencies`)
+	return /** @type {LocalizedString} */ (`إدارة الكفاءات`)
 };
 
 /**

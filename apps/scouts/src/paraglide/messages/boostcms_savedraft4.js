@@ -18,7 +18,7 @@ const fr_boostcms_savedraft4 = /** @type {(inputs: Boostcms_Savedraft4Inputs) =>
 };
 
 const ar_boostcms_savedraft4 = /** @type {(inputs: Boostcms_Savedraft4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Save As Draft`)
+	return /** @type {LocalizedString} */ (`حفظ كمسودة`)
 };
 
 /**

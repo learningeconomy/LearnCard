@@ -18,7 +18,7 @@ const fr_credsbundle_connecthandler2 = /** @type {(inputs: Credsbundle_Connectha
 };
 
 const ar_credsbundle_connecthandler2 = /** @type {(inputs: Credsbundle_Connecthandler2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Connect Handler`)
+	return /** @type {LocalizedString} */ (`ربط المعالج`)
 };
 
 /**

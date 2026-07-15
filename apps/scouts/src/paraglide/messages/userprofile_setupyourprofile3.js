@@ -18,7 +18,7 @@ const fr_userprofile_setupyourprofile3 = /** @type {(inputs: Userprofile_Setupyo
 };
 
 const ar_userprofile_setupyourprofile3 = /** @type {(inputs: Userprofile_Setupyourprofile3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Setup Your Profile`)
+	return /** @type {LocalizedString} */ (`إعداد ملفك الشخصي`)
 };
 
 /**

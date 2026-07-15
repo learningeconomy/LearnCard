@@ -18,7 +18,7 @@ const fr_boost_byissuer1 = /** @type {(inputs: Boost_Byissuer1Inputs) => Localiz
 };
 
 const ar_boost_byissuer1 = /** @type {(inputs: Boost_Byissuer1Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`by ${i?.name} ${i?.date}`)
+	return /** @type {LocalizedString} */ (`بواسطة ${i?.name} ${i?.date}`)
 };
 
 /**

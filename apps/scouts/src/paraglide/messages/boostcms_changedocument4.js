@@ -18,7 +18,7 @@ const fr_boostcms_changedocument4 = /** @type {(inputs: Boostcms_Changedocument4
 };
 
 const ar_boostcms_changedocument4 = /** @type {(inputs: Boostcms_Changedocument4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Change Document`)
+	return /** @type {LocalizedString} */ (`تغيير المستند`)
 };
 
 /**

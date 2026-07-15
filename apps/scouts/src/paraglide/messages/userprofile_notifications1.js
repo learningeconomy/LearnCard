@@ -18,7 +18,7 @@ const fr_userprofile_notifications1 = /** @type {(inputs: Userprofile_Notificati
 };
 
 const ar_userprofile_notifications1 = /** @type {(inputs: Userprofile_Notifications1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Notifications`)
+	return /** @type {LocalizedString} */ (`الإشعارات`)
 };
 
 /**

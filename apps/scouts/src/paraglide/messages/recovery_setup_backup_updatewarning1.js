@@ -18,7 +18,7 @@ const fr_recovery_setup_backup_updatewarning1 = /** @type {(inputs: Recovery_Set
 };
 
 const ar_recovery_setup_backup_updatewarning1 = /** @type {(inputs: Recovery_Setup_Backup_Updatewarning1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`This will generate a new backup file. Your previous backup file will no longer work.`)
+	return /** @type {LocalizedString} */ (`سيؤدي هذا إلى إنشاء ملف نسخ احتياطي جديد. لن يعمل ملف النسخ الاحتياطي السابق بعد الآن.`)
 };
 
 /**

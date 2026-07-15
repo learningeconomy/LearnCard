@@ -18,7 +18,7 @@ const fr_boost_whotosend2 = /** @type {(inputs: Boost_Whotosend2Inputs) => Local
 };
 
 const ar_boost_whotosend2 = /** @type {(inputs: Boost_Whotosend2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Who do you want to send to?`)
+	return /** @type {LocalizedString} */ (`لمن تريد الإرسال؟`)
 };
 
 /**

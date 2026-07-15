@@ -18,7 +18,7 @@ const fr_recovery_setup_backup_generating = /** @type {(inputs: Recovery_Setup_B
 };
 
 const ar_recovery_setup_backup_generating = /** @type {(inputs: Recovery_Setup_Backup_GeneratingInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Generating...`)
+	return /** @type {LocalizedString} */ (`جاري الإنشاء...`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_troops_members_searchplh1 = /** @type {(inputs: Troops_Members_Searchpl
 };
 
 const ar_troops_members_searchplh1 = /** @type {(inputs: Troops_Members_Searchplh1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Search...`)
+	return /** @type {LocalizedString} */ (`بحث...`)
 };
 
 /**

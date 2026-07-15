@@ -18,7 +18,7 @@ const fr_userprofile_reauthenticatehere2 = /** @type {(inputs: Userprofile_Reaut
 };
 
 const ar_userprofile_reauthenticatehere2 = /** @type {(inputs: Userprofile_Reauthenticatehere2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Reauthenticate here`)
+	return /** @type {LocalizedString} */ (`أعد المصادقة هنا`)
 };
 
 /**

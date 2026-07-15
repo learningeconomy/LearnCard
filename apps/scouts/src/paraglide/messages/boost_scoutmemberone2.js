@@ -18,7 +18,7 @@ const fr_boost_scoutmemberone2 = /** @type {(inputs: Boost_Scoutmemberone2Inputs
 };
 
 const ar_boost_scoutmemberone2 = /** @type {(inputs: Boost_Scoutmemberone2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Scout`)
+	return /** @type {LocalizedString} */ (`كشاف`)
 };
 
 /**

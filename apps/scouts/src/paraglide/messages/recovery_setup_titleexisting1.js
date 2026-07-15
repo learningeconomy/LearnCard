@@ -18,7 +18,7 @@ const fr_recovery_setup_titleexisting1 = /** @type {(inputs: Recovery_Setup_Titl
 };
 
 const ar_recovery_setup_titleexisting1 = /** @type {(inputs: Recovery_Setup_Titleexisting1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Account Recovery`)
+	return /** @type {LocalizedString} */ (`استرداد الحساب`)
 };
 
 /**

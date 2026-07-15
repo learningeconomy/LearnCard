@@ -18,7 +18,7 @@ const fr_troops_usesourceddescription2 = /** @type {(inputs: Troops_Usesourcedde
 };
 
 const ar_troops_usesourceddescription2 = /** @type {(inputs: Troops_Usesourceddescription2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Use {source} description`)
+	return /** @type {LocalizedString} */ (`استخدام وصف {source}`)
 };
 
 /**

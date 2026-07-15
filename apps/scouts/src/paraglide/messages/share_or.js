@@ -18,7 +18,7 @@ const fr_share_or = /** @type {(inputs: Share_OrInputs) => LocalizedString} */ (
 };
 
 const ar_share_or = /** @type {(inputs: Share_OrInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`or`)
+	return /** @type {LocalizedString} */ (`أو`)
 };
 
 /**

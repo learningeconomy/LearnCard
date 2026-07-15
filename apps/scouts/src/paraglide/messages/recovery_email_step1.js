@@ -47,11 +47,11 @@ const fr_recovery_email_step1 = /** @type {((inputs: Recovery_Email_Step1Inputs)
 const ar_recovery_email_step1 = /** @type {((inputs: Recovery_Email_Step1Inputs) => LocalizedString) & { parts: (inputs: Recovery_Email_Step1Inputs) => import('../runtime.js').MessagePart[] }} */ (
 	/* @__PURE__ */ Object.assign(
 		/** @type {(inputs: Recovery_Email_Step1Inputs) => LocalizedString} */ (() => {
-			return /** @type {LocalizedString} */ (`Search your inbox for an email with the subject "Your ScoutPass Recovery Key"`)
+			return /** @type {LocalizedString} */ (`ابحث في صندوق الوارد الخاص بك عن بريد إلكتروني بموضوع "مفتاح استرداد ScoutPass الخاص بك"`)
 		}),
 		{
 			parts: /** @type {(inputs: Recovery_Email_Step1Inputs) => import('../runtime.js').MessagePart[]} */ (() => {
-				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "Search your inbox for an email with the subject " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: "\"Your ScoutPass Recovery Key\"" }, { type: "markup-end", name: "0", options: {}, attributes: {} }])
+				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "ابحث في صندوق الوارد الخاص بك عن بريد إلكتروني بموضوع " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: "\"مفتاح استرداد ScoutPass الخاص بك\"" }, { type: "markup-end", name: "0", options: {}, attributes: {} }])
 			})
 		}
 	)

@@ -18,7 +18,7 @@ const fr_addressbook_contactslabel2 = /** @type {(inputs: Addressbook_Contactsla
 };
 
 const ar_addressbook_contactslabel2 = /** @type {(inputs: Addressbook_Contactslabel2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Contacts`)
+	return /** @type {LocalizedString} */ (`جهات الاتصال`)
 };
 
 /**

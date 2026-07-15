@@ -18,7 +18,7 @@ const fr_consentflow_sharedatainlc5 = /** @type {(inputs: Consentflow_Sharedatai
 };
 
 const ar_consentflow_sharedatainlc5 = /** @type {(inputs: Consentflow_Sharedatainlc5Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Share Data in Your LearnCard`)
+	return /** @type {LocalizedString} */ (`مشاركة البيانات في LearnCard الخاص بك`)
 };
 
 /**

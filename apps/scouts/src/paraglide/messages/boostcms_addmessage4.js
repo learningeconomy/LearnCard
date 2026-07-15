@@ -18,7 +18,7 @@ const fr_boostcms_addmessage4 = /** @type {(inputs: Boostcms_Addmessage4Inputs) 
 };
 
 const ar_boostcms_addmessage4 = /** @type {(inputs: Boostcms_Addmessage4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Add a message...`)
+	return /** @type {LocalizedString} */ (`أضف رسالة...`)
 };
 
 /**

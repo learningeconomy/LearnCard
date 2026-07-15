@@ -18,7 +18,7 @@ const fr_boost_editdraft1 = /** @type {(inputs: Boost_Editdraft1Inputs) => Local
 };
 
 const ar_boost_editdraft1 = /** @type {(inputs: Boost_Editdraft1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Edit Draft`)
+	return /** @type {LocalizedString} */ (`تعديل المسودة`)
 };
 
 /**

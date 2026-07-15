@@ -18,7 +18,7 @@ const fr_recovery_setup_phrase_updatewarning1 = /** @type {(inputs: Recovery_Set
 };
 
 const ar_recovery_setup_phrase_updatewarning1 = /** @type {(inputs: Recovery_Setup_Phrase_Updatewarning1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`This will generate a new phrase. Your previous phrase will no longer work.`)
+	return /** @type {LocalizedString} */ (`سيؤدي هذا إلى إنشاء عبارة جديدة. لن تعمل العبارة السابقة بعد الآن.`)
 };
 
 /**

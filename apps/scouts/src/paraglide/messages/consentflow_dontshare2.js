@@ -18,7 +18,7 @@ const fr_consentflow_dontshare2 = /** @type {(inputs: Consentflow_Dontshare2Inpu
 };
 
 const ar_consentflow_dontshare2 = /** @type {(inputs: Consentflow_Dontshare2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Don't share any {plural}.`)
+	return /** @type {LocalizedString} */ (`لا تشارك أي {plural}.`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_boost_or = /** @type {(inputs: Boost_OrInputs) => LocalizedString} */ (
 };
 
 const ar_boost_or = /** @type {(inputs: Boost_OrInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`or`)
+	return /** @type {LocalizedString} */ (`أو`)
 };
 
 /**

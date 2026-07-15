@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_assignparenttitle4 = /** @type {(inputs: Admintoo
 };
 
 const ar_admintools_bulkimport_assignparenttitle4 = /** @type {(inputs: Admintools_Bulkimport_Assignparenttitle4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Assign a Parent Credential`)
+	return /** @type {LocalizedString} */ (`تعيين مؤهل أصلي`)
 };
 
 /**

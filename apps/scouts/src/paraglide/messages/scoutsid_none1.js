@@ -18,7 +18,7 @@ const fr_scoutsid_none1 = /** @type {(inputs: Scoutsid_None1Inputs) => Localized
 };
 
 const ar_scoutsid_none1 = /** @type {(inputs: Scoutsid_None1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`None`)
+	return /** @type {LocalizedString} */ (`لا شيء`)
 };
 
 /**

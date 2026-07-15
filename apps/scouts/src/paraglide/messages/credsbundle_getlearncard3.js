@@ -18,7 +18,7 @@ const fr_credsbundle_getlearncard3 = /** @type {(inputs: Credsbundle_Getlearncar
 };
 
 const ar_credsbundle_getlearncard3 = /** @type {(inputs: Credsbundle_Getlearncard3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Get LearnCard`)
+	return /** @type {LocalizedString} */ (`الحصول على LearnCard`)
 };
 
 /**

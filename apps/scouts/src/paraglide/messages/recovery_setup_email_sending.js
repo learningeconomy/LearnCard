@@ -18,7 +18,7 @@ const fr_recovery_setup_email_sending = /** @type {(inputs: Recovery_Setup_Email
 };
 
 const ar_recovery_setup_email_sending = /** @type {(inputs: Recovery_Setup_Email_SendingInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Sending...`)
+	return /** @type {LocalizedString} */ (`جاري الإرسال...`)
 };
 
 /**

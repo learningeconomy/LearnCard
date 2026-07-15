@@ -18,7 +18,7 @@ const fr_recovery_phrase_recoverbtn1 = /** @type {(inputs: Recovery_Phrase_Recov
 };
 
 const ar_recovery_phrase_recoverbtn1 = /** @type {(inputs: Recovery_Phrase_Recoverbtn1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Recover Account`)
+	return /** @type {LocalizedString} */ (`استعادة الحساب`)
 };
 
 /**

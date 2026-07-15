@@ -18,7 +18,7 @@ const fr_skillframeworks_fwtierbullet3 = /** @type {(inputs: Skillframeworks_Fwt
 };
 
 const ar_skillframeworks_fwtierbullet3 = /** @type {(inputs: Skillframeworks_Fwtierbullet3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Framework Tier • `)
+	return /** @type {LocalizedString} */ (`مستوى الإطار • `)
 };
 
 /**

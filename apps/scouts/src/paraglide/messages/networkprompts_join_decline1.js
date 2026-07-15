@@ -18,7 +18,7 @@ const fr_networkprompts_join_decline1 = /** @type {(inputs: Networkprompts_Join_
 };
 
 const ar_networkprompts_join_decline1 = /** @type {(inputs: Networkprompts_Join_Decline1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Don’t Accept`)
+	return /** @type {LocalizedString} */ (`لا تقبل`)
 };
 
 /**

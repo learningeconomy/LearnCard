@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_simplefilenames3 = /** @type {(inputs: Admintools
 };
 
 const ar_admintools_bulkimport_simplefilenames3 = /** @type {(inputs: Admintools_Bulkimport_Simplefilenames3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`OR simple filenames (image.png) for images you'll upload in a ZIP`)
+	return /** @type {LocalizedString} */ (`أو أسماء ملفات بسيطة (image.png) للصور التي سترفعها في ملف ZIP`)
 };
 
 /**

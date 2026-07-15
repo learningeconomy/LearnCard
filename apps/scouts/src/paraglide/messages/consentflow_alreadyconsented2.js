@@ -18,7 +18,7 @@ const fr_consentflow_alreadyconsented2 = /** @type {(inputs: Consentflow_Already
 };
 
 const ar_consentflow_alreadyconsented2 = /** @type {(inputs: Consentflow_Alreadyconsented2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Already Consented`)
+	return /** @type {LocalizedString} */ (`تمت الموافقة مسبقاً`)
 };
 
 /**

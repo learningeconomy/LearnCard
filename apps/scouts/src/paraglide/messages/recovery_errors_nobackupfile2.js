@@ -18,7 +18,7 @@ const fr_recovery_errors_nobackupfile2 = /** @type {(inputs: Recovery_Errors_Nob
 };
 
 const ar_recovery_errors_nobackupfile2 = /** @type {(inputs: Recovery_Errors_Nobackupfile2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Please select your backup file.`)
+	return /** @type {LocalizedString} */ (`يرجى اختيار ملف النسخ الاحتياطي الخاص بك.`)
 };
 
 /**

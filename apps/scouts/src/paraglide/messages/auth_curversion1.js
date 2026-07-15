@@ -18,7 +18,7 @@ const fr_auth_curversion1 = /** @type {(inputs: Auth_Curversion1Inputs) => Local
 };
 
 const ar_auth_curversion1 = /** @type {(inputs: Auth_Curversion1Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`Current Version: ${i?.version}`)
+	return /** @type {LocalizedString} */ (`الإصدار الحالي: ${i?.version}`)
 };
 
 /**

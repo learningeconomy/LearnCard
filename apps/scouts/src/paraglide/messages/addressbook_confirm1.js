@@ -18,7 +18,7 @@ const fr_addressbook_confirm1 = /** @type {(inputs: Addressbook_Confirm1Inputs) 
 };
 
 const ar_addressbook_confirm1 = /** @type {(inputs: Addressbook_Confirm1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Confirm`)
+	return /** @type {LocalizedString} */ (`تأكيد`)
 };
 
 /**

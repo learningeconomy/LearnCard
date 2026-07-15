@@ -18,7 +18,7 @@ const fr_introslides_swipetocontinue3 = /** @type {(inputs: Introslides_Swipetoc
 };
 
 const ar_introslides_swipetocontinue3 = /** @type {(inputs: Introslides_Swipetocontinue3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Swipe right to Continue`)
+	return /** @type {LocalizedString} */ (`اسحب لليمين للمتابعة`)
 };
 
 /**

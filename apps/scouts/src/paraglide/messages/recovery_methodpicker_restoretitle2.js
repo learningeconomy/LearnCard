@@ -18,7 +18,7 @@ const fr_recovery_methodpicker_restoretitle2 = /** @type {(inputs: Recovery_Meth
 };
 
 const ar_recovery_methodpicker_restoretitle2 = /** @type {(inputs: Recovery_Methodpicker_Restoretitle2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Restore Access`)
+	return /** @type {LocalizedString} */ (`استعادة الوصول`)
 };
 
 /**

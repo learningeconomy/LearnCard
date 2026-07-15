@@ -18,7 +18,7 @@ const fr_boostcms_selectrecipient4 = /** @type {(inputs: Boostcms_Selectrecipien
 };
 
 const ar_boostcms_selectrecipient4 = /** @type {(inputs: Boostcms_Selectrecipient4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Select Recipient`)
+	return /** @type {LocalizedString} */ (`اختر المستلم`)
 };
 
 /**

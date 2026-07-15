@@ -18,7 +18,7 @@ const fr_skillframeworks_nameplh2 = /** @type {(inputs: Skillframeworks_Nameplh2
 };
 
 const ar_skillframeworks_nameplh2 = /** @type {(inputs: Skillframeworks_Nameplh2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`e.g., Scouts Core Skills`)
+	return /** @type {LocalizedString} */ (`مثال: مهارات الكشافة الأساسية`)
 };
 
 /**

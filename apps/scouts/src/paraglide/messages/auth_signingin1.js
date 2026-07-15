@@ -18,7 +18,7 @@ const fr_auth_signingin1 = /** @type {(inputs: Auth_Signingin1Inputs) => Localiz
 };
 
 const ar_auth_signingin1 = /** @type {(inputs: Auth_Signingin1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Signing in...`)
+	return /** @type {LocalizedString} */ (`جاري تسجيل الدخول...`)
 };
 
 /**

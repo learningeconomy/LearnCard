@@ -18,7 +18,7 @@ const fr_skillframeworks_confirmdelfw3 = /** @type {(inputs: Skillframeworks_Con
 };
 
 const ar_skillframeworks_confirmdelfw3 = /** @type {(inputs: Skillframeworks_Confirmdelfw3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Are you sure you want to delete this framework? This action cannot be undone.`)
+	return /** @type {LocalizedString} */ (`هل أنت متأكد من حذف هذا الإطار؟ لا يمكن التراجع عن هذا الإجراء.`)
 };
 
 /**

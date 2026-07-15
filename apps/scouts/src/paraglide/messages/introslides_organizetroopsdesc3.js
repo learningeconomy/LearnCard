@@ -18,7 +18,7 @@ const fr_introslides_organizetroopsdesc3 = /** @type {(inputs: Introslides_Organ
 };
 
 const ar_introslides_organizetroopsdesc3 = /** @type {(inputs: Introslides_Organizetroopsdesc3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Soon local troops can self organize and issue official scout badges.`)
+	return /** @type {LocalizedString} */ (`قريباً ستتمكن الفرق المحلية من التنظيم الذاتي وإصدار شارات كشفية رسمية.`)
 };
 
 /**

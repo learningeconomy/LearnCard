@@ -18,7 +18,7 @@ const fr_boostcms_showmembersonly5 = /** @type {(inputs: Boostcms_Showmembersonl
 };
 
 const ar_boostcms_showmembersonly5 = /** @type {(inputs: Boostcms_Showmembersonly5Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Show to members only`)
+	return /** @type {LocalizedString} */ (`عرض للأعضاء فقط`)
 };
 
 /**

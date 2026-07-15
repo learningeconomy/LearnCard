@@ -18,7 +18,7 @@ const fr_boost_issuedtoname2 = /** @type {(inputs: Boost_Issuedtoname2Inputs) =>
 };
 
 const ar_boost_issuedtoname2 = /** @type {(inputs: Boost_Issuedtoname2Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`Issued to ${i?.name}`)
+	return /** @type {LocalizedString} */ (`صدر لـ ${i?.name}`)
 };
 
 /**

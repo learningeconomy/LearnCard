@@ -18,7 +18,7 @@ const fr_boostcms_type3 = /** @type {(inputs: Boostcms_Type3Inputs) => Localized
 };
 
 const ar_boostcms_type3 = /** @type {(inputs: Boostcms_Type3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Type`)
+	return /** @type {LocalizedString} */ (`النوع`)
 };
 
 /**

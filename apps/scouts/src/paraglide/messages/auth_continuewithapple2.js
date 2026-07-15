@@ -18,7 +18,7 @@ const fr_auth_continuewithapple2 = /** @type {(inputs: Auth_Continuewithapple2In
 };
 
 const ar_auth_continuewithapple2 = /** @type {(inputs: Auth_Continuewithapple2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Continue with Apple`)
+	return /** @type {LocalizedString} */ (`المتابعة مع Apple`)
 };
 
 /**

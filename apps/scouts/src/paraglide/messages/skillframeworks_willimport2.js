@@ -18,7 +18,7 @@ const fr_skillframeworks_willimport2 = /** @type {(inputs: Skillframeworks_Willi
 };
 
 const ar_skillframeworks_willimport2 = /** @type {(inputs: Skillframeworks_Willimport2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`You will be importing:`)
+	return /** @type {LocalizedString} */ (`سيتم استيراد:`)
 };
 
 /**

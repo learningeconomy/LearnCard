@@ -18,7 +18,7 @@ const fr_login_privacypolicy1 = /** @type {(inputs: Login_Privacypolicy1Inputs) 
 };
 
 const ar_login_privacypolicy1 = /** @type {(inputs: Login_Privacypolicy1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Privacy Policy`)
+	return /** @type {LocalizedString} */ (`سياسة الخصوصية`)
 };
 
 /**

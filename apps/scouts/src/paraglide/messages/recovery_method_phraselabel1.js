@@ -18,7 +18,7 @@ const fr_recovery_method_phraselabel1 = /** @type {(inputs: Recovery_Method_Phra
 };
 
 const ar_recovery_method_phraselabel1 = /** @type {(inputs: Recovery_Method_Phraselabel1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Recovery Phrase`)
+	return /** @type {LocalizedString} */ (`عبارة الاسترداد`)
 };
 
 /**

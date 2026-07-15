@@ -18,7 +18,7 @@ const fr_recovery_setup_backup_genbtn1 = /** @type {(inputs: Recovery_Setup_Back
 };
 
 const ar_recovery_setup_backup_genbtn1 = /** @type {(inputs: Recovery_Setup_Backup_Genbtn1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Generate Backup File`)
+	return /** @type {LocalizedString} */ (`إنشاء ملف النسخ الاحتياطي`)
 };
 
 /**

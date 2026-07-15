@@ -18,7 +18,7 @@ const fr_addressbook_blockcontact2 = /** @type {(inputs: Addressbook_Blockcontac
 };
 
 const ar_addressbook_blockcontact2 = /** @type {(inputs: Addressbook_Blockcontact2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Block Contact`)
+	return /** @type {LocalizedString} */ (`حظر جهة الاتصال`)
 };
 
 /**

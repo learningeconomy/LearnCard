@@ -18,7 +18,7 @@ const fr_boostcms_boostsaved4 = /** @type {(inputs: Boostcms_Boostsaved4Inputs) 
 };
 
 const ar_boostcms_boostsaved4 = /** @type {(inputs: Boostcms_Boostsaved4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Boost saved successfully`)
+	return /** @type {LocalizedString} */ (`تم حفظ التعزيز بنجاح`)
 };
 
 /**

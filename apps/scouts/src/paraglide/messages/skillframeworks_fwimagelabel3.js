@@ -18,7 +18,7 @@ const fr_skillframeworks_fwimagelabel3 = /** @type {(inputs: Skillframeworks_Fwi
 };
 
 const ar_skillframeworks_fwimagelabel3 = /** @type {(inputs: Skillframeworks_Fwimagelabel3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Framework Image`)
+	return /** @type {LocalizedString} */ (`صورة الإطار`)
 };
 
 /**

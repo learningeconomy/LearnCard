@@ -18,7 +18,7 @@ const fr_addressbook_chooseboosttype3 = /** @type {(inputs: Addressbook_Choosebo
 };
 
 const ar_addressbook_chooseboosttype3 = /** @type {(inputs: Addressbook_Chooseboosttype3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Choose Boost Type:`)
+	return /** @type {LocalizedString} */ (`اختر نوع التعزيز:`)
 };
 
 /**

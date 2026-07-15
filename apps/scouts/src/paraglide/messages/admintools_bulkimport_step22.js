@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_step22 = /** @type {(inputs: Admintools_Bulkimpor
 };
 
 const ar_admintools_bulkimport_step22 = /** @type {(inputs: Admintools_Bulkimport_Step22Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Step 2`)
+	return /** @type {LocalizedString} */ (`الخطوة 2`)
 };
 
 /**

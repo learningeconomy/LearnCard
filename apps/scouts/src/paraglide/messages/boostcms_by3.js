@@ -47,11 +47,11 @@ const fr_boostcms_by3 = /** @type {((inputs: Boostcms_By3Inputs) => LocalizedStr
 const ar_boostcms_by3 = /** @type {((inputs: Boostcms_By3Inputs) => LocalizedString) & { parts: (inputs: Boostcms_By3Inputs) => import('../runtime.js').MessagePart[] }} */ (
 	/* @__PURE__ */ Object.assign(
 		/** @type {(inputs: Boostcms_By3Inputs) => LocalizedString} */ ((i) => {
-			return /** @type {LocalizedString} */ (`by ${i?.name}`)
+			return /** @type {LocalizedString} */ (`بواسطة ${i?.name}`)
 		}),
 		{
 			parts: /** @type {(inputs: Boostcms_By3Inputs) => import('../runtime.js').MessagePart[]} */ ((i) => {
-				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "by " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: String(i?.name) }, { type: "markup-end", name: "0", options: {}, attributes: {} }])
+				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "بواسطة " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: String(i?.name) }, { type: "markup-end", name: "0", options: {}, attributes: {} }])
 			})
 		}
 	)

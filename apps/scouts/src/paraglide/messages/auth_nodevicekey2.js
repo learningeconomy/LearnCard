@@ -18,7 +18,7 @@ const fr_auth_nodevicekey2 = /** @type {(inputs: Auth_Nodevicekey2Inputs) => Loc
 };
 
 const ar_auth_nodevicekey2 = /** @type {(inputs: Auth_Nodevicekey2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No device key available`)
+	return /** @type {LocalizedString} */ (`لا يوجد مفتاح جهاز متاح`)
 };
 
 /**

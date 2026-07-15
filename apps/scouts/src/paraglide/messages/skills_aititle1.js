@@ -18,7 +18,7 @@ const fr_skills_aititle1 = /** @type {(inputs: Skills_Aititle1Inputs) => Localiz
 };
 
 const ar_skills_aititle1 = /** @type {(inputs: Skills_Aititle1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`AI Insights`)
+	return /** @type {LocalizedString} */ (`رؤى الذكاء الاصطناعي`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_boost_achievement = /** @type {(inputs: Boost_AchievementInputs) => Loc
 };
 
 const ar_boost_achievement = /** @type {(inputs: Boost_AchievementInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Achievement`)
+	return /** @type {LocalizedString} */ (`إنجاز`)
 };
 
 /**

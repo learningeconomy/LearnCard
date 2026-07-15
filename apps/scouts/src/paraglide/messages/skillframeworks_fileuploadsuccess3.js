@@ -18,7 +18,7 @@ const fr_skillframeworks_fileuploadsuccess3 = /** @type {(inputs: Skillframework
 };
 
 const ar_skillframeworks_fileuploadsuccess3 = /** @type {(inputs: Skillframeworks_Fileuploadsuccess3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`File upload successful.`)
+	return /** @type {LocalizedString} */ (`تم رفع الملف بنجاح.`)
 };
 
 /**

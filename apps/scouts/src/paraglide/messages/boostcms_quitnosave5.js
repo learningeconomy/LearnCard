@@ -18,7 +18,7 @@ const fr_boostcms_quitnosave5 = /** @type {(inputs: Boostcms_Quitnosave5Inputs) 
 };
 
 const ar_boostcms_quitnosave5 = /** @type {(inputs: Boostcms_Quitnosave5Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Quit Without Saving`)
+	return /** @type {LocalizedString} */ (`إنهاء بدون حفظ`)
 };
 
 /**

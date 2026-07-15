@@ -18,7 +18,7 @@ const fr_skillframeworks_addcomps2 = /** @type {(inputs: Skillframeworks_Addcomp
 };
 
 const ar_skillframeworks_addcomps2 = /** @type {(inputs: Skillframeworks_Addcomps2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Add Competencies`)
+	return /** @type {LocalizedString} */ (`إضافة كفاءات`)
 };
 
 /**

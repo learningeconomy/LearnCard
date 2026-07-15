@@ -18,7 +18,7 @@ const fr_addressbook_requestconnection2 = /** @type {(inputs: Addressbook_Reques
 };
 
 const ar_addressbook_requestconnection2 = /** @type {(inputs: Addressbook_Requestconnection2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Request Connection`)
+	return /** @type {LocalizedString} */ (`طلب اتصال`)
 };
 
 /**

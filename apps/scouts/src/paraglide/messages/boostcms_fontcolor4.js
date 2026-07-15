@@ -18,7 +18,7 @@ const fr_boostcms_fontcolor4 = /** @type {(inputs: Boostcms_Fontcolor4Inputs) =>
 };
 
 const ar_boostcms_fontcolor4 = /** @type {(inputs: Boostcms_Fontcolor4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Font Color`)
+	return /** @type {LocalizedString} */ (`لون الخط`)
 };
 
 /**

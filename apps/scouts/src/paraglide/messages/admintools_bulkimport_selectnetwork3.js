@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_selectnetwork3 = /** @type {(inputs: Admintools_B
 };
 
 const ar_admintools_bulkimport_selectnetwork3 = /** @type {(inputs: Admintools_Bulkimport_Selectnetwork3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Select a network...`)
+	return /** @type {LocalizedString} */ (`اختر شبكة...`)
 };
 
 /**

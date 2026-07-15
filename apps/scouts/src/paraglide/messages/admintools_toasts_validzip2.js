@@ -18,7 +18,7 @@ const fr_admintools_toasts_validzip2 = /** @type {(inputs: Admintools_Toasts_Val
 };
 
 const ar_admintools_toasts_validzip2 = /** @type {(inputs: Admintools_Toasts_Validzip2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Please upload a valid ZIP file`)
+	return /** @type {LocalizedString} */ (`يرجى رفع ملف ZIP صالح`)
 };
 
 /**

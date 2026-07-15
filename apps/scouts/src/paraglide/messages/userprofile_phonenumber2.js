@@ -18,7 +18,7 @@ const fr_userprofile_phonenumber2 = /** @type {(inputs: Userprofile_Phonenumber2
 };
 
 const ar_userprofile_phonenumber2 = /** @type {(inputs: Userprofile_Phonenumber2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Phone Number`)
+	return /** @type {LocalizedString} */ (`رقم الهاتف`)
 };
 
 /**

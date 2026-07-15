@@ -18,7 +18,7 @@ const fr_auth_uidmismatch1 = /** @type {(inputs: Auth_Uidmismatch1Inputs) => Loc
 };
 
 const ar_auth_uidmismatch1 = /** @type {(inputs: Auth_Uidmismatch1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`You signed in with a different account. Please try again with the correct account.`)
+	return /** @type {LocalizedString} */ (`لقد سجلت الدخول بحساب مختلف. يرجى المحاولة مرة أخرى بالحساب الصحيح.`)
 };
 
 /**

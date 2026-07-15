@@ -18,7 +18,7 @@ const fr_networkprompts_join_title1 = /** @type {(inputs: Networkprompts_Join_Ti
 };
 
 const ar_networkprompts_join_title1 = /** @type {(inputs: Networkprompts_Join_Title1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Join the ScoutPass Network?`)
+	return /** @type {LocalizedString} */ (`الانضمام إلى شبكة ScoutPass؟`)
 };
 
 /**

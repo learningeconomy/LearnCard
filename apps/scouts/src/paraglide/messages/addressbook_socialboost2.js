@@ -18,7 +18,7 @@ const fr_addressbook_socialboost2 = /** @type {(inputs: Addressbook_Socialboost2
 };
 
 const ar_addressbook_socialboost2 = /** @type {(inputs: Addressbook_Socialboost2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Social Boost`)
+	return /** @type {LocalizedString} */ (`تعزيز اجتماعي`)
 };
 
 /**

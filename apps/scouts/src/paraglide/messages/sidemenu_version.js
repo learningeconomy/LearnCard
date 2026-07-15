@@ -18,7 +18,7 @@ const fr_sidemenu_version = /** @type {(inputs: Sidemenu_VersionInputs) => Local
 };
 
 const ar_sidemenu_version = /** @type {(inputs: Sidemenu_VersionInputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`V ${i?.version}`)
+	return /** @type {LocalizedString} */ (`الإصدار ${i?.version}`)
 };
 
 /**

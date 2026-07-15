@@ -18,7 +18,7 @@ const fr_auth_continuewithgoogle2 = /** @type {(inputs: Auth_Continuewithgoogle2
 };
 
 const ar_auth_continuewithgoogle2 = /** @type {(inputs: Auth_Continuewithgoogle2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Continue with Google`)
+	return /** @type {LocalizedString} */ (`المتابعة مع Google`)
 };
 
 /**

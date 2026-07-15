@@ -18,7 +18,7 @@ const fr_recovery_setup_email_recoveryrow1 = /** @type {(inputs: Recovery_Setup_
 };
 
 const ar_recovery_setup_email_recoveryrow1 = /** @type {(inputs: Recovery_Setup_Email_Recoveryrow1Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`Recovery email: ${i?.email}`)
+	return /** @type {LocalizedString} */ (`البريد الإلكتروني للاسترداد: ${i?.email}`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_notifications_settingconnectionrequestsdesc3 = /** @type {(inputs: Noti
 };
 
 const ar_notifications_settingconnectionrequestsdesc3 = /** @type {(inputs: Notifications_Settingconnectionrequestsdesc3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`When someone scans your code or clicks your user links it will initiate a network request that you can accept or deny.`)
+	return /** @type {LocalizedString} */ (`عندما يمسح شخص رمزك أو ينقر على روابط المستخدم الخاصة بك، سيبدأ طلب شبكة يمكنك قبوله أو رفضه.`)
 };
 
 /**

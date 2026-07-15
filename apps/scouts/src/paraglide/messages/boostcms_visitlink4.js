@@ -18,7 +18,7 @@ const fr_boostcms_visitlink4 = /** @type {(inputs: Boostcms_Visitlink4Inputs) =>
 };
 
 const ar_boostcms_visitlink4 = /** @type {(inputs: Boostcms_Visitlink4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Visit Link`)
+	return /** @type {LocalizedString} */ (`زيارة الرابط`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_skillframeworks_replacefw2 = /** @type {(inputs: Skillframeworks_Replac
 };
 
 const ar_skillframeworks_replacefw2 = /** @type {(inputs: Skillframeworks_Replacefw2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Replace Framework`)
+	return /** @type {LocalizedString} */ (`استبدال الإطار`)
 };
 
 /**

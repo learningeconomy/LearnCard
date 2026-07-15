@@ -18,7 +18,7 @@ const fr_troops_id_issued = /** @type {(inputs: Troops_Id_IssuedInputs) => Local
 };
 
 const ar_troops_id_issued = /** @type {(inputs: Troops_Id_IssuedInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Issued {date}`)
+	return /** @type {LocalizedString} */ (`صدر {date}`)
 };
 
 /**

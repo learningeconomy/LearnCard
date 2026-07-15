@@ -18,7 +18,7 @@ const fr_consentflow_yes1 = /** @type {(inputs: Consentflow_Yes1Inputs) => Local
 };
 
 const ar_consentflow_yes1 = /** @type {(inputs: Consentflow_Yes1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Yes`)
+	return /** @type {LocalizedString} */ (`نعم`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_skillframeworks_addnewadmin3 = /** @type {(inputs: Skillframeworks_Addn
 };
 
 const ar_skillframeworks_addnewadmin3 = /** @type {(inputs: Skillframeworks_Addnewadmin3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Add New Admin`)
+	return /** @type {LocalizedString} */ (`إضافة مسؤول جديد`)
 };
 
 /**

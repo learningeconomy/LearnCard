@@ -18,7 +18,7 @@ const fr_consentflow_livesyncdesc3 = /** @type {(inputs: Consentflow_Livesyncdes
 };
 
 const ar_consentflow_livesyncdesc3 = /** @type {(inputs: Consentflow_Livesyncdesc3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Turning on live syncing will continuosly share your credentials as you get them. This can be enabled/disabled per category at any time.`)
+	return /** @type {LocalizedString} */ (`تشغيل المزامنة الحية سيشارك مؤهلاتك باستمرار عند حصولك عليها. يمكن تمكين/تعطيل هذا حسب الفئة.`)
 };
 
 /**

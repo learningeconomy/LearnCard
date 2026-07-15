@@ -18,7 +18,7 @@ const fr_skills_comingsoon1 = /** @type {(inputs: Skills_Comingsoon1Inputs) => L
 };
 
 const ar_skills_comingsoon1 = /** @type {(inputs: Skills_Comingsoon1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Coming Soon...`)
+	return /** @type {LocalizedString} */ (`قريباً...`)
 };
 
 /**

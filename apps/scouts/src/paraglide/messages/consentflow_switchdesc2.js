@@ -18,7 +18,7 @@ const fr_consentflow_switchdesc2 = /** @type {(inputs: Consentflow_Switchdesc2In
 };
 
 const ar_consentflow_switchdesc2 = /** @type {(inputs: Consentflow_Switchdesc2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Deselecting data switches off Live Syncing and activates Selective Sharing, giving you full control over which credentials you share. You can easily revert to Live Syncing at any time.`)
+	return /** @type {LocalizedString} */ (`إلغاء تحديد البيانات يوقف المزامنة الحية وينشط المشاركة الانتقائية، مما يمنحك تحكماً كاملاً في المؤهلات التي تشاركها.`)
 };
 
 /**

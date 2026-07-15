@@ -18,7 +18,7 @@ const fr_skillframeworks_yesreplacejson3 = /** @type {(inputs: Skillframeworks_Y
 };
 
 const ar_skillframeworks_yesreplacejson3 = /** @type {(inputs: Skillframeworks_Yesreplacejson3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Yes, Replace JSON`)
+	return /** @type {LocalizedString} */ (`نعم، استبدال JSON`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_recovery_methodpicker_title1 = /** @type {(inputs: Recovery_Methodpicke
 };
 
 const ar_recovery_methodpicker_title1 = /** @type {(inputs: Recovery_Methodpicker_Title1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Verify Your Identity`)
+	return /** @type {LocalizedString} */ (`التحقق من هويتك`)
 };
 
 /**

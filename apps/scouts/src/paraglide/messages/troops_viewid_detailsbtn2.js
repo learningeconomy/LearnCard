@@ -18,7 +18,7 @@ const fr_troops_viewid_detailsbtn2 = /** @type {(inputs: Troops_Viewid_Detailsbt
 };
 
 const ar_troops_viewid_detailsbtn2 = /** @type {(inputs: Troops_Viewid_Detailsbtn2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Details`)
+	return /** @type {LocalizedString} */ (`التفاصيل`)
 };
 
 /**

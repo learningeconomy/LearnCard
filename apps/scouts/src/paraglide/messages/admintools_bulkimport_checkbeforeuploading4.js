@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_checkbeforeuploading4 = /** @type {(inputs: Admin
 };
 
 const ar_admintools_bulkimport_checkbeforeuploading4 = /** @type {(inputs: Admintools_Bulkimport_Checkbeforeuploading4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Check Before Uploading`)
+	return /** @type {LocalizedString} */ (`التحقق قبل الرفع`)
 };
 
 /**

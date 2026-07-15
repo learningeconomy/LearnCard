@@ -18,7 +18,7 @@ const fr_scoutsid_editdraft2 = /** @type {(inputs: Scoutsid_Editdraft2Inputs) =>
 };
 
 const ar_scoutsid_editdraft2 = /** @type {(inputs: Scoutsid_Editdraft2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Edit Draft`)
+	return /** @type {LocalizedString} */ (`تعديل المسودة`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_troops_invite_title = /** @type {(inputs: Troops_Invite_TitleInputs) =>
 };
 
 const ar_troops_invite_title = /** @type {(inputs: Troops_Invite_TitleInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Who would you like to invite?`)
+	return /** @type {LocalizedString} */ (`من تريد دعوته؟`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_networkprompts_reject_joinnet2 = /** @type {(inputs: Networkprompts_Rej
 };
 
 const ar_networkprompts_reject_joinnet2 = /** @type {(inputs: Networkprompts_Reject_Joinnet2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Join ScoutPass Network`)
+	return /** @type {LocalizedString} */ (`الانضمام إلى شبكة ScoutPass`)
 };
 
 /**

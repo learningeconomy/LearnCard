@@ -18,7 +18,7 @@ const fr_skills_explore = /** @type {(inputs: Skills_ExploreInputs) => Localized
 };
 
 const ar_skills_explore = /** @type {(inputs: Skills_ExploreInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Explore`)
+	return /** @type {LocalizedString} */ (`استكشاف`)
 };
 
 /**

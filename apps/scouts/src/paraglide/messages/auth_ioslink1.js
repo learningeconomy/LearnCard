@@ -18,7 +18,7 @@ const fr_auth_ioslink1 = /** @type {(inputs: Auth_Ioslink1Inputs) => LocalizedSt
 };
 
 const ar_auth_ioslink1 = /** @type {(inputs: Auth_Ioslink1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`ScoutPass for iOS`)
+	return /** @type {LocalizedString} */ (`ScoutPass لنظام iOS`)
 };
 
 /**

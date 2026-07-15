@@ -18,7 +18,7 @@ const fr_recovery_setup_passkey_setuprow2 = /** @type {(inputs: Recovery_Setup_P
 };
 
 const ar_recovery_setup_passkey_setuprow2 = /** @type {(inputs: Recovery_Setup_Passkey_Setuprow2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Passkey is set up`)
+	return /** @type {LocalizedString} */ (`تم إعداد مفتاح المرور`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_troops_invite_lscout1 = /** @type {(inputs: Troops_Invite_Lscout1Inputs
 };
 
 const ar_troops_invite_lscout1 = /** @type {(inputs: Troops_Invite_Lscout1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Invite Scout`)
+	return /** @type {LocalizedString} */ (`دعوة كشاف`)
 };
 
 /**

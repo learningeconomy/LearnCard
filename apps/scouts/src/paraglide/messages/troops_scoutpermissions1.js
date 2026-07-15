@@ -18,7 +18,7 @@ const fr_troops_scoutpermissions1 = /** @type {(inputs: Troops_Scoutpermissions1
 };
 
 const ar_troops_scoutpermissions1 = /** @type {(inputs: Troops_Scoutpermissions1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Scout Permissions`)
+	return /** @type {LocalizedString} */ (`صلاحيات الكشاف`)
 };
 
 /**

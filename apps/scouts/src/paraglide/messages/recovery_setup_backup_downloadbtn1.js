@@ -18,7 +18,7 @@ const fr_recovery_setup_backup_downloadbtn1 = /** @type {(inputs: Recovery_Setup
 };
 
 const ar_recovery_setup_backup_downloadbtn1 = /** @type {(inputs: Recovery_Setup_Backup_Downloadbtn1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Download Backup File`)
+	return /** @type {LocalizedString} */ (`تنزيل ملف النسخ الاحتياطي`)
 };
 
 /**

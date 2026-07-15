@@ -18,7 +18,7 @@ const fr_boostcms_boostmyself4 = /** @type {(inputs: Boostcms_Boostmyself4Inputs
 };
 
 const ar_boostcms_boostmyself4 = /** @type {(inputs: Boostcms_Boostmyself4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Boost Myself`)
+	return /** @type {LocalizedString} */ (`تعزيز نفسي`)
 };
 
 /**

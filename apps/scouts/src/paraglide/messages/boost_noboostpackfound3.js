@@ -47,11 +47,11 @@ const fr_boost_noboostpackfound3 = /** @type {((inputs: Boost_Noboostpackfound3I
 const ar_boost_noboostpackfound3 = /** @type {((inputs: Boost_Noboostpackfound3Inputs) => LocalizedString) & { parts: (inputs: Boost_Noboostpackfound3Inputs) => import('../runtime.js').MessagePart[] }} */ (
 	/* @__PURE__ */ Object.assign(
 		/** @type {(inputs: Boost_Noboostpackfound3Inputs) => LocalizedString} */ ((i) => {
-			return /** @type {LocalizedString} */ (`0 ${i?.type} Packs found for ${i?.search}`)
+			return /** @type {LocalizedString} */ (`لم يتم العثور على 0 حزمة ${i?.type} لـ ${i?.search}`)
 		}),
 		{
 			parts: /** @type {(inputs: Boost_Noboostpackfound3Inputs) => import('../runtime.js').MessagePart[]} */ ((i) => {
-				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "0 " }, { type: "text", value: String(i?.type) }, { type: "text", value: " Packs found for " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: String(i?.search) }, { type: "markup-end", name: "0", options: {}, attributes: {} }])
+				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "لم يتم العثور على 0 حزمة " }, { type: "text", value: String(i?.type) }, { type: "text", value: " لـ " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: String(i?.search) }, { type: "markup-end", name: "0", options: {}, attributes: {} }])
 			})
 		}
 	)

@@ -18,7 +18,7 @@ const fr_launchpad_manageschools2 = /** @type {(inputs: Launchpad_Manageschools2
 };
 
 const ar_launchpad_manageschools2 = /** @type {(inputs: Launchpad_Manageschools2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Manage schools`)
+	return /** @type {LocalizedString} */ (`إدارة المدارس`)
 };
 
 /**

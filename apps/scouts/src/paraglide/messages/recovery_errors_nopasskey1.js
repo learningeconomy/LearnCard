@@ -18,7 +18,7 @@ const fr_recovery_errors_nopasskey1 = /** @type {(inputs: Recovery_Errors_Nopass
 };
 
 const ar_recovery_errors_nopasskey1 = /** @type {(inputs: Recovery_Errors_Nopasskey1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No passkey found on this device.`)
+	return /** @type {LocalizedString} */ (`لم يتم العثور على مفتاح مرور على هذا الجهاز.`)
 };
 
 /**

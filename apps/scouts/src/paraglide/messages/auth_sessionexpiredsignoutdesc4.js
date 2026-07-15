@@ -18,7 +18,7 @@ const fr_auth_sessionexpiredsignoutdesc4 = /** @type {(inputs: Auth_Sessionexpir
 };
 
 const ar_auth_sessionexpiredsignoutdesc4 = /** @type {(inputs: Auth_Sessionexpiredsignoutdesc4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Your sign-in session has expired. Please sign out and sign back in to continue.`)
+	return /** @type {LocalizedString} */ (`انتهت صلاحية جلسة تسجيل الدخول الخاصة بك. يرجى تسجيل الخروج وإعادة تسجيل الدخول للمتابعة.`)
 };
 
 /**

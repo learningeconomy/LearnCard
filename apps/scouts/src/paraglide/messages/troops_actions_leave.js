@@ -18,7 +18,7 @@ const fr_troops_actions_leave = /** @type {(inputs: Troops_Actions_LeaveInputs) 
 };
 
 const ar_troops_actions_leave = /** @type {(inputs: Troops_Actions_LeaveInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Leave {name}`)
+	return /** @type {LocalizedString} */ (`مغادرة {name}`)
 };
 
 /**

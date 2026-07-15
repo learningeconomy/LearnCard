@@ -18,7 +18,7 @@ const fr_skillframeworks_fileformaterror3 = /** @type {(inputs: Skillframeworks_
 };
 
 const ar_skillframeworks_fileformaterror3 = /** @type {(inputs: Skillframeworks_Fileformaterror3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`File Formatting Error`)
+	return /** @type {LocalizedString} */ (`خطأ في تنسيق الملف`)
 };
 
 /**

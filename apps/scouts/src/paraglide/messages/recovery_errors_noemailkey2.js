@@ -18,7 +18,7 @@ const fr_recovery_errors_noemailkey2 = /** @type {(inputs: Recovery_Errors_Noema
 };
 
 const ar_recovery_errors_noemailkey2 = /** @type {(inputs: Recovery_Errors_Noemailkey2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Please paste the recovery key from your email.`)
+	return /** @type {LocalizedString} */ (`يرجى لصق مفتاح الاسترداد من بريدك الإلكتروني.`)
 };
 
 /**

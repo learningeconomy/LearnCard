@@ -18,7 +18,7 @@ const fr_consentflow_off1 = /** @type {(inputs: Consentflow_Off1Inputs) => Local
 };
 
 const ar_consentflow_off1 = /** @type {(inputs: Consentflow_Off1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Off`)
+	return /** @type {LocalizedString} */ (`إيقاف`)
 };
 
 /**

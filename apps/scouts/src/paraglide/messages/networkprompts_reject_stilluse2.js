@@ -18,7 +18,7 @@ const fr_networkprompts_reject_stilluse2 = /** @type {(inputs: Networkprompts_Re
 };
 
 const ar_networkprompts_reject_stilluse2 = /** @type {(inputs: Networkprompts_Reject_Stilluse2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`You can still use ScoutPass.`)
+	return /** @type {LocalizedString} */ (`لا يزال بإمكانك استخدام ScoutPass.`)
 };
 
 /**

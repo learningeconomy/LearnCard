@@ -18,7 +18,7 @@ const fr_boost_noboostsyet2 = /** @type {(inputs: Boost_Noboostsyet2Inputs) => L
 };
 
 const ar_boost_noboostsyet2 = /** @type {(inputs: Boost_Noboostsyet2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No Boosts yet!`)
+	return /** @type {LocalizedString} */ (`لا توجد تعزيزات بعد!`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_boostcms_autoconnect4 = /** @type {(inputs: Boostcms_Autoconnect4Inputs
 };
 
 const ar_boostcms_autoconnect4 = /** @type {(inputs: Boostcms_Autoconnect4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Automatically connect members in contacts`)
+	return /** @type {LocalizedString} */ (`ربط الأعضاء تلقائياً في جهات الاتصال`)
 };
 
 /**

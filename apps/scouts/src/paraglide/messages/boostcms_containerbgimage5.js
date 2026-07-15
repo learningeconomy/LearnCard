@@ -18,7 +18,7 @@ const fr_boostcms_containerbgimage5 = /** @type {(inputs: Boostcms_Containerbgim
 };
 
 const ar_boostcms_containerbgimage5 = /** @type {(inputs: Boostcms_Containerbgimage5Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Container Background Image`)
+	return /** @type {LocalizedString} */ (`صورة خلفية الحاوية`)
 };
 
 /**

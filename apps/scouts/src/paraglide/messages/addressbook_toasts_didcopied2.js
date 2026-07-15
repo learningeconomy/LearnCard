@@ -18,7 +18,7 @@ const fr_addressbook_toasts_didcopied2 = /** @type {(inputs: Addressbook_Toasts_
 };
 
 const ar_addressbook_toasts_didcopied2 = /** @type {(inputs: Addressbook_Toasts_Didcopied2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`DID copied to clipboard`)
+	return /** @type {LocalizedString} */ (`تم نسخ DID إلى الحافظة`)
 };
 
 /**

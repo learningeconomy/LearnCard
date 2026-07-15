@@ -18,7 +18,7 @@ const fr_addressbook_toasts_connectedsuccessfully2 = /** @type {(inputs: Address
 };
 
 const ar_addressbook_toasts_connectedsuccessfully2 = /** @type {(inputs: Addressbook_Toasts_Connectedsuccessfully2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Connected Successfully!`)
+	return /** @type {LocalizedString} */ (`تم الاتصال بنجاح!`)
 };
 
 /**

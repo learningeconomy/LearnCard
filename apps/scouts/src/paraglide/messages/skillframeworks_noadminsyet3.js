@@ -18,7 +18,7 @@ const fr_skillframeworks_noadminsyet3 = /** @type {(inputs: Skillframeworks_Noad
 };
 
 const ar_skillframeworks_noadminsyet3 = /** @type {(inputs: Skillframeworks_Noadminsyet3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No admins yet. Add one above.`)
+	return /** @type {LocalizedString} */ (`لا يوجد مسؤولون بعد. أضف واحداً أعلاه.`)
 };
 
 /**

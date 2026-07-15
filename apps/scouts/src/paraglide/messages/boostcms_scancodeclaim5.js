@@ -18,7 +18,7 @@ const fr_boostcms_scancodeclaim5 = /** @type {(inputs: Boostcms_Scancodeclaim5In
 };
 
 const ar_boostcms_scancodeclaim5 = /** @type {(inputs: Boostcms_Scancodeclaim5Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Scan Code to Claim Boost`)
+	return /** @type {LocalizedString} */ (`مسح الرمز لاستلام التعزيز`)
 };
 
 /**

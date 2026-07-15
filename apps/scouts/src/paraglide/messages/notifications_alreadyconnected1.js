@@ -18,7 +18,7 @@ const fr_notifications_alreadyconnected1 = /** @type {(inputs: Notifications_Alr
 };
 
 const ar_notifications_alreadyconnected1 = /** @type {(inputs: Notifications_Alreadyconnected1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`You are already connected.`)
+	return /** @type {LocalizedString} */ (`أنت متصل بالفعل.`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_skillframeworks_editfwtitle3 = /** @type {(inputs: Skillframeworks_Edit
 };
 
 const ar_skillframeworks_editfwtitle3 = /** @type {(inputs: Skillframeworks_Editfwtitle3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Edit Skill Framework`)
+	return /** @type {LocalizedString} */ (`تعديل إطار المهارات`)
 };
 
 /**

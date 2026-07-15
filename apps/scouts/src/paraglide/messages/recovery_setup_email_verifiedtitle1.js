@@ -18,7 +18,7 @@ const fr_recovery_setup_email_verifiedtitle1 = /** @type {(inputs: Recovery_Setu
 };
 
 const ar_recovery_setup_email_verifiedtitle1 = /** @type {(inputs: Recovery_Setup_Email_Verifiedtitle1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Email verified`)
+	return /** @type {LocalizedString} */ (`تم التحقق من البريد الإلكتروني`)
 };
 
 /**

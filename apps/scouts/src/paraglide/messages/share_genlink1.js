@@ -18,7 +18,7 @@ const fr_share_genlink1 = /** @type {(inputs: Share_Genlink1Inputs) => Localized
 };
 
 const ar_share_genlink1 = /** @type {(inputs: Share_Genlink1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Generating Link...`)
+	return /** @type {LocalizedString} */ (`جاري إنشاء الرابط...`)
 };
 
 /**

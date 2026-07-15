@@ -18,7 +18,7 @@ const fr_addressbook_scancodedesc3 = /** @type {(inputs: Addressbook_Scancodedes
 };
 
 const ar_addressbook_scancodedesc3 = /** @type {(inputs: Addressbook_Scancodedesc3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Have your contact scan this code.`)
+	return /** @type {LocalizedString} */ (`اطلب من جهة اتصالك مسح هذا الرمز.`)
 };
 
 /**

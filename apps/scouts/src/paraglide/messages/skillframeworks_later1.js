@@ -18,7 +18,7 @@ const fr_skillframeworks_later1 = /** @type {(inputs: Skillframeworks_Later1Inpu
 };
 
 const ar_skillframeworks_later1 = /** @type {(inputs: Skillframeworks_Later1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Later`)
+	return /** @type {LocalizedString} */ (`لاحقاً`)
 };
 
 /**

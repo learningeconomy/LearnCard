@@ -18,7 +18,7 @@ const fr_scanner_sharelink1 = /** @type {(inputs: Scanner_Sharelink1Inputs) => L
 };
 
 const ar_scanner_sharelink1 = /** @type {(inputs: Scanner_Sharelink1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Share Link`)
+	return /** @type {LocalizedString} */ (`مشاركة الرابط`)
 };
 
 /**

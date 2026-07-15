@@ -18,7 +18,7 @@ const fr_skillframeworks_editjson2 = /** @type {(inputs: Skillframeworks_Editjso
 };
 
 const ar_skillframeworks_editjson2 = /** @type {(inputs: Skillframeworks_Editjson2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Edit JSON`)
+	return /** @type {LocalizedString} */ (`تعديل JSON`)
 };
 
 /**

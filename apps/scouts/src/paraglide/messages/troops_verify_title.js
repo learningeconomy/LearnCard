@@ -18,7 +18,7 @@ const fr_troops_verify_title = /** @type {(inputs: Troops_Verify_TitleInputs) =>
 };
 
 const ar_troops_verify_title = /** @type {(inputs: Troops_Verify_TitleInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Credential Verifications`)
+	return /** @type {LocalizedString} */ (`التحقق من المؤهلات`)
 };
 
 /**

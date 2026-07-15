@@ -18,7 +18,7 @@ const fr_skillframeworks_selectfw2 = /** @type {(inputs: Skillframeworks_Selectf
 };
 
 const ar_skillframeworks_selectfw2 = /** @type {(inputs: Skillframeworks_Selectfw2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Select a Framework`)
+	return /** @type {LocalizedString} */ (`اختر إطاراً`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_scoutsid_dark1 = /** @type {(inputs: Scoutsid_Dark1Inputs) => Localized
 };
 
 const ar_scoutsid_dark1 = /** @type {(inputs: Scoutsid_Dark1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Dark`)
+	return /** @type {LocalizedString} */ (`داكن`)
 };
 
 /**

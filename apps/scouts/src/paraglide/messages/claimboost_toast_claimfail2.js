@@ -18,7 +18,7 @@ const fr_claimboost_toast_claimfail2 = /** @type {(inputs: Claimboost_Toast_Clai
 };
 
 const ar_claimboost_toast_claimfail2 = /** @type {(inputs: Claimboost_Toast_Claimfail2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Unable to claim Credential`)
+	return /** @type {LocalizedString} */ (`تعذر استلام المؤهل`)
 };
 
 /**

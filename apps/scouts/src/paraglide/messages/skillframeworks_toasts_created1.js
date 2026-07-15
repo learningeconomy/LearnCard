@@ -18,7 +18,7 @@ const fr_skillframeworks_toasts_created1 = /** @type {(inputs: Skillframeworks_T
 };
 
 const ar_skillframeworks_toasts_created1 = /** @type {(inputs: Skillframeworks_Toasts_Created1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Framework created successfully!`)
+	return /** @type {LocalizedString} */ (`تم إنشاء الإطار بنجاح!`)
 };
 
 /**

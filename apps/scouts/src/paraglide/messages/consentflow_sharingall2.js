@@ -18,7 +18,7 @@ const fr_consentflow_sharingall2 = /** @type {(inputs: Consentflow_Sharingall2In
 };
 
 const ar_consentflow_sharingall2 = /** @type {(inputs: Consentflow_Sharingall2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Sharing All`)
+	return /** @type {LocalizedString} */ (`مشاركة الكل`)
 };
 
 /**

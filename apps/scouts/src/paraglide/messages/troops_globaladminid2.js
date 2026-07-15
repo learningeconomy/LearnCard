@@ -18,7 +18,7 @@ const fr_troops_globaladminid2 = /** @type {(inputs: Troops_Globaladminid2Inputs
 };
 
 const ar_troops_globaladminid2 = /** @type {(inputs: Troops_Globaladminid2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Global Admin ID`)
+	return /** @type {LocalizedString} */ (`معرف المسؤول العام`)
 };
 
 /**

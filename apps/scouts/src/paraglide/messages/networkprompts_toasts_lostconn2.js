@@ -18,7 +18,7 @@ const fr_networkprompts_toasts_lostconn2 = /** @type {(inputs: Networkprompts_To
 };
 
 const ar_networkprompts_toasts_lostconn2 = /** @type {(inputs: Networkprompts_Toasts_Lostconn2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Oops! It seems you’ve lost your connection. The app may not function properly and you will not be able to send boosts.`)
+	return /** @type {LocalizedString} */ (`عذراً! يبدو أنك فقدت اتصالك. قد لا يعمل التطبيق بشكل صحيح ولن تتمكن من إرسال التعزيزات.`)
 };
 
 /**

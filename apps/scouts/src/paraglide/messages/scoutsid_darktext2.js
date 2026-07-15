@@ -18,7 +18,7 @@ const fr_scoutsid_darktext2 = /** @type {(inputs: Scoutsid_Darktext2Inputs) => L
 };
 
 const ar_scoutsid_darktext2 = /** @type {(inputs: Scoutsid_Darktext2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Dark Text`)
+	return /** @type {LocalizedString} */ (`نص داكن`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_boostcms_sendto4 = /** @type {(inputs: Boostcms_Sendto4Inputs) => Local
 };
 
 const ar_boostcms_sendto4 = /** @type {(inputs: Boostcms_Sendto4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Send To`)
+	return /** @type {LocalizedString} */ (`إرسال إلى`)
 };
 
 /**

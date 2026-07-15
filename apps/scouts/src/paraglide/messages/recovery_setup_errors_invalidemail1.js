@@ -18,7 +18,7 @@ const fr_recovery_setup_errors_invalidemail1 = /** @type {(inputs: Recovery_Setu
 };
 
 const ar_recovery_setup_errors_invalidemail1 = /** @type {(inputs: Recovery_Setup_Errors_Invalidemail1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Please enter a valid email address.`)
+	return /** @type {LocalizedString} */ (`يرجى إدخال عنوان بريد إلكتروني صالح.`)
 };
 
 /**

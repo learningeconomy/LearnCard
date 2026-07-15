@@ -18,7 +18,7 @@ const fr_skillframeworks_expand1 = /** @type {(inputs: Skillframeworks_Expand1In
 };
 
 const ar_skillframeworks_expand1 = /** @type {(inputs: Skillframeworks_Expand1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Expand`)
+	return /** @type {LocalizedString} */ (`توسيع`)
 };
 
 /**

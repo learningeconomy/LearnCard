@@ -18,7 +18,7 @@ const fr_skillframeworks_replacefile2 = /** @type {(inputs: Skillframeworks_Repl
 };
 
 const ar_skillframeworks_replacefile2 = /** @type {(inputs: Skillframeworks_Replacefile2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Replace File`)
+	return /** @type {LocalizedString} */ (`استبدال الملف`)
 };
 
 /**

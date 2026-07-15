@@ -18,7 +18,7 @@ const fr_recovery_setup_phrase_savedrow1 = /** @type {(inputs: Recovery_Setup_Ph
 };
 
 const ar_recovery_setup_phrase_savedrow1 = /** @type {(inputs: Recovery_Setup_Phrase_Savedrow1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Phrase is saved`)
+	return /** @type {LocalizedString} */ (`تم حفظ العبارة`)
 };
 
 /**

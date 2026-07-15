@@ -18,7 +18,7 @@ const fr_skillframeworks_resultother2 = /** @type {(inputs: Skillframeworks_Resu
 };
 
 const ar_skillframeworks_resultother2 = /** @type {(inputs: Skillframeworks_Resultother2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`{count} Results`)
+	return /** @type {LocalizedString} */ (`{count} نتائج`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_recovery_backup_title = /** @type {(inputs: Recovery_Backup_TitleInputs
 };
 
 const ar_recovery_backup_title = /** @type {(inputs: Recovery_Backup_TitleInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Backup File`)
+	return /** @type {LocalizedString} */ (`ملف النسخ الاحتياطي`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_introslides_earnbadges2 = /** @type {(inputs: Introslides_Earnbadges2In
 };
 
 const ar_introslides_earnbadges2 = /** @type {(inputs: Introslides_Earnbadges2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Earn & Send Badges`)
+	return /** @type {LocalizedString} */ (`اكسب وأرسل الشارات`)
 };
 
 /**

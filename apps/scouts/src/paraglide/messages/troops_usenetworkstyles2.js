@@ -18,7 +18,7 @@ const fr_troops_usenetworkstyles2 = /** @type {(inputs: Troops_Usenetworkstyles2
 };
 
 const ar_troops_usenetworkstyles2 = /** @type {(inputs: Troops_Usenetworkstyles2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Use network styles`)
+	return /** @type {LocalizedString} */ (`استخدام أنماط الشبكة`)
 };
 
 /**

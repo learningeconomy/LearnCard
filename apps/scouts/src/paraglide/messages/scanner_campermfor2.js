@@ -18,7 +18,7 @@ const fr_scanner_campermfor2 = /** @type {(inputs: Scanner_Campermfor2Inputs) =>
 };
 
 const ar_scanner_campermfor2 = /** @type {(inputs: Scanner_Campermfor2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Enable camera permissions for:`)
+	return /** @type {LocalizedString} */ (`تمكين أذونات الكاميرا لـ:`)
 };
 
 /**

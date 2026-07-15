@@ -18,7 +18,7 @@ const fr_networkprompts_errorlogout_logoutbtn3 = /** @type {(inputs: Networkprom
 };
 
 const ar_networkprompts_errorlogout_logoutbtn3 = /** @type {(inputs: Networkprompts_Errorlogout_Logoutbtn3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Logout`)
+	return /** @type {LocalizedString} */ (`تسجيل الخروج`)
 };
 
 /**

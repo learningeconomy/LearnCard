@@ -18,7 +18,7 @@ const fr_recovery_setup_backup_passplaceholder1 = /** @type {(inputs: Recovery_S
 };
 
 const ar_recovery_setup_backup_passplaceholder1 = /** @type {(inputs: Recovery_Setup_Backup_Passplaceholder1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`At least 8 characters`)
+	return /** @type {LocalizedString} */ (`8 أحرف على الأقل`)
 };
 
 /**

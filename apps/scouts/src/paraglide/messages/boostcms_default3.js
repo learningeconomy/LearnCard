@@ -18,7 +18,7 @@ const fr_boostcms_default3 = /** @type {(inputs: Boostcms_Default3Inputs) => Loc
 };
 
 const ar_boostcms_default3 = /** @type {(inputs: Boostcms_Default3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Default`)
+	return /** @type {LocalizedString} */ (`افتراضي`)
 };
 
 /**

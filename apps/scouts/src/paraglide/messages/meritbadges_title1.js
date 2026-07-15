@@ -18,7 +18,7 @@ const fr_meritbadges_title1 = /** @type {(inputs: Meritbadges_Title1Inputs) => L
 };
 
 const ar_meritbadges_title1 = /** @type {(inputs: Meritbadges_Title1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Merit Badges`)
+	return /** @type {LocalizedString} */ (`شارات الجدارة`)
 };
 
 /**

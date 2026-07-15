@@ -18,7 +18,7 @@ const fr_skillframeworks_selectadmins2 = /** @type {(inputs: Skillframeworks_Sel
 };
 
 const ar_skillframeworks_selectadmins2 = /** @type {(inputs: Skillframeworks_Selectadmins2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Select Admins`)
+	return /** @type {LocalizedString} */ (`اختيار مسؤولين`)
 };
 
 /**

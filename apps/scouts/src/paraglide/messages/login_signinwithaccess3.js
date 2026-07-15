@@ -47,11 +47,11 @@ const fr_login_signinwithaccess3 = /** @type {((inputs: Login_Signinwithaccess3I
 const ar_login_signinwithaccess3 = /** @type {((inputs: Login_Signinwithaccess3Inputs) => LocalizedString) & { parts: (inputs: Login_Signinwithaccess3Inputs) => import('../runtime.js').MessagePart[] }} */ (
 	/* @__PURE__ */ Object.assign(
 		/** @type {(inputs: Login_Signinwithaccess3Inputs) => LocalizedString} */ ((i) => {
-			return /** @type {LocalizedString} */ (`Sign in with ${i?.name} to access your account.`)
+			return /** @type {LocalizedString} */ (`تسجيل الدخول باستخدام ${i?.name} للوصول إلى حسابك.`)
 		}),
 		{
 			parts: /** @type {(inputs: Login_Signinwithaccess3Inputs) => import('../runtime.js').MessagePart[]} */ ((i) => {
-				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "Sign in with " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: String(i?.name) }, { type: "markup-end", name: "0", options: {}, attributes: {} }, { type: "text", value: " to access your account." }])
+				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "تسجيل الدخول باستخدام " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: String(i?.name) }, { type: "markup-end", name: "0", options: {}, attributes: {} }, { type: "text", value: " للوصول إلى حسابك." }])
 			})
 		}
 	)

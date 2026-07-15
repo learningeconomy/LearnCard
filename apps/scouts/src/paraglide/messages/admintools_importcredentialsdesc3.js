@@ -18,7 +18,7 @@ const fr_admintools_importcredentialsdesc3 = /** @type {(inputs: Admintools_Impo
 };
 
 const ar_admintools_importcredentialsdesc3 = /** @type {(inputs: Admintools_Importcredentialsdesc3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Upload multiple credentials at once.`)
+	return /** @type {LocalizedString} */ (`رفع مؤهلات متعددة دفعة واحدة.`)
 };
 
 /**

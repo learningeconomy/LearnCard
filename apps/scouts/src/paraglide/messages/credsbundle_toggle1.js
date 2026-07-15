@@ -18,7 +18,7 @@ const fr_credsbundle_toggle1 = /** @type {(inputs: Credsbundle_Toggle1Inputs) =>
 };
 
 const ar_credsbundle_toggle1 = /** @type {(inputs: Credsbundle_Toggle1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`toggle`)
+	return /** @type {LocalizedString} */ (`تبديل`)
 };
 
 /**

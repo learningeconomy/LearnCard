@@ -18,7 +18,7 @@ const fr_skillframeworks_createfwtitle3 = /** @type {(inputs: Skillframeworks_Cr
 };
 
 const ar_skillframeworks_createfwtitle3 = /** @type {(inputs: Skillframeworks_Createfwtitle3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Create Framework`)
+	return /** @type {LocalizedString} */ (`إنشاء إطار`)
 };
 
 /**

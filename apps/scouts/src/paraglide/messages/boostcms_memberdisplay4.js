@@ -18,7 +18,7 @@ const fr_boostcms_memberdisplay4 = /** @type {(inputs: Boostcms_Memberdisplay4In
 };
 
 const ar_boostcms_memberdisplay4 = /** @type {(inputs: Boostcms_Memberdisplay4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Member Display`)
+	return /** @type {LocalizedString} */ (`عرض الأعضاء`)
 };
 
 /**

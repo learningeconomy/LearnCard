@@ -18,7 +18,7 @@ const fr_boostcms_generateclaimlink5 = /** @type {(inputs: Boostcms_Generateclai
 };
 
 const ar_boostcms_generateclaimlink5 = /** @type {(inputs: Boostcms_Generateclaimlink5Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Generate Claim Link?`)
+	return /** @type {LocalizedString} */ (`إنشاء رابط استلام؟`)
 };
 
 /**

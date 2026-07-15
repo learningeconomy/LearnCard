@@ -18,7 +18,7 @@ const fr_troops_issuelog_empty1 = /** @type {(inputs: Troops_Issuelog_Empty1Inpu
 };
 
 const ar_troops_issuelog_empty1 = /** @type {(inputs: Troops_Issuelog_Empty1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No issue history`)
+	return /** @type {LocalizedString} */ (`لا يوجد سجل إصدار`)
 };
 
 /**

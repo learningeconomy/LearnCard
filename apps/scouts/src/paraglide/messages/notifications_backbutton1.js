@@ -18,7 +18,7 @@ const fr_notifications_backbutton1 = /** @type {(inputs: Notifications_Backbutto
 };
 
 const ar_notifications_backbutton1 = /** @type {(inputs: Notifications_Backbutton1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Back button`)
+	return /** @type {LocalizedString} */ (`زر الرجوع`)
 };
 
 /**

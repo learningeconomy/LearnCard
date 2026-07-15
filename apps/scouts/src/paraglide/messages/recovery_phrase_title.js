@@ -18,7 +18,7 @@ const fr_recovery_phrase_title = /** @type {(inputs: Recovery_Phrase_TitleInputs
 };
 
 const ar_recovery_phrase_title = /** @type {(inputs: Recovery_Phrase_TitleInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Recovery Phrase`)
+	return /** @type {LocalizedString} */ (`عبارة الاسترداد`)
 };
 
 /**

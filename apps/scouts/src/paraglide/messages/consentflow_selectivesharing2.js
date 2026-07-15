@@ -18,7 +18,7 @@ const fr_consentflow_selectivesharing2 = /** @type {(inputs: Consentflow_Selecti
 };
 
 const ar_consentflow_selectivesharing2 = /** @type {(inputs: Consentflow_Selectivesharing2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Selective Sharing`)
+	return /** @type {LocalizedString} */ (`المشاركة الانتقائية`)
 };
 
 /**

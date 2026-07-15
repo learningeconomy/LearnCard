@@ -18,7 +18,7 @@ const fr_boostcms_location3 = /** @type {(inputs: Boostcms_Location3Inputs) => L
 };
 
 const ar_boostcms_location3 = /** @type {(inputs: Boostcms_Location3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Location`)
+	return /** @type {LocalizedString} */ (`الموقع`)
 };
 
 /**

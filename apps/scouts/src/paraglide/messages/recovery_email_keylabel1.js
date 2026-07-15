@@ -18,7 +18,7 @@ const fr_recovery_email_keylabel1 = /** @type {(inputs: Recovery_Email_Keylabel1
 };
 
 const ar_recovery_email_keylabel1 = /** @type {(inputs: Recovery_Email_Keylabel1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Recovery Key`)
+	return /** @type {LocalizedString} */ (`مفتاح الاسترداد`)
 };
 
 /**

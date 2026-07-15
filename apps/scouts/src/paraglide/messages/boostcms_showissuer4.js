@@ -18,7 +18,7 @@ const fr_boostcms_showissuer4 = /** @type {(inputs: Boostcms_Showissuer4Inputs) 
 };
 
 const ar_boostcms_showissuer4 = /** @type {(inputs: Boostcms_Showissuer4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Show Issuer Thumbnail`)
+	return /** @type {LocalizedString} */ (`إظهار صورة المُصدر المصغرة`)
 };
 
 /**

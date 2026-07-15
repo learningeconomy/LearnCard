@@ -18,7 +18,7 @@ const fr_boostcms_searchnetwork4 = /** @type {(inputs: Boostcms_Searchnetwork4In
 };
 
 const ar_boostcms_searchnetwork4 = /** @type {(inputs: Boostcms_Searchnetwork4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Search ScoutPass Network...`)
+	return /** @type {LocalizedString} */ (`بحث في شبكة ScoutPass...`)
 };
 
 /**

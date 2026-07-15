@@ -18,7 +18,7 @@ const fr_sociallogins_or1 = /** @type {(inputs: Sociallogins_Or1Inputs) => Local
 };
 
 const ar_sociallogins_or1 = /** @type {(inputs: Sociallogins_Or1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`OR`)
+	return /** @type {LocalizedString} */ (`أو`)
 };
 
 /**

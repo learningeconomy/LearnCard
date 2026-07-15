@@ -18,7 +18,7 @@ const fr_boost_searchnetwork1 = /** @type {(inputs: Boost_Searchnetwork1Inputs) 
 };
 
 const ar_boost_searchnetwork1 = /** @type {(inputs: Boost_Searchnetwork1Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`Search ${i?.name}...`)
+	return /** @type {LocalizedString} */ (`بحث في ${i?.name}...`)
 };
 
 /**

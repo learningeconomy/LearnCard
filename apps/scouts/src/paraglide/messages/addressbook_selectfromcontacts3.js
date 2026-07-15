@@ -18,7 +18,7 @@ const fr_addressbook_selectfromcontacts3 = /** @type {(inputs: Addressbook_Selec
 };
 
 const ar_addressbook_selectfromcontacts3 = /** @type {(inputs: Addressbook_Selectfromcontacts3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Select from Contacts`)
+	return /** @type {LocalizedString} */ (`اختر من جهات الاتصال`)
 };
 
 /**

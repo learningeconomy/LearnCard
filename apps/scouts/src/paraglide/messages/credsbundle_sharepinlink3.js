@@ -18,7 +18,7 @@ const fr_credsbundle_sharepinlink3 = /** @type {(inputs: Credsbundle_Sharepinlin
 };
 
 const ar_credsbundle_sharepinlink3 = /** @type {(inputs: Credsbundle_Sharepinlink3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Share your PIN and this link:`)
+	return /** @type {LocalizedString} */ (`شارك رمز PIN الخاص بك وهذا الرابط:`)
 };
 
 /**

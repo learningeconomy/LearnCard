@@ -18,7 +18,7 @@ const fr_consentflow_backbtn2 = /** @type {(inputs: Consentflow_Backbtn2Inputs) 
 };
 
 const ar_consentflow_backbtn2 = /** @type {(inputs: Consentflow_Backbtn2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Back button`)
+	return /** @type {LocalizedString} */ (`زر الرجوع`)
 };
 
 /**

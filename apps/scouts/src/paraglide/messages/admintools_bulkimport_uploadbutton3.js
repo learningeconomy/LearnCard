@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_uploadbutton3 = /** @type {(inputs: Admintools_Bu
 };
 
 const ar_admintools_bulkimport_uploadbutton3 = /** @type {(inputs: Admintools_Bulkimport_Uploadbutton3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Upload!`)
+	return /** @type {LocalizedString} */ (`رفع!`)
 };
 
 /**

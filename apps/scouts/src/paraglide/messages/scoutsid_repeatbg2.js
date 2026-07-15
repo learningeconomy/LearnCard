@@ -18,7 +18,7 @@ const fr_scoutsid_repeatbg2 = /** @type {(inputs: Scoutsid_Repeatbg2Inputs) => L
 };
 
 const ar_scoutsid_repeatbg2 = /** @type {(inputs: Scoutsid_Repeatbg2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Repeat background`)
+	return /** @type {LocalizedString} */ (`تكرار الخلفية`)
 };
 
 /**

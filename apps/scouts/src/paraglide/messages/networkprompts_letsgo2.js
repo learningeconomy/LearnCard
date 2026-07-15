@@ -18,7 +18,7 @@ const fr_networkprompts_letsgo2 = /** @type {(inputs: Networkprompts_Letsgo2Inpu
 };
 
 const ar_networkprompts_letsgo2 = /** @type {(inputs: Networkprompts_Letsgo2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Let's Go!`)
+	return /** @type {LocalizedString} */ (`هيا بنا!`)
 };
 
 /**

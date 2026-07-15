@@ -18,7 +18,7 @@ const fr_addressbook_toasts_unabletocopycontactlink5 = /** @type {(inputs: Addre
 };
 
 const ar_addressbook_toasts_unabletocopycontactlink5 = /** @type {(inputs: Addressbook_Toasts_Unabletocopycontactlink5Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Unable to copy Contact link to clipboard`)
+	return /** @type {LocalizedString} */ (`تعذر نسخ رابط الاتصال إلى الحافظة`)
 };
 
 /**

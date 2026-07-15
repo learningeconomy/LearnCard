@@ -18,7 +18,7 @@ const fr_recovery_device_title = /** @type {(inputs: Recovery_Device_TitleInputs
 };
 
 const ar_recovery_device_title = /** @type {(inputs: Recovery_Device_TitleInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Sign In from Another Device`)
+	return /** @type {LocalizedString} */ (`تسجيل الدخول من جهاز آخر`)
 };
 
 /**

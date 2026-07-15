@@ -18,7 +18,7 @@ const fr_skillframeworks_removeadmintitle3 = /** @type {(inputs: Skillframeworks
 };
 
 const ar_skillframeworks_removeadmintitle3 = /** @type {(inputs: Skillframeworks_Removeadmintitle3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Remove admin`)
+	return /** @type {LocalizedString} */ (`إزالة مسؤول`)
 };
 
 /**

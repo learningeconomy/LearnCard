@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_network2 = /** @type {(inputs: Admintools_Bulkimp
 };
 
 const ar_admintools_bulkimport_network2 = /** @type {(inputs: Admintools_Bulkimport_Network2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Network`)
+	return /** @type {LocalizedString} */ (`الشبكة`)
 };
 
 /**

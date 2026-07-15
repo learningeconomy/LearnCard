@@ -18,7 +18,7 @@ const fr_troops_invalidtroopnumber2 = /** @type {(inputs: Troops_Invalidtroopnum
 };
 
 const ar_troops_invalidtroopnumber2 = /** @type {(inputs: Troops_Invalidtroopnumber2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Invalid Troop number entered`)
+	return /** @type {LocalizedString} */ (`رقم فرقة غير صالح`)
 };
 
 /**

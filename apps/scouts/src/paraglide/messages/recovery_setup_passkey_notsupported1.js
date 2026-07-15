@@ -18,7 +18,7 @@ const fr_recovery_setup_passkey_notsupported1 = /** @type {(inputs: Recovery_Set
 };
 
 const ar_recovery_setup_passkey_notsupported1 = /** @type {(inputs: Recovery_Setup_Passkey_Notsupported1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Passkeys aren't supported on this device or browser. Try using a recovery phrase or backup file instead.`)
+	return /** @type {LocalizedString} */ (`مفاتيح المرور غير مدعومة على هذا الجهاز أو المتصفح. جرب استخدام عبارة استرداد أو ملف نسخ احتياطي بدلاً من ذلك.`)
 };
 
 /**

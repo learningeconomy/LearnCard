@@ -18,7 +18,7 @@ const fr_networkprompts_settings_showphoto2 = /** @type {(inputs: Networkprompts
 };
 
 const ar_networkprompts_settings_showphoto2 = /** @type {(inputs: Networkprompts_Settings_Showphoto2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Display profile photo in your connections’ contact lists.`)
+	return /** @type {LocalizedString} */ (`عرض الصورة الشخصية في قوائم جهات اتصال من تتواصل معهم.`)
 };
 
 /**

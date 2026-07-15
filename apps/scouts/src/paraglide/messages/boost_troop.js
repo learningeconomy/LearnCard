@@ -18,7 +18,7 @@ const fr_boost_troop = /** @type {(inputs: Boost_TroopInputs) => LocalizedString
 };
 
 const ar_boost_troop = /** @type {(inputs: Boost_TroopInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Troop`)
+	return /** @type {LocalizedString} */ (`فرقة`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_consentflow_setexpdate3 = /** @type {(inputs: Consentflow_Setexpdate3In
 };
 
 const ar_consentflow_setexpdate3 = /** @type {(inputs: Consentflow_Setexpdate3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Set an expiration date?`)
+	return /** @type {LocalizedString} */ (`تعيين تاريخ انتهاء صلاحية؟`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_auth_verifysess1 = /** @type {(inputs: Auth_Verifysess1Inputs) => Local
 };
 
 const ar_auth_verifysess1 = /** @type {(inputs: Auth_Verifysess1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Verifying session...`)
+	return /** @type {LocalizedString} */ (`جاري التحقق من الجلسة...`)
 };
 
 /**

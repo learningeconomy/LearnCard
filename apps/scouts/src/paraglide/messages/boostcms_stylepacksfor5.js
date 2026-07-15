@@ -18,7 +18,7 @@ const fr_boostcms_stylepacksfor5 = /** @type {(inputs: Boostcms_Stylepacksfor5In
 };
 
 const ar_boostcms_stylepacksfor5 = /** @type {(inputs: Boostcms_Stylepacksfor5Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`${i?.title} Style Packs`)
+	return /** @type {LocalizedString} */ (`حزم أنماط ${i?.title}`)
 };
 
 /**

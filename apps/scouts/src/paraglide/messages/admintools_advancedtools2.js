@@ -18,7 +18,7 @@ const fr_admintools_advancedtools2 = /** @type {(inputs: Admintools_Advancedtool
 };
 
 const ar_admintools_advancedtools2 = /** @type {(inputs: Admintools_Advancedtools2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Advanced Tools`)
+	return /** @type {LocalizedString} */ (`أدوات متقدمة`)
 };
 
 /**

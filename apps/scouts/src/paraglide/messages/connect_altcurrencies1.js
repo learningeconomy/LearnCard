@@ -18,7 +18,7 @@ const fr_connect_altcurrencies1 = /** @type {(inputs: Connect_Altcurrencies1Inpu
 };
 
 const ar_connect_altcurrencies1 = /** @type {(inputs: Connect_Altcurrencies1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`currencies`)
+	return /** @type {LocalizedString} */ (`عملات`)
 };
 
 /**

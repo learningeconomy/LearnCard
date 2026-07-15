@@ -18,7 +18,7 @@ const fr_boostcms_toasts_copycontactlinkfail6 = /** @type {(inputs: Boostcms_Toa
 };
 
 const ar_boostcms_toasts_copycontactlinkfail6 = /** @type {(inputs: Boostcms_Toasts_Copycontactlinkfail6Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Unable to copy Contact link to clipboard`)
+	return /** @type {LocalizedString} */ (`تعذر نسخ رابط جهة الاتصال إلى الحافظة`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_skillframeworks_mgnets2 = /** @type {(inputs: Skillframeworks_Mgnets2In
 };
 
 const ar_skillframeworks_mgnets2 = /** @type {(inputs: Skillframeworks_Mgnets2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Manage Networks`)
+	return /** @type {LocalizedString} */ (`إدارة الشبكات`)
 };
 
 /**

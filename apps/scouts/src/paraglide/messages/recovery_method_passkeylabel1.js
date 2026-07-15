@@ -18,7 +18,7 @@ const fr_recovery_method_passkeylabel1 = /** @type {(inputs: Recovery_Method_Pas
 };
 
 const ar_recovery_method_passkeylabel1 = /** @type {(inputs: Recovery_Method_Passkeylabel1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Passkey`)
+	return /** @type {LocalizedString} */ (`مفتاح المرور`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_boostcms_uploading3 = /** @type {(inputs: Boostcms_Uploading3Inputs) =>
 };
 
 const ar_boostcms_uploading3 = /** @type {(inputs: Boostcms_Uploading3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Uploading...`)
+	return /** @type {LocalizedString} */ (`جاري الرفع...`)
 };
 
 /**

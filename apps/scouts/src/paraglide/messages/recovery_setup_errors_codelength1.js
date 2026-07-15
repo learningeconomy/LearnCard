@@ -18,7 +18,7 @@ const fr_recovery_setup_errors_codelength1 = /** @type {(inputs: Recovery_Setup_
 };
 
 const ar_recovery_setup_errors_codelength1 = /** @type {(inputs: Recovery_Setup_Errors_Codelength1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Please enter the 6-digit code.`)
+	return /** @type {LocalizedString} */ (`يرجى إدخال الرمز المكون من 6 أرقام.`)
 };
 
 /**

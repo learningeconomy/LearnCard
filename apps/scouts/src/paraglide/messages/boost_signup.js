@@ -18,7 +18,7 @@ const fr_boost_signup = /** @type {(inputs: Boost_SignupInputs) => LocalizedStri
 };
 
 const ar_boost_signup = /** @type {(inputs: Boost_SignupInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Signup`)
+	return /** @type {LocalizedString} */ (`تسجيل`)
 };
 
 /**

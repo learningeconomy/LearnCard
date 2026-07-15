@@ -18,7 +18,7 @@ const fr_recovery_email_findkey1 = /** @type {(inputs: Recovery_Email_Findkey1In
 };
 
 const ar_recovery_email_findkey1 = /** @type {(inputs: Recovery_Email_Findkey1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`How to find your recovery key`)
+	return /** @type {LocalizedString} */ (`كيفية العثور على مفتاح الاسترداد الخاص بك`)
 };
 
 /**

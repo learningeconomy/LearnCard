@@ -18,7 +18,7 @@ const fr_recovery_setup_tabbackup1 = /** @type {(inputs: Recovery_Setup_Tabbacku
 };
 
 const ar_recovery_setup_tabbackup1 = /** @type {(inputs: Recovery_Setup_Tabbackup1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Backup`)
+	return /** @type {LocalizedString} */ (`نسخ احتياطي`)
 };
 
 /**

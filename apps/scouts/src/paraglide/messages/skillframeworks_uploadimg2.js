@@ -18,7 +18,7 @@ const fr_skillframeworks_uploadimg2 = /** @type {(inputs: Skillframeworks_Upload
 };
 
 const ar_skillframeworks_uploadimg2 = /** @type {(inputs: Skillframeworks_Uploadimg2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Upload Image`)
+	return /** @type {LocalizedString} */ (`رفع صورة`)
 };
 
 /**

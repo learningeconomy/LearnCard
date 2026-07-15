@@ -18,7 +18,7 @@ const fr_login_signinfromdevice3 = /** @type {(inputs: Login_Signinfromdevice3In
 };
 
 const ar_login_signinfromdevice3 = /** @type {(inputs: Login_Signinfromdevice3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Sign in from another device`)
+	return /** @type {LocalizedString} */ (`تسجيل الدخول من جهاز آخر`)
 };
 
 /**

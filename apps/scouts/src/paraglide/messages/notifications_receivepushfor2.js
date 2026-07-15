@@ -18,7 +18,7 @@ const fr_notifications_receivepushfor2 = /** @type {(inputs: Notifications_Recei
 };
 
 const ar_notifications_receivepushfor2 = /** @type {(inputs: Notifications_Receivepushfor2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Receive push notifications for:`)
+	return /** @type {LocalizedString} */ (`استلام إشعارات لحظية لـ:`)
 };
 
 /**

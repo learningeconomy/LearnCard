@@ -18,7 +18,7 @@ const fr_scanner_eek = /** @type {(inputs: Scanner_EekInputs) => LocalizedString
 };
 
 const ar_scanner_eek = /** @type {(inputs: Scanner_EekInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Eeek!`)
+	return /** @type {LocalizedString} */ (`أوه!`)
 };
 
 /**

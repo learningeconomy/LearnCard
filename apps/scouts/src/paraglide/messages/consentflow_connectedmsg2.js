@@ -18,7 +18,7 @@ const fr_consentflow_connectedmsg2 = /** @type {(inputs: Consentflow_Connectedms
 };
 
 const ar_consentflow_connectedmsg2 = /** @type {(inputs: Consentflow_Connectedmsg2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`You are now connected with {name}!`)
+	return /** @type {LocalizedString} */ (`أنت متصل الآن مع {name}!`)
 };
 
 /**

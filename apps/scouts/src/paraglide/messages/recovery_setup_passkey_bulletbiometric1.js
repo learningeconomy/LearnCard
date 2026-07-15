@@ -18,7 +18,7 @@ const fr_recovery_setup_passkey_bulletbiometric1 = /** @type {(inputs: Recovery_
 };
 
 const ar_recovery_setup_passkey_bulletbiometric1 = /** @type {(inputs: Recovery_Setup_Passkey_Bulletbiometric1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Uses your device's secure biometric authentication`)
+	return /** @type {LocalizedString} */ (`يستخدم المصادقة البيومترية الآمنة لجهازك`)
 };
 
 /**

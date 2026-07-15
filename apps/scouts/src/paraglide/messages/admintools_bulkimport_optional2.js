@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_optional2 = /** @type {(inputs: Admintools_Bulkim
 };
 
 const ar_admintools_bulkimport_optional2 = /** @type {(inputs: Admintools_Bulkimport_Optional2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Optional`)
+	return /** @type {LocalizedString} */ (`اختياري`)
 };
 
 /**

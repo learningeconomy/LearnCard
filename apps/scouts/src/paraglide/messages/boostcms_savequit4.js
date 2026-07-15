@@ -18,7 +18,7 @@ const fr_boostcms_savequit4 = /** @type {(inputs: Boostcms_Savequit4Inputs) => L
 };
 
 const ar_boostcms_savequit4 = /** @type {(inputs: Boostcms_Savequit4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Save & Quit`)
+	return /** @type {LocalizedString} */ (`حفظ وإنهاء`)
 };
 
 /**

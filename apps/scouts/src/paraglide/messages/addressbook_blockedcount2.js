@@ -18,7 +18,7 @@ const fr_addressbook_blockedcount2 = /** @type {(inputs: Addressbook_Blockedcoun
 };
 
 const ar_addressbook_blockedcount2 = /** @type {(inputs: Addressbook_Blockedcount2Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`${i?.count} Blocked`)
+	return /** @type {LocalizedString} */ (`${i?.count} محظور`)
 };
 
 /**

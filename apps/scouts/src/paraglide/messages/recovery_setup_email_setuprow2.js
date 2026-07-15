@@ -18,7 +18,7 @@ const fr_recovery_setup_email_setuprow2 = /** @type {(inputs: Recovery_Setup_Ema
 };
 
 const ar_recovery_setup_email_setuprow2 = /** @type {(inputs: Recovery_Setup_Email_Setuprow2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Email recovery is set up`)
+	return /** @type {LocalizedString} */ (`تم إعداد استرداد البريد الإلكتروني`)
 };
 
 /**

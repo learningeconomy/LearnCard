@@ -47,11 +47,11 @@ const fr_networkprompts_reject_credaccess2 = /** @type {((inputs: Networkprompts
 const ar_networkprompts_reject_credaccess2 = /** @type {((inputs: Networkprompts_Reject_Credaccess2Inputs) => LocalizedString) & { parts: (inputs: Networkprompts_Reject_Credaccess2Inputs) => import('../runtime.js').MessagePart[] }} */ (
 	/* @__PURE__ */ Object.assign(
 		/** @type {(inputs: Networkprompts_Reject_Credaccess2Inputs) => LocalizedString} */ (() => {
-			return /** @type {LocalizedString} */ (`You can still receive and share credentials with “school connect” and your ScoutPass number.`)
+			return /** @type {LocalizedString} */ (`لا يزال بإمكانك استلام ومشاركة المؤهلات من خلال "اتصال المدرسة" ورقم ScoutPass الخاص بك.`)
 		}),
 		{
 			parts: /** @type {(inputs: Networkprompts_Reject_Credaccess2Inputs) => import('../runtime.js').MessagePart[]} */ (() => {
-				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "You can still receive and share credentials with “school connect” and your " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: "ScoutPass number" }, { type: "markup-end", name: "0", options: {}, attributes: {} }, { type: "text", value: "." }])
+				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "لا يزال بإمكانك استلام ومشاركة المؤهلات من خلال \"اتصال المدرسة\" و" }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: "رقم ScoutPass" }, { type: "markup-end", name: "0", options: {}, attributes: {} }, { type: "text", value: " الخاص بك." }])
 			})
 		}
 	)

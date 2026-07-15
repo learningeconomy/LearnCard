@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_csvdata3 = /** @type {(inputs: Admintools_Bulkimp
 };
 
 const ar_admintools_bulkimport_csvdata3 = /** @type {(inputs: Admintools_Bulkimport_Csvdata3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`CSV Data:`)
+	return /** @type {LocalizedString} */ (`بيانات CSV:`)
 };
 
 /**

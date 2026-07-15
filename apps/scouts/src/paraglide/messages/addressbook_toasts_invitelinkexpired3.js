@@ -18,7 +18,7 @@ const fr_addressbook_toasts_invitelinkexpired3 = /** @type {(inputs: Addressbook
 };
 
 const ar_addressbook_toasts_invitelinkexpired3 = /** @type {(inputs: Addressbook_Toasts_Invitelinkexpired3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Invite link has expired!`)
+	return /** @type {LocalizedString} */ (`انتهت صلاحية رابط الدعوة!`)
 };
 
 /**

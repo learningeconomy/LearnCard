@@ -18,7 +18,7 @@ const fr_addressbook_scancode2 = /** @type {(inputs: Addressbook_Scancode2Inputs
 };
 
 const ar_addressbook_scancode2 = /** @type {(inputs: Addressbook_Scancode2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Scan Code`)
+	return /** @type {LocalizedString} */ (`مسح الرمز`)
 };
 
 /**

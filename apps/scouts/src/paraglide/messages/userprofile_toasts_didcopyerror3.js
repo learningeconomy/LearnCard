@@ -18,7 +18,7 @@ const fr_userprofile_toasts_didcopyerror3 = /** @type {(inputs: Userprofile_Toas
 };
 
 const ar_userprofile_toasts_didcopyerror3 = /** @type {(inputs: Userprofile_Toasts_Didcopyerror3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Unable to copy DID to clipboard`)
+	return /** @type {LocalizedString} */ (`تعذر نسخ DID إلى الحافظة`)
 };
 
 /**

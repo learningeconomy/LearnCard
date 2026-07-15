@@ -18,7 +18,7 @@ const fr_notifications_archivedwithcount2 = /** @type {(inputs: Notifications_Ar
 };
 
 const ar_notifications_archivedwithcount2 = /** @type {(inputs: Notifications_Archivedwithcount2Inputs) => LocalizedString} */ (i) => {
-	return /** @type {LocalizedString} */ (`${i?.count} Archived`)
+	return /** @type {LocalizedString} */ (`${i?.count} مؤرشف`)
 };
 
 /**

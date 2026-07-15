@@ -18,7 +18,7 @@ const fr_login_continuetosignin3 = /** @type {(inputs: Login_Continuetosignin3In
 };
 
 const ar_login_continuetosignin3 = /** @type {(inputs: Login_Continuetosignin3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Continue to Sign In`)
+	return /** @type {LocalizedString} */ (`المتابعة لتسجيل الدخول`)
 };
 
 /**

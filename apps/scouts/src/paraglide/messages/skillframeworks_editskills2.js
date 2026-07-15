@@ -18,7 +18,7 @@ const fr_skillframeworks_editskills2 = /** @type {(inputs: Skillframeworks_Edits
 };
 
 const ar_skillframeworks_editskills2 = /** @type {(inputs: Skillframeworks_Editskills2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Edit Skills`)
+	return /** @type {LocalizedString} */ (`تعديل المهارات`)
 };
 
 /**

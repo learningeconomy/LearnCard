@@ -18,7 +18,7 @@ const fr_admintools_toasts_importfailed2 = /** @type {(inputs: Admintools_Toasts
 };
 
 const ar_admintools_toasts_importfailed2 = /** @type {(inputs: Admintools_Toasts_Importfailed2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Bulk boost import failed! {message}`)
+	return /** @type {LocalizedString} */ (`فشل استيراد التعزيزات بالجملة! {message}`)
 };
 
 /**

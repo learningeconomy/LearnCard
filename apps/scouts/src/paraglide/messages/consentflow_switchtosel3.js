@@ -18,7 +18,7 @@ const fr_consentflow_switchtosel3 = /** @type {(inputs: Consentflow_Switchtosel3
 };
 
 const ar_consentflow_switchtosel3 = /** @type {(inputs: Consentflow_Switchtosel3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Switch to Selective Sharing?`)
+	return /** @type {LocalizedString} */ (`التبديل إلى المشاركة الانتقائية؟`)
 };
 
 /**

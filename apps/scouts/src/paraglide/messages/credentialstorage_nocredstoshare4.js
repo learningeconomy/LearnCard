@@ -18,7 +18,7 @@ const fr_credentialstorage_nocredstoshare4 = /** @type {(inputs: Credentialstora
 };
 
 const ar_credentialstorage_nocredstoshare4 = /** @type {(inputs: Credentialstorage_Nocredstoshare4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`No credentials to share.`)
+	return /** @type {LocalizedString} */ (`لا توجد مؤهلات للمشاركة.`)
 };
 
 /**

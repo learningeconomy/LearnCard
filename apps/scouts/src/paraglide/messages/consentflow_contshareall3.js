@@ -18,7 +18,7 @@ const fr_consentflow_contshareall3 = /** @type {(inputs: Consentflow_Contshareal
 };
 
 const ar_consentflow_contshareall3 = /** @type {(inputs: Consentflow_Contshareall3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Continuously share all {plural}.`)
+	return /** @type {LocalizedString} */ (`المشاركة المستمرة لكل {plural}.`)
 };
 
 /**

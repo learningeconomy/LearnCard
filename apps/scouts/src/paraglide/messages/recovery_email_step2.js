@@ -47,11 +47,11 @@ const fr_recovery_email_step2 = /** @type {((inputs: Recovery_Email_Step2Inputs)
 const ar_recovery_email_step2 = /** @type {((inputs: Recovery_Email_Step2Inputs) => LocalizedString) & { parts: (inputs: Recovery_Email_Step2Inputs) => import('../runtime.js').MessagePart[] }} */ (
 	/* @__PURE__ */ Object.assign(
 		/** @type {(inputs: Recovery_Email_Step2Inputs) => LocalizedString} */ (() => {
-			return /** @type {LocalizedString} */ (`Find the long string of characters between "RECOVERY KEY" and "END RECOVERY KEY"`)
+			return /** @type {LocalizedString} */ (`ابحث عن السلسلة الطويلة من الأحرف بين "مفتاح الاسترداد" و"نهاية مفتاح الاسترداد"`)
 		}),
 		{
 			parts: /** @type {(inputs: Recovery_Email_Step2Inputs) => import('../runtime.js').MessagePart[]} */ (() => {
-				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "Find the long string of characters between " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: "\"RECOVERY KEY\"" }, { type: "markup-end", name: "0", options: {}, attributes: {} }, { type: "text", value: " and " }, { type: "markup-start", name: "1", options: {}, attributes: {} }, { type: "text", value: "\"END RECOVERY KEY\"" }, { type: "markup-end", name: "1", options: {}, attributes: {} }])
+				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "ابحث عن السلسلة الطويلة من الأحرف بين " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: "\"مفتاح الاسترداد\"" }, { type: "markup-end", name: "0", options: {}, attributes: {} }, { type: "text", value: " و" }, { type: "markup-start", name: "1", options: {}, attributes: {} }, { type: "text", value: "\"نهاية مفتاح الاسترداد\"" }, { type: "markup-end", name: "1", options: {}, attributes: {} }])
 			})
 		}
 	)

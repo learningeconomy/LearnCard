@@ -18,7 +18,7 @@ const fr_launchpad_maybelater2 = /** @type {(inputs: Launchpad_Maybelater2Inputs
 };
 
 const ar_launchpad_maybelater2 = /** @type {(inputs: Launchpad_Maybelater2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Maybe Later`)
+	return /** @type {LocalizedString} */ (`ربما لاحقاً`)
 };
 
 /**

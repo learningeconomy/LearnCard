@@ -18,7 +18,7 @@ const fr_troops_showmore1 = /** @type {(inputs: Troops_Showmore1Inputs) => Local
 };
 
 const ar_troops_showmore1 = /** @type {(inputs: Troops_Showmore1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Show more`)
+	return /** @type {LocalizedString} */ (`إظهار المزيد`)
 };
 
 /**

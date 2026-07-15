@@ -47,11 +47,11 @@ const fr_addressbook_wouldyouliketoconnect5 = /** @type {((inputs: Addressbook_W
 const ar_addressbook_wouldyouliketoconnect5 = /** @type {((inputs: Addressbook_Wouldyouliketoconnect5Inputs) => LocalizedString) & { parts: (inputs: Addressbook_Wouldyouliketoconnect5Inputs) => import('../runtime.js').MessagePart[] }} */ (
 	/* @__PURE__ */ Object.assign(
 		/** @type {(inputs: Addressbook_Wouldyouliketoconnect5Inputs) => LocalizedString} */ ((i) => {
-			return /** @type {LocalizedString} */ (`Would you like toconnect with ${i?.name}?`)
+			return /** @type {LocalizedString} */ (`هل ترغب فيالتواصل مع ${i?.name}؟`)
 		}),
 		{
 			parts: /** @type {(inputs: Addressbook_Wouldyouliketoconnect5Inputs) => import('../runtime.js').MessagePart[]} */ ((i) => {
-				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "Would you like to" }, { type: "markup-standalone", name: "1", options: {}, attributes: {} }, { type: "text", value: "connect with " }, { type: "text", value: String(i?.name) }, { type: "text", value: "?" }])
+				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "هل ترغب في" }, { type: "markup-standalone", name: "1", options: {}, attributes: {} }, { type: "text", value: "التواصل مع " }, { type: "text", value: String(i?.name) }, { type: "text", value: "؟" }])
 			})
 		}
 	)

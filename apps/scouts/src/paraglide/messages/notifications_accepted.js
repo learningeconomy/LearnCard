@@ -18,7 +18,7 @@ const fr_notifications_accepted = /** @type {(inputs: Notifications_AcceptedInpu
 };
 
 const ar_notifications_accepted = /** @type {(inputs: Notifications_AcceptedInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Accepted`)
+	return /** @type {LocalizedString} */ (`مقبول`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_boostcms_viewdocument4 = /** @type {(inputs: Boostcms_Viewdocument4Inpu
 };
 
 const ar_boostcms_viewdocument4 = /** @type {(inputs: Boostcms_Viewdocument4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`View Document`)
+	return /** @type {LocalizedString} */ (`عرض المستند`)
 };
 
 /**

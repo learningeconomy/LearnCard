@@ -18,7 +18,7 @@ const fr_credsbundle_selectedcount2 = /** @type {(inputs: Credsbundle_Selectedco
 };
 
 const ar_credsbundle_selectedcount2 = /** @type {(inputs: Credsbundle_Selectedcount2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`You have selected {count} {type}s to share`)
+	return /** @type {LocalizedString} */ (`لقد اخترت {count} {type} للمشاركة`)
 };
 
 /**

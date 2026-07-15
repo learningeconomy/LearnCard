@@ -18,7 +18,7 @@ const fr_troops_invite_sdesc1 = /** @type {(inputs: Troops_Invite_Sdesc1Inputs) 
 };
 
 const ar_troops_invite_sdesc1 = /** @type {(inputs: Troops_Invite_Sdesc1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Add a new scout to this troop`)
+	return /** @type {LocalizedString} */ (`أضف كشافاً جديداً إلى هذه الفرقة`)
 };
 
 /**

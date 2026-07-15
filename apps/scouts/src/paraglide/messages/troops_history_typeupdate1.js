@@ -18,7 +18,7 @@ const fr_troops_history_typeupdate1 = /** @type {(inputs: Troops_History_Typeupd
 };
 
 const ar_troops_history_typeupdate1 = /** @type {(inputs: Troops_History_Typeupdate1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Updated`)
+	return /** @type {LocalizedString} */ (`محدث`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_skills_listtitle1 = /** @type {(inputs: Skills_Listtitle1Inputs) => Loc
 };
 
 const ar_skills_listtitle1 = /** @type {(inputs: Skills_Listtitle1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Boosts`)
+	return /** @type {LocalizedString} */ (`التعزيزات`)
 };
 
 /**

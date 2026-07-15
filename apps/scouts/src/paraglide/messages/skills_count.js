@@ -18,7 +18,7 @@ const fr_skills_count = /** @type {(inputs: Skills_CountInputs) => LocalizedStri
 };
 
 const ar_skills_count = /** @type {(inputs: Skills_CountInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Skills`)
+	return /** @type {LocalizedString} */ (`المهارات`)
 };
 
 /**

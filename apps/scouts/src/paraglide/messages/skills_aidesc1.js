@@ -47,11 +47,11 @@ const fr_skills_aidesc1 = /** @type {((inputs: Skills_Aidesc1Inputs) => Localize
 const ar_skills_aidesc1 = /** @type {((inputs: Skills_Aidesc1Inputs) => LocalizedString) & { parts: (inputs: Skills_Aidesc1Inputs) => import('../runtime.js').MessagePart[] }} */ (
 	/* @__PURE__ */ Object.assign(
 		/** @type {(inputs: Skills_Aidesc1Inputs) => LocalizedString} */ (() => {
-			return /** @type {LocalizedString} */ (`Your top skills, learning snapshots, suggested lessons & careers, and TEDed content.`)
+			return /** @type {LocalizedString} */ (`أهم مهاراتك، لقطات التعلم، الدروس والوظائف المقترحة، و محتوى TEDed.`)
 		}),
 		{
 			parts: /** @type {(inputs: Skills_Aidesc1Inputs) => import('../runtime.js').MessagePart[]} */ (() => {
-				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: "Your" }, { type: "markup-end", name: "0", options: {}, attributes: {} }, { type: "text", value: " top skills, learning snapshots, suggested lessons & careers, " }, { type: "markup-start", name: "1", options: {}, attributes: {} }, { type: "text", value: "and" }, { type: "markup-end", name: "1", options: {}, attributes: {} }, { type: "text", value: " TEDed content." }])
+				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: "أهم" }, { type: "markup-end", name: "0", options: {}, attributes: {} }, { type: "text", value: " مهاراتك، لقطات التعلم، الدروس والوظائف المقترحة، " }, { type: "markup-start", name: "1", options: {}, attributes: {} }, { type: "text", value: "و" }, { type: "markup-end", name: "1", options: {}, attributes: {} }, { type: "text", value: " محتوى TEDed." }])
 			})
 		}
 	)

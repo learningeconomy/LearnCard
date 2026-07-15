@@ -18,7 +18,7 @@ const fr_consentflow_login1 = /** @type {(inputs: Consentflow_Login1Inputs) => L
 };
 
 const ar_consentflow_login1 = /** @type {(inputs: Consentflow_Login1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Login`)
+	return /** @type {LocalizedString} */ (`تسجيل الدخول`)
 };
 
 /**

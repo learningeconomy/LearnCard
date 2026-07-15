@@ -18,7 +18,7 @@ const fr_boostcms_editappearance4 = /** @type {(inputs: Boostcms_Editappearance4
 };
 
 const ar_boostcms_editappearance4 = /** @type {(inputs: Boostcms_Editappearance4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Edit Appearance`)
+	return /** @type {LocalizedString} */ (`تعديل المظهر`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_recovery_backup_fileselected1 = /** @type {(inputs: Recovery_Backup_Fil
 };
 
 const ar_recovery_backup_fileselected1 = /** @type {(inputs: Recovery_Backup_Fileselected1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`File selected`)
+	return /** @type {LocalizedString} */ (`تم اختيار الملف`)
 };
 
 /**

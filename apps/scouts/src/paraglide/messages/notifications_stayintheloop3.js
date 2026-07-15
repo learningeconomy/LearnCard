@@ -18,7 +18,7 @@ const fr_notifications_stayintheloop3 = /** @type {(inputs: Notifications_Stayin
 };
 
 const ar_notifications_stayintheloop3 = /** @type {(inputs: Notifications_Stayintheloop3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Stay in the Loop?`)
+	return /** @type {LocalizedString} */ (`هل تريد البقاء على اطلاع؟`)
 };
 
 /**

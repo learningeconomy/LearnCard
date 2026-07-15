@@ -18,7 +18,7 @@ const fr_recovery_setup_email_desc = /** @type {(inputs: Recovery_Setup_Email_De
 };
 
 const ar_recovery_setup_email_desc = /** @type {(inputs: Recovery_Setup_Email_DescInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Add a personal email (different from your login) as a recovery destination. A recovery key will be sent there.`)
+	return /** @type {LocalizedString} */ (`أضف بريداً إلكترونياً شخصياً (مختلفاً عن بريد تسجيل الدخول) كوجهة للاسترداد. سيتم إرسال مفتاح استرداد إليه.`)
 };
 
 /**

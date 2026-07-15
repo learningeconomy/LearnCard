@@ -47,11 +47,11 @@ const fr_boostcms_issuedtocount5 = /** @type {((inputs: Boostcms_Issuedtocount5I
 const ar_boostcms_issuedtocount5 = /** @type {((inputs: Boostcms_Issuedtocount5Inputs) => LocalizedString) & { parts: (inputs: Boostcms_Issuedtocount5Inputs) => import('../runtime.js').MessagePart[] }} */ (
 	/* @__PURE__ */ Object.assign(
 		/** @type {(inputs: Boostcms_Issuedtocount5Inputs) => LocalizedString} */ ((i) => {
-			return /** @type {LocalizedString} */ (`Issued to ${i?.count} ${i?.person}`)
+			return /** @type {LocalizedString} */ (`صدر لـ ${i?.count} ${i?.person}`)
 		}),
 		{
 			parts: /** @type {(inputs: Boostcms_Issuedtocount5Inputs) => import('../runtime.js').MessagePart[]} */ ((i) => {
-				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "Issued to " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: String(i?.count) }, { type: "text", value: " " }, { type: "text", value: String(i?.person) }, { type: "markup-end", name: "0", options: {}, attributes: {} }])
+				return /** @type {import('../runtime.js').MessagePart[]} */ ([{ type: "text", value: "صدر لـ " }, { type: "markup-start", name: "0", options: {}, attributes: {} }, { type: "text", value: String(i?.count) }, { type: "text", value: " " }, { type: "text", value: String(i?.person) }, { type: "markup-end", name: "0", options: {}, attributes: {} }])
 			})
 		}
 	)

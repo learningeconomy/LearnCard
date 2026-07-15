@@ -18,7 +18,7 @@ const fr_boostcms_boosttitle4 = /** @type {(inputs: Boostcms_Boosttitle4Inputs) 
 };
 
 const ar_boostcms_boosttitle4 = /** @type {(inputs: Boostcms_Boosttitle4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Boost Title`)
+	return /** @type {LocalizedString} */ (`عنوان التعزيز`)
 };
 
 /**

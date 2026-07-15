@@ -18,7 +18,7 @@ const fr_boostcms_titlefield4 = /** @type {(inputs: Boostcms_Titlefield4Inputs) 
 };
 
 const ar_boostcms_titlefield4 = /** @type {(inputs: Boostcms_Titlefield4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Title`)
+	return /** @type {LocalizedString} */ (`العنوان`)
 };
 
 /**

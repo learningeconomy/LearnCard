@@ -18,7 +18,7 @@ const fr_auth_sessionexpiredtitle2 = /** @type {(inputs: Auth_Sessionexpiredtitl
 };
 
 const ar_auth_sessionexpiredtitle2 = /** @type {(inputs: Auth_Sessionexpiredtitle2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Session Expired`)
+	return /** @type {LocalizedString} */ (`انتهت الجلسة`)
 };
 
 /**

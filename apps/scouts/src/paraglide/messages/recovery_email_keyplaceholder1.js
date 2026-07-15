@@ -18,7 +18,7 @@ const fr_recovery_email_keyplaceholder1 = /** @type {(inputs: Recovery_Email_Key
 };
 
 const ar_recovery_email_keyplaceholder1 = /** @type {(inputs: Recovery_Email_Keyplaceholder1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Paste your recovery key here — it looks like a long string of letters and numbers`)
+	return /** @type {LocalizedString} */ (`الصق مفتاح الاسترداد هنا — يبدو كسلسلة طويلة من الأحرف والأرقام`)
 };
 
 /**

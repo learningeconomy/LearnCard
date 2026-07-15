@@ -18,7 +18,7 @@ const fr_recovery_passkey_title = /** @type {(inputs: Recovery_Passkey_TitleInpu
 };
 
 const ar_recovery_passkey_title = /** @type {(inputs: Recovery_Passkey_TitleInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Passkey`)
+	return /** @type {LocalizedString} */ (`مفتاح المرور`)
 };
 
 /**

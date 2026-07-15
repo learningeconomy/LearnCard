@@ -18,7 +18,7 @@ const fr_learncard_recentactivity2 = /** @type {(inputs: Learncard_Recentactivit
 };
 
 const ar_learncard_recentactivity2 = /** @type {(inputs: Learncard_Recentactivity2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Recent Activity`)
+	return /** @type {LocalizedString} */ (`النشاط الأخير`)
 };
 
 /**

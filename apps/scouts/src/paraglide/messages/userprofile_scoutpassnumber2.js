@@ -18,7 +18,7 @@ const fr_userprofile_scoutpassnumber2 = /** @type {(inputs: Userprofile_Scoutpas
 };
 
 const ar_userprofile_scoutpassnumber2 = /** @type {(inputs: Userprofile_Scoutpassnumber2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`ScoutPass Number (DID)`)
+	return /** @type {LocalizedString} */ (`رقم ScoutPass (DID)`)
 };
 
 /**

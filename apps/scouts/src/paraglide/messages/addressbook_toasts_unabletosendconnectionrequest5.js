@@ -18,7 +18,7 @@ const fr_addressbook_toasts_unabletosendconnectionrequest5 = /** @type {(inputs:
 };
 
 const ar_addressbook_toasts_unabletosendconnectionrequest5 = /** @type {(inputs: Addressbook_Toasts_Unabletosendconnectionrequest5Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`An error ocurred, unable to send connection request.`)
+	return /** @type {LocalizedString} */ (`حدث خطأ، تعذر إرسال طلب الاتصال.`)
 };
 
 /**

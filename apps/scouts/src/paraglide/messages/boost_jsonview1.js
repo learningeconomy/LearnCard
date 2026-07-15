@@ -18,7 +18,7 @@ const fr_boost_jsonview1 = /** @type {(inputs: Boost_Jsonview1Inputs) => Localiz
 };
 
 const ar_boost_jsonview1 = /** @type {(inputs: Boost_Jsonview1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`JSON View`)
+	return /** @type {LocalizedString} */ (`عرض JSON`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_skills_compfwother2 = /** @type {(inputs: Skills_Compfwother2Inputs) =>
 };
 
 const ar_skills_compfwother2 = /** @type {(inputs: Skills_Compfwother2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`{count} Competency Frameworks`)
+	return /** @type {LocalizedString} */ (`{count} أطر كفاءات`)
 };
 
 /**

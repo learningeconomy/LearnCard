@@ -18,7 +18,7 @@ const fr_addressbook_confirmcancelconnection3 = /** @type {(inputs: Addressbook_
 };
 
 const ar_addressbook_confirmcancelconnection3 = /** @type {(inputs: Addressbook_Confirmcancelconnection3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Are you sure you want to cancel your connection request?`)
+	return /** @type {LocalizedString} */ (`هل أنت متأكد من إلغاء طلب الاتصال الخاص بك؟`)
 };
 
 /**

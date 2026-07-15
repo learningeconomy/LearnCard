@@ -18,7 +18,7 @@ const fr_skillframeworks_collapse1 = /** @type {(inputs: Skillframeworks_Collaps
 };
 
 const ar_skillframeworks_collapse1 = /** @type {(inputs: Skillframeworks_Collapse1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Collapse`)
+	return /** @type {LocalizedString} */ (`طي`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_boost_boostmyself1 = /** @type {(inputs: Boost_Boostmyself1Inputs) => L
 };
 
 const ar_boost_boostmyself1 = /** @type {(inputs: Boost_Boostmyself1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Boost Myself`)
+	return /** @type {LocalizedString} */ (`تعزيز نفسي`)
 };
 
 /**

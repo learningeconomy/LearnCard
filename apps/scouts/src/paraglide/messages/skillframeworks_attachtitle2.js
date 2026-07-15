@@ -18,7 +18,7 @@ const fr_skillframeworks_attachtitle2 = /** @type {(inputs: Skillframeworks_Atta
 };
 
 const ar_skillframeworks_attachtitle2 = /** @type {(inputs: Skillframeworks_Attachtitle2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Attach "{name}" to Network`)
+	return /** @type {LocalizedString} */ (`إرفاق "{name}" بالشبكة`)
 };
 
 /**

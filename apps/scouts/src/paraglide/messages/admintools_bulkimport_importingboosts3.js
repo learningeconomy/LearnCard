@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_importingboosts3 = /** @type {(inputs: Admintools
 };
 
 const ar_admintools_bulkimport_importingboosts3 = /** @type {(inputs: Admintools_Bulkimport_Importingboosts3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Importing boosts ({created}/{total})...`)
+	return /** @type {LocalizedString} */ (`جاري استيراد التعزيزات ({created}/{total})...`)
 };
 
 /**

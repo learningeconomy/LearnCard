@@ -18,7 +18,7 @@ const fr_boostcms_issuedok4 = /** @type {(inputs: Boostcms_Issuedok4Inputs) => L
 };
 
 const ar_boostcms_issuedok4 = /** @type {(inputs: Boostcms_Issuedok4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Boost issued successfully`)
+	return /** @type {LocalizedString} */ (`تم إصدار التعزيز بنجاح`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_networkprompts_settings_photodesc2 = /** @type {(inputs: Networkprompts
 };
 
 const ar_networkprompts_settings_photodesc2 = /** @type {(inputs: Networkprompts_Settings_Photodesc2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Your profile photo will appear in your connection’s contact list, but it is never be displayed publicly or shared otherwise without your express permission.`)
+	return /** @type {LocalizedString} */ (`ستظهر صورتك الشخصية في قائمة جهات اتصال من تتواصل معهم، لكنها لا تعرض علناً أو تشارك بطريقة أخرى دون موافقتك.`)
 };
 
 /**

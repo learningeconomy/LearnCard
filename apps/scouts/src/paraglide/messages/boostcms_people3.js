@@ -18,7 +18,7 @@ const fr_boostcms_people3 = /** @type {(inputs: Boostcms_People3Inputs) => Local
 };
 
 const ar_boostcms_people3 = /** @type {(inputs: Boostcms_People3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`people`)
+	return /** @type {LocalizedString} */ (`أشخاص`)
 };
 
 /**

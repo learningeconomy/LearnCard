@@ -18,7 +18,7 @@ const fr_skillframeworks_editthumb2 = /** @type {(inputs: Skillframeworks_Editth
 };
 
 const ar_skillframeworks_editthumb2 = /** @type {(inputs: Skillframeworks_Editthumb2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Edit thumbnail`)
+	return /** @type {LocalizedString} */ (`تعديل الصورة المصغرة`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_recovery_setup_phrase_copied = /** @type {(inputs: Recovery_Setup_Phras
 };
 
 const ar_recovery_setup_phrase_copied = /** @type {(inputs: Recovery_Setup_Phrase_CopiedInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Copied!`)
+	return /** @type {LocalizedString} */ (`تم النسخ!`)
 };
 
 /**

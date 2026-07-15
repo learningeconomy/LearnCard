@@ -18,7 +18,7 @@ const fr_skillframeworks_managejson2 = /** @type {(inputs: Skillframeworks_Manag
 };
 
 const ar_skillframeworks_managejson2 = /** @type {(inputs: Skillframeworks_Managejson2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Manage JSON`)
+	return /** @type {LocalizedString} */ (`إدارة JSON`)
 };
 
 /**

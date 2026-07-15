@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_selectnationalnetwork4 = /** @type {(inputs: Admi
 };
 
 const ar_admintools_bulkimport_selectnationalnetwork4 = /** @type {(inputs: Admintools_Bulkimport_Selectnationalnetwork4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`5. Select the National Network that these Merit Badges and Social Boosts are for`)
+	return /** @type {LocalizedString} */ (`5. اختر الشبكة الوطنية التي تخصها هذه الشارات والتعزيزات الاجتماعية`)
 };
 
 /**

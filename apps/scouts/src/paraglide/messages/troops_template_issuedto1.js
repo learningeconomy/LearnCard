@@ -18,7 +18,7 @@ const fr_troops_template_issuedto1 = /** @type {(inputs: Troops_Template_Issuedt
 };
 
 const ar_troops_template_issuedto1 = /** @type {(inputs: Troops_Template_Issuedto1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Issued to {name}`)
+	return /** @type {LocalizedString} */ (`صدر لـ {name}`)
 };
 
 /**

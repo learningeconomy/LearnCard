@@ -18,7 +18,7 @@ const fr_boostcms_continueissue4 = /** @type {(inputs: Boostcms_Continueissue4In
 };
 
 const ar_boostcms_continueissue4 = /** @type {(inputs: Boostcms_Continueissue4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Continue Issuing`)
+	return /** @type {LocalizedString} */ (`متابعة الإصدار`)
 };
 
 /**

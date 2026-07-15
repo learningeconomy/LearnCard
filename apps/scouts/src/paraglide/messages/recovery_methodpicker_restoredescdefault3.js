@@ -18,7 +18,7 @@ const fr_recovery_methodpicker_restoredescdefault3 = /** @type {(inputs: Recover
 };
 
 const ar_recovery_methodpicker_restoredescdefault3 = /** @type {(inputs: Recovery_Methodpicker_Restoredescdefault3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Choose how you'd like to restore access.`)
+	return /** @type {LocalizedString} */ (`اختر كيف ترغب في استعادة الوصول.`)
 };
 
 /**

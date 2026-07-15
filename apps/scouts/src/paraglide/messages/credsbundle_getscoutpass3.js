@@ -18,7 +18,7 @@ const fr_credsbundle_getscoutpass3 = /** @type {(inputs: Credsbundle_Getscoutpas
 };
 
 const ar_credsbundle_getscoutpass3 = /** @type {(inputs: Credsbundle_Getscoutpass3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Get ScoutPass`)
+	return /** @type {LocalizedString} */ (`الحصول على ScoutPass`)
 };
 
 /**

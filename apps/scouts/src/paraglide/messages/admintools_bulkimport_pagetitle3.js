@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_pagetitle3 = /** @type {(inputs: Admintools_Bulki
 };
 
 const ar_admintools_bulkimport_pagetitle3 = /** @type {(inputs: Admintools_Bulkimport_Pagetitle3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Bulk Boost Import`)
+	return /** @type {LocalizedString} */ (`استيراد التعزيزات بالجملة`)
 };
 
 /**

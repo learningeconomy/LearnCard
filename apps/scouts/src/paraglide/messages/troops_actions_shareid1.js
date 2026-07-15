@@ -18,7 +18,7 @@ const fr_troops_actions_shareid1 = /** @type {(inputs: Troops_Actions_Shareid1In
 };
 
 const ar_troops_actions_shareid1 = /** @type {(inputs: Troops_Actions_Shareid1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Share ID`)
+	return /** @type {LocalizedString} */ (`مشاركة المعرف`)
 };
 
 /**

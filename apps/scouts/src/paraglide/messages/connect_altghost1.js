@@ -18,7 +18,7 @@ const fr_connect_altghost1 = /** @type {(inputs: Connect_Altghost1Inputs) => Loc
 };
 
 const ar_connect_altghost1 = /** @type {(inputs: Connect_Altghost1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`ghost`)
+	return /** @type {LocalizedString} */ (`شبح`)
 };
 
 /**

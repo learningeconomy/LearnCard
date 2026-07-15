@@ -18,7 +18,7 @@ const fr_admintools_importcredentialsaction3 = /** @type {(inputs: Admintools_Im
 };
 
 const ar_admintools_importcredentialsaction3 = /** @type {(inputs: Admintools_Importcredentialsaction3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Add Credentials`)
+	return /** @type {LocalizedString} */ (`إضافة مؤهلات`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_troops_media_title = /** @type {(inputs: Troops_Media_TitleInputs) => L
 };
 
 const ar_troops_media_title = /** @type {(inputs: Troops_Media_TitleInputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Media Attachments`)
+	return /** @type {LocalizedString} */ (`مرفقات الوسائط`)
 };
 
 /**

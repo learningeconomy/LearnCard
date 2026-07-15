@@ -18,7 +18,7 @@ const fr_skillframeworks_grid1 = /** @type {(inputs: Skillframeworks_Grid1Inputs
 };
 
 const ar_skillframeworks_grid1 = /** @type {(inputs: Skillframeworks_Grid1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Grid`)
+	return /** @type {LocalizedString} */ (`شبكي`)
 };
 
 /**

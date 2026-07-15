@@ -18,7 +18,7 @@ const fr_login_devicelinkedfinish2 = /** @type {(inputs: Login_Devicelinkedfinis
 };
 
 const ar_login_devicelinkedfinish2 = /** @type {(inputs: Login_Devicelinkedfinish2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Device linked — sign in to finish`)
+	return /** @type {LocalizedString} */ (`تم ربط الجهاز — سجل الدخول للإكمال`)
 };
 
 /**

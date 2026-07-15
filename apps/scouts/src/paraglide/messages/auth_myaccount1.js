@@ -18,7 +18,7 @@ const fr_auth_myaccount1 = /** @type {(inputs: Auth_Myaccount1Inputs) => Localiz
 };
 
 const ar_auth_myaccount1 = /** @type {(inputs: Auth_Myaccount1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`My Account`)
+	return /** @type {LocalizedString} */ (`حسابي`)
 };
 
 /**

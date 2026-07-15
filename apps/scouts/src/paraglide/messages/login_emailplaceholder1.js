@@ -18,7 +18,7 @@ const fr_login_emailplaceholder1 = /** @type {(inputs: Login_Emailplaceholder1In
 };
 
 const ar_login_emailplaceholder1 = /** @type {(inputs: Login_Emailplaceholder1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Email address`)
+	return /** @type {LocalizedString} */ (`البريد الإلكتروني`)
 };
 
 /**

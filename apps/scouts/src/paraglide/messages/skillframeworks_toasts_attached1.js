@@ -18,7 +18,7 @@ const fr_skillframeworks_toasts_attached1 = /** @type {(inputs: Skillframeworks_
 };
 
 const ar_skillframeworks_toasts_attached1 = /** @type {(inputs: Skillframeworks_Toasts_Attached1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Framework attached to network!`)
+	return /** @type {LocalizedString} */ (`تم إرفاق الإطار بالشبكة!`)
 };
 
 /**

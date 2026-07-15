@@ -18,7 +18,7 @@ const fr_claimboost_erroralert2 = /** @type {(inputs: Claimboost_Erroralert2Inpu
 };
 
 const ar_claimboost_erroralert2 = /** @type {(inputs: Claimboost_Erroralert2Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Something went wrong while claiming this credential. Please try again.`)
+	return /** @type {LocalizedString} */ (`حدث خطأ ما أثناء استلام هذا المؤهل. يرجى المحاولة مرة أخرى.`)
 };
 
 /**

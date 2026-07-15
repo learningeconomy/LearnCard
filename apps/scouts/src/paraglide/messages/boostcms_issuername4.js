@@ -18,7 +18,7 @@ const fr_boostcms_issuername4 = /** @type {(inputs: Boostcms_Issuername4Inputs) 
 };
 
 const ar_boostcms_issuername4 = /** @type {(inputs: Boostcms_Issuername4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Issuer Name`)
+	return /** @type {LocalizedString} */ (`اسم المُصدر`)
 };
 
 /**

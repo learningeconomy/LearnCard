@@ -18,7 +18,7 @@ const fr_userprofile_confirmbytyping3 = /** @type {(inputs: Userprofile_Confirmb
 };
 
 const ar_userprofile_confirmbytyping3 = /** @type {(inputs: Userprofile_Confirmbytyping3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Confirm by typing`)
+	return /** @type {LocalizedString} */ (`تأكيد بالكتابة`)
 };
 
 /**

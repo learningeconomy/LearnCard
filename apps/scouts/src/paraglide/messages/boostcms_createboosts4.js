@@ -18,7 +18,7 @@ const fr_boostcms_createboosts4 = /** @type {(inputs: Boostcms_Createboosts4Inpu
 };
 
 const ar_boostcms_createboosts4 = /** @type {(inputs: Boostcms_Createboosts4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Create Custom Boosts`)
+	return /** @type {LocalizedString} */ (`إنشاء تعزيزات مخصصة`)
 };
 
 /**

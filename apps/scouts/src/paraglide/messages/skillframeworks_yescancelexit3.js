@@ -18,7 +18,7 @@ const fr_skillframeworks_yescancelexit3 = /** @type {(inputs: Skillframeworks_Ye
 };
 
 const ar_skillframeworks_yescancelexit3 = /** @type {(inputs: Skillframeworks_Yescancelexit3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Yes, Cancel & Exit`)
+	return /** @type {LocalizedString} */ (`نعم، إلغاء وخروج`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_recovery_setup_errors_downloadfailed1 = /** @type {(inputs: Recovery_Se
 };
 
 const ar_recovery_setup_errors_downloadfailed1 = /** @type {(inputs: Recovery_Setup_Errors_Downloadfailed1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Could not save the file. Please try again.`)
+	return /** @type {LocalizedString} */ (`تعذر حفظ الملف. يرجى المحاولة مرة أخرى.`)
 };
 
 /**

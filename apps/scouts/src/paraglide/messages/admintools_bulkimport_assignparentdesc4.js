@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_assignparentdesc4 = /** @type {(inputs: Admintool
 };
 
 const ar_admintools_bulkimport_assignparentdesc4 = /** @type {(inputs: Admintools_Bulkimport_Assignparentdesc4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Select the credential that these credentials will be created under.`)
+	return /** @type {LocalizedString} */ (`اختر المؤهل الذي سيتم إنشاء هذه المؤهلات تحته.`)
 };
 
 /**

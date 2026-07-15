@@ -18,7 +18,7 @@ const fr_boost_someonesubtext1 = /** @type {(inputs: Boost_Someonesubtext1Inputs
 };
 
 const ar_boost_someonesubtext1 = /** @type {(inputs: Boost_Someonesubtext1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Issue credentials to people you know, teach and admire. Every boost of encouragement counts.`)
+	return /** @type {LocalizedString} */ (`أصدر مؤهلات للأشخاص الذين تعرفهم وتعلمهم وتقدرهم. كل تعزيز يشجع يُحتسب.`)
 };
 
 /**

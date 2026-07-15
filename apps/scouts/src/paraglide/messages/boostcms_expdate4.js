@@ -18,7 +18,7 @@ const fr_boostcms_expdate4 = /** @type {(inputs: Boostcms_Expdate4Inputs) => Loc
 };
 
 const ar_boostcms_expdate4 = /** @type {(inputs: Boostcms_Expdate4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Expiration Date`)
+	return /** @type {LocalizedString} */ (`تاريخ انتهاء الصلاحية`)
 };
 
 /**

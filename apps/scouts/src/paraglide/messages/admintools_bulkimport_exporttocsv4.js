@@ -18,7 +18,7 @@ const fr_admintools_bulkimport_exporttocsv4 = /** @type {(inputs: Admintools_Bul
 };
 
 const ar_admintools_bulkimport_exporttocsv4 = /** @type {(inputs: Admintools_Bulkimport_Exporttocsv4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`2. Export to CSV: File → Download → Comma Separated Values (.csv)`)
+	return /** @type {LocalizedString} */ (`2. تصدير إلى CSV: ملف → تنزيل → قيم مفصولة بفواصل (.csv)`)
 };
 
 /**

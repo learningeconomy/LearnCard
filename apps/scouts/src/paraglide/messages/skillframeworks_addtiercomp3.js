@@ -18,7 +18,7 @@ const fr_skillframeworks_addtiercomp3 = /** @type {(inputs: Skillframeworks_Addt
 };
 
 const ar_skillframeworks_addtiercomp3 = /** @type {(inputs: Skillframeworks_Addtiercomp3Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Add tier or competency`)
+	return /** @type {LocalizedString} */ (`إضافة مستوى أو كفاءة`)
 };
 
 /**

@@ -18,7 +18,7 @@ const fr_boostcms_stylepack4 = /** @type {(inputs: Boostcms_Stylepack4Inputs) =>
 };
 
 const ar_boostcms_stylepack4 = /** @type {(inputs: Boostcms_Stylepack4Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Style Pack`)
+	return /** @type {LocalizedString} */ (`حزمة الأنماط`)
 };
 
 /**

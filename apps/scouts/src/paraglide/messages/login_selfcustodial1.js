@@ -18,7 +18,7 @@ const fr_login_selfcustodial1 = /** @type {(inputs: Login_Selfcustodial1Inputs) 
 };
 
 const ar_login_selfcustodial1 = /** @type {(inputs: Login_Selfcustodial1Inputs) => LocalizedString} */ () => {
-	return /** @type {LocalizedString} */ (`Self-custodial login.`)
+	return /** @type {LocalizedString} */ (`تسجيل دخول ذاتي الحفظ.`)
 };
 
 /**
