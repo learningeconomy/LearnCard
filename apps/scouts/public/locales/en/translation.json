@@ -858,8 +858,130 @@
         "troop": "Troop",
         "toasts": {
             "errorIssuingBoost": "Error issuing boost",
-            "errorEditingBoost": "Error editing boost"
+            "errorEditingBoost": "Error editing boost",
+            "boostFail": "Failed to process boost",
+            "linkGenFail": "Failed to generate claim link",
+            "linkCopied": "Troop link copied to clipboard",
+            "linkCopy": "Unable to copy Troop link",
+            "shareCopied": "Link copied to clipboard!",
+            "shareFail": "Failed to copy link to clipboard"
         },
-        "selectNetworkType": "Select Network Type"
+        "selectNetworkType": "Select Network Type",
+        "invite": {
+            "title": "Who would you like to invite?",
+            "lLeader": "Invite Troop Leader",
+            "lDesc": "Add a scout leader to this troop",
+            "lScout": "Invite Scout",
+            "sDesc": "Add a new scout to this troop"
+        },
+        "connect": {
+            "failed": "Failed to generate link",
+            "showQr": "Show QR Code",
+            "share": "Share Link",
+            "browse": "Browse Contacts"
+        },
+        "analytics": {
+            "close": "Close Analytics",
+            "desktop": "Analytics is only supported on desktop devices. Please view this from a desktop browser.",
+            "title": "Analytics Dashboard",
+            "failedMsg": "Failed to load analytics"
+        },
+        "id": {
+            "issued": "Issued {date}"
+        },
+        "history": {
+            "title": "History",
+            "entry": "{type} on {date}",
+            "viewId": "View ID",
+            "empty": "No history available",
+            "typeIssued": "Issued",
+            "typeUpdate": "Updated",
+            "typeRevoke": "Revoked",
+            "typeExpire": "Expired"
+        },
+        "issueLog": {
+            "title": "Issue Log",
+            "issued": "Issued to {name}",
+            "claimed": "Claimed {date}",
+            "empty": "No issue history"
+        },
+        "media": {
+            "title": "Media Attachments",
+            "pages": "{count} page",
+            "noTitle": "No title"
+        },
+        "perms": {
+            "title": "Permissions"
+        },
+        "details": {
+            "title": "Details",
+            "about": "About",
+            "createdBy": "Created by {name}",
+            "issuedBy": "Issued by:",
+            "onDate": "on {date}"
+        },
+        "showMore": "Show more",
+        "showLess": "Show less",
+        "verify": {
+            "title": "Credential Verifications",
+            "infoText": "Credential verifications check the cryptographic proof of digital credentials to ensure their authenticity and accuracy."
+        },
+        "list": {
+            "zeroPeople": "0 People"
+        },
+        "members": {
+            "allTab": "All",
+            "scoutTab": "{count} Scout",
+            "leaderTab": "{count} Leader",
+            "inviteBtn": "Invite",
+            "searchLabel": "Search members",
+            "searchPlh": "Search...",
+            "inviteLabel": "Invite new member",
+            "heading": "{count} Member",
+            "scoutLabel": "Scout",
+            "leaderLabel": "Leader"
+        },
+        "viewId": {
+            "shareBtn": "Share",
+            "closeBtn": "Close",
+            "detailsBtn": "Details",
+            "backBtn": "Back",
+            "editBtn": "Edit"
+        },
+        "template": {
+            "issuedTo": "Issued to {name}",
+            "by": "by {issuer}",
+            "joinAuto": "Joining this troop will automatically add all its members to your contacts.",
+            "joinBtn": "Join",
+            "joining": "Joining",
+            "joined": "Joined",
+            "joinTroop": "Join Troop",
+            "joiningTroop": "Joining"
+        },
+        "actions": {
+            "viewTroopId": "View Troop ID",
+            "shareId": "Share ID",
+            "viewJson": "View ID JSON",
+            "leave": "Leave {name}",
+            "removeFrom": "Remove from {name}",
+            "viewProfile": "View Profile"
+        },
+        "options": {
+            "removeConfirm": "Are you sure you want to remove {owner} from {credential}?",
+            "leaveConfirm": "Are you sure you want to leave {credential}?",
+            "deleteConfirm": "Are you sure you want to delete {credential}?",
+            "removedMsg": "{owner} has been removed from {credential}",
+            "removeFailed": "Failed to remove {owner}. Please try again."
+        },
+        "membersList": {
+            "issuedSub": "Issued to {count} {person}",
+            "startPlaceholder": "Search network titles...",
+            "troopPlaceholder": "Search Troop Titles...",
+            "searchPlaceholder": "Search..."
+        },
+        "footer": {
+            "backBtn": "Back",
+            "editBtn": "Edit"
+        }
     }
 }

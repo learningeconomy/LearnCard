@@ -15,6 +15,7 @@ import {
 import { getScoutsNounForCred, useGetNetworkFromTroop } from '../../helpers/troop.helpers';
 import { VC } from '@learncard/types';
 import { getCredentialSubject as getSubject } from 'learn-card-base/helpers/credentialHelpers';
+import * as m from '../paraglide/messages.js';
 
 type ShareTroopIdModalProps = {
     credential: VC;
@@ -64,12 +65,12 @@ const ShareTroopIdModal: React.FC<ShareTroopIdModalProps> = ({
             await Clipboard.write({
                 string: shareLink,
             });
-            presentToast('Link copied to clipboard!', {
+            presentToast(m['troops.toasts.shareCopied'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Failed to copy link to clipboard', {
+            presentToast(m['troops.toasts.shareFail'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -129,7 +130,7 @@ const ShareTroopIdModal: React.FC<ShareTroopIdModalProps> = ({
                     className="bg-sp-purple-base w-full rounded-[20px] py-2 font-notoSans text-lg disabled:opacity-80 text-white"
                     disabled={!shareLink}
                 >
-                    Share Link
+                    {m['scanner.shareLink']()}
                 </button>
             </div>
         </div>

@@ -18,6 +18,7 @@ import NewBoostSelectMenu from '../../components/boost/boost-select-menu/NewBoos
 import { BlueBoostOutline2 } from 'learn-card-base/svgs/BoostOutline2';
 import { PurpleMeritBadgesIcon } from 'learn-card-base/svgs/MeritBadgesIcon';
 import { IonRow, IonCol, IonInput, IonContent } from '@ionic/react';
+import * as m from '../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('troop-credentials-modal');
 
@@ -158,7 +159,7 @@ const TroopCredentialsModal: React.FC<TroopCredentialsModalProps> = ({
                         <IonCol className="flex w-full items-center justify-start ion-no-padding gap-[10px]">
                             <IonInput
                                 autocapitalize="on"
-                                placeholder="Search..."
+                                placeholder={m['troops.membersList.searchPlaceholder']()}
                                 value={search}
                                 className="bg-white text-grayscale-800 !px-4 !py-1 rounded-[15px] text-[17px] font-notoSans"
                                 onIonInput={e => setSearch(e?.detail?.value)}

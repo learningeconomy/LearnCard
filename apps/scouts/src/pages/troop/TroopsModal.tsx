@@ -21,6 +21,7 @@ import { IonRow, IonCol, IonInput, IonSpinner } from '@ionic/react';
 
 import { pluralize, ModalTypes } from 'learn-card-base';
 import { TroopsCMSViewModeEnum } from '../../components/troopsCMS/troopCMSState';
+import * as m from '../paraglide/messages.js';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { TroopParentLevel, troopParentLevelToChildDepth } from './troopConstants';
 
@@ -111,7 +112,7 @@ const TroopsModal: React.FC<TroopsModalProps> = ({
                             <IonCol className="flex w-full items-center justify-start ion-no-padding gap-[10px]">
                                 <IonInput
                                     autocapitalize="on"
-                                    placeholder="Search Troop Titles..."
+                                    placeholder={m['troops.membersList.troopPlaceholder']()}
                                     value={search}
                                     className="bg-white text-grayscale-800 !px-4 !py-1 rounded-[15px] text-[17px] font-notoSans"
                                     onIonInput={e => setSearch(e?.detail?.value)}

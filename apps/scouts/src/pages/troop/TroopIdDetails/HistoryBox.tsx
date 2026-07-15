@@ -1,5 +1,6 @@
 import React from 'react';
 import moment from 'moment';
+import * as m from '../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('history-box');
 
@@ -20,6 +21,16 @@ type HistoryBoxProps = {
     history: HistoryItem[];
 };
 
+const getLocalizedHistoryType = (type: HistoryTypeEnum): string => {
+    const map: Record<HistoryTypeEnum, string> = {
+        [HistoryTypeEnum.issued]: m['troops.history.typeIssued'](),
+        [HistoryTypeEnum.updated]: m['troops.history.typeUpdate'](),
+        [HistoryTypeEnum.revoked]: m['troops.history.typeRevoke'](),
+        [HistoryTypeEnum.expired]: m['troops.history.typeExpire'](),
+    };
+    return map[type];
+};
+
 const HistoryBox: React.FC<HistoryBoxProps> = ({ history }) => {
     const formatDate = (dateIso: string) => {
         // might need something like this to properly recognize timezone
@@ -31,7 +42,7 @@ const HistoryBox: React.FC<HistoryBoxProps> = ({ history }) => {
 
     return (
         <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom p-[15px] w-full relative">
-            <h3 className="text-[17px] text-grayscale-900 font-notoSans">History</h3>
+            <h3 className="text-[17px] text-grayscale-900 font-notoSans">{m['troops.history.title']()}</h3>
             {historyExists && (
                 <div className="flex flex-col w-full">
                     {history?.map((historyItem, index) => {
@@ -42,15 +53,14 @@ const HistoryBox: React.FC<HistoryBoxProps> = ({ history }) => {
                                 key={index}
                             >
                                 <span className="text-grayscale-700 font-notoSans text-[14px]">
-                                    <strong className="font-notoSans font-[600]">{type}</strong> on{' '}
-                                    {formatDate(dateIsoString)}
+                                    {m['troops.history.entry']({ type: getLocalizedHistoryType(type), date: formatDate(dateIsoString) })}
                                 </span>
                                 {idUri && (
                                     <button
                                         onClick={() => log.debug('TODO View ID')}
                                         className="text-sp-blue-ocean font-notoSans text-[14px] font-[600]"
                                     >
-                                        View ID
+                                        {m['troops.history.viewId']()}
                                     </button>
                                 )}
                             </div>
@@ -61,7 +71,7 @@ const HistoryBox: React.FC<HistoryBoxProps> = ({ history }) => {
             {!historyExists && (
                 <div className="flex flex-col py-[10px] items-start">
                     <span className="text-grayscale-700 font-notoSans text-[14px]">
-                        No history available
+                        {m['troops.history.empty']()}
                     </span>
                 </div>
             )}

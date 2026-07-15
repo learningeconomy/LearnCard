@@ -33,6 +33,7 @@ import {
 
 import { VC } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
+import * as m from '../paraglide/messages.js';
 const log = getLogger('scout-connect-modal');
 
 // Types
@@ -118,7 +119,7 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
             closeAllModals();
         } catch (error) {
             log.error('Error handling boost:', error);
-            presentToast('Failed to process boost', {
+            presentToast(m['troops.toasts.boostFail'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -178,7 +179,7 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
             }
         } catch (error) {
             log.error('Error generating claim link:', error);
-            presentToast('Failed to generate claim link', {
+            presentToast(m['troops.toasts.linkGenFail'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -190,12 +191,12 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
     const copyTroopLinkToClipBoard = async () => {
         try {
             await Clipboard.write({ string: claimLink });
-            presentToast('Troop link copied to clipboard', {
+            presentToast(m['troops.toasts.linkCopied'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (error) {
-            presentToast('Unable to copy Troop link', {
+            presentToast(m['troops.toasts.linkCopy'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -227,9 +228,7 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                         credential={boost}
                         name={type}
                         thumbSrc={boost?.boostID?.idThumbnail}
-                        subTextOverride={`Issued to ${recipientCount} ${
-                            recipientCount === 1 ? 'person' : 'people'
-                        }`}
+                        subTextOverride={m['troops.membersList.issuedSub']({ count: recipientCount ?? 0, person: m[recipientCount === 1 ? 'boost.person_one' : 'boost.person_other']() })}
                         issuedDateOverride={
                             <div className="flex">
                                 {recipients?.slice(0, 5)?.map((r, index) => (
@@ -257,11 +256,11 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                         <div className="flex flex-row items-center gap-[15px] h-[19px] flex-1 min-w-0 order-0">
                             {linkLoading ? (
                                 <p className="w-full min-w-0 h-[19px] font-['Noto_Sans'] font-normal text-[14px] leading-[19px] flex items-center text-[#6F7590] flex-none order-0 self-stretch truncate">
-                                    Generating Link...
+                                    {m['share.genLink']()}
                                 </p>
                             ) : (
                                 <p className="w-full min-w-0 h-[19px] font-['Noto_Sans'] font-normal text-[14px] leading-[19px] flex items-center text-[#6F7590] flex-none order-0 self-stretch truncate">
-                                    {!claimLink ? 'Failed to generate link' : claimLink}
+                                    {!claimLink ? m['troops.connect.failed']() : claimLink}
                                 </p>
                             )}
                         </div>
@@ -295,7 +294,7 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                         }}
                         disabled={!claimLink}
                     >
-                        <p className="text-[17px] font-notoSans font-normal">Show QR Code</p>
+                        <p className="text-[17px] font-notoSans font-normal">{m['troops.connect.showQr']()}</p>
                         <QRCodeIcon height="30px" width="30px" />
                     </button>
                 </IonItem>
@@ -307,7 +306,7 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                         onClick={handleShare}
                         disabled={!claimLink}
                     >
-                        <p className="text-[17px] font-notoSans font-normal">Share Link</p>
+                        <p className="text-[17px] font-notoSans font-normal">{m['troops.connect.share']()}</p>
                         <ShareArrow />
                     </button>
                 </IonItem>
@@ -338,7 +337,7 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                         }}
                         className="flex justify-between items-center w-full"
                     >
-                        <p className="text-[17px] font-notoSans font-normal">Browse Contacts</p>
+                        <p className="text-[17px] font-notoSans font-normal">{m['troops.connect.browse']()}</p>
                         <AddUserIcon />
                     </button>
                 </IonItem>
