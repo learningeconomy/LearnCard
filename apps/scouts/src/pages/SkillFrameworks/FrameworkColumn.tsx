@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ModalTypes, useDeviceTypeByWidth, useGetSkillChildren, useModal } from 'learn-card-base';
 
+import * as m from '../../paraglide/messages.js';
 import X from '../../components/svgs/X';
 import Plus from '../../components/svgs/Plus';
 import Pencil from '../../components/svgs/Pencil';
@@ -292,7 +293,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                         className="w-[40px] h-[40px] shrink-0 text-grayscale-800"
                     />
                     <span className="text-[22px] font-poppins font-[600] leading-[24px] text-grayscale-900">
-                        Add Competencies
+                        {m['skillFrameworks.addComps']()}
                     </span>
                     <span className="ml-auto text-[22px] font-poppins font-[600] leading-[24px] text-grayscale-700">
                         {selectedSkills?.length || 0}
@@ -326,7 +327,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                             {isTopLevel ? frameworkInfo?.name : columnNode?.targetName}
                         </h5>
                         <span className="text-grayscale-800 font-poppins font-[700] text-[12px] flex items-center gap-[2px]">
-                            {isTopLevel && 'Framework • '}
+                            {isTopLevel && m['skillFrameworks.fwTierBullet']()}
                             <FrameworkSkillsCount
                                 frameworkId={frameworkInfo?.id}
                                 skillId={columnNode?.id}
@@ -397,7 +398,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
 
                                 return (
                                     <div key={index} className="flex items-center">
-                                        {index > 0 && <span className="mx-[3px]">›</span>}
+                                        {index > 0 && <span className="mx-[3px]">{'>'}</span>}
                                         {isCurrent ? (
                                             <span
                                                 className="font-poppins text-[14px] font-[600]"
@@ -520,7 +521,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                                 >
                                     <Plus className="w-[25px] h-[25px] text-grayscale-900" />
                                     <span className="text-[17px] text-grayscale-900 font-poppins">
-                                        Add tier or competency
+                                        {m['skillFrameworks.addTierComp']()}
                                     </span>
                                 </button>
                             )}
@@ -535,7 +536,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                         >
                             <Plus className="w-[25px] h-[25px] text-grayscale-900" />
                             <span className="text-[17px] text-grayscale-700 font-poppins font-[600]">
-                                Add tier or competency
+                                {m['skillFrameworks.addTierComp']()}
                             </span>
                         </button>
                     </div>
@@ -563,7 +564,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                                         onClick={handleDisableEdit}
                                         className="bg-white flex items-center justify-center gap-[5px] rounded-[30px] px-[20px] py-[7px] border-[1px] border-grayscale-200 border-solid shadow-bottom-3-4 font-poppins text-[17px] line-clamp-1 flex-1"
                                     >
-                                        Cancel
+                                        {m['common.cancel']()}
                                     </button>
                                 )}
                                 <button
@@ -571,7 +572,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                                     className="px-[15px] py-[7px] bg-emerald-700 text-white rounded-[30px] text-[17px] font-[600] font-poppins leading-[24px] tracking-[0.25px] shadow-button-bottom h-[44px] flex-1 disabled:bg-grayscale-200"
                                     disabled={!changesExist && !isApproveFlow}
                                 >
-                                    {isApproveFlow ? 'Approve' : 'Save'}
+                                    {isApproveFlow ? m['common.verify']() : m['common.save']()}
                                 </button>
                             </>
                         )}
@@ -582,14 +583,14 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                                     onClick={handleClose}
                                     className="bg-white flex items-center justify-center gap-[5px] rounded-[30px] px-[20px] py-[7px] border-[1px] border-grayscale-200 border-solid shadow-bottom-3-4 font-poppins text-[17px] line-clamp-1 flex-1"
                                 >
-                                    Close
+                                    {m['common.close']()}
                                 </button>
                                 <button
                                     onClick={handleSaveSkills}
                                     className="px-[15px] py-[7px] bg-emerald-700 text-white rounded-[30px] text-[17px] font-[600] font-poppins leading-[24px] tracking-[0.25px] shadow-button-bottom h-[44px] flex-1 disabled:bg-grayscale-200"
                                     disabled={disableSave}
                                 >
-                                    Save
+                                    {m['common.save']()}
                                 </button>
                             </>
                         )}
@@ -601,7 +602,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                                     className="py-[7px] px-[25px] flex gap-[5px] items-center justify-center bg-white rounded-[30px] text-grayscale-800 shadow-button-bottom flex-1 font-poppins text-[17px] border-[2px] border-grayscale-200 border-solid"
                                 >
                                     <Pencil version={3} className="w-[25px] h-[25px] shrink-0" />
-                                    Edit
+                                    {m['common.edit']()}
                                 </button>
                                 <button
                                     onClick={openManageJsonModal}
@@ -611,7 +612,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                                         version="with-slash"
                                         className="w-[25px] h-[25px] shrink-0"
                                     />
-                                    JSON
+                                    {m['skillFrameworks.json']()}
                                 </button>
                             </>
                         )}

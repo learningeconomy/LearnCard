@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
+import * as m from '../../paraglide/messages.js';
 import { IonInput, IonSpinner } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import Pencil from '../../components/svgs/Pencil';
@@ -103,7 +104,7 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                             className="w-[40px] h-[40px] shrink-0 text-grayscale-800"
                         />
                         <span className="text-[22px] font-poppins font-[600] leading-[24px] text-grayscale-900">
-                            Add {conditionalPluralize(selectedSkills?.length || 0, 'Skill')}
+                            {m['skillFrameworks.addSkills']({ count: selectedSkills?.length || 0 })}
                         </span>
                     </div>
                 )}
@@ -184,7 +185,7 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                                             onClick={handleDisableEdit}
                                             className="bg-white flex items-center justify-center gap-[5px] rounded-[30px] px-[20px] py-[7px] border-[1px] border-grayscale-200 border-solid shadow-bottom-3-4 font-poppins text-[17px] line-clamp-1 flex-1"
                                         >
-                                            Cancel
+                                            {m['common.cancel']()}
                                         </button>
                                     )}
                                     <button
@@ -193,10 +194,10 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                                         disabled={!changesExist && !isApproveFlow}
                                     >
                                         {isApproveFlow && (
-                                            <>{useShortText ? 'Approve' : 'Approve Framework'}</>
+                                            <>{useShortText ? m['common.verify']() : m['skillFrameworks.approveFw']()}</>
                                         )}
                                         {!isApproveFlow && (
-                                            <>{useShortText ? 'Save' : 'Save Framework'}</>
+                                            <>{useShortText ? m['common.save']() : m['skillFrameworks.saveFw']()}</>
                                         )}
                                     </button>
                                 </>
@@ -208,7 +209,7 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                                         className="bg-emerald-700 disabled:bg-grayscale-200 text-white font-[600] flex items-center justify-center rounded-[30px] px-[20px] py-[7px] font-poppins text-[17px] line-clamp-1 flex-1 h-full"
                                         disabled={disableSave}
                                     >
-                                        Save
+                                        {m['common.save']()}
                                     </button>
                                 </>
                             )}
@@ -222,7 +223,7 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                                             version={3}
                                             className="w-[25px] h-[25px] shrink-0"
                                         />
-                                        {useShortText ? 'Edit' : 'Edit Framework'}
+                                        {useShortText ? m['common.edit']() : m['skillFrameworks.editFwOpt']()}
                                     </button>
                                     <button
                                         onClick={openManageJsonModal}
@@ -232,7 +233,7 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                                             className="w-[25px] h-[25px] shrink-0"
                                             version="with-slash"
                                         />
-                                        {useShortText ? 'JSON' : 'Manage JSON'}
+                                        {useShortText ? m['skillFrameworks.json']() : m['skillFrameworks.manageJson']()}
                                     </button>
                                 </>
                             )}

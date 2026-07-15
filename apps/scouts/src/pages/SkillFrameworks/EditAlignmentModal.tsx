@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ModalTypes, useDeviceTypeByWidth, useModal } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
+import TransP from '../../i18n/TransP';
 
 import X from '../../components/svgs/X';
 import data from '@emoji-mart/data';
@@ -219,7 +221,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                     {!isTier && (
                         <div className="flex flex-col gap-[5px] w-full">
                             <label className="text-grayscale-600 font-poppins text-[12px] font-[600]">
-                                Code
+                                {m['skillFrameworks.codeLabel']()}
                             </label>
                             <IonInput
                                 onIonInput={e => {
@@ -237,7 +239,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
 
                     <div className="flex flex-col gap-[5px] w-full">
                         <label className="text-grayscale-600 font-poppins text-[12px] font-[600]">
-                            Title*
+                            {m['skillFrameworks.titleLabel']()}
                         </label>
                         <IonInput
                             onIonInput={e => {
@@ -265,7 +267,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                                     version="outlined"
                                 />
                                 <p className="text-[12px] text-grayscale-800 font-poppins font-[600] uppercase">
-                                    Framework Tier
+                                    {m['skillFrameworks.fwTier']()}
                                 </p>
                             </>
                         ) : (
@@ -275,7 +277,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                                     version="filled"
                                 />
                                 <p className="text-[12px] text-grayscale-800 font-poppins font-[600] uppercase">
-                                    Competency
+                                    {m['skillFrameworks.compLabel']()}
                                 </p>
                             </>
                         )}
@@ -288,13 +290,11 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
 
                     {isTier ? (
                         <p className="text-center font-poppins text-[14px] text-grayscale-700 tracking-[-0.25px]">
-                            A <span className="font-[600]">framework tier</span> serves as a
-                            structural container for competencies.
+                            <TransP m={m['skillFrameworks.tierDesc']} components={[<span key="b" className="font-[600]" />]} />
                         </p>
                     ) : (
                         <p className="text-center font-poppins text-[14px] text-grayscale-700 tracking-[-0.25px]">
-                            A <span className="font-[600]">competency</span> is a verified
-                            credential that can be awarded and earned.
+                            <TransP m={m['skillFrameworks.compDesc']} components={[<span key="b" className="font-[600]" />]} />
                         </p>
                     )}
                 </div>
@@ -302,7 +302,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                 <div className="flex flex-col gap-[15px] p-[20px]">
                     <div className="flex flex-col gap-[5px] w-full">
                         <label className="text-grayscale-600 font-poppins text-[12px] font-[600]">
-                            Statement
+                            {m['skillFrameworks.statementLabel']()}
                         </label>
                         <IonTextarea
                             onIonInput={e => {
@@ -326,14 +326,14 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                         onClick={closeModal}
                         className="bg-white text-grayscale-900 py-[10px] pl-[20px] pr-[15px] rounded-[30px] flex gap-[10px] items-center justify-center shadow-bottom-3-4 font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px]"
                     >
-                        Close
+                        {m['common.close']()}
                     </button>
                     <button
                         onClick={handleDeleteButtonClick}
                         className="bg-rose-600 py-[10px] pl-[20px] pr-[15px] rounded-[30px] flex gap-[10px] items-center justify-center shadow-bottom-3-4 font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white"
                     >
                         <TrashBin className="w-[24px] h-[24px]" version="thin" />
-                        Delete
+                        {m['common.delete']()}
                     </button>
                 </>
             )}
@@ -344,7 +344,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                     className="py-[10px] pl-[20px] pr-[15px] bg-emerald-500 font-[600] rounded-[30px] text-white shadow-button-bottom font-poppins text-[17px] disabled:bg-grayscale-300"
                     disabled={!node.targetName}
                 >
-                    Create
+                    {m['common.create']()}
                 </button>
             )}
         </div>
@@ -378,7 +378,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                         onClick={closeModal}
                         className="py-[7px] px-[20px] bg-white rounded-full text-grayscale-900 shadow-button-bottom flex-1 font-poppins text-[17px]"
                     >
-                        {isCreate ? 'Cancel' : 'Back'}
+                        {isCreate ? m['common.cancel']() : m['common.back']()}
                     </button>
                     {isCreate && (
                         <button
@@ -386,7 +386,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
                             className="py-[7px] px-[20px] bg-emerald-500 font-[600] rounded-full text-white shadow-button-bottom flex-1 font-poppins text-[17px] disabled:bg-grayscale-300"
                             disabled={!node.targetName}
                         >
-                            Create
+                            {m['common.create']()}
                         </button>
                     )}
                 </div>

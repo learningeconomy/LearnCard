@@ -2,7 +2,7 @@ import React from 'react';
 
 import FrameworkSearchResultItem from './FrameworkSearchResultItem';
 
-import { conditionalPluralize } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 import { SkillFrameworkNode, SkillFrameworkNodeWithSearchInfo } from '../../components/boost/boost';
 import { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
 
@@ -37,7 +37,7 @@ const FrameworkSearchResults: React.FC<FrameworkSearchResultsProps> = ({
             <p
                 className={`font-poppins text-[17px] font-[700] text-grayscale-800 ${resultTextClassName}`}
             >
-                {conditionalPluralize(searchResults.length, 'Result')}
+                {searchResults.length === 1 ? m['skillFrameworks.result_one']() : m['skillFrameworks.result_other']({ count: searchResults.length })}
             </p>
             {searchResults.map((result, index) => (
                 <FrameworkSearchResultItem

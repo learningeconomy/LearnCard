@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { useModal, useCountSkillsInFramework, conditionalPluralize } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 import TierIcon from './TierIcon';
 import TrashBin from 'learn-card-base/svgs/TrashBin';
@@ -59,13 +60,12 @@ const ConfirmAlignmentDeletionModal: React.FC<ConfirmAlignmentDeletionModalProps
             <div className="bg-white text-grayscale-900 rounded-[15px] p-[20px] flex flex-col gap-[20px]">
                 {isTier ? (
                     <p className="font-poppins text-[22px] text-grayscale-900 text-center">
-                        Please confirm deletion of this framework tier and everything inside it
-                        including{' '}
-                        <span className="font-[600]">{conditionalPluralize(count, 'skill')}.</span>
+                        {m['skillFrameworks.confirmDelTier']()}{' '}
+                        <span className="font-[600]">{count === 1 ? m['skillFrameworks.skill_one']() : m['skillFrameworks.skill_other']({ count })}</span>
                     </p>
                 ) : (
                     <p className="font-poppins text-[22px] text-grayscale-900 text-center">
-                        Please confirm deletion of this skill.
+                        {m['skillFrameworks.confirmDelSkill']()}
                     </p>
                 )}
                 <button
@@ -76,7 +76,7 @@ const ConfirmAlignmentDeletionModal: React.FC<ConfirmAlignmentDeletionModalProps
                     className="bg-rose-600 py-[10px] pl-[20px] pr-[15px] rounded-[30px] flex gap-[10px] items-center justify-center shadow-bottom-3-4 font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white"
                 >
                     <TrashBin className="w-[24px] h-[24px]" version="thin" />
-                    Delete
+                    {m['common.delete']()}
                 </button>
             </div>
         </div>

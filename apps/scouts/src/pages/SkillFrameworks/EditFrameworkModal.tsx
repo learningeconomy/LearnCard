@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import * as m from '../../paraglide/messages.js';
 import { useModal, useWallet, useFilestack } from 'learn-card-base';
 import { IonInput } from '@ionic/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -84,46 +85,47 @@ const EditFrameworkModal: React.FC<EditFrameworkModalProps> = ({ frameworkId }) 
             <section className="bg-white p-[20px] rounded-[15px] flex flex-col gap-[10px]">
                 <div className="flex flex-col items-center gap-[10px] py-[20px]">
                     <h1 className="font-poppins text-[20px] text-grayscale-900 leading-[130%] tracking-[-0.25px]">
-                        Edit Skill Framework
+                        {m['skillFrameworks.editFwTitle']()}
                     </h1>
                     <p className="font-poppins text-[14px] text-grayscale-600 leading-[130%] tracking-[-0.25px] text-center">
-                        Update the framework name and description
+                        {m['skillFrameworks.editFwDesc']()}
                     </p>
                 </div>
 
                 {isLoading ? (
-                    <div className="py-[20px] text-center text-grayscale-600">Loading...</div>
+                    <div className="py-[20px] text-center text-grayscale-600">{m['common.loading']()}</div>
                 ) : (
                     <>
                         <IonInput
                             onIonInput={e => setName(e.detail.value ?? '')}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] !px-[15px] !h-[40px]"
-                            placeholder="Framework Name *"
+                            placeholder={m['skillFrameworks.fwNameLabel']()}
                             value={name}
                         />
 
                         <IonInput
                             onIonInput={e => setDescription(e.detail.value ?? '')}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] !px-[15px] !h-[40px]"
-                            placeholder="Framework Description"
+                            placeholder={m['skillFrameworks.descLabel']()}
                             value={description}
                         />
 
                         {/* Image Upload */}
                         <div className="flex flex-col items-start gap-[10px] py-[10px]">
                             <p className="font-poppins text-[14px] text-grayscale-900 leading-[130%] tracking-[-0.25px]">
-                                Framework Image
+                                {m['skillFrameworks.fwImageLabel']()}
                             </p>
                             {image ? (
                                 <div className="relative w-full">
                                     <img
                                         src={image}
-                                        alt="Framework"
+                                        alt={m['skillFrameworks.fwImageLabel']()}
                                         className="w-full h-[150px] object-cover rounded-[10px]"
                                     />
                                     <button
                                         onClick={() => setImage(undefined)}
                                         className="absolute top-[10px] right-[10px] bg-red-600 text-white p-[8px] rounded-full hover:bg-red-700"
+                                        aria-label={m['common.close']()}
                                     >
                                         ✕
                                     </button>
@@ -138,7 +140,7 @@ const EditFrameworkModal: React.FC<EditFrameworkModalProps> = ({ frameworkId }) 
                                         <UploadIcon className="w-[25px] h-[25px]" strokeWidth="2" />
                                     </div>
                                     <span className="text-grayscale-800 font-poppins text-[14px] leading-[130%]">
-                                        {isUploadingImage ? 'Uploading...' : 'Upload Image'}
+                                        {isUploadingImage ? m['common.loading']() : m['skillFrameworks.uploadImg']()}
                                     </span>
                                 </button>
                             )}
@@ -152,7 +154,7 @@ const EditFrameworkModal: React.FC<EditFrameworkModalProps> = ({ frameworkId }) 
                 disabled={!name.trim() || updateFrameworkMutation.isPending || isLoading}
                 className="bg-emerald-700 text-white pl-[20px] pr-[15px] py-[10px] rounded-[30px] flex gap-[10px] items-center justify-center text-[17px] font-[600] font-poppins leading-[130%] tracking-[-0.25px] w-full shadow-bottom-4-4 disabled:bg-grayscale-600"
             >
-                {updateFrameworkMutation.isPending ? 'Saving...' : 'Save Changes'}
+                {updateFrameworkMutation.isPending ? m['common.saving']() : m['skillFrameworks.saveChanges']()}
             </button>
         </div>
     );
