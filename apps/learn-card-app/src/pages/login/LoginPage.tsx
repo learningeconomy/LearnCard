@@ -44,8 +44,7 @@ import { IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
 import EmailForm from './forms/EmailForm';
 import PhoneForm from './forms/PhoneForm';
 import LoginFooter from './LoginFooter';
-import OnboardingContainer from '../../components/onboarding/OnboardingContainer';
-import { OnboardingStepsEnum } from '../../components/onboarding/onboarding.helpers';
+import OnboardingFlow from '../../components/onboarding/v2/OnboardingFlow';
 import EUParentalConsentModalContent from '../../components/onboarding/onboardingNetworkForm/components/EUParentalConsentModalContent';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import SocialLoginsButtons from './SocialLogins/SocialLoginsButtons';
@@ -103,19 +102,16 @@ export const LoginContent: React.FC = () => {
         }
     }, [generatePinUpdateToken]);
 
-    const openOnboardingModal = useCallback(
-        (initialStep?: OnboardingStepsEnum) => {
-            // OnboardingContainer unmount owns the `isOnboardingOpen(false)` reset.
-            redirectStore.set.isOnboardingOpen(true);
+    const openOnboardingModal = useCallback(() => {
+        // OnboardingFlow unmount owns the `isOnboardingOpen(false)` reset.
+        redirectStore.set.isOnboardingOpen(true);
 
-            newModal(
-                <OnboardingContainer initialStep={initialStep} />,
-                {},
-                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
-            );
-        },
-        [coordinatorState.status, currentUser, isLoggedIn, newModal]
-    );
+        newModal(
+            <OnboardingFlow />,
+            {},
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+        );
+    }, [newModal]);
 
     // Removed unnecessary LC network redirect helper; inline push is sufficient.
 
@@ -125,7 +121,7 @@ export const LoginContent: React.FC = () => {
         }
 
         if (coordinatorState.status === 'needs_setup') {
-            openOnboardingModal(OnboardingStepsEnum.ageGate);
+            openOnboardingModal();
             return;
         }
 
@@ -136,7 +132,7 @@ export const LoginContent: React.FC = () => {
             const profile = await wallet?.invoke?.getProfile();
 
             if (!profile) {
-                openOnboardingModal(OnboardingStepsEnum.ageGate);
+                openOnboardingModal();
             } else if (profile?.approved === false) {
                 // Re-prompt EU Parental Consent if user was previously marked unapproved
                 newModal(
@@ -474,6 +470,33 @@ export const LoginContent: React.FC = () => {
                                         {installIntent.appName ?? 'the app'}
                                     </span>{' '}
                                     after sign in
+                                </span>
+                            </div>
+                        </IonRow>
+                    )}
+
+                    {((query.get('redirectTo') ?? '').includes('createFamily=true') ||
+                        Boolean(query.get('underageFamily'))) && (
+                        <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
+                            <div className="w-full p-3 bg-white/20 backdrop-blur-sm rounded-[20px] flex items-start gap-2.5">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="w-5 h-5 text-white shrink-0 mt-0.5"
+                                    aria-hidden="true"
+                                >
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                    <circle cx="9" cy="7" r="4" />
+                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                                </svg>
+                                <span className="text-sm text-white leading-relaxed">
+                                    Sign in as a parent or guardian to create a family account and
+                                    add your child.
                                 </span>
                             </div>
                         </IonRow>

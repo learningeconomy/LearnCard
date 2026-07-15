@@ -14,7 +14,7 @@ export const ACCOUNT_CREATED_AT_KEY = 'lc_account_created_at_ms';
 export const ACCOUNT_CREATED_KEY = 'lc_account_created_tracked';
 export const SESSION_START_KEY = 'lc_session_start_ms';
 export const LAST_SESSION_KEY = 'lc_last_session_ms';
-/** Set by OnboardingNetworkForm post-createProfile; consumed once by ACCOUNT_CREATED. */
+/** Set by OnboardingFlow post-createProfile; consumed once by ACCOUNT_CREATED. */
 export const NEW_SIGNUP_FLAG_KEY = 'lc_is_new_signup';
 /** Set at earliest onboarding screen so ONBOARDING_COMPLETED reports time-in-flow, not time-on-final-form. */
 export const ONBOARDING_STARTED_AT_KEY = 'lc_onboarding_started_at_ms';
@@ -47,9 +47,7 @@ export const useProfileSnapshot = (): ProfileSnapshot => {
             credentialCount: Number(credentialCount ?? 0),
             hasSkillsProfile: skillsCount > 0,
             skillsCount: skillsCount ?? 0,
-            daysSinceSignup: accountCreatedAt
-                ? (now - accountCreatedAt) / 86_400_000
-                : 0,
+            daysSinceSignup: accountCreatedAt ? (now - accountCreatedAt) / 86_400_000 : 0,
         };
     }, [credentialCount, skillsCount]);
 };
