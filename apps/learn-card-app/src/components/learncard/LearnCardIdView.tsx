@@ -6,7 +6,7 @@ import {
     useGetCurrentLCNUser,
     walletStore,
 } from 'learn-card-base';
-import { useTenantBrandingAssets } from '../../config/brandingAssets';
+import { useTenantBrandingAssets, DEFAULT_BRAND_MARK } from '../../config/brandingAssets';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { getIdBackgroundStyles } from '../learncardID-CMS/learncard-cms.helpers';
@@ -20,6 +20,7 @@ const LearnCardIdView: React.FC<LearnCardIdViewProps> = ({ user }) => {
     const brandingConfig = useBrandingConfig();
     const currentUser = useCurrentUser();
     const { currentLCNUser } = useGetCurrentLCNUser();
+    const { brandMark } = useTenantBrandingAssets();
 
     const { displayName, profileId } = currentLCNUser ?? {};
 
@@ -84,9 +85,15 @@ const LearnCardIdView: React.FC<LearnCardIdViewProps> = ({ user }) => {
                 // style={{ backgroundColor: credential?.boostID?.accentColor }}
             >
                 <img
-                    src={useTenantBrandingAssets().brandMark}
+                    src={brandMark}
                     alt="Brand mark"
                     className="rounded-full h-[50px] w-[50px]"
+                    onError={e => {
+                        if (!e.currentTarget.dataset.fallbackApplied) {
+                            e.currentTarget.dataset.fallbackApplied = 'true';
+                            e.currentTarget.src = DEFAULT_BRAND_MARK;
+                        }
+                    }}
                 />
             </div>
         </div>

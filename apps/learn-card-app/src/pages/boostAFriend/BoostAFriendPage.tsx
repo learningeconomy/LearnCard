@@ -35,6 +35,7 @@ import {
     resolveBadgeStyle,
     buildPreviewCredential,
 } from './boostAFriend.helpers';
+import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 import { useStylePackRegistry } from '../../registries/useStylePackRegistry';
 import { useBadgeGroups } from '../../registries/useBadgeGroups';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
@@ -66,6 +67,7 @@ const BoostAFriendPage: React.FC = () => {
     const { getRegisteredSigningAuthorities, getRegisteredSigningAuthority } =
         useSigningAuthority();
     const { presentToast } = useToast();
+    const { gate } = useLCNGatedAction();
     const { data: stylePacks } = useStylePackRegistry();
     const { data: badgeGroups } = useBadgeGroups();
     const categoryFallback = walletSubtypeToDefaultImageSrc(WalletCategoryTypes.socialBadges);
@@ -89,6 +91,7 @@ const BoostAFriendPage: React.FC = () => {
     const [claimLink, setClaimLink] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
     const qrCanvasRef = useRef<HTMLCanvasElement>(null);
+    const handleIssueRef = useRef<() => Promise<void>>(async () => {});
 
     const handleSelectBadge = (badge: BadgePreset, color: string) => {
         const {
@@ -107,18 +110,11 @@ const BoostAFriendPage: React.FC = () => {
         setStep('personalize');
     };
 
-    const handleIssue = async () => {
+    const runIssue = async () => {
         if (!selectedBadge) return;
 
         const isLinkMode = recipientMode === 'link';
-        const hasRecipients = recipients.length > 0;
 
-        if (recipientMode === 'people' && !hasRecipients) {
-            setError('Please add at least one recipient.');
-            return;
-        }
-
-        setError(null);
         setIsIssuing(true);
 
         try {
@@ -193,6 +189,33 @@ const BoostAFriendPage: React.FC = () => {
             setIsIssuing(false);
         }
     };
+
+    const handleIssue = async () => {
+        if (!selectedBadge) return;
+
+        const hasRecipients = recipients.length > 0;
+
+        if (recipientMode === 'people' && !hasRecipients) {
+            setError('Please add at least one recipient.');
+            return;
+        }
+
+        setError(null);
+
+        // Every send mode needs an LCN profile. If the user has none, open
+        // onboarding, then resume through the latest gate-aware handler.
+        const { prompted } = await gate(async () => {
+            try {
+                await handleIssueRef.current();
+            } catch (err) {
+                setError(getFriendlyIssueError(err, recipientMode).message);
+            }
+        });
+        if (prompted) return;
+
+        await runIssue();
+    };
+    handleIssueRef.current = handleIssue;
 
     const handleCopyLink = async () => {
         if (!claimLink) return;
