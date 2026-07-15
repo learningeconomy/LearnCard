@@ -1,6 +1,6 @@
 import React from 'react';
 
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 import Pencil from '../../../../svgs/Pencil';
 import BoostCMSAppearanceFormModal from './BoostCMSAppearanceFormModal';
 import BoostCMSIDCard from '../../../boost-id-card/BoostIDCard';

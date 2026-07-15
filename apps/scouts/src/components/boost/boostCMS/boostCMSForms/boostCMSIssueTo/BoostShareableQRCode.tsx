@@ -10,7 +10,7 @@ import { BoostCMSState } from '../../../boost';
 import { CATEGORY_TO_SUBCATEGORY_LIST } from '../../../boost-options/boostOptions';
 import { QRCodeSVG } from 'qrcode.react';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 
 const BoostShareableQRCode: React.FC<{
     handleCloseModal: () => void;

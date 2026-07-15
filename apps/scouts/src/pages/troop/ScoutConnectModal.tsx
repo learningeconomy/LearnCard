@@ -33,7 +33,7 @@ import {
 
 import { VC } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
-import * as m from '../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 const log = getLogger('scout-connect-modal');
 
 // Types

@@ -150,7 +150,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
         !searchLoading && search?.length > 0 && searchResults && searchResults.length === 0;
 
     let noConnectionsString = m['boost.noConnectionsYet']();
-    let headerText = conditionalPluralize(contactCount ?? 0, m['boost.contact_one']());
+    let headerText = conditionalPluralize(contactCount ?? 0, m['boost.contactOne']());
     let searchPlaceholder = m['boost.searchScoutPass']();
 
     let connectionsToShow = connections;
@@ -165,7 +165,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
             showSearchResults = false; // Again, doesn't use network profile search
             showNoSearchResults = !scoutsLoading && scouts?.length === 0 && search?.length > 0;
             noConnectionsString = m['boost.noTroopMembers']();
-            headerText = conditionalPluralize(scouts?.length ?? 0, m['boost.scoutMember_one']());
+            headerText = conditionalPluralize(scouts?.length ?? 0, m['boost.scoutMemberOne']());
             searchPlaceholder = m['boost.searchTroop']({ name: contextCredential?.name ?? m['boost.troop']() });
             connectionsToShow = scouts ?? [];
         }
@@ -180,7 +180,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
             showNoSearchResults =
                 !networkLoading && networkMembers?.length === 0 && search?.length > 0;
             noConnectionsString = m['boost.noNetworkMembers']();
-            headerText = conditionalPluralize(networkMembers?.length ?? 0, m['boost.networkMemberLabel_one']());
+            headerText = conditionalPluralize(networkMembers?.length ?? 0, m['boost.networkMemberLabelOne']());
             searchPlaceholder = m['boost.searchNetwork']({ name: contextCredential?.name ?? m['boost.network']() });
             connectionsToShow = networkMembers;
         }

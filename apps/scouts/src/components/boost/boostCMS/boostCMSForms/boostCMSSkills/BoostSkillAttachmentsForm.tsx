@@ -17,7 +17,7 @@ import {
     SKILLS_TO_SUBSKILLS,
 } from './boostSkills';
 import { useModal, ModalTypes } from 'learn-card-base';
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 
 export enum BoostCMSSkillsAttachmentFormModeEnum {
     view = 'view',

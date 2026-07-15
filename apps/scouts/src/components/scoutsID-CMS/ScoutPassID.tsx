@@ -1,6 +1,6 @@
 import React from 'react';
 
-import * as m from '../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 
 import { VerifiedBadgeWhiteBackground } from 'learn-card-base/svgs/VerifiedBadge';
 
@@ -47,7 +47,7 @@ const ScoutPassID: React.FC<{
                     )}
 
                     {showIssueDate && (
-                        <span className="font-notoSans font-[600] text-[12px]">{m.scoutsId_issuedDate()}</span>
+                        <span className="font-notoSans font-[600] text-[12px]">{m['scoutsId.issuedDate']()}</span>
                     )}
                 </div>
             </div>

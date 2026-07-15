@@ -30,7 +30,7 @@ const TroopsModalWrapper = lazyWithRetry(
 );
 
 import { openExternalLink } from '../../helpers/externalLinkHelpers';
-import * as m from '../../../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 import {
     SubheaderContentType,
     SubheaderTypeEnum,

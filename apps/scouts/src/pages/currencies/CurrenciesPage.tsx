@@ -10,7 +10,7 @@ import {
     categoryMetadata,
 } from 'learn-card-base';
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
-import * as m from '../../../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 
 const CurrenciesPage: React.FC = () => {
     const imgSrc = categoryMetadata[CredentialCategoryEnum.currency].defaultImageSrc;

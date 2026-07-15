@@ -6,7 +6,7 @@ import { IonTextarea } from '@ionic/react';
 import useFirebaseAnalytics from '../../../../../hooks/useFirebaseAnalytics';
 import { isCustomBoostType } from 'learn-card-base';
 import { BoostCMSState } from '../../../boost';
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 
 const BoostCMSTitleForm: React.FC<{
     state: BoostCMSState;

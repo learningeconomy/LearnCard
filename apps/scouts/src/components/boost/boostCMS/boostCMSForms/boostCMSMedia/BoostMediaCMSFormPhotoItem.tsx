@@ -1,5 +1,5 @@
 import React from 'react';
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 import { BoostMediaOptionsEnum } from '../../../boost';
 import Camera from 'learn-card-base/svgs/Camera';
 import TrashBin from 'learn-card-base/svgs/TrashBin';

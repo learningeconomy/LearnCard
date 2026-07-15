@@ -1,6 +1,6 @@
 import React from 'react';
 
-import * as m from '../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 
 import { IonLabel, IonRow, IonSegment, IonSegmentButton } from '@ionic/react';
 
@@ -33,7 +33,7 @@ const ScoutPassIDCMSTabs: React.FC<{
                     }}
                 >
                     <IonLabel className="font-normal text-[17px] text-grayscale-800 font-poppins">
-                        {m.scoutsId_dark()}
+                        {m['scoutsId.dark']()}
                     </IonLabel>
                 </IonSegmentButton>
                 <IonSegmentButton
@@ -45,7 +45,7 @@ const ScoutPassIDCMSTabs: React.FC<{
                     }}
                 >
                     <IonLabel className="font-normal text-[17px] text-grayscale-800 font-poppins">
-                        {m.scoutsId_light()}
+                        {m['scoutsId.light']()}
                     </IonLabel>
                 </IonSegmentButton>
                 <IonSegmentButton
@@ -57,7 +57,7 @@ const ScoutPassIDCMSTabs: React.FC<{
                     }}
                 >
                     <IonLabel className="font-normal text-[17px] text-grayscale-800 font-poppins">
-                        {m.scoutsId_custom()}
+                        {m['scoutsId.custom']()}
                     </IonLabel>
                 </IonSegmentButton>
             </IonSegment>

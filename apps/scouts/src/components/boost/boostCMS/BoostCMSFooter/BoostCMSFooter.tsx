@@ -10,7 +10,7 @@ import { boostCategoryOptions } from '../../boost-options/boostOptions';
 
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import { BoostCMSStepsEnum } from '../../boost';
-import * as m from '../../../../../paraglide/messages.js';
+import * as m from '../../../../paraglide/messages.js';
 
 const BoostCMSFooter: React.FC<{
     boostUserType: BoostUserTypeEnum;
@@ -64,12 +64,12 @@ const BoostCMSFooter: React.FC<{
                                             className="scale-[1] mr-1"
                                         />{' '}
                                         <p className="w-full line-clamp-1 font-mouse uppercase tracking-wide">
-                                            {m.commonSaving()}
+                                            {m['common.saving']()}
                                         </p>
                                     </>
                                 ) : (
                                     <p className="w-full line-clamp-1 font-mouse uppercase tracking-wide">
-                                        {m.boostCMSSaveQuit()}
+                                        {m['boostCMS.saveQuit']()}
                                     </p>
                                 )}
                             </button>
@@ -78,7 +78,7 @@ const BoostCMSFooter: React.FC<{
                                 className="flex items-center justify-center bg-white rounded-full px-[18px] py-[8px] text-grayscale-900 font-mouse text-3xl shadow-lg uppercase tracking-wide mr-3 text-center overflow-hidden line-clamp-1 boost-preview-btn"
                             >
                                 <p className="w-full line-clamp-1 font-mouse uppercase tracking-wide">
-                                    {m.commonPreview()}
+                                    {m['common.preview']()}
                                 </p>
                             </button>
                             <button
@@ -115,12 +115,12 @@ const BoostCMSFooter: React.FC<{
                                             className="scale-[1] mr-1"
                                         />{' '}
                                         <p className="w-full line-clamp-1 font-mouse uppercase tracking-wide">
-                                            {m.commonLoading()}
+                                            {m['common.loading']()}
                                         </p>
                                     </>
                                 ) : (
                                     <p className="w-full line-clamp-1 font-mouse uppercase tracking-wide">
-                                        {m.boostCMSIssue()}
+                                        {m['boostCMS.issue']()}
                                     </p>
                                 )}
                             </button>

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { IonCol, IonRow } from '@ionic/react';
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 import { useModal } from 'learn-card-base';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import Checkmark from 'learn-card-base/svgs/Checkmark';

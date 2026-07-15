@@ -4,7 +4,7 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 import { IonTextarea } from '@ionic/react';
 
 import { BoostCMSState } from '../../../boost';
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 import {
     replaceUnderscoresWithWhiteSpace,
     getAchievementTypeFromCustomType,

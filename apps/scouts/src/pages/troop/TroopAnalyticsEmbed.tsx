@@ -4,7 +4,7 @@ import { VC } from '@learncard/types';
 import { DASHBOARD_TYPE } from 'packages/plugins/lca-api-plugin/src/types';
 import { Capacitor } from '@capacitor/core';
 import { getLogger } from 'learn-card-base';
-import * as m from '../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 const log = getLogger('troop-analytics-embed');
 
 export interface AnalyticsPayload {

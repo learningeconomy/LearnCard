@@ -13,7 +13,7 @@ import { BoostCategoryOptionsEnum, useModal, ModalTypes } from 'learn-card-base'
 import { AddressSpec } from '../../../../locationSearch/location.helpers';
 import { SetState } from 'packages/shared-types/dist';
 import { boostCategoryOptions } from '../../../boost-options/boostOptions';
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 
 const BoostCMSAdvancedSettingsForm: React.FC<{
     state: BoostCMSState;

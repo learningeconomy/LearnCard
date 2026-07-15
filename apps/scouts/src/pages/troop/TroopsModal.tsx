@@ -21,7 +21,7 @@ import { IonRow, IonCol, IonInput, IonSpinner } from '@ionic/react';
 
 import { pluralize, ModalTypes } from 'learn-card-base';
 import { TroopsCMSViewModeEnum } from '../../components/troopsCMS/troopCMSState';
-import * as m from '../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { TroopParentLevel, troopParentLevelToChildDepth } from './troopConstants';
 

@@ -4,7 +4,7 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { IonRow, IonGrid, IonInput } from '@ionic/react';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 import { TransP } from '../../../../../i18n/TransP';
 
 import {

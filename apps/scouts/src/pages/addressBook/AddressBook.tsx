@@ -35,7 +35,7 @@ import Lottie from 'react-lottie-player';
 import Pulpo from '../../assets/lotties/cuteopulpo.json';
 import MainHeader from '../../components/main-header/MainHeader';
 import { getLogger } from 'learn-card-base';
-import * as m from '../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 const log = getLogger('address-book');
 
 const getActiveRouteTab = (url: string): AddressBookTabsEnum | undefined => {

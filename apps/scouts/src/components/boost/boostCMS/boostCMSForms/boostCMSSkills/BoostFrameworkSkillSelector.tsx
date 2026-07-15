@@ -7,7 +7,7 @@ import { useModal, ModalTypes, useGetBoostsThatUseFramework } from 'learn-card-b
 import BrowseFrameworkPage from 'apps/scouts/src/pages/SkillFrameworks/BrowseFrameworkPage';
 import BoostCMSSkillDisplay from './BoostCMSSkillDisplay';
 import { SetState } from 'packages/shared-types/dist';
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 
 /**
  * New framework-based skill selector for Scouts

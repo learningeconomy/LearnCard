@@ -5,7 +5,7 @@ import { useGetCredentialWithEdits } from 'learn-card-base';
 import { ScoutsRoleEnum } from '../../stores/troopPageStore';
 import troopPageStore from '../../stores/troopPageStore';
 import useGetTroopNetwork from '../../hooks/useGetTroopNetwork';
-import * as m from '../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 import {
     getDefaultBadgeThumbForCredential,
     getIdBackgroundStyles,

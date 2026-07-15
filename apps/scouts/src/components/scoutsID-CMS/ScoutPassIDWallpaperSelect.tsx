@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-import * as m from '../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 
 import { IonSpinner } from '@ionic/react';
 import Pencil from '../svgs/Pencil';
@@ -72,7 +72,7 @@ export const ScoutPassIDWallpaperSelect: React.FC<{
                 </div>
                 {!wallpaper && (
                     <p className="ml-[10px] font-notoSans text-sm font-bold text-grayscale-500">
-                        {m.scoutsId_none()}
+                        {m['scoutsId.none']()}
                     </p>
                 )}
             </div>

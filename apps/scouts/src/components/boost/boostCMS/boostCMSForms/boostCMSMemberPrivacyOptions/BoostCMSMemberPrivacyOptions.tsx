@@ -6,7 +6,7 @@ import { IonRow, IonCol, IonToggle, IonCheckbox } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 
 import { BoostCMSState } from '../../../boost';
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 
 export enum MemberPrivacyOptionsEnum {
     public = 'public',

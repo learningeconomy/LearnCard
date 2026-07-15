@@ -117,8 +117,8 @@ const ManageSkillsJsonUploadedBody: React.FC<ManageSkillsJsonUploadedBodyProps> 
                                                     {numberOfTiers}
                                                 </span>{' '}
                                                 {numberOfTiers === 1
-                                                    ? m['skillFrameworks.tier_one']()
-                                                    : m['skillFrameworks.tier_other']({ count: numberOfTiers })}
+                                                    ? m['skillFrameworks.tierOne']()
+                                                    : m['skillFrameworks.tierOther']({ count: numberOfTiers })}
                                             </li>
                                             <li className="font-poppins">
                                                 <span className="font-bold font-poppins">
@@ -154,8 +154,8 @@ const ManageSkillsJsonUploadedBody: React.FC<ManageSkillsJsonUploadedBodyProps> 
                                                     {numberOfTiers}
                                                 </span>{' '}
                                                 {numberOfTiers === 1
-                                                    ? m['skillFrameworks.tier_one']()
-                                                    : m['skillFrameworks.tier_other']({ count: numberOfTiers })}
+                                                    ? m['skillFrameworks.tierOne']()
+                                                    : m['skillFrameworks.tierOther']({ count: numberOfTiers })}
                                             </li>
                                             <li className="font-poppins">
                                                 <span className="font-bold font-poppins">

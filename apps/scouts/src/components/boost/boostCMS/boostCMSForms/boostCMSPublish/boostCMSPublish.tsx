@@ -5,7 +5,7 @@ import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 
 import { BoostCMSState } from '../../../boost';
 import { boostCategoryOptions } from '../../../boost-options/boostOptions';
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 import TransP from '../../../../../i18n/TransP';
 
 export const BoostCMSPublish: React.FC<{

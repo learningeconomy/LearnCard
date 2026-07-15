@@ -15,7 +15,7 @@ import {
     ProfilePicture,
     useGetCurrentUserTroopIds,
 } from 'learn-card-base';
-import * as m from '../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 import { getScoutsRole, getScoutsNounForRole } from '../../helpers/troop.helpers';
 import { ScoutsRoleEnum } from '../../stores/troopPageStore';
 import { useCanInviteTroop } from './useCanInviteTroop';

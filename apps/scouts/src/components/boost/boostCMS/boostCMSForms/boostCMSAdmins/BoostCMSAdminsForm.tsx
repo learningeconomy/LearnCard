@@ -7,7 +7,7 @@ import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 
 import { BoostCMSState } from '../../../boost';
 import Plus from 'learn-card-base/svgs/Plus';
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 
 const BoostCMSAdminsForm: React.FC<{
     state: BoostCMSState;

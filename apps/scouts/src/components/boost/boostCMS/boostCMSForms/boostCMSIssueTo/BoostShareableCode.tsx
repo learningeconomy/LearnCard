@@ -21,7 +21,7 @@ import {
     ModalTypes,
 } from 'learn-card-base';
 import { BoostCMSState } from '../../../boost';
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 
 import CopyStack from '../../../../svgs/CopyStack';
 import Calendar from '../../../../svgs/Calendar';

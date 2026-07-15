@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { IonCol, IonRow } from '@ionic/react';
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 import {
     BoostCMSMediaAttachment,
     BoostCMSState,

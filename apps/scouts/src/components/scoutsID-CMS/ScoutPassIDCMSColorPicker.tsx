@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import * as m from '../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 
 import { HexColorPicker } from 'react-colorful';
 
@@ -77,7 +77,7 @@ export const ScoutPassIDCMSColorPicker: React.FC<{
                         value={color}
                         onChange={e => handleColorInputOnChange(e.target.value)}
                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] p-4 font-medium tracking-widest text-base w-full"
-                        placeholder={m.scoutsId_hexCode()}
+                        placeholder={m['scoutsId.hexCode']()}
                         type="text"
                     />
 

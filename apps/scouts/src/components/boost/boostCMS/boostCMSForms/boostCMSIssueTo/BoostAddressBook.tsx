@@ -47,7 +47,7 @@ import { LCNProfile, BoostRecipientInfo } from '@learncard/types';
 import { ScoutsRoleEnum } from '../../../../../stores/troopPageStore';
 import { MemberTabsEnum } from '../../../../../pages/troop/TroopPageMembersBox';
 import { getLogger } from 'learn-card-base';
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 const log = getLogger('boost-address-book');
 
 export enum BoostAddressBookEditMode {

@@ -4,7 +4,7 @@ import VerificationRow from './VerificationRow';
 import InfoBox from './InfoBox';
 import InfoIcon from 'learn-card-base/svgs/InfoIcon';
 
-import * as m from '../../paraglide/messages.js';
+import * as m from '../../../paraglide/messages.js';
 import { VerificationItem } from '@learncard/types';
 
 type VerificationsBoxProps = {

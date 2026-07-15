@@ -17,7 +17,7 @@ import {
     useGetCredentialWithEdits,
 } from 'learn-card-base';
 
-import * as m from '../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 import { VC } from '@learncard/types';
 import { ScoutsRoleEnum } from '../../stores/troopPageStore';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';

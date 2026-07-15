@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { z } from 'zod';
 
 import { IonPage } from '@ionic/react';
-import * as m from '../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 import TroopsCMSLayout from './TroopsCMSLayout';
 import TroopsCMSThumbnail from './TroopsCMSThumbnail';
 import TroopsCMSHeader from './TroopsCMSHeader/TroopsCMSHeader';

@@ -14,7 +14,7 @@ import TroopIdDetails from './TroopIdDetails/TroopIdDetails';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import ReplyIcon from 'learn-card-base/svgs/ReplyIcon';
 import X from 'learn-card-base/svgs/X';
-import * as m from '../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 import Lottie from 'react-lottie-player';
 import HourGlass from '../../assets/lotties/hourglass.json';
 

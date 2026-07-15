@@ -38,7 +38,7 @@ import { useGetCurrentLCNUser } from 'learn-card-base';
 import { BoostUserTypeEnum } from 'learn-card-base';
 import { LCNProfile } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 const log = getLogger('boost-address-book-contact-options');
 
 const BoostAddressBookContactOptions: React.FC<{

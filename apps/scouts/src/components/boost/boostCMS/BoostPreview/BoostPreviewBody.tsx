@@ -1,7 +1,7 @@
 import React from 'react';
 import { UserProfilePicture, useCurrentUser } from 'learn-card-base';
 import { IonGrid, IonRow } from '@ionic/react';
-import * as m from '../../../../../paraglide/messages.js';
+import * as m from '../../../../paraglide/messages.js';
 import { TransP } from '../../../../i18n/TransP';
 
 // import { IonSpinner } from '@ionic/react';
@@ -96,10 +96,10 @@ export const BoostPreviewBody: React.FC<BoostPreviewBodyProps> = ({
                         {count > 0 && (
                             <p>
                                 <TransP
-                                    m={m.boostCMSIssuedToCount}
+                                    m={m['boostCMS.issuedToCount']}
                                     values={{
                                         count: String(count),
-                                        person: count === 1 ? m.boostCMSPerson() : m.boostCMSPeople(),
+                                        person: count === 1 ? m['boostCMS.person']() : m['boostCMS.people'](),
                                     }}
                                     components={[<span key="c" className="text-grayscale-900 font-semibold" />]}
                                 />
@@ -107,7 +107,7 @@ export const BoostPreviewBody: React.FC<BoostPreviewBodyProps> = ({
                         )}
                         <p className="text-grayscale-600 font-semibold">
                             <TransP
-                                m={m.boostCMSBy}
+                                m={m['boostCMS.by']}
                                 values={{ name: currentUser?.name ?? '' }}
                                 components={[<span key="n" className="font-bold text-gray-900 text-center" />]}
                             />
@@ -119,7 +119,7 @@ export const BoostPreviewBody: React.FC<BoostPreviewBodyProps> = ({
 
                 {!hideBodyPreviewOnCard && count === 0 && (
                     <p className="text-grayscale-600 font-semibold text-center mt-0 text-sm leading-5">
-                        {m.boostCMSNotClaimed()}
+                        {m['boostCMS.notClaimed']()}
                     </p>
                 )}
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 import { useFilestack, UploadRes, LCAStylesPackRegistryEntry, useModal, ModalTypes } from 'learn-card-base';
 import { useScoutPassStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';

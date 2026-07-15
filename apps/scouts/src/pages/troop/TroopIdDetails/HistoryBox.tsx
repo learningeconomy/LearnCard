@@ -1,6 +1,6 @@
 import React from 'react';
 import moment from 'moment';
-import * as m from '../../paraglide/messages.js';
+import * as m from '../../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('history-box');
 

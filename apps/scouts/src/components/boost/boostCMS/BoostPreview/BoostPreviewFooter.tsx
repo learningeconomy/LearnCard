@@ -3,7 +3,7 @@ import React from 'react';
 import { IonSpinner } from '@ionic/react';
 
 import { boostCategoryOptions } from '../../boost-options/boostOptions';
-import * as m from '../../../../../paraglide/messages.js';
+import * as m from '../../../../paraglide/messages.js';
 
 export const BoostPreviewFooter: React.FC<{
     selectedVCType: string;
@@ -38,12 +38,12 @@ export const BoostPreviewFooter: React.FC<{
                         <>
                             <IonSpinner name="crescent" color="dark" className="scale-[1] mr-1" />{' '}
                             <p className="w-full line-clamp-1 ">
-                                {m.commonSaving()}
+                                {m['common.saving']()}
                             </p>
                         </>
                     ) : (
                         <p className="w-full line-clamp-1 font-medium">
-                            {m.commonSave()}
+                            {m['common.save']()}
                         </p>
                     )}
                 </button>
@@ -65,12 +65,12 @@ export const BoostPreviewFooter: React.FC<{
                         <>
                             <IonSpinner name="crescent" color="dark" className="scale-[1] mr-1" />{' '}
                             <p className="w-full line-clamp-1 font-medium">
-                                {m.commonLoading()}
+                                {m['common.loading']()}
                             </p>
                         </>
                     ) : (
                         <p className="w-full line-clamp-1 font-medium ml-8">
-                            {m.boostSend()}
+                            {m['boost.send']()}
                         </p>
                     )}
                 </button>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { format } from 'date-fns';
 
-import * as m from '../../paraglide/messages.js';
+import * as m from '../../../paraglide/messages.js';
 import { useGetBoostParents } from 'learn-card-base';
 
 import TruncateTextBox from './TruncateTextBox';

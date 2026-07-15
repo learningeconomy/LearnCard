@@ -56,7 +56,7 @@ const SkillsAdminPanel: React.FC<SkillsAdminPanelProps> = ({ setFrameworkToBrows
             {!isLoadingFrameworks && (
                 <>
                     <h2 className="text-left text-grayscale-900 text-[20px] font-poppins">
-                        {frameworks?.length === 1 ? m['skills.compFw_one']() : m['skills.compFw_other']({ count: frameworks?.length ?? 0 })}
+                        {frameworks?.length === 1 ? m['skills.compFwOne']() : m['skills.compFwOther']({ count: frameworks?.length ?? 0 })}
                     </h2>
 
                     <div className="flex flex-col gap-[10px]">

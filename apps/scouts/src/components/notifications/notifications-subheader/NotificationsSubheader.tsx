@@ -4,7 +4,7 @@ import { Capacitor } from '@capacitor/core';
 import { useHistory } from 'react-router-dom';
 
 import { IonCol, IonGrid, IonRow } from '@ionic/react';
-import * as m from '../../paraglide/messages.js';
+import * as m from '../../../paraglide/messages.js';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import X from 'learn-card-base/svgs/X';
 

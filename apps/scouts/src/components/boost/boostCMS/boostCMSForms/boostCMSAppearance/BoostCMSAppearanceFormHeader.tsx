@@ -4,7 +4,7 @@ import { BoostCategoryOptionsEnum, isCustomBoostType } from 'learn-card-base';
 
 import { IonRow, IonCol, IonHeader, IonToolbar } from '@ionic/react';
 
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 import X from 'learn-card-base/svgs/X';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import BoostCMSCategoryTypeSwiper from './BoostCMSCategoryTypeSwiper';

@@ -3,7 +3,7 @@ import IdentificationCard from '../../components/svgs/IdentificationCard';
 import TroopUserIcon from '../../components/svgs/TroopUserIcon';
 import ScoutIdThumbPlaceholder from '../../components/svgs/ScoutIdThumbPlaceholder';
 import LeaderIdThumbPlaceholder from '../../components/svgs/LeaderIdThumbPlaceholder';
-import * as m from '../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 
 interface InviteSelectionModalProps {
     onInviteLeader: () => void;

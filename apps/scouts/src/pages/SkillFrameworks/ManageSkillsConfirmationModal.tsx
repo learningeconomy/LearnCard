@@ -56,8 +56,8 @@ const ManageSkillsConfirmationModal: React.FC<ManageSkillsConfirmationModalProps
                                     <>
                                         <strong className="font-[600] font-poppins">
                                             {skillsCreated === 1
-                                                ? m['skillFrameworks.comp_one']()
-                                                : m['skillFrameworks.comp_other']({ count: skillsCreated })}
+                                                ? m['skillFrameworks.compOne']()
+                                                : m['skillFrameworks.compOther']({ count: skillsCreated })}
                                         </strong>
                                         {tiersCreated > 0 && m['skillFrameworks.andWord']()}
                                     </>
@@ -65,8 +65,8 @@ const ManageSkillsConfirmationModal: React.FC<ManageSkillsConfirmationModalProps
                                 {tiersCreated > 0 && (
                                     <strong className="font-[600] font-poppins">
                                         {tiersCreated === 1
-                                            ? m['skillFrameworks.tier_one']()
-                                            : m['skillFrameworks.tier_other']({ count: tiersCreated })}
+                                            ? m['skillFrameworks.tierOne']()
+                                            : m['skillFrameworks.tierOther']({ count: tiersCreated })}
                                     </strong>
                                 )}{' '}
                                 {skillsCreated + tiersCreated === 1
@@ -80,8 +80,8 @@ const ManageSkillsConfirmationModal: React.FC<ManageSkillsConfirmationModalProps
                                     <>
                                         <strong className="font-[600] font-poppins">
                                             {skillsUpdated === 1
-                                                ? m['skillFrameworks.comp_one']()
-                                                : m['skillFrameworks.comp_other']({ count: skillsUpdated })}
+                                                ? m['skillFrameworks.compOne']()
+                                                : m['skillFrameworks.compOther']({ count: skillsUpdated })}
                                         </strong>
                                         {tiersUpdated > 0 && m['skillFrameworks.andWord']()}
                                     </>
@@ -89,8 +89,8 @@ const ManageSkillsConfirmationModal: React.FC<ManageSkillsConfirmationModalProps
                                 {tiersUpdated > 0 && (
                                     <strong className="font-[600] font-poppins">
                                         {tiersUpdated === 1
-                                            ? m['skillFrameworks.tier_one']()
-                                            : m['skillFrameworks.tier_other']({ count: tiersUpdated })}
+                                            ? m['skillFrameworks.tierOne']()
+                                            : m['skillFrameworks.tierOther']({ count: tiersUpdated })}
                                     </strong>
                                 )}{' '}
                                 {skillsUpdated + tiersUpdated === 1
@@ -104,8 +104,8 @@ const ManageSkillsConfirmationModal: React.FC<ManageSkillsConfirmationModalProps
                                     <>
                                         <strong className="font-[600] font-poppins">
                                             {skillsDeleted === 1
-                                                ? m['skillFrameworks.comp_one']()
-                                                : m['skillFrameworks.comp_other']({ count: skillsDeleted })}
+                                                ? m['skillFrameworks.compOne']()
+                                                : m['skillFrameworks.compOther']({ count: skillsDeleted })}
                                         </strong>
                                         {tiersDeleted > 0 && m['skillFrameworks.andWord']()}
                                     </>
@@ -113,8 +113,8 @@ const ManageSkillsConfirmationModal: React.FC<ManageSkillsConfirmationModalProps
                                 {tiersDeleted > 0 && (
                                     <strong className="font-[600] font-poppins">
                                         {tiersDeleted === 1
-                                            ? m['skillFrameworks.tier_one']()
-                                            : m['skillFrameworks.tier_other']({ count: tiersDeleted })}
+                                            ? m['skillFrameworks.tierOne']()
+                                            : m['skillFrameworks.tierOther']({ count: tiersDeleted })}
                                     </strong>
                                 )}{' '}
                                 {skillsDeleted + tiersDeleted === 1

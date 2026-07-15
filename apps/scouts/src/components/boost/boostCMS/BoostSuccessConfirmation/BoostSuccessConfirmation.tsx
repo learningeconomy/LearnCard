@@ -11,7 +11,7 @@ import {
 } from '../../boost-options/boostOptions';
 import { BoostCategoryOptionsEnum, UserProfilePicture } from 'learn-card-base';
 import BoostCMSIDCard from '../../boost-id-card/BoostIDCard';
-import * as m from '../../../../../paraglide/messages.js';
+import * as m from '../../../../paraglide/messages.js';
 import { TransP } from '../../../../i18n/TransP';
 
 export const BoostSuccessConfirmation: React.FC<{
@@ -52,7 +52,7 @@ export const BoostSuccessConfirmation: React.FC<{
                 </div>
 
                 <div className="w-full flex items-end justify-center mb-6">
-                    <h3 className="text-grayscale-800 text-4xl text-center">{m.boostCMSSent()}</h3>
+                    <h3 className="text-grayscale-800 text-4xl text-center">{m['boostCMS.sent']()}</h3>
                 </div>
                 <div className="w-full flex flex-col items-center justify-center mb-4">
                     <h3 className="text-grayscale-800 text-3xl text-center">
@@ -60,11 +60,11 @@ export const BoostSuccessConfirmation: React.FC<{
                     </h3>
                     <h3 className="text-grayscale-800 text-base text-center mt-2">
                         <TransP
-                            m={m.boostCMSSentToCount}
+                            m={m['boostCMS.sentToCount']}
                             values={{
                                 type: state?.basicInfo?.type ?? '',
                                 count: String(state?.issueTo?.length || 0),
-                                person: (state?.issueTo?.length || 0) === 1 ? m.boostCMSPerson() : m.boostCMSPeople(),
+                                person: (state?.issueTo?.length || 0) === 1 ? m['boostCMS.person']() : m['boostCMS.people'](),
                             }}
                             components={[
                                 <span key="t" className="text-grayscale-800 font-semibold" />,
@@ -100,7 +100,7 @@ export const BoostSuccessConfirmation: React.FC<{
                         onClick={handlePreview}
                         className="flex items-center font-medium justify-center text-white rounded-full px-[64px] py-[12px] bg-grayscale-900 text-2xl w-full shadow-3xl max-w-[325px] mb-4"
                     >
-                        {m.boostCMSViewBoost()}
+                        {m['boostCMS.viewBoost']()}
                     </button>
                     <button
                         onClick={() => {
@@ -116,7 +116,7 @@ export const BoostSuccessConfirmation: React.FC<{
                         }}
                         className="flex items-center font-medium justify-center text-white rounded-full px-[64px] py-[12px] bg-indigo-500 text-2xl w-full shadow-3xl max-w-[325px] mb-4"
                     >
-                        {m.boostCMSWallet()}
+                        {m['boostCMS.wallet']()}
                     </button>
                 </div>
             </div>

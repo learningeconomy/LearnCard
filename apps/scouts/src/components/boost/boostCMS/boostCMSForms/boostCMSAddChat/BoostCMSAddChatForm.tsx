@@ -3,7 +3,7 @@ import React from 'react';
 import { IonRow, IonCol, IonToggle } from '@ionic/react';
 
 import { BoostCMSState } from '../../../boost';
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 
 const BoostCMSAddChatForm: React.FC<{
     state: BoostCMSState;

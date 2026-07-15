@@ -35,7 +35,7 @@ import Plus from '../../components/svgs/Plus';
 import { SubheaderContentType } from '../../components/main-subheader/MainSubHeader.types';
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
 import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
-import * as m from '../../../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 
 const MeritBadgesPage: React.FC = () => {
     const { newModal, closeModal } = useModal({

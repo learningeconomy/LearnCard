@@ -159,9 +159,9 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
     } else if (isInTroopViewMode) {
         currentMode = m['troops.troop']();
     } else if (isInMemberViewMode) {
-        currentMode = m['troops.scout_one']();
+        currentMode = m['troops.scoutOne']();
     } else if (isInLeaderViewMode) {
-        currentMode = m['troops.leader_one']();
+        currentMode = m['troops.leaderOne']();
     } else {
         currentMode = '';
     }

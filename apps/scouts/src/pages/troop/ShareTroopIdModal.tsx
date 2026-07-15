@@ -15,7 +15,7 @@ import {
 import { getScoutsNounForCred, useGetNetworkFromTroop } from '../../helpers/troop.helpers';
 import { VC } from '@learncard/types';
 import { getCredentialSubject as getSubject } from 'learn-card-base/helpers/credentialHelpers';
-import * as m from '../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 
 type ShareTroopIdModalProps = {
     credential: VC;

@@ -11,7 +11,7 @@ import TroopListItemCard from './TroopListItemCard';
 import { OrangeScoutsNetworkTent } from 'learn-card-base/svgs/ScoutsNetworkTent';
 import { IonRow, IonCol, IonInput, IonSpinner } from '@ionic/react';
 
-import * as m from '../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { TroopsCMSViewModeEnum } from '../../components/troopsCMS/troopCMSState';
 

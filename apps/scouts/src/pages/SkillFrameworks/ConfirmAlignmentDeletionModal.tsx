@@ -61,7 +61,7 @@ const ConfirmAlignmentDeletionModal: React.FC<ConfirmAlignmentDeletionModalProps
                 {isTier ? (
                     <p className="font-poppins text-[22px] text-grayscale-900 text-center">
                         {m['skillFrameworks.confirmDelTier']()}{' '}
-                        <span className="font-[600]">{count === 1 ? m['skillFrameworks.skill_one']() : m['skillFrameworks.skill_other']({ count })}</span>
+                        <span className="font-[600]">{count === 1 ? m['skillFrameworks.skillOne']() : m['skillFrameworks.skillOther']({ count })}</span>
                     </p>
                 ) : (
                     <p className="font-poppins text-[22px] text-grayscale-900 text-center">

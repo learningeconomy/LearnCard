@@ -283,7 +283,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
                                 : 'text-white mt-[6px]'
                             }`}
                     >
-                        {m['boost.issuedTo']({ count: recipientCount ?? 0, person: (recipientCount ?? 0) === 1 ? m['boost.person_one']() : m['boost.person_other']() })}
+                        {m['boost.issuedTo']({ count: recipientCount ?? 0, person: (recipientCount ?? 0) === 1 ? m['boost.personOne']() : m['boost.personOther']() })}
                     </p>
                 }
             </div>

@@ -39,8 +39,8 @@ const FrameworkSkillsCount: React.FC<FrameworkSkillsCountProps> = ({
                 <span className={`${textClassName} font-poppins font-[600]`}>
                     {countToUse !== undefined
                         ? countToUse === 1
-                            ? m['skillFrameworks.skill_one']()
-                            : m['skillFrameworks.skill_other']({ count: countToUse })
+                            ? m['skillFrameworks.skillOne']()
+                            : m['skillFrameworks.skillOther']({ count: countToUse })
                         : m['skillFrameworks.skillLoading']()}
                 </span>
             ) : (

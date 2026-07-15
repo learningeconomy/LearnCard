@@ -10,7 +10,7 @@ import EmptyImage from 'learn-card-base/assets/images/empty-image.png';
 import TrashBin from '../../../../svgs/TrashBin';
 
 import { BoostCMSState } from '../../../boost';
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 
 const BoostIDCardCMSBackgroundImageForm: React.FC<{
     state: BoostCMSState;
@@ -51,7 +51,7 @@ const BoostIDCardCMSBackgroundImageForm: React.FC<{
 
     return (
         <div className="flex flex-col items-center justify-center bg-white rounded-[20px] w-full font-medium text-lg mt-4">
-            <h3 className="text-grayscale-700 text-left w-full">{m.boostCMSBgImage()}</h3>
+            <h3 className="text-grayscale-700 text-left w-full">{m['boostCMS.bgImage']()}</h3>
 
             <div className="flex items-center justify-between w-full bg-grayscale-100 rounded-tl-[10px] rounded-bl-[10px] rounded-tr-[50px] rounded-br-[50px] mt-2">
                 <div className="flex items-center justify-start w-[70%] px-[6px] py-[6px] overflow-hidden">
@@ -87,7 +87,7 @@ const BoostIDCardCMSBackgroundImageForm: React.FC<{
                         )}
                     </div>
                     {!state?.appearance?.idBackgroundImage && (
-                        <p className="ml-[10px] text-grayscale-700">{m.boostCMSEmpty()}</p>
+                        <p className="ml-[10px] text-grayscale-700">{m['boostCMS.empty']()}</p>
                     )}
                 </div>
 
@@ -99,7 +99,7 @@ const BoostIDCardCMSBackgroundImageForm: React.FC<{
             </div>
 
             <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
-                <p className="text-grayscale-900 font-medium w-10/12">{m.boostCMSDimBg()}</p>
+                <p className="text-grayscale-900 font-medium w-10/12">{m['boostCMS.dimBg']()}</p>
                 <IonToggle
                     mode="ios"
                     color="emerald-700"

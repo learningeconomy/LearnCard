@@ -111,7 +111,7 @@ export const TroopIDUsersList: React.FC<TroopIDUsersListProps> = ({
             {scoutsAndLeadersListCount > 0 && (
                 <div className="w-full flex items-start justify-center flex-col">
                     <h3 className="font-notoSans text-xl font-normal mb-2 text-grayscale-900">
-                        {conditionalPluralize(scoutsAndLeadersListCount, m['troops.member_one']())}
+                        {conditionalPluralize(scoutsAndLeadersListCount, m['troops.memberOne']())}
                     </h3>
                     {isInTroopViewMode && scoutsListCount > 0 && leadersListCount > 0 && (
                         <div className="flex mb-2">
@@ -132,7 +132,7 @@ export const TroopIDUsersList: React.FC<TroopIDUsersListProps> = ({
                                             : 'text-grayscale-700'
                                         }`}
                                 >
-                                    {scoutsListCount} {conditionalPluralize(scoutsListCount, m['troops.scout_one']())}
+                                    {scoutsListCount} {conditionalPluralize(scoutsListCount, m['troops.scoutOne']())}
                                 </button>
                             )}
 
@@ -145,7 +145,7 @@ export const TroopIDUsersList: React.FC<TroopIDUsersListProps> = ({
                                         }`}
                                 >
                                     {leadersListCount}{' '}
-                                    {conditionalPluralize(leadersListCount, m['troops.leader_one']())}
+                                    {conditionalPluralize(leadersListCount, m['troops.leaderOne']())}
                                 </button>
                             )}
                         </div>
@@ -163,7 +163,7 @@ export const TroopIDUsersList: React.FC<TroopIDUsersListProps> = ({
 
             {filteredList?.length > 0 &&
                 filteredList.map((user, index) => {
-                    const typeTitle = user?.type === 'scout' ? m['troops.scout_one']() : m['troops.leader_one']();
+                    const typeTitle = user?.type === 'scout' ? m['troops.scoutOne']() : m['troops.leaderOne']();
                     const deleteKey = user?.type === 'scout' ? 'issueTo' : 'admins';
 
                     return (

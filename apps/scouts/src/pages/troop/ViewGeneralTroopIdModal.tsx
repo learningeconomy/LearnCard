@@ -19,7 +19,7 @@ import BulkyAddUser from 'learn-card-base/svgs/BulkyAddUser';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import X from 'learn-card-base/svgs/X';
 
-import * as m from '../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 import {
     getRoleFromCred,
     getScoutDefaultsForRole,

@@ -1,7 +1,7 @@
 import React from 'react';
 import moment from 'moment';
 import { useGetBoostIssueHistory } from 'learn-card-base';
-import * as m from '../../paraglide/messages.js';
+import * as m from '../../../paraglide/messages.js';
 import CircleCheckmark from 'learn-card-base/svgs/CircleCheckmark';
 
 type IssueHistoryBoxProps = {

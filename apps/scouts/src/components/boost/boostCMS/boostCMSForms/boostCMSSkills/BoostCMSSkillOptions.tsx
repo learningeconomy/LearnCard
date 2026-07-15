@@ -10,7 +10,7 @@ import X from 'learn-card-base/svgs/X';
 import { BoostCMSSkill, BoostCMSState } from '../../../boost';
 import { BoostCMSSKillsCategoryEnum, CATEGORY_TO_SKILLS, SKILLS_TO_SUBSKILLS } from './boostSkills';
 import { isPlatformIOS } from 'learn-card-base';
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 
 const BoostCMSSkillOptions: React.FC<{
     state: BoostCMSState;

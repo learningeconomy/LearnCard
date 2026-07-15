@@ -2,7 +2,7 @@ import React from 'react';
 
 import { IonRow, IonCol, IonTextarea } from '@ionic/react';
 import { BoostCMSState } from '../../../boost';
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 
 const BoostCMSNotesForm: React.FC<{
     state: BoostCMSState;

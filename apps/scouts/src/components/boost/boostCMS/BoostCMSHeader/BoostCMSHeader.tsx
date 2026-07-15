@@ -6,7 +6,7 @@ import { BoostUserTypeEnum, boostCategoryOptions } from '../../boost-options/boo
 import { BoostCMSStepsEnum } from '../../boost';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
-import * as m from '../../../../../paraglide/messages.js';
+import * as m from '../../../../paraglide/messages.js';
 
 type BoostCMSHeaderProps = {
     boostUserType: BoostUserTypeEnum | string | null;
@@ -39,11 +39,11 @@ const BoostCMSHeader: React.FC<BoostCMSHeaderProps> = ({
     if (currentStep === BoostCMSStepsEnum.create) {
         headerTitle = `${title}`;
     } else if (currentStep === BoostCMSStepsEnum.publish) {
-        headerTitle = m.boostCMSPublishTitle({ title });
+        headerTitle = m['boostCMS.publishTitle']({ title });
     } else if (currentStep === BoostCMSStepsEnum.issueTo) {
-        headerTitle = m.boostCMSSendTitle({ title });
+        headerTitle = m['boostCMS.sendTitle']({ title });
     } else if (currentStep === BoostCMSStepsEnum.confirmation) {
-        headerTitle = m.boostCMSConfirmTitle({ title });
+        headerTitle = m['boostCMS.confirmTitle']({ title });
     }
 
     const handleGoBack = () => {
@@ -101,14 +101,14 @@ const BoostCMSHeader: React.FC<BoostCMSHeaderProps> = ({
                                 onClick={handleQuitConfirmationModal}
                                 className="rounded-full mr-[10px] ion-no-padding p-0 shadow-3xl font-medium text-lg bg-grayscale-900 text-white px-[24px] py-[4px] font-notoSans"
                             >
-                                {m.boostCMSQuit()}
+                                {m['boostCMS.quit']()}
                             </button>
                             {currentStep === BoostCMSStepsEnum.create && (
                                 <button
                                     onClick={handleNextStep}
                                     className="rounded-full ion-no-padding p-0 shadow-3xl text-lg font-medium bg-white text-grayscale-800 px-[24px] py-[4px] font-notoSans"
                                 >
-                                    {m.commonNext()}
+                                    {m['common.next']()}
                                 </button>
                             )}
                             {currentStep === BoostCMSStepsEnum.issueTo && (
@@ -117,7 +117,7 @@ const BoostCMSHeader: React.FC<BoostCMSHeaderProps> = ({
                                     onClick={() => handleSaveAndIssue(publishedBoostUri)}
                                     className="rounded-full ion-no-padding p-0 shadow-3xl text-xl font-medium bg-white text-grayscale-800 px-[20px] py-[4px] disabled:opacity-50 font-notoSans"
                                 >
-                                    {m.boostSend()}
+                                    {m['boost.send']()}
                                 </button>
                             )}
                         </div>

@@ -21,7 +21,7 @@ import TroopActionMenu from './TroopActionMenu';
 import ScoutConnectModal from './ScoutConnectModal';
 import InviteSelectionModal from './InviteSelectionModal';
 
-import * as m from '../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 import { getScoutsRole } from '../../helpers/troop.helpers';
 import { VC, Boost } from '@learncard/types';
 

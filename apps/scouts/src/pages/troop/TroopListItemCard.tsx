@@ -20,7 +20,7 @@ import BoostRecipients from 'learn-card-base/components/boost/BoostRecipients';
 import ScoutConnectModal from './ScoutConnectModal';
 import InviteSelectionModal from './InviteSelectionModal';
 
-import * as m from '../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 import { Boost, VC } from '@learncard/types';
 import { pluralize } from 'learn-card-base';
 import { useCanInviteTroop } from './useCanInviteTroop';

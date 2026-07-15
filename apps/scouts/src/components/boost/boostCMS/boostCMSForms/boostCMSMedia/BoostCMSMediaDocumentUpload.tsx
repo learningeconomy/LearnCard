@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Keyboard } from '@capacitor/keyboard';
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 import { useFilestack, UploadRes } from 'learn-card-base';
 import { VIEWER_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { IonCol, IonRow, IonInput } from '@ionic/react';

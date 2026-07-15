@@ -18,7 +18,7 @@ import NewBoostSelectMenu from '../../components/boost/boost-select-menu/NewBoos
 import { BlueBoostOutline2 } from 'learn-card-base/svgs/BoostOutline2';
 import { PurpleMeritBadgesIcon } from 'learn-card-base/svgs/MeritBadgesIcon';
 import { IonRow, IonCol, IonInput, IonContent } from '@ionic/react';
-import * as m from '../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('troop-credentials-modal');
 

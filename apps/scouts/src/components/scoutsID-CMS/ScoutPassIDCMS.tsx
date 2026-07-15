@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-import * as m from '../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 
 import { IonPage, IonToggle } from '@ionic/react';
 import ScoutPassIDCMSLayout from './ScoutPassIDCMSLayout';
@@ -110,12 +110,12 @@ export const ScoutPassIDCMS: React.FC<{
                 <div className="bg-white rounded-b-[20px] shadow-soft-bottom">
                     <div className="ion-padding ">
                         <div className="w-full flex items-center justify-end border-b-solid border-b-grayscale-100 border-b-[2px] pb-2">
-                            <p className="font-poppins text-grayscale-600 font-semibold">{m.scoutsId_display()}</p>
+                            <p className="font-poppins text-grayscale-600 font-semibold">{m['scoutsId.display']()}</p>
                         </div>
 
                         <div className="w-full flex items-end justify-between mb-2 mt-4">
                             <h3 className="text-grayscale-900 text-left w-full font-poppins text-[20px] mb-2">
-                                {m.scoutsId_card()}
+                                {m['scoutsId.card']()}
                             </h3>
 
                             <img src={IDWallpaperSelected} alt="id highlighted" />
@@ -167,7 +167,7 @@ export const ScoutPassIDCMS: React.FC<{
                                 <div className="flex items-center justify-between w-full p-2 mt-2">
                                     <div className="flex items-center justify-between w-full py-2 pl-[4px]">
                                         <p className="text-grayscale-900 font-poppins text-lg flex items-center justify-start w-[80%]">
-                                            {m.scoutsId_fadeImage()}
+                                            {m['scoutsId.fadeImage']()}
                                         </p>
                                         <IonToggle
                                             mode="ios"
@@ -185,7 +185,7 @@ export const ScoutPassIDCMS: React.FC<{
                                 <div className="flex items-center justify-between w-full p-2 mt-2">
                                     <div className="flex items-center justify-between w-full py-2 pl-[4px]">
                                         <p className="text-grayscale-900 font-poppins text-lg flex items-center justify-start w-[80%]">
-                                            {m.scoutsId_darkText()}
+                                            {m['scoutsId.darkText']()}
                                         </p>
                                         <IonToggle
                                             mode="ios"
@@ -213,7 +213,7 @@ export const ScoutPassIDCMS: React.FC<{
                     <div className="ion-padding ">
                         <div className="w-full flex items-end justify-between mb-2 mt-4">
                             <h3 className="text-grayscale-900 text-left w-full font-poppins text-[20px] mb-2">
-                                {m.scoutsId_wallpaper()}
+                                {m['scoutsId.wallpaper']()}
                             </h3>
 
                             <img src={ContainerWallpaperSelected} alt="container highlighted" />
@@ -263,7 +263,7 @@ export const ScoutPassIDCMS: React.FC<{
                         >
                             <div className="flex items-center justify-between w-full py-2 pl-[4px]">
                                 <p className="text-grayscale-900 font-poppins text-lg flex items-center justify-start w-[80%]">
-                                    {m.scoutsId_repeatBg()}
+                                    {m['scoutsId.repeatBg']()}
                                 </p>
                                 <IonToggle
                                     mode="ios"

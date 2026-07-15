@@ -37,7 +37,7 @@ const FrameworkSearchResults: React.FC<FrameworkSearchResultsProps> = ({
             <p
                 className={`font-poppins text-[17px] font-[700] text-grayscale-800 ${resultTextClassName}`}
             >
-                {searchResults.length === 1 ? m['skillFrameworks.result_one']() : m['skillFrameworks.result_other']({ count: searchResults.length })}
+                {searchResults.length === 1 ? m['skillFrameworks.resultOne']() : m['skillFrameworks.resultOther']({ count: searchResults.length })}
             </p>
             {searchResults.map((result, index) => (
                 <FrameworkSearchResultItem

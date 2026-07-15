@@ -6,7 +6,7 @@ import X from 'learn-card-base/svgs/X';
 
 import { BoostCMSState } from '../../../boost';
 import { useModal, ModalTypes } from 'learn-card-base';
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 
 const BoostIDCardAccentForm: React.FC<{
     state: BoostCMSState;
@@ -65,7 +65,7 @@ const BoostIDCardAccentForm: React.FC<{
         <>
             <IonCol size="12" className="w-full bg-white flex items-center justify-between mt-4">
                 <h3 className="text-grayscale-700 text-left w-full font-medium text-lg">
-                    {m.boostCMSAccentColor()}
+                    {m['boostCMS.accentColor']()}
                 </h3>
             </IonCol>
 
@@ -75,7 +75,7 @@ const BoostIDCardAccentForm: React.FC<{
                         value={state?.appearance?.accentColor}
                         onChange={e => handleColorInputOnChange(e.target.value)}
                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base w-full pr-10"
-                        placeholder={m.boostCMSColorHex()}
+                        placeholder={m['boostCMS.colorHex']()}
                         type="text"
                         disabled={disabled}
                     />

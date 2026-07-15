@@ -84,8 +84,8 @@ const SkillFrameworks: React.FC = () => {
             <div className="bg-white max-w-[800px] w-full rounded-[15px] p-[15px] shadow-box-bottom flex flex-col gap-[20px]">
                 <h4 className="text-[20px] text-grayscale-900 text-left font-notoSans">
                     {frameworks.length === 1
-                        ? m['skillFrameworks.fwCount_one']({ count: frameworks.length })
-                        : m['skillFrameworks.fwCount_other']({ count: frameworks.length })}
+                        ? m['skillFrameworks.fwCountOne']({ count: frameworks.length })
+                        : m['skillFrameworks.fwCountOther']({ count: frameworks.length })}
                 </h4>
 
                 {isLoading ? (

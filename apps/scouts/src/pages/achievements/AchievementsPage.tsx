@@ -27,7 +27,7 @@ import Lottie from 'react-lottie-player';
 import HourGlass from '../../assets/lotties/hourglass.json';
 import BoostErrorsDisplay from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
-import * as m from '../../../paraglide/messages.js';
+import * as m from '../../paraglide/messages.js';
 
 const AchievementsPage: React.FC = () => {
     //Query gets 'earned' credentials

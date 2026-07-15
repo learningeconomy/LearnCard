@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 
 import {
     useFilestack,

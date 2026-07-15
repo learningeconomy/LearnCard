@@ -4,7 +4,7 @@ import {
     childPermissionsToDisplayString,
     convertBoostPermissionsToCategoryPermissions,
 } from '../../../helpers/permissions.helpers';
-import * as m from '../../paraglide/messages.js';
+import * as m from '../../../paraglide/messages.js';
 import { VC } from '@learncard/types';
 import { getRoleFromCred } from '../../../helpers/troop.helpers';
 import { ScoutsRoleEnum } from '../../../stores/troopPageStore';

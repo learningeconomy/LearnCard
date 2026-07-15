@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import prettyBytes from 'pretty-bytes';
-import * as m from '../../paraglide/messages.js';
+import * as m from '../../../paraglide/messages.js';
 
 import Camera from '../svgs/Camera';
 import LinkIcon from '../svgs/LinkIcon';

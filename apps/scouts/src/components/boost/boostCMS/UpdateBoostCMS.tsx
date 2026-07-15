@@ -1,3 +1,4 @@
+import * as m from '../../../paraglide/messages.js';
 import React, { useEffect, useMemo, useState } from 'react';
 import { deriveAlignmentsFromVC } from '../alignmentHelpers';
 import { useHistory, useLocation } from 'react-router';
@@ -499,7 +500,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
         } catch (e) {
             setIsSaveLoading(false);
             log.debug('error::savingBoost', e);
-            presentToast(m.boostCMSBoostFailed(), {
+            presentToast(m['boostCMS.boostFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -537,7 +538,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
             } catch (e) {
                 setIsPublishLoading(false);
                 log.debug('error::boosting::someone', e);
-                presentToast(m.boostCMSIssueErr(), {
+                presentToast(m['boostCMS.issueErr'](), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
@@ -799,7 +800,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                     isLoading={loading}
                     collectionPropName="admins"
                     showContactOptions={false}
-                    title={m.boostCMSAssignAdmins()}
+                    title={m['boostCMS.assignAdmins']()}
                     hideBoostShareableCode
                 />
                 {/* <BoostCMSAdvancedSettingsForm
@@ -865,13 +866,13 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
 
     let loadingText = '';
     if (isBoostLoading) {
-        loadingText = m.commonLoading();
+        loadingText = m['common.loading']();
     } else if (isLoading) {
-        loadingText = m.boostSending();
+        loadingText = m['boost.sending']();
     } else if (isPublishLoading) {
-        loadingText = m.boostCMSPublishing();
+        loadingText = m['boostCMS.publishing']();
     } else if (isSaveLoading) {
-        loadingText = m.commonSaving();
+        loadingText = m['common.saving']();
     }
 
     return (
@@ -901,7 +902,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                     <IonRow className="w-full flex items-center justify-center pb-[200px]">
                         <IonCol className="w-full flex items-center justify-center">
                             <button onClick={handleConfirmationModal} className="mt-4 pb-4">
-                                {m.boostCMSQuit()}
+                                {m['boostCMS.quit']()}
                             </button>
                         </IonCol>
                     </IonRow>

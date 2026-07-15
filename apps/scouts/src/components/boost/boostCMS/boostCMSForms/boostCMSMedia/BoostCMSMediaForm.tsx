@@ -1,7 +1,7 @@
 import React from 'react';
 import { IonCol, IonRow } from '@ionic/react';
 
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 import Plus from 'learn-card-base/svgs/Plus';
 import BoostCMSMediaOptions from './BoostCMSMediaOptions';
 import { BoostCMSState, BoostMediaOptionsEnum, BoostCMSMediaAttachment } from '../../../boost';

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Keyboard } from '@capacitor/keyboard';
-import * as m from '../../../../../../paraglide/messages.js';
+import * as m from '../../../../../paraglide/messages.js';
 import { IonCol, IonRow, IonInput } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import { Updater } from 'use-immer';
