@@ -184,8 +184,9 @@ answers its `postMessage` requests. When you run your app on its own (local dev,
 Storybook, a preview deploy, CI), there is no host, so every call would hang
 until it times out.
 
-**Mock mode fixes this automatically.** When the SDK detects it is _not_ embedded
-in a LearnCard host, it simulates the host locally:
+**Mock mode fixes this automatically in local development.** When the SDK is
+standalone on a local dev host (and, on preview deploys, whenever you pass
+`mock: true`), it simulates the host locally:
 
 -   **Every method shows a branded toast** describing what would happen once embedded — e.g. `sendCredential` → _"✅ In LearnCard, the user would receive **[name]** here."_, `incrementCounter` → _"Counter **coins** → **10**."_, `launchFeature` → _"Would open **/wallet**."_ So you get strong, visible feedback for every call, not just console logs.
 -   `requestConsent(...)` auto-grants and shows a "mock consent" toast; `incrementCounter` / `getCounter` / `getCounters` persist to `localStorage` so values survive reloads.
@@ -206,10 +207,16 @@ const res = await learnCard.sendCredential({ templateAlias: 'course-completion' 
 // Embedded:   goes to the real LearnCard host.
 ```
 
+**`'auto'` only mocks on a local dev host** (`localhost`, `127.0.0.1`, `*.local`,
+etc.) when standalone. It deliberately does **not** mock on a production origin,
+so a partner app opened directly by a real user never silently auto-grants
+consent or returns a fake identity. To demo a standalone build on a preview
+deploy (a non-localhost URL), opt in explicitly with `mock: true`.
+
 Override the default behavior when needed:
 
 ```typescript
-// Force mock even while embedded (useful in tests):
+// Force mock anywhere — preview deploys, or even while embedded (and in tests):
 createPartnerConnect({ mock: true });
 
 // Never mock (calls will time out if no host is present):

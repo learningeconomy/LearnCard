@@ -138,7 +138,7 @@ interface PartnerConnectOptions {
 
     /**
      * Automatic standalone mock mode.
-     * 'auto' (default) mocks only when not embedded; true always mocks; false never mocks.
+     * 'auto' (default) mocks only when standalone AND on a local dev host; true always mocks; false never mocks.
      * @default 'auto'
      */
     mock?: boolean | 'auto';
@@ -883,7 +883,7 @@ Also available as `PartnerConnect.isEmbedded()` (static) and `learnCard.isEmbedd
 
 The SDK only does real work when it's embedded inside LearnCard — that's what answers its requests. Run your app on its own (local dev, a preview deploy, tests) and there's nothing to answer, so calls would hang until they time out.
 
-Mock mode fixes this automatically. When the SDK sees it isn't embedded, it stands in for LearnCard so your app stays fully usable:
+Mock mode fixes this automatically in local development. When the SDK is standalone on a local dev host (`localhost`, `127.0.0.1`, `*.local`), it stands in for LearnCard so your app stays fully usable:
 
 -   **Every method shows a branded toast** describing what would happen once embedded — e.g. `sendCredential` → _"✅ In LearnCard, the user would receive **[name]** here"_, `incrementCounter` → _"Counter **coins** → **10**"_, `launchFeature` → _"Would open **/wallet**"_. Strong, visible feedback for every call.
 -   `requestConsent(...)` grants automatically and shows a "mock consent" toast; counters (`incrementCounter` / `getCounter` / `getCounters`) save to the browser and survive reloads.
@@ -893,8 +893,10 @@ Mock mode fixes this automatically. When the SDK sees it isn't embedded, it stan
 
 No flags, no separate build. Your app is demo-able standalone and behaves exactly the same against the real host once embedded.
 
+**Safe by default:** `'auto'` only mocks on a local dev host, so a partner app opened directly by a real user in production never silently auto-grants consent or returns a fake identity. To demo a standalone build on a preview deploy (a non-localhost URL), opt in with `mock: true`.
+
 ```typescript
-// Works everywhere: mocks when standalone, real host when embedded.
+// Mocks on localhost, real host when embedded, no-op in production standalone.
 const learnCard = createPartnerConnect();
 
 await learnCard.sendCredential({ templateAlias: 'course-completion' });
@@ -903,7 +905,7 @@ await learnCard.sendCredential({ templateAlias: 'course-completion' });
 **Overrides:**
 
 ```typescript
-createPartnerConnect({ mock: true }); // always mock (handy in tests)
+createPartnerConnect({ mock: true }); // force mock (preview deploys, tests)
 createPartnerConnect({ mock: false }); // never mock
 createPartnerConnect({
     mockOptions: {

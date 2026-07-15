@@ -198,9 +198,11 @@ export class MockHost {
                 return Promise.resolve({ credentialId, stored: true });
             }
 
-            case 'REQUEST_CONSENT':
-                this.showConsentBanner();
+            case 'REQUEST_CONSENT': {
+                const redirect = Boolean((payload as { redirect?: boolean } | undefined)?.redirect);
+                this.showConsentBanner(redirect);
                 return Promise.resolve({ granted: true });
+            }
 
             case 'LAUNCH_FEATURE': {
                 const featurePath =
@@ -685,12 +687,27 @@ export class MockHost {
         });
     }
 
-    private showConsentBanner(): void {
+    private showConsentBanner(redirectIgnored = false): void {
         this.toast({
             icon: '🔓',
             tone: 'positive',
-            segments: ['The user would review and grant consent. Auto-granted in mock.'],
+            segments: redirectIgnored
+                ? ['Consent auto-granted. Redirect ignored in mock.']
+                : ['The user would review and grant consent. Auto-granted in mock.'],
         });
+
+        if (redirectIgnored) {
+            this.note(
+                "requestConsent: 'redirect' is ignored in mock mode — the real host would " +
+                    "navigate to the contract's redirectUrl with the VP in the URL."
+            );
+        }
+    }
+
+    private note(message: string): void {
+        if (!this.options.log) return;
+        // eslint-disable-next-line no-console
+        console.log(`${MOCK_PREFIX} ${message}`);
     }
 
     /**
@@ -716,8 +733,9 @@ export class MockHost {
             return;
         }
 
-        this.ensureStyles();
         const stack = this.ensureStack();
+        if (!stack) return;
+        this.ensureStyles();
 
         const toast = document.createElement('div');
         toast.className = `lc-mock-toast lc-mock-toast--${tone}`;
@@ -772,7 +790,8 @@ export class MockHost {
         }, 200);
     }
 
-    private ensureStack(): HTMLElement {
+    private ensureStack(): HTMLElement | null {
+        if (!document.body) return null;
         if (this.stackEl && document.body.contains(this.stackEl)) return this.stackEl;
 
         const stack = document.createElement('div');
@@ -783,7 +802,7 @@ export class MockHost {
     }
 
     private ensureStyles(): void {
-        if (!this.options.ui || !hasDocument() || this.styleEl) return;
+        if (!this.options.ui || !hasDocument() || this.styleEl || !document.head) return;
 
         const style = document.createElement('style');
         style.textContent = `

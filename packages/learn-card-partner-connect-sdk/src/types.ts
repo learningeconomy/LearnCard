@@ -111,9 +111,13 @@ export interface PartnerConnectOptions {
      * demo-able, and testable without being embedded — and then behaves
      * identically (real host) once embedded, with no code changes.
      *
-     * - `'auto'` **(default)**: mock automatically **only when not embedded**.
-     *    When embedded in a real LearnCard host, real `postMessage` is used.
-     * - `true`: always mock, even when embedded (useful for tests / demos).
+     * - `'auto'` **(default)**: mock automatically only when **not embedded**
+     *    **and** running on a local dev host (`localhost`, `127.0.0.1`,
+     *    `*.local`, etc.). This deliberately does **not** mock on a production
+     *    origin, so a partner app opened directly by a real user never silently
+     *    auto-grants consent or returns a fake identity.
+     * - `true`: always mock, even when embedded or on a production origin
+     *    (use this to demo a standalone build on a preview deploy, and in tests).
      * - `false`: never mock. Calls go to the real host and will time out if
      *    no host is present.
      *

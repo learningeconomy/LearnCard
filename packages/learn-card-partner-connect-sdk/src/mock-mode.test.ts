@@ -56,6 +56,21 @@ describe('mock mode activation', () => {
     it('can be forced on', () => {
         expect(createPartnerConnect({ mock: true }).isMocked()).toBe(true);
     });
+
+    it('does not auto-mock on a production host, but true still forces it', () => {
+        const original = Object.getOwnPropertyDescriptor(window, 'location');
+        Object.defineProperty(window, 'location', {
+            configurable: true,
+            value: { hostname: 'app.example.com', search: '', href: 'https://app.example.com/' },
+        });
+
+        try {
+            expect(createPartnerConnect().isMocked()).toBe(false);
+            expect(createPartnerConnect({ mock: true }).isMocked()).toBe(true);
+        } finally {
+            if (original) Object.defineProperty(window, 'location', original);
+        }
+    });
 });
 
 describe('mock responses', () => {

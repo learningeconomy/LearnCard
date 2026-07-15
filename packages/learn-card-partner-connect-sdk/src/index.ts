@@ -98,6 +98,27 @@ export function isEmbedded(): boolean {
 }
 
 /**
+ * Heuristic for "is this a local development host?" Used to keep automatic mock
+ * mode from ever activating for real users on a production origin — where
+ * silently auto-granting consent / returning a fake identity would be unsafe.
+ */
+function isLocalDevHost(): boolean {
+    if (typeof window === 'undefined') return false;
+
+    const hostname = window.location?.hostname ?? '';
+
+    return (
+        hostname === 'localhost' ||
+        hostname === '127.0.0.1' ||
+        hostname === '0.0.0.0' ||
+        hostname === '::1' ||
+        hostname === '[::1]' ||
+        hostname.endsWith('.localhost') ||
+        hostname.endsWith('.local')
+    );
+}
+
+/**
  * LearnCard Partner Connect SDK class
  */
 export class PartnerConnect {
@@ -158,7 +179,8 @@ export class PartnerConnect {
         this.setupMessageListener();
 
         const mockSetting = options?.mock ?? 'auto';
-        const shouldMock = mockSetting === true || (mockSetting === 'auto' && !isEmbedded());
+        const shouldMock =
+            mockSetting === true || (mockSetting === 'auto' && !isEmbedded() && isLocalDevHost());
         if (shouldMock) {
             this.mockHost = new MockHost(options?.mockOptions);
         }
