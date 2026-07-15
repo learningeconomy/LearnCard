@@ -108,6 +108,13 @@ export const aiPassportApps: (LaunchPadAppListItem & { url: string })[] = [
     },
 ];
 
+export const getSelectableAiPassportApps = (
+    allAppsAvailable = areAiPassportAppsAvailable()
+): (LaunchPadAppListItem & { url: string })[] =>
+    allAppsAvailable
+        ? aiPassportApps
+        : aiPassportApps.filter(app => app.type === AiPassportAppsEnum.learncardapp);
+
 export const getAiAppBackgroundStylesForApp = (app?: LaunchPadAppListItem) => {
     if (app?.type === AiPassportAppsEnum.chatGPT) {
         return {

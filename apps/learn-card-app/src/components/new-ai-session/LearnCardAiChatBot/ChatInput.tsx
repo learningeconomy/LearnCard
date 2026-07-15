@@ -29,7 +29,6 @@ import {
 } from 'learn-card-base/stores/nanoStores/chatStore';
 
 import type { LearningPathway } from 'learn-card-base/types/ai-chat';
-import { IonSpinner } from '@ionic/react';
 import CustomSpinner from '../../svgs/CustomSpinner';
 import AiSessionLoader from '../AiSessionLoader';
 import {
@@ -115,7 +114,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
 
     if (showContinue && mode === AiSessionMode.tutor) {
         return (
-            <div className="flex justify-center p-5">
+            <div className="flex flex-col items-center gap-2 p-5">
                 <button
                     onClick={continuePlan}
                     className={`bg-${primaryColor} text-xl text-white flex items-center justify-center font-semibold py-[12px] rounded-full w-full shadow-soft-bottom max-w-[375px] mr-2`}

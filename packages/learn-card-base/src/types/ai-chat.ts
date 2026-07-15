@@ -31,6 +31,17 @@ export type ChatMessage = {
     artifact?: InsightArtifact;
 };
 
+export type ThreadCredentialContext = {
+    uri: string;
+    type: string;
+    context: string;
+    score: number;
+    strongestScore?: number;
+    averageScore?: number;
+    matchCount?: number;
+    title?: string;
+};
+
 export type Thread = {
     id: string;
     did: string;
@@ -38,6 +49,8 @@ export type Thread = {
     title: string;
     created_at: string;
     last_message_at: string;
+    active?: boolean;
+    ended_at?: string;
     // Thread-specific data (consolidated from separate collections)
     summaries?: Array<{
         summary_data: string;
@@ -48,7 +61,9 @@ export type Thread = {
         plan_data: string;
         created_at: string;
     }>;
-    credentials?: VerifiableCredential[];
+    credentials?: ThreadCredentialContext[];
+    credentialSearchTopic?: string;
+    credentialContextStatus?: 'pending' | 'ready' | 'empty' | 'error';
 };
 
 export type VerifiableCredential = {

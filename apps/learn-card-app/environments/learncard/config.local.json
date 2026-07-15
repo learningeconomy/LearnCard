@@ -6,7 +6,8 @@
         "brainServiceApi": "http://localhost:4000/api",
         "cloudService": "http://localhost:4100/trpc",
         "lcaApi": "http://localhost:5100/trpc",
-        "xapi": "http://localhost:4100/xapi"
+        "xapi": "http://localhost:4100/xapi",
+        "aiService": "http://localhost:3001"
     },
     "features": {
         "analytics": false,
