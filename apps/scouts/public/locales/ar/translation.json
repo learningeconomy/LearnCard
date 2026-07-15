@@ -202,5 +202,57 @@
                 "couldNotVerify": "تعذّر التحقق من بيان اعتماد Boost."
             }
         }
+    },
+    "introSlides": {
+        "swipeToContinue": "Swipe right to Continue",
+        "earnBadges": "Earn & Send Badges",
+        "badgesDesc": "Badges help to recognize values, talents, participation and contributions.",
+        "organizeTroops": "Organize into Troops",
+        "organizeTroopsDesc": "Soon local troops can self organize and issue official scout badges."
+    },
+    "socialLogins": {
+        "or": "OR",
+        "loginWith": "Login With"
+    },
+    "auth": {
+        "troubleSigningIn": "Having trouble signing in?",
+        "downloadScoutPass": "You can also download ScoutPass on your smartphone or tablet:",
+        "androidLink": "ScoutPass for Android",
+        "iosLink": "ScoutPass for iOS",
+        "loggingOut": "Logging out...",
+        "restoringSession": "Restoring your session...",
+        "sessionRestored": "Session Restored",
+        "youreAllSet": "You're all set.",
+        "sessionExpiredTitle": "Session Expired",
+        "sessionExpiredDesc": "Your sign-in session has expired. Please sign in again to continue.",
+        "sessionExpiredSignOutDesc": "Your sign-in session has expired. Please sign out and sign back in to continue.",
+        "signingIn": "Signing in...",
+        "continueWithGoogle": "Continue with Google",
+        "continueWithApple": "Continue with Apple",
+        "dismiss": "Dismiss",
+        "uidMismatch": "You signed in with a different account. Please try again with the correct account."
+    },
+    "login": {
+        "selfCustodial": "Self-custodial login.",
+        "learnMoreScoutPass": "Learn More about ScoutPass",
+        "termsOfService": "Terms of Service",
+        "privacyPolicy": "Privacy Policy",
+        "contact": "Contact",
+        "loginWithEmail": "Login with Email",
+        "loginWithPhone": "Login With Phone Number",
+        "emailPlaceholder": "Email address",
+        "phonePlaceholder": "Phone Number",
+        "usernamePlaceholder": "Username",
+        "sendLoginCode": "Send Login Code",
+        "sendCode": "Send Code",
+        "youreAllSetTitle": "You're all set!",
+        "signInWithAccess": "Sign in with <0>{{name}}</0> to access your account.",
+        "signInBelowAccess": "Now just sign in below to access your account.",
+        "continueToSignIn": "Continue to Sign In",
+        "signInWithFinish": "Sign in with <0>{{name}}</0> to finish",
+        "deviceLinkedFinish": "Device linked — sign in to finish",
+        "signInFromDevice": "Sign in from another device",
+        "worldScoutsAccount": "Login with your <0>World Scouts Account</0>",
+        "verificationSentToast": "A verification code has been sent"
     }
 }

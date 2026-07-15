@@ -3,6 +3,7 @@ import React from 'react';
 import { IonCol, IonRouterLink } from '@ionic/react';
 import Web3AuthLogo from '../../assets/images/web3auth-logo.svg';
 import ExternalLinkIcon from 'learn-card-base/svgs/ExternalLink';
+import * as m from '../../paraglide/messages.js';
 import { openToS, openPP, openContactLink, openLCwebsite } from '../../helpers/externalLinkHelpers';
 
 const LoginFooter: React.FC = () => {
@@ -14,7 +15,7 @@ const LoginFooter: React.FC = () => {
                     className="w-full flex-col items-center justify-start login-footer-title-wrap"
                 >
                     <p className="w-full flex items-center mr-3 text-grayscale-600 font-medium text-base">
-                        Self-custodial login.
+                        {m['login.selfCustodial']()}
                     </p>
                 </IonCol>
                 <div className="bg-grayscale-100 w-full h-[2px]" />
@@ -22,7 +23,7 @@ const LoginFooter: React.FC = () => {
                     onClick={openLCwebsite}
                     className="flex items-end justify-center text-indigo-500 font-bold text-sm mr-2 mt-2"
                 >
-                    Learn More about ScoutPass{' '}
+                    {m['login.learnMoreScoutPass']()}{' '}
                     <ExternalLinkIcon className="ml-[6px] w-[20px]" color="#6366f1" />
                 </button>
                 <IonCol
@@ -33,19 +34,19 @@ const LoginFooter: React.FC = () => {
                         onClick={openToS}
                         className="flex items-center justify-center text-indigo-500 font-bold text-xs mr-2 mt-2"
                     >
-                        Terms of Service
+                        {m['login.termsOfService']()}
                     </button>
                     <button
                         onClick={openPP}
                         className="flex items-center text-indigo-500 font-bold text-xs mr-2 mt-2"
                     >
-                        Privacy Policy
+                        {m['login.privacyPolicy']()}
                     </button>
                     <button
                         onClick={openContactLink}
                         className="flex items-center text-indigo-500 font-bold text-xs mr-1 mt-2"
                     >
-                        Contact
+                        {m['login.contact']()}
                     </button>
                 </IonCol>
             </div>

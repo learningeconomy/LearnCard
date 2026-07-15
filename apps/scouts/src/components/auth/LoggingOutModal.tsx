@@ -1,6 +1,7 @@
 import { IonSpinner } from '@ionic/react';
 import React from 'react';
 import { ScoutsLogo } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 const LoggingOutModal: React.FC = () => {
     return (
@@ -23,7 +24,7 @@ const LoggingOutModal: React.FC = () => {
                 <ScoutsLogo className="w-14 h-14 absolute" />
             </div>
             <div className="font-rubik text-grayscale-900 font-medium text-xl text-center">
-                Logging out...
+                {m['auth.loggingOut']()}
             </div>
         </div>
     );

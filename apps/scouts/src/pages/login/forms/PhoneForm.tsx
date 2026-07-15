@@ -20,6 +20,9 @@ import { PhoneFormStepsEnum } from 'learn-card-base';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('phone-form');
 
+import * as m from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
+
 import 'react-phone-number-input/style.css';
 
 const PhoneValidator = z.object({
@@ -132,7 +135,7 @@ const PhoneForm: React.FC = () => {
     };
 
     const showSuccessToast = () => {
-        presentToast('A verification code has been sent', {
+        presentToast(m['login.verificationSentToast'](), {
             type: ToastTypeEnum.Success,
             hasDismissButton: true,
         });
@@ -225,19 +228,19 @@ const PhoneForm: React.FC = () => {
     let activeStep: React.ReactNode | null = null;
     let formTitle: React.ReactNode | null = null;
     let buttonTitle: string | null = null;
-    const resendCodeButtonText: string = isResendCodeLoading ? 'Sending Code...' : 'Resend Code';
+    const resendCodeButtonText = isResendCodeLoading ? m['common.sendingCode']() : m['common.resendCode']();
 
     if (currentStep === PhoneFormStepsEnum.phone) {
         formTitle = (
             <p className="font-medium text-sm text-grayscale-600 uppercase">
-                Login With Phone Number
+                {m['login.loginWithPhone']()}
             </p>
         );
 
         activeStep = (
             <IonCol size="12">
                 <PhoneInput
-                    placeholder="Phone Number"
+                    placeholder={m['login.phonePlaceholder']()}
                     countryOptionsOrder={['US', 'CA', 'AU', '|', '...']}
                     defaultCountry="US"
                     value={phone}
@@ -256,14 +259,14 @@ const PhoneForm: React.FC = () => {
                 )}
             </IonCol>
         );
-        buttonTitle = isLoading ? 'Loading...' : 'Send Code';
+        buttonTitle = isLoading ? m['common.loading']() : m['login.sendCode']();
     } else if (currentStep === PhoneFormStepsEnum.verification) {
         formTitle = (
             <p className=" text-grayscale-600 font-bold text-center text-lg">
-                Enter verification code or{' '}
-                <span className="login-start-over-span text-indigo-500" onClick={resetForm}>
-                    start over
-                </span>
+                <TransP
+                    m={m['common.enterVerificationCode']}
+                    components={[<span className="login-start-over-span text-indigo-500" onClick={resetForm} key="reset" />]}
+                />
             </p>
         );
         activeStep = (
@@ -288,35 +291,35 @@ const PhoneForm: React.FC = () => {
                 )}
             </IonCol>
         );
-        buttonTitle = buttonTitle = isLoading ? 'Verifying...' : 'Verify';
+        buttonTitle = isLoading ? m['common.verifying']() : m['common.verify']();
     } else if (currentStep === PhoneFormStepsEnum.passwordExistingUser) {
-        formTitle = <p className="font-medium text-grayscale-600 uppercase">Password</p>;
+        formTitle = <p className="font-medium text-grayscale-600 uppercase">{m['common.password']()}</p>;
         activeStep = (
             <IonCol size="12">
                 <IonInput
                     autocapitalize="on"
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
-                    placeholder="Password"
+                    placeholder={m['common.password']()}
                     // todo: add view password toggle
                     onIonInput={e => setPassword(e.detail.value)}
                     value={password}
                     type="password"
                 />
                 <IonCol size="12" className="flex items-center justify-end mt-3">
-                    <p className="mr-3 text-gray-700 font-medium text-lg">Stay Signed In</p>{' '}
+                    <p className="mr-3 text-gray-700 font-medium text-lg">{m['common.staySignedIn']()}</p>{' '}
                     <IonToggle />
                 </IonCol>
             </IonCol>
         );
-        buttonTitle = 'Login';
+        buttonTitle = m['common.login']();
     } else if (currentStep === PhoneFormStepsEnum.passwordNewUser) {
-        formTitle = 'Password';
+        formTitle = m['common.password']();
         activeStep = (
             <IonCol size="12">
                 <IonInput
                     autocapitalize="on"
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
-                    placeholder="Password"
+                    placeholder={m['common.password']()}
                     // todo: add view password toggle
                     onIonInput={e => setPassword(e.detail.value)}
                     value={password}
@@ -324,16 +327,16 @@ const PhoneForm: React.FC = () => {
                 />
                 <IonCol size="12" className="flex items-center justify-end mt-3">
                     <p className="mr-3 text-gray-700 font-medium text-lg">
-                        Agree to{' '}
-                        <IonRouterLink href="#" className="font-semibold login-terms-span">
-                            Terms
-                        </IonRouterLink>
+                        <TransP
+                            m={m['common.agreeToTerms']}
+                            components={[<IonRouterLink href="#" className="font-semibold login-terms-span" key="terms" />]}
+                        />
                     </p>{' '}
                     <IonCheckbox />
                 </IonCol>
             </IonCol>
         );
-        buttonTitle = 'Create Account';
+        buttonTitle = m['common.createAccount']();
     }
 
     return (
@@ -363,12 +366,12 @@ const PhoneForm: React.FC = () => {
                     size="12"
                     className="text-center mt-4 text-gray-700 font-medium text-lg login-existing-account"
                 >
-                    <p>Already have an account?</p>
+                    <p>{m['common.alreadyHaveAccount']()}</p>
                     <button
                         onClick={resetForm}
                         className="w-full text-center font-bold text-lg login-reset-btn"
                     >
-                        Use a different email address
+                        {m['common.differentEmail']()}
                     </button>
                 </IonCol>
             )}

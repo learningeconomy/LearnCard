@@ -24,6 +24,8 @@ import {
     useVerifyLoginVerificationCode,
 } from 'learn-card-base';
 import { generatePK } from '../../../helpers/privateKeyHelpers';
+import * as m from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('email-form');
 
@@ -248,12 +250,12 @@ const EmailForm: React.FC = () => {
         setPassword('');
     };
 
-    const resendCodeButtonText: string = isResendCodeLoading ? 'Sending Code...' : 'Resend Code';
+    const resendCodeButtonText = isResendCodeLoading ? m['common.sendingCode']() : m['common.resendCode']();
 
     let disabled = isLoading;
     if (currentStep === EmailFormStepsEnum.email) {
         formTitle = (
-            <p className="font-medium text-sm text-grayscale-600 uppercase">Login with Email</p>
+            <p className="font-medium text-sm text-grayscale-600 uppercase">{m['login.loginWithEmail']()}</p>
         );
         const emailError = errors.email?.[0];
         activeStep = (
@@ -264,7 +266,7 @@ const EmailForm: React.FC = () => {
                     className={`w-full px-4 py-3 bg-grayscale-100 border rounded-[15px] font-medium font-notoSans tracking-widest text-base text-grayscale-900 placeholder:text-grayscale-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
                         emailError ? 'border-red-300' : 'border-grayscale-200'
                     } ${emailError ? 'login-input-email-error' : ''}`}
-                    placeholder="Email address"
+                    placeholder={m['login.emailPlaceholder']()}
                     onChange={e => setEmail(e.target.value)}
                     value={email}
                     type="text"
@@ -272,17 +274,16 @@ const EmailForm: React.FC = () => {
                 {emailError && <p className="login-input-error-msg">{emailError}</p>}
             </div>
         );
-        // buttonTitle = 'Continue';
-        buttonTitle = 'Send Login Code';
-        if (isLoading) buttonTitle = 'Sending Code...';
+        buttonTitle = m['login.sendLoginCode']();
+        if (isLoading) buttonTitle = m['common.sendingCode']();
         disabled = !email || isLoading;
     } else if (currentStep === EmailFormStepsEnum.verification) {
         formTitle = (
             <p className={`w-full text-grayscale-800 text-lg text-center`}>
-                Enter verification code or{' '}
-                <span className="text-sp-purple-base underline font-bold" onClick={resetForm}>
-                    start over
-                </span>
+                <TransP
+                    m={m['common.enterVerificationCode']}
+                    components={[<span className="text-sp-purple-base underline font-bold" onClick={resetForm} key="reset" />]}
+                />
             </p>
         );
         activeStep = (
@@ -307,36 +308,36 @@ const EmailForm: React.FC = () => {
                 )}
             </IonCol>
         );
-        buttonTitle = isLoading ? 'Verifying...' : 'Verify';
+        buttonTitle = isLoading ? m['common.verifying']() : m['common.verify']();
         disabled = code?.length < 6 || isLoading;
     } else if (currentStep === EmailFormStepsEnum.passwordExistingUser) {
-        formTitle = 'Password';
+        formTitle = m['common.password']();
         activeStep = (
             <IonCol size="12">
                 <IonInput
                     autocapitalize="on"
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium font-notoSans text-base"
-                    placeholder="Password"
+                    placeholder={m['common.password']()}
                     // todo: add view password toggle
                     onIonInput={e => setPassword(e.detail.value)}
                     value={password}
                     type="password"
                 />
                 <IonCol size="12" className="flex items-center justify-end mt-3">
-                    <p className="mr-3 text-gray-700 font-medium text-lg">Stay Signed In</p>{' '}
+                    <p className="mr-3 text-gray-700 font-medium text-lg">{m['common.staySignedIn']()}</p>{' '}
                     <IonToggle />
                 </IonCol>
             </IonCol>
         );
-        buttonTitle = 'Login';
+        buttonTitle = m['common.login']();
     } else if (currentStep === EmailFormStepsEnum.passwordNewUser) {
-        formTitle = 'Password';
+        formTitle = m['common.password']();
         activeStep = (
             <IonCol size="12">
                 <IonInput
                     autocapitalize="on"
                     className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium font-notoSans text-base"
-                    placeholder="Password"
+                    placeholder={m['common.password']()}
                     // todo: add view password toggle
                     onIonInput={e => setPassword(e.detail.value)}
                     value={password}
@@ -344,16 +345,16 @@ const EmailForm: React.FC = () => {
                 />
                 <IonCol size="12" className="flex items-center justify-end mt-3">
                     <p className="mr-3 text-gray-700 font-medium text-lg">
-                        Agree to{' '}
-                        <IonRouterLink href="#" className="font-semibold login-terms-span">
-                            Terms
-                        </IonRouterLink>
+                        <TransP
+                            m={m['common.agreeToTerms']}
+                            components={[<IonRouterLink href="#" className="font-semibold login-terms-span" key="terms" />]}
+                        />
                     </p>{' '}
                     <IonCheckbox />
                 </IonCol>
             </IonCol>
         );
-        buttonTitle = 'Create Account';
+        buttonTitle = m['common.createAccount']();
     }
 
     return (
@@ -390,7 +391,7 @@ const EmailForm: React.FC = () => {
                                     disabled
                                     className="text-grayscale-600 font-bold mt-4 border-b-grayscale-600 border-solid border-b-[1px] font-notoSans"
                                 >
-                                    Resend in {seconds}s
+                                    {m['common.resendIn']({ seconds })}
                                 </button>
                             )
                         }
@@ -402,12 +403,12 @@ const EmailForm: React.FC = () => {
                     size="12"
                     className="text-center mt-4 text-gray-700 font-medium text-lg login-existing-account"
                 >
-                    <p>Already have an account?</p>
+                    <p>{m['common.alreadyHaveAccount']()}</p>
                     <button
                         onClick={resetForm}
                         className="w-full text-center font-bold text-lg login-reset-btn"
                     >
-                        Use a different email address
+                        {m['common.differentEmail']()}
                     </button>
                 </IonCol>
             )}

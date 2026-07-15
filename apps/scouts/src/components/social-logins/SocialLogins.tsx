@@ -5,6 +5,7 @@ import useSocialLogins, { SocialLoginTypes } from 'learn-card-base/hooks/useSoci
 
 import { LoginTypesEnum } from 'learn-card-base/helpers/loginHelpers';
 import { BrandingEnum } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 export const SocialLogins: React.FC<{
     branding: BrandingEnum;
@@ -31,14 +32,14 @@ export const SocialLogins: React.FC<{
         <IonRow className="w-full flex items-center justify-center social-logins-container">
             <div className="w-[80%] pl-[12px] pr-[12px] flex items-center justify-center max-w-[600px]">
                 <p className="border-b-[2px] border-solid border-[#EFF0F5] leading-[0.1em] mb-[20px] mt-[24px] w-full text-center">
-                    <span className="bg-white py-0 px-[10px]">OR</span>
+                    <span className="bg-white py-0 px-[10px]">{m['socialLogins.or']()}</span>
                 </p>
             </div>
 
             <div className="w-full flex flex-col items-center justify-center max-w-[500px] ion-padding-horizontal">
                 <div className="w-full text-left">
                     <p className="font-medium text-sm text-grayscale-600 uppercase mb-4">
-                        Login With
+                        {m['socialLogins.loginWith']()}
                     </p>
                 </div>
 
