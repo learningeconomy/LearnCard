@@ -12,6 +12,8 @@ import AddCredentialIcon from 'learn-card-base/svgs/AddCredentialIcon';
 import CheckListUploadRawVC from '../learncard/checklist/checklist-steps/CheckListUploadRawVC';
 import useBuildMyLearnCardModal from '../../pages/dashboard/hooks/useBuildMyLearnCardModal';
 
+import * as m from '../../paraglide/messages.js';
+
 const log = getLogger('add-to-passport');
 
 const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -91,30 +93,34 @@ export const AddToPassportMenu: React.FC<{ className?: string }> = ({ className 
         <div className={`w-full flex flex-col justify-center p-4 ${className || ''}`}>
             <div className="mb-2 px-2">
                 <h1 className="text-xl font-semibold text-grayscale-900 font-poppins mb-1">
-                    Add to Passport
+                    {m['passport.wallet.addToPassport']()}
                 </h1>
-                <p className="text-sm text-grayscale-600">Bring a credential into your passport.</p>
+                <p className="text-sm text-grayscale-600">{m['addToPassport.subtitle']()}</p>
             </div>
             <div className="w-full flex flex-col justify-center">
-                <SectionLabel>Receive</SectionLabel>
+                <SectionLabel>{m['addToPassport.receive']()}</SectionLabel>
                 {Capacitor.isNativePlatform() && (
-                    <MenuItem Icon={ScanIcon} label="Scan a QR Code" onClick={handleScanQRCode} />
+                    <MenuItem
+                        Icon={ScanIcon}
+                        label={m['passport.wallet.scanQrCode']()}
+                        onClick={handleScanQRCode}
+                    />
                 )}
                 <MenuItem
                     Icon={LinkOutlinedIcon}
-                    label="Use a Claim Link"
+                    label={m['launchpad.actions.useClaimLink']()}
                     onClick={handleUseClaimLink}
                 />
 
-                <SectionLabel>Add your own</SectionLabel>
+                <SectionLabel>{m['addToPassport.addYourOwn']()}</SectionLabel>
                 <MenuItem
                     Icon={UploadIcon}
-                    label="Upload a Credential"
+                    label={m['addToPassport.uploadCredential']()}
                     onClick={handleUploadCredential}
                 />
                 <MenuItem
                     Icon={AddCredentialIcon}
-                    label={`Build My ${brandingConfig.name}`}
+                    label={m['addToPassport.buildMyBrand']({ brand: brandingConfig.name })}
                     onClick={handleBuild}
                 />
             </div>

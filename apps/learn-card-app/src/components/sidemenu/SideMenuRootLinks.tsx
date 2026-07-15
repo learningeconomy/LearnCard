@@ -52,8 +52,9 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
     const isSyncing = isWalletSyncing.status === WalletSyncState.Syncing;
     const isCompleted = isWalletSyncing.status === WalletSyncState.Completed;
 
-    let walletText = 'Passport';
-    if (isSyncing || isCompleted) walletText = isWalletSyncing?.text ?? 'Passport';
+    let walletText: string = m['sidemenu.links.passport']();
+    if (isSyncing || isCompleted)
+        walletText = isWalletSyncing?.text ?? m['sidemenu.links.passport']();
 
     let walletTextStyles = '';
     if (isSyncing) walletTextStyles = `${colors.syncingColor}`;

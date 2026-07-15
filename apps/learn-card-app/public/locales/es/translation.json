@@ -520,7 +520,8 @@
                 "accomplishment": "Elemento de portafolio",
                 "accommodation": "Asistencia",
                 "workHistory": "Experiencia",
-                "credential": "Credencial"
+                "credential": "Credencial",
+                "id": "Identificación"
             },
             "categoriesPlural": {
                 "all": "Todo",
@@ -542,7 +543,39 @@
             "allCreds": "Todas las credenciales",
             "emptyAll": "Aún no hay nada en tu pasaporte.",
             "recent": "AÑADIDOS RECIENTEMENTE",
-            "seeAll": "Ver todo"
+            "seeAll": "Ver todo",
+            "article": {
+                "socialBadge": "una",
+                "achievement": "un",
+                "learningHistory": "un",
+                "accomplishment": "un",
+                "accommodation": "una",
+                "workHistory": "una",
+                "id": "una",
+                "credential": "una"
+            },
+            "status": {
+                "sent": "Enviado",
+                "claimed": "Reclamado",
+                "expired": "Vencido",
+                "notDelivered": "No entregado"
+            },
+            "title": {
+                "selfAdded": "Agregaste {{article}} {{label}} a tu pasaporte",
+                "received": "{{actor}} te envió {{article}} {{label}}",
+                "claimedBy": "{{label}} reclamado por",
+                "expiredFor": "{{label}} vencido para",
+                "failedTo": "No se pudo entregar {{label}} a",
+                "sentTo": "Enviaste {{article}} {{label}} a"
+            },
+            "when": {
+                "earlier": "Antes",
+                "today": "Hoy",
+                "yesterday": "Ayer",
+                "thisWeek": "A principios de esta semana",
+                "lastWeek": "La semana pasada",
+                "thisMonth": "A principios de este mes"
+            }
         }
     },
     "launchpad": {
@@ -807,7 +840,9 @@
             "colorful": "Colorful",
             "formal": "Formal",
             "vetpass": "VetPass"
-        }
+        },
+        "colorfulMode": "Modo colorido",
+        "neutralMode": "Modo neutro"
     },
     "language": {
         "select": "Seleccionar idioma",
@@ -3585,7 +3620,9 @@
             "browsePathwaysLabel": "Explorar rutas",
             "browsePathwaysCaption": "Descubre rutas disponibles",
             "discoverAppsLabel": "Descubrir apps",
-            "discoverAppsCaption": "Encuentra apps para empezar"
+            "discoverAppsCaption": "Encuentra apps para empezar",
+            "addToPassportLabel": "Agregar al pasaporte",
+            "addToPassportCaption": "Escanea, pega o sube"
         },
         "skillProfile": {
             "eyebrow": "Haz {{brand}} tuyo",
@@ -3679,5 +3716,23 @@
             "maxClaims": "Máximo de reclamos (opcional)",
             "unlimited": "Ilimitado"
         }
+    },
+    "myAppsPage": {
+        "browseMore": "Ver más",
+        "searchPlaceholder": "Buscar...",
+        "searchAria": "Buscar apps",
+        "learnCardApps": "Apps de LearnCard",
+        "moreApps": "Más apps",
+        "noResults": "Aún no hay apps para mostrar.",
+        "noResultsFor": "No hay resultados para \"{{query}}\"",
+        "oneResult": "1 resultado para \"{{query}}\"",
+        "manyResults": "{{count}} resultados para \"{{query}}\""
+    },
+    "addToPassport": {
+        "subtitle": "Lleva una credencial a tu pasaporte.",
+        "receive": "Recibir",
+        "addYourOwn": "Agrega la tuya",
+        "uploadCredential": "Sube una credencial",
+        "buildMyBrand": "Crea mi {{brand}}"
     }
 }
