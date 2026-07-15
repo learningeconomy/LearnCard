@@ -37,6 +37,7 @@ import {
 import PushNotificationsPrompt from '../push-notifications-prompt/PushNotificationsPrompt';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 const log = getLogger('join-network-prompt');
 
 const StateValidator = z.object({
@@ -177,7 +178,7 @@ export const JoinNetworkPrompt: React.FC<{
         }
     };
 
-    const networkPromptTitle = step === 1 ? 'Join the ScoutPass Network?' : 'Create Your User ID';
+    const networkPromptTitle = step === 1 ? m['networkPrompts.join.title']() : m['networkPrompts.join.createUid']();
 
     return (
         <>
@@ -202,18 +203,16 @@ export const JoinNetworkPrompt: React.FC<{
             <IonRow className="flex items-center justify-center w-full">
                 <IonCol className="text-center">
                     <p className="text-center text-sm font-semibold px-[16px] text-grayscale-800">
-                        The ScoutPass Network allows you to exchange credentials and badges with
-                        other members.
+                        {m['networkPrompts.join.desc']()}
                     </p>
                     <br />
                     {step === 1 && (
                         <p className="text-center text-sm font-semibold px-[16px] text-grayscale-600">
                             <span className="font-semibold text-grayscale-800">
-                                Requesting access to:
+                                {m['networkPrompts.join.requestAcc']()}
                             </span>
                             <br />
-                            Send and receive connection requests, display your profile photo and
-                            name in your connections’ contacts lists.
+                            {m['networkPrompts.join.accessDet']()}
                         </p>
                     )}
                     {step === 2 && (
@@ -226,7 +225,7 @@ export const JoinNetworkPrompt: React.FC<{
                                     }`}
                                     onIonInput={e => setProfileId(e.detail.value)}
                                     value={profileId}
-                                    placeholder="User ID"
+                                    placeholder={m['userProfile.userID']()}
                                     type="text"
                                 />
                                 {error && (
@@ -259,7 +258,7 @@ export const JoinNetworkPrompt: React.FC<{
                             type="submit"
                             className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-emerald-700 text-2xl w-full shadow-lg font-medium max-w-[320px]"
                         >
-                            Accept
+                            {m['common.accept']()}
                         </button>
                     ) : (
                         <button
@@ -267,7 +266,7 @@ export const JoinNetworkPrompt: React.FC<{
                             type="submit"
                             className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-emerald-700 text-2xl w-full shadow-lg font-medium max-w-[320px]"
                         >
-                            {loading ? 'Loading...' : 'Continue'}
+                            {loading ? m['common.loading']() : m['common.continue']()}
                         </button>
                     )}
 
@@ -281,7 +280,7 @@ export const JoinNetworkPrompt: React.FC<{
                             }}
                             className="text-grayscale-900 text-center text-base w-full font-medium"
                         >
-                            Don't Accept
+                            {m['networkPrompts.join.decline']()}
                         </button>
                     </div>
                 </IonCol>
@@ -289,21 +288,21 @@ export const JoinNetworkPrompt: React.FC<{
             <IonRow className="flex items-center justify-center mt-4 w-full">
                 <IonCol className="flex flex-col items-center justify-center text-center">
                     <p className="text-center text-sm font-normal px-16 text-grayscale-600">
-                        You own your own data.
+                        {m['networkPrompts.dataOwn']()}
                         <br />
-                        All connections are encrypted.
+                        {m['networkPrompts.encrypted']()}
                     </p>
-                    <button className="text-indigo-500 font-bold">Learn More</button>
+                    <button className="text-indigo-500 font-bold">{m['common.learnMore']()}</button>
                 </IonCol>
             </IonRow>
             <IonRow className="flex items-center justify-center w-full">
                 <IonCol className="flex items-center justify-center">
                     <button onClick={openPP} className="text-indigo-500 font-bold text-sm">
-                        Privacy Policy
+                        {m['login.privacyPolicy']()}
                     </button>
-                    <span className="text-indigo-500 font-bold text-sm">&nbsp;•&nbsp;</span>
+                    <span className="text-indigo-500 font-bold text-sm">&nbsp;{m['networkPrompts.separator']()}&nbsp;</span>
                     <button onClick={openToS} className="text-indigo-500 font-bold text-sm">
-                        Terms of Service
+                        {m['login.termsOfService']()}
                     </button>
                 </IonCol>
             </IonRow>

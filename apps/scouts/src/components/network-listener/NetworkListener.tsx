@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useToast, ToastTypeEnum } from 'learn-card-base';
 import { useNetworkStatus } from './useNetworkStatus';
+import * as m from '../../paraglide/messages.js';
 
 export const NetworkListener = () => {
     const isConnected = useNetworkStatus();
@@ -9,7 +10,7 @@ export const NetworkListener = () => {
     useEffect(() => {
         if (!isConnected && isConnected !== undefined) {
             present(
-                "Oops! It seems you've lost your connection. The app may not function properly and you will not be able to send boosts.",
+                m['networkPrompts.toasts.lostConn'](),
                 {
                     duration: 3000000,
                     type: ToastTypeEnum.Error,

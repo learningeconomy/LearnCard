@@ -9,6 +9,7 @@ import {
     NetworkSettingsEnum,
 } from './networkSettings.helpers';
 import ModalLayout from '../../layout/ModalLayout';
+import * as m from '../../paraglide/messages.js';
 
 const NetworkSettings: React.FC<{
     handleCloseModal: () => void;
@@ -52,7 +53,7 @@ const NetworkSettings: React.FC<{
                         <CaretLeft className="h-auto w-3 text-grayscale-900" />
                     </button>
                     <p className="font-bold text-black font-mouse text-3xl">
-                        Edit Requested Access
+                        {m['networkPrompts.settings.editAccess']()}
                     </p>
                 </IonCol>
             </IonRow>

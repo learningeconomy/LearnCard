@@ -1,3 +1,5 @@
+import * as m from '../../paraglide/messages.js';
+
 export type NetworkSettingsState = {
     sendRequests: boolean;
     receiveRequests: boolean;
@@ -22,30 +24,26 @@ export type NetworkSettingOptions = {
 export const networkSettingOptions: NetworkSettingOptions[] = [
     {
         id: 1,
-        title: 'Send Connection Requests.',
-        description:
-            'ScoutPass acts as a gateway that sends encrypted connection requests on your behalf.',
+        title: m['networkPrompts.settings.sendReq'](),
+        description: m['networkPrompts.settings.sendReqDesc'](),
         type: NetworkSettingsEnum.sendRequests,
     },
     {
         id: 2,
-        title: 'Receive connection requests.',
-        description:
-            'ScoutPass acts as a gateway that receives encrypted connection requests on your behalf.',
+        title: m['networkPrompts.settings.recvReq'](),
+        description: m['networkPrompts.settings.recvReqDesc'](),
         type: NetworkSettingsEnum.receiveRequests,
     },
     {
         id: 3,
-        title: 'Display name in your connections’ contact lists.',
-        description:
-            'Your name will appear in  your connection’s contact list, but it is never be displayed publicly or shared otherwise without your express permission.',
+        title: m['networkPrompts.settings.showName'](),
+        description: m['networkPrompts.settings.nameDesc'](),
         type: NetworkSettingsEnum.showDisplayName,
     },
     {
         id: 4,
-        title: 'Display profile photo in your connections’ contact lists.',
-        description:
-            'Your profile photo will appear in  your connection’s contact list, but it is never be displayed publicly or shared otherwise without your express permission.',
+        title: m['networkPrompts.settings.showPhoto'](),
+        description: m['networkPrompts.settings.photoDesc'](),
         type: NetworkSettingsEnum.showProfilePicture,
     },
 ];

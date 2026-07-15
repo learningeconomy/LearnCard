@@ -447,5 +447,53 @@
                 "email": "Recovery key sent to your email!"
             }
         }
+    },
+    "networkPrompts": {
+        "welcomeTo": "Welcome to",
+        "setupProf": "Set up your profile to get started!",
+        "dataOwn": "You own your own data.",
+        "encrypted": "All connections are encrypted.",
+        "separator": "•",
+        "createUser": "Create a new username",
+        "usernamePlh": "username",
+        "joiningNet": "Joining Network...",
+        "letsGo": "Let's Go!",
+        "join": {
+            "title": "Join the ScoutPass Network?",
+            "desc": "The ScoutPass Network allows you to exchange credentials and badges with other members.",
+            "createUid": "Create Your User ID",
+            "requestAcc": "Requesting access to:",
+            "accessDet": "Send and receive connection requests, display your profile photo and name in your connections’ contacts lists.",
+            "decline": "Don’t Accept",
+            "joinNet": "Join the ScoutPass Network"
+        },
+        "optOut": {
+            "joinLater": "You can still use ScoutPass without joining the network.",
+            "limit": "You won’t be able to send Boosts or connect with others, but you can still sync credentials. You can join later anytime."
+        },
+        "reject": {
+            "noProblem": "No Problem!",
+            "stillUse": "You can still use ScoutPass.",
+            "credAccess": "You can still receive and share credentials with “school connect” and your <0>ScoutPass number</0>.",
+            "joinNet": "Join ScoutPass Network"
+        },
+        "errorLogout": {
+            "msg": "There was a sign-in error. Please log out and log back into the app to fix this error.",
+            "logoutBtn": "Logout"
+        },
+        "settings": {
+            "editAccess": "Edit Requested Access",
+            "sendReq": "Send Connection Requests.",
+            "sendReqDesc": "ScoutPass acts as a gateway that sends encrypted connection requests on your behalf.",
+            "recvReq": "Receive connection requests.",
+            "recvReqDesc": "ScoutPass acts as a gateway that receives encrypted connection requests on your behalf.",
+            "showName": "Display name in your connections’ contact lists.",
+            "nameDesc": "Your name will appear in your connection’s contact list, but it is never be displayed publicly or shared otherwise without your express permission.",
+            "showPhoto": "Display profile photo in your connections’ contact lists.",
+            "photoDesc": "Your profile photo will appear in your connection’s contact list, but it is never be displayed publicly or shared otherwise without your express permission."
+        },
+        "toasts": {
+            "lostConn": "Oops! It seems you’ve lost your connection. The app may not function properly and you will not be able to send boosts."
+        }
     }
 }
