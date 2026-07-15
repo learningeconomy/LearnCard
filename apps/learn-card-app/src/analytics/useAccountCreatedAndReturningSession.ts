@@ -21,7 +21,7 @@ import { useEngagementSignal } from './useEngagementSignal';
  * The `method` distinguishes the first-ever fire after a fresh signup
  * (`'new_signup'`) from any first-fire on a new device for an existing
  * account (`'returning_user'`). Detection looks for the
- * `NEW_SIGNUP_FLAG_KEY` localStorage flag, which `OnboardingNetworkForm`
+ * `NEW_SIGNUP_FLAG_KEY` localStorage flag, which `OnboardingFlow`
  * sets immediately after `wallet.invoke.createProfile()` succeeds.
  * The flag is consume-on-read.
  *
@@ -34,7 +34,7 @@ export const useAccountCreatedAndReturningSession = (
      * directly (callers commonly pass `useCurrentUser()`) — internals
      * only use truthiness, so the precise shape doesn't matter.
      */
-    user: unknown,
+    user: unknown
 ): void => {
     const { track, isReady } = useAnalytics();
     const fireEngagement = useEngagementSignal();
@@ -64,7 +64,7 @@ export const useAccountCreatedAndReturningSession = (
         // Fire ACCOUNT_CREATED once per user lifetime (per device).
         if (localStorage.getItem(ACCOUNT_CREATED_KEY) !== 'true') {
             // LC-1853 (review #4): consume the new-signup flag set by
-            // OnboardingNetworkForm post-createProfile. Without the flag,
+            // OnboardingFlow post-createProfile. Without the flag,
             // we're seeing this user's first login on a fresh device for
             // an account that already existed elsewhere → 'returning_user'.
             const isNewSignup = localStorage.getItem(NEW_SIGNUP_FLAG_KEY) === '1';
