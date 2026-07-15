@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.97.4
+
+### Patch Changes
+
+-   [#1407](https://github.com/learningeconomy/LearnCard/pull/1407) [`0f2e8faa0e70de1917cfc7d1ab12494cb048136a`](https://github.com/learningeconomy/LearnCard/commit/0f2e8faa0e70de1917cfc7d1ab12494cb048136a) Thanks [@Custard7](https://github.com/Custard7)! - Fix selector
+
+-   [#1394](https://github.com/learningeconomy/LearnCard/pull/1394) [`147d2a5fda49ba33f20077400ac3aae633bddb05`](https://github.com/learningeconomy/LearnCard/commit/147d2a5fda49ba33f20077400ac3aae633bddb05) Thanks [@goblincore](https://github.com/goblincore)! - perf: eliminate duplicate wallet construction during app boot. getBespokeLearnCard/getSigningLearnCard now cache in-flight promises so concurrent boot callers share one build; getWalletOrFallback checks secure storage before falling back to the dummy wallet; useGetProofOfLoginVp reuses the logged-in user's wallet instead of building a throwaway 'aaa'-seed wallet (the server route ignores the caller DID).
+
+-   [#1412](https://github.com/learningeconomy/LearnCard/pull/1412) [`7e101e35f8faf1c43f5c37120dda63393a4ffe1b`](https://github.com/learningeconomy/LearnCard/commit/7e101e35f8faf1c43f5c37120dda63393a4ffe1b) Thanks [@Custard7](https://github.com/Custard7)! - fix: Badge Summit Bugs
+
+-   [#1413](https://github.com/learningeconomy/LearnCard/pull/1413) [`24bd3cd36c5aa9a3a013288909d389e0aa43dd5d`](https://github.com/learningeconomy/LearnCard/commit/24bd3cd36c5aa9a3a013288909d389e0aa43dd5d) Thanks [@Custard7](https://github.com/Custard7)! - feat: Onboarding 2.0
+
+-   [#1410](https://github.com/learningeconomy/LearnCard/pull/1410) [`daf64d05972682d6bd87b4afc7005eb0f19b0361`](https://github.com/learningeconomy/LearnCard/commit/daf64d05972682d6bd87b4afc7005eb0f19b0361) Thanks [@Custard7](https://github.com/Custard7)! - fix: Query Param Merging
+
+-   [#1410](https://github.com/learningeconomy/LearnCard/pull/1410) [`daf64d05972682d6bd87b4afc7005eb0f19b0361`](https://github.com/learningeconomy/LearnCard/commit/daf64d05972682d6bd87b4afc7005eb0f19b0361) Thanks [@Custard7](https://github.com/Custard7)! - fix: Query Param Merging
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.2.20
+    -   @learncard/credential-library@1.0.13
+    -   @learncard/react@2.10.7
+
 ## 1.97.3
 
 ### Patch Changes
