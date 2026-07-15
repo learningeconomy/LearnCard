@@ -3726,7 +3726,11 @@
         "noResults": "Aún no hay apps para mostrar.",
         "noResultsFor": "No hay resultados para \"{{query}}\"",
         "oneResult": "1 resultado para \"{{query}}\"",
-        "manyResults": "{{count}} resultados para \"{{query}}\""
+        "manyResults": "{{count}} resultados para \"{{query}}\"",
+        "shortcuts": {
+            "skillInsights": "Perspectivas de habilidades",
+            "boostAFriend": "Impulsa a un amigo"
+        }
     },
     "addToPassport": {
         "subtitle": "Lleva una credencial a tu pasaporte.",
