@@ -1,7 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { IonCol, IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
-import { useDeviceTypeByWidth } from 'learn-card-base';
+import {
+    SCOUTPASS_NETWORK_API_URL,
+    useDeviceTypeByWidth,
+    usePathQuery,
+    BoostCategoryOptionsEnum,
+    getDefaultCategoryForCredential,
+} from 'learn-card-base';
 import { BrandingEnum, LoginTypesEnum, SocialLoginTypes } from 'learn-card-base';
 import ScoutPassLogo from '../../../assets/images/scoutpass-logo.svg';
 import ScoutPassTextLogo from '../../../assets/images/scoutpass-text-logo.svg';
@@ -17,13 +23,119 @@ import PhoneForm from '../../../pages/login/forms/PhoneForm';
 import LoginFooter from '../../../pages/login/LoginFooter';
 import SocialLogins from '../../../components/social-logins/SocialLogins';
 import useFirebase from '../../../hooks/useFirebase';
+import { VC } from 'packages/learn-card-types/dist';
+
+const getBoostHeadline = (boost?: VC): string => {
+    const boostCategory = getDefaultCategoryForCredential(boost as any);
+    const boostName =
+        (boost as any)?.name ??
+        (boost as any)?.credentialSubject?.achievement?.name ??
+        'this boost';
+
+    switch (boostCategory) {
+        case BoostCategoryOptionsEnum.globalAdminId:
+        case BoostCategoryOptionsEnum.nationalNetworkAdminId:
+            return `You've been invited to be an admin of ${boostName}`;
+        case BoostCategoryOptionsEnum.troopLeaderId:
+            return `You've been invited to be a leader of ${boostName}`;
+        case BoostCategoryOptionsEnum.scoutId:
+            return `You've been invited to join ${boostName}`;
+        case BoostCategoryOptionsEnum.meritBadge:
+            return `You've been sent a Merit Badge`;
+        case BoostCategoryOptionsEnum.socialBadge:
+            return `You've been sent a Social Boost`;
+        default:
+            return 'Someone sent you a credential';
+    }
+};
+
+const getBoostActionLabel = (boost?: VC): string => {
+    const boostCategory = getDefaultCategoryForCredential(boost as any);
+
+    switch (boostCategory) {
+        case BoostCategoryOptionsEnum.globalAdminId:
+        case BoostCategoryOptionsEnum.nationalNetworkAdminId:
+        case BoostCategoryOptionsEnum.troopLeaderId:
+        case BoostCategoryOptionsEnum.scoutId:
+            return 'Sign in to Accept';
+        case BoostCategoryOptionsEnum.meritBadge:
+        case BoostCategoryOptionsEnum.socialBadge:
+            return 'Sign in to Claim';
+        default:
+            return 'Sign In to View and Claim';
+    }
+};
 
 export const ClaimBoostLoggedOutPrompt: React.FC<{
     handleRedirectTo: () => void;
 }> = ({ handleRedirectTo }) => {
     const { isDesktop } = useDeviceTypeByWidth();
+    const query = usePathQuery();
+
+    const [isLoading, setIsLoading] = useState(true);
+    const [boost, setBoost] = useState<VC | undefined>(undefined);
+
+    const boostHeadline = getBoostHeadline(boost);
+
+    const boostUri = query.get('boostUri') || undefined;
+    const challenge = query.get('challenge') || undefined;
+
+    const getBoost = async () => {
+        try {
+            setIsLoading(true);
+
+            const result = await fetch(
+                `${SCOUTPASS_NETWORK_API_URL}/storage/resolve?uri=${boostUri}${
+                    challenge ? `&challenge=${encodeURIComponent(challenge)}` : ''
+                }`
+            );
+
+            if (result.status !== 200) throw new Error('Error resolving boost');
+
+            const boostVC: VC = await result.json();
+
+            setBoost(boostVC);
+        } catch (error: any) {
+            // log.error(error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        getBoost();
+    }, []);
 
     const backgroundColor = 'var(--sp-purple-base, #622599)';
+    const boostActionLabel = getBoostActionLabel(boost);
+
+    if (isLoading) {
+        return (
+            <IonPage className="flex flex-col h-full" style={{ backgroundColor }}>
+                <IonContent
+                    fullscreen
+                    className="flex flex-col flex-grow"
+                    style={{ '--background': backgroundColor } as React.CSSProperties}
+                >
+                    <IonGrid
+                        className="h-full w-full flex items-center justify-center p-0"
+                        style={{ backgroundColor }}
+                    >
+                        <IonRow className="flex flex-col items-center justify-center w-full h-full p-0 m-0">
+                            <IonCol className="w-full flex flex-col items-center justify-center h-full p-0 m-0 text-white">
+                                <div className="flex flex-col items-center justify-center gap-4">
+                                    <span className="w-10 h-10 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    <p className="text-sm font-medium text-white/90">
+                                        Loading boost...
+                                    </p>
+                                </div>
+                            </IonCol>
+                        </IonRow>
+                    </IonGrid>
+                </IonContent>
+            </IonPage>
+        );
+    }
 
     return (
         <IonPage className="flex flex-col h-full" style={{ backgroundColor }}>
@@ -42,12 +154,15 @@ export const ClaimBoostLoggedOutPrompt: React.FC<{
                                 <ClaimBoostLoggedOutPromptDesktop
                                     logo={ScoutPassLogo}
                                     textLogo={ScoutPassTextLogo}
+                                    headline={boostHeadline}
                                 />
                             ) : (
                                 <ClaimBoostLoggedOutPromptMobile
                                     handleRedirectTo={handleRedirectTo}
                                     logo={ScoutPassLogo}
                                     textLogo={ScoutPassTextLogo}
+                                    headline={boostHeadline}
+                                    actionLabel={boostActionLabel}
                                 />
                             )}
                         </IonCol>
@@ -61,7 +176,8 @@ export const ClaimBoostLoggedOutPrompt: React.FC<{
 const ClaimBoostLoggedOutPromptDesktop: React.FC<{
     logo: string;
     textLogo: string;
-}> = ({ logo, textLogo }) => {
+    headline: string;
+}> = ({ logo, textLogo, headline }) => {
     return (
         <div className="relative grid h-full w-full grid-cols-2 overflow-hidden text-white">
             <ScoutsLoginColumn />
@@ -72,8 +188,8 @@ const ClaimBoostLoggedOutPromptDesktop: React.FC<{
                     <img src={textLogo} alt="ScoutPass text logo" className="max-w-[200px]" />
                 </div>
 
-                <h1 className="max-w-[320px] text-[24px] font-semibold leading-snug text-white drop-shadow-sm">
-                    Someone sent you a credential
+                <h1 className="max-w-[310px] text-[24px] font-semibold leading-snug text-white drop-shadow-sm">
+                    {headline}
                 </h1>
             </div>
         </div>
@@ -205,7 +321,9 @@ const ClaimBoostLoggedOutPromptMobile: React.FC<{
     handleRedirectTo: () => void;
     logo: string;
     textLogo: string;
-}> = ({ handleRedirectTo, logo, textLogo }) => {
+    headline: string;
+    actionLabel: string;
+}> = ({ handleRedirectTo, logo, textLogo, headline, actionLabel }) => {
     return (
         <div className="relative flex h-full w-full flex-col overflow-hidden text-white">
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-[14px] py-[22px] text-center">
@@ -214,15 +332,15 @@ const ClaimBoostLoggedOutPromptMobile: React.FC<{
                     <img src={textLogo} alt="ScoutPass text logo" className="max-w-[160px]" />
                 </div>
 
-                <h1 className="mb-2 max-w-[220px] text-[20px] font-semibold leading-snug text-white drop-shadow-sm">
-                    Someone sent you a credential
+                <h1 className="mb-2 max-w-[310px] text-[20px] font-semibold leading-snug text-white drop-shadow-sm">
+                    {headline}
                 </h1>
 
                 <button
                     onClick={handleRedirectTo}
-                    className="mt-[18px] flex h-[50px] w-full max-w-[340px] px-[30px] items-center justify-center rounded-[20px] bg-white text-[15px] font-semibold text-grayscale-900 shadow-lg transition-opacity hover:opacity-90"
+                    className="mt-[18px] flex h-[50px] w-full max-w-[360px] px-[30px] items-center justify-center rounded-[20px] bg-white text-[15px] font-semibold text-grayscale-900 shadow-lg transition-opacity hover:opacity-90"
                 >
-                    Sign In to View and Claim
+                    {actionLabel}
                 </button>
 
                 <div className="mt-[24px] flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] font-semibold text-white/80">

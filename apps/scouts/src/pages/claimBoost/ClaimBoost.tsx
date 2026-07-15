@@ -403,8 +403,8 @@ const ClaimBoost: React.FC = () => {
         mobile: ModalTypes.FullScreen,
     });
 
-    const uriParam = query.get('boostUri') || undefined;
-    const challengeParam = query.get('challenge') || undefined;
+    const boostUri = query.get('boostUri') || undefined;
+    const challenge = query.get('challenge') || undefined;
     const redirectTo = `${history.location.pathname}${history.location.search}`;
 
     useEffect(() => {
@@ -417,14 +417,14 @@ const ClaimBoost: React.FC = () => {
         // opens 2 modals for some reason, but looks fine...
         newModal(
             <ClaimBoostModal
-                uri={uriParam}
-                claimChallenge={challengeParam}
+                uri={boostUri}
+                claimChallenge={challenge}
                 dismissClaimModal={closeAllModals}
             />
         );
         // only open once per route load
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isLoggedIn, uriParam, challengeParam]);
+    }, [isLoggedIn, boostUri, challenge]);
 
     if (!isLoggedIn) {
         return (
