@@ -1,9 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { IonCol, IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useDeviceTypeByWidth } from 'learn-card-base';
+import { BrandingEnum, LoginTypesEnum, SocialLoginTypes } from 'learn-card-base';
 import ScoutPassLogo from '../../../assets/images/scoutpass-logo.svg';
 import ScoutPassTextLogo from '../../../assets/images/scoutpass-text-logo.svg';
+import WorldScoutsIcon from '../../../assets/images/world-scouts-icon.svg';
+import PhoneIcon from '../../../assets/images/Phone.svg';
+import EmailIcon from '../../../assets/images/Email-outline.svg';
+import AppleIcon from '../../../assets/images/apple-logo.svg';
+import GoogleIcon from 'learn-card-base/assets/images/google-G-logo.svg';
 import { openLCwebsite, openPP, openToS } from '../../../helpers/externalLinkHelpers';
+import ScoutsSSOLogin from '../../../pages/login/ScoutsSSO/ScoutSSOLogin';
+import EmailForm from '../../../pages/login/forms/EmailForm';
+import PhoneForm from '../../../pages/login/forms/PhoneForm';
+import LoginFooter from '../../../pages/login/LoginFooter';
+import SocialLogins from '../../../components/social-logins/SocialLogins';
+import useFirebase from '../../../hooks/useFirebase';
 
 export const ClaimBoostLoggedOutPrompt: React.FC<{
     handleRedirectTo: () => void;
@@ -53,26 +66,7 @@ const ClaimBoostLoggedOutPromptDesktop: React.FC<{
 }> = ({ handleRedirectTo, logo, textLogo }) => {
     return (
         <div className="relative flex h-full w-full flex-row overflow-hidden text-white">
-            <div className="flex min-h-0 flex-1 flex-col items-center justify-center bg-white px-[50px] py-[22px] text-center text-grayscale-900">
-                <div className="flex w-full max-w-[240px] flex-col items-center justify-center">
-                    <h2 className="text-lg font-semibold text-grayscale-900">SCOUTPASS</h2>
-
-                    <div className="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[11px] font-semibold text-indigo-500">
-                        <button
-                            onClick={openLCwebsite}
-                            className="transition-colors hover:opacity-80"
-                        >
-                            Learn More
-                        </button>
-                        <button onClick={openToS} className="transition-colors hover:opacity-80">
-                            Terms of Service
-                        </button>
-                        <button onClick={openPP} className="transition-colors hover:opacity-80">
-                            Privacy Policy
-                        </button>
-                    </div>
-                </div>
-            </div>
+            <ScoutsLoginColumn />
 
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center border-l border-white/15 px-[50px] py-[22px] text-center">
                 <div className="mb-[16px] flex w-full items-center justify-center gap-2">
@@ -90,6 +84,124 @@ const ClaimBoostLoggedOutPromptDesktop: React.FC<{
                 >
                     Sign In to View and Claim
                 </button>
+            </div>
+        </div>
+    );
+};
+
+const ScoutsLoginColumn: React.FC = () => {
+    const flags = useFlags();
+    const { googleLogin, appleLogin } = useFirebase();
+    const [activeLoginType, setActiveLoginType] = useState<LoginTypesEnum>(LoginTypesEnum.email);
+
+    const enableWorldScoutsLogin = flags?.enableWorldScoutsLogin;
+    const enableSmsLogin = flags?.enableSmsLogin;
+
+    let LoginTypeForm: React.ReactNode | null = null;
+
+    if (activeLoginType === LoginTypesEnum.email) {
+        LoginTypeForm = <EmailForm />;
+    } else if (activeLoginType === LoginTypesEnum.phone) {
+        LoginTypeForm = <PhoneForm />;
+    } else if (activeLoginType === LoginTypesEnum.scoutsSSO) {
+        LoginTypeForm = <ScoutsSSOLogin />;
+    }
+
+    const extraSocialLogins = [
+        {
+            id: 1,
+            src: GoogleIcon,
+            alt: 'google',
+            onClick: googleLogin,
+            type: SocialLoginTypes.google,
+        },
+        {
+            id: 2,
+            src: AppleIcon,
+            alt: 'apple',
+            onClick: appleLogin,
+            type: SocialLoginTypes.apple,
+        },
+    ];
+
+    const activeLoginTypeStyles = 'border-[#FF8DFF]';
+
+    return (
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white text-grayscale-900">
+            <div className="relative flex items-center justify-center bg-sp-purple-base login-page-header !overflow-hidden">
+                <div className="flex flex-col items-center justify-center">
+                    <img src={ScoutPassLogo} alt="ScoutPass logo" className="w-[55px]" />
+                    <img src={ScoutPassTextLogo} alt="ScoutPass text logo" className="mt-4" />
+                </div>
+                <div className="absolute bottom-[-155px] h-[80%] w-[110%] rounded-[100%] bg-white login-page-curve" />
+            </div>
+
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-[24px] pt-[48px] pb-[32px]">
+                <div className="w-full max-w-[500px] flex flex-col items-center justify-center text-center">
+                    <div className="mb-6 flex w-full items-center justify-center gap-2">
+                        {enableWorldScoutsLogin && (
+                            <button
+                                className={`flex items-center justify-center border-solid border-2 rounded-full mr-2 h-[50px] w-[50px] max-w-[50px] max-h-[50px] z-[9999] ${
+                                    activeLoginType === LoginTypesEnum.scoutsSSO
+                                        ? activeLoginTypeStyles
+                                        : 'border-gray-100'
+                                }`}
+                                onClick={() => setActiveLoginType(LoginTypesEnum.scoutsSSO)}
+                            >
+                                <img
+                                    src={WorldScoutsIcon}
+                                    alt="world scouts icon"
+                                    className="w-[50px] h-auto rounded-full"
+                                />
+                            </button>
+                        )}
+
+                        <button
+                            className={`flex items-center justify-center border-solid border-2 p-2 bg-[#0094F6] rounded-full mr-2 h-[50px] w-[50px] max-w-[50px] max-h-[50px] z-[9999] ${
+                                activeLoginType === LoginTypesEnum.email
+                                    ? activeLoginTypeStyles
+                                    : 'border-gray-100'
+                            }`}
+                            onClick={() => setActiveLoginType(LoginTypesEnum.email)}
+                        >
+                            <img src={EmailIcon} alt="email icon" className="w-[30px] h-[30px]" />
+                        </button>
+
+                        {enableSmsLogin && (
+                            <button
+                                className={`flex items-center justify-center border-solid border-2 p-2 bg-[#0094F6] rounded-full mr-2 h-[50px] w-[50px] max-w-[50px] max-h-[50px] z-[9999] ${
+                                    activeLoginType === LoginTypesEnum.phone
+                                        ? activeLoginTypeStyles
+                                        : 'border-gray-100'
+                                }`}
+                                onClick={() => setActiveLoginType(LoginTypesEnum.phone)}
+                            >
+                                <img
+                                    src={PhoneIcon}
+                                    alt="phone icon"
+                                    className="w-[30px] h-[30px]"
+                                />
+                            </button>
+                        )}
+                    </div>
+
+                    <IonRow className="w-full max-w-[500px] ion-padding-horizontal flex items-center justify-center">
+                        {LoginTypeForm}
+                    </IonRow>
+
+                    <div className="w-full flex items-center justify-center">
+                        <SocialLogins
+                            branding={BrandingEnum.scoutPass}
+                            activeLoginType={activeLoginType}
+                            setActiveLoginType={setActiveLoginType}
+                            extraSocialLogins={extraSocialLogins}
+                        />
+                    </div>
+                </div>
+
+                <div className="w-full max-w-[500px] pt-10 flex justify-center">
+                    <LoginFooter />
+                </div>
             </div>
         </div>
     );
