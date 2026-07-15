@@ -7,6 +7,7 @@ import { useModal, ModalTypes, useGetBoostsThatUseFramework } from 'learn-card-b
 import BrowseFrameworkPage from 'apps/scouts/src/pages/SkillFrameworks/BrowseFrameworkPage';
 import BoostCMSSkillDisplay from './BoostCMSSkillDisplay';
 import { SetState } from 'packages/shared-types/dist';
+import * as m from '../../../../../../paraglide/messages.js';
 
 /**
  * New framework-based skill selector for Scouts
@@ -72,7 +73,7 @@ export const BoostFrameworkSkillSelector: React.FC<{
     return (
         <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
             <IonCol size="12" className="w-full bg-white flex items-center justify-between">
-                <h1 className="text-black text-xl p-0 m-0 font-notoSans">Skills</h1>
+                <h1 className="text-black text-xl p-0 m-0 font-notoSans">{m['boostCMS.skills']()}</h1>
                 <button
                     onClick={() => {
                         handleSelectSkills();

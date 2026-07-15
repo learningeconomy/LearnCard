@@ -10,6 +10,7 @@ import X from 'learn-card-base/svgs/X';
 import { BoostCMSSkill, BoostCMSState } from '../../../boost';
 import { BoostCMSSKillsCategoryEnum, CATEGORY_TO_SKILLS, SKILLS_TO_SUBSKILLS } from './boostSkills';
 import { isPlatformIOS } from 'learn-card-base';
+import * as m from '../../../../../../paraglide/messages.js';
 
 const BoostCMSSkillOptions: React.FC<{
     state: BoostCMSState;
@@ -72,7 +73,7 @@ const BoostCMSSkillOptions: React.FC<{
                             onClick={handleSaveSkills}
                             className="rounded-full font-medium ion-no-padding p-0 shadow-3xl text-xl px-4 py-2 font-notoSans bg-white text-grayscale-800"
                         >
-                            Save
+                            {m['common.save']()}
                         </button>
                     </div>
 
@@ -142,7 +143,7 @@ const BoostCMSSkillOptions: React.FC<{
                         onClick={() => handleCloseModal()}
                         className="text-grayscale-900 text-center text-sm"
                     >
-                        Cancel
+                        {m['common.cancel']()}
                     </button>
                 </div>
             </IonContent>

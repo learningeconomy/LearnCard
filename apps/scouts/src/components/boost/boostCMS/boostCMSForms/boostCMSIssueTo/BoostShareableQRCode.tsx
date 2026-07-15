@@ -10,6 +10,7 @@ import { BoostCMSState } from '../../../boost';
 import { CATEGORY_TO_SUBCATEGORY_LIST } from '../../../boost-options/boostOptions';
 import { QRCodeSVG } from 'qrcode.react';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
+import * as m from '../../../../../../paraglide/messages.js';
 
 const BoostShareableQRCode: React.FC<{
     handleCloseModal: () => void;
@@ -74,7 +75,7 @@ const BoostShareableQRCode: React.FC<{
 
                                 <div className="w-full flex items-end justify-center pt-4 pb-6">
                                     <h3 className="text-grayscale-800 text-xl text-center">
-                                        Scan Code to Claim Boost
+                                        {m['boostCMS.scanCodeClaim']()}
                                     </h3>
                                 </div>
                             </>
@@ -83,7 +84,7 @@ const BoostShareableQRCode: React.FC<{
                                 <IonSpinner name="crescent" color="dark" />
 
                                 <p className="text-grayscale-500 text-sm text-center">
-                                    Generating claim link...
+                                    {m['boostCMS.generatingClaimLink']()}
                                 </p>
                             </div>
                         )}

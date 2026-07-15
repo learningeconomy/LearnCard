@@ -21,6 +21,7 @@ import {
     ModalTypes,
 } from 'learn-card-base';
 import { BoostCMSState } from '../../../boost';
+import * as m from '../../../../../../paraglide/messages.js';
 
 import CopyStack from '../../../../svgs/CopyStack';
 import Calendar from '../../../../svgs/Calendar';
@@ -247,7 +248,7 @@ export const BoostShareableCode: React.FC<{
         <IonGrid className={`w-full flex items-center justify-center flex-col ${customClassName}`}>
             <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px] ion-padding">
                 <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
-                    <p className="text-grayscale-900 font-medium w-10/12">Generate Claim Link?</p>
+                    <p className="text-grayscale-900 font-medium w-10/12">{m['boostCMS.generateClaimLink']()}</p>
                     <IonToggle
                         mode="ios"
                         color="emerald-700"
@@ -269,7 +270,7 @@ export const BoostShareableCode: React.FC<{
                             >
                                 {expirationDate
                                     ? moment(expirationDate).format('MMMM Do, YYYY - hh:mm A')
-                                    : 'Expiration Date'}
+                                    : m['boostCMS.expDate']()}
                                 <Calendar className="w-[30px] text-grayscale-700" />
                             </button>
                         </div>
@@ -277,7 +278,7 @@ export const BoostShareableCode: React.FC<{
                         <div className="w-full flex flex-col  py-[8px]">
                             <div className="flex w-full items-center justify-between mb-4">
                                 <p className="text-grayscale-900 font-medium w-10/12 text-left pr-2">
-                                    Set Claim Limit?
+                                    {m['boostCMS.setClaimLimit']()}
                                 </p>
                                 <IonToggle
                                     mode="ios"
@@ -295,7 +296,7 @@ export const BoostShareableCode: React.FC<{
                                     <IonInput
                                         autocapitalize="on"
                                         className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mr-2`}
-                                        placeholder="Unlimited"
+                                        placeholder={m['boostCMS.unlimited']()}
                                         type="number"
                                         min={0}
                                         value={claimLimit}
@@ -337,7 +338,7 @@ export const BoostShareableCode: React.FC<{
                                 }}
                                 className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg font-medium font-notoSans"
                             >
-                                {isLinkLoading ? 'Generating Link...' : 'Generate Link'}
+                                {isLinkLoading ? m['boostCMS.generatingLink']() : m['boostCMS.generateLink']()}
                             </button>
                         </div>
 
@@ -357,8 +358,8 @@ export const BoostShareableCode: React.FC<{
                                                     />{' '}
                                                     <p className="flex items-center justify-center text-left text-grayscale-500 font-medium text-sm line-clamp-1 ml-2 font-notoSans">
                                                         {boostClaimLink
-                                                            ? 'Updating Link...'
-                                                            : 'Generating Link...'}
+                                                            ? m['boostCMS.updatingLink']()
+                                                            : m['boostCMS.generatingLink']()}
                                                     </p>
                                                 </>
                                             ) : (
@@ -382,7 +383,7 @@ export const BoostShareableCode: React.FC<{
                                         className="flex items-center font-medium justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg font-notoSans"
                                     >
                                         <QRCodeScanner className="ml-[5px] h-[30px] w-[30px] mr-2 " />{' '}
-                                        Show Code
+                                        {m['boostCMS.showCode']()}
                                     </button>
                                 </div>
                             </>

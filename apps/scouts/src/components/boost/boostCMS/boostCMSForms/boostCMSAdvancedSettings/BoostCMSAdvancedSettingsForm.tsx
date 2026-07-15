@@ -13,6 +13,7 @@ import { BoostCategoryOptionsEnum, useModal, ModalTypes } from 'learn-card-base'
 import { AddressSpec } from '../../../../locationSearch/location.helpers';
 import { SetState } from 'packages/shared-types/dist';
 import { boostCategoryOptions } from '../../../boost-options/boostOptions';
+import * as m from '../../../../../../paraglide/messages.js';
 
 const BoostCMSAdvancedSettingsForm: React.FC<{
     state: BoostCMSState;
@@ -101,7 +102,7 @@ const BoostCMSAdvancedSettingsForm: React.FC<{
     return (
         <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
             <IonCol size="12" className="w-full bg-white flex items-center justify-between">
-                <h1 className="text-black text-2xl p-0 m-0">Advanced Settings</h1>
+                <h1 className="text-black text-2xl p-0 m-0">{m['boostCMS.advancedSettings']()}</h1>
                 <button onClick={() => setShowAbout(!showAbout)}>
                     <CaretLeft
                         className={`h-auto w-3 text-grayscale-800 ${
@@ -118,7 +119,7 @@ const BoostCMSAdvancedSettingsForm: React.FC<{
                                 autocapitalize="on"
                                 value={basicInfo?.issuerName}
                                 onIonInput={e => handleStateChange('issuerName', e.detail.value)}
-                                placeholder="Issuer Name"
+                                placeholder={m['boostCMS.issuerName']()}
                                 className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium text-base"
                                 rows={2}
                                 disabled={disabled || flags?.disableCmsCustomization}
@@ -130,7 +131,7 @@ const BoostCMSAdvancedSettingsForm: React.FC<{
                             autocapitalize="on"
                             value={basicInfo?.description}
                             onIonInput={e => handleStateChange('description', e.detail.value)}
-                            placeholder={`What is this ${title} for?`}
+                            placeholder={m['boostCMS.whatFor']({ title })}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium text-base"
                             rows={3}
                             disabled={disabled || flags?.disableCmsCustomization}
@@ -141,7 +142,7 @@ const BoostCMSAdvancedSettingsForm: React.FC<{
                             autocapitalize="on"
                             value={basicInfo?.narrative}
                             onIonInput={e => handleStateChange('narrative', e.detail.value)}
-                            placeholder={`How do you earn this ${title}?`}
+                            placeholder={m['boostCMS.howEarn']({ title })}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[15px] font-medium text-base"
                             rows={10}
                             disabled={disabled || flags?.disableCmsCustomization}
@@ -157,7 +158,7 @@ const BoostCMSAdvancedSettingsForm: React.FC<{
                             >
                                 {state?.address.streetAddress
                                     ? state?.address.streetAddress
-                                    : 'Location'}
+                                    : m['boostCMS.location']()}
                             </button>
                             <LocationIcon className="text-grayscale-600" />
                         </div>
@@ -167,7 +168,7 @@ const BoostCMSAdvancedSettingsForm: React.FC<{
                         <>
                             <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
                                 <p className="text-grayscale-900 font-medium w-10/12">
-                                    Credential Expires
+                                    {m['boostCMS.credExpires']()}
                                 </p>
                                 <IonToggle
                                     mode="ios"
@@ -197,7 +198,7 @@ const BoostCMSAdvancedSettingsForm: React.FC<{
                                             ? moment(basicInfo?.expirationDate).format(
                                                   'MMMM Do, YYYY'
                                               )
-                                            : 'Expiration Date'}
+                                            : m['boostCMS.expDate']()}
                                         <Calendar className="w-[30px] text-grayscale-700" />
                                     </button>
                                 )}

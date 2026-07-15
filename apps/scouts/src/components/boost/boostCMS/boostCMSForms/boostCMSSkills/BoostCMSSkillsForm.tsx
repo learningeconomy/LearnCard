@@ -15,6 +15,7 @@ import {
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { useModal, ModalTypes } from 'learn-card-base';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../../../../../paraglide/messages.js';
 const log = getLogger('boost-cms-skills-form');
 
 const BoostCMSPrimarySkillButton: React.FC<{
@@ -185,7 +186,7 @@ const BoostCMSSkillOptions: React.FC<{
                         onClick={() => handleCloseModal()}
                         className="text-grayscale-900 text-center text-sm"
                     >
-                        Cancel
+                        {m['common.cancel']()}
                     </button>
                 </div>
             </IonContent>
@@ -265,7 +266,7 @@ export const BoostCMSSkillsForm: React.FC<{
                 setState={setState}
                 title={
                     <p className="font-mouse flex items-center justify-center text-3xl w-full h-full text-grayscale-900">
-                        Select Skills
+                        {m['boostCMS.selectSkills']()}
                     </p>
                 }
                 showCloseButton={true}
@@ -285,7 +286,7 @@ export const BoostCMSSkillsForm: React.FC<{
                 className="w-full flex-col items-center justify-center bg-white rounded-[20px]"
             >
                 <div className="flex items-center justify-between w-full ion-padding">
-                    <h1 className="font-mouse text-black text-3xl p-0 m-0">Skills</h1>
+                    <h1 className="font-mouse text-black text-3xl p-0 m-0">{m['boostCMS.skills']()}</h1>
 
                     <button
                         onClick={() => openSkillsModal()}
