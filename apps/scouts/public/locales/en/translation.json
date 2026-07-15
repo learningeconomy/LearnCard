@@ -283,5 +283,169 @@
         "errors": {
             "recentLoginRequired": "A recent login is required!"
         }
+    },
+    "recovery": {
+        "methodPicker": {
+            "title": "Verify Your Identity",
+            "descNewDevice": "This device hasn't been set up for your account yet. Choose a method to sign in.",
+            "descStaleKey": "Your account security was recently updated on another device. Please verify to continue.",
+            "restoreTitle": "Restore Access",
+            "restoreDescMissing": "Choose how you'd like to restore access to your account.",
+            "restoreDescDefault": "Choose how you'd like to restore access."
+        },
+        "method": {
+            "emailLabel": "Email Recovery Key",
+            "emailDesc": "Paste the key sent to your email",
+            "phraseLabel": "Recovery Phrase",
+            "phraseDesc": "Enter your 25-word phrase",
+            "backupLabel": "Backup File",
+            "backupDesc": "Upload your backup file",
+            "passkeyLabel": "Passkey",
+            "passkeyDesc": "Use Face ID, Touch ID, or similar",
+            "deviceLabel": "Another Device",
+            "deviceDesc": "Scan a code from a signed-in device",
+            "notSetUp": "Not set up"
+        },
+        "passkey": {
+            "title": "Passkey",
+            "desc": "Use your device's biometric authentication to recover.",
+            "tapDesc": "Tap below to verify with Face ID, Touch ID, or your device passkey.",
+            "verifyBtn": "Verify with Passkey"
+        },
+        "phrase": {
+            "title": "Recovery Phrase",
+            "desc": "Enter your 25-word recovery phrase, separated by spaces.",
+            "label": "Your phrase",
+            "wordCount": "{{count}} / 25 words",
+            "recoverBtn": "Recover Account",
+            "loading": "Recovering...",
+            "placeholder": "word1 word2 word3 ..."
+        },
+        "device": {
+            "title": "Sign In from Another Device",
+            "desc": "Scan the QR code below with a device that's already signed in to your account."
+        },
+        "email": {
+            "title": "Recover via Email",
+            "descWithEmail": "We previously sent a recovery email to <0>{{email}}</0>. Open that email and follow the steps below.",
+            "descWithoutEmail": "We previously sent a recovery email to your recovery address. Open that email and follow the steps below.",
+            "findKey": "How to find your recovery key",
+            "step1": "Search your inbox for an email with the subject <0>\"Your ScoutPass Recovery Key\"</0>",
+            "step2": "Find the long string of characters between <0>\"RECOVERY KEY\"</0> and <1>\"END RECOVERY KEY\"</1>",
+            "step3": "Copy that entire string and paste it below",
+            "keyLabel": "Recovery Key",
+            "keyPlaceholder": "Paste your recovery key here — it looks like a long string of letters and numbers",
+            "keyHint": "The key is a long string of letters and numbers. Copy and paste it exactly as it appears in the email."
+        },
+        "backup": {
+            "title": "Backup File",
+            "desc": "Upload your backup file and enter the password you used when creating it.",
+            "fileSelected": "File selected",
+            "tapToChoose": "Tap to choose backup file",
+            "passLabel": "Backup Password",
+            "passPlaceholder": "Password used when creating backup"
+        },
+        "errors": {
+            "noPasskey": "No passkey found on this device.",
+            "phraseIncomplete": "Please enter all 25 words of your recovery phrase.",
+            "noBackupFile": "Please select your backup file.",
+            "noBackupPass": "Please enter the password for your backup file.",
+            "noEmailKey": "Please paste the recovery key from your email.",
+            "phraseInvalid": "The recovery phrase doesn't look right. Please check for typos.",
+            "decryptFailed": "Incorrect password or corrupted data. Please try again."
+        },
+        "setup": {
+            "titleNew": "Protect Your Account",
+            "titleExisting": "Account Recovery",
+            "descNew": "Set up a recovery method so you can get back in if you lose access to this device.",
+            "descMethodsActive": "{{count}} recovery method(s) active",
+            "changeBtn": "Change",
+            "tabEmail": "Email",
+            "tabPhrase": "Phrase",
+            "tabBackup": "Backup",
+            "tabPasskey": "Passkey",
+            "passkey": {
+                "notSupported": "Passkeys aren't supported on this device or browser. Try using a recovery phrase or backup file instead.",
+                "setUpRow": "Passkey is set up",
+                "updateWarning": "This will replace your current passkey.",
+                "desc": "Use Face ID, Touch ID, or Windows Hello as your recovery method. Nothing to remember.",
+                "chromeOnly": "Passkeys with encryption are currently supported on desktop Chrome and Edge only.",
+                "bulletBiometric": "Uses your device's secure biometric authentication",
+                "bulletNoPassword": "No password to remember",
+                "replaceBtn": "Replace Passkey",
+                "setupBtn": "Set Up Passkey",
+                "replacing": "Replacing...",
+                "settingUp": "Setting up..."
+            },
+            "phrase": {
+                "savedRow": "Phrase is saved",
+                "updateWarning": "This will generate a new phrase. Your previous phrase will no longer work.",
+                "desc": "Generate a 25-word phrase that can restore your account from anywhere. Write it down and keep it safe.",
+                "keepSafe": "Keep it safe",
+                "warningWritePaper": "Write it on paper and store it securely",
+                "warningNeverShare": "Never share it — anyone with this phrase has full access",
+                "genNewBtn": "Generate New Phrase",
+                "genBtn": "Generate Recovery Phrase",
+                "generating": "Generating...",
+                "yourPhrase": "Your Recovery Phrase",
+                "copied": "Copied!",
+                "copyBtn": "Copy to Clipboard",
+                "confirmBtn": "I've Saved It Somewhere Safe"
+            },
+            "backup": {
+                "createdRow": "Backup file created",
+                "updateWarning": "This will generate a new backup file. Your previous backup file will no longer work.",
+                "desc": "Generate an encrypted backup file protected by a password. Store it somewhere safe — you'll need both the file and the password to recover.",
+                "passLabel": "Backup Password",
+                "passPlaceholder": "At least 8 characters",
+                "confirmLabel": "Confirm Password",
+                "confirmPlaceholder": "Type it again",
+                "genNewBtn": "Generate New Backup",
+                "genBtn": "Generate Backup File",
+                "generating": "Generating...",
+                "readyTitle": "Backup file ready",
+                "readyDesc": "Download this file and store it somewhere safe. You'll need it along with your backup password to recover.",
+                "downloadAgain": "Download Again",
+                "downloadBtn": "Download Backup File",
+                "confirmBtn": "I've Saved It Somewhere Safe"
+            },
+            "email": {
+                "recoveryRow": "Recovery email: {{email}}",
+                "setUpRow": "Email recovery is set up",
+                "updateWarning": "This will replace your current recovery email.",
+                "recommended": "Recommended",
+                "desc": "Add a personal email (different from your login) as a recovery destination. A recovery key will be sent there.",
+                "emailLabel": "Recovery Email",
+                "emailPlaceholder": "personal@gmail.com",
+                "sendCodeBtn": "Send Verification Code",
+                "sending": "Sending...",
+                "codeSent": "We sent a 6-digit code to <0>{{email}}</0>. Check your inbox.",
+                "codeLabel": "Verification Code",
+                "codePlaceholder": "123456",
+                "verifyCodeBtn": "Verify Code",
+                "differentEmail": "Use a different email",
+                "verifiedTitle": "Email verified",
+                "sendKeyDesc": "We'll send a recovery key to this email. If you ever lose access, just check your inbox and paste the key to recover.",
+                "sendKeyBtn": "Send Recovery Key",
+                "keySentTitle": "Recovery key sent",
+                "keySentDesc": "Check your inbox at {{email}}. Keep that email safe — you'll need the recovery key if you ever lose access."
+            },
+            "errors": {
+                "passLength": "Password must be at least 8 characters.",
+                "passMismatch": "Passwords don't match.",
+                "invalidEmail": "Please enter a valid email address.",
+                "codeLength": "Please enter the 6-digit code.",
+                "incorrectCode": "Incorrect code. Please try again.",
+                "downloadFailed": "Could not save the file. Please try again."
+            },
+            "hintOneMissing": "We recommend setting up at least two recovery methods.",
+            "hintMore": "Adding another method improves your security.",
+            "success": {
+                "passkey": "Passkey recovery is set up!",
+                "phrase": "Recovery phrase saved! Keep it somewhere safe.",
+                "backup": "Backup file saved! Keep it and your password somewhere safe.",
+                "email": "Recovery key sent to your email!"
+            }
+        }
     }
 }
