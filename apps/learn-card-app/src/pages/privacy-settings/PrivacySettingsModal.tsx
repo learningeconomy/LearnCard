@@ -394,11 +394,11 @@ const PrivacySettingsModal: React.FC = () => {
                         >
                             {aiConnectionStatus === 'connecting' ? (
                                 <p className="text-xs text-grayscale-500 leading-relaxed">
-                                    Connecting...
+                                    {m['dataSharing.connecting']()}
                                 </p>
                             ) : aiConnectionStatus === 'disconnecting' ? (
                                 <p className="text-xs text-grayscale-500 leading-relaxed">
-                                    Disconnecting...
+                                    {m['dataSharing.disconnecting']()}
                                 </p>
                             ) : (
                                 <p className="flex items-center gap-1.5 text-xs text-emerald-600 leading-relaxed">
