@@ -22,6 +22,7 @@ import {
 import { AddressBookTabsEnum } from '../addressBookHelpers';
 import ConnectModal from '../../connectPage/ConnectModal';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 const log = getLogger('address-book-connection-requests');
 
 const AddressBookConnectionRequests: React.FC<{
@@ -56,7 +57,7 @@ const AddressBookConnectionRequests: React.FC<{
                     },
                     onError(error: any, variables, context) {
                         refetch();
-                        presentToast(error?.message || 'An error occurred, unable to block user', {
+                        presentToast(error?.message || m['addressBook.toasts.unableToBlockUser'](), {
                             type: ToastTypeEnum.Error,
                             hasDismissButton: true,
                         });
@@ -65,7 +66,7 @@ const AddressBookConnectionRequests: React.FC<{
             );
         } catch (err: any) {
             log.debug('blockProfile::error', err);
-            presentToast(err?.message || 'An error occurred, unable to block user', {
+            presentToast(err?.message || m['addressBook.toasts.unableToBlockUser'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -119,7 +120,7 @@ const AddressBookConnectionRequests: React.FC<{
             {isLoading && (
                 <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full pt-[100px]">
                     <IonSpinner color="black" />
-                    <p className="mt-2 font-bold text-lg">Loading...</p>
+                    <p className="mt-2 font-bold text-lg">{m['addressBook.loading']()}</p>
                 </section>
             )}
             {!isLoading && (
@@ -136,7 +137,7 @@ const AddressBookConnectionRequests: React.FC<{
             )}
             {!isLoading && (data?.length === 0 || error) && (
                 <section className="relative flex flex-col pt-[10px] px-[20px] text-center justify-center">
-                    <strong>No connection requests yet.</strong>
+                    <strong>{m['addressBook.noConnectionRequests']()}</strong>
                     <div className="w-[280px] h-[280px] mt-[-30px]">
                         <Lottie
                             loop

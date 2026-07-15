@@ -16,6 +16,7 @@ import {
 } from 'learn-card-base';
 import { AddressBookTabsEnum } from '../addressBookHelpers';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 const log = getLogger('address-book-pending-connections');
 
 const AddressBookPendingConnections: React.FC<{
@@ -61,7 +62,7 @@ const AddressBookPendingConnections: React.FC<{
                 },
                 onError(error, variables, context) {
                     refetch();
-                    presentToast(error?.message || 'An error occurred, unable to cancel request', {
+                    presentToast(error?.message || m['addressBook.toasts.unableToCancelRequest'](), {
                         // @ts-ignore
                         type: ToastTypeEnum.Error,
                         hasDismissButton: true,
@@ -72,7 +73,7 @@ const AddressBookPendingConnections: React.FC<{
         try {
         } catch (err) {
             log.debug('canceledConnectionReq::error', err);
-            presentToast(err?.message || 'An error occurred, unable to cancel request', {
+            presentToast(err?.message || m['addressBook.toasts.unableToCancelRequest'](), {
                 // @ts-ignore
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -95,7 +96,7 @@ const AddressBookPendingConnections: React.FC<{
                     },
                     onError(error, variables, context) {
                         refetch();
-                        presentToast(error?.message || 'An error occurred, unable to block user', {
+                        presentToast(error?.message || m['addressBook.toasts.unableToBlockUser'](), {
                             // @ts-ignore
                             type: ToastTypeEnum.Error,
                             hasDismissButton: true,
@@ -105,7 +106,7 @@ const AddressBookPendingConnections: React.FC<{
             );
         } catch (err) {
             log.debug('blockProfile::error', err);
-            presentToast(err?.message || 'An error occurred, unable to block user', {
+            presentToast(err?.message || m['addressBook.toasts.unableToBlockUser'](), {
                 // @ts-ignore
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -118,7 +119,7 @@ const AddressBookPendingConnections: React.FC<{
             {isLoading && (
                 <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full pt-[100px]">
                     <IonSpinner color="black" />
-                    <p className="mt-2 font-bold text-lg">Loading...</p>
+                    <p className="mt-2 font-bold text-lg">{m['addressBook.loading']()}</p>
                 </section>
             )}
             {!isLoading && (
@@ -134,7 +135,7 @@ const AddressBookPendingConnections: React.FC<{
             {!isLoading && (data?.length === 0 || error) && (
                 <section className="relative flex flex-col pt-[100px] px-[20px] text-center justify-center">
                     <img src={MiniGhost} alt="ghost" className="max-w-[250px] m-auto" />
-                    No pending connections yet.
+                    {m['addressBook.noPendingConnections']()}
                 </section>
             )}
         </>

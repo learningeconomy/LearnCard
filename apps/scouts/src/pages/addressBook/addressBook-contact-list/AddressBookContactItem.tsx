@@ -22,6 +22,7 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 import { LCNProfileConnectionStatusEnum, LCNProfile, VC } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
 
 type AddressBookContactItemProps = {
     contact: LCNProfile;
@@ -74,21 +75,21 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
 
     const troopTypes: Record<string, { label: string; icon: JSX.Element }> = {
         'ext:TroopID': {
-            label: 'Leader',
+            label: m['addressBook.troopStatusLeader'](),
             icon: <GirlScoutsIcon className="absolute top-[-5px] left-[30px] w-[25px]" />,
         },
         'ext:ScoutID': {
-            label: 'Scout',
+            label: m['addressBook.troopStatusScout'](),
             icon: <WorldScoutIcon className="absolute top-0 left-[30px] w-[25px]" />,
         },
         'ext:GlobalID': {
-            label: 'Global Admin',
+            label: m['addressBook.troopStatusGlobalAdmin'](),
             icon: (
                 <WorldScoutIcon fill={'#622599'} className="absolute top-0 left-[30px] w-[25px]" />
             ),
         },
         'ext:NetworkID': {
-            label: 'National Admin',
+            label: m['addressBook.troopStatusNationalAdmin'](),
             icon: (
                 <GirlScoutsIcon
                     className={`absolute top-[-5px] w-[25px] ${isDesktop ? 'left-[30px]' : 'left-[20px]'
@@ -121,8 +122,8 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
             cssClass: 'boost-confirmation-alert',
             header,
             buttons: [
-                { text: 'Confirm', role: 'confirm', handler: onConfirm },
-                { text: 'Cancel', role: 'cancel', handler: () => dismissAlert() },
+                { text: m['addressBook.confirm'](), role: 'confirm', handler: onConfirm },
+                { text: m['common.cancel'](), role: 'cancel', handler: () => dismissAlert() },
             ],
         });
     };
@@ -146,14 +147,14 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                                 : connection
                         )
                     );
-                    presentToast('Connection Request sent', {
+                    presentToast(m['addressBook.toasts.connectionRequestSent'](), {
                         type: ToastTypeEnum.Success,
                         hasDismissButton: true,
                     });
                 },
                 onError: (error: any) => {
                     presentToast(
-                        error?.message || 'An error occurred, unable to send connection request',
+                        error?.message || m['addressBook.toasts.unableToSendConnectionRequest'](),
                         {
                             type: ToastTypeEnum.Error,
                             hasDismissButton: true,
@@ -187,7 +188,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                     );
                 },
                 onError: (error: any) => {
-                    presentToast(error?.message || 'An error occurred, unable to cancel request', {
+                    presentToast(error?.message || m['addressBook.toasts.unableToCancelRequest'](), {
                         type: ToastTypeEnum.Error,
                         hasDismissButton: true,
                     });
@@ -225,7 +226,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                     });
                 },
                 onError: (error: any) => {
-                    presentToast(error?.message || 'An error occurred, unable to accept request', {
+                    presentToast(error?.message || m['addressBook.toasts.unableToAcceptRequest'](), {
                         type: ToastTypeEnum.Error,
                         hasDismissButton: true,
                     });
@@ -250,7 +251,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                     });
                 },
                 onError: (error: any) => {
-                    presentToast(error?.message || 'An error occurred, unable to unblock user', {
+                    presentToast(error?.message || m['addressBook.toasts.unableToUnblockUser'](), {
                         type: ToastTypeEnum.Error,
                         hasDismissButton: true,
                     });
@@ -302,7 +303,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
         if (!showRequestButton) return null;
         switch (contact.connectionStatus) {
             case LCNProfileConnectionStatusEnum.enum.CONNECTED:
-                return <button className="text-emerald-600 font-bold text-sm">Connected</button>;
+                return <button className="text-emerald-600 font-bold text-sm">{m['addressBook.connected']()}</button>;
             case LCNProfileConnectionStatusEnum.enum.NOT_CONNECTED:
                 return (
                     <button
@@ -340,16 +341,16 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                             presentAlert({
                                 backdropDismiss: false,
                                 cssClass: 'boost-confirmation-alert',
-                                header: 'Are you sure you want to cancel your connection request?',
+                                header: m['addressBook.confirmCancelConnection'](),
                                 buttons: [
                                     {
-                                        text: 'Confirm',
+                                        text: m['addressBook.confirm'](),
                                         role: 'confirm',
                                         handler: () =>
                                             handleCancelConnectionRequest(e, contact.profileId),
                                     },
                                     {
-                                        text: 'Cancel',
+                                        text: m['common.cancel'](),
                                         role: 'cancel',
                                         handler: () => dismissAlert(),
                                     },
@@ -358,8 +359,8 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         }}
                         className="text-indigo-600 font-semibold text-sm font-notoSans"
                     >
-                        <span className="text-grayscale-800">Request Pending</span> •{' '}
-                        {cancelLoading ? 'Loading...' : 'Cancel'}
+                        <span className="text-grayscale-800">{m['addressBook.pendingRequest']()}</span>{m['addressBook.separatorBullet']()}{' '}
+                        {cancelLoading ? m['addressBook.loading']() : m['common.cancel']()}
                     </button>
                 );
             case LCNProfileConnectionStatusEnum.enum.PENDING_REQUEST_RECEIVED:
@@ -420,11 +421,11 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                 )}
                 {highlightedCreds.length !== 0 && (
                     <p className="text-grayscale-600 font-notoSans text-[12px] font-semibold">
-                        {troopStatus.label} • {chosenHighlightedCred?.name}
+                        {troopStatus.label}{' '}{m['addressBook.separatorBullet']()}{' '}{chosenHighlightedCred?.name}
                     </p>
                 )}
                 <p className="text-grayscale-600 font-semibold font-notoSans text-[12px] line-clamp-2">
-                    @{contact.profileId}
+                    {m['addressBook.profileIdPrefix']()}{contact.profileId}
                 </p>
                 {renderActionButton()}
                 {showAcceptButton && (
@@ -434,16 +435,16 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                             presentAlert({
                                 backdropDismiss: false,
                                 cssClass: 'boost-confirmation-alert',
-                                header: 'Are you sure you want to accept the connection request?',
+                                header: m['addressBook.confirmAcceptConnection'](),
                                 buttons: [
                                     {
-                                        text: 'Confirm',
+                                        text: m['addressBook.confirm'](),
                                         role: 'confirm',
                                         handler: () =>
                                             handleAcceptConnectionRequest(e, contact.profileId),
                                     },
                                     {
-                                        text: 'Cancel',
+                                        text: m['common.cancel'](),
                                         role: 'cancel',
                                         handler: () => dismissAlert(),
                                     },
@@ -452,7 +453,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         }}
                         className="text-emerald-600 font-semibold text-sm font-notoSans"
                     >
-                        {acceptLoading ? 'Loading...' : 'Accept Request'}
+                        {acceptLoading ? m['addressBook.loading']() : m['addressBook.acceptRequest']()}
                     </button>
                 )}
                 {showUnblockButton && (
@@ -462,15 +463,15 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                             presentAlert({
                                 backdropDismiss: false,
                                 cssClass: 'boost-confirmation-alert',
-                                header: 'Are you sure you want to unblock this user?',
+                                header: m['addressBook.confirmUnblockUser'](),
                                 buttons: [
                                     {
-                                        text: 'Confirm',
+                                        text: m['addressBook.confirm'](),
                                         role: 'confirm',
                                         handler: () => handleUnblockUser(e, contact.profileId),
                                     },
                                     {
-                                        text: 'Cancel',
+                                        text: m['common.cancel'](),
                                         role: 'cancel',
                                         handler: () => dismissAlert(),
                                     },
@@ -479,7 +480,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         }}
                         className="text-indigo-600 font-bold text-base"
                     >
-                        {unblockLoading ? 'Loading...' : 'Unblock'}
+                        {unblockLoading ? m['addressBook.loading']() : m['addressBook.unblock']()}
                     </button>
                 )}
                 {showCancelButton && (
@@ -489,16 +490,16 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                             presentAlert({
                                 backdropDismiss: false,
                                 cssClass: 'boost-confirmation-alert',
-                                header: 'Are you sure you want to cancel your connection request?',
+                                header: m['addressBook.confirmCancelConnection'](),
                                 buttons: [
                                     {
-                                        text: 'Confirm',
+                                        text: m['addressBook.confirm'](),
                                         role: 'confirm',
                                         handler: () =>
                                             handleCancelConnectionRequest(e, contact.profileId),
                                     },
                                     {
-                                        text: 'Cancel',
+                                        text: m['common.cancel'](),
                                         role: 'cancel',
                                         handler: () => dismissAlert(),
                                     },
@@ -507,7 +508,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         }}
                         className="text-rose-600 font-bold text-base"
                     >
-                        {cancelLoading ? 'Loading...' : 'Cancel Request'}
+                        {cancelLoading ? m['addressBook.loading']() : m['addressBook.cancelRequest']()}
                     </button>
                 )}
             </div>

@@ -22,6 +22,8 @@ import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 
 import { useAcceptConnectionRequestMutation } from 'learn-card-base';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
 const log = getLogger('add-contact-view');
 
 export enum AddContactViewMode {
@@ -139,8 +141,8 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
         } catch (err) {
             let _errMessage = err?.message;
             if (_errMessage.includes('Challenge not found'))
-                _errMessage = 'Invite link has expired!';
-            presentToast(_errMessage ?? 'An error ocurred, unable to connect!', {
+                _errMessage = m['addressBook.toasts.inviteLinkExpired']();
+            presentToast(_errMessage ?? m['addressBook.toasts.unableToConnect'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -224,7 +226,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                             onClick={e => handleAddBoostIssueTo(e, user?.profileId)}
                             className="w-full flex items-center justify-center bg-indigo-500 rounded-full px-[12px] py-[8px] text-white text-4xl shadow-lg mb-4"
                         >
-                            <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" /> Boost
+                            <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" /> {m['boost.boost']()}
                         </button>
                     </IonCol>
                 );
@@ -236,14 +238,14 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                                 onClick={e => handleConnectionRequest(e, user?.profileId)}
                                 className="w-full flex items-center justify-center bg-emerald-600 rounded-full px-[12px] py-[8px] text-white text-[18px] font-semibold shadow-lg mb-4"
                             >
-                                {loading ? 'loading...' : 'Request Connection'}
+                                {loading ? m['addressBook.loading']() : m['addressBook.requestConnection']()}
                             </button>
                         ) : (
                             <button
                                 disabled
                                 className="w-full flex items-center justify-center bg-emerald-600 rounded-full px-[12px] py-[8px] text-white text-[18px] font-semibold shadow-lg mb-4"
                             >
-                                Pending request
+                                {m['addressBook.pendingRequest']()}
                             </button>
                         )}
                     </IonCol>
@@ -261,7 +263,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                         handleCancel();
                     }}
                 >
-                    Login to Connect
+                    {m['addressBook.loginToConnect']()}
                 </button>
             );
         }
@@ -280,7 +282,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                         disabled
                         className="w-full flex items-center justify-center bg-emerald-600 rounded-full px-[12px] py-[8px] text-white text-[18px] font-semibold shadow-lg mb-4"
                     >
-                        Connected
+                        {m['addressBook.connected']()}
                     </button>
                 )}
             </IonCol>
@@ -295,7 +297,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                         handleCancel();
                     }}
                 >
-                    Login to Connect
+                    {m['addressBook.loginToConnect']()}
                 </button>
             );
         }
@@ -314,7 +316,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                         disabled
                         className="w-full flex items-center justify-center bg-emerald-600 rounded-full px-[12px] py-[8px] text-white text-[18px] font-semibold shadow-lg mb-4"
                     >
-                        Connected
+                        {m['addressBook.connected']()}
                     </button>
                 )}
             </IonCol>
@@ -323,23 +325,24 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
 
     let promptText = null;
 
+    const userName = user?.displayName || `@${user?.profileId}`;
+
     if (isIssuingBoost) {
         promptText = (
             <p className="text-grayscale-600 text-lg font-semibold text-center">
-                Would you like to <br /> boost {user?.displayName || `@${user?.profileId}`}?
+                <TransP m={m['addressBook.wouldYouLikeToBoost']} values={{ name: userName }} components={[<br key="br" />]} />
             </p>
         );
     } else if (mode === AddContactViewMode?.acceptConnectionRequest) {
         promptText = (
             <p className="text-grayscale-600 text-lg font-semibold text-center">
-                {user?.displayName || `@${user?.profileId}`} has requested
-                <br /> to connect with you?
+                <TransP m={m['addressBook.hasRequestedToConnect']} values={{ name: userName }} components={[<br key="br" />]} />
             </p>
         );
     } else {
         promptText = (
             <p className="text-grayscale-600 text-lg font-semibold text-center">
-                Would you like to <br /> connect with {user?.displayName || `@${user?.profileId}`}?
+                <TransP m={m['addressBook.wouldYouLikeToConnect']} values={{ name: userName }} components={[<br key="br" />]} />
             </p>
         );
     }
@@ -389,7 +392,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                 </IonRow>
                 <div onClick={handleCancel} className="w-full flex items-center justify-center">
                     <button className="text-grayscale-900 text-center text-sm">
-                        {isLoggedIn ? 'Cancel' : 'Return home'}
+                        {isLoggedIn ? m['common.cancel']() : m['addressBook.returnHome']()}
                     </button>
                 </div>
             </IonRow>
