@@ -4,6 +4,7 @@ import BoostErrorsDisplay from '../../components/boost/boostErrors/BoostErrorsDi
 import SkillsCategoryList from './SkillsCategoryList';
 import SkillsPageEmptyPlaceholder from './SkillsEmptyPlaceholder';
 import CategoryEmptyPlaceholder from '../../components/empty-placeholder/CategoryEmptyPlaceHolder';
+import * as m from '../../paraglide/messages.js';
 
 import { BoostCategoryOptionsEnum, useGetCredentialsForSkills } from 'learn-card-base';
 import {
@@ -34,7 +35,7 @@ const SkillsMyHub: React.FC<SkillsMyHubProps> = ({}) => {
         <section className="w-full flex flex-col relative items-center achievements-list-container pt-[10px] px-[20px] text-center justify-center">
             <CategoryEmptyPlaceholder category={BoostCategoryOptionsEnum.skill} />
             <p className="text-black mt-10">
-                <strong>Coming Soon...</strong>
+                <strong>{m['skills.comingSoon']()}</strong>
             </p>
         </section>
     );

@@ -1230,5 +1230,16 @@
         "fwLabel": "Framework",
         "chooseFw": "Framework",
         "compCount": "Competencies"
+    },
+    "skills": {
+        "compFw_one": "1 Competency Framework",
+        "compFw_other": "{count} Competency Frameworks",
+        "aiTitle": "AI Insights",
+        "aiDesc": "<0>Your</0> top skills, learning snapshots, suggested lessons & careers, <1>and</1> TEDed content.",
+        "explore": "Explore",
+        "comingSoon": "Coming Soon...",
+        "count": "Skills",
+        "listTitle": "Boosts",
+        "emptyBoosts": "You don't have any Boosts yet."
     }
 }
