@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { IonSpinner } from '@ionic/react';
+import * as m from '../../../paraglide/messages.js';
 import CaretDown from '../../svgs/CaretDown';
 import TroopsNetworkList from './TroopsNetworkList';
 
@@ -87,7 +88,7 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
                         <h4
                             className={`text-${globalColor} font-bold p-0 m-0 text-xs font-notoSans`}
                         >
-                            Global Network
+                            {m['troops.globalNetworkLabel']()}
                         </h4>
 
                         {isParentBoostLoading ? (
@@ -135,12 +136,12 @@ export const TroopsNetworkToggle: React.FC<TroopsNetworkToggleProps> = ({
                 </div>
                 <div className="flex flex-col items-start justify-center">
                     <h4 className="text-sp-fire-red font-bold p-0 m-0 text-xs font-notoSans">
-                        Network
+                        {m['troops.network']()}
                     </h4>
 
                     {isParentBoostLoading ? (
                         <p className="m-0 p-0 text-lg font-notoSans text-grayscale-900 line-clamp-1">
-                            ...
+                            {m['troops.loading']()}
                         </p>
                     ) : (
                         <p className="m-0 p-0 text-lg font-notoSans text-grayscale-900 line-clamp-1">

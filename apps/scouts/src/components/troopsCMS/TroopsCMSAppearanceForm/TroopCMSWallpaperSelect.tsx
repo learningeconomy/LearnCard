@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 import { IonSpinner } from '@ionic/react';
+import * as m from '../../../paraglide/messages.js';
 import Pencil from '../../svgs/Pencil';
 import TrashBin from '../../svgs/TrashBin';
 import WallpaperEmptyState from '../../../assets/images/wallpaper-empty-state.png';
@@ -129,7 +130,7 @@ export const TroopCMSWallpaperSelect: React.FC<{
                 {(!wallpaper && !state?.inheritNetworkStyles && !isInIDMode) ||
                     (!wallpaper && isInIDMode && (
                         <p className="ml-[10px] font-notoSans text-sm font-bold text-grayscale-500">
-                            None
+                            {m['scoutsId.none']()}
                         </p>
                     ))}
             </div>

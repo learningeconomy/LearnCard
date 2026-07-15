@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 import { IonToggle } from '@ionic/react';
+import * as m from '../../../paraglide/messages.js';
 import TroopCMSWallpaperSelect from './TroopCMSWallpaperSelect';
 import TroopCMSThumbnailSelect from './TroopsCMSThumbnailSelect';
 import TroopsCMSColorPicker from './TroopCMSColorPicker';
@@ -110,11 +111,11 @@ export const TroopCMSAppearanceForm: React.FC<{
             {isInIDMode && (
                 <>
                     <div className="w-full flex items-center justify-end border-b-solid border-b-grayscale-100 border-b-[2px] pb-2 mt-4">
-                        <p className="font-notoSans text-grayscale-600 font-semibold">DISPLAY</p>
+                        <p className="font-notoSans text-grayscale-600 font-semibold">{m['scoutsId.display']()}</p>
                     </div>
                     <div className="w-full flex items-end justify-between mb-2 mt-4">
                         <h3 className="text-grayscale-900 text-left w-full font-notoSans text-[20px] mb-2">
-                            Card
+                            {m['scoutsId.card']()}
                         </h3>
 
                         <img src={IDThumbnailSelected} alt="id highlighted" />
@@ -132,7 +133,7 @@ export const TroopCMSAppearanceForm: React.FC<{
                                 className="w-full h-full object-cover"
                             />
                         </div>
-                        Use network styles
+                        {m['troops.useNetworkStyles']()}
                     </div>
                     <IonToggle
                         mode="ios"
@@ -167,7 +168,7 @@ export const TroopCMSAppearanceForm: React.FC<{
                 <div className="flex items-center justify-between w-full p-2 border-b-white border-b-solid border-b-[2px]">
                     <div className="flex items-center justify-between w-full pb-2 pl-[4px]">
                         <p className="text-grayscale-900 font-notoSans text-lg flex items-center justify-start w-[80%]">
-                            Fade Image
+                            {m['scoutsId.fadeImage']()}
                         </p>
                         <IonToggle
                             mode="ios"
@@ -199,7 +200,7 @@ export const TroopCMSAppearanceForm: React.FC<{
                 <div className="flex items-center justify-between w-full p-2 border-b-white border-b-solid border-b-[2px]">
                     <div className="flex items-center justify-between w-full pb-2 pl-[4px]">
                         <p className="text-grayscale-900 font-notoSans text-lg flex items-center justify-start w-[80%]">
-                            Dark Text
+                            {m['scoutsId.darkText']()}
                         </p>
                         <IonToggle
                             mode="ios"
@@ -238,7 +239,7 @@ export const TroopCMSAppearanceForm: React.FC<{
             <div className="flex flex-col items-center justify-center bg-white rounded-[20px] w-full mb-[20px]">
                 <div className="w-full flex items-end justify-between mb-2">
                     <h3 className="text-grayscale-900 text-left w-full font-notoSans text-[20px] mb-2">
-                        Wallpaper
+                        {m['scoutsId.wallpaper']()}
                     </h3>
 
                     {isInIDMode && <img src={IDWallpaperSelected} alt="id highlighted" />}
@@ -299,7 +300,7 @@ export const TroopCMSAppearanceForm: React.FC<{
                         <div className="flex items-center justify-between w-full bg-grayscale-100 p-2 border-b-white border-b-solid border-b-[2px]">
                             <div className="flex items-center justify-between w-full pb-2 pl-[4px]">
                                 <p className="text-grayscale-900 font-notoSans text-lg flex items-center justify-start w-[80%]">
-                                    Fade Image
+                                    {m['scoutsId.fadeImage']()}
                                 </p>
                                 <IonToggle
                                     mode="ios"
@@ -335,7 +336,7 @@ export const TroopCMSAppearanceForm: React.FC<{
                     <div className="flex items-center justify-between w-full bg-grayscale-100 rounded-[15px] p-2">
                         <div className="flex items-center justify-between w-full py-2 pl-[4px]">
                             <p className="text-grayscale-900 font-notoSans text-lg flex items-center justify-start w-[80%]">
-                                Repeat Image
+                                {m['troops.repeatImage']()}
                             </p>
                             <IonToggle
                                 mode="ios"

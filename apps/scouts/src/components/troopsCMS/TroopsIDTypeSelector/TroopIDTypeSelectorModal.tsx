@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import { IonSpinner } from '@ionic/react';
+import * as m from '../../../paraglide/messages.js';
 
 import TroopIDTypeSelectorListItem from './TroopIDTypeSelectorListItem';
 
@@ -55,7 +56,7 @@ const TroopIDTypeSelectorModal: React.FC<{
                             color="grayscale-900"
                             className="scale-[2] mb-8 mt-6"
                         />
-                        <p className="font-notoSans text-grayscale-800">Loading...</p>
+                        <p className="font-notoSans text-grayscale-800">{m['common.loading']()}</p>
                     </div>
                 ) : (
                     <>

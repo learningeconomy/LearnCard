@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 
 import { IonFooter, IonLoading, IonToolbar } from '@ionic/react';
+import * as m from '../../../paraglide/messages.js';
 import TroopIDPreview from '../TroopsIDCMS/TroopIDPreview/TroopIDPreview';
 import X from '../../svgs/X';
 
@@ -96,7 +97,7 @@ export const TroopsCMSFooter: React.FC<TroopsCMSFooterProps> = ({
                 {isInIDMode && (
                     <>
                         {editIdOnlyMode && (
-                            <IonLoading mode="ios" message="Saving..." isOpen={isSaving} />
+                            <IonLoading mode="ios" message={m['common.saving']()} isOpen={isSaving} />
                         )}
                         <div className={`w-full flex items-center justify-center ${footerStyles}`}>
                             <div className="w-full flex items-center justify-between max-w-[600px] ion-padding">
@@ -110,7 +111,7 @@ export const TroopsCMSFooter: React.FC<TroopsCMSFooterProps> = ({
                                     onClick={() => openPreview()}
                                     className="bg-white text-grayscale-900 text-lg rounded-full py-[12px] w-full mr-2 shadow-soft-bottom"
                                 >
-                                    Preview
+                                    {m['common.preview']()}
                                 </button>
                                 <button
                                     onClick={async () => {
@@ -124,7 +125,7 @@ export const TroopsCMSFooter: React.FC<TroopsCMSFooterProps> = ({
                                     className={`text-white text-lg font-bold rounded-full py-[12px] w-full disabled:opacity-60 ${actionButtonColor}`}
                                     disabled={isSaving}
                                 >
-                                    Save
+                                    {m['common.save']()}
                                 </button>
                             </div>
                         </div>
@@ -138,7 +139,7 @@ export const TroopsCMSFooter: React.FC<TroopsCMSFooterProps> = ({
                                 onClick={handleCloseModal}
                                 className="bg-white text-grayscale-900 text-lg rounded-full py-[12px] w-full mr-2 shadow-soft-bottom"
                             >
-                                Cancel
+                                {m['common.cancel']()}
                             </button>
                             <button
                                 disabled={isTroopCreationDisabled ?? false}
@@ -147,7 +148,7 @@ export const TroopsCMSFooter: React.FC<TroopsCMSFooterProps> = ({
                                     isTroopCreationDisabled ? 'bg-opacity-50' : ''
                                 } ${actionButtonColor}`}
                             >
-                                {isEdit ? 'Save' : 'Create'}
+                                {isEdit ? m['common.save']() : m['common.create']()}
                             </button>
                         </div>
                     </div>

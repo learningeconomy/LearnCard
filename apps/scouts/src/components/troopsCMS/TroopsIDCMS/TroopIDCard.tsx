@@ -1,5 +1,7 @@
 import React from 'react';
 
+import * as m from '../../../paraglide/messages.js';
+
 import {
     getDefaultBadgeThumbForViewMode,
     getIdBackgroundStyles,
@@ -65,24 +67,24 @@ const TroopIDCard: React.FC<TroopIDCardProps> = ({ state, idState, rootViewMode,
     let title = '';
     let PlaceholderIcon = ScoutIdThumbPlaceholder;
     if (isInGlobalViewMode) {
-        title = 'Global Admin Name';
+        title = m['troops.globalAdminName']();
         PlaceholderIcon = GlobalAdminIdThumbPlaceholder;
     } else if (isInNetworkViewMode) {
-        title = 'National Admin Name';
+        title = m['troops.nationalAdminName']();
         PlaceholderIcon = NationalAdminIdThumbPlaceholder;
     } else if (isInTroopViewMode && isInLeaderViewMode) {
-        title = 'Leader Name';
+        title = m['troops.leaderName']();
         PlaceholderIcon = LeaderIdThumbPlaceholder;
     } else if (isInTroopViewMode && isInMemberViewMode) {
-        title = 'Scout Name';
+        title = m['troops.scoutName']();
         PlaceholderIcon = ScoutIdThumbPlaceholder;
     }
 
     let name = state?.basicInfo?.name;
     if (!name) {
-        name = isInNetworkViewMode || isInGlobalViewMode ? 'Network Name' : 'Troop';
+        name = isInNetworkViewMode || isInGlobalViewMode ? m['troops.networkName']() : m['troops.troop']();
     } else if (isInTroopViewMode) {
-        name = `Troop ${name}`;
+        name = `${m['troops.troop']()} ${name}`;
     }
 
     return (
@@ -105,7 +107,7 @@ const TroopIDCard: React.FC<TroopIDCardProps> = ({ state, idState, rootViewMode,
                     <span className="font-notoSans font-[600] text-[12px]">
                         {getMemberTypeText(rootViewMode, viewMode)} ID
                     </span>
-                    <span className="font-notoSans font-[600] text-[12px]">Issued (Date)</span>
+                    <span className="font-notoSans font-[600] text-[12px]">{m['scoutsId.issuedDate']()}</span>
                 </div>
             </div>
             <div className={`flex flex-col justify-center px-[10px] py-[4px] h-[45px] bg-white`}>

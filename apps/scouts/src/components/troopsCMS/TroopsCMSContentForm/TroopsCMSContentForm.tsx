@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 
 import { IonInput, IonTextarea, IonToggle } from '@ionic/react';
+import * as m from '../../../paraglide/messages.js';
 
 import {
     getMemberTypeText,
@@ -152,15 +153,15 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
 
     let currentMode;
     if (isInNetworkViewMode) {
-        currentMode = 'Network';
+        currentMode = m['troops.network']();
     } else if (isInGlobalViewMode) {
-        currentMode = 'Global Network';
+        currentMode = m['troops.globalNetworkLabel']();
     } else if (isInTroopViewMode) {
-        currentMode = 'Troop';
+        currentMode = m['troops.troop']();
     } else if (isInMemberViewMode) {
-        currentMode = 'Scout';
+        currentMode = m['troops.scout_one']();
     } else if (isInLeaderViewMode) {
-        currentMode = 'Leader';
+        currentMode = m['troops.leader_one']();
     } else {
         currentMode = '';
     }
@@ -258,13 +259,13 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
             {(isInMemberViewMode || isInLeaderViewMode) && (
                 <div className="w-full mb-2 mt-4">
                     <h3 className="text-grayscale-900 text-left w-full font-notoSans text-[20px] mb-2">
-                        Member Type
+                        {m['troops.memberType']()}
                     </h3>
 
                     <IonInput
                         value={getMemberTypeText(rootViewMode, viewMode)}
                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-notoSans text-[17px] w-full troops-cms-placeholder"
-                        placeholder="Member type"
+                        placeholder={m['troops.memberTypePlaceholder']()}
                         type="text"
                         readonly
                     />
@@ -274,7 +275,7 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
             {(isInNetworkViewMode || isInGlobalViewMode) && (
                 <div className="w-full mb-2 mt-4">
                     <h3 className="text-grayscale-900 text-left w-full font-notoSans text-[20px] mb-2">
-                        {currentMode} Name
+                        {m['troops.namePlaceholder']({ mode: currentMode })}
                     </h3>
 
                     <IonInput
@@ -288,7 +289,7 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
                         className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-notoSans text-[17px] w-full troops-cms-placeholder ${
                             errors?.name ? 'border-red-300 border-2' : ''
                         }`}
-                        placeholder={`${currentMode} Name`}
+                        placeholder={m['troops.namePlaceholder']({ mode: currentMode })}
                         clearInput
                         type="text"
                         minlength={1}
@@ -303,13 +304,13 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
             {(isInNetworkViewMode || isInGlobalViewMode) && (
                 <div className="w-full mb-2 mt-2">
                     <h3 className="text-grayscale-900 text-left w-full font-notoSans text-[20px] mb-2">
-                        Country
+                        {m['troops.country']()}
                     </h3>
                     <button
                         type="button"
                         onClick={() =>
                             openListModal(
-                                'Select Country',
+                                m['troops.selectCountry'](),
                                 countryOptions,
                                 state?.networkFields?.country ?? '',
                                 v => handleSetNetworkField('country', v)
@@ -317,7 +318,7 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
                         }
                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-notoSans text-[17px] w-full troops-cms-placeholder text-left"
                     >
-                        {state?.networkFields?.country?.trim() || 'Select Country'}
+                        {state?.networkFields?.country?.trim() || m['troops.selectCountry']()}
                     </button>
                 </div>
             )}
@@ -325,13 +326,13 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
             {(isInNetworkViewMode || isInGlobalViewMode) && (
                 <div className="w-full mb-2 mt-2">
                     <h3 className="text-grayscale-900 text-left w-full font-notoSans text-[20px] mb-2">
-                        World Scouting Region
+                        {m['troops.worldScoutingRegion']()}
                     </h3>
                     <button
                         type="button"
                         onClick={() =>
                             openListModal(
-                                'Select Region',
+                                m['troops.selectRegion'](),
                                 regionOptions,
                                 state?.networkFields?.region ?? '',
                                 v => handleSetNetworkField('region', v)
@@ -339,7 +340,7 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
                         }
                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-notoSans text-[17px] w-full troops-cms-placeholder text-left"
                     >
-                        {state?.networkFields?.region?.trim() || 'Select Region'}
+                        {state?.networkFields?.region?.trim() || m['troops.selectRegion']()}
                     </button>
                 </div>
             )}
@@ -347,13 +348,13 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
             {(isInNetworkViewMode || isInGlobalViewMode) && (
                 <div className="w-full mb-2 mt-2">
                     <h3 className="text-grayscale-900 text-left w-full font-notoSans text-[20px] mb-2">
-                        Network Type
+                        {m['troops.networkType']()}
                     </h3>
                     <button
                         type="button"
                         onClick={() =>
                             openListModal(
-                                'Select Network Type',
+                                m['troops.selectNetworkType'](),
                                 networkTypeOptions,
                                 state?.networkFields?.networkType ?? '',
                                 v => handleSetNetworkField('networkType', v)
@@ -361,7 +362,7 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
                         }
                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-notoSans text-[17px] w-full troops-cms-placeholder text-left"
                     >
-                        {state?.networkFields?.networkType?.trim() || 'Select Network Type'}
+                        {state?.networkFields?.networkType?.trim() || m['troops.selectNetworkType']()}
                     </button>
                 </div>
             )}
@@ -369,7 +370,7 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
             {isInTroopViewMode && (
                 <div className="w-full mb-2 mt-4">
                     <h3 className="text-grayscale-900 text-left w-full font-notoSans text-[20px] mb-2">
-                        Troop Number
+                        {m['troops.troopNumber']()}
                     </h3>
 
                     <IonInput
@@ -383,7 +384,7 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
                         className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-notoSans text-[17px] w-full troops-cms-placeholder ${
                             errors?.troopNumber ? 'border-red-300 border-2' : ''
                         }`}
-                        placeholder="00000"
+                        placeholder={m['troops.troopNumberPlaceholder']()}
                         clearInput
                         type="number"
                         minlength={1}
@@ -392,7 +393,7 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
 
                     {errors?.troopNumber && (
                         <div className="text-red-400 font-medium pl-2">
-                            Invalid Troop number entered
+                            {m['troops.invalidTroopNumber']()}
                         </div>
                     )}
                 </div>
@@ -400,7 +401,7 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
 
             <div className="w-full mb-2 mt-4">
                 <h3 className="text-grayscale-900 text-left w-full font-notoSans text-[20px] mb-2">
-                    About
+                    {m['common.about']()}
                 </h3>
                 {/* allows a troop to toggle the network's description */}
                 {isInTroopViewMode && (
@@ -419,7 +420,7 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
                                     />
                                 </div>
                             )}
-                            Use network description
+                            {m['troops.useNetworkDescription']()}
                         </div>
                         <IonToggle
                             mode="ios"
@@ -449,7 +450,7 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
                                 handleSetState('description', _description);
                                 setErrors?.({});
                             }}
-                            placeholder={`${currentMode} description...`}
+                            placeholder={m['troops.descriptionPlaceholder']({ mode: currentMode })}
                             className={`bg-grayscale-100 text-grayscale-900 rounded-[15px] font-normal text-[17px] font-notoSans troops-cms-textarea ${
                                 errors?.description ? 'border-red-300 border-2' : ''
                             }`}
@@ -479,7 +480,7 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
                                     />
                                 </div>
                             )}
-                            Use {defaultDescriptionNoun} description
+                            {m['troops.useSourcedDescription']({ source: defaultDescriptionNoun })}
                         </div>
                         <IonToggle
                             mode="ios"
@@ -509,7 +510,7 @@ export const TroopCMSContentForm: React.FC<TroopCMSContentFormProps> = ({
                                 handleSetIDState('idDescription', _description);
                                 setErrors?.({});
                             }}
-                            placeholder={`${currentMode} ID description...`}
+                            placeholder={m['troops.idDescriptionPlaceholder']({ mode: currentMode })}
                             className={`bg-grayscale-100 text-grayscale-900 rounded-[15px] font-normal text-[17px] font-notoSans troops-cms-textarea ${
                                 errors?.description ? 'border-red-300 border-2' : ''
                             }`}

@@ -3,6 +3,7 @@ import React from 'react';
 import TroopID from '../TroopIDCard';
 import IDSleeve from 'learn-card-base/svgs/IDSleeve';
 import QRCodeScanner from '../../../svgs/QRCodeScanner';
+import * as m from '../../../../paraglide/messages.js';
 
 import { TroopsCMSState, TroopsCMSViewModeEnum } from '../../troopCMSState';
 
@@ -58,15 +59,13 @@ export const TroopIDPreviewFrontFace: React.FC<{
                     <IDSleeve className="h-auto w-full" />
 
                     <button className="rounded-[20px] py-[5px] px-[14px] bg-grayscale-900 absolute top-[27px] right-[10px] text-[12px] font-notoSans font-[600] text-white">
-                        Draft
+                        {m['troops.draft']()}
                     </button>
                 </div>
 
                 <div className="w-full bg-white flex flex-col items-center justify-center pt-8 pb-8">
                     <span className="font-notoSans text-[17px] text-center">
-                        Issued to {title}
-                        <br />
-                        by {name}
+                        {m['troops.issuedToBy']({ title, name })}
                     </span>
                     <h4 className="text-[14px] font-notoSans font-semibold text-gray-900">
                         {network?.basicInfo?.name}
