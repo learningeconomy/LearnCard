@@ -1,0 +1,206 @@
+{
+    "common": {
+        "share": "مشاركة",
+        "open": "فتح",
+        "accept": "قبول",
+        "search": "بحث",
+        "delete": "حذف",
+        "done": "تم",
+        "next": "التالي",
+        "verify": "تحقق",
+        "verifying": "جاري التحقق...",
+        "preview": "معاينة",
+        "details": "التفاصيل",
+        "about": "حول",
+        "unknown": "غير معروف",
+        "status": "الحالة",
+        "claim": "مطالبة",
+        "update": "تحديث",
+        "skipForNow": "تخطٍّ مؤقت",
+        "upload": "تحميل",
+        "publish": "نشر",
+        "yes": "نعم",
+        "no": "لا",
+        "connect": "اتصال",
+        "login": "تسجيل الدخول",
+        "password": "كلمة المرور",
+        "createAccount": "إنشاء حساب",
+        "staySignedIn": "البقاء مسجلاً",
+        "resendCode": "إعادة إرسال الرمز",
+        "resendIn": "إعادة الإرسال خلال {{seconds}} ثانية",
+        "invalidCode": "رمز غير صالح",
+        "enterVerificationCode": "أدخل رمز التحقق أو <0>ابدأ من جديد</0>",
+        "agreeToTerms": "أوافق على <0>الشروط</0>",
+        "alreadyHaveAccount": "هل لديك حساب بالفعل؟",
+        "differentEmail": "استخدام بريد إلكتروني آخر",
+        "sendingCode": "جاري إرسال الرمز...",
+        "back": "رجوع",
+        "close": "إغلاق",
+        "cancel": "إلغاء",
+        "save": "حفظ",
+        "continue": "متابعة",
+        "loading": "جاري التحميل...",
+        "add": "إضافة",
+        "saving": "جارٍ الحفظ...",
+        "searchResults": {
+            "noResults": "لم يتم العثور على نتائج",
+            "noResultsFor": "لم يتم العثور على نتائج لـ <0>{{query}}</0>"
+        },
+        "create": "إنشاء",
+        "creating": "جارٍ الإنشاء...",
+        "updating": "جارٍ التحديث...",
+        "revoked": "ملغى",
+        "learnMore": "اعرف المزيد",
+        "viewAll": "عرض الكل",
+        "tagline": "محفظة التعلّم والعمل الشاملة",
+        "gotIt": "حسنًا.",
+        "edit": "تعديل",
+        "clear": "مسح"
+    },
+    "error": {
+        "generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+        "network": "مشكلة في الاتصال. يرجى التحقق من الإنترنت والمحاولة مرة أخرى.",
+        "notFound": "الصفحة غير موجودة.",
+        "unauthorized": "ليس لديك إذن للقيام بذلك.",
+        "sessionExpired": "انتهت صلاحية جلستك. يرجى تسجيل الدخول مرة أخرى.",
+        "retry": "إعادة المحاولة",
+        "goHome": "الصفحة الرئيسية",
+        "back": "رجوع"
+    },
+    "language": {
+        "select": "اختيار اللغة",
+        "english": "English",
+        "spanish": "Español",
+        "german": "Deutsch",
+        "arabic": "العربية",
+        "french": "Français",
+        "korean": "한국어"
+    },
+    "theme": {
+        "title": "اختر مظهرك",
+        "subtitleColorfulFormal": "بدّل بين تجربتنا الملونة وأسلوب كلاسيكي رسمي.",
+        "subtitleGeneric": "اختر أسلوبك المرئي المفضل.",
+        "names": {
+            "colorful": "Colorful",
+            "formal": "Formal",
+            "vetpass": "VetPass"
+        },
+        "colorfulMode": "الوضع الملوّن",
+        "neutralMode": "الوضع المحايد"
+    },
+    "scanner": {
+        "title": "مسح رمز QR",
+        "scanning": "جاري المسح...",
+        "noCamera": "لا توجد كاميرا متاحة",
+        "cameraPermission": "يلزم إذن الكاميرا",
+        "invalidCode": "رمز QR غير صالح",
+        "scanAnother": "مسح آخر",
+        "openCamera": "فتح الكاميرا",
+        "scanQR": "مسح رمز QR",
+        "importFromLink": "استيراد من رابط",
+        "pasteLink": "الصق الرابط هنا...",
+        "importCredential": "استيراد شهادة",
+        "processing": "جاري المعالجة...",
+        "success": "تم استيراد الشهادة بنجاح!",
+        "failed": "فشل استيراد الشهادة",
+        "download": "تنزيل",
+        "scanLabel": "مسح",
+        "saveToPhotos": "حفظ في الصور",
+        "saveAsPhoto": "حفظ كصورة",
+        "saveToFiles": "حفظ في الملفات",
+        "saveAsFile": "حفظ كملف",
+        "downloadQrCode": "تنزيل رمز QR",
+        "downloadQrCodeDescription": "شارك أو اطبع رمز QR الخاص بك على {{brand}}.",
+        "savedToPhotos": "تم حفظ رمز QR في الصور!",
+        "saveFailed": "فشل حفظ رمز QR.",
+        "savedToDocuments": "تم حفظ رمز QR في المستندات!",
+        "savePdfFailed": "فشل حفظ رمز QR كـ PDF."
+    },
+    "share": {
+        "addContact": "إضافة جهة اتصال",
+        "generateLinkFailed": "فشل إنشاء رابط الدعوة",
+        "inviteLinkCopied": "تم نسخ رابط الدعوة إلى الحافظة",
+        "inviteLinkCopyFailed": "تعذر نسخ رابط الدعوة إلى الحافظة",
+        "profileLinkCopied": "تم نسخ رابط الملف الشخصي إلى الحافظة",
+        "profileLinkCopyFailed": "تعذر نسخ رابط الملف الشخصي إلى الحافظة",
+        "linkExpires": "ينتهي الرابط خلال {{time}}",
+        "neverExpires": "لا ينتهي أبداً",
+        "link": "الرابط",
+        "shareProfile": "مشاركة الملف الشخصي",
+        "generateInviteLink": "إنشاء رابط دعوة",
+        "noCredentialsToShare": "لا توجد بيانات اعتماد للمشاركة."
+    },
+    "verification": {
+        "title": "التحقق من الاعتمادات",
+        "viewJson": "عرض json",
+        "hideJson": "إخفاء json",
+        "status": {
+            "success": "ناجح",
+            "failed": "فاشل",
+            "error": "خطأ"
+        },
+        "checks": {
+            "proof": "إثبات",
+            "revocation": "الحالة",
+            "expiration": "الانتهاء"
+        },
+        "messages": {
+            "valid": "صالح",
+            "notRevoked": "غير ملغى",
+            "doesNotExpire": "لا ينتهي",
+            "expired": "غير صالح • منتهٍ {{date}}",
+            "expires": "صالح • ينتهي {{date}}"
+        }
+    },
+    "base": {
+        "verification": {
+            "selfIssued": "صادر ذاتياً",
+            "trustedIssuer": "جهة إصدار موثوقة",
+            "unknownIssuer": "جهة إصدار غير معروفة",
+            "appIssuer": "جهة إصدار التطبيق",
+            "untrustedIssuer": "جهة إصدار غير موثوقة"
+        },
+        "boostFooter": {
+            "close": "إغلاق",
+            "back": "رجوع",
+            "details": "التفاصيل",
+            "share": "مشاركة",
+            "accept": "قبول"
+        },
+        "common": {
+            "close": "إغلاق",
+            "select": "تحديد"
+        }
+    },
+    "sdk": {
+        "verification": {
+            "selfIssued": "صادر ذاتياً",
+            "trustedIssuer": "جهة إصدار موثوقة",
+            "unknownIssuer": "جهة إصدار غير معروفة",
+            "appIssuer": "تطبيق موثوق",
+            "untrustedIssuer": "جهة إصدار غير موثوقة",
+            "title": "عمليات التحقق من بيانات الاعتماد",
+            "infoText": "تتحقق عمليات التحقق من بيانات الاعتماد من الإثبات التشفيري لبيانات الاعتماد الرقمية لضمان صحتها ودقتها.",
+            "status": {
+                "success": "نجاح",
+                "error": "خطأ",
+                "failed": "فشل"
+            },
+            "check": {
+                "proof": "الإثبات",
+                "status": "الحالة",
+                "expiration": "انتهاء الصلاحية"
+            },
+            "message": {
+                "valid": "صالح",
+                "invalid": "غير صالح",
+                "notRevoked": "غير ملغى",
+                "revoked": "ملغى",
+                "doesNotExpire": "لا تنتهي صلاحيته",
+                "expired": "منتهي الصلاحية",
+                "active": "نشط",
+                "couldNotVerify": "تعذّر التحقق من بيان اعتماد Boost."
+            }
+        }
+    }
+}

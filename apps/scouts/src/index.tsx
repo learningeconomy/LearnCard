@@ -5,6 +5,8 @@ import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { asyncWithLDProvider } from 'launchdarkly-react-client-sdk';
 import { LAUNCH_DARKLY_CONFIG } from './constants/launchDarkly';
 import { TenantConfigProvider } from 'learn-card-base';
+import { LocaleProvider } from './i18n';
+import { setTenantDefaultLocaleCache } from './i18n/detectLocale';
 
 import App from './App';
 import { bootstrapTenantConfig } from './config/bootstrapTenantConfig';
@@ -20,6 +22,12 @@ const log = getLogger('index');
 
 (async () => {
     const tenantConfig = await bootstrapTenantConfig();
+
+    // Seed the locale-detection cache so LocaleProvider's sync initializer can
+    // fall through to the tenant default when there's no persisted choice and
+    // navigator.language isn't a supported locale. Must run BEFORE React mounts
+    // (resolveInitialLocale runs in the LocaleProvider useState initializer).
+    setTenantDefaultLocaleCache((tenantConfig as any)?.i18n?.defaultLanguage);
 
     // notifyAppReady
     const capGoApp = await CapacitorUpdater.notifyAppReady();
@@ -41,9 +49,11 @@ const log = getLogger('index');
         const root = createRoot(container);
         root.render(
             <TenantConfigProvider config={tenantConfig}>
-                <LDProvider>
-                    <App />
-                </LDProvider>
+                <LocaleProvider>
+                    <LDProvider>
+                        <App />
+                    </LDProvider>
+                </LocaleProvider>
             </TenantConfigProvider>
         );
     }

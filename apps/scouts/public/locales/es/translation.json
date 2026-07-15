@@ -1,0 +1,206 @@
+{
+    "common": {
+        "share": "Compartir",
+        "open": "Abrir",
+        "accept": "Aceptar",
+        "search": "Buscar",
+        "delete": "Eliminar",
+        "done": "Listo",
+        "next": "Siguiente",
+        "verify": "Verificar",
+        "verifying": "Verificando...",
+        "preview": "Vista previa",
+        "details": "Detalles",
+        "about": "Acerca de",
+        "unknown": "Desconocido",
+        "status": "Estado",
+        "claim": "Reclamar",
+        "update": "Actualizar",
+        "skipForNow": "Omitir por ahora",
+        "upload": "Subir",
+        "publish": "Publicar",
+        "yes": "Sí",
+        "no": "No",
+        "connect": "Conectar",
+        "login": "Iniciar sesión",
+        "password": "Contraseña",
+        "createAccount": "Crear cuenta",
+        "staySignedIn": "Permanecer conectado",
+        "resendCode": "Reenviar código",
+        "resendIn": "Reenviar en {{seconds}}s",
+        "invalidCode": "Código inválido",
+        "enterVerificationCode": "Ingresa el código de verificación o <0>comienza de nuevo</0>",
+        "agreeToTerms": "Acepto los <0>Términos</0>",
+        "alreadyHaveAccount": "¿Ya tienes una cuenta?",
+        "differentEmail": "Usar otro correo",
+        "sendingCode": "Enviando código...",
+        "back": "Volver",
+        "close": "Cerrar",
+        "cancel": "Cancelar",
+        "save": "Guardar",
+        "continue": "Continuar",
+        "loading": "Cargando...",
+        "add": "Añadir",
+        "saving": "Guardando...",
+        "searchResults": {
+            "noResults": "No se encontraron resultados",
+            "noResultsFor": "No se encontraron resultados para <0>{{query}}</0>"
+        },
+        "create": "Crear",
+        "creating": "Creando...",
+        "updating": "Actualizando...",
+        "revoked": "Revocado",
+        "learnMore": "Más información",
+        "viewAll": "Ver todo",
+        "tagline": "Portafolio universal de aprendizaje y trabajo",
+        "gotIt": "Entendido.",
+        "edit": "Editar",
+        "clear": "Borrar"
+    },
+    "error": {
+        "generic": "Algo salió mal. Inténtalo de nuevo.",
+        "network": "Problema de conexión. Verifica tu internet e inténtalo de nuevo.",
+        "notFound": "Página no encontrada.",
+        "unauthorized": "No tienes permiso para hacer esto.",
+        "sessionExpired": "Tu sesión ha expirado. Inicia sesión de nuevo.",
+        "retry": "Intentar de nuevo",
+        "goHome": "Ir al inicio",
+        "back": "Volver"
+    },
+    "language": {
+        "select": "Seleccionar idioma",
+        "english": "English",
+        "spanish": "Español",
+        "german": "Deutsch",
+        "arabic": "العربية",
+        "french": "Français",
+        "korean": "한국어"
+    },
+    "theme": {
+        "title": "Elige tu tema",
+        "subtitleColorfulFormal": "Cambia entre nuestra experiencia colorida y un estilo clásico y formal.",
+        "subtitleGeneric": "Elige tu estilo visual preferido.",
+        "names": {
+            "colorful": "Colorful",
+            "formal": "Formal",
+            "vetpass": "VetPass"
+        },
+        "colorfulMode": "Modo colorido",
+        "neutralMode": "Modo neutro"
+    },
+    "scanner": {
+        "title": "Escanear código QR",
+        "scanning": "Escaneando...",
+        "noCamera": "Cámara no disponible",
+        "cameraPermission": "Se requiere permiso de cámara",
+        "invalidCode": "Código QR inválido",
+        "scanAnother": "Escanear otro",
+        "openCamera": "Abrir cámara",
+        "scanQR": "Escanear código QR",
+        "importFromLink": "Importar desde enlace",
+        "pasteLink": "Pega el enlace aquí...",
+        "importCredential": "Importar credencial",
+        "processing": "Procesando...",
+        "success": "¡Credencial importada exitosamente!",
+        "failed": "Error al importar la credencial",
+        "download": "Descargar",
+        "scanLabel": "Escanear",
+        "saveToPhotos": "Guardar en Fotos",
+        "saveAsPhoto": "Guardar como foto",
+        "saveToFiles": "Guardar en Archivos",
+        "saveAsFile": "Guardar como archivo",
+        "downloadQrCode": "Descargar código QR",
+        "downloadQrCodeDescription": "Comparte o imprime tu código QR de {{brand}}.",
+        "savedToPhotos": "¡Código QR guardado en Fotos!",
+        "saveFailed": "Error al guardar el código QR.",
+        "savedToDocuments": "¡Código QR guardado en Documentos!",
+        "savePdfFailed": "Error al guardar el código QR en PDF."
+    },
+    "share": {
+        "addContact": "Agregar contacto",
+        "generateLinkFailed": "Error al generar enlace de invitación",
+        "inviteLinkCopied": "Enlace de invitación copiado al portapapeles",
+        "inviteLinkCopyFailed": "No se pudo copiar el enlace de invitación al portapapeles",
+        "profileLinkCopied": "Enlace de perfil copiado al portapapeles",
+        "profileLinkCopyFailed": "No se pudo copiar el enlace de perfil al portapapeles",
+        "linkExpires": "El enlace expira en {{time}}",
+        "neverExpires": "Nunca expira",
+        "link": "Enlace",
+        "shareProfile": "Compartir perfil",
+        "generateInviteLink": "Generar enlace de invitación",
+        "noCredentialsToShare": "No hay credenciales para compartir."
+    },
+    "verification": {
+        "title": "Verificaciones de credenciales",
+        "viewJson": "Ver json",
+        "hideJson": "Ocultar json",
+        "status": {
+            "success": "Correcto",
+            "failed": "Fallido",
+            "error": "Error"
+        },
+        "checks": {
+            "proof": "Prueba",
+            "revocation": "Estado",
+            "expiration": "Vencimiento"
+        },
+        "messages": {
+            "valid": "Válido",
+            "notRevoked": "No revocado",
+            "doesNotExpire": "No expira",
+            "expired": "Inválido • Vencido {{date}}",
+            "expires": "Válido • Vence {{date}}"
+        }
+    },
+    "base": {
+        "verification": {
+            "selfIssued": "Autoemitido",
+            "trustedIssuer": "Emisor de confianza",
+            "unknownIssuer": "Emisor desconocido",
+            "appIssuer": "Emisor de la app",
+            "untrustedIssuer": "Emisor no confiable"
+        },
+        "boostFooter": {
+            "close": "Cerrar",
+            "back": "Atrás",
+            "details": "Detalles",
+            "share": "Compartir",
+            "accept": "Aceptar"
+        },
+        "common": {
+            "close": "Cerrar",
+            "select": "Seleccionar"
+        }
+    },
+    "sdk": {
+        "verification": {
+            "selfIssued": "Autoemitido",
+            "trustedIssuer": "Emisor de confianza",
+            "unknownIssuer": "Emisor desconocido",
+            "appIssuer": "App de confianza",
+            "untrustedIssuer": "Emisor no confiable",
+            "title": "Verificaciones de credenciales",
+            "infoText": "Las verificaciones de credenciales comprueban la prueba criptográfica de las credenciales digitales para garantizar su autenticidad y exactitud.",
+            "status": {
+                "success": "Éxito",
+                "error": "Error",
+                "failed": "Falló"
+            },
+            "check": {
+                "proof": "Prueba",
+                "status": "Estado",
+                "expiration": "Vencimiento"
+            },
+            "message": {
+                "valid": "Válido",
+                "invalid": "No válido",
+                "notRevoked": "No revocado",
+                "revoked": "Revocado",
+                "doesNotExpire": "No vence",
+                "expired": "Vencido",
+                "active": "Activo",
+                "couldNotVerify": "No se pudo verificar la credencial Boost."
+            }
+        }
+    }
+}

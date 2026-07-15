@@ -1,0 +1,206 @@
+{
+    "common": {
+        "share": "Share",
+        "open": "Open",
+        "accept": "Accept",
+        "search": "Search",
+        "delete": "Delete",
+        "done": "Done",
+        "next": "Next",
+        "verify": "Verify",
+        "verifying": "Verifying...",
+        "preview": "Preview",
+        "details": "Details",
+        "about": "About",
+        "unknown": "Unknown",
+        "status": "Status",
+        "claim": "Claim",
+        "update": "Update",
+        "skipForNow": "Skip for Now",
+        "upload": "Upload",
+        "publish": "Publish",
+        "yes": "Yes",
+        "no": "No",
+        "connect": "Connect",
+        "login": "Login",
+        "password": "Password",
+        "createAccount": "Create Account",
+        "staySignedIn": "Stay Signed In",
+        "resendCode": "Resend Code",
+        "resendIn": "Resend in {{seconds}}s",
+        "invalidCode": "Invalid code",
+        "enterVerificationCode": "Enter verification code or <0>start over</0>",
+        "agreeToTerms": "Agree to <0>Terms</0>",
+        "alreadyHaveAccount": "Already have an account?",
+        "differentEmail": "Use a different email address",
+        "sendingCode": "Sending Code...",
+        "back": "Back",
+        "close": "Close",
+        "cancel": "Cancel",
+        "save": "Save",
+        "continue": "Continue",
+        "loading": "Loading...",
+        "add": "Add",
+        "saving": "Saving...",
+        "searchResults": {
+            "noResults": "No results found",
+            "noResultsFor": "No results found for <0>{{query}}</0>"
+        },
+        "create": "Create",
+        "creating": "Creating...",
+        "updating": "Updating...",
+        "revoked": "Revoked",
+        "learnMore": "Learn More",
+        "viewAll": "View All",
+        "tagline": "Universal Learning & Work Portfolio",
+        "gotIt": "Got it.",
+        "edit": "Edit",
+        "clear": "Clear"
+    },
+    "error": {
+        "back": "Go Back",
+        "generic": "Something went wrong. Please try again.",
+        "goHome": "Go Home",
+        "network": "Connection issue. Please check your internet and try again.",
+        "notFound": "Page not found.",
+        "retry": "Try Again",
+        "sessionExpired": "Your session has expired. Please sign in again.",
+        "unauthorized": "You don't have permission to do this."
+    },
+    "language": {
+        "arabic": "العربية",
+        "english": "English",
+        "french": "Français",
+        "german": "Deutsch",
+        "korean": "한국어",
+        "select": "Select language",
+        "spanish": "Español"
+    },
+    "theme": {
+        "names": {
+            "colorful": "Colorful",
+            "formal": "Formal",
+            "vetpass": "VetPass"
+        },
+        "subtitleColorfulFormal": "Switch between our signature, colorful experience and a classic, formal style.",
+        "subtitleGeneric": "Choose your preferred visual style.",
+        "title": "Choose Your Theme",
+        "colorfulMode": "Colorful Mode",
+        "neutralMode": "Neutral Mode"
+    },
+    "scanner": {
+        "cameraPermission": "Camera permission required",
+        "failed": "Failed to import credential",
+        "importCredential": "Import Credential",
+        "importFromLink": "Import from Link",
+        "invalidCode": "Invalid QR code",
+        "noCamera": "No camera available",
+        "openCamera": "Open Camera",
+        "pasteLink": "Paste link here...",
+        "processing": "Processing...",
+        "scanAnother": "Scan Another",
+        "scanQR": "Scan QR Code",
+        "scanning": "Scanning...",
+        "success": "Credential imported successfully!",
+        "title": "Scan QR Code",
+        "download": "Download",
+        "scanLabel": "Scan",
+        "saveToPhotos": "Save to Photos",
+        "saveAsPhoto": "Save as Photo",
+        "saveToFiles": "Save to Files",
+        "saveAsFile": "Save as File",
+        "downloadQrCode": "Download QR Code",
+        "downloadQrCodeDescription": "Share or print your {{brand}} QR code.",
+        "savedToPhotos": "QR Code saved to Photos!",
+        "saveFailed": "Failed to save QR Code.",
+        "savedToDocuments": "QR Code saved to Documents!",
+        "savePdfFailed": "Failed to save QR Code PDF."
+    },
+    "share": {
+        "addContact": "Add contact",
+        "generateLinkFailed": "Failed to generate invite link",
+        "inviteLinkCopied": "Invite link copied to clipboard",
+        "inviteLinkCopyFailed": "Unable to copy Invite link to clipboard",
+        "link": "Link",
+        "linkExpires": "Link expires in {{time}}",
+        "neverExpires": "Never expires",
+        "profileLinkCopied": "Profile link copied to clipboard",
+        "profileLinkCopyFailed": "Unable to copy Profile link to clipboard",
+        "shareProfile": "Share Profile",
+        "generateInviteLink": "Generate Invite Link",
+        "noCredentialsToShare": "No credentials to share."
+    },
+    "verification": {
+        "title": "Credential Verifications",
+        "viewJson": "View json",
+        "hideJson": "Hide json",
+        "status": {
+            "success": "Success",
+            "failed": "Failed",
+            "error": "Error"
+        },
+        "checks": {
+            "proof": "Proof",
+            "revocation": "Status",
+            "expiration": "Expiration"
+        },
+        "messages": {
+            "valid": "Valid",
+            "notRevoked": "Not Revoked",
+            "doesNotExpire": "Does Not Expire",
+            "expired": "Invalid • Expired {{date}}",
+            "expires": "Valid • Expires {{date}}"
+        }
+    },
+    "base": {
+        "verification": {
+            "selfIssued": "Self Issued",
+            "trustedIssuer": "Trusted Issuer",
+            "unknownIssuer": "Unknown Issuer",
+            "appIssuer": "App Issuer",
+            "untrustedIssuer": "Untrusted Issuer"
+        },
+        "boostFooter": {
+            "close": "Close",
+            "back": "Back",
+            "details": "Details",
+            "share": "Share",
+            "accept": "Accept"
+        },
+        "common": {
+            "close": "Close",
+            "select": "Select"
+        }
+    },
+    "sdk": {
+        "verification": {
+            "selfIssued": "Self Issued",
+            "trustedIssuer": "Trusted Issuer",
+            "unknownIssuer": "Unknown Issuer",
+            "appIssuer": "Trusted App",
+            "untrustedIssuer": "Untrusted Issuer",
+            "title": "Credential Verifications",
+            "infoText": "Credential verifications check the cryptographic proof of digital credentials to ensure their authenticity and accuracy.",
+            "status": {
+                "success": "Success",
+                "error": "Error",
+                "failed": "Failed"
+            },
+            "check": {
+                "proof": "Proof",
+                "status": "Status",
+                "expiration": "Expiration"
+            },
+            "message": {
+                "valid": "Valid",
+                "invalid": "Invalid",
+                "notRevoked": "Not Revoked",
+                "revoked": "Revoked",
+                "doesNotExpire": "Does Not Expire",
+                "expired": "Expired",
+                "active": "Active",
+                "couldNotVerify": "Boost Credential could not be verified."
+            }
+        }
+    }
+}
