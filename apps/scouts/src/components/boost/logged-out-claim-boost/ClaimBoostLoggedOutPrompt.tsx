@@ -65,10 +65,10 @@ const ClaimBoostLoggedOutPromptDesktop: React.FC<{
     textLogo: string;
 }> = ({ handleRedirectTo, logo, textLogo }) => {
     return (
-        <div className="relative flex h-full w-full flex-row overflow-hidden text-white">
+        <div className="relative grid h-full w-full grid-cols-2 overflow-hidden text-white">
             <ScoutsLoginColumn />
 
-            <div className="flex min-h-0 flex-1 flex-col items-center justify-center border-l border-white/15 px-[50px] py-[22px] text-center">
+            <div className="flex min-h-0 min-w-0 flex-col items-center justify-center border-l border-white/15 px-[50px] py-[22px] text-center">
                 <div className="mb-[16px] flex w-full items-center justify-center gap-2">
                     <img src={logo} alt="ScoutPass logo" className="w-[55px]" />
                     <img src={textLogo} alt="ScoutPass text logo" className="max-w-[200px]" />
@@ -127,7 +127,7 @@ const ScoutsLoginColumn: React.FC = () => {
     const activeLoginTypeStyles = 'border-[#FF8DFF]';
 
     return (
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white text-grayscale-900">
+        <div className="flex min-h-0 min-w-0 flex-col overflow-hidden bg-white text-grayscale-900">
             <div className="relative flex items-center justify-center bg-sp-purple-base login-page-header !overflow-hidden">
                 <div className="flex flex-col items-center justify-center">
                     <img src={ScoutPassLogo} alt="ScoutPass logo" className="w-[55px]" />
