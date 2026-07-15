@@ -12,6 +12,16 @@ The `@learncard/partner-connect` SDK is a Promise-based JavaScript library that 
 -   **Message Queue**: Tracks pending requests with unique IDs and timeouts
 -   **Central Listener**: Validates origins and resolves/rejects promises
 -   **Type System**: Comprehensive TypeScript definitions for all APIs
+-   **MockHost** (`src/mock-host.ts`): Simulates the LearnCard host when the SDK is not embedded, so partner apps run and demo standalone
+-   **Embed detection** (`isEmbedded`): Reports whether the SDK is running inside an iframe host
+
+### Standalone Mock Mode
+
+When the SDK is not embedded in a LearnCard host, no host answers its `postMessage` requests. Mock mode (on by default via `mock: 'auto'`) intercepts the single `sendMessage(action, payload)` chokepoint and returns host-shaped responses, so every method resolves without a real host.
+
+-   Activation: `mock` option — `'auto'` (mock only when not embedded, default), `true` (always), `false` (never). `mockOptions` tunes UI/logging/persistence/DID/namespace.
+-   `MockHost` is browser-oriented but SSR-safe (never touches `document` at import) and dependency-free. Counters persist to `localStorage`; UI is injected DOM cleaned up on `destroy()`.
+-   Response shapes MUST match the real host handlers in `apps/learn-card-app/src/hooks/post-message/useLearnCardPostMessage.handlers.ts`. Update both together.
 
 ### Security Model
 
@@ -77,7 +87,8 @@ public newFeature(params: unknown): Promise<NewFeatureResponse> {
 
 3. Document the method with JSDoc including examples
 4. Update the README.md with the new method
-5. Test with example applications
+5. **Add a matching case to `MockHost.handle` (`src/mock-host.ts`)** so the method also resolves in standalone mock mode
+6. Test with example applications
 
 #### Updating Security Configuration
 

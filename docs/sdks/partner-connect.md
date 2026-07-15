@@ -3,7 +3,7 @@
 > Promise-based JavaScript SDK for secure cross-origin communication between partner apps and LearnCard
 
 {% hint style="info" %}
-**Last verified against `@learncard/partner-connect` v0.2.16.** When in doubt, the runtime types in `packages/learn-card-partner-connect-sdk/src/types.ts` and the Zod validators in `@learncard/types` (`packages/learn-card-types/src/lcn.ts`) are the source of truth.
+**Last verified against `@learncard/partner-connect` v0.3.10.** When in doubt, the runtime types in `packages/learn-card-partner-connect-sdk/src/types.ts` and the Zod validators in `@learncard/types` (`packages/learn-card-types/src/lcn.ts`) are the source of truth.
 {% endhint %}
 
 The Partner Connect SDK transforms complex `postMessage` communication into clean, modern Promise-based functions. It handles the entire cross-origin message lifecycle, including request queuing, origin validation, and timeout management.
@@ -16,6 +16,7 @@ The Partner Connect SDK transforms complex `postMessage` communication into clea
 -   **🧹 Clean**: Abstracts away all postMessage implementation details
 -   **📦 Lightweight**: Zero runtime dependencies, ~8KB minified
 -   **🛡️ Robust**: Built-in timeout handling and structured error management
+-   **🧪 Standalone-ready**: Runs and demos on its own via automatic mock mode — no host required
 
 ## Installation
 
@@ -134,6 +135,18 @@ interface PartnerConnectOptions {
      * @default 30000
      */
     requestTimeout?: number;
+
+    /**
+     * Automatic standalone mock mode.
+     * 'auto' (default) mocks only when not embedded; true always mocks; false never mocks.
+     * @default 'auto'
+     */
+    mock?: boolean | 'auto';
+
+    /**
+     * Mock behavior overrides (UI, logging, persistence, fake DID, namespace).
+     */
+    mockOptions?: MockHostOptions;
 }
 ```
 
@@ -848,6 +861,63 @@ Clean up the SDK and remove event listeners.
 learnCard.destroy();
 ```
 
+#### `isEmbedded()`
+
+Check whether your app is running inside LearnCard (an iframe) or on its own. Use it to change behavior — for example, showing an "Open in LearnCard" prompt when standalone — without writing your own detection.
+
+**Returns:** `boolean` (`false` during server-side rendering)
+
+```typescript
+import { isEmbedded } from '@learncard/partner-connect';
+
+if (isEmbedded()) {
+    // Inside LearnCard — SDK talks to the real host.
+} else {
+    // Standalone — show a preview banner, or rely on mock mode (below).
+}
+```
+
+Also available as `PartnerConnect.isEmbedded()` (static) and `learnCard.isEmbedded()` (instance).
+
+## Standalone / Mock Mode
+
+The SDK only does real work when it's embedded inside LearnCard — that's what answers its requests. Run your app on its own (local dev, a preview deploy, tests) and there's nothing to answer, so calls would hang until they time out.
+
+Mock mode fixes this automatically. When the SDK sees it isn't embedded, it stands in for LearnCard so your app stays fully usable:
+
+-   `sendCredential(...)` shows a toast — _"✅ In LearnCard, the user would receive **[name]** here"_ — and resolves with a mock result.
+-   `requestConsent(...)` grants automatically and shows a visible "mock consent" banner.
+-   `incrementCounter` / `getCounter` / `getCounters` save to the browser, so values survive reloads.
+-   `requestIdentity`, notifications, learner context, and sync status return sensible placeholder data.
+-   Everything is logged to the console with a `[LearnCard SDK · MOCK]` prefix.
+
+No flags, no separate build. Your app is demo-able standalone and behaves exactly the same against the real host once embedded.
+
+```typescript
+// Works everywhere: mocks when standalone, real host when embedded.
+const learnCard = createPartnerConnect();
+
+await learnCard.sendCredential({ templateAlias: 'course-completion' });
+```
+
+**Overrides:**
+
+```typescript
+createPartnerConnect({ mock: true }); // always mock (handy in tests)
+createPartnerConnect({ mock: false }); // never mock
+createPartnerConnect({
+    mockOptions: {
+        ui: true, // toasts/banners (default true)
+        log: true, // console logging (default true)
+        persist: true, // save counters to the browser (default true)
+        did: 'did:web:example.com:me', // fake identity
+        namespace: 'my-app-mock', // storage namespace for mock data
+    },
+});
+```
+
+Use `learnCard.isMocked()` to check whether an instance is currently mocking.
+
 ## Security Model
 
 The Partner Connect SDK implements comprehensive security measures:
@@ -1286,6 +1356,14 @@ interface ConsentResponse {
 
 interface RequestConsentOptions {
     redirect?: boolean;
+}
+
+interface MockHostOptions {
+    ui?: boolean; // show toasts/banners (default true)
+    log?: boolean; // console logging (default true)
+    persist?: boolean; // save counters to the browser (default true)
+    did?: string; // fake identity DID
+    namespace?: string; // storage namespace for mock data
 }
 
 interface RequestLearnerContextOptions {
