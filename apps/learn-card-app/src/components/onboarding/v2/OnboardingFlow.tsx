@@ -880,8 +880,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                 </div>
                                             ) : (
                                                 <p className="mt-1.5 text-xs text-grayscale-500">
-                                                    Friends can find you with this. You can change
-                                                    it anytime.
+                                                    Friends can find you with this.
                                                 </p>
                                             )}
                                         </div>
