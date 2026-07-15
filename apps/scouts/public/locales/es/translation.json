@@ -1315,5 +1315,24 @@
             "importSuccess": "Boosts imported successfully!",
             "importFailed": "Bulk boost import failed! {message}"
         }
+    },
+    "membership": {
+        "joinWait": "Join Waiting List",
+        "troops": "Troops",
+        "empty": "You don't have any Troops yet."
+    },
+    "achievements": {
+        "none": "No achievements yet",
+        "noBoosts": "No boosts to manage yet",
+        "altImg": "Achievements"
+    },
+    "currencies": {
+        "none": "No currencies yet.",
+        "altImg": "currencies"
+    },
+    "meritBadges": {
+        "title": "Merit Badges",
+        "emptyMsg": "You don't have any Merit Badges yet.",
+        "createBtn": "Create new merit badge"
     }
 }

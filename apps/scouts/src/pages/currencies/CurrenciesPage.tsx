@@ -10,6 +10,7 @@ import {
     categoryMetadata,
 } from 'learn-card-base';
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
+import * as m from '../../../paraglide/messages.js';
 
 const CurrenciesPage: React.FC = () => {
     const imgSrc = categoryMetadata[CredentialCategoryEnum.currency].defaultImageSrc;
@@ -23,8 +24,8 @@ const CurrenciesPage: React.FC = () => {
             <IonContent fullscreen className="currencies-page" color={'cyan-700'}>
                 <CurvedBackdropEl className="bg-cyan-300" />
                 <section className="flex flex-col pt-[10px] px-[20px] text-center justify-center">
-                    <img src={imgSrc} alt="currencies" className="relative max-w-[250px] m-auto" />
-                    <strong className="relative">No currencies yet.</strong>
+                    <img src={imgSrc} alt={m['currencies.altImg']()} className="relative max-w-[250px] m-auto" />
+                    <strong className="relative">{m['currencies.none']()}</strong>
                 </section>
             </IonContent>
         </IonPage>
