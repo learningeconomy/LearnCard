@@ -536,5 +536,25 @@
             "successfullyClaimed": "Successfully claimed Credential!"
         },
         "notificationIcon": "notification icon"
+    },
+    "scoutsId": {
+        "issuedDate": "Issued (Date)",
+        "display": "DISPLAY",
+        "card": "Card",
+        "fadeImage": "Fade Image",
+        "darkText": "Dark Text",
+        "wallpaper": "Wallpaper",
+        "repeatBg": "Repeat background",
+        "dark": "Dark",
+        "light": "Light",
+        "custom": "Custom",
+        "none": "None",
+        "editDraft": "Edit Draft",
+        "send": "Send",
+        "hexCode": "Color Hex Code"
+    },
+    "ids": {
+        "noTroops": "No troops yet",
+        "noTroopsMng": "No troops to manage yet"
     }
 }

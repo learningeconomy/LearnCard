@@ -1,5 +1,7 @@
 import React from 'react';
 
+import * as m from '../paraglide/messages.js';
+
 import { IonFooter, IonToolbar } from '@ionic/react';
 import X from '../svgs/X';
 import ScoutPassIDPreview from './ScoutPassIDPreview';
@@ -47,13 +49,13 @@ export const ScoutPassIDCMSFooter: React.FC<{
                             }
                             className="bg-white text-grayscale-900 text-lg rounded-full py-[12px] w-full mr-2 shadow-soft-bottom"
                         >
-                            Preview
+                            {m.common_preview()}
                         </button>
                         <button
                             onClick={handleSave}
                             className={`text-white text-lg font-bold rounded-full py-[12px] w-full ${actionButtonColor}`}
                         >
-                            Save
+                            {m.common_save()}
                         </button>
                     </div>
                 </div>
