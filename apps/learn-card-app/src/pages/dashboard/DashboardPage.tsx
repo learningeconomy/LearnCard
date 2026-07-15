@@ -48,6 +48,7 @@ import {
 
 import DashboardView from './DashboardView';
 import DashboardRoleSwitcher from './components/DashboardRoleSwitcher';
+import PendingApprovalBanner from '../../components/pending-approval-banner/PendingApprovalBanner';
 import type {
     DashboardViewModel,
     DashboardEmptyTip,
@@ -523,6 +524,7 @@ const DashboardPage: React.FC = () => {
                     scrollEvents
                     onIonScroll={onHeaderScroll}
                 >
+                    {currentLCNUser?.approved === false && <PendingApprovalBanner />}
                     <DashboardView vm={viewModel} />
                 </IonContent>
             </ErrorBoundary>

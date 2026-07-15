@@ -270,6 +270,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
         return Number.isNaN(parsedAge) ? null : parsedAge;
     }, [dob]);
 
+    const isUnder13 = age !== null && age < 13;
     const isTeen = age !== null && age >= 13 && age <= 17;
     const inEU = country ? isEUCountry(country) : false;
     const needsEUConsent = isTeen && inEU && requiresEUParentalConsent(country, age);
@@ -539,7 +540,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
             {step === 'age-country' && (
                 <div className="relative z-10 w-full h-full flex flex-col">
-                    <div className="flex-1 flex flex-col justify-center items-center px-4 pt-[calc(env(safe-area-inset-top)_+_2rem)] pb-8">
+                    <div className="flex-1 flex flex-col justify-start desktop:justify-center items-center px-4 pt-[calc(env(safe-area-inset-top)_+_1rem)] pb-8">
                         <div className="w-full max-w-[420px] animate-fade-in-up">
                             {renderProgress(1)}
 
@@ -610,6 +611,19 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                         <LocationIcon className="w-5 h-5 text-grayscale-500" />
                                     </button>
                                 </div>
+
+                                {isUnder13 && (
+                                    <div className="mt-4 p-4 bg-white/80 backdrop-blur-sm border border-grayscale-200/60 rounded-2xl space-y-2 animate-fade-in-up shadow-sm">
+                                        <h3 className="text-sm font-semibold text-grayscale-900">
+                                            Parent or guardian required
+                                        </h3>
+                                        <p className="text-xs text-grayscale-600 leading-relaxed">
+                                            You need to be 13 or older to set up your own account.
+                                            Tap Continue and we'll help a parent or guardian add you
+                                            to a family account.
+                                        </p>
+                                    </div>
+                                )}
 
                                 {needsUSConsent && (
                                     <div className="mt-4 p-4 bg-white/80 backdrop-blur-sm border border-grayscale-200/60 rounded-2xl space-y-3 animate-fade-in-up shadow-sm">
@@ -1009,9 +1023,13 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
                     <div className="text-center mb-8">
                         <h1 className="text-3xl font-semibold text-grayscale-900 mb-2">
-                            You're in!
+                            {euParentalConsentRequested ? 'Almost there!' : "You're in!"}
                         </h1>
-                        <p className="text-base text-grayscale-600">Your {brandName} is ready.</p>
+                        <p className="text-base text-grayscale-600">
+                            {euParentalConsentRequested
+                                ? "We've emailed your guardian to approve your account. You can start exploring now — some features unlock once they confirm."
+                                : `Your ${brandName} is ready.`}
+                        </p>
                     </div>
 
                     <div className="w-full max-w-[320px] bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl border border-white/50 p-8 flex flex-col items-center gap-5 relative overflow-hidden mb-10">
