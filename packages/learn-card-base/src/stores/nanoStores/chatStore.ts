@@ -125,7 +125,8 @@ const CREDENTIAL_INGESTION_PHASES = {
     error: true,
 } satisfies Record<NonNullable<CredentialContextReadiness['ingestionPhase']>, true>;
 
-const hasThreadEnded = (thread: Thread | undefined): boolean =>
+/** Returns whether a thread has explicit lifecycle or legacy summary evidence of ending. */
+export const hasThreadEnded = (thread: Thread | undefined): boolean =>
     Boolean(thread?.ended_at || thread?.active === false || thread?.summaries?.length);
 
 /**
@@ -519,6 +520,7 @@ export function connectWebSocket() {
 
             if (data.event === 'plan_intro') {
                 if (!isCurrentSessionStartFrame(data.requestId)) return;
+                // The backend sends plan_ready immediately after plan_intro; readiness owns teardown.
                 planStreamActive.set(false);
                 isTyping.set(false);
                 isLoading.set(false);
@@ -533,6 +535,7 @@ export function connectWebSocket() {
                 planReady.set(true);
                 planReadyThread.set(data.threadId);
                 currentThreadId.set(data.threadId);
+                const credentialContextStatus = credentialContextReadiness.get().status;
 
                 if (data.title) {
                     const list = threads.get();
@@ -540,7 +543,13 @@ export function connectWebSocket() {
 
                     if (idx > -1) {
                         const copy = [...list];
-                        copy[idx].title = data.title;
+                        copy[idx] = {
+                            ...copy[idx],
+                            title: data.title,
+                            ...(credentialContextStatus === 'idle'
+                                ? {}
+                                : { credentialContextStatus }),
+                        };
                         threads.set(copy);
                     } else {
                         threads.set([
@@ -550,6 +559,9 @@ export function connectWebSocket() {
                                 title: data.title,
                                 created_at: new Date().toISOString(),
                                 last_message_at: new Date().toISOString(),
+                                ...(credentialContextStatus === 'idle'
+                                    ? {}
+                                    : { credentialContextStatus }),
                             },
                             ...list,
                         ]);
@@ -559,6 +571,7 @@ export function connectWebSocket() {
             }
 
             if (data.event === 'insights_ready') {
+                // Insights sessions neither arm the startup watchdog nor use request-ID correlation.
                 planReady.set(true);
                 planReadyThread.set(data.threadId);
                 currentThreadId.set(data.threadId);
@@ -626,12 +639,13 @@ export function connectWebSocket() {
 
             if (data.error) {
                 if (!isCurrentSessionStartFrame(data.requestId)) return;
+                const isStartupPending = startupWatchdog !== undefined;
                 clearSessionStartWatchdog();
                 log.error('Error:', data.error);
                 isLoading.set(false);
                 isTyping.set(false);
                 planStreamActive.set(false);
-                if (typeof data.requestId === 'string') {
+                if (isStartupPending || typeof data.requestId === 'string') {
                     showErrorModal(
                         'Something went wrong',
                         'Please try starting the session again.'

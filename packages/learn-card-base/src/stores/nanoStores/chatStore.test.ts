@@ -218,6 +218,9 @@ describe('chat session startup', () => {
             count: 0,
             ingestionPhase: 'active',
         });
+        expect(
+            threads.get().find(thread => thread.id === 'thread-context')?.credentialContextStatus
+        ).toBe('pending');
 
         socket.receive({
             event: 'credential_context_status',
@@ -247,9 +250,39 @@ describe('chat session startup', () => {
         ).toBe('ready');
     });
 
+    it('preserves stored credential readiness when plan_ready has no newer status', async () => {
+        threads.set([
+            {
+                id: 'existing-thread',
+                did: 'did:example:learner',
+                title: 'Existing',
+                created_at: '2026-01-01T00:00:00.000Z',
+                last_message_at: '2026-01-01T00:00:00.000Z',
+                credentialContextStatus: 'ready',
+            },
+        ]);
+
+        const start = startTopic('Algebra');
+        const socket = await openLatestSocket();
+        await start;
+        socket.receive({ event: 'session_start_accepted', requestId: 'request-existing' });
+        socket.receive({
+            event: 'plan_ready',
+            requestId: 'request-existing',
+            threadId: 'existing-thread',
+            title: 'Updated',
+        });
+
+        expect(threads.get()[0]).toMatchObject({
+            title: 'Updated',
+            credentialContextStatus: 'ready',
+        });
+    });
+
     it.each([
         { event: 'session_start_error', requestId: 'request-error' },
         { error: 'provider failed', requestId: 'request-error' },
+        { error: 'legacy provider failed' },
     ])('terminates loading for startup error frame %#', async errorFrame => {
         const start = startTopic('Algebra');
         const socket = await openLatestSocket();

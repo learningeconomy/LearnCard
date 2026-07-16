@@ -186,6 +186,7 @@ export {
     suggestedTopics,
     topicCredentials,
     sessionEnded,
+    hasThreadEnded,
     planReady,
     planReadyThread,
     resetChatStores,

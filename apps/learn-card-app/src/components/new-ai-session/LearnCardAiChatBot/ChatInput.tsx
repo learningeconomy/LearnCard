@@ -17,6 +17,7 @@ import { ArrowUp } from 'lucide-react';
 import {
     currentThreadId,
     threads,
+    hasThreadEnded,
     sendMessage,
     planReady,
     continuePlan,
@@ -125,9 +126,9 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
         );
     }
 
-    // Check if session has ended - either via atom or by checking for summary credentials
+    // Keep the reactive atom fast while honoring persisted lifecycle state for loaded threads.
     const thread = $threads.find(t => t.id === $currentThreadId);
-    const hasSessionEnded = $sessionEnded || (thread?.summaries && thread.summaries.length > 0);
+    const hasSessionEnded = $sessionEnded || hasThreadEnded(thread);
 
     if (hasSessionEnded) {
         return (
