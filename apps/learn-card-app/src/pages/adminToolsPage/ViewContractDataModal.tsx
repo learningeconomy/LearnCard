@@ -18,9 +18,6 @@ import CopyStack from '../../components/svgs/CopyStack';
 import CreateContractModal from './CreateContractModal';
 import ShareContractModal from './ShareContractModal';
 import * as m from '../../paraglide/messages.js';
-import { IonSpinner } from '@ionic/react';
-
-import { ConsentFlowContractDetails } from '@learncard/types';
 import { getInfoFromContractKey } from '../../helpers/contract.helpers';
 
 type ViewContractDataModalProps = {
