@@ -16,6 +16,7 @@ import {
     semanticRecordToNode,
     FrameworkDefaultsLoader,
 } from './skillBrowserShared';
+import * as m from '../../../paraglide/messages.js';
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -142,20 +143,22 @@ export const SkillBrowserModal: React.FC<SkillBrowserModalProps> = ({
 
             <div className="sticky top-0 bg-white px-6 pt-6 pb-4 border-b border-grayscale-100">
                 <div className="flex items-center justify-between mb-1">
-                    <h2 className="text-xl font-semibold text-grayscale-900">Add skills</h2>
+                    <h2 className="text-xl font-semibold text-grayscale-900">
+                        {m['issueFlow.addSkills']()}
+                    </h2>
                     <button
                         type="button"
                         onClick={handleCloseModal}
                         className="w-8 h-8 rounded-full flex items-center justify-center text-grayscale-400 hover:text-grayscale-900 hover:bg-grayscale-100 transition-colors"
-                        aria-label="Close"
+                        aria-label={m['common.close']()}
                     >
                         <X className="w-5 h-5" />
                     </button>
                 </div>
                 <p className="text-sm text-grayscale-600 mb-4">
                     {selectedKeys.size > 0
-                        ? `${selectedKeys.size} selected · tap to add or remove`
-                        : 'Align this credential to competencies from any framework.'}
+                        ? m['issueFlow.selectedTapToToggle']({ count: selectedKeys.size })
+                        : m['issueFlow.addSkillsSubtitle']()}
                 </p>
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-grayscale-400" />
@@ -163,7 +166,7 @@ export const SkillBrowserModal: React.FC<SkillBrowserModalProps> = ({
                         type="text"
                         value={query}
                         onChange={e => setQuery(e.target.value)}
-                        placeholder="Search by skill, goal, or job…"
+                        placeholder={m['skills.search.searchPlaceholder']()}
                         className="w-full py-3 pl-10 pr-10 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                     />
                     {query && (
@@ -171,7 +174,7 @@ export const SkillBrowserModal: React.FC<SkillBrowserModalProps> = ({
                             type="button"
                             onClick={() => setQuery('')}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-grayscale-400 hover:text-grayscale-700 transition-colors"
-                            aria-label="Clear search"
+                            aria-label={m['issueFlow.clearSearch']()}
                         >
                             <X className="w-4 h-4" />
                         </button>
@@ -184,7 +187,7 @@ export const SkillBrowserModal: React.FC<SkillBrowserModalProps> = ({
                     isLoading ? (
                         <div className="flex items-center gap-2 text-sm text-grayscale-500 py-1">
                             <Loader2 className="w-4 h-4 animate-spin" />
-                            Searching…
+                            {m['issueFlow.searching']()}
                         </div>
                     ) : searchResults.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
@@ -198,7 +201,9 @@ export const SkillBrowserModal: React.FC<SkillBrowserModalProps> = ({
                             ))}
                         </div>
                     ) : (
-                        <p className="text-sm text-grayscale-500 py-1">No matching skills.</p>
+                        <p className="text-sm text-grayscale-500 py-1">
+                            {m['issueFlow.noMatchingSkills']()}
+                        </p>
                     )
                 ) : (
                     frameworks.map(framework => {
@@ -233,7 +238,7 @@ export const SkillBrowserModal: React.FC<SkillBrowserModalProps> = ({
                     onClick={handleCloseModal}
                     className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                 >
-                    Done
+                    {m['common.done']()}
                 </button>
             </div>
         </div>

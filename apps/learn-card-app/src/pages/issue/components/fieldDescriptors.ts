@@ -4,6 +4,7 @@ import {
     type TemplateFieldValue,
 } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import type { ActivityField } from './credentialTypeCatalog';
+import * as m from '../../../paraglide/messages.js';
 
 export type FieldInputType = 'text' | 'number' | 'date' | 'select' | 'result';
 
@@ -237,3 +238,33 @@ export const FIELD_DESCRIPTORS: Record<ActivityField, FieldDescriptor> = BASE_DE
 >;
 
 export const getDescriptor = (key: ActivityField): FieldDescriptor => FIELD_DESCRIPTORS[key];
+
+/**
+ * Resolve a paraglide message by dotted key, falling back to English when the
+ * key is absent from the active locale bundle. Descriptor display strings are
+ * keyed by the descriptor's stable `key` (and, for options, the option value).
+ */
+const msg = (key: string, fallback: string): string => {
+    const fn = (m as Record<string, unknown>)[key];
+    return typeof fn === 'function' ? (fn as () => string)() : fallback;
+};
+
+/** Translated field label, keyed by the descriptor's stable key. */
+export const descriptorLabel = (descriptor: FieldDescriptor): string =>
+    msg(`issueFlow.field.${descriptor.key}.label`, descriptor.label);
+
+/**
+ * Translated field placeholder, keyed by the descriptor's stable key.
+ * Returns undefined when the descriptor defines no placeholder (e.g. date
+ * fields), preserving the caller's own fallback handling.
+ */
+export const descriptorPlaceholder = (descriptor: FieldDescriptor): string | undefined =>
+    descriptor.placeholder === undefined
+        ? undefined
+        : msg(`issueFlow.field.${descriptor.key}.ph`, descriptor.placeholder);
+
+/** Translated select-option label, keyed by descriptor key + option value. */
+export const descriptorOptionLabel = (
+    descriptor: FieldDescriptor,
+    option: FieldSelectOption
+): string => msg(`issueFlow.field.${descriptor.key}.opt.${option.value}`, option.label);

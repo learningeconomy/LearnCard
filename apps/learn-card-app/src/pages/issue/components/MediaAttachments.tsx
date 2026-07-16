@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { Camera, FileText, Video, Link2, Loader2, X, Plus, ImageIcon } from 'lucide-react';
 
 import { useFilestack } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 
 export type SimpleMediaType = 'photo' | 'document' | 'video' | 'link';
 
@@ -26,12 +27,16 @@ const INPUT_CLASS =
 
 const TYPE_META: Record<
     SimpleMediaType,
-    { label: string; Icon: React.FC<{ className?: string }>; fileType?: string }
+    { label: () => string; Icon: React.FC<{ className?: string }>; fileType?: string }
 > = {
-    photo: { label: 'Photo', Icon: Camera, fileType: 'image/*' },
-    document: { label: 'Document', Icon: FileText, fileType: 'application/pdf,.doc,.docx,.txt' },
-    video: { label: 'Video', Icon: Video, fileType: 'video/*' },
-    link: { label: 'Link', Icon: Link2 },
+    photo: { label: () => m['issueFlow.media.photo'](), Icon: Camera, fileType: 'image/*' },
+    document: {
+        label: () => m['issueFlow.media.document'](),
+        Icon: FileText,
+        fileType: 'application/pdf,.doc,.docx,.txt',
+    },
+    video: { label: () => m['issueFlow.media.video'](), Icon: Video, fileType: 'video/*' },
+    link: { label: () => m['issueFlow.media.link'](), Icon: Link2 },
 };
 
 const makeId = () => `media-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -49,7 +54,7 @@ const UploadButton: React.FC<{
                 id: makeId(),
                 type,
                 url,
-                title: file?.name ?? meta.label,
+                title: file?.name ?? meta.label(),
                 fileName: file?.name,
                 fileType: file?.type,
             }),
@@ -67,7 +72,7 @@ const UploadButton: React.FC<{
             ) : (
                 <meta.Icon className="w-4 h-4" />
             )}
-            {meta.label}
+            {meta.label()}
         </button>
     );
 };
@@ -101,7 +106,7 @@ const AttachmentPreview: React.FC<{
                 type="button"
                 onClick={onRemove}
                 className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-grayscale-400 hover:text-grayscale-900 hover:bg-grayscale-100 transition-colors"
-                aria-label="Remove attachment"
+                aria-label={m['issueFlow.media.removeAttachment']()}
             >
                 <X className="w-4 h-4" />
             </button>
@@ -160,7 +165,7 @@ export const MediaAttachments: React.FC<MediaAttachmentsProps> = ({
                         type="url"
                         value={linkUrl}
                         onChange={e => setLinkUrl(e.target.value)}
-                        placeholder="https://example.com/proof"
+                        placeholder={m['issueFlow.media.urlPlaceholder']()}
                         className={INPUT_CLASS}
                     />
                     <button
@@ -170,7 +175,7 @@ export const MediaAttachments: React.FC<MediaAttachmentsProps> = ({
                         className="shrink-0 px-4 rounded-xl bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
                     >
                         <Plus className="w-4 h-4" />
-                        Link
+                        {m['issueFlow.media.link']()}
                     </button>
                 </div>
                 {linkUrl && linkValid && (
@@ -178,7 +183,7 @@ export const MediaAttachments: React.FC<MediaAttachmentsProps> = ({
                         type="text"
                         value={linkTitle}
                         onChange={e => setLinkTitle(e.target.value)}
-                        placeholder="Link title (optional)"
+                        placeholder={m['issueFlow.media.linkTitle']()}
                         className={INPUT_CLASS}
                     />
                 )}
@@ -197,7 +202,7 @@ export const MediaAttachments: React.FC<MediaAttachmentsProps> = ({
             ) : (
                 <div className="flex items-center gap-2 text-xs text-grayscale-400">
                     <ImageIcon className="w-4 h-4" />
-                    No attachments yet.
+                    {m['issueFlow.media.noAttachments']()}
                 </div>
             )}
         </>
@@ -208,9 +213,11 @@ export const MediaAttachments: React.FC<MediaAttachmentsProps> = ({
     return (
         <section className={`${CARD_CLASS} space-y-4`}>
             <div>
-                <h3 className="text-base font-semibold text-grayscale-900">Evidence & media</h3>
+                <h3 className="text-base font-semibold text-grayscale-900">
+                    {m['issueFlow.media.title']()}
+                </h3>
                 <p className="text-sm text-grayscale-600 leading-relaxed mt-1">
-                    Attach proof — photos, documents, videos, or links.
+                    {m['issueFlow.media.subtitle']()}
                 </p>
             </div>
             {body}

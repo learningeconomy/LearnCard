@@ -4060,5 +4060,451 @@
             "canWriteSuffix": ", {{count}} también pueden escribir",
             "stopAnytime": ". Puedes detenerlo cuando quieras."
         }
+    },
+    "issueFlow": {
+        "header": {
+            "json": "JSON",
+            "issuing": "Emitiendo...",
+            "issue": "Emitir",
+            "issueCredential": "Emitir credencial"
+        },
+        "provenance": {
+            "importedFrom": "Importado de {{source}}",
+            "dismiss": "Descartar"
+        },
+        "error": {
+            "tryAgain": "Intentar de nuevo"
+        },
+        "type": {
+            "heading": "¿Qué vas a emitir?",
+            "subheading": "Elige un tipo—tu credencial toma forma a medida que avanzas.",
+            "selected": "Tipo: {{label}}",
+            "browseAll": "Ver todos los tipos"
+        },
+        "browser": {
+            "title": "Elige un tipo de credencial",
+            "subtitle": "Elige el tipo que mejor se ajuste a lo que estás reconociendo.",
+            "searchPlaceholder": "Buscar tipos…",
+            "noMatch": "Ningún tipo coincide con “{{query}}”."
+        },
+        "details": {
+            "name": "Nombre",
+            "namePlaceholder": "p. ej. Web Development Fundamentals",
+            "nameError": "Dale un nombre a tu credencial para continuar.",
+            "descLabel": "Descripción (opcional)",
+            "descPlaceholder": "¿Qué representa esta credencial?",
+            "changeImage": "Cambiar imagen",
+            "addImage": "Añadir una imagen (opcional)"
+        },
+        "advanced": {
+            "toggle": "Más detalle",
+            "criteriaLabel": "Cómo se obtiene (criterios)",
+            "criteriaPlaceholder": "Describe qué hizo el destinatario para obtenerla.",
+            "expiresLabel": "Vence el (opcional)",
+            "evidenceHint": "Añade evidencia y multimedia arriba en la sección <0>Evidencia & multimedia</0>."
+        },
+        "display": {
+            "heading": "Visualización (opcional)",
+            "subheading": "Ajusta cómo se ve esta credencial. Las carteras que no admiten estas indicaciones simplemente las ignoran.",
+            "categoryLabel": "Categoría",
+            "autoPlaceholder": "Automático (según el tipo)",
+            "subtypeLabel": "Etiqueta de subtipo",
+            "subtypePlaceholder": "p. ej. Trailblazer",
+            "styleLabel": "Estilo de visualización",
+            "bgColor": "Color de fondo",
+            "accentColor": "Color de acento (anillo de la insignia)",
+            "accentHint": "Colorea el anillo de la insignia. Por defecto usa el color de la categoría si no se define.",
+            "bgImageLabel": "Imagen de fondo",
+            "bgPreviewAlt": "Vista previa del fondo",
+            "remove": "Quitar",
+            "changeBgImage": "Cambiar imagen de fondo",
+            "addBgImage": "Añadir una imagen de fondo",
+            "clearField": "Borrar {{label}}",
+            "style": {
+                "badge": "Insignia",
+                "certificate": "Certificado",
+                "award": "Premio",
+                "idCard": "Tarjeta de ID",
+                "course": "Curso",
+                "media": "Multimedia"
+            },
+            "styleDesc": {
+                "badge": "Un emblema circular con una cinta. Ideal para insignias sociales y logros.",
+                "certificate": "Un marco formal con estilo de documento. Bueno para finalizaciones y certificaciones.",
+                "award": "Una cinta estilo trofeo que enfatiza el reconocimiento y los honores.",
+                "idCard": "Un diseño de ID estilo cartera con foto y emisor. Ideal para membresías.",
+                "course": "Optimizado para cursos, clases y programas de aprendizaje.",
+                "media": "Un mosaico enriquecido que destaca una imagen o un video en primer plano."
+            },
+            "cat": {
+                "badge": "Insignia",
+                "achievement": "Logro",
+                "course": "Curso",
+                "portfolio": "Portafolio",
+                "assistance": "Asistencia",
+                "experience": "Experiencia",
+                "id": "ID"
+            },
+            "catDesc": {
+                "badge": "Insignias de reconocimiento comunitario y social.",
+                "achievement": "Premios, certificados y logros.",
+                "course": "Cursos, clases y programas de aprendizaje.",
+                "portfolio": "Piezas de portafolio y trabajo personal.",
+                "assistance": "Necesidades de apoyo y adaptaciones.",
+                "experience": "Empleos, prácticas y experiencia profesional.",
+                "id": "Tarjetas de identidad y credenciales oficiales."
+            }
+        },
+        "success": {
+            "theRecipient": "el destinatario",
+            "twoNames": "{{first}} y {{second}}",
+            "andOthers": "{{name}} y {{count}} más",
+            "linkCopied": "Enlace copiado.",
+            "shareTitle": "Una credencial para ti",
+            "qrDownloadFail": "No se pudo descargar el código QR.",
+            "expires": "Vence {{date}}",
+            "claimLimitOne": "Límite de {{count}} reclamo",
+            "claimLimitOther": "Límite de {{count}} reclamos",
+            "linkReady": "Tu enlace está listo",
+            "linkDesc": "Cualquiera con este enlace o código QR puede reclamarla.",
+            "copyLink": "Copiar enlace",
+            "copied": "Copiado",
+            "downloadQr": "Descargar QR",
+            "issueAnother": "Emitir otra",
+            "sent": "¡Enviada!",
+            "deliveredTo": "Entregada a {{recipients}}.",
+            "youMadeIt": "¡Lo lograste!",
+            "savedToWallet": "Tu credencial está firmada y guardada en tu cartera.",
+            "viewInWallet": "Ver en la cartera"
+        },
+        "fields": {
+            "gradeOrResult": "Calificación o resultado",
+            "useFixed": "Usar un valor fijo",
+            "personalize": "Personalizar por destinatario",
+            "setPerRecipient": "Establecer por destinatario abajo",
+            "selectStatus": "Selecciona un estado…",
+            "pickGradeType": "Elige un tipo de calificación arriba para que este resultado se guarde en un formato estándar.",
+            "fillDetails": "Completa los detalles",
+            "placeholdersDesc": "Esta credencial tiene marcadores de posición. Dale un valor a cada uno antes de emitir.",
+            "sameForAll": "Igual para todos",
+            "perRecipient": "Por destinatario",
+            "selectDefault": "Selecciona…"
+        },
+        "media": {
+            "photo": "Foto",
+            "document": "Documento",
+            "video": "Video",
+            "link": "Enlace",
+            "title": "Evidencia & multimedia",
+            "subtitle": "Adjunta pruebas — fotos, documentos, videos o enlaces.",
+            "removeAttachment": "Quitar adjunto",
+            "urlPlaceholder": "https://example.com/proof",
+            "linkTitle": "Título del enlace (opcional)",
+            "noAttachments": "Aún no hay adjuntos."
+        },
+        "whoFor": "¿Para quién es esto?",
+        "whoForDesc": "Esto determina la vista previa y cómo se entrega.",
+        "people": "Personas",
+        "specificPeople": "Personas específicas",
+        "link": "Enlace",
+        "anyoneLink": "Cualquier persona con un enlace",
+        "addByHint": "Añade por nombre, @usuario o correo",
+        "linkOnIssue": "Crearemos un enlace para compartir cuando emitas.",
+        "alreadyHave": "¿Ya tienes algo?",
+        "startFromLink": "Empieza desde un enlace, archivo o ID",
+        "sendExisting": "Envía una que hayas creado",
+        "startFromSomething": "Empieza desde algo",
+        "importIntro": "Pega un enlace, un ID de Credential Engine o los datos de una credencial — nosotros nos encargamos del resto.",
+        "importPlaceholder": "Pega una URL, un ID ce- o el JSON de la credencial…",
+        "importSupports": "Admitimos enlaces, IDs y archivos",
+        "uploadFile": "Subir archivo",
+        "pasteInstead": "Abre la fuente, copia su JSON y pégalo arriba.",
+        "bringingIn": "Importándola…",
+        "bringItIn": "Importarla",
+        "foundIt": "La encontramos",
+        "fromCredEngine": "De Credential Engine",
+        "useThis": "Usar esta",
+        "openFailed": "No pudimos abrir esa. Prueba con otra.",
+        "credSentToast": "Credencial enviada.",
+        "sendFailed": "Algo salió mal al enviar esta credencial. Inténtalo de nuevo.",
+        "untitled": "Credencial sin título",
+        "sendThisCred": "Enviar esta credencial",
+        "whosItFor": "¿Para quién es?",
+        "reuseTitle": "Reutiliza una que hayas creado",
+        "reuseSubtitle": "Envía una credencial que gestionas — elige una para empezar.",
+        "searchCreds": "Busca tus credenciales…",
+        "nothingMatches": "No hay coincidencias para “{{query}}”.",
+        "noneIssued": "Aún no has emitido ninguna credencial.",
+        "showMore": "Mostrar más",
+        "previewDesc": "Esto es exactamente lo que recibirá tu destinatario.",
+        "chooseRecip": "Elegir destinatario",
+        "editCopy": "Mejor edita una copia",
+        "linkReady": "Tu enlace está listo",
+        "credSent": "Credencial enviada",
+        "linkClaimDesc": "Cualquier persona con este enlace puede reclamarla.",
+        "onItsWay": "“{{name}}” está en camino.",
+        "copy": "Copiar",
+        "sendAnother": "Enviar otra",
+        "sending": "Enviando…",
+        "createLink": "Crear enlace para compartir",
+        "sendToSelf": "Enviármela a mí",
+        "sendCred": "Enviar credencial",
+        "skillsTitle": "Habilidades",
+        "skillsSubtitle": "Busca competencias para alinear esta credencial con un marco.",
+        "removeSkill": "Eliminar {{name}}",
+        "clearSearch": "Borrar búsqueda",
+        "searching": "Buscando…",
+        "suggested": "Sugeridas",
+        "noMatchingSkills": "No hay habilidades coincidentes.",
+        "browseAllFrameworks": "Explorar todos los marcos",
+        "addSkills": "Añadir habilidades",
+        "selectedTapToToggle": "{{count}} seleccionadas · toca para añadir o quitar",
+        "addSkillsSubtitle": "Alinea esta credencial con competencias de cualquier marco.",
+        "frameworkAlignment": "Alineación con el marco",
+        "verified": "Verificado",
+        "removeAlignment": "Eliminar alineación",
+        "alignmentsTitle": "Alineaciones",
+        "alignmentsSubtitle": "Estándares y marcos externos con los que se relaciona esta credencial.",
+        "verifiedSource": "Fuente verificada",
+        "occupationsPrograms": "Ocupaciones & programas",
+        "invalidJsonLine": "JSON no válido en la línea {{line}}.",
+        "invalidJson": "Esto aún no es JSON válido.",
+        "mustBeJsonObject": "Una credencial debe ser un objeto JSON.",
+        "checking": "Comprobando…",
+        "valid": "Válido",
+        "copied": "Copiado",
+        "jsonStudioHint": "Edita la credencial directamente. Mantendremos sincronizados el emisor y el destinatario cuando emitas.",
+        "evidencePerRecipient": "Evidencia por destinatario",
+        "evidenceSubtitle": "Adjunta pruebas específicas para cada persona. Opcional.",
+        "catalog": {
+            "Badge": {
+                "label": "Insignia",
+                "pick": "Una insignia digital para un logro o una habilidad."
+            },
+            "Certificate": {
+                "label": "Certificado",
+                "pick": "Un certificado formal que reconoce un logro."
+            },
+            "Course": {
+                "label": "Curso",
+                "pick": "Alguien completó un curso o capacitación."
+            },
+            "Competency": {
+                "label": "Habilidad",
+                "pick": "Verifica una habilidad o competencia específica."
+            },
+            "License": {
+                "label": "Licencia",
+                "pick": "Una licencia profesional u ocupacional."
+            },
+            "Membership": {
+                "label": "Membresía",
+                "pick": "Membresía en una organización o programa."
+            },
+            "MicroCredential": {
+                "label": "Microcredencial",
+                "pick": "Reconocimiento breve para un aprendizaje específico."
+            },
+            "Achievement": {
+                "label": "Logro",
+                "pick": "Un logro general que no encaja en ningún otro tipo."
+            },
+            "Award": {
+                "label": "Premio",
+                "pick": "Un honor o premio otorgado por excelencia."
+            },
+            "CommunityService": {
+                "label": "Servicio comunitario",
+                "pick": "Reconoce el trabajo voluntario o comunitario."
+            },
+            "CoCurricular": {
+                "label": "Cocurricular",
+                "pick": "Actividad paralela al estudio formal (clubes, deportes)."
+            },
+            "CertificateOfCompletion": {
+                "label": "Certificado de finalización",
+                "pick": "Confirma que alguien terminó un programa."
+            },
+            "LearningProgram": {
+                "label": "Programa de aprendizaje",
+                "pick": "Un programa de aprendizaje estructurado de varias partes."
+            },
+            "Assessment": {
+                "label": "Evaluación",
+                "pick": "Resultados de una prueba o evaluación."
+            },
+            "Assignment": {
+                "label": "Tarea",
+                "pick": "Un trabajo de curso completado."
+            },
+            "Fieldwork": {
+                "label": "Trabajo de campo",
+                "pick": "Experiencia práctica o de campo."
+            },
+            "Degree": {
+                "label": "Título",
+                "pick": "Un título académico general."
+            },
+            "AssociateDegree": {
+                "label": "Título de asociado",
+                "pick": "Un título de asociado de dos años."
+            },
+            "BachelorDegree": {
+                "label": "Licenciatura",
+                "pick": "Un título universitario de cuatro años."
+            },
+            "MasterDegree": {
+                "label": "Maestría",
+                "pick": "Un título de posgrado de maestría."
+            },
+            "DoctoralDegree": {
+                "label": "Doctorado",
+                "pick": "Un doctorado (PhD o equivalente)."
+            },
+            "ResearchDoctorate": {
+                "label": "Doctorado de investigación",
+                "pick": "Un doctorado orientado a la investigación."
+            },
+            "ProfessionalDoctorate": {
+                "label": "Doctorado profesional",
+                "pick": "Un doctorado orientado a la práctica."
+            },
+            "Diploma": {
+                "label": "Diploma",
+                "pick": "Un diploma por estudios completados."
+            },
+            "SecondarySchoolDiploma": {
+                "label": "Diploma de bachillerato",
+                "pick": "Un diploma de educación secundaria / bachillerato."
+            },
+            "GeneralEducationDevelopment": {
+                "label": "GED",
+                "pick": "Una equivalencia de bachillerato (GED)."
+            },
+            "Certification": {
+                "label": "Certificación",
+                "pick": "Una certificación industrial o profesional."
+            },
+            "ApprenticeshipCertificate": {
+                "label": "Aprendizaje",
+                "pick": "Finalización de un aprendizaje."
+            },
+            "JourneymanCertificate": {
+                "label": "Oficial",
+                "pick": "Una credencial de oficio de nivel oficial."
+            },
+            "MasterCertificate": {
+                "label": "Certificado de maestro",
+                "pick": "Una credencial de oficio de nivel maestro."
+            },
+            "QualityAssuranceCredential": {
+                "label": "Garantía de calidad",
+                "pick": "Una credencial de garantía de calidad o cumplimiento."
+            },
+            "fam": {
+                "recognition": {
+                    "label": "Reconocimiento",
+                    "blurb": "Honra un logro, una contribución o un momento."
+                },
+                "learning": {
+                    "label": "Aprendizaje",
+                    "blurb": "Alguien completó un curso, programa o habilidad."
+                },
+                "degrees": {
+                    "label": "Títulos & Diplomas",
+                    "blurb": "Un título académico o diploma formal."
+                },
+                "professional": {
+                    "label": "Profesional",
+                    "blurb": "Licencia, certificación o credencial de oficio."
+                },
+                "belonging": {
+                    "label": "Pertenencia",
+                    "blurb": "Membresía en una organización o programa."
+                }
+            }
+        },
+        "result": {
+            "LetterGrade": {
+                "label": "Calificación con letra",
+                "eg": "p. ej. A-"
+            },
+            "Percent": {
+                "label": "Porcentaje",
+                "eg": "p. ej. 95"
+            },
+            "GradePointAverage": {
+                "label": "GPA",
+                "eg": "p. ej. 3.8"
+            },
+            "RawScore": {
+                "label": "Puntos",
+                "eg": "p. ej. 720"
+            },
+            "Status": {
+                "label": "Estado",
+                "eg": ""
+            },
+            "status": {
+                "Completed": "Completado",
+                "Enrolled": "Inscrito",
+                "Failed": "Reprobado",
+                "InProgress": "En curso",
+                "OnHold": "En pausa",
+                "Provisional": "Provisional",
+                "Withdrew": "Retirado"
+            }
+        },
+        "field": {
+            "completionDate": {
+                "label": "Fecha de finalización"
+            },
+            "startDate": {
+                "label": "Fecha de inicio"
+            },
+            "creditsEarned": {
+                "label": "Créditos obtenidos",
+                "ph": "p. ej. 3"
+            },
+            "term": {
+                "label": "Periodo",
+                "ph": "p. ej. Otoño 2025"
+            },
+            "licenseNumber": {
+                "label": "Número de licencia",
+                "ph": "p. ej. RN-1234567"
+            },
+            "role": {
+                "label": "Rol o nivel",
+                "ph": "p. ej. Miembro Oro"
+            },
+            "creditHours": {
+                "label": "Horas crédito",
+                "ph": "p. ej. 10"
+            },
+            "humanCode": {
+                "label": "Código del curso",
+                "ph": "p. ej. CS101"
+            },
+            "fieldOfStudy": {
+                "label": "Campo de estudio",
+                "ph": "p. ej. Ciencias de la Computación"
+            },
+            "specialization": {
+                "label": "Especialización",
+                "ph": "p. ej. Aprendizaje automático"
+            },
+            "version": {
+                "label": "Versión",
+                "ph": "p. ej. 2.1"
+            },
+            "expiryDate": {
+                "label": "Vence el"
+            },
+            "memberId": {
+                "label": "ID de miembro",
+                "ph": "p. ej. M-00482"
+            }
+        }
     }
 }
