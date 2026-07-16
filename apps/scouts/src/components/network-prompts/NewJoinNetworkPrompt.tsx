@@ -304,11 +304,11 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                             <h5
                                 className={`font-notoSans select-none text-xl font-medium tracking-wider text-center`}
                             >
-                                <span className="font-notoSans font-normal text-center">
+                                <span className="font-notoSans font-normal text-center text-grayscale-900">
                                     Welcome to
                                 </span>
                                 <br />
-                                <div className="tracking-[12px] text-lg font-bold text-black">
+                                <div className="tracking-[12px] text-lg font-bold text-grayscale-900">
                                     SCOUTPASS
                                 </div>
                             </h5>
