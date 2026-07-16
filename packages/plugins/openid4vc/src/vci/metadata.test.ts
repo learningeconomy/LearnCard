@@ -186,7 +186,7 @@ describe('fetchAuthorizationServerMetadata', () => {
 
         expect(fetchMock).toHaveBeenCalledWith(
             'https://issuer.example.com/.well-known/oauth-authorization-server',
-            { method: 'GET' }
+            { method: 'GET', headers: { Accept: 'application/json' } }
         );
         expect(result.token_endpoint).toBe('https://issuer.example.com/token');
     });
@@ -205,7 +205,7 @@ describe('fetchAuthorizationServerMetadata', () => {
         expect(fetchMock).toHaveBeenNthCalledWith(
             2,
             'https://issuer.example.com/.well-known/openid-configuration',
-            { method: 'GET' }
+            { method: 'GET', headers: { Accept: 'application/json' } }
         );
         expect(result.token_endpoint).toBe('https://issuer.example.com/token');
     });
@@ -220,7 +220,7 @@ describe('fetchAuthorizationServerMetadata', () => {
 
         expect(fetchMock).toHaveBeenCalledWith(
             'https://issuer.example.com/.well-known/oauth-authorization-server/tenant',
-            { method: 'GET' }
+            { method: 'GET', headers: { Accept: 'application/json' } }
         );
     });
 
@@ -238,12 +238,12 @@ describe('fetchAuthorizationServerMetadata', () => {
         expect(fetchMock).toHaveBeenNthCalledWith(
             1,
             'https://issuer.example.com/.well-known/oauth-authorization-server/tenant',
-            { method: 'GET' }
+            { method: 'GET', headers: { Accept: 'application/json' } }
         );
         expect(fetchMock).toHaveBeenNthCalledWith(
             2,
             'https://issuer.example.com/tenant/.well-known/openid-configuration',
-            { method: 'GET' }
+            { method: 'GET', headers: { Accept: 'application/json' } }
         );
     });
 

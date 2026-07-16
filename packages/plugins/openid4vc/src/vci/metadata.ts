@@ -77,7 +77,10 @@ export const fetchAuthorizationServerMetadata = async (
         let response: Response;
 
         try {
-            response = await fetchImpl(url, { method: 'GET' });
+            response = await fetchImpl(url, {
+                method: 'GET',
+                headers: { Accept: 'application/json' },
+            });
         } catch {
             return null;
         }
