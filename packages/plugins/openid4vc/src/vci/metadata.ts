@@ -143,9 +143,17 @@ export const fetchAuthorizationServerMetadata = async (
     }
 
     if (json == null) {
+        // [draft-13-compat] Draft 13 issuers that act as their own AS under a
+        // path serve AS metadata at the append-style oauth-authorization-server
+        // URL (rather than the RFC 8414 insert-style one). Try it last.
+        const legacyOauthUrl = appendWellKnown(authServer, OAUTH_AS_WELL_KNOWN);
+        if (legacyOauthUrl !== oauthUrl) json = await tryUrl(legacyOauthUrl);
+    }
+
+    if (json == null) {
         throw new VciError(
             'metadata_fetch_failed',
-            `Authorization server metadata not reachable at ${oauthUrl} or the OIDC fallback`
+            `Authorization server metadata not reachable at ${oauthUrl} or the OIDC / legacy fallbacks`
         );
     }
 

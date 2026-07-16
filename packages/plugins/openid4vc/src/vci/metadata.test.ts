@@ -296,6 +296,36 @@ describe('fetchAuthorizationServerMetadata', () => {
         );
     });
 
+    it('[draft-13-compat] falls back to append-style oauth-authorization-server when insert + openid-configuration 404', async () => {
+        const fetchMock = jest
+            .fn()
+            .mockResolvedValueOnce(mockResponse({}, { ok: false, status: 404 }))
+            .mockResolvedValueOnce(mockResponse({}, { ok: false, status: 404 }))
+            .mockResolvedValueOnce(mockResponse(validAsMetadata));
+
+        const result = await fetchAuthorizationServerMetadata(
+            'https://issuer.example.com/embedded/issuer',
+            fetchMock as unknown as typeof fetch
+        );
+
+        expect(result.token_endpoint).toBe('https://issuer.example.com/token');
+        expect(fetchMock).toHaveBeenNthCalledWith(
+            1,
+            'https://issuer.example.com/.well-known/oauth-authorization-server/embedded/issuer',
+            { method: 'GET', headers: { Accept: 'application/json' } }
+        );
+        expect(fetchMock).toHaveBeenNthCalledWith(
+            2,
+            'https://issuer.example.com/embedded/issuer/.well-known/openid-configuration',
+            { method: 'GET', headers: { Accept: 'application/json' } }
+        );
+        expect(fetchMock).toHaveBeenNthCalledWith(
+            3,
+            'https://issuer.example.com/embedded/issuer/.well-known/oauth-authorization-server',
+            { method: 'GET', headers: { Accept: 'application/json' } }
+        );
+    });
+
     it('throws metadata_fetch_failed when both well-known paths fail', async () => {
         const fetchMock = jest.fn().mockResolvedValue(mockResponse({}, { ok: false, status: 404 }));
 
