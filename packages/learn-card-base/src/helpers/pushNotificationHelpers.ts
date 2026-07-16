@@ -117,4 +117,13 @@ export const parseForegroundPushNotification = (
 export const getNotificationSenderImage = (notification: LCNNotification): string | undefined =>
     typeof notification.from === 'string' ? undefined : notification.from?.image;
 
+// Notification types that are too noisy / low-signal to surface as an in-app
+// toast. They still land in the Alerts list and badge.
+const TOAST_EXCLUDED_TYPES: LCNNotification['type'][] = [
+    LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
+];
+
+export const shouldToastNotification = (notification: LCNNotification): boolean =>
+    !TOAST_EXCLUDED_TYPES.includes(notification.type);
+
 export { handlePushNotificationActionPerformed as default };

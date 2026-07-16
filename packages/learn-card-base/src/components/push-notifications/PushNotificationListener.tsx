@@ -11,6 +11,7 @@ import {
     resolveNotificationRoute,
     getNotificationToastCopy,
     getNotificationSenderImage,
+    shouldToastNotification,
 } from '../../helpers/pushNotificationHelpers';
 import { PushNotificationToast } from './PushNotificationToast';
 
@@ -39,6 +40,8 @@ export const PushNotificationListener = () => {
 
             queryClient.invalidateQueries({ queryKey: ['useGetUnreadUserNotifications'] });
             queryClient.invalidateQueries({ queryKey: ['useGetUserNotifications'] });
+
+            if (!shouldToastNotification(notification)) return;
 
             const { title, body } = getNotificationToastCopy(notification);
             const path = resolveNotificationRoute(notification);

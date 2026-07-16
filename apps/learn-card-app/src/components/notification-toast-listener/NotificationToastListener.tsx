@@ -7,6 +7,7 @@ import {
     useIsLoggedIn,
     getNotificationToastCopy,
     getNotificationSenderImage,
+    shouldToastNotification,
     PushNotificationToast,
     switchedProfileStore,
 } from 'learn-card-base';
@@ -58,9 +59,9 @@ const NotificationToastListener: React.FC = () => {
 
         if (Capacitor.isNativePlatform()) return;
 
-        // Toast only the newest new notification per poll; any others still
-        // appear in the Alerts list and badge, so nothing is lost.
-        const newest = freshNotifications[0];
+        // Toast only the newest toastable notification per poll; any others
+        // still appear in the Alerts list and badge, so nothing is lost.
+        const newest = freshNotifications.find(shouldToastNotification);
         if (!newest) return;
 
         const { title, body } = getNotificationToastCopy(newest);
