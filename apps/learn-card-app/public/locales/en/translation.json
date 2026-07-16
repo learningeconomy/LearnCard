@@ -4514,6 +4514,34 @@
                 "label": "Member ID",
                 "ph": "e.g. M-00482"
             }
+        },
+        "gate": {
+            "pickType": "Pick a type to begin",
+            "fixJson": "Fix the JSON to continue",
+            "addName": "Add a name to continue",
+            "addRecip": "Add a recipient to continue"
+        },
+        "toastIssued": "Credential issued.",
+        "saveFailed": "Credential was issued, but it could not be saved to your account.",
+        "discard": {
+            "title": "Discard this link?",
+            "keep": "Keep",
+            "discard": "Discard"
+        },
+        "preview": {
+            "willLook": "This is how your credential will look.",
+            "pickToStart": "Pick a type to start designing your credential."
+        },
+        "err": {
+            "network": "Connection issue. Check your internet and try again.",
+            "timeout": "That took longer than expected. Please try again.",
+            "session": "Your session may have expired. Sign in again and try once more.",
+            "server": "Our servers hit a snag. Please try again in a moment.",
+            "linkFail": "We couldn't create a shareable link. Please try again.",
+            "setupFail": "We couldn't set up issuing for your account. Please try again.",
+            "recipient": "We couldn't reach one of your recipients. Double-check the names or emails and try again.",
+            "invalid": "Some details on this credential aren't valid yet. Please review and try again.",
+            "generic": "Something went wrong issuing your credential. Please try again."
         }
     }
 }
