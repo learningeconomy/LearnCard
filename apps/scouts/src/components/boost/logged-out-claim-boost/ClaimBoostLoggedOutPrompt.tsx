@@ -81,11 +81,15 @@ export const ClaimBoostLoggedOutPrompt: React.FC<{
     const challenge = query.get('challenge') || undefined;
 
     const getBoost = async () => {
+        if (!boostUri) {
+            setIsLoading(false);
+            return;
+        }
         try {
             setIsLoading(true);
 
             const result = await fetch(
-                `${SCOUTPASS_NETWORK_API_URL}/storage/resolve?uri=${boostUri}${
+                `${SCOUTPASS_NETWORK_API_URL}/storage/resolve?uri=${encodeURIComponent(boostUri)}${
                     challenge ? `&challenge=${encodeURIComponent(challenge)}` : ''
                 }`
             );
