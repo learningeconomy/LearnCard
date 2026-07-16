@@ -10,6 +10,7 @@ import {
     parseForegroundPushNotification,
     resolveNotificationRoute,
     getNotificationToastCopy,
+    getNotificationSenderImage,
 } from '../../helpers/pushNotificationHelpers';
 import { PushNotificationToast } from './PushNotificationToast';
 
@@ -41,11 +42,13 @@ export const PushNotificationListener = () => {
 
             const { title, body } = getNotificationToastCopy(notification);
             const path = resolveNotificationRoute(notification);
+            const imageUrl = getNotificationSenderImage(notification);
 
             presentToast(
                 <PushNotificationToast
                     title={title}
                     body={body}
+                    imageUrl={imageUrl}
                     onClick={() => {
                         history.push(path);
                         dismissToast();

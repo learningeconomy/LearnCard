@@ -114,4 +114,7 @@ export const parseForegroundPushNotification = (
     payload: PushNotificationSchema
 ): LCNNotification | null => parseNotificationFromPushRaw(payload?.data?.raw);
 
+export const getNotificationSenderImage = (notification: LCNNotification): string | undefined =>
+    typeof notification.from === 'string' ? undefined : notification.from?.image;
+
 export { handlePushNotificationActionPerformed as default };

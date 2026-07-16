@@ -8,6 +8,7 @@ import {
     useIsLoggedIn,
     resolveNotificationRoute,
     getNotificationToastCopy,
+    getNotificationSenderImage,
     PushNotificationToast,
 } from 'learn-card-base';
 
@@ -58,11 +59,13 @@ const NotificationToastListener: React.FC = () => {
 
         const { title, body } = getNotificationToastCopy(newest);
         const path = resolveNotificationRoute(newest);
+        const imageUrl = getNotificationSenderImage(newest);
 
         presentToast(
             <PushNotificationToast
                 title={title}
                 body={body}
+                imageUrl={imageUrl}
                 onClick={() => {
                     history.push(path);
                     dismissToast();
