@@ -4,7 +4,7 @@
  * end-to-end through the plugin's public API.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { getOpenID4VCPlugin } from '@learncard/openid4vc-plugin';
+import { getOpenID4VCPlugin, requestW3cVc } from '@learncard/openid4vc-plugin';
 
 import { startE2EServer, type E2EServerHandle } from '../server/server';
 import { createPreAuthOffer } from '../server/issuer';
@@ -30,8 +30,7 @@ const getPlugin = (mock: MockLearnCardHandle) => {
     const plugin = getOpenID4VCPlugin(mock.learnCard, {});
     const bound: Record<string, (...args: any[]) => any> = {};
     for (const [name, fn] of Object.entries(plugin.methods)) {
-        bound[name] = (...args: any[]) =>
-            (fn as (...a: any[]) => any)(mock.learnCard, ...args);
+        bound[name] = (...args: any[]) => (fn as (...a: any[]) => any)(mock.learnCard, ...args);
     }
     return bound as any;
 };
@@ -53,7 +52,7 @@ describe('e2e: issue → present round trip', () => {
         expect(typeof accepted.credentials[0].credential).toBe('string');
 
         // -------- 2. Present --------
-        const session = createSession(server.verifier, {
+        const session = await createSession(server.verifier, {
             presentationDefinition: {
                 id: 'pd-e2e',
                 input_descriptors: [
@@ -146,7 +145,7 @@ describe('e2e: verifier rejection surfaces VpSubmitError', () => {
 
         // PD that will match — but we'll later corrupt the submission
         // state so the verifier rejects.
-        const session = createSession(server.verifier, {
+        const session = await createSession(server.verifier, {
             presentationDefinition: {
                 id: 'pd-reject',
                 input_descriptors: [
@@ -185,6 +184,133 @@ describe('e2e: verifier rejection surfaces VpSubmitError', () => {
             name: 'VpSubmitError',
             code: 'server_error',
             status: 400,
+        });
+    });
+
+    /* -------------------------------------------------------------------------- */
+    /*                          OID4VP 1.0 presentation path                      */
+    /* -------------------------------------------------------------------------- */
+
+    const universityDegreePd = (id: string) => ({
+        id,
+        input_descriptors: [
+            {
+                id: 'UniversityDegree',
+                constraints: {
+                    fields: [
+                        {
+                            path: ['$.type', '$.vc.type'],
+                            filter: { type: 'array', contains: { const: 'UniversityDegree' } },
+                        },
+                    ],
+                },
+            },
+        ],
+    });
+
+    const issueDegree = async (plugin: any) => {
+        const { offerUri } = createPreAuthOffer(server.issuer, {
+            configurationId: 'UniversityDegree_jwt',
+        });
+        const accepted = await plugin.acceptCredentialOffer(offerUri);
+        return accepted.credentials[0].credential as string;
+    };
+
+    describe('e2e: DCQL roundtrip (OID4VP 1.0 query language)', () => {
+        it('presents via DCQL and the verifier accepts the query-keyed vp_token (no presentation_submission)', async () => {
+            const mock = await buildMockLearnCard();
+            const plugin = getPlugin(mock);
+            const credential = await issueDegree(plugin);
+
+            const dcqlQuery = requestW3cVc({
+                id: 'degree',
+                types: ['VerifiableCredential', 'UniversityDegree'],
+            });
+
+            const session = await createSession(server.verifier, {
+                dcqlQuery: dcqlQuery as unknown as Record<string, unknown>,
+            });
+
+            const result = await plugin.presentCredentials(session.authRequestUri, [
+                { credentialQueryId: 'degree', candidate: { credential, format: 'jwt_vc_json' } },
+            ]);
+
+            expect(result.submitted.status).toBe(200);
+            expect(result.dcqlVpToken).toEqual(
+                expect.objectContaining({ degree: expect.any(String) })
+            );
+
+            const record = session.submissions[0]!;
+            expect(record.verifierAccepted).toBe(true);
+            expect(record.rejectionReason).toBeUndefined();
+            // §6.4: DCQL responses carry no presentation_submission.
+            expect(record.form.presentation_submission).toBeUndefined();
+        });
+    });
+
+    describe('e2e: JARM direct_post.jwt (OID4VP 1.0 encrypted response)', () => {
+        it('encrypts the response, negotiating enc via encrypted_response_enc_values_supported', async () => {
+            const mock = await buildMockLearnCard();
+            const plugin = getPlugin(mock);
+            const credential = await issueDegree(plugin);
+
+            const session = await createSession(server.verifier, {
+                presentationDefinition: universityDegreePd('pd-jarm'),
+                encryptResponse: true,
+            });
+
+            const result = await plugin.presentCredentials(
+                session.authRequestUri,
+                [
+                    {
+                        descriptorId: 'UniversityDegree',
+                        candidate: { credential, format: 'jwt_vc_json' },
+                    },
+                ],
+                { envelopeFormat: 'jwt_vp_json' }
+            );
+
+            expect(result.submitted.status).toBe(200);
+
+            const record = session.submissions[0]!;
+            expect(record.verifierAccepted).toBe(true);
+            expect(record.rejectionReason).toBeUndefined();
+            // The wallet sent an encrypted `response` (JARM), not a cleartext vp_token,
+            // and the verifier decrypted it with its A128GCM-advertised key.
+            expect(record.form.response).toBeDefined();
+            expect(record.form.vp_token).toBeUndefined();
+        });
+    });
+
+    describe('e2e: transaction_data is rejected (OID4VP 1.0 §8.4)', () => {
+        it('throws invalid_transaction_data and submits nothing to the verifier', async () => {
+            const mock = await buildMockLearnCard();
+            const plugin = getPlugin(mock);
+            const credential = await issueDegree(plugin);
+
+            const txData = Buffer.from(
+                JSON.stringify({ type: 'example_type', credential_ids: ['UniversityDegree'] })
+            ).toString('base64url');
+
+            const session = await createSession(server.verifier, {
+                presentationDefinition: universityDegreePd('pd-txdata'),
+                transactionData: [txData],
+            });
+
+            await expect(
+                plugin.presentCredentials(
+                    session.authRequestUri,
+                    [
+                        {
+                            descriptorId: 'UniversityDegree',
+                            candidate: { credential, format: 'jwt_vc_json' },
+                        },
+                    ],
+                    { envelopeFormat: 'jwt_vp_json' }
+                )
+            ).rejects.toMatchObject({ code: 'invalid_transaction_data' });
+
+            expect(session.submissions).toHaveLength(0);
         });
     });
 });
