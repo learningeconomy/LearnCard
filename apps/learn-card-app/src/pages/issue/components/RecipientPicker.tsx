@@ -3,6 +3,7 @@ import { Search, X, Mail, Loader2, Calendar } from 'lucide-react';
 import { useGetSearchProfiles, useGetConnections } from 'learn-card-base';
 import useDebounce from '../../../hooks/useDebounce';
 import { RecipientMode, Recipient, LinkOptions, isEmail } from './recipientTypes';
+import * as m from '../../../paraglide/messages.js';
 
 const INPUT_CLASS =
     'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
@@ -165,17 +166,17 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                         </div>
                         <div className="flex flex-col min-w-0">
                             <span className="text-sm font-medium text-grayscale-900 truncate">
-                                Send to {query}
+                                {m['boostAFriend.recip.sendTo']({ query })}
                             </span>
                             <span className="text-xs text-grayscale-500 truncate">
-                                They'll get an email to claim it
+                                {m['boostAFriend.recip.emailHint']()}
                             </span>
                         </div>
                     </button>
                 )}
             {dropdownResults.length === 0 && !isValidEmail && debouncedQuery.length > 0 && (
                 <div className="p-4 text-center text-sm text-grayscale-500">
-                    No results found. Enter a valid email to send an invite.
+                    {m['boostAFriend.recip.noResults']()}
                 </div>
             )}
         </>
@@ -185,9 +186,11 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
         <div className="space-y-4">
             {!hideHeader && (
                 <>
-                    <h3 className="text-base font-semibold text-grayscale-900">Who is this for?</h3>
+                    <h3 className="text-base font-semibold text-grayscale-900">
+                        {m['issueFlow.whoFor']()}
+                    </h3>
                     <p className="text-sm text-grayscale-600 leading-relaxed -mt-2">
-                        This shapes the preview and how it’s delivered.
+                        {m['issueFlow.whoForDesc']()}
                     </p>
                 </>
             )}
@@ -201,7 +204,7 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                             : 'text-grayscale-700 hover:bg-grayscale-200'
                     }`}
                 >
-                    Just me
+                    {m['boostAFriend.recip.justMe']()}
                 </button>
                 <button
                     type="button"
@@ -212,8 +215,8 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                             : 'text-grayscale-700 hover:bg-grayscale-200'
                     }`}
                 >
-                    <span className="sm:hidden">People</span>
-                    <span className="hidden sm:inline">Specific people</span>
+                    <span className="sm:hidden">{m['issueFlow.people']()}</span>
+                    <span className="hidden sm:inline">{m['issueFlow.specificPeople']()}</span>
                 </button>
                 <button
                     type="button"
@@ -224,8 +227,8 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                             : 'text-grayscale-700 hover:bg-grayscale-200'
                     }`}
                 >
-                    <span className="sm:hidden">Link</span>
-                    <span className="hidden sm:inline">Anyone with a link</span>
+                    <span className="sm:hidden">{m['issueFlow.link']()}</span>
+                    <span className="hidden sm:inline">{m['issueFlow.anyoneLink']()}</span>
                 </button>
             </div>
 
@@ -257,7 +260,7 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                                         type="button"
                                         onClick={() => handleRemoveRecipient(index)}
                                         className="text-white/70 hover:text-white transition-colors shrink-0 ml-1"
-                                        aria-label="Remove recipient"
+                                        aria-label={m['boostAFriend.recip.rmRecip']()}
                                     >
                                         <X className="w-3.5 h-3.5" />
                                     </button>
@@ -277,7 +280,7 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                                 clearTimeout(blurTimeoutRef.current);
                                 blurTimeoutRef.current = setTimeout(() => setIsFocused(false), 200);
                             }}
-                            placeholder="Search people..."
+                            placeholder={m['boostAFriend.recip.search']()}
                             spellCheck={false}
                             autoCapitalize="none"
                             autoCorrect="off"
@@ -288,7 +291,7 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                                 type="button"
                                 onClick={() => setQuery('')}
                                 className="absolute right-3 top-1/2 -translate-y-1/2 text-grayscale-400 hover:text-grayscale-700 transition-colors"
-                                aria-label="Clear search"
+                                aria-label={m['aiPathways.clearSearch']()}
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -301,7 +304,7 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                         )}
                     </div>
                     <p className="text-xs text-grayscale-400 mt-1.5 ml-1">
-                        Add by name, @username, or email
+                        {m['issueFlow.addByHint']()}
                     </p>
 
                     {inlineResults && showResults && (
@@ -314,12 +317,12 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
 
             {mode === 'link' && (
                 <div className="space-y-4 animate-fade-in-up">
-                    <p className="text-sm text-grayscale-600">
-                        We'll create a shareable link when you issue.
-                    </p>
+                    <p className="text-sm text-grayscale-600">{m['issueFlow.linkOnIssue']()}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className={LABEL_CLASS}>Expires (optional)</label>
+                            <label className={LABEL_CLASS}>
+                                {m['boostAFriend.recip.expires']()}
+                            </label>
                             <div className="relative">
                                 <input
                                     type="date"
@@ -336,7 +339,9 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                             </div>
                         </div>
                         <div>
-                            <label className={LABEL_CLASS}>Max claims (optional)</label>
+                            <label className={LABEL_CLASS}>
+                                {m['boostAFriend.recip.maxClaims']()}
+                            </label>
                             <input
                                 type="number"
                                 min="1"
@@ -349,7 +354,7 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                                             : undefined,
                                     })
                                 }
-                                placeholder="Unlimited"
+                                placeholder={m['boostAFriend.recip.unlimited']()}
                                 className={INPUT_CLASS}
                             />
                         </div>
