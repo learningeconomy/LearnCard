@@ -88,29 +88,29 @@ const AddressBookTabs: React.FC<{
                 </IonRow>
             )}
             <IonRow className="w-full max-w-[600px] p-2">
-                <IonCol className="relative flex w-full items-center justify-start">
-                    <div className="absolute left-6 top-1/2 transform -translate-y-1/2 z-10">
-                        <Search className="text-grayscale-900 w-[24px] h-[24px]" />
+                <IonCol className="p-0">
+                    <div className="relative w-full">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-5 h-5 text-grayscale-400 pointer-events-none" />
+                        <input
+                            autoCapitalize="on"
+                            placeholder="Search"
+                            value={search}
+                            onChange={e => handleSearch?.(e.target.value)}
+                            ref={searchInputRef}
+                            type="text"
+                            className="w-full py-3 pl-12 pr-11 rounded-2xl text-base text-grayscale-900 placeholder:text-grayscale-400 bg-grayscale-100 border border-transparent focus:outline-none focus:bg-white focus:border-grayscale-200 focus:ring-2 focus:ring-emerald-500/40 transition-all"
+                        />
+                        {search?.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={clearSearch}
+                                aria-label="Clear search"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 z-10 text-grayscale-400 hover:text-grayscale-700 transition-colors"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        )}
                     </div>
-                    <input
-                        autoCapitalize="on"
-                        placeholder="Search"
-                        value={search}
-                        onChange={e => handleSearch?.(e.target.value)}
-                        ref={searchInputRef}
-                        type="text"
-                        className="w-full bg-grayscale-100 text-grayscale-800 placeholder:text-grayscale-400 rounded-[15px] text-base font-medium tracking-wider subpixel-antialiased py-3 pl-[40px] pr-[40px] focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                    />
-                    {search?.length > 0 && (
-                        <button
-                            type="button"
-                            onClick={clearSearch}
-                            aria-label="Clear search"
-                            className="absolute right-6 top-1/2 transform -translate-y-1/2 z-10"
-                        >
-                            <X className="text-grayscale-600 w-[18px] h-[18px]" />
-                        </button>
-                    )}
                 </IonCol>
             </IonRow>
         </>
