@@ -24,6 +24,9 @@ import LoginFooter from '../../../pages/login/LoginFooter';
 import SocialLogins from '../../../components/social-logins/SocialLogins';
 import useFirebase from '../../../hooks/useFirebase';
 import { VC } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+
+const log = getLogger('claim-boost-logged-out-prompt');
 
 const getBoostHeadline = (boost?: VC): string => {
     const boostCategory = getDefaultCategoryForCredential(boost as any);
@@ -100,7 +103,7 @@ export const ClaimBoostLoggedOutPrompt: React.FC<{
 
             setBoost(boostVC);
         } catch (error: any) {
-            // log.error(error);
+            log.error('Failed to resolve boost:', error);
         } finally {
             setIsLoading(false);
         }
