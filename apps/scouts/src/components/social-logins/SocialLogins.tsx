@@ -28,9 +28,9 @@ export const SocialLogins: React.FC<{
     const _socialLogins = [...socialLogins, ...extraSocialLogins];
 
     return (
-        <IonRow className="w-full flex items-center justify-center social-logins-container">
-            <div className="relative w-full px-[12px] flex items-center justify-center max-w-[600px]">
-                <div className="h-[2px] bg-[#EFF0F5] absolute top-1/2 left-0 right-0" />
+        <IonRow className="w-full max-w-[600px] px-6 flex items-center justify-center social-logins-container">
+            <div className="relative w-full flex items-center justify-center">
+                <div className="h-[1px] bg-[#EFF0F5] absolute top-1/2 left-0 right-0" />
                 <span className="bg-white py-0 px-[10px] z-10">OR</span>
             </div>
 
