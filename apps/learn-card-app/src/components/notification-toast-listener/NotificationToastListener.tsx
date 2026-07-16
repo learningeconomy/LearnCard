@@ -1,16 +1,16 @@
 import React, { useEffect, useRef } from 'react';
-import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 
 import {
     useGetUnreadUserNotifications,
     useToast,
     useIsLoggedIn,
-    resolveNotificationRoute,
     getNotificationToastCopy,
     getNotificationSenderImage,
     PushNotificationToast,
 } from 'learn-card-base';
+
+import useOpenNotifications from '../notifications/useOpenNotifications';
 
 const POLL_INTERVAL_MS = 30_000;
 const TOAST_DURATION_MS = 6000;
@@ -20,7 +20,7 @@ const TOAST_DURATION_MS = 6000;
 // polls everywhere to keep the Alerts badge fresh from the same source.
 const NotificationToastListener: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
-    const history = useHistory();
+    const openNotifications = useOpenNotifications();
     const { presentToast, dismissToast } = useToast();
 
     const { data } = useGetUnreadUserNotifications({
@@ -58,7 +58,6 @@ const NotificationToastListener: React.FC = () => {
         if (!newest) return;
 
         const { title, body } = getNotificationToastCopy(newest);
-        const path = resolveNotificationRoute(newest);
         const imageUrl = getNotificationSenderImage(newest);
 
         presentToast(
@@ -67,13 +66,13 @@ const NotificationToastListener: React.FC = () => {
                 body={body}
                 imageUrl={imageUrl}
                 onClick={() => {
-                    history.push(path);
                     dismissToast();
+                    openNotifications();
                 }}
             />,
             { autoDismiss: true, duration: TOAST_DURATION_MS }
         );
-    }, [data, presentToast, dismissToast, history]);
+    }, [data, presentToast, dismissToast, openNotifications]);
 
     useEffect(() => {
         if (!isLoggedIn) seenIdsRef.current = null;
