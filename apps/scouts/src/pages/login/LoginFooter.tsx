@@ -8,20 +8,24 @@ import { openToS, openPP, openContactLink, openLCwebsite } from '../../helpers/e
 interface LoginFooterProps {
     className?: string;
     wrapperClassName?: string;
+    hideSelfCustodialLogin?: boolean;
 }
 
 const LoginFooter: React.FC<LoginFooterProps> = ({
     className = 'login-footer-container',
     wrapperClassName = 'login-footer-wrap',
+    hideSelfCustodialLogin = false,
 }) => {
     return (
         <div className={`${className}`}>
             <div className={`ion-padding pl-6 !pt-1 w-full ${wrapperClassName}`}>
-                <IonCol size="12" className="login-footer-title-wrap">
-                    <p className="text-grayscale-600 font-medium text-base">
-                        Self-custodial login.
-                    </p>
-                </IonCol>
+                {!hideSelfCustodialLogin && (
+                    <IonCol size="12" className="login-footer-title-wrap">
+                        <p className="text-grayscale-600 font-medium text-base">
+                            Self-custodial login.
+                        </p>
+                    </IonCol>
+                )}
                 <div className="bg-grayscale-100 w-full h-[2px]" />
                 <button
                     onClick={openLCwebsite}

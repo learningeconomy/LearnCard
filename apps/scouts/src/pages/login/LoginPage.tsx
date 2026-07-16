@@ -17,6 +17,7 @@ import {
     QrLoginRequester,
     getAuthConfig,
     getSSSConfig,
+    getConfigCapabilities,
 } from 'learn-card-base';
 
 import { useFirebase } from '../../hooks/useFirebase';
@@ -61,6 +62,7 @@ const LoginPage: React.FC = () => {
     const [showLinkedBanner, setShowLinkedBanner] = useState(false);
     const [accountHint, setAccountHint] = useState<string | null>(null);
     const authConfig = getAuthConfig();
+    const configCapabilities = getConfigCapabilities();
     const lcnRedirectTo = redirectStore.get.lcnRedirect();
 
     useEffect(() => {
@@ -349,14 +351,16 @@ const LoginPage: React.FC = () => {
                                 />
                             </IonRow>
 
-                            <IonRow className="w-full flex items-center justify-center mt-2 mb-2">
-                                <button
-                                    onClick={() => setShowQrLogin(true)}
-                                    className="text-sm text-grayscale-500 hover:text-grayscale-700 underline transition-colors"
-                                >
-                                    Sign in from another device
-                                </button>
-                            </IonRow>
+                            {configCapabilities.deviceLinking && (
+                                <IonRow className="w-full flex items-center justify-center mt-2 mb-2">
+                                    <button
+                                        onClick={() => setShowQrLogin(true)}
+                                        className="text-sm text-grayscale-500 hover:text-grayscale-700 underline transition-colors"
+                                    >
+                                        Sign in from another device
+                                    </button>
+                                </IonRow>
+                            )}
                         </>
                     )}
                 </IonGrid>
