@@ -106,7 +106,8 @@ export const pushUtilities = {
         initWallet: any,
         history: RouteComponentProps['history'],
         syncToken: boolean,
-        handleNotificationRegistrationError?: (text: string) => void
+        handleNotificationRegistrationError?: (text: string) => void,
+        handleForegroundNotification?: (payload: PushNotificationSchema) => void
     ) => {
         if (!pushNotificationsSupported()) return;
 
@@ -144,7 +145,9 @@ export const pushUtilities = {
             'pushNotificationReceived',
             (payload: PushNotificationSchema) => {
                 log.info('Push notification received:', payload);
-                // Handle received notification if needed
+                // The OS suppresses the banner while the app is foregrounded, so
+                // surface it in-app instead of letting the event drop.
+                handleForegroundNotification?.(payload);
             }
         );
 

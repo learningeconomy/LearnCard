@@ -1,17 +1,27 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
-import { Capacitor } from '@capacitor/core';
+import { useQueryClient } from '@tanstack/react-query';
+import { PushNotificationSchema } from '@capacitor/push-notifications';
 
 import { useWallet, useToast, ToastTypeEnum, useIsLoggedIn } from 'learn-card-base';
 
 import { pushUtilities } from '../../utils/pushUtilities';
+import {
+    parseForegroundPushNotification,
+    resolveNotificationRoute,
+    getNotificationToastCopy,
+} from '../../helpers/pushNotificationHelpers';
+import { PushNotificationToast } from './PushNotificationToast';
+
+const FOREGROUND_TOAST_DURATION_MS = 6000;
 
 export const PushNotificationListener = () => {
     const { initWallet } = useWallet();
     const isLoggedIn = useIsLoggedIn();
     const history = useHistory();
+    const queryClient = useQueryClient();
 
-    const { presentToast } = useToast();
+    const { presentToast, dismissToast } = useToast();
 
     const handleNotificationRegistrationError = (text: string) => {
         presentToast(text, {
@@ -20,14 +30,42 @@ export const PushNotificationListener = () => {
         });
     };
 
+    const handleForegroundNotification = useCallback(
+        (payload: PushNotificationSchema) => {
+            const notification = parseForegroundPushNotification(payload);
+
+            if (!notification) return;
+
+            queryClient.invalidateQueries({ queryKey: ['useGetUnreadUserNotifications'] });
+            queryClient.invalidateQueries({ queryKey: ['useGetUserNotifications'] });
+
+            const { title, body } = getNotificationToastCopy(notification);
+            const path = resolveNotificationRoute(notification);
+
+            presentToast(
+                <PushNotificationToast
+                    title={title}
+                    body={body}
+                    onClick={() => {
+                        history.push(path);
+                        dismissToast();
+                    }}
+                />,
+                { autoDismiss: true, duration: FOREGROUND_TOAST_DURATION_MS }
+            );
+        },
+        [queryClient, presentToast, dismissToast, history]
+    );
+
     useEffect(() => {
         pushUtilities.addBackgroundPushNotificationListeners(
             initWallet,
             history,
             isLoggedIn,
-            handleNotificationRegistrationError
+            handleNotificationRegistrationError,
+            handleForegroundNotification
         );
-    }, [history, isLoggedIn]);
+    }, [history, isLoggedIn, handleForegroundNotification]);
 
     return null;
 };

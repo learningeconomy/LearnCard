@@ -1,34 +1,36 @@
-import { ActionPerformed } from '@capacitor/push-notifications';
+import { ActionPerformed, PushNotificationSchema } from '@capacitor/push-notifications';
 import { LCNNotification, LCNNotificationTypeEnumValidator } from '@learncard/types';
 import { RouteComponentProps } from 'react-router-dom';
 
-export const handlePushNotificationActionPerformed = (
-    notificationPayload: ActionPerformed,
-    history: RouteComponentProps['history']
-) => {
-    if (!notificationPayload) return;
-    if (!history) return;
+import { getLogger } from '../logging/logger';
 
-    const notification: LCNNotification = JSON.parse(notificationPayload.notification.data.raw);
+const log = getLogger('push-notification-helpers');
 
-    const { from, type } = notification;
+// FCM delivers the full LCNNotification as a JSON string on `data.raw`.
+export const parseNotificationFromPushRaw = (
+    raw: string | undefined | null
+): LCNNotification | null => {
+    if (!raw) return null;
 
-    const recipient = typeof from === 'string' ? from : from?.profileId;
+    try {
+        return JSON.parse(raw) as LCNNotification;
+    } catch (error) {
+        log.warn('Failed to parse push notification payload', error);
+        return null;
+    }
+};
+
+export const resolveNotificationRoute = (notification: LCNNotification): string => {
+    const { type } = notification;
 
     switch (type) {
         case LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST:
-            history.push(`/notifications`);
-            break;
+            return '/notifications';
         case LCNNotificationTypeEnumValidator.enum.CONNECTION_ACCEPTED:
-            history.push(`/contacts`);
-            break;
+            return '/contacts';
         case LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED:
         case LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED:
-            history.push(`/notifications?uri=${notification?.data?.vcUris?.[0]}&claim=true`);
-            break;
-        case LCNNotificationTypeEnumValidator.enum.PRESENTATION_RECEIVED:
-            // TODO: handle VP redirect
-            break;
+            return `/notifications?uri=${notification?.data?.vcUris?.[0]}&claim=true`;
         case LCNNotificationTypeEnumValidator.enum.DEVICE_LINK_REQUEST:
             // Store session data so the app can auto-open the approver overlay
             if (notification.data?.metadata) {
@@ -44,12 +46,72 @@ export const handlePushNotificationActionPerformed = (
             }
             // Navigate to home — the app's AuthCoordinatorProvider will detect
             // the sessionStorage flag and auto-open the approver overlay.
-            history.push('/');
-            break;
+            return '/';
         default:
-            history.push('/');
-            break;
+            return '/';
     }
 };
+
+export const getNotificationToastCopy = (
+    notification: LCNNotification
+): { title: string; body: string } => {
+    const fromName =
+        typeof notification.from === 'string' ? '' : notification.from?.displayName ?? '';
+
+    if (notification.message?.title || notification.message?.body) {
+        return {
+            title: notification.message?.title ?? 'New notification',
+            body: notification.message?.body ?? '',
+        };
+    }
+
+    switch (notification.type) {
+        case LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST:
+            return {
+                title: 'New connection request',
+                body: fromName ? `${fromName} wants to connect` : 'Someone wants to connect',
+            };
+        case LCNNotificationTypeEnumValidator.enum.CONNECTION_ACCEPTED:
+            return {
+                title: 'Connection accepted',
+                body: fromName ? `You're now connected with ${fromName}` : "You're now connected",
+            };
+        case LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED:
+        case LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED:
+            return {
+                title: 'New credential received',
+                body: fromName ? `${fromName} sent you a credential` : 'You received a credential',
+            };
+        case LCNNotificationTypeEnumValidator.enum.PRESENTATION_REQUEST:
+            return {
+                title: 'New request',
+                body: fromName
+                    ? `${fromName} requested information`
+                    : 'Someone requested information',
+            };
+        case LCNNotificationTypeEnumValidator.enum.GUARDIAN_APPROVAL_PENDING:
+            return { title: 'Approval needed', body: 'A request is waiting for your approval' };
+        default:
+            return { title: 'New notification', body: fromName ? `From ${fromName}` : '' };
+    }
+};
+
+export const handlePushNotificationActionPerformed = (
+    notificationPayload: ActionPerformed,
+    history: RouteComponentProps['history']
+) => {
+    if (!notificationPayload) return;
+    if (!history) return;
+
+    const notification = parseNotificationFromPushRaw(notificationPayload.notification?.data?.raw);
+
+    if (!notification) return;
+
+    history.push(resolveNotificationRoute(notification));
+};
+
+export const parseForegroundPushNotification = (
+    payload: PushNotificationSchema
+): LCNNotification | null => parseNotificationFromPushRaw(payload?.data?.raw);
 
 export { handlePushNotificationActionPerformed as default };
