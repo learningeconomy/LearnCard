@@ -90,12 +90,6 @@ const PrivateRoute = ({ component: Component, ...rest }: PrivateRouteProps) => {
     ) : (
         <Redirect to="/login" />
     );
-
-    // return isLoggedIn ? (
-    //     <SentryRoute {...rest} render={props => <Component {...props} {...rest} />} />
-    // ) : (
-    //     <Redirect to="/login" />
-    // );
 };
 
 export const Routes: React.FC = () => {
