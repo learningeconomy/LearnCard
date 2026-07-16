@@ -6,7 +6,7 @@ import * as m from '../../paraglide/messages.js';
 import DotIcon from 'learn-card-base/svgs/DotIcon';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 
-import { conditionalPluralize, CredentialCategoryEnum } from 'learn-card-base';
+import { CredentialCategoryEnum } from 'learn-card-base';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 
@@ -61,10 +61,13 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
         <p className={`font-poppins text-[14px] ${passportCardTextColor ?? 'text-grayscale-900'}`}>
             {loading ? (
                 <div className="flex items-center gap-[5px]">
-                    <IonSpinner name="crescent" className="h-[14px] w-[14px]" /> Items
+                    <IonSpinner name="crescent" className="h-[14px] w-[14px]" />{' '}
+                    {m['wallet.items']()}
                 </div>
+            ) : count === 1 ? (
+                m['wallet.itemCountOne']({ count })
             ) : (
-                conditionalPluralize(count, 'Item')
+                m['wallet.itemCountOther']({ count })
             )}
         </p>
     );

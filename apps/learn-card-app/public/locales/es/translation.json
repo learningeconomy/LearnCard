@@ -830,7 +830,10 @@
                 "aiInsights": "Las perspectivas de IA son resúmenes inteligentes generados a partir de las credenciales verificadas, las habilidades, las experiencias de aprendizaje y los logros de una persona. Ofrecen una visión clara e integral del progreso del estudiante analizando datos autenticados para identificar fortalezas, destacar áreas de crecimiento y revelar patrones significativos a lo largo del tiempo. Estas perspectivas ayudan a los estudiantes a comprender su desarrollo, apoyan a los educadores en la orientación de sus alumnos y permiten tomar decisiones más informadas sobre las trayectorias de aprendizaje y las oportunidades futuras.",
                 "aiPathways": "Las trayectorias de IA son recorridos de aprendizaje personalizados que se generan analizando tus habilidades verificadas, tus credenciales y tus intereses profesionales. Trazan cursos, experiencias e hitos recomendados adaptados a tus objetivos, ayudándote a descubrir nuevas oportunidades y a avanzar hacia los resultados profesionales o de aprendizaje que más te importan."
             }
-        }
+        },
+        "items": "Elementos",
+        "itemCountOne": "{{count}} elemento",
+        "itemCountOther": "{{count}} elementos"
     },
     "theme": {
         "title": "Elige tu tema",
