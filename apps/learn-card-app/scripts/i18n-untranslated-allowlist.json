@@ -1,1 +1,26 @@
-[]
+[
+    "ar:passport.resumeBuilder.fields.linkedIn.label",
+    "ar:theme.names.vetpass",
+    "ar:onboarding.v2.brandAi",
+    "ar:developerPortal.credentialBuilder.dates.expirationPlaceholder",
+    "ar:developerPortal.credentialBuilder.recipient.activityStartDatePlaceholder",
+    "ar:developerPortal.credentialBuilder.recipient.activityEndDatePlaceholder",
+    "ar:developerPortal.credentialBuilder.customFields.fieldKeyPlaceholder",
+    "ar:developerPortal.dashboards.tabs.embedCode.reactSnippet",
+    "ar:developerPortal.dashboards.tabs.consentFlowTesting.credentialUri",
+    "ar:developerPortal.dashboards.tabs.apiTokens.sdkLabel",
+    "ar:developerPortal.dashboards.nav.partnerConnect",
+    "ar:developerPortal.guides.hub.resources.github.title",
+    "ar:developerPortal.guides.embedApp.urlCheck.corsHeader",
+    "ar:developerPortal.guides.embedApp.apiReference.methods.requestIdentity.name",
+    "ar:developerPortal.guides.embedApp.apiReference.methods.sendCredential.name",
+    "ar:developerPortal.guides.embedApp.apiReference.methods.askCredentialSearch.name",
+    "ar:developerPortal.guides.embedApp.apiReference.methods.askCredentialSpecific.name",
+    "ar:developerPortal.guides.embedApp.apiReference.methods.initiateTemplateIssue.name",
+    "ar:developerPortal.guides.embedApp.apiReference.methods.launchFeature.name",
+    "ar:developerPortal.guides.embedApp.apiReference.methods.requestConsent.name",
+    "ar:developerPortal.guides.issueCredentials.issueVerifyStep.uriLabel",
+    "ar:developerPortal.guides.verifyCredentials.testStep.credentialPlaceholder",
+    "ar:appStoreAdmin.listing.googlePlayStore",
+    "ar:issueFlow.catalog.GeneralEducationDevelopment.label"
+]
