@@ -28,7 +28,10 @@ export const UserProfileSetupListener: React.FC<{ loading: boolean }> = ({ loadi
 
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal(true, () => {
         userProfileSetupStore.set.clearAutoPrompted();
-        history.replace({ search: undefined });
+        const params = new URLSearchParams(window.location.search);
+        params.delete('profileSetup');
+        const remaining = params.toString();
+        history.replace({ search: remaining || undefined });
     });
 
     useEffect(() => {
@@ -68,7 +71,9 @@ export const UserProfileSetupListener: React.FC<{ loading: boolean }> = ({ loadi
                 if (!isUserModalOpen && currentUser) {
                     hasPresentedSetupModalRef.current = true;
                     userProfileSetupStore.set.markAutoPrompted();
-                    history.replace({ search: 'profileSetup=true' });
+                    const params = new URLSearchParams(window.location.search);
+                    params.set('profileSetup', 'true');
+                    history.replace({ search: params.toString() });
                     await handlePresentJoinNetworkModal({ forceOpen: true });
                 }
             } catch (err) {
