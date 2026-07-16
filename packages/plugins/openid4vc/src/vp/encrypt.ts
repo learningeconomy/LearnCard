@@ -363,7 +363,10 @@ export const encryptResponseObject = async (
 
     // OID4VP §8.3 paragraph 6: `apv` MUST equal base64url(verifier
     // nonce). jose's `setKeyManagementParameters` accepts the raw
-    // nonce bytes and handles base64url encoding internally.
+    // nonce bytes and handles base64url encoding internally. These are
+    // ECDH key-agreement KDF inputs; jose ignores them for RSA-OAEP /
+    // AES-KW enc keys, so those (rare) responses carry no apv nonce
+    // binding — ECDH is the expected path here.
     const keyManagementParameters: { apv: Uint8Array; apu?: Uint8Array } = {
         apv: new TextEncoder().encode(verifierNonce),
     };
@@ -482,16 +485,28 @@ const resolveVerifierJwks = async (
  *   2. one with no `alg` claim (algorithm-agnostic key)
  *   3. otherwise — first match wins
  */
+/** JWE content-encryption algorithms this wallet can actually perform via jose. */
+const PERFORMABLE_ENC = new Set([
+    'A128GCM',
+    'A192GCM',
+    'A256GCM',
+    'A128CBC-HS256',
+    'A192CBC-HS384',
+    'A256CBC-HS512',
+]);
+
 /**
  * Pick a content-encryption (`enc`) algorithm from the verifier's advertised
- * `encrypted_response_enc_values_supported` list (OID4VP 1.0 §8.3). Returns
- * the first entry, or `undefined` when the list is absent/empty so the caller
- * can fall back.
+ * `encrypted_response_enc_values_supported` list (OID4VP 1.0 §8.3). Prefers the
+ * first advertised value the wallet can actually perform, so an exotic value
+ * listed first doesn't force a later `encrypt_failed`. Falls back to the first
+ * advertised value if none are recognized, or `undefined` when the list is
+ * absent/empty so the caller can apply the spec default.
  */
 const pickSupportedEnc = (supported: string[] | undefined): string | undefined => {
     if (!Array.isArray(supported)) return undefined;
-    const first = supported.find(v => typeof v === 'string' && v.length > 0);
-    return first;
+    const values = supported.filter(v => typeof v === 'string' && v.length > 0);
+    return values.find(v => PERFORMABLE_ENC.has(v)) ?? values[0];
 };
 
 const pickEncryptionKey = (jwks: readonly JWK[], requestedAlg?: string): JWK => {

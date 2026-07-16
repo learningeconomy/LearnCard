@@ -312,5 +312,29 @@ describe('e2e: verifier rejection surfaces VpSubmitError', () => {
 
             expect(session.submissions).toHaveLength(0);
         });
+
+        it('also rejects on the granular submitPresentation path (not just presentCredentials)', async () => {
+            const mock = await buildMockLearnCard();
+            const plugin = getPlugin(mock);
+
+            const txData = Buffer.from(
+                JSON.stringify({ type: 'example_type', credential_ids: ['UniversityDegree'] })
+            ).toString('base64url');
+
+            const session = await createSession(server.verifier, {
+                presentationDefinition: universityDegreePd('pd-txdata-granular'),
+                transactionData: [txData],
+            });
+
+            await expect(
+                plugin.submitPresentation(
+                    session.authRequestUri,
+                    { vpToken: 'dummy.vp.token' },
+                    undefined
+                )
+            ).rejects.toMatchObject({ code: 'invalid_transaction_data' });
+
+            expect(session.submissions).toHaveLength(0);
+        });
     });
 });

@@ -333,6 +333,7 @@ export const getOpenID4VCPlugin = (
                 submitOptions = {}
             ) => {
                 const request = await resolveRequestInput(input, fetchImpl, resolveOptions);
+                assertTransactionDataUnsupported(request);
                 const responseUri = request.response_uri ?? request.redirect_uri;
 
                 if (!responseUri) {
@@ -372,18 +373,7 @@ export const getOpenID4VCPlugin = (
 
             presentCredentials: async (learnCard, input, chosen, options = {}) => {
                 const request = await resolveRequestInput(input, fetchImpl, resolveOptions);
-
-                // OID4VP 1.0 §8.4: a Wallet that cannot honor `transaction_data`
-                // MUST return an error rather than present without binding it.
-                // The plugin does not yet bind any transaction data type, so a
-                // request carrying it is rejected here instead of silently
-                // producing a non-conformant response.
-                if (request.transaction_data && request.transaction_data.length > 0) {
-                    throw new VpError(
-                        'invalid_transaction_data',
-                        'Authorization Request includes transaction_data, which this Wallet does not support'
-                    );
-                }
+                assertTransactionDataUnsupported(request);
 
                 const holder = options.holder ?? learnCard.id.did();
 
@@ -536,6 +526,23 @@ const resolveRequestInput = async (
     typeof input === 'string'
         ? await resolveAuthorizationRequestFn(input, fetchImpl, resolveOptions)
         : input;
+
+/**
+ * OID4VP 1.0 §8.4: a Wallet that cannot honor `transaction_data` MUST return an
+ * error rather than present without binding it. The plugin does not yet bind
+ * any transaction data type, so any request carrying it is rejected. Called
+ * from every entry point that actually emits a presentation
+ * (`presentCredentials`, `submitPresentation`) so the rejection can't be
+ * bypassed by driving the granular flow.
+ */
+const assertTransactionDataUnsupported = (request: AuthorizationRequest): void => {
+    if (request.transaction_data && request.transaction_data.length > 0) {
+        throw new VpError(
+            'invalid_transaction_data',
+            'Authorization Request includes transaction_data, which this Wallet does not support'
+        );
+    }
+};
 
 const requirePresentationDefinition = (request: AuthorizationRequest) => {
     if (!request.presentation_definition) {
