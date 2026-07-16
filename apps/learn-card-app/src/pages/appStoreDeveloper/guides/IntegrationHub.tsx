@@ -41,6 +41,9 @@ interface UseCaseCardProps {
     title: string;
     subtitle: string;
     description: string;
+    titleKey: string;
+    subtitleKey: string;
+    descriptionKey: string;
     icon: string;
     color: string;
     bgColor: string;
@@ -54,9 +57,9 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('integration-hub');
 
 const UseCaseCard: React.FC<UseCaseCardProps> = ({
-    title,
-    subtitle,
-    description,
+    titleKey,
+    subtitleKey,
+    descriptionKey,
     icon,
     color,
     bgColor,
@@ -82,11 +85,11 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
                     </span>
                 </div>
 
-                <h3 className="text-lg font-semibold text-gray-500 mb-1">{title}</h3>
+                <h3 className="text-lg font-semibold text-gray-500 mb-1">{(m as any)[titleKey]()}</h3>
 
-                <p className="text-sm text-gray-400 mb-3">{subtitle}</p>
+                <p className="text-sm text-gray-400 mb-3">{(m as any)[subtitleKey]()}</p>
 
-                <p className="text-sm text-gray-400 flex-1">{description}</p>
+                <p className="text-sm text-gray-400 flex-1">{(m as any)[descriptionKey]()}</p>
             </div>
         );
     }
@@ -106,11 +109,11 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
                     </span>
                 </div>
 
-                <h3 className="text-lg font-semibold text-gray-500 mb-1">{title}</h3>
+                <h3 className="text-lg font-semibold text-gray-500 mb-1">{(m as any)[titleKey]()}</h3>
 
-                <p className="text-sm text-gray-400 mb-3">{subtitle}</p>
+                <p className="text-sm text-gray-400 mb-3">{(m as any)[subtitleKey]()}</p>
 
-                <p className="text-sm text-gray-400 flex-1">{description}</p>
+                <p className="text-sm text-gray-400 flex-1">{(m as any)[descriptionKey]()}</p>
 
                 <div className="flex items-center gap-1.5 mt-4 text-gray-400 font-medium text-sm">
                     <Lock className="w-4 h-4" />
@@ -141,14 +144,18 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
                 )}
             </div>
 
-            <h3 className="text-lg font-semibold text-gray-800 mb-1">{title}</h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-1">{(m as any)[titleKey]()}</h3>
 
-            <p className="text-sm text-gray-500 mb-3">{subtitle}</p>
+            <p className="text-sm text-gray-500 mb-3">{(m as any)[subtitleKey]()}</p>
 
-            <p className="text-sm text-gray-600 flex-1">{description}</p>
+            <p className="text-sm text-gray-600 flex-1">{(m as any)[descriptionKey]()}</p>
 
             <div className="flex items-center gap-1.5 mt-4 text-cyan-600 font-medium text-sm group-hover:gap-2.5 transition-all">
-                <span>{isActive ? 'Continue' : 'Get Started'}</span>
+                <span>
+                    {isActive
+                        ? m['common.continue']()
+                        : m['developerPortal.guides.hub.getStarted']()}
+                </span>
                 <ArrowRight className="w-4 h-4" />
             </div>
         </button>
