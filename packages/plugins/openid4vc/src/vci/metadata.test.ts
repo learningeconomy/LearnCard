@@ -37,8 +37,9 @@ describe('fetchCredentialIssuerMetadata', () => {
             'https://issuer.example.com/.well-known/openid-credential-issuer',
             { method: 'GET', headers: { Accept: 'application/json' } }
         );
-        expect(result.credential_issuer).toBe('https://issuer.example.com');
-        expect(result.credential_endpoint).toBe('https://issuer.example.com/credential');
+        expect(result.metadata.credential_issuer).toBe('https://issuer.example.com');
+        expect(result.metadata.credential_endpoint).toBe('https://issuer.example.com/credential');
+        expect(result.specVersion).toBe('final');
     });
 
     it('strips trailing slash from issuer URL before inserting well-known path', async () => {
@@ -92,6 +93,54 @@ describe('fetchCredentialIssuerMetadata', () => {
             'https://transactions.example.com/.well-known/openid-credential-issuer/workflows/claim/exchanges/abc-123',
             { method: 'GET', headers: { Accept: 'application/json' } }
         );
+    });
+
+    it('[draft-13-compat] falls back to the append-style URL and reports specVersion draft-13', async () => {
+        const draft13Metadata = {
+            ...validMetadata,
+            credential_issuer: 'https://issuer.example.com/draft13',
+            credential_endpoint: 'https://issuer.example.com/draft13/credential',
+        };
+        const fetchMock = jest
+            .fn()
+            .mockResolvedValueOnce(
+                mockResponse({}, { ok: false, status: 404, statusText: 'Not Found' })
+            )
+            .mockResolvedValueOnce(mockResponse(draft13Metadata));
+
+        const result = await fetchCredentialIssuerMetadata(
+            'https://issuer.example.com/draft13',
+            fetchMock as unknown as typeof fetch
+        );
+
+        expect(result.specVersion).toBe('draft-13');
+        expect(fetchMock).toHaveBeenNthCalledWith(
+            1,
+            'https://issuer.example.com/.well-known/openid-credential-issuer/draft13',
+            { method: 'GET', headers: { Accept: 'application/json' } }
+        );
+        expect(fetchMock).toHaveBeenNthCalledWith(
+            2,
+            'https://issuer.example.com/draft13/.well-known/openid-credential-issuer',
+            { method: 'GET', headers: { Accept: 'application/json' } }
+        );
+    });
+
+    it('does not fall back for a path-less issuer (insert === append)', async () => {
+        const fetchMock = jest
+            .fn()
+            .mockResolvedValue(
+                mockResponse({}, { ok: false, status: 404, statusText: 'Not Found' })
+            );
+
+        await expect(
+            fetchCredentialIssuerMetadata(
+                'https://issuer.example.com',
+                fetchMock as unknown as typeof fetch
+            )
+        ).rejects.toMatchObject({ code: 'metadata_fetch_failed', status: 404 });
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
     });
 
     it('throws metadata_issuer_mismatch when advertised issuer differs', async () => {

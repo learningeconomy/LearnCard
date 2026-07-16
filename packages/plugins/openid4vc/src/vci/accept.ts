@@ -11,7 +11,9 @@ import { requestCredential } from './request';
 import {
     AcceptCredentialOfferOptions,
     AcceptedCredentialResult,
+    CredentialIssuerMetadata,
     ProofJwtSigner,
+    SpecVersion,
     TokenResponse,
 } from './types';
 import { VciError } from './errors';
@@ -54,7 +56,7 @@ export const acceptCredentialOffer = async (args: {
     const options = args.options ?? {};
     const fetchImpl = args.fetchImpl ?? globalThis.fetch;
     const { preAuth, requestedIds } = validatePreAuthOffer(args.offer, options);
-    const issuerMetadata = await fetchCredentialIssuerMetadata(
+    const { metadata: issuerMetadata, specVersion } = await fetchCredentialIssuerMetadata(
         args.offer.credential_issuer,
         fetchImpl
     );
@@ -76,6 +78,7 @@ export const acceptCredentialOffer = async (args: {
         options,
         fetchImpl,
         issuerMetadata,
+        specVersion,
         requestedIds,
     });
 };
@@ -87,7 +90,7 @@ export const exchangePreAuthCodeForToken = async (
     const fetchImpl = args.fetchImpl ?? globalThis.fetch;
     const { preAuth } = validatePreAuthOffer(args.offer, options);
 
-    const issuerMetadata = await fetchCredentialIssuerMetadata(
+    const { metadata: issuerMetadata } = await fetchCredentialIssuerMetadata(
         args.offer.credential_issuer,
         fetchImpl
     );
@@ -111,7 +114,10 @@ export const requestCredentialsFromPreAuthToken = async (
     const fetchImpl = args.fetchImpl ?? globalThis.fetch;
     const { requestedIds } = validatePreAuthOffer(offer, options);
 
-    const issuerMetadata = await fetchCredentialIssuerMetadata(offer.credential_issuer, fetchImpl);
+    const { metadata: issuerMetadata, specVersion } = await fetchCredentialIssuerMetadata(
+        offer.credential_issuer,
+        fetchImpl
+    );
     return requestCredentialsFromPreAuthTokenCore({
         offer,
         tokenResponse,
@@ -119,6 +125,7 @@ export const requestCredentialsFromPreAuthToken = async (
         options,
         fetchImpl,
         issuerMetadata,
+        specVersion,
         requestedIds,
     });
 };
@@ -129,10 +136,20 @@ const requestCredentialsFromPreAuthTokenCore = async (args: {
     signer: ProofJwtSigner;
     options: AcceptCredentialOfferOptions;
     fetchImpl: typeof fetch;
-    issuerMetadata: Awaited<ReturnType<typeof fetchCredentialIssuerMetadata>>;
+    issuerMetadata: CredentialIssuerMetadata;
+    specVersion: SpecVersion;
     requestedIds: string[];
 }): Promise<AcceptedCredentialResult> => {
-    const { offer, signer, tokenResponse, options, fetchImpl, issuerMetadata, requestedIds } = args;
+    const {
+        offer,
+        signer,
+        tokenResponse,
+        options,
+        fetchImpl,
+        issuerMetadata,
+        specVersion,
+        requestedIds,
+    } = args;
     const nonceEndpoint = issuerMetadata.nonce_endpoint;
 
     const credentials: AcceptedCredentialResult['credentials'] = [];
@@ -169,6 +186,10 @@ const requestCredentialsFromPreAuthTokenCore = async (args: {
                 credentialConfigurationId: requestDescriptor.credentialIdentifier
                     ? undefined
                     : configurationId,
+                specVersion,
+                // [draft-13-compat] consumed by requestCredential only when specVersion === 'draft-13'
+                format: requestDescriptor.credentialIdentifier ? undefined : format,
+                configDef: requestDescriptor.credentialIdentifier ? undefined : configDef,
                 fetchImpl,
             };
 

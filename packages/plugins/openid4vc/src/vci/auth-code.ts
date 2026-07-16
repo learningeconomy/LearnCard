@@ -39,6 +39,7 @@ import {
     CredentialIssuerMetadata,
     OAuthErrorBody,
     ProofJwtSigner,
+    SpecVersion,
     TokenResponse,
 } from './types';
 import { VciError } from './errors';
@@ -114,6 +115,8 @@ export interface AuthCodeFlowHandle {
     state: string;
     pkceVerifier: string;
     pkceMethod: 'S256';
+    /** Issuer spec revision detected at begin-time. [draft-13-compat] */
+    specVersion: SpecVersion;
     // Minimal issuer-metadata echo so `complete` can pick the right
     // credential_definition without a second metadata fetch.
     credentialConfigurations: Record<string, unknown>;
@@ -199,7 +202,7 @@ export const beginAuthCodeFlow = async (
 
     const requestedIds = filterConfigurationIds(options.offer, options.configurationIds);
 
-    const issuerMetadata = await fetchCredentialIssuerMetadata(
+    const { metadata: issuerMetadata, specVersion } = await fetchCredentialIssuerMetadata(
         options.offer.credential_issuer,
         fetchImpl
     );
@@ -249,6 +252,7 @@ export const beginAuthCodeFlow = async (
         state,
         pkceVerifier: pkce.verifier,
         pkceMethod: pkce.method,
+        specVersion,
         credentialConfigurations:
             (issuerMetadata.credential_configurations_supported as Record<string, unknown>) ?? {},
     };
@@ -487,6 +491,12 @@ export const fetchCredentialsForToken = async (
                 credentialConfigurationId: descriptor.credentialIdentifier
                     ? undefined
                     : configurationId,
+                specVersion: args.flowHandle.specVersion,
+                // [draft-13-compat] consumed by requestCredential only when specVersion === 'draft-13'
+                format: descriptor.credentialIdentifier ? undefined : format,
+                configDef: descriptor.credentialIdentifier
+                    ? undefined
+                    : (configDef as Record<string, unknown> | undefined),
                 fetchImpl: args.fetchImpl,
             };
 

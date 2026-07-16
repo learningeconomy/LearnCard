@@ -1,12 +1,22 @@
-import { AuthorizationServerMetadata, CredentialIssuerMetadata } from './types';
+import { AuthorizationServerMetadata, CredentialIssuerMetadata, SpecVersion } from './types';
 import { VciError } from './errors';
 
 const ISSUER_WELL_KNOWN = '/.well-known/openid-credential-issuer';
 const OAUTH_AS_WELL_KNOWN = '/.well-known/oauth-authorization-server';
 const OIDC_WELL_KNOWN = '/.well-known/openid-configuration';
 
+export interface CredentialIssuerMetadataResult {
+    metadata: CredentialIssuerMetadata;
+    /** Which spec revision the issuer serves, inferred from discovery. */
+    specVersion: SpecVersion;
+}
+
 /**
  * Fetch and validate the Credential Issuer Metadata for a given issuer URL.
+ *
+ * Returns the metadata plus the detected {@link SpecVersion}: `final` when the
+ * 1.0 insert-style well-known URL served it, `draft-13` when we had to fall
+ * back to the legacy append-style URL.
  *
  * @throws {VciError} with code `metadata_fetch_failed` for network / HTTP
  *   errors, `metadata_invalid` for shape issues, and `metadata_issuer_mismatch`
@@ -15,7 +25,7 @@ const OIDC_WELL_KNOWN = '/.well-known/openid-configuration';
 export const fetchCredentialIssuerMetadata = async (
     credentialIssuer: string,
     fetchImpl: typeof fetch = globalThis.fetch
-): Promise<CredentialIssuerMetadata> => {
+): Promise<CredentialIssuerMetadataResult> => {
     if (typeof fetchImpl !== 'function') {
         throw new VciError(
             'metadata_fetch_failed',
@@ -23,9 +33,7 @@ export const fetchCredentialIssuerMetadata = async (
         );
     }
 
-    const url = insertWellKnown(credentialIssuer, ISSUER_WELL_KNOWN);
-
-    const json = await getJson(url, fetchImpl, 'metadata_fetch_failed');
+    const { json, specVersion } = await fetchIssuerMetadataDocument(credentialIssuer, fetchImpl);
 
     if (!isObject(json)) {
         throw new VciError('metadata_invalid', 'Issuer metadata response was not a JSON object', {
@@ -53,7 +61,40 @@ export const fetchCredentialIssuerMetadata = async (
         );
     }
 
-    return json as CredentialIssuerMetadata;
+    return { metadata: json as CredentialIssuerMetadata, specVersion };
+};
+
+/**
+ * Fetch the raw issuer metadata document, detecting the spec revision from
+ * which well-known URL served it. Tries the 1.0 insert-style URL first.
+ */
+const fetchIssuerMetadataDocument = async (
+    credentialIssuer: string,
+    fetchImpl: typeof fetch
+): Promise<{ json: unknown; specVersion: SpecVersion }> => {
+    const insertUrl = insertWellKnown(credentialIssuer, ISSUER_WELL_KNOWN);
+
+    try {
+        return {
+            json: await getJson(insertUrl, fetchImpl, 'metadata_fetch_failed'),
+            specVersion: 'final',
+        };
+    } catch (insertError) {
+        // [draft-13-compat] Draft 13 §11.2.2 appended the well-known string to
+        // the END of the identifier instead of inserting it after the host.
+        // Retry the legacy shape when it differs (i.e. the issuer identifier
+        // has a path), so path-bearing Draft 13 issuers still resolve.
+        const appendUrl = appendWellKnown(credentialIssuer, ISSUER_WELL_KNOWN);
+        const insertFailed =
+            insertError instanceof VciError && insertError.code === 'metadata_fetch_failed';
+
+        if (appendUrl === insertUrl || !insertFailed) throw insertError;
+
+        return {
+            json: await getJson(appendUrl, fetchImpl, 'metadata_fetch_failed'),
+            specVersion: 'draft-13',
+        };
+    }
 };
 
 /**

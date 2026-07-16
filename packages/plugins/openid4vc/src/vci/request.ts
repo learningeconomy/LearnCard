@@ -1,4 +1,5 @@
-import { CredentialResponseBody, OAuthErrorBody } from './types';
+import { CredentialResponseBody, OAuthErrorBody, SpecVersion } from './types';
+import { buildDraft13CredentialRequestBody } from './draft13-compat';
 import { VciError } from './errors';
 
 /**
@@ -39,6 +40,15 @@ export const requestCredential = async (args: {
     credentialConfigurationId?: string;
     /** Proof-of-possession JWT built by {@link buildProofJwt}. */
     proofJwt: string;
+    /**
+     * Issuer spec revision from metadata discovery. Defaults to `final` (1.0);
+     * `draft-13` switches to the legacy request body. [draft-13-compat]
+     */
+    specVersion?: SpecVersion;
+    /** [draft-13-compat] Draft 13 `format`; ignored when specVersion is `final`. */
+    format?: string;
+    /** [draft-13-compat] Issuer-metadata config entry (for `credential_definition` / `vct`); ignored on `final`. */
+    configDef?: Record<string, unknown>;
     fetchImpl?: typeof fetch;
 }): Promise<CredentialResponseBody> => {
     const {
@@ -48,6 +58,9 @@ export const requestCredential = async (args: {
         credentialIdentifier,
         credentialConfigurationId,
         proofJwt,
+        specVersion = 'final',
+        format,
+        configDef,
     } = args;
     const fetchImpl = args.fetchImpl ?? globalThis.fetch;
 
@@ -71,15 +84,20 @@ export const requestCredential = async (args: {
         );
     }
 
-    const body: Record<string, unknown> = {
-        proofs: { jwt: [proofJwt] },
-    };
-
-    if (hasCredentialIdentifier) {
-        body.credential_identifier = credentialIdentifier;
-    } else {
-        body.credential_configuration_id = credentialConfigurationId;
-    }
+    const body =
+        specVersion === 'draft-13' // [draft-13-compat]
+            ? buildDraft13CredentialRequestBody({
+                  credentialIdentifier,
+                  credentialConfigurationId,
+                  format,
+                  configDef,
+                  proofJwt,
+              })
+            : buildFinalCredentialRequestBody({
+                  credentialIdentifier,
+                  credentialConfigurationId,
+                  proofJwt,
+              });
 
     let response: Response;
 
@@ -136,4 +154,26 @@ export const requestCredential = async (args: {
     }
 
     return payload as CredentialResponseBody;
+};
+
+/**
+ * Build the OID4VCI 1.0 §8.2 Credential Request body: a `proofs` array plus
+ * exactly one of `credential_identifier` / `credential_configuration_id`.
+ */
+const buildFinalCredentialRequestBody = (args: {
+    credentialIdentifier?: string;
+    credentialConfigurationId?: string;
+    proofJwt: string;
+}): Record<string, unknown> => {
+    const body: Record<string, unknown> = {
+        proofs: { jwt: [args.proofJwt] },
+    };
+
+    if (typeof args.credentialIdentifier === 'string' && args.credentialIdentifier.length > 0) {
+        body.credential_identifier = args.credentialIdentifier;
+    } else {
+        body.credential_configuration_id = args.credentialConfigurationId;
+    }
+
+    return body;
 };

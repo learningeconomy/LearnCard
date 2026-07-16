@@ -38,6 +38,57 @@ describe('requestCredential', () => {
         expect(body.proof).toBeUndefined();
     });
 
+    it('[draft-13-compat] sends the Draft 13 body (format + credential_definition + singular proof) when specVersion is draft-13', async () => {
+        const fetchMock = jest.fn().mockResolvedValue(mockResponse({ credential: 'eyJ.vc.jwt' }));
+
+        await requestCredential({
+            credentialEndpoint: 'https://issuer.example.com/credential',
+            accessToken: 'token-abc',
+            credentialConfigurationId: 'UniversityDegree_jwt_vc_json',
+            proofJwt: 'eyJ.proof.sig',
+            specVersion: 'draft-13',
+            format: 'jwt_vc_json',
+            configDef: {
+                format: 'jwt_vc_json',
+                credential_definition: { type: ['VerifiableCredential', 'UniversityDegree'] },
+            },
+            fetchImpl: fetchMock as unknown as typeof fetch,
+        });
+
+        const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+        expect(body.format).toBe('jwt_vc_json');
+        expect(body.credential_definition).toEqual({
+            type: ['VerifiableCredential', 'UniversityDegree'],
+        });
+        expect(body.proof).toEqual({ proof_type: 'jwt', jwt: 'eyJ.proof.sig' });
+        // Draft 13 body must NOT carry the 1.0 fields.
+        expect(body.proofs).toBeUndefined();
+        expect(body.credential_configuration_id).toBeUndefined();
+    });
+
+    it('[draft-13-compat] echoes `vct` (not credential_definition) for an SD-JWT VC config', async () => {
+        const fetchMock = jest
+            .fn()
+            .mockResolvedValue(mockResponse({ credential: 'eyJ.sdjwt~disc~' }));
+
+        await requestCredential({
+            credentialEndpoint: 'https://issuer.example.com/credential',
+            accessToken: 'token-abc',
+            credentialConfigurationId: 'BankId_vc+sd-jwt',
+            proofJwt: 'eyJ.proof.sig',
+            specVersion: 'draft-13',
+            format: 'vc+sd-jwt',
+            configDef: { format: 'vc+sd-jwt', vct: 'https://issuer.example.com/BankId' },
+            fetchImpl: fetchMock as unknown as typeof fetch,
+        });
+
+        const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+        expect(body.format).toBe('vc+sd-jwt');
+        expect(body.vct).toBe('https://issuer.example.com/BankId');
+        expect(body.credential_definition).toBeUndefined();
+        expect(body.proof).toEqual({ proof_type: 'jwt', jwt: 'eyJ.proof.sig' });
+    });
+
     it('sends credential_identifier (and NOT credential_configuration_id) when caller supplies one from authorization_details', async () => {
         const fetchMock = jest.fn().mockResolvedValue(mockResponse({ credential: 'eyJ.vc.jwt' }));
 

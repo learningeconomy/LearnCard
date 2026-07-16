@@ -7,10 +7,18 @@
  */
 
 /**
+ * Which OID4VCI revision an issuer speaks, detected during metadata
+ * discovery. `final` is the ratified 1.0 spec (the plugin's target);
+ * `draft-13` is the earlier draft some issuers still serve. Used to pick
+ * the Credential Request wire shape. [draft-13-compat]
+ */
+export type SpecVersion = 'final' | 'draft-13';
+
+/**
  * Minimal Credential Issuer Metadata shape.
  *
- * Per Draft 13 §11.2, issuers publish this at
- * `${credential_issuer}/.well-known/openid-credential-issuer`.
+ * Per OID4VCI 1.0 §12.2, issuers publish this at the well-known endpoint
+ * derived from the Credential Issuer Identifier.
  */
 export interface CredentialIssuerMetadata {
     /** MUST match the `credential_issuer` from the offer. */
