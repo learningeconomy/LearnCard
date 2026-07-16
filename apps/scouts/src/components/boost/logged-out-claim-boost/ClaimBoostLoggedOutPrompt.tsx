@@ -23,7 +23,7 @@ import PhoneForm from '../../../pages/login/forms/PhoneForm';
 import LoginFooter from '../../../pages/login/LoginFooter';
 import SocialLogins from '../../../components/social-logins/SocialLogins';
 import useFirebase from '../../../hooks/useFirebase';
-import { VC } from 'packages/learn-card-types/dist';
+import { VC } from '@learncard/types';
 
 const getBoostHeadline = (boost?: VC): string => {
     const boostCategory = getDefaultCategoryForCredential(boost as any);
