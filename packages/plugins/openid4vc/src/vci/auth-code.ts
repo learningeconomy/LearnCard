@@ -31,12 +31,13 @@ import {
 } from './metadata';
 import { generatePkcePair, PkcePair } from './pkce';
 import { fetchNonceFromEndpoint } from './nonce';
-import { buildProofJwt } from './proof';
+import { buildDiVpProof, buildProofJwt, selectKeyProofType } from './proof';
 import { requestCredential } from './request';
 import {
     AcceptedCredentialResult,
     AuthorizationServerMetadata,
     CredentialIssuerMetadata,
+    DiVpProofSigner,
     OAuthErrorBody,
     ProofJwtSigner,
     SpecVersion,
@@ -137,6 +138,8 @@ export interface CompleteAuthCodeFlowOptions {
      */
     signer: ProofJwtSigner;
 
+    diVpSigner?: DiVpProofSigner;
+
     fetchImpl?: typeof fetch;
 }
 
@@ -151,6 +154,7 @@ export interface FetchCredentialsForTokenOptions {
     flowHandle: AuthCodeFlowHandle;
     tokenResponse: TokenResponse;
     signer: ProofJwtSigner;
+    diVpSigner?: DiVpProofSigner;
     initialNonce: {
         c_nonce: string | undefined;
         c_nonce_expires_in: number | undefined;
@@ -162,6 +166,7 @@ export interface RequestCredentialsFromAuthCodeTokenOptions {
     flowHandle: AuthCodeFlowHandle;
     tokenResponse: TokenResponse;
     signer: ProofJwtSigner;
+    diVpSigner?: DiVpProofSigner;
     fetchImpl?: typeof fetch;
 }
 
@@ -280,6 +285,7 @@ export const completeAuthCodeFlow = async (
         flowHandle: options.flowHandle,
         tokenResponse,
         signer: options.signer,
+        diVpSigner: options.diVpSigner,
         fetchImpl: options.fetchImpl,
     });
 };
@@ -321,6 +327,7 @@ export const requestCredentialsFromAuthCodeToken = async (
         flowHandle: options.flowHandle,
         tokenResponse: options.tokenResponse,
         signer: options.signer,
+        diVpSigner: options.diVpSigner,
         initialNonce,
         fetchImpl,
     });
@@ -475,6 +482,18 @@ export const fetchCredentialsForToken = async (
     for (const configurationId of args.flowHandle.configurationIds) {
         const configDef = args.flowHandle.credentialConfigurations[configurationId];
         const format = inferFormat(configDef);
+        const proofSelection =
+            args.flowHandle.specVersion === 'draft-13' // [draft-13-compat] draft 13 only defines the jwt proof type
+                ? ({ proofType: 'jwt' } as const)
+                : selectKeyProofType(configDef as Record<string, unknown> | undefined);
+
+        if (proofSelection.proofType === 'di_vp' && !args.diVpSigner) {
+            throw new VciError(
+                'proof_signing_failed',
+                `Configuration "${configurationId}" requires a di_vp key proof but no di_vp signer is available`
+            );
+        }
+
         const issuedIdentifiers = identifiersByConfigId.get(configurationId) ?? [];
 
         const descriptors =
@@ -500,13 +519,28 @@ export const fetchCredentialsForToken = async (
                 fetchImpl: args.fetchImpl,
             };
 
-            const buildCurrentProofJwt = async (): Promise<string> => {
-                return buildProofJwt({
-                    signer: args.signer,
-                    audience: args.flowHandle.issuer,
-                    nonce: latestCNonce,
-                    clientId: args.flowHandle.clientId,
-                });
+            const buildCurrentProof = async (): Promise<
+                { proofJwt: string } | { proofDiVp: Record<string, unknown> }
+            > => {
+                if (proofSelection.proofType === 'di_vp') {
+                    return {
+                        proofDiVp: await buildDiVpProof({
+                            signer: args.diVpSigner!,
+                            audience: args.flowHandle.issuer,
+                            nonce: latestCNonce,
+                            cryptosuite: proofSelection.cryptosuite,
+                        }),
+                    };
+                }
+
+                return {
+                    proofJwt: await buildProofJwt({
+                        signer: args.signer,
+                        audience: args.flowHandle.issuer,
+                        nonce: latestCNonce,
+                        clientId: args.flowHandle.clientId,
+                    }),
+                };
             };
 
             let response;
@@ -514,7 +548,7 @@ export const fetchCredentialsForToken = async (
             try {
                 response = await requestCredential({
                     ...requestArgs,
-                    proofJwt: await buildCurrentProofJwt(),
+                    ...(await buildCurrentProof()),
                 });
             } catch (error) {
                 const body = error instanceof VciError ? error.body : undefined;
@@ -550,7 +584,7 @@ export const fetchCredentialsForToken = async (
 
                 response = await requestCredential({
                     ...requestArgs,
-                    proofJwt: await buildCurrentProofJwt(),
+                    ...(await buildCurrentProof()),
                 });
             }
 

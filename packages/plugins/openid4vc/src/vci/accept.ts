@@ -6,12 +6,13 @@ import {
 } from './metadata';
 import { exchangePreAuthorizedCode } from './token';
 import { fetchNonceFromEndpoint } from './nonce';
-import { buildProofJwt } from './proof';
+import { buildDiVpProof, buildProofJwt, selectKeyProofType } from './proof';
 import { requestCredential } from './request';
 import {
     AcceptCredentialOfferOptions,
     AcceptedCredentialResult,
     CredentialIssuerMetadata,
+    DiVpProofSigner,
     ProofJwtSigner,
     SpecVersion,
     TokenResponse,
@@ -28,6 +29,7 @@ export interface RequestCredentialsFromPreAuthTokenOptions {
     offer: CredentialOffer;
     tokenResponse: TokenResponse;
     signer: ProofJwtSigner;
+    diVpSigner?: DiVpProofSigner;
     options?: AcceptCredentialOfferOptions;
     fetchImpl?: typeof fetch;
 }
@@ -50,6 +52,7 @@ export interface RequestCredentialsFromPreAuthTokenOptions {
 export const acceptCredentialOffer = async (args: {
     offer: CredentialOffer;
     signer: ProofJwtSigner;
+    diVpSigner?: DiVpProofSigner;
     options?: AcceptCredentialOfferOptions;
     fetchImpl?: typeof fetch;
 }): Promise<AcceptedCredentialResult> => {
@@ -75,6 +78,7 @@ export const acceptCredentialOffer = async (args: {
         offer: args.offer,
         tokenResponse,
         signer: args.signer,
+        diVpSigner: args.diVpSigner,
         options,
         fetchImpl,
         issuerMetadata,
@@ -109,7 +113,7 @@ export const exchangePreAuthCodeForToken = async (
 export const requestCredentialsFromPreAuthToken = async (
     args: RequestCredentialsFromPreAuthTokenOptions
 ): Promise<AcceptedCredentialResult> => {
-    const { offer, signer, tokenResponse } = args;
+    const { offer, signer, diVpSigner, tokenResponse } = args;
     const options = args.options ?? {};
     const fetchImpl = args.fetchImpl ?? globalThis.fetch;
     const { requestedIds } = validatePreAuthOffer(offer, options);
@@ -122,6 +126,7 @@ export const requestCredentialsFromPreAuthToken = async (
         offer,
         tokenResponse,
         signer,
+        diVpSigner,
         options,
         fetchImpl,
         issuerMetadata,
@@ -134,6 +139,7 @@ const requestCredentialsFromPreAuthTokenCore = async (args: {
     offer: CredentialOffer;
     tokenResponse: TokenResponse;
     signer: ProofJwtSigner;
+    diVpSigner?: DiVpProofSigner;
     options: AcceptCredentialOfferOptions;
     fetchImpl: typeof fetch;
     issuerMetadata: CredentialIssuerMetadata;
@@ -143,6 +149,7 @@ const requestCredentialsFromPreAuthTokenCore = async (args: {
     const {
         offer,
         signer,
+        diVpSigner,
         tokenResponse,
         options,
         fetchImpl,
@@ -168,6 +175,18 @@ const requestCredentialsFromPreAuthTokenCore = async (args: {
     for (const configurationId of requestedIds) {
         const configDef = getConfigurationDefinition(issuerMetadata, configurationId);
         const format = inferFormatFromDefinition(configDef);
+        const proofSelection =
+            specVersion === 'draft-13' // [draft-13-compat] draft 13 only defines the jwt proof type
+                ? ({ proofType: 'jwt' } as const)
+                : selectKeyProofType(configDef);
+
+        if (proofSelection.proofType === 'di_vp' && !diVpSigner) {
+            throw new VciError(
+                'proof_signing_failed',
+                `Configuration "${configurationId}" requires a di_vp key proof but no di_vp signer is available`
+            );
+        }
+
         const issuedIdentifiers = identifiersByConfigId.get(configurationId) ?? [];
 
         // If the issuer provided credential_identifiers, request each one;
@@ -193,13 +212,28 @@ const requestCredentialsFromPreAuthTokenCore = async (args: {
                 fetchImpl,
             };
 
-            const buildCurrentProofJwt = async (): Promise<string> => {
-                return buildProofJwt({
-                    signer,
-                    audience: offer.credential_issuer,
-                    nonce: latestCNonce,
-                    clientId: options.clientId,
-                });
+            const buildCurrentProof = async (): Promise<
+                { proofJwt: string } | { proofDiVp: Record<string, unknown> }
+            > => {
+                if (proofSelection.proofType === 'di_vp') {
+                    return {
+                        proofDiVp: await buildDiVpProof({
+                            signer: diVpSigner!,
+                            audience: offer.credential_issuer,
+                            nonce: latestCNonce,
+                            cryptosuite: proofSelection.cryptosuite,
+                        }),
+                    };
+                }
+
+                return {
+                    proofJwt: await buildProofJwt({
+                        signer,
+                        audience: offer.credential_issuer,
+                        nonce: latestCNonce,
+                        clientId: options.clientId,
+                    }),
+                };
             };
 
             let response;
@@ -207,7 +241,7 @@ const requestCredentialsFromPreAuthTokenCore = async (args: {
             try {
                 response = await requestCredential({
                     ...requestArgs,
-                    proofJwt: await buildCurrentProofJwt(),
+                    ...(await buildCurrentProof()),
                 });
             } catch (error) {
                 const body = error instanceof VciError ? error.body : undefined;
@@ -237,7 +271,7 @@ const requestCredentialsFromPreAuthTokenCore = async (args: {
 
                 response = await requestCredential({
                     ...requestArgs,
-                    proofJwt: await buildCurrentProofJwt(),
+                    ...(await buildCurrentProof()),
                 });
             }
 

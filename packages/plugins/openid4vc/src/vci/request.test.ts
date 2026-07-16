@@ -195,3 +195,66 @@ describe('requestCredential', () => {
         ).rejects.toMatchObject({ code: 'credential_response_invalid' });
     });
 });
+
+describe('requestCredential di_vp proofs', () => {
+    const mockOk = () =>
+        ({
+            ok: true,
+            status: 200,
+            json: async () => ({ credential: 'vc' }),
+        } as unknown as Response);
+
+    it('sends proofs.di_vp when a di_vp proof is supplied', async () => {
+        const fetchMock = jest.fn().mockResolvedValue(mockOk());
+        const diVp = { type: ['VerifiablePresentation'], proof: { type: 'DataIntegrityProof' } };
+
+        await requestCredential({
+            credentialEndpoint: 'https://issuer.example.com/credential',
+            accessToken: 'token-abc',
+            credentialConfigurationId: 'OpenBadgeCredential',
+            proofDiVp: diVp,
+            fetchImpl: fetchMock as unknown as typeof fetch,
+        });
+
+        const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+        expect(body.proofs).toEqual({ di_vp: [diVp] });
+        expect(body.credential_configuration_id).toBe('OpenBadgeCredential');
+    });
+
+    it('rejects when both proofJwt and proofDiVp are supplied', async () => {
+        await expect(
+            requestCredential({
+                credentialEndpoint: 'https://issuer.example.com/credential',
+                accessToken: 'token-abc',
+                credentialConfigurationId: 'OpenBadgeCredential',
+                proofJwt: 'eyJ.proof.sig',
+                proofDiVp: {},
+                fetchImpl: jest.fn() as unknown as typeof fetch,
+            })
+        ).rejects.toThrow(/exactly one of/);
+    });
+
+    it('rejects when neither proof is supplied', async () => {
+        await expect(
+            requestCredential({
+                credentialEndpoint: 'https://issuer.example.com/credential',
+                accessToken: 'token-abc',
+                credentialConfigurationId: 'OpenBadgeCredential',
+                fetchImpl: jest.fn() as unknown as typeof fetch,
+            })
+        ).rejects.toThrow(/exactly one of/);
+    });
+
+    it('[draft-13-compat] rejects di_vp proofs on draft-13 issuers', async () => {
+        await expect(
+            requestCredential({
+                credentialEndpoint: 'https://issuer.example.com/credential',
+                accessToken: 'token-abc',
+                credentialConfigurationId: 'OpenBadgeCredential',
+                proofDiVp: {},
+                specVersion: 'draft-13',
+                fetchImpl: jest.fn() as unknown as typeof fetch,
+            })
+        ).rejects.toThrow(/only support the `jwt` proof type/);
+    });
+});

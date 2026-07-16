@@ -38,8 +38,16 @@ export const requestCredential = async (args: {
      * `credentialIdentifier` is supplied. MUST NOT be sent alongside one.
      */
     credentialConfigurationId?: string;
-    /** Proof-of-possession JWT built by {@link buildProofJwt}. */
-    proofJwt: string;
+    /**
+     * Proof-of-possession JWT built by {@link buildProofJwt}. Exactly one
+     * of `proofJwt` / `proofDiVp` MUST be supplied.
+     */
+    proofJwt?: string;
+    /**
+     * `di_vp` key proof (a Data-Integrity-signed W3C VP) built by
+     * {@link buildDiVpProof}. Final-spec only — draft-13 issuers get `jwt`.
+     */
+    proofDiVp?: Record<string, unknown>;
     /**
      * Issuer spec revision from metadata discovery. Defaults to `final` (1.0);
      * `draft-13` switches to the legacy request body. [draft-13-compat]
@@ -58,6 +66,7 @@ export const requestCredential = async (args: {
         credentialIdentifier,
         credentialConfigurationId,
         proofJwt,
+        proofDiVp,
         specVersion = 'final',
         format,
         configDef,
@@ -84,6 +93,23 @@ export const requestCredential = async (args: {
         );
     }
 
+    const hasProofJwt = typeof proofJwt === 'string' && proofJwt.length > 0;
+    const hasProofDiVp = proofDiVp !== undefined && proofDiVp !== null;
+
+    if (hasProofJwt === hasProofDiVp) {
+        throw new VciError(
+            'credential_request_failed',
+            'requestCredential requires exactly one of `proofJwt` / `proofDiVp`'
+        );
+    }
+
+    if (specVersion === 'draft-13' && !hasProofJwt) {
+        throw new VciError(
+            'credential_request_failed',
+            'Draft 13 credential requests only support the `jwt` proof type'
+        );
+    }
+
     const body =
         specVersion === 'draft-13' // [draft-13-compat]
             ? buildDraft13CredentialRequestBody({
@@ -91,12 +117,13 @@ export const requestCredential = async (args: {
                   credentialConfigurationId,
                   format,
                   configDef,
-                  proofJwt,
+                  proofJwt: proofJwt!,
               })
             : buildFinalCredentialRequestBody({
                   credentialIdentifier,
                   credentialConfigurationId,
                   proofJwt,
+                  proofDiVp,
               });
 
     let response: Response;
@@ -157,16 +184,18 @@ export const requestCredential = async (args: {
 };
 
 /**
- * Build the OID4VCI 1.0 §8.2 Credential Request body: a `proofs` array plus
- * exactly one of `credential_identifier` / `credential_configuration_id`.
+ * Build the OID4VCI 1.0 §8.2 Credential Request body: a `proofs` object
+ * (single proof type key) plus exactly one of `credential_identifier` /
+ * `credential_configuration_id`.
  */
 const buildFinalCredentialRequestBody = (args: {
     credentialIdentifier?: string;
     credentialConfigurationId?: string;
-    proofJwt: string;
+    proofJwt?: string;
+    proofDiVp?: Record<string, unknown>;
 }): Record<string, unknown> => {
     const body: Record<string, unknown> = {
-        proofs: { jwt: [args.proofJwt] },
+        proofs: args.proofDiVp ? { di_vp: [args.proofDiVp] } : { jwt: [args.proofJwt] },
     };
 
     if (typeof args.credentialIdentifier === 'string' && args.credentialIdentifier.length > 0) {

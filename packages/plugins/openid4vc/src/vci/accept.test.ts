@@ -358,3 +358,80 @@ describe('acceptCredentialOffer', () => {
         ).rejects.toMatchObject({ code: 'unsupported_format' });
     });
 });
+
+describe('acceptCredentialOffer di_vp key proofs', () => {
+    const diVpIssuerMetadata = {
+        credential_issuer: 'https://issuer.example.com',
+        credential_endpoint: 'https://issuer.example.com/credential',
+        credential_configurations_supported: {
+            UniversityDegree_jwt_vc_json: {
+                format: 'jwt_vc_json',
+                proof_types_supported: {
+                    di_vp: { proof_signing_alg_values_supported: ['eddsa-rdfc-2022'] },
+                },
+            },
+        },
+    };
+
+    const diVpSigner = {
+        holder: 'did:key:z6Mkholder',
+        signPresentation: jest.fn(async (vp: Record<string, unknown>, opts: unknown) => ({
+            ...vp,
+            proof: {
+                type: 'DataIntegrityProof',
+                proofPurpose: 'authentication',
+                ...(opts as Record<string, unknown>),
+            },
+        })),
+    };
+
+    beforeEach(() => {
+        diVpSigner.signPresentation.mockClear();
+        (fakeSigner.sign as jest.Mock).mockClear();
+    });
+
+    it('sends a di_vp key proof when the issuer only advertises di_vp', async () => {
+        const fetchMock = makeFetch([
+            mockResponse(diVpIssuerMetadata),
+            mockResponse(asMetadata),
+            mockResponse(tokenResponse),
+            mockResponse(credentialResponse),
+        ]);
+
+        const result = await acceptCredentialOffer({
+            offer: baseOffer,
+            signer: fakeSigner,
+            diVpSigner,
+            fetchImpl: fetchMock,
+        });
+
+        expect(result.credentials).toHaveLength(1);
+        expect(fakeSigner.sign).not.toHaveBeenCalled();
+        expect(diVpSigner.signPresentation).toHaveBeenCalledWith(
+            expect.objectContaining({ holder: 'did:key:z6Mkholder' }),
+            {
+                domain: 'https://issuer.example.com',
+                challenge: 'nonce-xyz',
+                cryptosuite: 'eddsa-rdfc-2022',
+            }
+        );
+
+        const credentialCall = (fetchMock as unknown as jest.Mock).mock.calls[3];
+        const body = JSON.parse(credentialCall[1].body);
+        expect(body.proofs.di_vp).toHaveLength(1);
+        expect(body.proofs.di_vp[0].proof.type).toBe('DataIntegrityProof');
+        expect(body.proofs.jwt).toBeUndefined();
+    });
+
+    it('fails fast when di_vp is required but no di_vp signer is available', async () => {
+        const fetchMock = makeFetch([
+            mockResponse(diVpIssuerMetadata),
+            mockResponse(asMetadata),
+            mockResponse(tokenResponse),
+        ]);
+
+        await expect(
+            acceptCredentialOffer({ offer: baseOffer, signer: fakeSigner, fetchImpl: fetchMock })
+        ).rejects.toMatchObject({ code: 'proof_signing_failed' });
+    });
+});

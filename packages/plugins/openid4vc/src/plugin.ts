@@ -17,7 +17,7 @@ import {
 import { createJoseEd25519Signer } from './vci/proof';
 import { importJWK, SignJWT, type JWK } from 'jose';
 import { storeAcceptedCredentials, StoreAcceptedCredentialsOptions } from './vci/store';
-import { AcceptCredentialOfferOptions } from './vci/types';
+import { AcceptCredentialOfferOptions, DiVpProofSigner } from './vci/types';
 import {
     parseAuthorizationRequestUri,
     resolveAuthorizationRequest as resolveAuthorizationRequestFn,
@@ -111,6 +111,7 @@ export const getOpenID4VCPlugin = (
                 return acceptCredentialOfferFn({
                     offer,
                     signer,
+                    diVpSigner: buildDiVpSigner(learnCard),
                     options,
                     fetchImpl,
                 });
@@ -137,6 +138,7 @@ export const getOpenID4VCPlugin = (
                     offer,
                     tokenResponse: requestOptions.tokenResponse,
                     signer,
+                    diVpSigner: buildDiVpSigner(learnCard),
                     options: requestOptions.options,
                     fetchImpl,
                 });
@@ -153,6 +155,7 @@ export const getOpenID4VCPlugin = (
                     return acceptCredentialOfferFn({
                         offer,
                         signer,
+                        diVpSigner: buildDiVpSigner(learnCard),
                         options,
                         fetchImpl,
                     });
@@ -193,6 +196,7 @@ export const getOpenID4VCPlugin = (
                     code: completionOptions.code,
                     state: completionOptions.state,
                     signer,
+                    diVpSigner: buildDiVpSigner(learnCard),
                     fetchImpl,
                 });
             },
@@ -213,6 +217,7 @@ export const getOpenID4VCPlugin = (
                     flowHandle: requestOptions.flowHandle,
                     tokenResponse: requestOptions.tokenResponse,
                     signer,
+                    diVpSigner: buildDiVpSigner(learnCard),
                     fetchImpl,
                 });
             },
@@ -668,6 +673,29 @@ const ensureVpJwtSigner = async (
  * contract expected by the VP sign layer. OID4VP replay-binding
  * (domain/challenge) is passed through verbatim.
  */
+/**
+ * Wrap `learnCard.invoke.issuePresentation` into the {@link DiVpProofSigner}
+ * contract for OID4VCI `di_vp` key proofs: a Data Integrity proof with
+ * `proofPurpose: authentication`, bound to the issuer identifier (domain)
+ * and c_nonce (challenge).
+ */
+const buildDiVpSigner = (learnCard: OpenID4VCDependentLearnCard): DiVpProofSigner => ({
+    holder: learnCard.id.did(),
+    signPresentation: async (unsignedVp, { domain, challenge, cryptosuite }) =>
+        learnCard.invoke.issuePresentation(unsignedVp as import('@learncard/types').UnsignedVP, {
+            proofPurpose: 'authentication',
+            domain,
+            challenge,
+            ...(cryptosuite
+                ? {
+                      type: 'DataIntegrityProof',
+                      cryptosuite:
+                          cryptosuite as import('@learncard/didkit-plugin').DataIntegrityCryptosuite,
+                  }
+                : {}),
+        }) as Promise<Record<string, unknown>>,
+});
+
 const buildLdpVpSigner = (learnCard: OpenID4VCDependentLearnCard): LdpVpSigner => ({
     sign: async (unsignedVp, { domain, challenge }) =>
         learnCard.invoke.issuePresentation(unsignedVp, { domain, challenge }),
