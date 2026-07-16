@@ -297,7 +297,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                 </div>
             )}
 
-            <section className="relative pt-[36px] pb-[16px]">
+            <section className="relative pt-[32px] pb-[16px]">
                 <IonRow className="w-full">
                     <IonRow className="flex w-full flex-col items-center justify-center mb-2">
                         <div className="flex w-full items-center justify-center">
@@ -349,7 +349,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                     </IonCol>
                 </IonRow>
 
-                <div className="flex flex-col items-center justify-center w-full px-6 mt-4">
+                <div className="flex flex-col items-center justify-center w-full px-6 mt-2">
                     {/* profile setup */}
                     <IonRow className="flex flex-col items-center justify-center w-full">
                         {lcNetworkProfile && lcNetworkProfile?.profileId && (
@@ -461,7 +461,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                         </IonRow>
                     )}
 
-                    <IonRow className="w-full flex items-center justify-center mt-8">
+                    <IonRow className="w-full flex items-center justify-center mt-4">
                         <button
                             onClick={handleClick}
                             type="button"
@@ -472,7 +472,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                     </IonRow>
                 </div>
 
-                <IonRow className="flex items-center justify-center mt-4 w-full">
+                <IonRow className="flex items-center justify-center mt-3 w-full">
                     <IonCol className="flex flex-col items-center justify-center text-center">
                         <p className="text-center text-sm font-normal px-16 text-grayscale-600">
                             You own your own data.
