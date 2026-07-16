@@ -591,3 +591,87 @@ describe('verifyAndDecodeRequestObject — client_id_scheme=x509_hash (§5.9.3)'
         ).rejects.not.toMatchObject({ code: 'unsupported_client_id_scheme' });
     });
 });
+
+describe('verifyAndDecodeRequestObject — unsigned JSON Request Objects', () => {
+    const responseUri = 'https://verifier.example.com/exchanges/abc/response';
+    const requestUri = 'https://verifier.example.com/exchanges/abc/request';
+
+    const unsignedRequest = {
+        response_type: 'vp_token',
+        response_mode: 'direct_post',
+        client_id: `redirect_uri:${responseUri}`,
+        response_uri: responseUri,
+        nonce: 'nonce-123',
+        state: 'state-456',
+        dcql_query: {
+            credentials: [
+                {
+                    id: 'credential',
+                    format: 'ldp_vc',
+                    meta: {
+                        type_values: [['https://www.w3.org/2018/credentials#VerifiableCredential']],
+                    },
+                },
+            ],
+        },
+    };
+
+    it('accepts a plain-JSON request object when the client-id prefix is redirect_uri', async () => {
+        const fetchImpl = mockFetch({ [requestUri]: { body: unsignedRequest } });
+
+        const request = await verifyAndDecodeRequestObject({ requestUri, fetchImpl });
+
+        expect(request.client_id).toBe(`redirect_uri:${responseUri}`);
+        expect(request.client_id_scheme).toBe('redirect_uri');
+        expect(request.nonce).toBe('nonce-123');
+        expect(request.response_uri).toBe(responseUri);
+        expect(request.dcql_query).toBeDefined();
+    });
+
+    it('cross-checks the outer URL client_id against the unsigned request', async () => {
+        const fetchImpl = mockFetch({ [requestUri]: { body: unsignedRequest } });
+
+        await expect(
+            verifyAndDecodeRequestObject({
+                requestUri,
+                urlClientId: 'redirect_uri:https://attacker.example.com/response',
+                fetchImpl,
+            })
+        ).rejects.toMatchObject({ code: 'client_id_mismatch' });
+    });
+
+    it('rejects unsigned request objects for prefixes that require signatures', async () => {
+        const fetchImpl = mockFetch({
+            [requestUri]: {
+                body: { ...unsignedRequest, client_id: 'did:web:verifier.example.com' },
+            },
+        });
+
+        await expect(verifyAndDecodeRequestObject({ requestUri, fetchImpl })).rejects.toMatchObject(
+            {
+                code: 'invalid_request_object',
+                message: expect.stringMatching(/requires a signed JWS/),
+            }
+        );
+    });
+
+    it('rejects bodies that are neither JWS nor JSON', async () => {
+        const fetchImpl = mockFetch({ [requestUri]: { body: 'not-a-jws-or-json' } });
+
+        await expect(verifyAndDecodeRequestObject({ requestUri, fetchImpl })).rejects.toMatchObject(
+            {
+                code: 'invalid_request_object',
+                message: expect.stringMatching(/neither a compact JWS nor a JSON/),
+            }
+        );
+    });
+
+    it('rejects unsigned request objects missing a nonce', async () => {
+        const { nonce: _omitted, ...withoutNonce } = unsignedRequest;
+        const fetchImpl = mockFetch({ [requestUri]: { body: withoutNonce } });
+
+        await expect(verifyAndDecodeRequestObject({ requestUri, fetchImpl })).rejects.toMatchObject(
+            { code: 'invalid_request_object' }
+        );
+    });
+});

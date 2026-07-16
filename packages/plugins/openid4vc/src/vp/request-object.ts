@@ -196,7 +196,13 @@ export interface VerifyRequestObjectOptions {
 export const verifyAndDecodeRequestObject = async (
     opts: VerifyRequestObjectOptions
 ): Promise<AuthorizationRequest> => {
-    const jws = await loadJws(opts);
+    const payload = await loadRequestPayload(opts);
+
+    if (payload.kind === 'unsigned') {
+        return handleUnsignedRequestObject(payload.claims, opts);
+    }
+
+    const jws = payload.jws;
 
     const { header, claims } = decodeHeaderAndClaims(jws);
 
@@ -339,7 +345,53 @@ const finalizeRequest = (
     return req;
 };
 
-const loadJws = async (opts: VerifyRequestObjectOptions): Promise<string> => {
+type RequestObjectPayload =
+    | { kind: 'jws'; jws: string }
+    | { kind: 'unsigned'; claims: Record<string, unknown> };
+
+/**
+ * §5.10: unsigned Request Objects are only permitted for the
+ * `redirect_uri` client-id prefix — that prefix carries no key material,
+ * so a signature is impossible by construction and the request's
+ * integrity rests on the TLS channel to the verifier-controlled
+ * `request_uri` host. Any other prefix demands a verified JWS; accepting
+ * unsigned claims there would let an attacker impersonate the verifier.
+ */
+const handleUnsignedRequestObject = (
+    claims: Record<string, unknown>,
+    opts: VerifyRequestObjectOptions
+): AuthorizationRequest => {
+    const clientId = asString(claims.client_id);
+    if (!clientId) {
+        throw new RequestObjectError(
+            'invalid_request_object',
+            'Unsigned Request Object is missing client_id'
+        );
+    }
+
+    const legacyScheme = asString(claims.client_id_scheme) ?? opts.urlClientIdScheme;
+    const { prefix } = deriveClientIdPrefix(clientId, legacyScheme);
+
+    if (opts.urlClientId && opts.urlClientId !== clientId) {
+        throw new RequestObjectError(
+            'client_id_mismatch',
+            `Outer URL client_id (${opts.urlClientId}) does not match Request Object client_id (${clientId})`
+        );
+    }
+
+    if (prefix !== 'redirect_uri' && !opts.unsafeSkipRequestObjectSignatureVerification) {
+        throw new RequestObjectError(
+            'invalid_request_object',
+            `request_uri returned an unsigned Request Object, but client-id prefix=${prefix} requires a signed JWS (only redirect_uri permits unsigned requests)`
+        );
+    }
+
+    return finalizeRequest(buildRequestFromClaims(clientId, prefix, claims), opts);
+};
+
+const loadRequestPayload = async (
+    opts: VerifyRequestObjectOptions
+): Promise<RequestObjectPayload> => {
     if (opts.inlineJwt) {
         if (!looksLikeJws(opts.inlineJwt)) {
             throw new RequestObjectError(
@@ -347,7 +399,7 @@ const loadJws = async (opts: VerifyRequestObjectOptions): Promise<string> => {
                 'Inline `request` parameter is not a compact JWS'
             );
         }
-        return opts.inlineJwt;
+        return { kind: 'jws', jws: opts.inlineJwt };
     }
 
     if (!opts.requestUri) {
@@ -400,14 +452,26 @@ const loadJws = async (opts: VerifyRequestObjectOptions): Promise<string> => {
 
     const body = (await response.text()).trim();
 
-    if (!looksLikeJws(body)) {
-        throw new RequestObjectError(
-            'invalid_request_object',
-            'request_uri response is not a compact JWS'
-        );
-    }
+    if (looksLikeJws(body)) return { kind: 'jws', jws: body };
 
-    return body;
+    const unsignedClaims = tryParseJsonObject(body);
+    if (unsignedClaims) return { kind: 'unsigned', claims: unsignedClaims };
+
+    throw new RequestObjectError(
+        'invalid_request_object',
+        'request_uri response is neither a compact JWS nor a JSON Request Object'
+    );
+};
+
+const tryParseJsonObject = (body: string): Record<string, unknown> | undefined => {
+    if (!body.startsWith('{')) return undefined;
+
+    try {
+        const parsed = JSON.parse(body);
+        return isObject(parsed) ? parsed : undefined;
+    } catch {
+        return undefined;
+    }
 };
 
 /* -------------------------------------------------------------------------- */

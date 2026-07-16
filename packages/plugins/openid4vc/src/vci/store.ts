@@ -256,7 +256,7 @@ const defaultCategoryFor = (
     // claims is treated as an ID rather than an achievement.
     if (types.some(matchesAny(ID_TYPES))) return 'ID';
     if (types.some(matchesAny(ACHIEVEMENT_TYPES))) return 'Achievement';
-    if (types.some(matchesAny(WORK_TYPES))) return 'Work';
+    if (types.some(matchesAny(WORK_TYPES))) return 'Work History';
     if (types.some(matchesAny(LEARNING_HISTORY_TYPES))) return 'Learning History';
 
     return 'Achievement';

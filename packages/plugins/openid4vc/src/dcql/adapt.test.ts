@@ -120,7 +120,11 @@ describe('adaptCredentialForDcql — ldp_vc', () => {
 
         expect(out).toEqual({
             credential_format: 'ldp_vc',
-            type: ['VerifiableCredential', 'UniversityDegree'],
+            type: [
+                'VerifiableCredential',
+                'UniversityDegree',
+                'https://www.w3.org/2018/credentials#VerifiableCredential',
+            ],
             claims: expect.objectContaining({
                 credentialSubject: expect.objectContaining({ name: 'Alice' }),
             }),
@@ -291,5 +295,46 @@ describe('adaptCredentialsForDcql — batch', () => {
         expect(result[0]?.original.credential).toBe(jwt);
         expect(result[1]?.adapted.credential_format).toBe('ldp_vc');
         expect(result[1]?.original.credential).toBe(ldVc);
+    });
+});
+
+describe('adaptCredentialForDcql — expanded type IRIs (ldp_vc)', () => {
+    const ldVc = {
+        '@context': [
+            'https://www.w3.org/2018/credentials/v1',
+            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json',
+        ],
+        type: ['VerifiableCredential', 'OpenBadgeCredential'],
+        credentialSubject: { id: 'did:jwk:holder' },
+        proof: { type: 'DataIntegrityProof', proofValue: 'z...' },
+    };
+
+    it('augments compact terms with well-known expanded IRIs', async () => {
+        const out = await adaptCredentialForDcql({ credential: ldVc });
+
+        expect(out?.credential_format).toBe('ldp_vc');
+        expect((out as { type: string[] }).type).toEqual([
+            'VerifiableCredential',
+            'OpenBadgeCredential',
+            'https://www.w3.org/2018/credentials#VerifiableCredential',
+            'https://purl.imsglobal.org/spec/vc/ob/vocab.html#OpenBadgeCredential',
+        ]);
+    });
+
+    it('does not duplicate IRIs already present on the credential', async () => {
+        const out = await adaptCredentialForDcql({
+            credential: {
+                ...ldVc,
+                type: [
+                    'VerifiableCredential',
+                    'https://www.w3.org/2018/credentials#VerifiableCredential',
+                ],
+            },
+        });
+
+        expect((out as { type: string[] }).type).toEqual([
+            'VerifiableCredential',
+            'https://www.w3.org/2018/credentials#VerifiableCredential',
+        ]);
     });
 });

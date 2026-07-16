@@ -326,7 +326,7 @@ export const getOpenID4VCPlugin = (
                         nonce: request.nonce,
                         holder,
                     },
-                    { ldpVpSigner: buildLdpVpSigner(learnCard) }
+                    { ldpVpSigner: buildLdpVpSigner(learnCard, request) }
                 );
             },
 
@@ -429,7 +429,7 @@ export const getOpenID4VCPlugin = (
                     const needsSdJwt = dcqlBuilt.some(b => b.kind === 'sd-jwt-vc');
                     const dcqlHelpers = {
                         ...(needsJwt ? { jwtSigner: await ensureSharedJwtSigner() } : {}),
-                        ...(needsLdp ? { ldpVpSigner: buildLdpVpSigner(learnCard) } : {}),
+                        ...(needsLdp ? { ldpVpSigner: buildLdpVpSigner(learnCard, request) } : {}),
                         ...(needsSdJwt ? { sdJwtPresenter: buildSdJwtPresenter(learnCard) } : {}),
                     };
 
@@ -480,7 +480,7 @@ export const getOpenID4VCPlugin = (
                     prepared.vpFormat === 'jwt_vp_json'
                         ? { jwtSigner: await ensureSharedJwtSigner() }
                         : prepared.vpFormat === 'ldp_vp'
-                        ? { ldpVpSigner: buildLdpVpSigner(learnCard) }
+                        ? { ldpVpSigner: buildLdpVpSigner(learnCard, request) }
                         : { sdJwtPresenter: buildSdJwtPresenter(learnCard) };
 
                 const signed = await signPresentationFn(
@@ -696,10 +696,51 @@ const buildDiVpSigner = (learnCard: OpenID4VCDependentLearnCard): DiVpProofSigne
         }) as Promise<Record<string, unknown>>,
 });
 
-const buildLdpVpSigner = (learnCard: OpenID4VCDependentLearnCard): LdpVpSigner => ({
+const buildLdpVpSigner = (
+    learnCard: OpenID4VCDependentLearnCard,
+    request?: AuthorizationRequest
+): LdpVpSigner => ({
     sign: async (unsignedVp, { domain, challenge }) =>
-        learnCard.invoke.issuePresentation(unsignedVp, { domain, challenge }),
+        learnCard.invoke.issuePresentation(unsignedVp, {
+            domain,
+            challenge,
+            ...ldpVpProofOptionsFromClientMetadata(request?.client_metadata),
+        }),
 });
+
+/**
+ * Derive Data Integrity proof options for `ldp_vp` signing from the
+ * verifier's `client_metadata.vp_formats_supported` (OID4VP 1.0 §5.1 /
+ * B.1.2). Verifiers that only accept `DataIntegrityProof` (e.g. the
+ * VC-API `data-integrity-cryptosuites` profile) reject the historical
+ * `Ed25519Signature2020` default, so when the metadata restricts
+ * `ldp_vp` proofs to Data Integrity we sign with a mutually supported
+ * cryptosuite and `proofPurpose: authentication`. Verifiers without
+ * that restriction keep the previous default behavior.
+ */
+const ldpVpProofOptionsFromClientMetadata = (
+    clientMetadata: Record<string, unknown> | undefined
+): Record<string, unknown> => {
+    const formats =
+        (clientMetadata?.vp_formats_supported as Record<string, unknown> | undefined) ??
+        (clientMetadata?.vp_formats as Record<string, unknown> | undefined);
+
+    const ldpVp = formats?.ldp_vp as Record<string, unknown> | undefined;
+    if (!ldpVp) return {};
+
+    const proofTypes = ldpVp.proof_type_values ?? ldpVp.proof_type;
+    if (!Array.isArray(proofTypes) || !proofTypes.includes('DataIntegrityProof')) return {};
+
+    const advertised = Array.isArray(ldpVp.cryptosuite_values) ? ldpVp.cryptosuite_values : [];
+    const supported = ['eddsa-rdfc-2022', 'eddsa-2022', 'json-eddsa-2022'];
+    const cryptosuite =
+        supported.find(suite => advertised.includes(suite)) ??
+        (advertised.length === 0 ? 'eddsa-rdfc-2022' : undefined);
+
+    if (!cryptosuite) return {};
+
+    return { type: 'DataIntegrityProof', cryptosuite, proofPurpose: 'authentication' };
+};
 
 /**
  * Build an SD-JWT-VC parser callback for the matcher layer. Wired to
