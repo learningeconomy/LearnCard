@@ -8167,7 +8167,7 @@
                 "pick": "Un diplôme d’associé de deux ans."
             },
             "BachelorDegree": {
-                "label": "Licence",
+                "label": "Baccalauréat",
                 "pick": "Un diplôme de premier cycle de quatre ans."
             },
             "MasterDegree": {
@@ -8322,6 +8322,34 @@
                 "label": "ID de membre",
                 "ph": "p. ex. M-00482"
             }
+        },
+        "gate": {
+            "pickType": "Choisissez un type pour commencer",
+            "fixJson": "Corrigez le JSON pour continuer",
+            "addName": "Ajoutez un nom pour continuer",
+            "addRecip": "Ajoutez un destinataire pour continuer"
+        },
+        "toastIssued": "Justificatif émis.",
+        "saveFailed": "Le justificatif a été émis, mais il n'a pas pu être enregistré dans votre compte.",
+        "discard": {
+            "title": "Supprimer ce lien ?",
+            "keep": "Conserver",
+            "discard": "Supprimer"
+        },
+        "preview": {
+            "willLook": "Voici à quoi ressemblera votre justificatif.",
+            "pickToStart": "Choisissez un type pour commencer à concevoir votre justificatif."
+        },
+        "err": {
+            "network": "Problème de connexion. Vérifiez votre connexion Internet et réessayez.",
+            "timeout": "Cela a pris plus de temps que prévu. Veuillez réessayer.",
+            "session": "Votre session a peut-être expiré. Reconnectez-vous et réessayez.",
+            "server": "Nos serveurs ont rencontré un problème. Veuillez réessayer dans un instant.",
+            "linkFail": "Nous n'avons pas pu créer de lien de partage. Veuillez réessayer.",
+            "setupFail": "Nous n'avons pas pu configurer l'émission pour votre compte. Veuillez réessayer.",
+            "recipient": "Nous n'avons pas pu joindre l'un de vos destinataires. Vérifiez les noms ou les adresses e-mail et réessayez.",
+            "invalid": "Certaines informations de ce justificatif ne sont pas encore valides. Veuillez les vérifier et réessayer.",
+            "generic": "Une erreur s'est produite lors de l'émission de votre justificatif. Veuillez réessayer."
         }
     }
 }
