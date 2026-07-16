@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 
 import * as m from '../../../paraglide/messages.js';
+import { mDynamic } from '../../../i18n/mDynamic';
 
 import type { AppPermission } from '../types';
 import { PERMISSION_OPTIONS } from '../types';
@@ -53,7 +54,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({
     const getPermissionLabel = (permission: AppPermission | null): string => {
         if (!permission) return m['common.unknown']();
         const opt = PERMISSION_OPTIONS.find(p => p.value === permission);
-        return opt ? (m as any)[opt.labelKey]() : permission;
+        return opt ? mDynamic(opt.labelKey) : permission;
     };
 
     const unauthorizedCount = events.filter(e => !e.authorized && e.permission).length;

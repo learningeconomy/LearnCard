@@ -24,6 +24,7 @@ import { useDeveloperPortal } from '../useDeveloperPortal';
 import { USE_CASES, UseCaseId } from './types';
 import { useBetaAccess } from '../components/BetaGate';
 import * as m from '../../../paraglide/messages.js';
+import { mDynamic } from '../../../i18n/mDynamic';
 import { openExternalLink } from 'src/helpers/externalLinkHelpers';
 
 const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
@@ -85,11 +86,11 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
                     </span>
                 </div>
 
-                <h3 className="text-lg font-semibold text-gray-500 mb-1">{(m as any)[titleKey]()}</h3>
+                <h3 className="text-lg font-semibold text-gray-500 mb-1">{mDynamic(titleKey)}</h3>
 
-                <p className="text-sm text-gray-400 mb-3">{(m as any)[subtitleKey]()}</p>
+                <p className="text-sm text-gray-400 mb-3">{mDynamic(subtitleKey)}</p>
 
-                <p className="text-sm text-gray-400 flex-1">{(m as any)[descriptionKey]()}</p>
+                <p className="text-sm text-gray-400 flex-1">{mDynamic(descriptionKey)}</p>
             </div>
         );
     }
@@ -109,11 +110,11 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
                     </span>
                 </div>
 
-                <h3 className="text-lg font-semibold text-gray-500 mb-1">{(m as any)[titleKey]()}</h3>
+                <h3 className="text-lg font-semibold text-gray-500 mb-1">{mDynamic(titleKey)}</h3>
 
-                <p className="text-sm text-gray-400 mb-3">{(m as any)[subtitleKey]()}</p>
+                <p className="text-sm text-gray-400 mb-3">{mDynamic(subtitleKey)}</p>
 
-                <p className="text-sm text-gray-400 flex-1">{(m as any)[descriptionKey]()}</p>
+                <p className="text-sm text-gray-400 flex-1">{mDynamic(descriptionKey)}</p>
 
                 <div className="flex items-center gap-1.5 mt-4 text-gray-400 font-medium text-sm">
                     <Lock className="w-4 h-4" />
@@ -144,11 +145,11 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
                 )}
             </div>
 
-            <h3 className="text-lg font-semibold text-gray-800 mb-1">{(m as any)[titleKey]()}</h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-1">{mDynamic(titleKey)}</h3>
 
-            <p className="text-sm text-gray-500 mb-3">{(m as any)[subtitleKey]()}</p>
+            <p className="text-sm text-gray-500 mb-3">{mDynamic(subtitleKey)}</p>
 
-            <p className="text-sm text-gray-600 flex-1">{(m as any)[descriptionKey]()}</p>
+            <p className="text-sm text-gray-600 flex-1">{mDynamic(descriptionKey)}</p>
 
             <div className="flex items-center gap-1.5 mt-4 text-cyan-600 font-medium text-sm group-hover:gap-2.5 transition-all">
                 <span>
@@ -331,10 +332,10 @@ const IntegrationHub: React.FC = () => {
 
                                             <div>
                                                 <h3 className="font-medium text-gray-800">
-                                                    {(m as any)[useCase.titleKey]()}
+                                                    {mDynamic(useCase.titleKey)}
                                                 </h3>
                                                 <p className="text-sm text-gray-500">
-                                                    {(m as any)[useCase.subtitleKey]()}
+                                                    {mDynamic(useCase.subtitleKey)}
                                                 </p>
                                             </div>
                                         </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import * as m from '../../../paraglide/messages.js';
+import { mDynamic } from '../../../i18n/mDynamic';
 import { CheckCircle2, FileText, Settings, Link2, ExternalLink, Smartphone } from 'lucide-react';
 
 import type { AppStoreListingCreate } from '../types';
@@ -13,7 +14,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
     const getCategoryLabel = (value?: string) => {
         const cat = CATEGORY_OPTIONS.find(c => c.value === value);
         return cat
-            ? (m as any)[cat.labelKey]()
+            ? mDynamic(cat.labelKey)
             : value || m['developerPortal.components.reviewStep.notSpecified']();
     };
 
@@ -77,7 +78,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
 
                             {launchTypeInfo && (
                                 <span className="px-2 py-0.5 bg-cyan-100 rounded-full text-xs font-medium text-cyan-700">
-                                    {(m as any)[launchTypeInfo.labelKey]()}
+                                    {mDynamic(launchTypeInfo.labelKey)}
                                 </span>
                             )}
                             {data.age_rating && (
@@ -149,7 +150,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
 
                             <span className="text-sm font-medium text-gray-600">
                                 {launchTypeInfo
-                                    ? (m as any)[launchTypeInfo.labelKey]()
+                                    ? mDynamic(launchTypeInfo.labelKey)
                                     : m['developerPortal.components.reviewStep.notSelected']()}
                             </span>
                         </div>

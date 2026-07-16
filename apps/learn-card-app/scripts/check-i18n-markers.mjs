@@ -57,7 +57,8 @@ const loadCatalog = locale =>
     flatten(JSON.parse(readFileSync(join(LOCALES_DIR, locale, 'translation.json'), 'utf8')));
 
 /** Multiset of `{{var}}` names in a string (ignores whitespace inside braces). */
-const varNames = s => (s.match(/\{\{\s*([^}]*?)\s*\}\}/g) || []).map(m => m.replace(/[{}]/g, '').trim());
+const varNames = s =>
+    (s.match(/\{\{\s*([^}]*?)\s*\}\}/g) || []).map(m => m.replace(/[{}]/g, '').trim());
 /** Multiset of `<0>` / `</0>` markup markers. */
 const markup = s => (s.match(/<\/?\d+>/g) || []).slice().sort();
 
@@ -94,7 +95,12 @@ for (const locale of locales) {
         const enMk = markup(enVal).join(' ');
         const locMk = markup(locVal).join(' ');
         if (enMk !== locMk) {
-            errors.push({ locale, key, kind: 'markup drift', detail: `en[${enMk}] ${locale}[${locMk}]` });
+            errors.push({
+                locale,
+                key,
+                kind: 'markup drift',
+                detail: `en[${enMk}] ${locale}[${locMk}]`,
+            });
         }
         // 3. DROPPED var (en had it, locale lost all copies) — advisory.
         for (const name of enVars.keys()) {
@@ -109,12 +115,16 @@ let failed = false;
 
 if (errors.length) {
     failed = true;
-    console.error(`\n✗ i18n markers: ${errors.length} renamed-var / markup error(s) (always bugs):`);
+    console.error(
+        `\n✗ i18n markers: ${errors.length} renamed-var / markup error(s) (always bugs):`
+    );
     for (const e of errors) console.error(`    ${e.locale}  ${e.key}  —  ${e.kind}: ${e.detail}`);
 }
 
 if (dropped.length) {
-    console.error(`\n${strict ? '✗' : '⚠'} i18n markers: ${dropped.length} dropped-variable warning(s):`);
+    console.error(
+        `\n${strict ? '✗' : '⚠'} i18n markers: ${dropped.length} dropped-variable warning(s):`
+    );
     for (const d of dropped) console.error(`    ${d.locale}  ${d.key}  —  lost ${d.detail}`);
     console.error(
         `  If a drop is correct for the language, add "${dropped[0].locale}:${dropped[0].key}" ` +

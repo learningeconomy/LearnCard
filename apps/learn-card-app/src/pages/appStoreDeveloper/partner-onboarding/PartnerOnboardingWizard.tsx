@@ -6,6 +6,7 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('partner-onboarding-wizard');
 
 import * as m from '../../../paraglide/messages.js';
+import { mDynamic } from '../../../i18n/mDynamic';
 
 import { AppStoreHeader } from '../components/AppStoreHeader';
 import { HeaderIntegrationSelector } from '../components/HeaderIntegrationSelector';
@@ -108,7 +109,7 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ steps, currentStep, onSte
                             </div>
 
                             <span className="text-sm hidden sm:inline">
-                                {(m as any)[STEP_TITLE_KEYS[index]]()}
+                                {mDynamic(STEP_TITLE_KEYS[index])}
                             </span>
 
                             <Icon className="w-4 h-4 sm:hidden" />
@@ -553,7 +554,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                                     'developerPortal.onboarding.steps.step7',
                                     'developerPortal.onboarding.steps.step8',
                                 ];
-                                return (m as any)[keys[idx] + '.title']();
+                                return mDynamic(keys[idx] + '.title');
                             })()}
                         </h1>
 
@@ -570,7 +571,7 @@ const PartnerOnboardingWizard: React.FC = () => {
                                     'developerPortal.onboarding.steps.step7',
                                     'developerPortal.onboarding.steps.step8',
                                 ];
-                                return (m as any)[keys[idx] + '.description']();
+                                return mDynamic(keys[idx] + '.description');
                             })()}
                         </p>
                     </div>
@@ -972,10 +973,10 @@ export const PartnerOnboardingWizardContent: React.FC<{
             {/* Step Header */}
             <div className="mb-6">
                 <h1 className="text-2xl font-bold text-gray-900 mb-1">
-                    {(m as any)[currentStepInfo.titleKey]()}
+                    {mDynamic(currentStepInfo.titleKey)}
                 </h1>
 
-                <p className="text-gray-600">{(m as any)[currentStepInfo.descriptionKey]()}</p>
+                <p className="text-gray-600">{mDynamic(currentStepInfo.descriptionKey)}</p>
             </div>
 
             {/* Step Content */}

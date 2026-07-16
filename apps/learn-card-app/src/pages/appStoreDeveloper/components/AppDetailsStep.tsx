@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Info, Plus, X, Video, Shield, Smartphone, Palette, Users } from 'lucide-react';
 
 import * as m from '../../../paraglide/messages.js';
+import { mDynamic } from '../../../i18n/mDynamic';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import type { AppStoreListingCreate, AgeRating } from '../types';
@@ -230,7 +231,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
 
                     {visibleCategoryOptions.map(cat => (
                         <option key={cat.value} value={cat.value}>
-                            {(m as any)[cat.labelKey]()}
+                            {mDynamic(cat.labelKey)}
                         </option>
                     ))}
                 </select>

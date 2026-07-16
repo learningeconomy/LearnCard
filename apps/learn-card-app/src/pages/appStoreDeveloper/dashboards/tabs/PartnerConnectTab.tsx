@@ -1,4 +1,5 @@
 import * as m from '../../../../paraglide/messages.js';
+import { mDynamic } from '../../../../i18n/mDynamic';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('partner-connect-tab');
 /**
@@ -568,7 +569,7 @@ export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
     const getCategoryName = (id: string): string => {
         const key = `developerPortal.dashboards.tabs.partnerConnect.categories.${id}`;
         try {
-            return (m as any)[key]();
+            return mDynamic(key);
         } catch {
             return id;
         }

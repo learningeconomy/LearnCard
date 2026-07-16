@@ -1,4 +1,5 @@
 import * as m from '../../../../paraglide/messages.js';
+import { mDynamic } from '../../../../i18n/mDynamic';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('app-config-tab');
 /**
@@ -230,7 +231,7 @@ export const AppConfigTab: React.FC<AppConfigTabProps> = ({
     const getPermissionName = (id: string): string => {
         const key = `developerPortal.dashboards.tabs.appConfig.permissions.items.${id}.name`;
         try {
-            return (m as any)[key]();
+            return mDynamic(key);
         } catch {
             return id;
         }
@@ -240,7 +241,7 @@ export const AppConfigTab: React.FC<AppConfigTabProps> = ({
     const getPermissionDesc = (id: string): string => {
         const key = `developerPortal.dashboards.tabs.appConfig.permissions.items.${id}.desc`;
         try {
-            return (m as any)[key]();
+            return mDynamic(key);
         } catch {
             return id;
         }

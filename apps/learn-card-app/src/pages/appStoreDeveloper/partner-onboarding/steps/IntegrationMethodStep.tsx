@@ -1,4 +1,4 @@
-import * as m from '../../../../paraglide/messages.js';
+import { mDynamic } from '../../../../i18n/mDynamic';
 
 import React, { useState } from 'react';
 import {
@@ -114,7 +114,7 @@ export const IntegrationMethodStep: React.FC<IntegrationMethodStepProps> = ({
 }) => {
     const [selected, setSelected] = useState<IntegrationMethod | null>(selectedMethod);
     const mKey = (suffix: string) => `developerPortal.onboarding.integrationMethod.${suffix}`;
-    const t = (suffix: string) => (m as any)[mKey(suffix)]();
+    const t = (suffix: string) => mDynamic(mKey(suffix));
 
     return (
         <div className="space-y-6">

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import * as m from '../../../paraglide/messages.js';
+import { mDynamic } from '../../../i18n/mDynamic';
 import {
     AlertCircle,
     Code,
@@ -127,11 +128,11 @@ export const LaunchConfigStep: React.FC<LaunchConfigStepProps> = ({
 
                                         <div>
                                             <span className="text-sm font-medium text-gray-700">
-                                                {(m as any)[permission.labelKey]()}
+                                                {mDynamic(permission.labelKey)}
                                             </span>
 
                                             <p className="text-xs text-gray-500 mt-0.5">
-                                                {(m as any)[permission.descriptionKey]()}
+                                                {mDynamic(permission.descriptionKey)}
                                             </p>
                                         </div>
                                     </label>

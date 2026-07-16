@@ -1,5 +1,6 @@
 import React from 'react';
 import * as m from '../../../paraglide/messages.js';
+import { mDynamic } from '../../../i18n/mDynamic';
 import {
     Layout,
     ExternalLink,
@@ -95,7 +96,7 @@ export const LaunchTypeStep: React.FC<LaunchTypeStepProps> = ({ data, onChange }
                                                     : 'text-gray-700'
                                             }`}
                                         >
-                                            {(m as any)[info.labelKey]()}
+                                            {mDynamic(info.labelKey)}
                                         </h3>
 
                                         {isComingSoon && (
@@ -113,7 +114,7 @@ export const LaunchTypeStep: React.FC<LaunchTypeStepProps> = ({ data, onChange }
                                             isComingSoon ? 'text-gray-400' : 'text-gray-500'
                                         }`}
                                     >
-                                        {(m as any)[info.descriptionKey]()}
+                                        {mDynamic(info.descriptionKey)}
                                     </p>
                                 </div>
 

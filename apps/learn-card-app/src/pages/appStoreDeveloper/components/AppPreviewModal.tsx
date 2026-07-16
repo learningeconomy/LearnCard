@@ -5,6 +5,7 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('app-preview-modal');
 
 import * as m from '../../../paraglide/messages.js';
+import { mDynamic } from '../../../i18n/mDynamic';
 import { TransP } from '../../../i18n/TransP';
 
 import { useModal, appendQueryParams } from 'learn-card-base';
@@ -200,7 +201,9 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                         {listing.display_name}
                                     </h2>
                                     <span className="text-xs text-gray-500">
-                                        {m['developerPortal.components.appPreviewModal.previewMode']()}
+                                        {m[
+                                            'developerPortal.components.appPreviewModal.previewMode'
+                                        ]()}
                                     </span>
                                 </div>
                             </div>
@@ -241,9 +244,9 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                             ]
                                         }
                                         values={{
-                                            type: (m as any)[
+                                            type: mDynamic(
                                                 LAUNCH_TYPE_INFO[listing.launch_type]?.labelKey
-                                            ](),
+                                            ),
                                         }}
                                         components={[<strong />]}
                                     />
@@ -287,8 +290,8 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                     {listing.display_name}
                                 </h2>
                                 <span className="text-xs text-gray-500">
-                                        {m['developerPortal.components.appPreviewModal.previewMode']()}
-                                    </span>
+                                    {m['developerPortal.components.appPreviewModal.previewMode']()}
+                                </span>
                             </div>
                         </div>
 

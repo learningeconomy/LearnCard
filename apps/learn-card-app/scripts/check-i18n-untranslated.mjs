@@ -154,7 +154,9 @@ for (const locale of locales) {
         console.log(`✓ ${locale}: no untranslated (English-fallback) values`);
         continue;
     }
-    console.error(`\n✗ ${locale}: ${offenders.length} untranslated value(s) (identical to English):`);
+    console.error(
+        `\n✗ ${locale}: ${offenders.length} untranslated value(s) (identical to English):`
+    );
     // Group by top-2 namespace segments so the scope is legible at a glance.
     const byNs = new Map();
     for (const o of offenders) {
