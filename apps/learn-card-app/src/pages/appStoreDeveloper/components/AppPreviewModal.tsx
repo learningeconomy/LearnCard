@@ -199,7 +199,9 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                     <h2 className="text-lg font-semibold text-gray-700">
                                         {listing.display_name}
                                     </h2>
-                                    <span className="text-xs text-gray-500"></span>
+                                    <span className="text-xs text-gray-500">
+                                        {m['developerPortal.components.appPreviewModal.previewMode']()}
+                                    </span>
                                 </div>
                             </div>
 
@@ -284,7 +286,9 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                 <h2 className="text-lg font-semibold text-gray-700">
                                     {listing.display_name}
                                 </h2>
-                                <span className="text-xs text-gray-500"></span>
+                                <span className="text-xs text-gray-500">
+                                        {m['developerPortal.components.appPreviewModal.previewMode']()}
+                                    </span>
                             </div>
                         </div>
 

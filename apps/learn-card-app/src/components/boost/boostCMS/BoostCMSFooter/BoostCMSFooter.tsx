@@ -117,7 +117,7 @@ const BoostCMSFooter: React.FC<{
                                     </>
                                 ) : (
                                     <p className="w-full line-clamp-1 font-poppins normal tracking-wide">
-                                        Issue
+                                        {m['boost.issue']()}
                                     </p>
                                 )}
                             </button>

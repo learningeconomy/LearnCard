@@ -65,7 +65,11 @@
         "loadingConfiguration": "جاري تحميل إعدادات التكوين…",
         "loadingDataTruck": "جاري تحميل شاحنة البيانات…",
         "loadingContracts": "جاري تحميل العقود...",
-        "loadingClaimsToShare": "جاري تحميل المطالبات للمشاركة…"
+        "loadingClaimsToShare": "جاري تحميل المطالبات للمشاركة…",
+        "invite": "دعوة",
+        "letsGo": "هيا بنا!",
+        "skill": "مهارة",
+        "skills": "المهارات"
     },
     "sidemenu": {
         "addTo": "إضافة إلى {{brand}}",

@@ -65,7 +65,11 @@
         "loadingConfiguration": "Cargando configuración…",
         "loadingDataTruck": "Cargando el camión de datos…",
         "loadingContracts": "Cargando contratos...",
-        "loadingClaimsToShare": "Cargando reclamaciones para compartir…"
+        "loadingClaimsToShare": "Cargando reclamaciones para compartir…",
+        "invite": "Invitar",
+        "letsGo": "¡Vamos!",
+        "skill": "Habilidad",
+        "skills": "Habilidades"
     },
     "sidemenu": {
         "addTo": "Agregar a {{brand}}",

@@ -65,7 +65,11 @@
         "loadingConfiguration": "Loading configuration settings…",
         "loadingDataTruck": "Loading the data truck…",
         "loadingContracts": "Loading Contracts...",
-        "loadingClaimsToShare": "Loading claims to share…"
+        "loadingClaimsToShare": "Loading claims to share…",
+        "invite": "Invite",
+        "letsGo": "Let's Go!",
+        "skill": "Skill",
+        "skills": "Skills"
     },
     "sidemenu": {
         "addTo": "Add to {{brand}}",

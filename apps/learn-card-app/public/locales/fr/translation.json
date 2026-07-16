@@ -65,7 +65,11 @@
         "loadingConfiguration": "Chargement des paramètres de configuration…",
         "loadingDataTruck": "Chargement du camion de données…",
         "loadingContracts": "Chargement des contrats...",
-        "loadingClaimsToShare": "Chargement des réclamations à partager…"
+        "loadingClaimsToShare": "Chargement des réclamations à partager…",
+        "invite": "Inviter",
+        "letsGo": "C'est parti !",
+        "skill": "Compétence",
+        "skills": "Compétences"
     },
     "sidemenu": {
         "addTo": "Ajouter à {{brand}}",

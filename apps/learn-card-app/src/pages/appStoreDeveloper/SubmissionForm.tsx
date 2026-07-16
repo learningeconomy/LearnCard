@@ -62,15 +62,14 @@ const SubmissionForm: React.FC = () => {
     // Get listing from route state (passed from DeveloperPortal) or fetch if not available
     const listingFromState = location.state?.listing;
 
-    const resolvedSteps = useMemo(
-        () =>
-            STEPS.map(s => ({
-                id: s.id,
-                title: m[s.titleKey](),
-                description: m[s.descriptionKey](),
-            })),
-        []
-    );
+    // Not memoized: m[...]() resolves the active locale at call time, so freezing
+    // this with useMemo([]) would leave the step labels stuck in the mount-time
+    // locale after a runtime language switch.
+    const resolvedSteps = STEPS.map(s => ({
+        id: s.id,
+        title: m[s.titleKey](),
+        description: m[s.descriptionKey](),
+    }));
 
     const { useListing, useCreateListing, useUpdateListing, useSubmitForReview } =
         useDeveloperPortal();

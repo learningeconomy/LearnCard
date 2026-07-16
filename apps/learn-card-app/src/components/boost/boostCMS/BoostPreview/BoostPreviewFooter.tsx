@@ -77,7 +77,7 @@ export const BoostPreviewFooter: React.FC<{
                         </>
                     ) : (
                         <p className="w-full line-clamp-1 font-poppins normal tracking-wide ml-8">
-                            Issue
+                            {m['boost.issue']()}
                         </p>
                     )}
                 </button>
