@@ -24,7 +24,7 @@ import { VC } from '@learncard/types';
 export enum MemberTabsEnum {
     All = 'All',
     Scouts = 'Scout',
-    Leaders = 'Leader',
+    Leaders = 'Troop Leader',
 }
 
 type TroopPageMembersBoxProps = {
