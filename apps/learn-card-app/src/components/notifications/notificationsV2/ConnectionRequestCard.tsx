@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 
 // import X from '../../../assets/images/X.svg';
 import X from 'learn-card-base/svgs/X';

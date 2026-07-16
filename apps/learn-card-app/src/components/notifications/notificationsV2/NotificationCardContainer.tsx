@@ -22,7 +22,6 @@ import { useQueryClient } from '@tanstack/react-query';
 type NotificationCardProps = {
     className?: string;
     notification: NotificationType;
-    queryOptions?: any;
 };
 
 export const NOTIFICATION_TYPES = {

@@ -8,6 +8,7 @@ import {
     getNotificationToastCopy,
     getNotificationSenderImage,
     PushNotificationToast,
+    switchedProfileStore,
 } from 'learn-card-base';
 
 import useOpenNotifications from '../notifications/useOpenNotifications';
@@ -20,6 +21,7 @@ const TOAST_DURATION_MS = 6000;
 // polls everywhere to keep the Alerts badge fresh from the same source.
 const NotificationToastListener: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
+    const switchedDid = switchedProfileStore.use.switchedDid();
     const openNotifications = useOpenNotifications();
     const { presentToast, dismissToast } = useToast();
 
@@ -50,10 +52,14 @@ const NotificationToastListener: React.FC = () => {
             notification => notification._id && !seenIds.has(notification._id)
         );
 
-        currentIds.forEach(id => seenIds.add(id));
+        // Rebuild the baseline from the current unread set each cycle so it
+        // stays bounded to what's actually unread.
+        seenIdsRef.current = new Set(currentIds);
 
         if (Capacitor.isNativePlatform()) return;
 
+        // Toast only the newest new notification per poll; any others still
+        // appear in the Alerts list and badge, so nothing is lost.
         const newest = freshNotifications[0];
         if (!newest) return;
 
@@ -74,9 +80,11 @@ const NotificationToastListener: React.FC = () => {
         );
     }, [data, presentToast, dismissToast, openNotifications]);
 
+    // Reset the baseline on logout OR profile switch — the unread query is
+    // per-DID, so a switched profile must not toast its existing backlog.
     useEffect(() => {
-        if (!isLoggedIn) seenIdsRef.current = null;
-    }, [isLoggedIn]);
+        seenIdsRef.current = null;
+    }, [isLoggedIn, switchedDid]);
 
     return null;
 };

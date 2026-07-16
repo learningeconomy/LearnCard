@@ -50,8 +50,6 @@ const NewNotificationsList: React.FC<NewNotificationsListProps> = ({
 
     useLoadingLine(isLoading || isFetching);
 
-    const queryOptions = { options, filter };
-
     const flatNotifications: NotificationType[] =
         data?.pages?.flatMap(group => group?.notifications ?? []) ?? [];
 
@@ -68,10 +66,7 @@ const NewNotificationsList: React.FC<NewNotificationsListProps> = ({
 
         return (
             <GenericErrorBoundary key={item.notification?._id}>
-                <NotificationCardContainer
-                    queryOptions={queryOptions}
-                    notification={item.notification}
-                />
+                <NotificationCardContainer notification={item.notification} />
             </GenericErrorBoundary>
         );
     });
