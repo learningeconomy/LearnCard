@@ -4505,6 +4505,34 @@
                 "label": "ID de miembro",
                 "ph": "p. ej. M-00482"
             }
+        },
+        "gate": {
+            "pickType": "Elige un tipo para empezar",
+            "fixJson": "Corrige el JSON para continuar",
+            "addName": "Añade un nombre para continuar",
+            "addRecip": "Añade un destinatario para continuar"
+        },
+        "toastIssued": "Credencial emitida.",
+        "saveFailed": "La credencial se emitió, pero no se pudo guardar en tu cuenta.",
+        "discard": {
+            "title": "¿Descartar este enlace?",
+            "keep": "Conservar",
+            "discard": "Descartar"
+        },
+        "preview": {
+            "willLook": "Así se verá tu credencial.",
+            "pickToStart": "Elige un tipo para empezar a diseñar tu credencial."
+        },
+        "err": {
+            "network": "Problema de conexión. Revisa tu conexión a internet e inténtalo de nuevo.",
+            "timeout": "Esto tardó más de lo esperado. Inténtalo de nuevo.",
+            "session": "Puede que tu sesión haya caducado. Inicia sesión de nuevo e inténtalo otra vez.",
+            "server": "Nuestros servidores tuvieron un problema. Inténtalo de nuevo en un momento.",
+            "linkFail": "No pudimos crear un enlace para compartir. Inténtalo de nuevo.",
+            "setupFail": "No pudimos configurar la emisión para tu cuenta. Inténtalo de nuevo.",
+            "recipient": "No pudimos contactar a uno de tus destinatarios. Revisa los nombres o correos e inténtalo de nuevo.",
+            "invalid": "Algunos datos de esta credencial aún no son válidos. Revísalos e inténtalo de nuevo.",
+            "generic": "Algo salió mal al emitir tu credencial. Inténtalo de nuevo."
         }
     }
 }
