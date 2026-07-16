@@ -64,6 +64,8 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
         scoutBoostUri,
         troopBoostUri,
         troopPermissionsData,
+        scoutId,
+        troopId,
     } = useCanInviteTroop({ credential, boostUri: uri });
 
     const { openEditTroopOrNetworkModal } = useEditTroopId(credential, uri);
@@ -129,6 +131,8 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
               const canInviteScout = scoutPermissionsData?.canIssue;
               const canInviteLeader =
                   troopPermissionsData?.canIssue || boostPermissionsData?.canIssue;
+              const leaderImage = troopId?.boostID?.idThumbnail;
+              const scoutImage = scoutId?.boostID?.idThumbnail;
 
               if (canInviteScout && canInviteLeader) {
                   newModal(
@@ -142,6 +146,8 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
                           onInviteScout={() => openScoutConnectModal(scoutBoostUri, 'Scout')}
                           handleCloseModal={closeModal}
                           scoutNoun={scoutNoun}
+                          leaderImage={leaderImage}
+                          scoutImage={scoutImage}
                       />,
                       { sectionClassName: '!max-w-[450px]' },
                       { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
