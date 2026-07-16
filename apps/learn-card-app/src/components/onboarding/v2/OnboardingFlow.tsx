@@ -7,6 +7,8 @@ import { auth } from '../../../firebase/firebase';
 import { updateProfile } from 'firebase/auth';
 import { Check, Loader2, Edit2, ShieldCheck, User } from 'lucide-react';
 
+import * as m from '../../../paraglide/messages.js';
+
 import {
     useModal,
     useWallet,
@@ -233,7 +235,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
         if (coordinatorState.status !== 'needs_setup') {
             if (currentUser?.privateKey) return true;
-            setError('Something went wrong. Please sign in again.');
+            setError(m['onboarding.v2.signInAgain']());
             return false;
         }
 
@@ -251,7 +253,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                 didPrepareNewKeyRef.current = true;
                 return true;
             } catch (e) {
-                setError('Something went wrong. Please try again.');
+                setError(m['onboarding.v2.tryAgain']());
                 return false;
             } finally {
                 setIsPreparingKey(false);
@@ -289,7 +291,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const handleScreen1Continue = async () => {
         setError(null);
         if (isFutureDate(dob)) {
-            setError('Date of birth cannot be in the future.');
+            setError(m['onboarding.v2.dobFuture']());
             return;
         }
         if (age !== null && age < 13) {
@@ -341,7 +343,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
         const parsedData = ProfileIDStateValidator.safeParse({ profileId });
         if (!parsedData.success) {
             setProfileIdError(
-                parsedData.error.flatten().fieldErrors.profileId?.[0] || 'Invalid User ID'
+                parsedData.error.flatten().fieldErrors.profileId?.[0] ||
+                    m['onboarding.v2.invalidUserId']()
             );
             return;
         }
@@ -480,7 +483,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
             }
         } catch (err: any) {
             log.error('createProfile::error', err);
-            setError(err?.message || 'There was an error creating your profile');
+            setError(err?.message || m['onboarding.profile.error.createFailed']());
         } finally {
             setIsCreating(false);
         }
@@ -552,11 +555,10 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                     />
                                 </div>
                                 <h1 className="text-2xl font-semibold text-grayscale-900 mb-2">
-                                    Welcome — let's set you up
+                                    {m['onboarding.v2.welcomeTitle']()}
                                 </h1>
                                 <p className="text-sm text-grayscale-600 leading-relaxed">
-                                    Just a couple quick things to personalize {brandName} and keep
-                                    you safe.
+                                    {m['onboarding.v2.welcomeSubtitle']({ brand: brandName })}
                                 </p>
                             </div>
 
@@ -571,7 +573,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
-                                        Date of Birth
+                                        {m['onboarding.profile.dateOfBirth']()}
                                     </label>
                                     <BirthdayPicker
                                         value={dob}
@@ -582,7 +584,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
                                 <div>
                                     <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
-                                        Country
+                                        {m['onboarding.v2.country']()}
                                     </label>
                                     <button
                                         className="w-full flex items-center justify-between bg-white/80 backdrop-blur-sm text-grayscale-900 rounded-2xl font-medium px-4 py-4 text-sm border border-grayscale-200/60 shadow-sm motion-safe:hover:-translate-y-0.5 active:scale-[0.98] transition-all"
@@ -607,7 +609,9 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                         }}
                                         type="button"
                                     >
-                                        {country ? COUNTRIES[country] ?? country : 'Select country'}
+                                        {country
+                                            ? COUNTRIES[country] ?? country
+                                            : m['onboarding.v2.selectCountry']()}
                                         <LocationIcon className="w-5 h-5 text-grayscale-500" />
                                     </button>
                                 </div>
@@ -615,12 +619,10 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                 {isUnder13 && (
                                     <div className="mt-4 p-4 bg-white/80 backdrop-blur-sm border border-grayscale-200/60 rounded-2xl space-y-2 animate-fade-in-up shadow-sm">
                                         <h3 className="text-sm font-semibold text-grayscale-900">
-                                            Parent or guardian required
+                                            {m['onboarding.v2.under13Title']()}
                                         </h3>
                                         <p className="text-xs text-grayscale-600 leading-relaxed">
-                                            You need to be 13 or older to set up your own account.
-                                            Tap Continue and we'll help a parent or guardian add you
-                                            to a family account.
+                                            {m['onboarding.v2.under13Desc']()}
                                         </p>
                                     </div>
                                 )}
@@ -628,12 +630,10 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                 {needsUSConsent && (
                                     <div className="mt-4 p-4 bg-white/80 backdrop-blur-sm border border-grayscale-200/60 rounded-2xl space-y-3 animate-fade-in-up shadow-sm">
                                         <h3 className="text-sm font-semibold text-grayscale-900">
-                                            Parental Notice
+                                            {m['onboarding.v2.usNoticeTitle']()}
                                         </h3>
                                         <p className="text-xs text-grayscale-600 leading-relaxed">
-                                            Because you are under 18, we need your parent or
-                                            guardian's permission to collect your information. By
-                                            continuing, you confirm you have their permission.
+                                            {m['onboarding.v2.usNoticeDesc']()}
                                         </p>
                                         <label className="flex items-start gap-3 cursor-pointer mt-2 group">
                                             <input
@@ -643,7 +643,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                 className="mt-0.5 w-4 h-4 rounded border-grayscale-300 text-emerald-600 focus:ring-emerald-500 transition-colors"
                                             />
                                             <span className="text-xs font-medium text-grayscale-700 group-hover:text-grayscale-900 transition-colors">
-                                                I have my parent/guardian's permission
+                                                {m['onboarding.v2.usConsentCheck']()}
                                             </span>
                                         </label>
                                     </div>
@@ -652,21 +652,20 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                 {needsEUConsent && (
                                     <div className="mt-4 p-4 bg-white/80 backdrop-blur-sm border border-grayscale-200/60 rounded-2xl space-y-3 animate-fade-in-up shadow-sm">
                                         <h3 className="text-sm font-semibold text-grayscale-900">
-                                            Parental Consent Required
+                                            {m['onboarding.consent.eu.heading']()}
                                         </h3>
                                         <p className="text-xs text-grayscale-600 leading-relaxed">
-                                            Because of privacy laws in your country, we need your
-                                            parent or guardian's permission to create your account.
+                                            {m['onboarding.v2.euConsentDesc']()}
                                         </p>
                                         <div>
                                             <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
-                                                Parent/Guardian Email
+                                                {m['onboarding.v2.guardianEmail']()}
                                             </label>
                                             <input
                                                 type="email"
                                                 value={guardianEmail}
                                                 onChange={e => setGuardianEmail(e.target.value)}
-                                                placeholder="guardian@example.com"
+                                                placeholder={m['onboarding.v2.guardianEmailHint']()}
                                                 className="w-full py-3 px-4 border border-grayscale-200/60 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/50 transition-all"
                                             />
                                         </div>
@@ -687,7 +686,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                 {isPreparingKey ? (
                                     <Loader2 className="w-5 h-5 animate-spin" />
                                 ) : (
-                                    'Continue'
+                                    m['onboarding.v2.continue']()
                                 )}
                             </button>
                         </div>
@@ -703,10 +702,10 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
                             <div className="text-center mb-8">
                                 <h1 className="text-2xl font-semibold text-grayscale-900 mb-2">
-                                    Make it yours
+                                    {m['onboarding.v2.makeItYours']()}
                                 </h1>
                                 <p className="text-sm text-grayscale-600">
-                                    Customize how you appear on the network.
+                                    {m['onboarding.v2.makeItYoursDesc']()}
                                 </p>
                             </div>
 
@@ -764,10 +763,10 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                         </div>
                                         <div className="text-center relative z-10 w-full">
                                             <h2 className="text-xl font-semibold text-grayscale-900 truncate px-2">
-                                                {name || 'Your Name'}
+                                                {name || m['onboarding.v2.yourName']()}
                                             </h2>
                                             <p className="text-sm text-grayscale-500 font-medium truncate px-2">
-                                                @{profileId || 'username'}
+                                                @{profileId || m['onboarding.v2.username']()}
                                             </p>
                                         </div>
                                     </div>
@@ -778,20 +777,20 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                     <div className="w-full bg-white/80 backdrop-blur-sm border border-grayscale-200/60 rounded-3xl shadow-sm p-5 space-y-4">
                                         <div>
                                             <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
-                                                Full Name
+                                                {m['onboarding.profile.fullName']()}
                                             </label>
                                             <input
                                                 type="text"
                                                 value={name}
                                                 onChange={e => setName(e.target.value)}
-                                                placeholder="Your Name"
+                                                placeholder={m['onboarding.v2.yourName']()}
                                                 className="w-full py-3 px-4 border border-grayscale-200/60 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/50 transition-all"
                                             />
                                         </div>
 
                                         <div>
                                             <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
-                                                Public Handle
+                                                {m['onboarding.v2.publicHandle']()}
                                             </label>
                                             <div
                                                 className={`flex items-center w-full border rounded-xl bg-white/50 focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-transparent transition-all ${
@@ -811,7 +810,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                         setProfileId(e.target.value);
                                                         setProfileIdError('');
                                                     }}
-                                                    placeholder="username"
+                                                    placeholder={m['onboarding.v2.username']()}
                                                     className="flex-1 py-3 px-2 text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none bg-transparent"
                                                 />
                                                 <div className="pr-4 flex items-center">
@@ -854,7 +853,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                                 <span className="w-1.5 h-1.5 rounded-full bg-grayscale-300" />
                                                             </span>
                                                         )}
-                                                        3–25 characters
+                                                        {m['onboarding.v2.charCount']()}
                                                     </div>
                                                     <div
                                                         className={`flex items-center gap-1.5 text-xs transition-colors ${
@@ -870,7 +869,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                                 <span className="w-1.5 h-1.5 rounded-full bg-grayscale-300" />
                                                             </span>
                                                         )}
-                                                        Letters, numbers, and dashes only
+                                                        {m['onboarding.v2.dashesOnly']()}
                                                     </div>
                                                     <div
                                                         className={`flex items-center gap-1.5 text-xs transition-colors ${
@@ -889,15 +888,15 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                             </span>
                                                         )}
                                                         {uniqueProfileFetching
-                                                            ? 'Checking availability…'
+                                                            ? m['onboarding.v2.checkingAvail']()
                                                             : isUniqueValid
-                                                            ? 'Available'
-                                                            : 'Already taken'}
+                                                            ? m['onboarding.v2.available']()
+                                                            : m['onboarding.v2.alreadyTaken']()}
                                                     </div>
                                                 </div>
                                             ) : (
                                                 <p className="mt-1.5 text-xs text-grayscale-500">
-                                                    Friends can find you with this.
+                                                    {m['onboarding.v2.findYouHint']()}
                                                 </p>
                                             )}
                                         </div>
@@ -906,17 +905,19 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                     <div className="w-full p-5 bg-white/80 backdrop-blur-sm border border-grayscale-200/60 rounded-3xl shadow-sm space-y-5">
                                         <div>
                                             <h3 className="text-sm font-semibold text-grayscale-900">
-                                                Your Privacy
+                                                {m['onboarding.v2.privacyTitle']()}
                                             </h3>
                                             <p className="text-xs text-grayscale-500 mt-0.5">
-                                                Set based on your age. Change anytime in Settings.
+                                                {m['onboarding.v2.privacyDesc']()}
                                             </p>
                                         </div>
 
                                         <div className="space-y-4">
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm font-medium text-grayscale-700">
-                                                    {brandName} AI
+                                                    {m['onboarding.v2.brandAi']({
+                                                        brand: brandName,
+                                                    })}
                                                 </span>
                                                 <Toggle
                                                     checked={Boolean(
@@ -938,12 +939,12 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                             </div>
                                             {privacyPreferences?.isMinor && (
                                                 <p className="text-xs text-amber-700 bg-amber-50/80 backdrop-blur-sm p-2.5 rounded-xl border border-amber-100/50">
-                                                    AI features are disabled for minors.
+                                                    {m['onboarding.v2.aiMinorNote']()}
                                                 </p>
                                             )}
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm font-medium text-grayscale-700">
-                                                    Analytics
+                                                    {m['onboarding.v2.analytics']()}
                                                 </span>
                                                 <Toggle
                                                     checked={Boolean(
@@ -964,7 +965,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm font-medium text-grayscale-700">
-                                                    Bug Reports
+                                                    {m['onboarding.v2.bugReports']()}
                                                 </span>
                                                 <Toggle
                                                     checked={Boolean(
@@ -1009,7 +1010,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                 {isCreating ? (
                                     <Loader2 className="w-5 h-5 animate-spin" />
                                 ) : (
-                                    `Create my ${brandName}`
+                                    m['onboarding.v2.createMy']({ brand: brandName })
                                 )}
                             </button>
                         </div>
@@ -1023,12 +1024,14 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
                     <div className="text-center mb-8">
                         <h1 className="text-3xl font-semibold text-grayscale-900 mb-2">
-                            {euParentalConsentRequested ? 'Almost there!' : "You're in!"}
+                            {euParentalConsentRequested
+                                ? m['onboarding.v2.almostThere']()
+                                : m['onboarding.v2.youreIn']()}
                         </h1>
                         <p className="text-base text-grayscale-600">
                             {euParentalConsentRequested
-                                ? "We've emailed your guardian to approve your account. You can start exploring now — some features unlock once they confirm."
-                                : `Your ${brandName} is ready.`}
+                                ? m['onboarding.v2.guardianEmailed']()
+                                : m['onboarding.v2.ready']({ brand: brandName })}
                         </p>
                     </div>
 
@@ -1069,7 +1072,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
                     <div className="w-full max-w-sm space-y-4 mb-8">
                         <p className="text-sm font-medium text-grayscale-700 text-center">
-                            Who are you? (Optional)
+                            {m['onboarding.v2.whoAreYou']()}
                         </p>
                         <div className="flex flex-wrap justify-center gap-2">
                             {LearnCardRoles.map(r => (
@@ -1094,7 +1097,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                             onClick={handleExplore}
                             className="w-full py-3.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-base hover:opacity-90 transition-all shadow-md active:scale-[0.98]"
                         >
-                            Explore {brandName}
+                            {m['onboarding.v2.explore']({ brand: brandName })}
                         </button>
                     </div>
                 </div>
