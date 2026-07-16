@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.16.10
+
+### Patch Changes
+
+-   [#1408](https://github.com/learningeconomy/LearnCard/pull/1408) [`c92534e3ceadbdbe4a79311f7d60dfd7cc54e015`](https://github.com/learningeconomy/LearnCard/commit/c92534e3ceadbdbe4a79311f7d60dfd7cc54e015) Thanks [@Custard7](https://github.com/Custard7)! - fix: did:web SAs
+
 ## 3.16.9
 
 ### Patch Changes

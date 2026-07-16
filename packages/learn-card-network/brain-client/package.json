@@ -1,6 +1,6 @@
 {
     "name": "@learncard/network-brain-client",
-    "version": "2.5.46",
+    "version": "2.5.47",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",
@@ -24,7 +24,9 @@
         "src"
     ],
     "scripts": {
-        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.json && shx cp ./dist/index.d.ts ./dist/index.d.cts"
+        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.json && shx cp ./dist/index.d.ts ./dist/index.d.cts",
+        "test": "vitest run",
+        "test:watch": "vitest"
     },
     "keywords": [],
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
@@ -33,7 +35,8 @@
         "@learncard/helpers": "workspace:*",
         "@learncard/types": "workspace:*",
         "dts-bundle-generator": "^6.10.0",
-        "esbuild": "^0.27.1"
+        "esbuild": "^0.27.1",
+        "vitest": "^1.4.0"
     },
     "dependencies": {
         "@learncard/network-brain-service": "workspace:*",
