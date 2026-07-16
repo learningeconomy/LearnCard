@@ -38,6 +38,10 @@ export const SCOUTS_TENANT_CONFIG: TenantConfig = {
         brainServiceApi: SCOUTPASS_NETWORK_API_URL,
         cloudService: SCOUTCLOUD_URL,
         lcaApi: SCOUTPASS_API_ENDPOINT,
+        notificationsEndpoint: SCOUTPASS_API_ENDPOINT.replace(
+            /\/trpc\/?$/,
+            '/api/notifications/send'
+        ),
     },
     auth: {
         ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth,

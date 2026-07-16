@@ -34,6 +34,7 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         cloudService: 'https://cloud.learncard.com/trpc',
         lcaApi: 'https://api.learncard.app/trpc',
         xapi: undefined,
+        notificationsEndpoint: 'https://api.learncard.app/api/notifications/send',
         aiService: 'https://api.learncloud.ai',
         corsProxyApiKey: undefined,
     },

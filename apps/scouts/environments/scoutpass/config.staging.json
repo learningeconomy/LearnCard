@@ -6,7 +6,8 @@
         "brainServiceApi": "https://staging.scoutnetwork.org/api",
         "cloudService": "https://staging.cloud.scoutnetwork.org/trpc",
         "lcaApi": "https://staging.api.scoutnetwork.org/trpc",
-        "xapi": "https://staging.cloud.scoutnetwork.org/xapi"
+        "xapi": "https://staging.cloud.scoutnetwork.org/xapi",
+        "notificationsEndpoint": "https://staging.api.scoutnetwork.org/api/notifications/send"
     },
     "auth": {
         "keyDerivation": "web3auth"
