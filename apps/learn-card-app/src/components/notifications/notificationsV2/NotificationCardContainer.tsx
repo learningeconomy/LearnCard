@@ -6,7 +6,6 @@ import {
     useMarkNotificationRead,
     useGetProfile,
     useGetCurrentLCNUser,
-    switchedProfileStore,
 } from 'learn-card-base';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import { notificationCardStyles } from './types';
@@ -51,10 +50,8 @@ const log = getLogger('notification-card-container');
 export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
     className,
     notification: _notification,
-    queryOptions,
 }) => {
     const { data, isLoading } = useGetProfile(_notification.from.profileId);
-    const switchedDid = switchedProfileStore.use.switchedDid();
 
     const notification = data ? { ..._notification, from: data, message: {} } : _notification;
 
@@ -106,83 +103,53 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
         });
     };
 
+    const syncAcceptedConnection = () => {
+        queryClient.setQueriesData({ queryKey: ['useGetUserNotifications'] }, (old: any) => {
+            if (!old?.pages) return old;
+
+            return {
+                ...old,
+                pages: old.pages.map((page: any) => ({
+                    ...page,
+                    notifications: page?.notifications?.map((n: any) =>
+                        n?._id === notification?._id
+                            ? { ...n, actionStatus: 'COMPLETED', read: true }
+                            : n
+                    ),
+                })),
+            };
+        });
+
+        queryClient.invalidateQueries({ queryKey: ['useGetUnreadUserNotifications'] });
+
+        [
+            'connections',
+            'getConnectionRequests',
+            'paginatedConnections',
+            'paginatedPendingConnections',
+            'paginatedConnectionRequests',
+        ].forEach(key => queryClient.invalidateQueries({ queryKey: [key] }));
+    };
+
     const handleConnectionRequest = async () => {
         await acceptConnectionRequest(
             { profileId: notification?.from?.profileId },
             {
-                async onSuccess(data, variables, context) {
+                async onSuccess() {
                     await updateNotification({
                         notificationId: notification?._id,
                         payload: { actionStatus: 'COMPLETED', read: true },
                     });
 
-                    //update query cache
-                    const currentQuery = queryClient.getQueryData([
-                        'useGetUserNotifications',
-                        switchedDid ?? '',
-                        queryOptions?.options,
-                        queryOptions?.filter,
-                    ]);
-
-                    if (currentQuery) {
-                        // find notification in query cache
-                        // const updatedQueryNotifications = currentQuery?.notifications?.map(
-                        //     _notification => {
-                        //         if (_notification?._id === notification?._id) {
-                        //             _notification.actionStatus = 'COMPLETED';
-                        //             return _notification;
-                        //         }
-                        //         return _notification;
-                        //     }
-                        // );
-                        // Note the below is for infiniteQuery hook, above commented out is normal....todo, handle this better.
-                        const updatedQueryNotifications = currentQuery?.pages.map(page => {
-                            return {
-                                hasMore: page?.hasMore,
-                                notifications: page?.notifications?.filter(_notification => {
-                                    if (_notification?._id === notification?._id) {
-                                        _notification.actionStatus = 'COMPLETED';
-                                        _notification.read = true;
-                                        return _notification;
-                                    }
-                                    return _notification;
-                                }),
-                            };
-                        });
-
-                        const updatedQuery = {
-                            ...currentQuery,
-                            notifications: updatedQueryNotifications,
-                        };
-
-                        // update to the new value
-                        queryClient.setQueryData(
-                            [
-                                'useGetUserNotifications',
-                                switchedDid ?? '',
-                                queryOptions?.options,
-                                queryOptions?.filter,
-                            ],
-                            updatedQuery
-                        );
-                    }
-
-                    return true;
+                    syncAcceptedConnection();
                 },
-                async onError(err, variables, context) {
+                async onError(err) {
                     log.info('///ON ERROR CONNECTION REQUEST', err);
                     if (err?.toString()?.includes('Profiles are already connected')) {
-                        log.info('//profiles already connected mutation firing');
                         await updateNotification({
                             notificationId: notification?._id,
                             payload: { actionStatus: 'COMPLETED', read: true },
                         });
-                        const currentQuery = queryClient.getQueryData([
-                            'useGetUserNotifications',
-                            switchedDid ?? '',
-                            queryOptions?.options,
-                            queryOptions?.filter,
-                        ]);
 
                         presentAlert({
                             backdropDismiss: false,
@@ -192,58 +159,14 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
                                 {
                                     text: 'Okay',
                                     role: 'confirm',
-                                    handler: async () => {
-                                        //extract to helper function....
-                                        if (currentQuery) {
-                                            // find notification in query cache
-                                            // Note the below is for infiniteQuery hook, above commented out is normal....todo, handle this better.
-                                            const updatedQueryNotifications =
-                                                currentQuery?.pages.map(page => {
-                                                    return {
-                                                        hasMore: page?.hasMore,
-                                                        notifications: page?.notifications?.filter(
-                                                            _notification => {
-                                                                if (
-                                                                    _notification?._id ===
-                                                                    notification?._id
-                                                                ) {
-                                                                    _notification.actionStatus =
-                                                                        'COMPLETED';
-                                                                    _notification.read = true;
-                                                                    return _notification;
-                                                                }
-                                                                return _notification;
-                                                            }
-                                                        ),
-                                                    };
-                                                });
-
-                                            const updatedQuery = {
-                                                ...currentQuery,
-                                                notifications: updatedQueryNotifications,
-                                            };
-
-                                            // update to the new value
-                                            queryClient.setQueryData(
-                                                [
-                                                    'useGetUserNotifications',
-                                                    switchedDid ?? '',
-                                                    queryOptions?.options,
-                                                    queryOptions?.filter,
-                                                ],
-                                                updatedQuery
-                                            );
-                                            dismissAlert();
-                                        }
+                                    handler: () => {
+                                        syncAcceptedConnection();
+                                        dismissAlert();
                                     },
                                 },
                             ],
                         });
-
-                        log.info('//profiles already connected mutation firing complete');
-                        return true;
                     }
-                    return false;
                 },
             }
         );
