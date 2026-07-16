@@ -163,8 +163,8 @@ export const ClaimBoostModal: React.FC<{
     });
 
     const { newModal: newLoaderModal, closeModal: closeLoaderModal } = useModal({
-        mobile: ModalTypes.Cancel,
-        desktop: ModalTypes.Cancel,
+        mobile: ModalTypes.FullScreen,
+        desktop: ModalTypes.FullScreen,
     });
 
     const openLoggedOutModal = () => {
