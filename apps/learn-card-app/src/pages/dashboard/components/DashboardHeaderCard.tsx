@@ -1,4 +1,5 @@
 import React from 'react';
+import { User } from 'lucide-react';
 
 import * as m from '../../../paraglide/messages.js';
 
@@ -75,9 +76,15 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
         setImageFailed(false);
     }, [profileImage]);
 
+    const hasName = displayName.trim().length > 0;
+
     const initialsAvatar = (
         <div className="w-16 h-16 rounded-full bg-grayscale-100 border-2 border-white shadow-soft-bottom flex items-center justify-center text-grayscale-700 font-semibold text-lg">
-            {initials}
+            {hasName ? (
+                initials
+            ) : (
+                <User className="w-7 h-7 text-grayscale-400" strokeWidth={1.75} />
+            )}
         </div>
     );
 
