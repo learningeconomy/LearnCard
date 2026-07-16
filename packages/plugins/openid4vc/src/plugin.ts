@@ -23,7 +23,7 @@ import {
     resolveAuthorizationRequest as resolveAuthorizationRequestFn,
     ResolveAuthorizationRequestOptions,
 } from './vp/parse';
-import { AuthorizationRequest } from './vp/types';
+import { AuthorizationRequest, VpError } from './vp/types';
 import { selectCredentials, type SdJwtParser } from './vp/select';
 import {
     buildPresentation as buildPresentationFn,
@@ -372,6 +372,18 @@ export const getOpenID4VCPlugin = (
 
             presentCredentials: async (learnCard, input, chosen, options = {}) => {
                 const request = await resolveRequestInput(input, fetchImpl, resolveOptions);
+
+                // OID4VP 1.0 §8.4: a Wallet that cannot honor `transaction_data`
+                // MUST return an error rather than present without binding it.
+                // The plugin does not yet bind any transaction data type, so a
+                // request carrying it is rejected here instead of silently
+                // producing a non-conformant response.
+                if (request.transaction_data && request.transaction_data.length > 0) {
+                    throw new VpError(
+                        'invalid_transaction_data',
+                        'Authorization Request includes transaction_data, which this Wallet does not support'
+                    );
+                }
 
                 const holder = options.holder ?? learnCard.id.did();
 

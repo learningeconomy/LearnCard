@@ -227,9 +227,9 @@ describe('parseAuthorizationRequestUri', () => {
                 presentation_definition: JSON.stringify(minimalPd),
             });
 
-            expect(() =>
-                parseAuthorizationRequestUri(`openid4vp://?${params.toString()}`)
-            ).toThrow(expect.objectContaining({ code: 'missing_client_id' }));
+            expect(() => parseAuthorizationRequestUri(`openid4vp://?${params.toString()}`)).toThrow(
+                expect.objectContaining({ code: 'missing_client_id' })
+            );
         });
 
         it('throws missing_nonce when nonce is absent', () => {
@@ -240,9 +240,9 @@ describe('parseAuthorizationRequestUri', () => {
                 presentation_definition: JSON.stringify(minimalPd),
             });
 
-            expect(() =>
-                parseAuthorizationRequestUri(`openid4vp://?${params.toString()}`)
-            ).toThrow(expect.objectContaining({ code: 'missing_nonce' }));
+            expect(() => parseAuthorizationRequestUri(`openid4vp://?${params.toString()}`)).toThrow(
+                expect.objectContaining({ code: 'missing_nonce' })
+            );
         });
 
         it('throws missing_response_type when response_type is absent', () => {
@@ -253,16 +253,14 @@ describe('parseAuthorizationRequestUri', () => {
                 presentation_definition: JSON.stringify(minimalPd),
             });
 
-            expect(() =>
-                parseAuthorizationRequestUri(`openid4vp://?${params.toString()}`)
-            ).toThrow(expect.objectContaining({ code: 'missing_response_type' }));
+            expect(() => parseAuthorizationRequestUri(`openid4vp://?${params.toString()}`)).toThrow(
+                expect.objectContaining({ code: 'missing_response_type' })
+            );
         });
 
         it('throws unsupported_response_type for code / token grants', () => {
             expect(() =>
-                parseAuthorizationRequestUri(
-                    buildByValueUri({ response_type: 'code' })
-                )
+                parseAuthorizationRequestUri(buildByValueUri({ response_type: 'code' }))
             ).toThrow(expect.objectContaining({ code: 'unsupported_response_type' }));
         });
 
@@ -274,9 +272,9 @@ describe('parseAuthorizationRequestUri', () => {
                 presentation_definition: JSON.stringify(minimalPd),
             });
 
-            expect(() =>
-                parseAuthorizationRequestUri(`openid4vp://?${params.toString()}`)
-            ).toThrow(expect.objectContaining({ code: 'missing_response_target' }));
+            expect(() => parseAuthorizationRequestUri(`openid4vp://?${params.toString()}`)).toThrow(
+                expect.objectContaining({ code: 'missing_response_target' })
+            );
         });
 
         it('throws both_definition_and_uri when both are supplied', () => {
@@ -297,9 +295,9 @@ describe('parseAuthorizationRequestUri', () => {
                 response_uri: 'https://x/cb',
             });
 
-            expect(() =>
-                parseAuthorizationRequestUri(`openid4vp://?${params.toString()}`)
-            ).toThrow(expect.objectContaining({ code: 'missing_presentation_definition' }));
+            expect(() => parseAuthorizationRequestUri(`openid4vp://?${params.toString()}`)).toThrow(
+                expect.objectContaining({ code: 'missing_presentation_definition' })
+            );
         });
 
         it('throws invalid_json when presentation_definition is malformed', () => {
@@ -347,9 +345,7 @@ describe('parseAuthorizationRequestUri', () => {
 
         it('throws invalid_json when client_metadata is malformed', () => {
             expect(() =>
-                parseAuthorizationRequestUri(
-                    buildByValueUri({ client_metadata: '{not json' })
-                )
+                parseAuthorizationRequestUri(buildByValueUri({ client_metadata: '{not json' }))
             ).toThrow(expect.objectContaining({ code: 'invalid_json' }));
         });
     });
@@ -373,10 +369,9 @@ describe('resolvePresentationDefinitionByReference', () => {
         );
 
         expect(pd.id).toBe('pd-1');
-        expect(fetchMock).toHaveBeenCalledWith(
-            'https://verifier.example.com/pd.json',
-            { method: 'GET' }
-        );
+        expect(fetchMock).toHaveBeenCalledWith('https://verifier.example.com/pd.json', {
+            method: 'GET',
+        });
     });
 
     it('rejects a non-https uri up front (no fetch call)', async () => {
@@ -393,9 +388,7 @@ describe('resolvePresentationDefinitionByReference', () => {
     });
 
     it('surfaces HTTP errors as presentation_definition_fetch_failed', async () => {
-        const fetchMock = jest.fn().mockResolvedValue(
-            mockResponse({}, { ok: false, status: 404 })
-        );
+        const fetchMock = jest.fn().mockResolvedValue(mockResponse({}, { ok: false, status: 404 }));
 
         await expect(
             resolvePresentationDefinitionByReference(
@@ -490,10 +483,9 @@ describe('resolveAuthorizationRequest', () => {
         );
 
         expect(request.presentation_definition?.id).toBe('pd-1');
-        expect(fetchMock).toHaveBeenCalledWith(
-            'https://verifier.example.com/pd.json',
-            { method: 'GET' }
-        );
+        expect(fetchMock).toHaveBeenCalledWith('https://verifier.example.com/pd.json', {
+            method: 'GET',
+        });
     });
 
     it('routes signed Request Objects through verifyAndDecodeRequestObject (Slice 7.5)', async () => {
@@ -526,10 +518,7 @@ describe('resolveAuthorizationRequest', () => {
         // is not a structurally valid compact JWS (non-base64url chars),
         // so the module rejects it before any crypto work.
         await expect(
-            resolveAuthorizationRequest(
-                'openid4vp://?request=eyJ.header.payload.sig',
-                fetchMock
-            )
+            resolveAuthorizationRequest('openid4vp://?request=eyJ.header.payload.sig', fetchMock)
         ).rejects.toMatchObject({
             name: 'RequestObjectError',
             code: 'invalid_request_object',
@@ -546,5 +535,46 @@ describe('VpError shape', () => {
             expect((e as VpError).code).toBe('invalid_uri');
             expect((e as VpError).name).toBe('VpError');
         }
+    });
+});
+
+describe('OID4VP 1.0 §5 request parameters', () => {
+    const asRequest = (uri: string) => {
+        const parsed = parseAuthorizationRequestUri(uri);
+        if (parsed.kind !== 'by_value') throw new Error('expected by_value');
+        return parsed.request;
+    };
+
+    it('parses transaction_data into a string array', () => {
+        const req = asRequest(
+            buildByValueUri({
+                transaction_data: JSON.stringify(['eyJ0eXBlIjoiZXgifQ', 'eyJ0eXBlIjoiZngifQ']),
+            })
+        );
+        expect(req.transaction_data).toEqual(['eyJ0eXBlIjoiZXgifQ', 'eyJ0eXBlIjoiZngifQ']);
+    });
+
+    it('rejects malformed transaction_data with invalid_transaction_data', () => {
+        expect(() =>
+            asRequest(buildByValueUri({ transaction_data: '{"not":"an array"}' }))
+        ).toThrow(expect.objectContaining({ code: 'invalid_transaction_data' }));
+        expect(() => asRequest(buildByValueUri({ transaction_data: '[]' }))).toThrow(
+            expect.objectContaining({ code: 'invalid_transaction_data' })
+        );
+    });
+
+    it('parses verifier_info into an array', () => {
+        const info = [{ format: 'jwt', data: 'eyJ...' }];
+        const req = asRequest(buildByValueUri({ verifier_info: JSON.stringify(info) }));
+        expect(req.verifier_info).toEqual(info);
+    });
+
+    it('accepts request_uri_method get/post and rejects other values', () => {
+        expect(asRequest(buildByValueUri({ request_uri_method: 'post' })).request_uri_method).toBe(
+            'post'
+        );
+        expect(() => asRequest(buildByValueUri({ request_uri_method: 'POST' }))).toThrow(
+            expect.objectContaining({ code: 'invalid_request_uri_method' })
+        );
     });
 });

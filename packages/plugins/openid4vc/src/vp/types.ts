@@ -3,11 +3,13 @@
  * plus the DIF Presentation Exchange v2.0 subset the plugin consumes.
  *
  * Spec references:
- * - OpenID4VP Draft 22: https://openid.net/specs/openid-4-verifiable-presentations-1_0.html
- * - DIF PEX v2.0:       https://identity.foundation/presentation-exchange/spec/v2.0.0/
+ * - OpenID4VP 1.0 (final): https://openid.net/specs/openid-4-verifiable-presentations-1_0.html
+ * - DIF PEX v2.0:          https://identity.foundation/presentation-exchange/spec/v2.0.0/
  *
- * We target Draft 22 (`response_uri`) but tolerate legacy `redirect_uri`
- * when the caller used an older verifier implementation.
+ * We target OID4VP 1.0 (DCQL, `response_uri`) and retain PEX
+ * (`presentation_definition`) as `[pex-compat]` backward support for
+ * pre-1.0 verifiers — 1.0 removed PEX in favor of DCQL, but a large
+ * installed base still speaks it.
  */
 
 /**
@@ -44,7 +46,20 @@ export type VpErrorCode =
      * guard we'd silently route on whichever one we happened to read
      * first, which would mask verifier-side bugs.
      */
-    | 'both_pex_and_dcql';
+    | 'both_pex_and_dcql'
+    /**
+     * OID4VP 1.0 §8.4/§8.5: the request carried a `transaction_data`
+     * parameter and the Wallet cannot honor it (unknown/unsupported type,
+     * malformed entry, or referenced credential unavailable). The spec
+     * REQUIRES the Wallet to return an error in this case rather than
+     * proceed without binding the transaction data.
+     */
+    | 'invalid_transaction_data'
+    /**
+     * OID4VP 1.0 §5.10/§8.5: `request_uri_method` was present with a value
+     * other than the case-sensitive `get` / `post`.
+     */
+    | 'invalid_request_uri_method';
 
 /**
  * Thrown by the parser/resolver and by PEX selection helpers. The `code`
@@ -189,6 +204,34 @@ export interface AuthorizationRequest {
      * mappings. Passed through verbatim for Slice 8.
      */
     scope?: string;
+
+    /**
+     * OID4VP 1.0 §5.1 — array of base64url-encoded JSON objects describing
+     * transactions the End-User is asked to authorize. Preserved verbatim
+     * (still base64url-encoded) so the presentation layer can bind or, if
+     * unsupported, reject per §8.4.
+     */
+    transaction_data?: string[];
+
+    /**
+     * OID4VP 1.0 §5.11 — verifier attestations (registration certs, policy
+     * statements, role confirmations). The Wallet MAY use these and SHOULD
+     * ignore unrecognized entries. Passed through for consent/policy layers.
+     */
+    verifier_info?: unknown[];
+
+    /**
+     * OID4VP 1.0 §5.10 — `get` (default) or `post`. Determines how a
+     * `request_uri` is fetched.
+     */
+    request_uri_method?: 'get' | 'post';
+
+    /**
+     * OID4VP 1.0 §5.10 — the wallet-generated nonce echoed by the verifier
+     * in the signed Request Object's `wallet_nonce` claim (request replay
+     * protection for the POST request_uri method).
+     */
+    wallet_nonce?: string;
 
     /**
      * Any additional parameters the verifier included. Kept so callers

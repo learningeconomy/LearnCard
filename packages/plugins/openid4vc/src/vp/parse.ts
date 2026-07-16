@@ -4,10 +4,7 @@ import {
     PresentationDefinition,
     VpError,
 } from './types';
-import {
-    verifyAndDecodeRequestObject,
-    DidResolver,
-} from './request-object';
+import { verifyAndDecodeRequestObject, DidResolver } from './request-object';
 import { deriveClientIdPrefix } from './client-id-prefix';
 import { parseDcqlQuery } from '../dcql/parse';
 import type { DcqlQuery } from '../dcql/types';
@@ -28,14 +25,9 @@ import type { DcqlQuery } from '../dcql/types';
  * parameter in the URI is spec-mandated to be ignored in favor of the
  * JWS claims, so we punt immediately without validating them here.
  */
-export const parseAuthorizationRequestUri = (
-    input: string
-): ParsedAuthorizationRequest => {
+export const parseAuthorizationRequestUri = (input: string): ParsedAuthorizationRequest => {
     if (typeof input !== 'string' || input.trim().length === 0) {
-        throw new VpError(
-            'invalid_uri',
-            'Authorization Request URI must be a non-empty string'
-        );
+        throw new VpError('invalid_uri', 'Authorization Request URI must be a non-empty string');
     }
 
     const params = extractSearchParams(input);
@@ -46,10 +38,7 @@ export const parseAuthorizationRequestUri = (
     const requestUri = params.get('request_uri');
     if (typeof requestUri === 'string' && requestUri.length > 0) {
         if (!isHttpsUrl(requestUri)) {
-            throw new VpError(
-                'invalid_uri',
-                'request_uri must be an absolute https:// URL'
-            );
+            throw new VpError('invalid_uri', 'request_uri must be an absolute https:// URL');
         }
 
         return { kind: 'by_reference_request_uri', requestUri, rawParams: params };
@@ -167,16 +156,11 @@ export const resolveAuthorizationRequest = async (
         request = parsed.request;
     } else {
         const urlClientId = parsed.rawParams.get('client_id') ?? undefined;
-        const urlClientIdScheme =
-            parsed.rawParams.get('client_id_scheme') ?? undefined;
+        const urlClientIdScheme = parsed.rawParams.get('client_id_scheme') ?? undefined;
 
         request = await verifyAndDecodeRequestObject({
-            requestUri:
-                parsed.kind === 'by_reference_request_uri'
-                    ? parsed.requestUri
-                    : undefined,
-            inlineJwt:
-                parsed.kind === 'by_reference_request_jwt' ? parsed.jwt : undefined,
+            requestUri: parsed.kind === 'by_reference_request_uri' ? parsed.requestUri : undefined,
+            inlineJwt: parsed.kind === 'by_reference_request_jwt' ? parsed.jwt : undefined,
             urlClientId,
             urlClientIdScheme,
             fetchImpl,
@@ -320,11 +304,9 @@ const buildRequestFromParams = (params: URLSearchParams): AuthorizationRequest =
         try {
             parsed = JSON.parse(dcqlQueryRaw);
         } catch (e) {
-            throw new VpError(
-                'invalid_json',
-                'dcql_query query parameter was not valid JSON',
-                { cause: e }
-            );
+            throw new VpError('invalid_json', 'dcql_query query parameter was not valid JSON', {
+                cause: e,
+            });
         }
         dcqlQuery = parseDcqlQuery(parsed);
     }
@@ -373,6 +355,10 @@ const buildRequestFromParams = (params: URLSearchParams): AuthorizationRequest =
         }
     }
 
+    const transactionData = parseTransactionData(params.get('transaction_data'));
+    const verifierInfo = parseVerifierInfo(params.get('verifier_info'));
+    const requestUriMethod = parseRequestUriMethod(params.get('request_uri_method'));
+
     // Preserve unknown params so the caller can echo them into the
     // direct_post response (state-like extensions, custom claims, etc.).
     const known = new Set([
@@ -390,6 +376,9 @@ const buildRequestFromParams = (params: URLSearchParams): AuthorizationRequest =
         'client_metadata',
         'client_metadata_uri',
         'scope',
+        'transaction_data',
+        'verifier_info',
+        'request_uri_method',
     ]);
 
     const extra: Record<string, string> = {};
@@ -428,8 +417,80 @@ const buildRequestFromParams = (params: URLSearchParams): AuthorizationRequest =
         client_metadata: clientMetadata,
         client_metadata_uri: params.get('client_metadata_uri') ?? undefined,
         scope,
+        transaction_data: transactionData,
+        verifier_info: verifierInfo,
+        request_uri_method: requestUriMethod,
         ...(Object.keys(extra).length > 0 ? { extra } : {}),
     };
+};
+
+/**
+ * Parse the OID4VP 1.0 §5.1 `transaction_data` parameter: a JSON array of
+ * base64url strings. Kept encoded; the presentation layer decides whether it
+ * can honor the transaction (§8.4) or must reject (§8.5). Throws
+ * `invalid_transaction_data` for a structurally malformed parameter.
+ */
+const parseTransactionData = (raw: string | null): string[] | undefined => {
+    if (raw === null) return undefined;
+
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(raw);
+    } catch (e) {
+        throw new VpError('invalid_transaction_data', 'transaction_data was not valid JSON', {
+            cause: e,
+        });
+    }
+
+    if (
+        !Array.isArray(parsed) ||
+        parsed.length === 0 ||
+        !parsed.every(x => typeof x === 'string')
+    ) {
+        throw new VpError(
+            'invalid_transaction_data',
+            'transaction_data MUST be a non-empty array of base64url-encoded strings'
+        );
+    }
+
+    return parsed as string[];
+};
+
+/**
+ * Parse the OID4VP 1.0 §5.11 `verifier_info` parameter: a JSON array of
+ * attestation objects. Passed through for consent/policy layers; unknown
+ * entries are the caller's to ignore per §5.11.
+ */
+const parseVerifierInfo = (raw: string | null): unknown[] | undefined => {
+    if (raw === null) return undefined;
+
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(raw);
+    } catch (e) {
+        throw new VpError('invalid_json', 'verifier_info was not valid JSON', { cause: e });
+    }
+
+    if (!Array.isArray(parsed)) {
+        throw new VpError('invalid_json', 'verifier_info MUST be a JSON array');
+    }
+
+    return parsed;
+};
+
+/**
+ * Parse the OID4VP 1.0 §5.10 `request_uri_method` parameter. Case-sensitive
+ * `get` / `post`; anything else is `invalid_request_uri_method` (§8.5).
+ */
+const parseRequestUriMethod = (raw: string | null): 'get' | 'post' | undefined => {
+    if (raw === null) return undefined;
+    if (raw !== 'get' && raw !== 'post') {
+        throw new VpError(
+            'invalid_request_uri_method',
+            `request_uri_method must be 'get' or 'post' (case-sensitive), got '${raw}'`
+        );
+    }
+    return raw;
 };
 
 /**

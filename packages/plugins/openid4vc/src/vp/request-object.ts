@@ -955,6 +955,33 @@ const buildRequestFromClaims = (
         ? (claims.client_metadata as Record<string, unknown>)
         : undefined;
 
+    // OID4VP 1.0 §5.2: `nonce` is REQUIRED. A signed Request Object without it
+    // is rejected rather than accepted with an empty nonce (which would defeat
+    // the replay binding of §14.1).
+    const nonce = asString(claims.nonce);
+    if (!nonce) {
+        throw new RequestObjectError(
+            'invalid_request_object',
+            'Signed Request Object is missing the required `nonce` claim (OID4VP 1.0 §5.2)'
+        );
+    }
+
+    const transactionData =
+        Array.isArray(claims.transaction_data) &&
+        claims.transaction_data.every(x => typeof x === 'string')
+            ? (claims.transaction_data as string[])
+            : undefined;
+
+    const verifierInfo = Array.isArray(claims.verifier_info)
+        ? (claims.verifier_info as unknown[])
+        : undefined;
+
+    const requestUriMethodClaim = asString(claims.request_uri_method);
+    const requestUriMethod =
+        requestUriMethodClaim === 'get' || requestUriMethodClaim === 'post'
+            ? requestUriMethodClaim
+            : undefined;
+
     return {
         client_id: clientId,
         client_id_scheme: clientIdPrefix,
@@ -962,7 +989,7 @@ const buildRequestFromClaims = (
         response_mode: asString(claims.response_mode),
         response_uri: asString(claims.response_uri),
         redirect_uri: asString(claims.redirect_uri),
-        nonce: asString(claims.nonce) ?? '',
+        nonce,
         state: asString(claims.state),
         presentation_definition: presentationDefinition,
         presentation_definition_uri: presentationDefinitionUri,
@@ -970,6 +997,10 @@ const buildRequestFromClaims = (
         client_metadata: clientMetadata,
         client_metadata_uri: asString(claims.client_metadata_uri),
         scope: asString(claims.scope),
+        transaction_data: transactionData,
+        verifier_info: verifierInfo,
+        request_uri_method: requestUriMethod,
+        wallet_nonce: asString(claims.wallet_nonce),
     };
 };
 
