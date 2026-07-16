@@ -1016,7 +1016,9 @@
         "guardianLinked": {
             "heading": "You're all set up!",
             "description": "You're now set up to manage credentials for <0>{{name}}</0>. Future approvals will appear directly in the app.",
-            "gotIt": "Got it"
+            "gotIt": "Got it",
+            "otherOne": "{{count}} other",
+            "otherOther": "{{count}} others"
         },
         "profile": {
             "header": "Set up your profile to get started!",
@@ -1167,7 +1169,54 @@
                 }
             }
         },
-        "welcome": "Welcome to"
+        "welcome": "Welcome to",
+        "scrollToChoose": "Scroll to choose",
+        "dobMonth": "Month",
+        "dobDay": "Day",
+        "dobYear": "Year",
+        "v2": {
+            "signInAgain": "Something went wrong. Please sign in again.",
+            "tryAgain": "Something went wrong. Please try again.",
+            "dobFuture": "Date of birth cannot be in the future.",
+            "invalidUserId": "Invalid User ID",
+            "welcomeTitle": "Welcome — let's set you up",
+            "welcomeSubtitle": "Just a couple quick things to personalize {{brand}} and keep you safe.",
+            "country": "Country",
+            "selectCountry": "Select country",
+            "under13Title": "Parent or guardian required",
+            "under13Desc": "You need to be 13 or older to set up your own account. Tap Continue and we'll help a parent or guardian add you to a family account.",
+            "usNoticeTitle": "Parental Notice",
+            "usNoticeDesc": "Because you are under 18, we need your parent or guardian's permission to collect your information. By continuing, you confirm you have their permission.",
+            "usConsentCheck": "I have my parent/guardian's permission",
+            "euConsentDesc": "Because of privacy laws in your country, we need your parent or guardian's permission to create your account.",
+            "guardianEmail": "Parent/Guardian Email",
+            "guardianEmailHint": "guardian@example.com",
+            "continue": "Continue",
+            "makeItYours": "Make it yours",
+            "makeItYoursDesc": "Customize how you appear on the network.",
+            "yourName": "Your Name",
+            "username": "username",
+            "publicHandle": "Public Handle",
+            "charCount": "3–25 characters",
+            "dashesOnly": "Letters, numbers, and dashes only",
+            "checkingAvail": "Checking availability…",
+            "available": "Available",
+            "alreadyTaken": "Already taken",
+            "findYouHint": "Friends can find you with this.",
+            "privacyTitle": "Your Privacy",
+            "privacyDesc": "Set based on your age. Change anytime in Settings.",
+            "brandAi": "{{brand}} AI",
+            "aiMinorNote": "AI features are disabled for minors.",
+            "analytics": "Analytics",
+            "bugReports": "Bug Reports",
+            "createMy": "Create my {{brand}}",
+            "almostThere": "Almost there!",
+            "youreIn": "You're in!",
+            "guardianEmailed": "We've emailed your guardian to approve your account. You can start exploring now — some features unlock once they confirm.",
+            "ready": "Your {{brand}} is ready.",
+            "whoAreYou": "Who are you? (Optional)",
+            "explore": "Explore {{brand}}"
+        }
     },
     "profile": {
         "age": "Age:",

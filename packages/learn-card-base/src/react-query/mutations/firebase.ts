@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 import { useIonAlert } from '@ionic/react';
+import { getCurrentUserPrivateKey } from 'learn-card-base/helpers/privateKeyHelpers';
 
 import { getLogger } from '../../logging/logger';
 const log = getLogger('firebase');
@@ -102,7 +103,11 @@ export const useGetProofOfLoginVp = (opts?: { showAlert?: boolean }) => {
         {
             mutationFn: async ({ token }: { token: string }) => {
                 try {
-                    const wallet = await initWallet('aaa');
+                    // The server route ignores the caller's DID. Reuse the active
+                    // wallet when signed in; only build the dummy wallet pre-login.
+                    const wallet = (await getCurrentUserPrivateKey())
+                        ? await initWallet()
+                        : await initWallet('aaa');
                     const data = await wallet?.invoke?.getProofOfLoginVp(token);
 
                     return data;
