@@ -14,7 +14,7 @@ import userProfileSetupStore from '../../stores/userProfileSetupStore';
 
 const log = getLogger('user-profile-setup-listener');
 
-export const UserProfileSetupListener: React.FC<{ loading: boolean }> = ({ loading }) => {
+export const UserProfileSetupListener: React.FC = () => {
     const history = useHistory();
     const { initWallet } = useWallet();
     const currentUser = useCurrentUser();
@@ -41,7 +41,7 @@ export const UserProfileSetupListener: React.FC<{ loading: boolean }> = ({ loadi
         if (typeOfLogin === SocialLoginTypes.apple) return;
         // ! APPLE HOT FIX
         // ! apple's guidelines: additional user info should not be required
-        if (loading || currentLCNUserLoading) return;
+        if (currentLCNUserLoading) return;
 
         if (!currentUser) {
             hasPresentedSetupModalRef.current = false;
