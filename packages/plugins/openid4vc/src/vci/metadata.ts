@@ -53,7 +53,7 @@ export const fetchCredentialIssuerMetadata = async (
         });
     }
 
-    if (!originsMatch(json.credential_issuer, credentialIssuer)) {
+    if (!issuerIdentifiersMatch(json.credential_issuer, credentialIssuer)) {
         throw new VciError(
             'metadata_issuer_mismatch',
             `Issuer metadata advertises \`credential_issuer\` as ${json.credential_issuer} but was fetched for ${credentialIssuer}`,
@@ -67,6 +67,16 @@ export const fetchCredentialIssuerMetadata = async (
 /**
  * Fetch the raw issuer metadata document, detecting the spec revision from
  * which well-known URL served it. Tries the 1.0 insert-style URL first.
+ *
+ * [draft-13-compat] Detection keys off the insert-vs-append URL-shape
+ * difference, which only exists when the issuer identifier has a path. A
+ * path-less issuer (`https://issuer.example.com`) produces the identical URL
+ * both ways, so the insert probe always succeeds and we report `final`. A
+ * path-less *Draft 13* issuer is therefore treated as 1.0 and would get a 1.0
+ * request body. This is an accepted limitation: Draft 13 metadata is otherwise
+ * indistinguishable from 1.0 (no reliable positive signal to sniff), Draft 13
+ * issuers in practice serve under a path (e.g. walt.id's `/draftNN`), and the
+ * ecosystem is converging on 1.0.
  */
 const fetchIssuerMetadataDocument = async (
     credentialIssuer: string,
@@ -255,10 +265,10 @@ const appendWellKnown = (base: string, path: string): string => {
     return `${base.slice(0, end)}${path}`;
 };
 
-const originsMatch = (a: string, b: string): boolean => {
-    // Compare canonicalized forms — strip trailing slashes and lower-case
-    // the scheme. Host is compared case-sensitively and the path (if any)
-    // is preserved, matching the previous regex-based normalizer.
+const issuerIdentifiersMatch = (a: string, b: string): boolean => {
+    // Compare the full canonicalized identifiers — strip trailing slashes and
+    // lower-case the scheme. Host is compared case-sensitively and the path
+    // (if any) is preserved, so identifiers must match including their path.
     return normalizeIssuerId(a) === normalizeIssuerId(b);
 };
 

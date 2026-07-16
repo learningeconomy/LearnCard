@@ -404,7 +404,7 @@ const handleToken = async (
 
     return writeJson(res, 200, {
         access_token: accessToken,
-        token_type: 'bearer',
+        token_type: 'Bearer',
         expires_in: 300,
         c_nonce: offer.cNonce,
         c_nonce_expires_in: 300,

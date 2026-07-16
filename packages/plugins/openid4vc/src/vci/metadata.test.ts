@@ -155,7 +155,7 @@ describe('fetchCredentialIssuerMetadata', () => {
         ).rejects.toMatchObject({ code: 'metadata_issuer_mismatch' });
     });
 
-    it('tolerates trailing-slash / case differences in origin comparison', async () => {
+    it('tolerates trailing-slash / scheme-case differences in issuer identifier comparison', async () => {
         const withSlash = { ...validMetadata, credential_issuer: 'https://issuer.example.com/' };
         const fetchMock = jest.fn().mockResolvedValue(mockResponse(withSlash));
 
