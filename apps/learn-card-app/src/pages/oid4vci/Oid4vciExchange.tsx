@@ -22,6 +22,7 @@ import {
     getDefaultCategoryForCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { fetchCredentialIssuerMetadata } from '@learncard/openid4vc-plugin';
+import { BOOST_CATEGORY_TO_WALLET_ROUTE } from '../../components/boost/boost-options/boostOptions';
 import type { VC } from '@learncard/types';
 import type {
     AcceptedCredentialResult,
@@ -398,8 +399,19 @@ const Oid4vciExchange: React.FC = () => {
     );
 
     const handleViewWallet = useCallback(() => {
-        history.push('/');
-    }, [history]);
+        if (phase.kind === 'finished' && phase.stored.length === 1) {
+            const category = phase.stored[0]?.category;
+            const route =
+                BOOST_CATEGORY_TO_WALLET_ROUTE[
+                    category as keyof typeof BOOST_CATEGORY_TO_WALLET_ROUTE
+                ];
+
+            history.push(route ? `/${route}` : '/passport');
+            return;
+        }
+
+        history.push('/passport');
+    }, [history, phase]);
 
     const handleRetry = useCallback(() => {
         if (phase.kind !== 'error' || !phase.retryOffer) return;

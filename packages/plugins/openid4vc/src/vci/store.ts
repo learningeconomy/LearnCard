@@ -89,6 +89,8 @@ export interface StoredCredentialEntry {
     configurationId: string;
     /** Format id the issuer used (`jwt_vc_json`, `ldp_vc`, …). */
     format: string;
+    /** Category placed on the index record (host apps use it for routing). */
+    category: string;
 }
 
 export interface StoreAcceptedCredentialsResult {
@@ -178,6 +180,7 @@ export const storeAcceptedCredentials = async (
                 vc: normalized.vc,
                 configurationId: entry.configuration_id,
                 format: normalized.rawFormat,
+                category: record.category,
             });
         } catch (e) {
             failures.push({
