@@ -7877,5 +7877,451 @@
             "canWriteSuffix": ", {{count}} يمكنها الكتابة أيضًا",
             "stopAnytime": ". يمكنك التوقف في أي وقت."
         }
+    },
+    "issueFlow": {
+        "header": {
+            "json": "JSON",
+            "issuing": "جارٍ الإصدار…",
+            "issue": "إصدار",
+            "issueCredential": "إصدار شهادة"
+        },
+        "provenance": {
+            "importedFrom": "مستورد من {{source}}",
+            "dismiss": "تجاهل"
+        },
+        "error": {
+            "tryAgain": "حاول مرة أخرى"
+        },
+        "type": {
+            "heading": "ماذا تُصدر؟",
+            "subheading": "اختر نوعًا—تتشكّل شهادتك أثناء تقدّمك.",
+            "selected": "النوع: {{label}}",
+            "browseAll": "تصفّح جميع الأنواع"
+        },
+        "browser": {
+            "title": "اختر نوع الشهادة",
+            "subtitle": "اختر النوع الأنسب لما تُقدّره.",
+            "searchPlaceholder": "ابحث في الأنواع…",
+            "noMatch": "لا يوجد نوع يطابق “{{query}}”."
+        },
+        "details": {
+            "name": "الاسم",
+            "namePlaceholder": "مثال: Web Development Fundamentals",
+            "nameError": "امنح شهادتك اسمًا للمتابعة.",
+            "descLabel": "الوصف (اختياري)",
+            "descPlaceholder": "ماذا تُمثّل هذه الشهادة؟",
+            "changeImage": "تغيير الصورة",
+            "addImage": "أضف صورة (اختياري)"
+        },
+        "advanced": {
+            "toggle": "مزيد من التفاصيل",
+            "criteriaLabel": "كيف يتم الحصول عليها (المعايير)",
+            "criteriaPlaceholder": "صِف ما فعله المستلم للحصول عليها.",
+            "expiresLabel": "تنتهي في (اختياري)",
+            "evidenceHint": "أضف الأدلة والوسائط أعلاه في قسم <0>الأدلة والوسائط</0>."
+        },
+        "display": {
+            "heading": "العرض (اختياري)",
+            "subheading": "اضبط مظهر هذه الشهادة بدقّة. المحافظ التي لا تدعم هذه التلميحات تتجاهلها ببساطة.",
+            "categoryLabel": "الفئة",
+            "autoPlaceholder": "تلقائي (حسب النوع)",
+            "subtypeLabel": "تسمية النوع الفرعي",
+            "subtypePlaceholder": "مثال: Trailblazer",
+            "styleLabel": "نمط العرض",
+            "bgColor": "لون الخلفية",
+            "accentColor": "لون التمييز (حلقة الشارة)",
+            "accentHint": "يُلوّن حلقة الشارة. يستخدم لون الفئة افتراضيًا إذا لم يُحدَّد.",
+            "bgImageLabel": "صورة الخلفية",
+            "bgPreviewAlt": "معاينة الخلفية",
+            "remove": "إزالة",
+            "changeBgImage": "تغيير صورة الخلفية",
+            "addBgImage": "أضف صورة خلفية",
+            "clearField": "مسح {{label}}",
+            "style": {
+                "badge": "شارة",
+                "certificate": "شهادة",
+                "award": "جائزة",
+                "idCard": "بطاقة هوية",
+                "course": "دورة",
+                "media": "وسائط"
+            },
+            "styleDesc": {
+                "badge": "شعار دائري بشريط. الأفضل للشارات الاجتماعية والإنجازات.",
+                "certificate": "إطار رسمي بنمط المستند. مناسب لحالات الإتمام والاعتمادات.",
+                "award": "شريط بنمط الكأس يُبرز التقدير والتكريم.",
+                "idCard": "تخطيط بطاقة هوية بنمط المحفظة مع صورة وجهة الإصدار. رائع للعضويات.",
+                "course": "مُهيّأ للدورات والفصول وبرامج التعلّم.",
+                "media": "بطاقة غنية تُبرز صورة أو فيديو في المقدمة."
+            },
+            "cat": {
+                "badge": "شارة",
+                "achievement": "إنجاز",
+                "course": "دورة",
+                "portfolio": "حافظة أعمال",
+                "assistance": "مساعدة",
+                "experience": "خبرة",
+                "id": "الهوية"
+            },
+            "catDesc": {
+                "badge": "شارات التقدير المجتمعي والاجتماعي.",
+                "achievement": "الجوائز والشهادات والإنجازات.",
+                "course": "الدورات والفصول وبرامج التعلّم.",
+                "portfolio": "أعمال الحافظة والأعمال الشخصية.",
+                "assistance": "احتياجات الدعم والتيسيرات.",
+                "experience": "الوظائف والتدريب والخبرة المهنية.",
+                "id": "بطاقات الهوية والاعتمادات الرسمية."
+            }
+        },
+        "success": {
+            "theRecipient": "المستلم",
+            "twoNames": "{{first}} و{{second}}",
+            "andOthers": "{{name}} و{{count}} آخرون",
+            "linkCopied": "تم نسخ الرابط.",
+            "shareTitle": "شهادة لك",
+            "qrDownloadFail": "تعذّر تنزيل رمز QR.",
+            "expires": "تنتهي في {{date}}",
+            "claimLimitOne": "{{count}} مطالبة كحد أقصى",
+            "claimLimitOther": "{{count}} مطالبات كحد أقصى",
+            "linkReady": "رابطك جاهز",
+            "linkDesc": "يمكن لأي شخص لديه هذا الرابط أو رمز QR المطالبة بها.",
+            "copyLink": "نسخ الرابط",
+            "copied": "تم النسخ",
+            "downloadQr": "تنزيل رمز QR",
+            "issueAnother": "إصدار أخرى",
+            "sent": "تم الإرسال!",
+            "deliveredTo": "تم التسليم إلى {{recipients}}.",
+            "youMadeIt": "لقد نجحت!",
+            "savedToWallet": "شهادتك موقّعة ومحفوظة في محفظتك.",
+            "viewInWallet": "عرض في المحفظة"
+        },
+        "fields": {
+            "gradeOrResult": "الدرجة أو النتيجة",
+            "useFixed": "استخدام قيمة ثابتة",
+            "personalize": "التخصيص لكل مستلم",
+            "setPerRecipient": "التعيين لكل مستلم أدناه",
+            "selectStatus": "اختر حالة…",
+            "pickGradeType": "اختر نوع الدرجة أعلاه ليتم حفظ هذه النتيجة بتنسيق قياسي.",
+            "fillDetails": "املأ التفاصيل",
+            "placeholdersDesc": "تحتوي هذه الشهادة على عناصر نائبة. امنح كل عنصر قيمة قبل الإصدار.",
+            "sameForAll": "نفسه للجميع",
+            "perRecipient": "لكل مستلم",
+            "selectDefault": "اختر…"
+        },
+        "media": {
+            "photo": "صورة",
+            "document": "مستند",
+            "video": "فيديو",
+            "link": "رابط",
+            "title": "الأدلة والوسائط",
+            "subtitle": "أرفق إثباتًا — صور أو مستندات أو مقاطع فيديو أو روابط.",
+            "removeAttachment": "إزالة المرفق",
+            "urlPlaceholder": "https://example.com/proof",
+            "linkTitle": "عنوان الرابط (اختياري)",
+            "noAttachments": "لا مرفقات بعد."
+        },
+        "whoFor": "لمن هذه الشهادة؟",
+        "whoForDesc": "يحدد هذا شكل المعاينة وطريقة تسليمها.",
+        "people": "أشخاص",
+        "specificPeople": "أشخاص محددون",
+        "link": "رابط",
+        "anyoneLink": "أي شخص لديه رابط",
+        "addByHint": "أضف بالاسم أو @اسم المستخدم أو البريد الإلكتروني",
+        "linkOnIssue": "سننشئ رابطاً قابلاً للمشاركة عند الإصدار.",
+        "alreadyHave": "هل لديك شيء بالفعل؟",
+        "startFromLink": "ابدأ من رابط أو ملف أو معرّف",
+        "sendExisting": "أرسل واحدة أنشأتها",
+        "startFromSomething": "ابدأ من شيء ما",
+        "importIntro": "الصق رابطاً أو معرّف Credential Engine أو بيانات شهادة — وسنتولى الباقي.",
+        "importPlaceholder": "الصق رابط URL أو معرّف ce- أو JSON الشهادة…",
+        "importSupports": "ندعم الروابط والمعرّفات والملفات",
+        "uploadFile": "تحميل ملف",
+        "pasteInstead": "افتح المصدر وانسخ JSON الخاص به والصقه في الأعلى.",
+        "bringingIn": "جارٍ إحضارها…",
+        "bringItIn": "أحضِرها",
+        "foundIt": "وجدناها",
+        "fromCredEngine": "من Credential Engine",
+        "useThis": "استخدم هذه",
+        "openFailed": "تعذّر علينا فتح تلك. يُرجى تجربة أخرى.",
+        "credSentToast": "تم إرسال الشهادة.",
+        "sendFailed": "حدث خطأ ما أثناء إرسال هذه الشهادة. يُرجى المحاولة مرة أخرى.",
+        "untitled": "شهادة بلا عنوان",
+        "sendThisCred": "إرسال هذه الشهادة",
+        "whosItFor": "لمن هي؟",
+        "reuseTitle": "أعد استخدام واحدة أنشأتها",
+        "reuseSubtitle": "أرسل شهادة تديرها — اختر واحدة للبدء.",
+        "searchCreds": "ابحث في شهاداتك…",
+        "nothingMatches": "لا يوجد ما يطابق “{{query}}”.",
+        "noneIssued": "لم تُصدر أي شهادات بعد.",
+        "showMore": "عرض المزيد",
+        "previewDesc": "هذا هو بالضبط ما سيستلمه المستلم.",
+        "chooseRecip": "اختيار المستلم",
+        "editCopy": "عدّل نسخة بدلاً من ذلك",
+        "linkReady": "رابطك جاهز",
+        "credSent": "تم إرسال الشهادة",
+        "linkClaimDesc": "يمكن لأي شخص لديه هذا الرابط المطالبة بها.",
+        "onItsWay": "“{{name}}” في طريقها إليك.",
+        "copy": "نسخ",
+        "sendAnother": "إرسال أخرى",
+        "sending": "جارٍ الإرسال…",
+        "createLink": "إنشاء رابط قابل للمشاركة",
+        "sendToSelf": "إرسالها إلى نفسي",
+        "sendCred": "إرسال الشهادة",
+        "skillsTitle": "المهارات",
+        "skillsSubtitle": "ابحث في الكفاءات لمحاذاة هذه الشهادة مع إطار.",
+        "removeSkill": "إزالة {{name}}",
+        "clearSearch": "مسح البحث",
+        "searching": "جارٍ البحث…",
+        "suggested": "مقترحة",
+        "noMatchingSkills": "لا توجد مهارات مطابقة.",
+        "browseAllFrameworks": "تصفح جميع الأطر",
+        "addSkills": "إضافة مهارات",
+        "selectedTapToToggle": "{{count}} محددة · انقر للإضافة أو الإزالة",
+        "addSkillsSubtitle": "حاذِ هذه الشهادة مع كفاءات من أي إطار.",
+        "frameworkAlignment": "محاذاة الإطار",
+        "verified": "موثّق",
+        "removeAlignment": "إزالة المحاذاة",
+        "alignmentsTitle": "المحاذاة",
+        "alignmentsSubtitle": "المعايير والأطر الخارجية التي ترتبط بها هذه الشهادة.",
+        "verifiedSource": "مصدر موثّق",
+        "occupationsPrograms": "المهن & البرامج",
+        "invalidJsonLine": "JSON غير صالح في السطر {{line}}.",
+        "invalidJson": "هذا ليس JSON صالحاً بعد.",
+        "mustBeJsonObject": "يجب أن تكون الشهادة كائن JSON.",
+        "checking": "جارٍ التحقق…",
+        "valid": "صالح",
+        "copied": "تم النسخ",
+        "jsonStudioHint": "عدّل الشهادة مباشرة. سنبقي المُصدِر والمستلم متزامنين عند الإصدار.",
+        "evidencePerRecipient": "دليل لكل مستلم",
+        "evidenceSubtitle": "أرفق دليلاً خاصاً بكل شخص. اختياري.",
+        "catalog": {
+            "Badge": {
+                "label": "شارة",
+                "pick": "شارة رقمية لإنجاز أو مهارة."
+            },
+            "Certificate": {
+                "label": "شهادة",
+                "pick": "شهادة رسمية تقدّر إنجازًا."
+            },
+            "Course": {
+                "label": "دورة",
+                "pick": "أتمّ شخص دورة أو تدريبًا."
+            },
+            "Competency": {
+                "label": "مهارة",
+                "pick": "تحقّق من مهارة أو كفاءة محدّدة."
+            },
+            "License": {
+                "label": "رخصة",
+                "pick": "رخصة مهنية أو حرفية."
+            },
+            "Membership": {
+                "label": "عضوية",
+                "pick": "عضوية في منظمة أو برنامج."
+            },
+            "MicroCredential": {
+                "label": "اعتماد مصغّر",
+                "pick": "تقدير موجز لتعلّم مركّز."
+            },
+            "Achievement": {
+                "label": "إنجاز",
+                "pick": "إنجاز عام لا يندرج تحت أي نوع آخر."
+            },
+            "Award": {
+                "label": "جائزة",
+                "pick": "تكريم أو جائزة تُمنح للتميّز."
+            },
+            "CommunityService": {
+                "label": "خدمة مجتمعية",
+                "pick": "تقدير للعمل التطوعي أو المجتمعي."
+            },
+            "CoCurricular": {
+                "label": "نشاط مصاحب للمنهج",
+                "pick": "نشاط موازٍ للدراسة الرسمية (نوادٍ، رياضة)."
+            },
+            "CertificateOfCompletion": {
+                "label": "شهادة إتمام",
+                "pick": "تؤكّد أن شخصًا أنهى برنامجًا."
+            },
+            "LearningProgram": {
+                "label": "برنامج تعليمي",
+                "pick": "برنامج تعليمي منظّم متعدد الأجزاء."
+            },
+            "Assessment": {
+                "label": "تقييم",
+                "pick": "نتائج اختبار أو تقييم."
+            },
+            "Assignment": {
+                "label": "واجب",
+                "pick": "عمل دراسي مكتمل."
+            },
+            "Fieldwork": {
+                "label": "عمل ميداني",
+                "pick": "خبرة عملية أو ميدانية."
+            },
+            "Degree": {
+                "label": "درجة علمية",
+                "pick": "درجة علمية أكاديمية عامة."
+            },
+            "AssociateDegree": {
+                "label": "درجة الزمالة",
+                "pick": "درجة زمالة مدتها سنتان."
+            },
+            "BachelorDegree": {
+                "label": "بكالوريوس",
+                "pick": "درجة جامعية مدتها أربع سنوات."
+            },
+            "MasterDegree": {
+                "label": "ماجستير",
+                "pick": "درجة ماجستير في مرحلة الدراسات العليا."
+            },
+            "DoctoralDegree": {
+                "label": "دكتوراه",
+                "pick": "درجة دكتوراه (دكتوراه فلسفة أو ما يعادلها)."
+            },
+            "ResearchDoctorate": {
+                "label": "دكتوراه بحثية",
+                "pick": "دكتوراه ذات توجّه بحثي."
+            },
+            "ProfessionalDoctorate": {
+                "label": "دكتوراه مهنية",
+                "pick": "دكتوراه ذات توجّه تطبيقي."
+            },
+            "Diploma": {
+                "label": "دبلوم",
+                "pick": "دبلوم عن دراسة مكتملة."
+            },
+            "SecondarySchoolDiploma": {
+                "label": "شهادة الثانوية العامة",
+                "pick": "دبلوم تعليم ثانوي / ثانوية عامة."
+            },
+            "GeneralEducationDevelopment": {
+                "label": "GED",
+                "pick": "معادلة الثانوية العامة (GED)."
+            },
+            "Certification": {
+                "label": "شهادة اعتماد",
+                "pick": "شهادة اعتماد صناعية أو مهنية."
+            },
+            "ApprenticeshipCertificate": {
+                "label": "تلمذة مهنية",
+                "pick": "إتمام تلمذة مهنية."
+            },
+            "JourneymanCertificate": {
+                "label": "حرفي متمرّس",
+                "pick": "مؤهل حرفي بمستوى الحرفي المتمرّس."
+            },
+            "MasterCertificate": {
+                "label": "شهادة معلّم حرفي",
+                "pick": "مؤهل حرفي بمستوى المعلّم."
+            },
+            "QualityAssuranceCredential": {
+                "label": "ضمان الجودة",
+                "pick": "مؤهل في ضمان الجودة أو الامتثال."
+            },
+            "fam": {
+                "recognition": {
+                    "label": "تقدير",
+                    "blurb": "كرّم إنجازًا أو مساهمة أو لحظة مميزة."
+                },
+                "learning": {
+                    "label": "تعلّم",
+                    "blurb": "أتمّ شخص دورة أو برنامجًا أو مهارة."
+                },
+                "degrees": {
+                    "label": "الدرجات & الدبلومات",
+                    "blurb": "درجة أكاديمية أو دبلوم رسمي."
+                },
+                "professional": {
+                    "label": "مهني",
+                    "blurb": "ترخيص أو اعتماد أو مؤهل حرفي."
+                },
+                "belonging": {
+                    "label": "انتماء",
+                    "blurb": "عضوية في منظمة أو برنامج."
+                }
+            }
+        },
+        "result": {
+            "LetterGrade": {
+                "label": "تقدير حرفي",
+                "eg": "مثال: A-"
+            },
+            "Percent": {
+                "label": "نسبة مئوية",
+                "eg": "مثال: 95"
+            },
+            "GradePointAverage": {
+                "label": "المعدل التراكمي (GPA)",
+                "eg": "مثال: 3.8"
+            },
+            "RawScore": {
+                "label": "نقاط",
+                "eg": "مثال: 720"
+            },
+            "Status": {
+                "label": "الحالة",
+                "eg": ""
+            },
+            "status": {
+                "Completed": "مكتمل",
+                "Enrolled": "مسجّل",
+                "Failed": "راسب",
+                "InProgress": "قيد التقدم",
+                "OnHold": "قيد الانتظار",
+                "Provisional": "مؤقت",
+                "Withdrew": "منسحب"
+            }
+        },
+        "field": {
+            "completionDate": {
+                "label": "تاريخ الإكمال"
+            },
+            "startDate": {
+                "label": "تاريخ البدء"
+            },
+            "creditsEarned": {
+                "label": "الوحدات المكتسبة",
+                "ph": "مثال: 3"
+            },
+            "term": {
+                "label": "الفصل الدراسي",
+                "ph": "مثال: خريف 2025"
+            },
+            "licenseNumber": {
+                "label": "رقم الترخيص",
+                "ph": "مثال: RN-1234567"
+            },
+            "role": {
+                "label": "الدور أو المستوى",
+                "ph": "مثال: عضو ذهبي"
+            },
+            "creditHours": {
+                "label": "الساعات المعتمدة",
+                "ph": "مثال: 10"
+            },
+            "humanCode": {
+                "label": "رمز المقرر",
+                "ph": "مثال: CS101"
+            },
+            "fieldOfStudy": {
+                "label": "مجال الدراسة",
+                "ph": "مثال: علوم الحاسوب"
+            },
+            "specialization": {
+                "label": "التخصص",
+                "ph": "مثال: تعلّم الآلة"
+            },
+            "version": {
+                "label": "الإصدار",
+                "ph": "مثال: 2.1"
+            },
+            "expiryDate": {
+                "label": "تنتهي في"
+            },
+            "memberId": {
+                "label": "معرّف العضو",
+                "ph": "مثال: M-00482"
+            }
+        }
     }
 }

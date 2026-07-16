@@ -7877,5 +7877,451 @@
             "canWriteSuffix": ", {{count}} peuvent aussi écrire",
             "stopAnytime": ". Vous pouvez arrêter à tout moment."
         }
+    },
+    "issueFlow": {
+        "header": {
+            "json": "JSON",
+            "issuing": "Émission…",
+            "issue": "Émettre",
+            "issueCredential": "Émettre un justificatif"
+        },
+        "provenance": {
+            "importedFrom": "Importé depuis {{source}}",
+            "dismiss": "Ignorer"
+        },
+        "error": {
+            "tryAgain": "Réessayer"
+        },
+        "type": {
+            "heading": "Que souhaitez-vous émettre ?",
+            "subheading": "Choisissez un type—votre justificatif prend forme au fur et à mesure.",
+            "selected": "Type : {{label}}",
+            "browseAll": "Parcourir tous les types"
+        },
+        "browser": {
+            "title": "Choisissez un type de justificatif",
+            "subtitle": "Choisissez le type qui correspond le mieux à ce que vous reconnaissez.",
+            "searchPlaceholder": "Rechercher des types…",
+            "noMatch": "Aucun type ne correspond à “{{query}}”."
+        },
+        "details": {
+            "name": "Nom",
+            "namePlaceholder": "p. ex. Web Development Fundamentals",
+            "nameError": "Donnez un nom à votre justificatif pour continuer.",
+            "descLabel": "Description (facultatif)",
+            "descPlaceholder": "Que représente ce justificatif ?",
+            "changeImage": "Changer l’image",
+            "addImage": "Ajouter une image (facultatif)"
+        },
+        "advanced": {
+            "toggle": "Plus de détails",
+            "criteriaLabel": "Comment l’obtenir (critères)",
+            "criteriaPlaceholder": "Décrivez ce que le destinataire a fait pour l’obtenir.",
+            "expiresLabel": "Expire le (facultatif)",
+            "evidenceHint": "Ajoutez des preuves et des médias ci-dessus dans la section <0>Preuves & médias</0>."
+        },
+        "display": {
+            "heading": "Affichage (facultatif)",
+            "subheading": "Ajustez l’apparence de ce justificatif. Les portefeuilles qui ne prennent pas en charge ces indications les ignorent simplement.",
+            "categoryLabel": "Catégorie",
+            "autoPlaceholder": "Automatique (selon le type)",
+            "subtypeLabel": "Libellé de sous-type",
+            "subtypePlaceholder": "p. ex. Trailblazer",
+            "styleLabel": "Style d’affichage",
+            "bgColor": "Couleur d’arrière-plan",
+            "accentColor": "Couleur d’accentuation (anneau du badge)",
+            "accentHint": "Colore l’anneau du badge. Utilise par défaut la couleur de la catégorie si non défini.",
+            "bgImageLabel": "Image d’arrière-plan",
+            "bgPreviewAlt": "Aperçu de l’arrière-plan",
+            "remove": "Supprimer",
+            "changeBgImage": "Changer l’image d’arrière-plan",
+            "addBgImage": "Ajouter une image d’arrière-plan",
+            "clearField": "Effacer {{label}}",
+            "style": {
+                "badge": "Badge",
+                "certificate": "Certificat",
+                "award": "Récompense",
+                "idCard": "Carte d’identité",
+                "course": "Cours",
+                "media": "Média"
+            },
+            "styleDesc": {
+                "badge": "Un emblème circulaire avec un ruban. Idéal pour les badges sociaux et les réussites.",
+                "certificate": "Un cadre formel de style document. Convient aux achèvements et aux certifications.",
+                "award": "Un ruban de style trophée qui met l’accent sur la reconnaissance et les honneurs.",
+                "idCard": "Une mise en page de type carte d’identité avec photo et émetteur. Parfait pour les adhésions.",
+                "course": "Optimisé pour les cours, les classes et les programmes d’apprentissage.",
+                "media": "Une tuile riche qui met en avant une image ou une vidéo au premier plan."
+            },
+            "cat": {
+                "badge": "Badge",
+                "achievement": "Réussite",
+                "course": "Cours",
+                "portfolio": "Portfolio",
+                "assistance": "Assistance",
+                "experience": "Expérience",
+                "id": "ID"
+            },
+            "catDesc": {
+                "badge": "Badges de reconnaissance communautaire et sociale.",
+                "achievement": "Récompenses, certificats et accomplissements.",
+                "course": "Cours, classes et programmes d’apprentissage.",
+                "portfolio": "Éléments de portfolio et travaux personnels.",
+                "assistance": "Besoins d’accompagnement et aménagements.",
+                "experience": "Emplois, stages et expérience professionnelle.",
+                "id": "Cartes d’identité et justificatifs officiels."
+            }
+        },
+        "success": {
+            "theRecipient": "le destinataire",
+            "twoNames": "{{first}} et {{second}}",
+            "andOthers": "{{name}} et {{count}} autres",
+            "linkCopied": "Lien copié.",
+            "shareTitle": "Un justificatif pour vous",
+            "qrDownloadFail": "Échec du téléchargement du code QR.",
+            "expires": "Expire le {{date}}",
+            "claimLimitOne": "Limite de {{count}} réclamation",
+            "claimLimitOther": "Limite de {{count}} réclamations",
+            "linkReady": "Votre lien est prêt",
+            "linkDesc": "Toute personne disposant de ce lien ou de ce code QR peut le réclamer.",
+            "copyLink": "Copier le lien",
+            "copied": "Copié",
+            "downloadQr": "Télécharger le QR",
+            "issueAnother": "Émettre un autre",
+            "sent": "Envoyé !",
+            "deliveredTo": "Remis à {{recipients}}.",
+            "youMadeIt": "Vous avez réussi !",
+            "savedToWallet": "Votre justificatif est signé et enregistré dans votre portefeuille.",
+            "viewInWallet": "Voir dans le portefeuille"
+        },
+        "fields": {
+            "gradeOrResult": "Note ou résultat",
+            "useFixed": "Utiliser une valeur fixe",
+            "personalize": "Personnaliser par destinataire",
+            "setPerRecipient": "Définir par destinataire ci-dessous",
+            "selectStatus": "Sélectionnez un statut…",
+            "pickGradeType": "Choisissez un type de note ci-dessus pour que ce résultat soit enregistré dans un format standard.",
+            "fillDetails": "Remplissez les détails",
+            "placeholdersDesc": "Ce justificatif contient des espaces réservés. Donnez une valeur à chacun avant l’émission.",
+            "sameForAll": "Identique pour tous",
+            "perRecipient": "Par destinataire",
+            "selectDefault": "Sélectionner…"
+        },
+        "media": {
+            "photo": "Photo",
+            "document": "Document",
+            "video": "Vidéo",
+            "link": "Lien",
+            "title": "Preuves & médias",
+            "subtitle": "Joignez des preuves — photos, documents, vidéos ou liens.",
+            "removeAttachment": "Supprimer la pièce jointe",
+            "urlPlaceholder": "https://example.com/proof",
+            "linkTitle": "Titre du lien (facultatif)",
+            "noAttachments": "Aucune pièce jointe pour le moment."
+        },
+        "whoFor": "Pour qui est-ce ?",
+        "whoForDesc": "Cela détermine l'aperçu et la manière dont il est remis.",
+        "people": "Personnes",
+        "specificPeople": "Personnes spécifiques",
+        "link": "Lien",
+        "anyoneLink": "Toute personne disposant d'un lien",
+        "addByHint": "Ajoutez par nom, @pseudo ou e-mail",
+        "linkOnIssue": "Nous créerons un lien partageable au moment de l'émission.",
+        "alreadyHave": "Vous avez déjà quelque chose ?",
+        "startFromLink": "Partez d'un lien, d'un fichier ou d'un ID",
+        "sendExisting": "Envoyez-en un que vous avez créé",
+        "startFromSomething": "Partir de quelque chose",
+        "importIntro": "Collez un lien, un ID Credential Engine ou les données d'un titre — nous nous occupons du reste.",
+        "importPlaceholder": "Collez une URL, un ID ce- ou le JSON du titre…",
+        "importSupports": "Nous prenons en charge les liens, les ID et les fichiers",
+        "uploadFile": "Télécharger un fichier",
+        "pasteInstead": "Ouvrez la source, copiez son JSON et collez-le ci-dessus.",
+        "bringingIn": "Importation…",
+        "bringItIn": "L'importer",
+        "foundIt": "Trouvé",
+        "fromCredEngine": "Depuis Credential Engine",
+        "useThis": "Utiliser celui-ci",
+        "openFailed": "Nous n'avons pas pu ouvrir celui-ci. Veuillez en essayer un autre.",
+        "credSentToast": "Titre envoyé.",
+        "sendFailed": "Un problème est survenu lors de l'envoi de ce titre. Veuillez réessayer.",
+        "untitled": "Titre sans nom",
+        "sendThisCred": "Envoyer ce titre",
+        "whosItFor": "Pour qui ?",
+        "reuseTitle": "Réutilisez-en un que vous avez créé",
+        "reuseSubtitle": "Envoyez un titre que vous gérez — choisissez-en un pour commencer.",
+        "searchCreds": "Recherchez vos titres…",
+        "nothingMatches": "Rien ne correspond à “{{query}}”.",
+        "noneIssued": "Vous n'avez pas encore émis de titre.",
+        "showMore": "Afficher plus",
+        "previewDesc": "C'est exactement ce que votre destinataire recevra.",
+        "chooseRecip": "Choisir le destinataire",
+        "editCopy": "Modifier plutôt une copie",
+        "linkReady": "Votre lien est prêt",
+        "credSent": "Titre envoyé",
+        "linkClaimDesc": "Toute personne disposant de ce lien peut le réclamer.",
+        "onItsWay": "“{{name}}” est en route.",
+        "copy": "Copier",
+        "sendAnother": "En envoyer un autre",
+        "sending": "Envoi…",
+        "createLink": "Créer un lien partageable",
+        "sendToSelf": "Me l'envoyer",
+        "sendCred": "Envoyer le titre",
+        "skillsTitle": "Compétences",
+        "skillsSubtitle": "Recherchez des compétences pour aligner ce titre sur un cadre.",
+        "removeSkill": "Supprimer {{name}}",
+        "clearSearch": "Effacer la recherche",
+        "searching": "Recherche…",
+        "suggested": "Suggérées",
+        "noMatchingSkills": "Aucune compétence correspondante.",
+        "browseAllFrameworks": "Parcourir tous les cadres",
+        "addSkills": "Ajouter des compétences",
+        "selectedTapToToggle": "{{count}} sélectionnées · appuyez pour ajouter ou retirer",
+        "addSkillsSubtitle": "Alignez ce titre sur des compétences de n'importe quel cadre.",
+        "frameworkAlignment": "Alignement sur le cadre",
+        "verified": "Vérifié",
+        "removeAlignment": "Supprimer l'alignement",
+        "alignmentsTitle": "Alignements",
+        "alignmentsSubtitle": "Normes et cadres externes auxquels ce titre correspond.",
+        "verifiedSource": "Source vérifiée",
+        "occupationsPrograms": "Métiers & programmes",
+        "invalidJsonLine": "JSON invalide à la ligne {{line}}.",
+        "invalidJson": "Ce n'est pas encore un JSON valide.",
+        "mustBeJsonObject": "Un titre doit être un objet JSON.",
+        "checking": "Vérification…",
+        "valid": "Valide",
+        "copied": "Copié",
+        "jsonStudioHint": "Modifiez le titre directement. Nous garderons l'émetteur et le destinataire synchronisés au moment de l'émission.",
+        "evidencePerRecipient": "Preuve par destinataire",
+        "evidenceSubtitle": "Joignez une preuve propre à chaque personne. Facultatif.",
+        "catalog": {
+            "Badge": {
+                "label": "Badge",
+                "pick": "Un badge numérique pour une réalisation ou une compétence."
+            },
+            "Certificate": {
+                "label": "Certificat",
+                "pick": "Un certificat officiel reconnaissant une réalisation."
+            },
+            "Course": {
+                "label": "Cours",
+                "pick": "Une personne a terminé un cours ou une formation."
+            },
+            "Competency": {
+                "label": "Compétence",
+                "pick": "Vérifiez une compétence ou une aptitude précise."
+            },
+            "License": {
+                "label": "Licence",
+                "pick": "Une licence professionnelle ou d’exercice."
+            },
+            "Membership": {
+                "label": "Adhésion",
+                "pick": "Adhésion à une organisation ou à un programme."
+            },
+            "MicroCredential": {
+                "label": "Micro-certification",
+                "pick": "Reconnaissance courte d’un apprentissage ciblé."
+            },
+            "Achievement": {
+                "label": "Réalisation",
+                "pick": "Une réussite générale qui ne correspond à aucun autre type."
+            },
+            "Award": {
+                "label": "Prix",
+                "pick": "Une distinction ou un prix décerné pour l’excellence."
+            },
+            "CommunityService": {
+                "label": "Service communautaire",
+                "pick": "Reconnaissez un travail bénévole ou communautaire."
+            },
+            "CoCurricular": {
+                "label": "Parascolaire",
+                "pick": "Activité parallèle aux études formelles (clubs, sports)."
+            },
+            "CertificateOfCompletion": {
+                "label": "Certificat de réussite",
+                "pick": "Confirme qu’une personne a terminé un programme."
+            },
+            "LearningProgram": {
+                "label": "Programme d’apprentissage",
+                "pick": "Un programme d’apprentissage structuré en plusieurs parties."
+            },
+            "Assessment": {
+                "label": "Évaluation",
+                "pick": "Résultats d’un test ou d’une évaluation."
+            },
+            "Assignment": {
+                "label": "Devoir",
+                "pick": "Un travail de cours terminé."
+            },
+            "Fieldwork": {
+                "label": "Travail de terrain",
+                "pick": "Une expérience pratique ou de terrain."
+            },
+            "Degree": {
+                "label": "Diplôme",
+                "pick": "Un diplôme universitaire général."
+            },
+            "AssociateDegree": {
+                "label": "Diplôme d’associé",
+                "pick": "Un diplôme d’associé de deux ans."
+            },
+            "BachelorDegree": {
+                "label": "Licence",
+                "pick": "Un diplôme de premier cycle de quatre ans."
+            },
+            "MasterDegree": {
+                "label": "Master",
+                "pick": "Un diplôme de master de deuxième cycle."
+            },
+            "DoctoralDegree": {
+                "label": "Doctorat",
+                "pick": "Un doctorat (PhD ou équivalent)."
+            },
+            "ResearchDoctorate": {
+                "label": "Doctorat de recherche",
+                "pick": "Un doctorat axé sur la recherche."
+            },
+            "ProfessionalDoctorate": {
+                "label": "Doctorat professionnel",
+                "pick": "Un doctorat orienté vers la pratique."
+            },
+            "Diploma": {
+                "label": "Diplôme",
+                "pick": "Un diplôme pour des études terminées."
+            },
+            "SecondarySchoolDiploma": {
+                "label": "Diplôme d’études secondaires",
+                "pick": "Un diplôme d’études secondaires / de lycée."
+            },
+            "GeneralEducationDevelopment": {
+                "label": "GED",
+                "pick": "Une équivalence d’études secondaires (GED)."
+            },
+            "Certification": {
+                "label": "Certification",
+                "pick": "Une certification sectorielle ou professionnelle."
+            },
+            "ApprenticeshipCertificate": {
+                "label": "Apprentissage",
+                "pick": "L’achèvement d’un apprentissage."
+            },
+            "JourneymanCertificate": {
+                "label": "Compagnon",
+                "pick": "Un titre de métier de niveau compagnon."
+            },
+            "MasterCertificate": {
+                "label": "Certificat de maître",
+                "pick": "Un titre de métier de niveau maître."
+            },
+            "QualityAssuranceCredential": {
+                "label": "Assurance qualité",
+                "pick": "Un titre d’assurance qualité ou de conformité."
+            },
+            "fam": {
+                "recognition": {
+                    "label": "Reconnaissance",
+                    "blurb": "Honorez une réussite, une contribution ou un moment."
+                },
+                "learning": {
+                    "label": "Apprentissage",
+                    "blurb": "Une personne a terminé un cours, un programme ou une compétence."
+                },
+                "degrees": {
+                    "label": "Grades & Diplômes",
+                    "blurb": "Un grade ou diplôme universitaire officiel."
+                },
+                "professional": {
+                    "label": "Professionnel",
+                    "blurb": "Licence, certification ou titre de métier."
+                },
+                "belonging": {
+                    "label": "Appartenance",
+                    "blurb": "Adhésion à une organisation ou à un programme."
+                }
+            }
+        },
+        "result": {
+            "LetterGrade": {
+                "label": "Note en lettre",
+                "eg": "p. ex. A-"
+            },
+            "Percent": {
+                "label": "Pourcentage",
+                "eg": "p. ex. 95"
+            },
+            "GradePointAverage": {
+                "label": "GPA/Moyenne",
+                "eg": "p. ex. 3.8"
+            },
+            "RawScore": {
+                "label": "Points",
+                "eg": "p. ex. 720"
+            },
+            "Status": {
+                "label": "Statut",
+                "eg": ""
+            },
+            "status": {
+                "Completed": "Terminé",
+                "Enrolled": "Inscrit",
+                "Failed": "Échoué",
+                "InProgress": "En cours",
+                "OnHold": "En attente",
+                "Provisional": "Provisoire",
+                "Withdrew": "Abandonné"
+            }
+        },
+        "field": {
+            "completionDate": {
+                "label": "Date d'achèvement"
+            },
+            "startDate": {
+                "label": "Date de début"
+            },
+            "creditsEarned": {
+                "label": "Crédits obtenus",
+                "ph": "p. ex. 3"
+            },
+            "term": {
+                "label": "Trimestre",
+                "ph": "p. ex. Automne 2025"
+            },
+            "licenseNumber": {
+                "label": "Numéro de licence",
+                "ph": "p. ex. RN-1234567"
+            },
+            "role": {
+                "label": "Rôle ou niveau",
+                "ph": "p. ex. Membre Or"
+            },
+            "creditHours": {
+                "label": "Heures de crédit",
+                "ph": "p. ex. 10"
+            },
+            "humanCode": {
+                "label": "Code du cours",
+                "ph": "p. ex. CS101"
+            },
+            "fieldOfStudy": {
+                "label": "Domaine d'études",
+                "ph": "p. ex. Informatique"
+            },
+            "specialization": {
+                "label": "Spécialisation",
+                "ph": "p. ex. Apprentissage automatique"
+            },
+            "version": {
+                "label": "Version",
+                "ph": "p. ex. 2.1"
+            },
+            "expiryDate": {
+                "label": "Expire le"
+            },
+            "memberId": {
+                "label": "ID de membre",
+                "ph": "p. ex. M-00482"
+            }
+        }
     }
 }

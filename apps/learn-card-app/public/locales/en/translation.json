@@ -7886,5 +7886,451 @@
             "canWriteSuffix": ", {{count}} can also write",
             "stopAnytime": ". You can stop anytime."
         }
+    },
+    "issueFlow": {
+        "header": {
+            "json": "JSON",
+            "issuing": "Issuing...",
+            "issue": "Issue",
+            "issueCredential": "Issue Credential"
+        },
+        "provenance": {
+            "importedFrom": "Imported from {{source}}",
+            "dismiss": "Dismiss"
+        },
+        "error": {
+            "tryAgain": "Try Again"
+        },
+        "type": {
+            "heading": "What are you issuing?",
+            "subheading": "Pick a type—your credential takes shape as you go.",
+            "selected": "Type: {{label}}",
+            "browseAll": "Browse all types"
+        },
+        "browser": {
+            "title": "Choose a credential type",
+            "subtitle": "Pick the type that best fits what you’re recognizing.",
+            "searchPlaceholder": "Search types…",
+            "noMatch": "No types match “{{query}}”."
+        },
+        "details": {
+            "name": "Name",
+            "namePlaceholder": "e.g. Web Development Fundamentals",
+            "nameError": "Give your credential a name to continue.",
+            "descLabel": "Description (optional)",
+            "descPlaceholder": "What does this credential represent?",
+            "changeImage": "Change image",
+            "addImage": "Add an image (optional)"
+        },
+        "advanced": {
+            "toggle": "More detail",
+            "criteriaLabel": "How it’s earned (criteria)",
+            "criteriaPlaceholder": "Describe what the recipient did to earn this.",
+            "expiresLabel": "Expires on (optional)",
+            "evidenceHint": "Add evidence and media above in the <0>Evidence & media</0> section."
+        },
+        "display": {
+            "heading": "Display (optional)",
+            "subheading": "Fine-tune how this credential looks. Wallets that don’t support these hints simply ignore them.",
+            "categoryLabel": "Category",
+            "autoPlaceholder": "Automatic (based on type)",
+            "subtypeLabel": "Subtype label",
+            "subtypePlaceholder": "e.g. Trailblazer",
+            "styleLabel": "Display style",
+            "bgColor": "Background color",
+            "accentColor": "Accent color (badge ring)",
+            "accentHint": "Colors the badge ring. Defaults to the category color if unset.",
+            "bgImageLabel": "Background image",
+            "bgPreviewAlt": "Background preview",
+            "remove": "Remove",
+            "changeBgImage": "Change background image",
+            "addBgImage": "Add a background image",
+            "clearField": "Clear {{label}}",
+            "style": {
+                "badge": "Badge",
+                "certificate": "Certificate",
+                "award": "Award",
+                "idCard": "ID card",
+                "course": "Course",
+                "media": "Media"
+            },
+            "styleDesc": {
+                "badge": "A circular emblem with a ribbon. Best for social badges and achievements.",
+                "certificate": "A formal, document-style frame. Good for completions and certifications.",
+                "award": "A trophy-style ribbon that emphasizes recognition and honors.",
+                "idCard": "A wallet-style ID layout with photo and issuer. Great for memberships.",
+                "course": "Tuned for courses, classes, and learning programs.",
+                "media": "A rich tile that showcases an image or video front-and-center."
+            },
+            "cat": {
+                "badge": "Badge",
+                "achievement": "Achievement",
+                "course": "Course",
+                "portfolio": "Portfolio",
+                "assistance": "Assistance",
+                "experience": "Experience",
+                "id": "ID"
+            },
+            "catDesc": {
+                "badge": "Community and social recognition badges.",
+                "achievement": "Awards, certificates, and accomplishments.",
+                "course": "Courses, classes, and learning programs.",
+                "portfolio": "Portfolio pieces and personal work.",
+                "assistance": "Support needs and accommodations.",
+                "experience": "Jobs, internships, and professional experience.",
+                "id": "Identity cards and official credentials."
+            }
+        },
+        "whoFor": "Who is this for?",
+        "whoForDesc": "This shapes the preview and how it’s delivered.",
+        "people": "People",
+        "specificPeople": "Specific people",
+        "link": "Link",
+        "anyoneLink": "Anyone with a link",
+        "addByHint": "Add by name, @username, or email",
+        "linkOnIssue": "We'll create a shareable link when you issue.",
+        "alreadyHave": "Already have something?",
+        "startFromLink": "Start from a link, file, or ID",
+        "sendExisting": "Send one you've made",
+        "startFromSomething": "Start from something",
+        "importIntro": "Paste a link, a Credential Engine ID, or a credential's data — we'll figure out the rest.",
+        "importPlaceholder": "Paste a URL, ce- ID, or credential JSON…",
+        "importSupports": "We support links, IDs, and files",
+        "uploadFile": "Upload file",
+        "pasteInstead": "Open the source, copy its JSON, and paste it above.",
+        "bringingIn": "Bringing it in…",
+        "bringItIn": "Bring it in",
+        "foundIt": "Found it",
+        "fromCredEngine": "From Credential Engine",
+        "useThis": "Use this",
+        "openFailed": "We couldn't open that one. Please try another.",
+        "credSentToast": "Credential sent.",
+        "sendFailed": "Something went wrong sending this credential. Please try again.",
+        "untitled": "Untitled credential",
+        "sendThisCred": "Send this credential",
+        "whosItFor": "Who's it for?",
+        "reuseTitle": "Reuse one you've made",
+        "reuseSubtitle": "Send a credential you manage — pick one to get started.",
+        "searchCreds": "Search your credentials…",
+        "nothingMatches": "Nothing matches “{{query}}”.",
+        "noneIssued": "You haven't issued any credentials yet.",
+        "showMore": "Show more",
+        "previewDesc": "This is exactly what your recipient will receive.",
+        "chooseRecip": "Choose recipient",
+        "editCopy": "Edit a copy instead",
+        "linkReady": "Your link is ready",
+        "credSent": "Credential sent",
+        "linkClaimDesc": "Anyone with this link can claim it.",
+        "onItsWay": "“{{name}}” is on its way.",
+        "copy": "Copy",
+        "sendAnother": "Send another",
+        "sending": "Sending…",
+        "createLink": "Create shareable link",
+        "sendToSelf": "Send to myself",
+        "sendCred": "Send credential",
+        "success": {
+            "theRecipient": "the recipient",
+            "twoNames": "{{first}} and {{second}}",
+            "andOthers": "{{name}} and {{count}} others",
+            "linkCopied": "Link copied.",
+            "shareTitle": "A credential for you",
+            "qrDownloadFail": "Failed to download QR code.",
+            "expires": "Expires {{date}}",
+            "claimLimitOne": "{{count}} claim limit",
+            "claimLimitOther": "{{count}} claims limit",
+            "linkReady": "Your link is ready",
+            "linkDesc": "Anyone with this link or QR code can claim it.",
+            "copyLink": "Copy link",
+            "copied": "Copied",
+            "downloadQr": "Download QR",
+            "issueAnother": "Issue Another",
+            "sent": "Sent!",
+            "deliveredTo": "Delivered to {{recipients}}.",
+            "youMadeIt": "You made it!",
+            "savedToWallet": "Your credential is signed and saved to your wallet.",
+            "viewInWallet": "View in Wallet"
+        },
+        "fields": {
+            "gradeOrResult": "Grade or result",
+            "useFixed": "Use a fixed value",
+            "personalize": "Personalize per recipient",
+            "setPerRecipient": "Set per recipient below",
+            "selectStatus": "Select a status…",
+            "pickGradeType": "Pick a grade type above so this result is saved in a standard format.",
+            "fillDetails": "Fill in the details",
+            "placeholdersDesc": "This credential has placeholders. Give each one a value before issuing.",
+            "sameForAll": "Same for everyone",
+            "perRecipient": "Per recipient",
+            "selectDefault": "Select…"
+        },
+        "media": {
+            "photo": "Photo",
+            "document": "Document",
+            "video": "Video",
+            "link": "Link",
+            "title": "Evidence & media",
+            "subtitle": "Attach proof — photos, documents, videos, or links.",
+            "removeAttachment": "Remove attachment",
+            "urlPlaceholder": "https://example.com/proof",
+            "linkTitle": "Link title (optional)",
+            "noAttachments": "No attachments yet."
+        },
+        "skillsTitle": "Skills",
+        "skillsSubtitle": "Search competencies to align this credential to a framework.",
+        "removeSkill": "Remove {{name}}",
+        "clearSearch": "Clear search",
+        "searching": "Searching…",
+        "suggested": "Suggested",
+        "noMatchingSkills": "No matching skills.",
+        "browseAllFrameworks": "Browse all frameworks",
+        "addSkills": "Add skills",
+        "selectedTapToToggle": "{{count}} selected · tap to add or remove",
+        "addSkillsSubtitle": "Align this credential to competencies from any framework.",
+        "frameworkAlignment": "Framework alignment",
+        "verified": "Verified",
+        "removeAlignment": "Remove alignment",
+        "alignmentsTitle": "Alignments",
+        "alignmentsSubtitle": "External standards and frameworks this credential maps to.",
+        "verifiedSource": "Verified source",
+        "occupationsPrograms": "Occupations & programs",
+        "invalidJsonLine": "Invalid JSON on line {{line}}.",
+        "invalidJson": "This isn’t valid JSON yet.",
+        "mustBeJsonObject": "A credential must be a JSON object.",
+        "checking": "Checking…",
+        "valid": "Valid",
+        "copied": "Copied",
+        "jsonStudioHint": "Edit the credential directly. We’ll keep the issuer and recipient in sync when you issue.",
+        "evidencePerRecipient": "Evidence per recipient",
+        "evidenceSubtitle": "Attach proof specific to each person. Optional.",
+        "catalog": {
+            "Badge": {
+                "label": "Badge",
+                "pick": "A digital badge for an achievement or skill."
+            },
+            "Certificate": {
+                "label": "Certificate",
+                "pick": "A formal certificate recognizing an achievement."
+            },
+            "Course": {
+                "label": "Course",
+                "pick": "Someone completed a course or training."
+            },
+            "Competency": {
+                "label": "Skill",
+                "pick": "Verify a specific skill or competency."
+            },
+            "License": {
+                "label": "License",
+                "pick": "A professional or occupational license."
+            },
+            "Membership": {
+                "label": "Membership",
+                "pick": "Membership in an organization or program."
+            },
+            "MicroCredential": {
+                "label": "Micro-Credential",
+                "pick": "Short-form recognition for focused learning."
+            },
+            "Achievement": {
+                "label": "Achievement",
+                "pick": "A general accomplishment that fits no other type."
+            },
+            "Award": {
+                "label": "Award",
+                "pick": "An honor or prize given for excellence."
+            },
+            "CommunityService": {
+                "label": "Community Service",
+                "pick": "Recognize volunteer or community work."
+            },
+            "CoCurricular": {
+                "label": "Co-Curricular",
+                "pick": "Activity alongside formal study (clubs, sports)."
+            },
+            "CertificateOfCompletion": {
+                "label": "Certificate of Completion",
+                "pick": "Confirms someone finished a program."
+            },
+            "LearningProgram": {
+                "label": "Learning Program",
+                "pick": "A structured multi-part learning program."
+            },
+            "Assessment": {
+                "label": "Assessment",
+                "pick": "Results of a test or evaluation."
+            },
+            "Assignment": {
+                "label": "Assignment",
+                "pick": "A completed piece of coursework."
+            },
+            "Fieldwork": {
+                "label": "Fieldwork",
+                "pick": "Hands-on practical or field experience."
+            },
+            "Degree": {
+                "label": "Degree",
+                "pick": "A general academic degree."
+            },
+            "AssociateDegree": {
+                "label": "Associate Degree",
+                "pick": "A two-year associate degree."
+            },
+            "BachelorDegree": {
+                "label": "Bachelor's Degree",
+                "pick": "A four-year undergraduate degree."
+            },
+            "MasterDegree": {
+                "label": "Master's Degree",
+                "pick": "A graduate-level master’s degree."
+            },
+            "DoctoralDegree": {
+                "label": "Doctoral Degree",
+                "pick": "A doctoral degree (PhD or equivalent)."
+            },
+            "ResearchDoctorate": {
+                "label": "Research Doctorate",
+                "pick": "A research-focused doctorate."
+            },
+            "ProfessionalDoctorate": {
+                "label": "Professional Doctorate",
+                "pick": "A practice-oriented doctorate."
+            },
+            "Diploma": {
+                "label": "Diploma",
+                "pick": "A diploma for completed study."
+            },
+            "SecondarySchoolDiploma": {
+                "label": "High School Diploma",
+                "pick": "A secondary / high-school diploma."
+            },
+            "GeneralEducationDevelopment": {
+                "label": "GED",
+                "pick": "A high-school equivalency (GED)."
+            },
+            "Certification": {
+                "label": "Certification",
+                "pick": "An industry or professional certification."
+            },
+            "ApprenticeshipCertificate": {
+                "label": "Apprenticeship",
+                "pick": "Completion of an apprenticeship."
+            },
+            "JourneymanCertificate": {
+                "label": "Journeyman",
+                "pick": "A journeyman-level trade credential."
+            },
+            "MasterCertificate": {
+                "label": "Master Certificate",
+                "pick": "A master-level trade credential."
+            },
+            "QualityAssuranceCredential": {
+                "label": "Quality Assurance",
+                "pick": "A quality-assurance or compliance credential."
+            },
+            "fam": {
+                "recognition": {
+                    "label": "Recognition",
+                    "blurb": "Honor an accomplishment, contribution, or moment."
+                },
+                "learning": {
+                    "label": "Learning",
+                    "blurb": "Someone completed a course, program, or skill."
+                },
+                "degrees": {
+                    "label": "Degrees & Diplomas",
+                    "blurb": "A formal academic degree or diploma."
+                },
+                "professional": {
+                    "label": "Professional",
+                    "blurb": "Licensure, certification, or a trade credential."
+                },
+                "belonging": {
+                    "label": "Belonging",
+                    "blurb": "Membership in an organization or program."
+                }
+            }
+        },
+        "result": {
+            "LetterGrade": {
+                "label": "Letter grade",
+                "eg": "e.g. A-"
+            },
+            "Percent": {
+                "label": "Percent",
+                "eg": "e.g. 95"
+            },
+            "GradePointAverage": {
+                "label": "GPA",
+                "eg": "e.g. 3.8"
+            },
+            "RawScore": {
+                "label": "Points",
+                "eg": "e.g. 720"
+            },
+            "Status": {
+                "label": "Status",
+                "eg": ""
+            },
+            "status": {
+                "Completed": "Completed",
+                "Enrolled": "Enrolled",
+                "Failed": "Failed",
+                "InProgress": "In Progress",
+                "OnHold": "On Hold",
+                "Provisional": "Provisional",
+                "Withdrew": "Withdrew"
+            }
+        },
+        "field": {
+            "completionDate": {
+                "label": "Completion date"
+            },
+            "startDate": {
+                "label": "Start date"
+            },
+            "creditsEarned": {
+                "label": "Credits earned",
+                "ph": "e.g. 3"
+            },
+            "term": {
+                "label": "Term",
+                "ph": "e.g. Fall 2025"
+            },
+            "licenseNumber": {
+                "label": "License number",
+                "ph": "e.g. RN-1234567"
+            },
+            "role": {
+                "label": "Role or level",
+                "ph": "e.g. Gold Member"
+            },
+            "creditHours": {
+                "label": "Credit hours",
+                "ph": "e.g. 10"
+            },
+            "humanCode": {
+                "label": "Course code",
+                "ph": "e.g. CS101"
+            },
+            "fieldOfStudy": {
+                "label": "Field of study",
+                "ph": "e.g. Computer Science"
+            },
+            "specialization": {
+                "label": "Specialization",
+                "ph": "e.g. Machine Learning"
+            },
+            "version": {
+                "label": "Version",
+                "ph": "e.g. 2.1"
+            },
+            "expiryDate": {
+                "label": "Expires on"
+            },
+            "memberId": {
+                "label": "Member ID",
+                "ph": "e.g. M-00482"
+            }
+        }
     }
 }
