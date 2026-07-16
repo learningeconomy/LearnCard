@@ -516,3 +516,78 @@ describe('verifyAndDecodeRequestObject — client_id_scheme=x509_san_dns', () =>
         ).rejects.toMatchObject({ code: 'invalid_request_object' });
     });
 });
+
+/* -------------------------------------------------------------------------- */
+/*                       request_uri_method=post (§5.10)                       */
+/* -------------------------------------------------------------------------- */
+
+describe('verifyAndDecodeRequestObject — request_uri_method=post (§5.10)', () => {
+    const jwsResponse = (jws: string) =>
+        ({ ok: true, status: 200, statusText: 'OK', text: async () => jws } as unknown as Response);
+
+    it('POSTs wallet_nonce and accepts a request object that echoes it', async () => {
+        const key = await makeVerifierKey();
+        const jws = await signRequestObject(key, baseClaims(key, { wallet_nonce: 'wn-abc' }));
+        const fetchMock = jest.fn().mockResolvedValue(jwsResponse(jws));
+
+        const request = await verifyAndDecodeRequestObject({
+            requestUri: 'https://verifier.test/req',
+            requestUriMethod: 'post',
+            walletNonce: 'wn-abc',
+            fetchImpl: fetchMock as unknown as typeof fetch,
+        });
+
+        expect(request.wallet_nonce).toBe('wn-abc');
+
+        const [url, init] = fetchMock.mock.calls[0];
+        expect(url).toBe('https://verifier.test/req');
+        expect(init.method).toBe('POST');
+        expect(init.headers.Accept).toBe('application/oauth-authz-req+jwt');
+        expect(String(init.body)).toContain('wallet_nonce=wn-abc');
+    });
+
+    it('rejects when the request object does not echo the sent wallet_nonce', async () => {
+        const key = await makeVerifierKey();
+        const jws = await signRequestObject(key, baseClaims(key, { wallet_nonce: 'different' }));
+        const fetchMock = jest.fn().mockResolvedValue(jwsResponse(jws));
+
+        await expect(
+            verifyAndDecodeRequestObject({
+                requestUri: 'https://verifier.test/req',
+                requestUriMethod: 'post',
+                walletNonce: 'wn-abc',
+                fetchImpl: fetchMock as unknown as typeof fetch,
+            })
+        ).rejects.toMatchObject({ code: 'invalid_request_object' });
+    });
+});
+
+/* -------------------------------------------------------------------------- */
+/*                              x509_hash (smoke)                             */
+/* -------------------------------------------------------------------------- */
+
+describe('verifyAndDecodeRequestObject — client_id_scheme=x509_hash (§5.9.3)', () => {
+    it('routes x509_hash to the x509 verifier (not rejected as unsupported)', async () => {
+        const key = await makeVerifierKey();
+        const jws = await signRequestObject(
+            key,
+            {
+                ...baseClaims(key),
+                client_id: 'x509_hash:Uvo3HtuIxuhC92rShpgqcT3YXwrqRxWEviRiA0OZszk',
+                client_id_scheme: 'x509_hash',
+            },
+            { x5c: ['MIIBkjCCATg=' /* bogus DER; never parsed */] }
+        );
+
+        // With a bogus cert the flow fails during chain parse / trust check —
+        // the point is it's ROUTED to x509 verification and does NOT throw
+        // unsupported_client_id_scheme.
+        await expect(
+            verifyAndDecodeRequestObject({ inlineJwt: jws, unsafeAllowSelfSigned: true })
+        ).rejects.toMatchObject({ name: 'RequestObjectError' });
+
+        await expect(
+            verifyAndDecodeRequestObject({ inlineJwt: jws, unsafeAllowSelfSigned: true })
+        ).rejects.not.toMatchObject({ code: 'unsupported_client_id_scheme' });
+    });
+});

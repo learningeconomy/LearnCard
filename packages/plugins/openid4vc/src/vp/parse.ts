@@ -158,9 +158,21 @@ export const resolveAuthorizationRequest = async (
         const urlClientId = parsed.rawParams.get('client_id') ?? undefined;
         const urlClientIdScheme = parsed.rawParams.get('client_id_scheme') ?? undefined;
 
+        // OID4VP 1.0 §5.10: honor `request_uri_method=post`. Only the
+        // by_reference_request_uri path fetches a URL, so POST + wallet_nonce
+        // apply there; the inline `request` JWS path ignores them.
+        const isUriRef = parsed.kind === 'by_reference_request_uri';
+        const rawMethod = parsed.rawParams.get('request_uri_method');
+        const requestUriMethod =
+            rawMethod === 'post' ? 'post' : rawMethod === 'get' ? 'get' : undefined;
+        const walletNonce =
+            isUriRef && requestUriMethod === 'post' ? randomWalletNonce() : undefined;
+
         request = await verifyAndDecodeRequestObject({
-            requestUri: parsed.kind === 'by_reference_request_uri' ? parsed.requestUri : undefined,
+            requestUri: isUriRef ? parsed.requestUri : undefined,
             inlineJwt: parsed.kind === 'by_reference_request_jwt' ? parsed.jwt : undefined,
+            requestUriMethod,
+            walletNonce,
             urlClientId,
             urlClientIdScheme,
             fetchImpl,
@@ -196,6 +208,21 @@ export const resolveAuthorizationRequest = async (
  * same variety of shapes (scheme://?..., scheme:?..., https://.../?...,
  * bare `?...`, bare `key=value`).
  */
+/**
+ * Fresh, cryptographically-random `wallet_nonce` for a §5.10 POST request_uri.
+ * 16 bytes of Web Crypto randomness, hex-encoded (ASCII-URL-safe).
+ */
+const randomWalletNonce = (): string => {
+    const c = (globalThis as { crypto?: Crypto }).crypto;
+    if (!c)
+        throw new VpError('invalid_uri', 'Web Crypto API not available to generate wallet_nonce');
+    const bytes = new Uint8Array(16);
+    c.getRandomValues(bytes);
+    let hex = '';
+    for (let i = 0; i < bytes.length; i++) hex += bytes[i]!.toString(16).padStart(2, '0');
+    return hex;
+};
+
 const extractSearchParams = (input: string): URLSearchParams => {
     const queryStart = input.indexOf('?');
 

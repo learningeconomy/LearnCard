@@ -113,6 +113,19 @@ export interface VerifyRequestObjectOptions {
     inlineJwt?: string;
 
     /**
+     * OID4VP 1.0 §5.10 — how to fetch `requestUri`. `get` (default) or `post`.
+     * When `post`, the wallet POSTs `wallet_nonce` (+ optional wallet_metadata)
+     * and validates the verifier echoes the nonce in the signed Request Object.
+     */
+    requestUriMethod?: 'get' | 'post';
+
+    /**
+     * OID4VP 1.0 §5.10 — the wallet nonce to send on a POST request_uri and
+     * require back in the signed Request Object's `wallet_nonce` claim.
+     */
+    walletNonce?: string;
+
+    /**
      * `client_id` from the outer URL params. Some verifiers let the
      * `client_id` live in the URL while the JWS payload just repeats
      * it; we cross-check them. Optional — only used as a consistency
@@ -225,7 +238,7 @@ export const verifyAndDecodeRequestObject = async (
     // the resolved AuthorizationRequest; we just skip the actual
     // crypto check below.
     if (opts.unsafeSkipRequestObjectSignatureVerification) {
-        return buildRequestFromClaims(clientId, prefix, claims);
+        return finalizeRequest(buildRequestFromClaims(clientId, prefix, claims), opts);
     }
 
     switch (prefix) {
@@ -250,6 +263,17 @@ export const verifyAndDecodeRequestObject = async (
                 header,
                 clientId: prefixValue,
                 opts,
+                x509Binding: 'san_dns',
+            });
+            break;
+
+        case 'x509_hash':
+            await verifyWithX509({
+                jws,
+                header,
+                clientId: prefixValue,
+                opts,
+                x509Binding: 'hash',
             });
             break;
 
@@ -264,10 +288,9 @@ export const verifyAndDecodeRequestObject = async (
 
         case 'https':
         case 'verifier_attestation':
-        case 'x509_hash':
             throw new RequestObjectError(
                 'unsupported_client_id_scheme',
-                `client-id prefix=${prefix} is not yet supported (supported: did, x509_san_dns, pre-registered)`
+                `client-id prefix=${prefix} is not yet supported (supported: did, x509_san_dns, x509_hash, pre-registered)`
             );
 
         default: {
@@ -282,12 +305,39 @@ export const verifyAndDecodeRequestObject = async (
         }
     }
 
-    return buildRequestFromClaims(clientId, prefix, claims);
+    return finalizeRequest(buildRequestFromClaims(clientId, prefix, claims), opts);
 };
 
 /* -------------------------------------------------------------------------- */
 /*                                  fetch                                     */
 /* -------------------------------------------------------------------------- */
+
+/** Form body for a §5.10 POST request_uri: `wallet_nonce` when supplied. */
+const buildRequestUriPostBody = (walletNonce?: string): string => {
+    const params = new URLSearchParams();
+    if (typeof walletNonce === 'string' && walletNonce.length > 0) {
+        params.set('wallet_nonce', walletNonce);
+    }
+    return params.toString();
+};
+
+/**
+ * §5.10: when the wallet sent a `wallet_nonce` on a POST request_uri, the
+ * signed Request Object MUST echo it in a `wallet_nonce` claim; otherwise the
+ * wallet MUST terminate. No-op when no wallet_nonce was sent.
+ */
+const finalizeRequest = (
+    req: AuthorizationRequest,
+    opts: VerifyRequestObjectOptions
+): AuthorizationRequest => {
+    if (opts.walletNonce && req.wallet_nonce !== opts.walletNonce) {
+        throw new RequestObjectError(
+            'invalid_request_object',
+            'Signed Request Object did not echo the wallet_nonce sent on the POST request_uri (OID4VP 1.0 §5.10)'
+        );
+    }
+    return req;
+};
 
 const loadJws = async (opts: VerifyRequestObjectOptions): Promise<string> => {
     if (opts.inlineJwt) {
@@ -315,9 +365,24 @@ const loadJws = async (opts: VerifyRequestObjectOptions): Promise<string> => {
         );
     }
 
+    // OID4VP 1.0 §5.10: `request_uri_method=post` — POST wallet_nonce (and
+    // optionally wallet_metadata) with an `application/oauth-authz-req+jwt`
+    // Accept header. Default (`get`) fetches the request object directly.
+    const usePost = opts.requestUriMethod === 'post';
+    const requestInit: RequestInit = usePost
+        ? {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                  Accept: 'application/oauth-authz-req+jwt',
+              },
+              body: buildRequestUriPostBody(opts.walletNonce),
+          }
+        : { method: 'GET', headers: { Accept: 'application/oauth-authz-req+jwt' } };
+
     let response: Response;
     try {
-        response = await fetchImpl(opts.requestUri, { method: 'GET' });
+        response = await fetchImpl(opts.requestUri, requestInit);
     } catch (e) {
         throw new RequestObjectError(
             'request_fetch_failed',
@@ -379,6 +444,12 @@ interface VerifyCtx {
     header: Record<string, unknown>;
     clientId: string;
     opts: VerifyRequestObjectOptions;
+    /**
+     * How the X.509 leaf is bound to the `client_id` (§5.9.3):
+     * - `san_dns` — leaf SAN dNSName must cover the client_id host.
+     * - `hash` — client_id must equal base64url(SHA-256(DER leaf)).
+     */
+    x509Binding?: 'san_dns' | 'hash';
 }
 
 const verifyWithDid = async (ctx: VerifyCtx): Promise<void> => {
@@ -474,12 +545,13 @@ const findVerificationMethod = (doc: DidDocument, kid: string): VerificationMeth
 
 const verifyWithX509 = async (ctx: VerifyCtx): Promise<void> => {
     const { jws, header, clientId, opts } = ctx;
+    const binding = ctx.x509Binding ?? 'san_dns';
 
     const x5c = header.x5c;
     if (!Array.isArray(x5c) || x5c.length === 0) {
         throw new RequestObjectError(
             'invalid_request_object',
-            'Request Object JWS header is missing x5c (required for client_id_scheme=x509_san_dns)'
+            'Request Object JWS header is missing x5c (required for the x509 client-id prefixes)'
         );
     }
 
@@ -508,24 +580,45 @@ const verifyWithX509 = async (ctx: VerifyCtx): Promise<void> => {
 
     const leaf = chain[0]!;
 
-    const expectedHost = hostFromClientId(clientId);
-    try {
-        if (!leafCoversHost(leaf, expectedHost, x509)) {
+    if (binding === 'hash') {
+        // §5.9.3 x509_hash: client_id (value) MUST equal the base64url-encoded
+        // SHA-256 of the DER-encoded leaf certificate.
+        let actualHash: string;
+        try {
+            actualHash = await base64UrlSha256(b64Decode(x5c[0] as string));
+        } catch (e) {
             throw new RequestObjectError(
-                'client_id_mismatch',
-                `Leaf certificate SAN does not cover client_id host "${expectedHost}" (sanDnsNames=${
-                    listLeafSanDnsNames(leaf, x509).join(',') || 'none'
-                })`
+                'invalid_request_object',
+                `Failed to hash leaf certificate: ${describe(e)}`,
+                { cause: e }
             );
         }
-    } catch (e) {
-        if (e instanceof RequestObjectError) throw e;
+        if (actualHash !== clientId) {
+            throw new RequestObjectError(
+                'client_id_mismatch',
+                `Leaf certificate hash does not match client_id (expected ${clientId}, got ${actualHash})`
+            );
+        }
+    } else {
+        const expectedHost = hostFromClientId(clientId);
+        try {
+            if (!leafCoversHost(leaf, expectedHost, x509)) {
+                throw new RequestObjectError(
+                    'client_id_mismatch',
+                    `Leaf certificate SAN does not cover client_id host "${expectedHost}" (sanDnsNames=${
+                        listLeafSanDnsNames(leaf, x509).join(',') || 'none'
+                    })`
+                );
+            }
+        } catch (e) {
+            if (e instanceof RequestObjectError) throw e;
 
-        throw new RequestObjectError(
-            'invalid_request_object',
-            `Failed to inspect leaf certificate SAN: ${describe(e)}`,
-            { cause: e }
-        );
+            throw new RequestObjectError(
+                'invalid_request_object',
+                `Failed to inspect leaf certificate SAN: ${describe(e)}`,
+                { cause: e }
+            );
+        }
     }
 
     // Trust-anchor check.
@@ -683,6 +776,16 @@ const matchesDnsName = (pattern: string, host: string): boolean => {
     if (!host.endsWith(suffix)) return false;
     const left = host.slice(0, -suffix.length);
     return left.length > 0 && !left.includes('.');
+};
+
+/** base64url(SHA-256(bytes)) — the x509_hash thumbprint form (§5.9.3). */
+const base64UrlSha256 = async (bytes: Uint8Array): Promise<string> => {
+    const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+    let binary = '';
+    for (let i = 0; i < digest.length; i++) binary += String.fromCharCode(digest[i]!);
+    const b64 =
+        typeof Buffer !== 'undefined' ? Buffer.from(digest).toString('base64') : btoa(binary);
+    return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 };
 
 const b64Decode = (b64: string): Uint8Array => {
