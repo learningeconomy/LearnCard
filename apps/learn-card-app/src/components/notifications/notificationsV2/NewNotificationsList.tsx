@@ -39,10 +39,7 @@ const NewNotificationsList: React.FC<NewNotificationsListProps> = ({
 
     const primaryColor = colorSet.primaryColor;
 
-    const { data, isLoading, refetch, isRefetching, isFetching } = useGetUserNotifications(
-        options,
-        filter
-    );
+    const { data, isLoading, refetch, isFetching } = useGetUserNotifications(options, filter);
 
     useEffect(() => {
         if (!isLoading && data) {
@@ -81,7 +78,12 @@ const NewNotificationsList: React.FC<NewNotificationsListProps> = ({
 
     const handleRefetch = () => refetch();
 
-    const notificationsLoading = isRefetching || isLoading;
+    // Gate the full-screen spinner on the INITIAL load only. Including
+    // `isRefetching` here tore the whole list down and rebuilt it on every
+    // background refetch — that caused the constant flashing and remounted each
+    // card (wiping local accepted state). Background refetches now surface only
+    // via the subtle top loading line (useLoadingLine above).
+    const notificationsLoading = isLoading;
 
     return (
         <div className="m-auto max-w-[600px] h-full bg-white">
