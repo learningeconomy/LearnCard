@@ -1246,7 +1246,7 @@
         "dateOfBirth": "Fecha de nacimiento",
         "disabled": "(desactivado)",
         "age": "Edad:",
-        "didLabel": "{{marca}} Número (DID)",
+        "didLabel": "{{brand}} Número (DID)",
         "didCopied": "DID copiado al portapapeles",
         "didCopyFailed": "No se puede copiar DID al portapapeles",
         "getAnAdult": "conseguir un adulto",
@@ -1267,7 +1267,7 @@
         "export": {
             "title": "Exportar frase inicial",
             "warning": "¡Advertencia!",
-            "masterKeyWarning": "Esta es la clave maestra de tu {{marca}}. Cualquiera que tenga acceso a esta frase puede controlar su {{marca}} y su identidad. - NO lo compartas. - NO lo almacene en línea ni tome capturas de pantalla. - Anótelo y guárdelo sin conexión. - Si lo pierdes, es posible que pierdas el acceso de forma permanente. <0>¿Está seguro de que desea continuar?</0>",
+            "masterKeyWarning": "Esta es la clave maestra de tu {{brand}}. Cualquiera que tenga acceso a esta frase puede controlar su {{brand}} y su identidad. - NO lo compartas. - NO lo almacene en línea ni tome capturas de pantalla. - Anótelo y guárdelo sin conexión. - Si lo pierdes, es posible que pierdas el acceso de forma permanente. <0>¿Está seguro de que desea continuar?</0>",
             "confirmByTyping": "Confirmar escribiendo",
             "below": "abajo.",
             "phonePlaceholder": "Número de teléfono...",
@@ -6817,7 +6817,7 @@
                     "source": "Origen",
                     "optional": "(Opcional)",
                     "updateConfigModalDesc": "Las funciones que seleccionaste requieren permisos diferentes a los que tu app tiene configurados actualmente.",
-                    "integrationTipsHeading": "Consejos de integración",
+                    "integrationTipsHeading": "{{tips}} de integración",
                     "tipReplaceTodos": "Reemplaza todos los marcadores TODO con tus valores reales",
                     "tipServerSideCode": "El código del lado del servidor (en comentarios) debe ejecutarse en TU servidor, no en la app integrada"
                 },
@@ -6839,7 +6839,7 @@
                     "required": "obligatorio",
                     "returns": "Devuelve",
                     "example": "Ejemplo",
-                    "proTips": "Consejos profesionales",
+                    "proTips": "{{tips}} profesionales",
                     "description": "API completa para comunicarse con la billetera de LearnCard. Selecciona un método para ver documentación detallada y ejemplos de código."
                 }
             },

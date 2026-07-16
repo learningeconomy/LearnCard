@@ -1267,7 +1267,7 @@
         "export": {
             "title": "Phrase d'exportation de semences",
             "warning": "Avertissement!",
-            "masterKeyWarning": "Il s'agit de la clé principale de votre {{brand}}. Toute personne ayant accès à cette phrase peut contrôler votre {{marque}} et votre identité. - Ne le partagez PAS. - Ne le stockez PAS en ligne et ne prenez pas de captures d'écran. - Notez-le et stockez-le hors ligne. - Si vous le perdez, vous risquez de perdre définitivement l'accès. <0>Êtes-vous sûr de vouloir continuer ?</0>",
+            "masterKeyWarning": "Il s'agit de la clé principale de votre {{brand}}. Toute personne ayant accès à cette phrase peut contrôler votre {{brand}} et votre identité. - Ne le partagez PAS. - Ne le stockez PAS en ligne et ne prenez pas de captures d'écran. - Notez-le et stockez-le hors ligne. - Si vous le perdez, vous risquez de perdre définitivement l'accès. <0>Êtes-vous sûr de vouloir continuer ?</0>",
             "confirmByTyping": "Confirmez en tapant",
             "below": "ci-dessous.",
             "phonePlaceholder": "Numéro de téléphone...",
