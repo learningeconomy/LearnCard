@@ -844,7 +844,10 @@
                 "aiInsights": "Les analyses d'IA sont des résumés intelligents générés à partir des justificatifs vérifiés, des compétences, des expériences d'apprentissage et des réussites d'une personne. Elles offrent une vision claire et globale de la progression de l'apprenant en analysant des données authentifiées afin d'identifier les points forts, de mettre en évidence les axes de progression et de révéler des tendances significatives au fil du temps. Ces analyses aident les apprenants à comprendre leur évolution, soutiennent les éducateurs dans l'accompagnement de leurs élèves et permettent de prendre des décisions plus éclairées concernant les parcours d'apprentissage et les opportunités futures.",
                 "aiPathways": "Les parcours d'IA sont des cheminements d'apprentissage personnalisés générés en analysant vos compétences vérifiées, vos justificatifs et vos centres d'intérêt professionnels. Ils définissent des cours, des expériences et des étapes recommandés, adaptés à vos objectifs, afin de vous aider à découvrir de nouvelles opportunités et à progresser vers les résultats professionnels ou d'apprentissage qui comptent le plus pour vous."
             }
-        }
+        },
+        "items": "Éléments",
+        "itemCountOne": "{{count}} élément",
+        "itemCountOther": "{{count}} éléments"
     },
     "theme": {
         "title": "Choisissez votre thème",
