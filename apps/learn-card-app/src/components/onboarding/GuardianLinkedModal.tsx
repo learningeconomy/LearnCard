@@ -1,5 +1,6 @@
 import React from 'react';
 import * as m from '../../paraglide/messages.js';
+import { getLocale } from '../../paraglide/runtime.js';
 import { TransP } from '../../i18n/TransP';
 
 type LinkedChild = {
@@ -15,15 +16,18 @@ type Props = {
 
 const GuardianLinkedModal: React.FC<Props> = ({ children, onDismiss }) => {
     const names = children.map(c => c.childDisplayName || c.childProfileId);
+    const listFormat = new Intl.ListFormat(getLocale(), { style: 'long', type: 'conjunction' });
 
     let nameText: string;
-    if (names.length === 1) {
-        nameText = names[0]!;
-    } else if (names.length === 2) {
-        nameText = `${names[0]} and ${names[1]}`;
+    if (names.length <= 2) {
+        nameText = listFormat.format(names);
     } else {
         const rest = names.length - 2;
-        nameText = `${names[0]}, ${names[1]}, and ${rest} other${rest > 1 ? 's' : ''}`;
+        const othersLabel =
+            rest === 1
+                ? m['onboarding.guardianLinked.otherOne']({ count: rest })
+                : m['onboarding.guardianLinked.otherOther']({ count: rest });
+        nameText = listFormat.format([names[0]!, names[1]!, othersLabel]);
     }
 
     return (

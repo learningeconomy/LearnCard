@@ -19,6 +19,7 @@ import { detectSource, type ImportSourceKind } from './detectSource';
 import { ingestText, ingestFile, ImportError } from './ingest';
 import type { NormalizedImport } from './normalizeToObv3';
 import { summarizeObv3 } from './importSummary';
+import * as m from '../../../paraglide/messages.js';
 
 const log = getLogger('import-sheet');
 
@@ -64,7 +65,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
             } else if (e instanceof Error && e.message) {
                 setError(e.message);
             } else {
-                setError('Something went wrong. Please try again.');
+                setError(m['error.generic']());
             }
         } finally {
             setBusy(false);
@@ -106,20 +107,19 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
             <div className="px-6 pt-6 pb-4 border-b border-grayscale-100">
                 <div className="flex items-center justify-between mb-1">
                     <h2 className="text-xl font-semibold text-grayscale-900">
-                        Start from something
+                        {m['issueFlow.startFromSomething']()}
                     </h2>
                     <button
                         type="button"
                         onClick={handleCloseModal}
                         className="w-8 h-8 rounded-full flex items-center justify-center text-grayscale-400 hover:text-grayscale-900 hover:bg-grayscale-100 transition-colors"
-                        aria-label="Close"
+                        aria-label={m['common.close']()}
                     >
                         <X className="w-5 h-5" />
                     </button>
                 </div>
                 <p className="text-sm text-grayscale-600 leading-relaxed">
-                    Paste a link, a Credential Engine ID, or a credential's data — we'll figure out
-                    the rest.
+                    {m['issueFlow.importIntro']()}
                 </p>
             </div>
 
@@ -145,7 +145,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                                     setText(e.target.value);
                                     setError(null);
                                 }}
-                                placeholder="Paste a URL, ce- ID, or credential JSON…"
+                                placeholder={m['issueFlow.importPlaceholder']()}
                                 rows={4}
                                 className="w-full py-3 px-4 bg-transparent rounded-2xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none resize-none"
                             />
@@ -157,7 +157,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                                     </span>
                                 ) : (
                                     <span className="text-xs text-grayscale-400">
-                                        We support links, IDs, and files
+                                        {m['issueFlow.importSupports']()}
                                     </span>
                                 )}
                                 <button
@@ -166,7 +166,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                                     className="flex items-center gap-1.5 text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
                                 >
                                     <Upload className="w-3.5 h-3.5" />
-                                    Upload file
+                                    {m['issueFlow.uploadFile']()}
                                 </button>
                                 <input
                                     ref={fileRef}
@@ -187,7 +187,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                                     </span>
                                     {canPaste && (
                                         <span className="block text-xs text-red-500">
-                                            Open the source, copy its JSON, and paste it above.
+                                            {m['issueFlow.pasteInstead']()}
                                         </span>
                                     )}
                                 </div>
@@ -203,11 +203,11 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                             {busy ? (
                                 <>
                                     <Loader2 className="w-4 h-4 animate-spin" />
-                                    Bringing it in…
+                                    {m['issueFlow.bringingIn']()}
                                 </>
                             ) : (
                                 <>
-                                    Bring it in
+                                    {m['issueFlow.bringItIn']()}
                                     <ArrowRight className="w-4 h-4" />
                                 </>
                             )}
@@ -219,7 +219,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                     <div className="space-y-4 animate-fade-in-up">
                         <div className="flex items-center gap-2 text-sm font-medium text-emerald-700">
                             <Check className="w-4 h-4" />
-                            Found it
+                            {m['issueFlow.foundIt']()}
                         </div>
 
                         <div className="flex items-start gap-4 p-4 rounded-2xl border border-grayscale-200 bg-grayscale-10">
@@ -254,7 +254,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                         {result.provenance.source === 'credential-engine' && (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-xs font-medium text-emerald-700">
                                 <Database className="w-3.5 h-3.5" />
-                                From Credential Engine
+                                {m['issueFlow.fromCredEngine']()}
                             </span>
                         )}
 
@@ -280,7 +280,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                                 }}
                                 className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                             >
-                                Back
+                                {m['common.back']()}
                             </button>
                             <button
                                 type="button"
@@ -290,7 +290,7 @@ export const ImportSheet: React.FC<ImportSheetProps> = ({ onUse, handleCloseModa
                                 }}
                                 className="flex-1 py-3 px-4 rounded-[20px] bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors"
                             >
-                                Use this
+                                {m['issueFlow.useThis']()}
                             </button>
                         </div>
                     </div>

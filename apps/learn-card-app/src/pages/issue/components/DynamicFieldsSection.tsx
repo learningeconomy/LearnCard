@@ -3,6 +3,7 @@ import { Variable } from 'lucide-react';
 
 import { humanizeVariable, inferVariableInputType } from './variableSubstitution';
 import { RecipientMode, Recipient, recipientKey, recipientLabel } from './recipientTypes';
+import * as m from '../../../paraglide/messages.js';
 
 const INPUT_CLASS =
     'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
@@ -76,10 +77,10 @@ export const DynamicFieldsSection: React.FC<DynamicFieldsSectionProps> = ({
                 </span>
                 <div>
                     <h3 className="text-base font-semibold text-grayscale-900">
-                        Fill in the details
+                        {m['issueFlow.fields.fillDetails']()}
                     </h3>
                     <p className="text-sm text-grayscale-600 leading-relaxed">
-                        This credential has placeholders. Give each one a value before issuing.
+                        {m['issueFlow.fields.placeholdersDesc']()}
                     </p>
                 </div>
             </div>
@@ -95,7 +96,7 @@ export const DynamicFieldsSection: React.FC<DynamicFieldsSectionProps> = ({
                                 : 'text-grayscale-700 hover:text-grayscale-900'
                         }`}
                     >
-                        Same for everyone
+                        {m['issueFlow.fields.sameForAll']()}
                     </button>
                     <button
                         type="button"
@@ -106,7 +107,7 @@ export const DynamicFieldsSection: React.FC<DynamicFieldsSectionProps> = ({
                                 : 'text-grayscale-700 hover:text-grayscale-900'
                         }`}
                     >
-                        Per recipient
+                        {m['issueFlow.fields.perRecipient']()}
                     </button>
                 </div>
             )}

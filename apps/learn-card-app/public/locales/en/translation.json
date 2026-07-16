@@ -1016,7 +1016,9 @@
         "guardianLinked": {
             "heading": "You're all set up!",
             "description": "You're now set up to manage credentials for <0>{{name}}</0>. Future approvals will appear directly in the app.",
-            "gotIt": "Got it"
+            "gotIt": "Got it",
+            "otherOne": "{{count}} other",
+            "otherOther": "{{count}} others"
         },
         "profile": {
             "header": "Set up your profile to get started!",
@@ -1167,7 +1169,54 @@
                 }
             }
         },
-        "welcome": "Welcome to"
+        "welcome": "Welcome to",
+        "scrollToChoose": "Scroll to choose",
+        "dobMonth": "Month",
+        "dobDay": "Day",
+        "dobYear": "Year",
+        "v2": {
+            "signInAgain": "Something went wrong. Please sign in again.",
+            "tryAgain": "Something went wrong. Please try again.",
+            "dobFuture": "Date of birth cannot be in the future.",
+            "invalidUserId": "Invalid User ID",
+            "welcomeTitle": "Welcome — let's set you up",
+            "welcomeSubtitle": "Just a couple quick things to personalize {{brand}} and keep you safe.",
+            "country": "Country",
+            "selectCountry": "Select country",
+            "under13Title": "Parent or guardian required",
+            "under13Desc": "You need to be 13 or older to set up your own account. Tap Continue and we'll help a parent or guardian add you to a family account.",
+            "usNoticeTitle": "Parental Notice",
+            "usNoticeDesc": "Because you are under 18, we need your parent or guardian's permission to collect your information. By continuing, you confirm you have their permission.",
+            "usConsentCheck": "I have my parent/guardian's permission",
+            "euConsentDesc": "Because of privacy laws in your country, we need your parent or guardian's permission to create your account.",
+            "guardianEmail": "Parent/Guardian Email",
+            "guardianEmailHint": "guardian@example.com",
+            "continue": "Continue",
+            "makeItYours": "Make it yours",
+            "makeItYoursDesc": "Customize how you appear on the network.",
+            "yourName": "Your Name",
+            "username": "username",
+            "publicHandle": "Public Handle",
+            "charCount": "3–25 characters",
+            "dashesOnly": "Letters, numbers, and dashes only",
+            "checkingAvail": "Checking availability…",
+            "available": "Available",
+            "alreadyTaken": "Already taken",
+            "findYouHint": "Friends can find you with this.",
+            "privacyTitle": "Your Privacy",
+            "privacyDesc": "Set based on your age. Change anytime in Settings.",
+            "brandAi": "{{brand}} AI",
+            "aiMinorNote": "AI features are disabled for minors.",
+            "analytics": "Analytics",
+            "bugReports": "Bug Reports",
+            "createMy": "Create my {{brand}}",
+            "almostThere": "Almost there!",
+            "youreIn": "You're in!",
+            "guardianEmailed": "We've emailed your guardian to approve your account. You can start exploring now — some features unlock once they confirm.",
+            "ready": "Your {{brand}} is ready.",
+            "whoAreYou": "Who are you? (Optional)",
+            "explore": "Explore {{brand}}"
+        }
     },
     "profile": {
         "age": "Age:",
@@ -1351,7 +1400,11 @@
             "connectionRequestsDesc": "Decide who can send you new connection requests.",
             "connectionRequestsAnyone": "Anyone",
             "connectionRequestsInviteOnly": "Invite only",
-            "unableToUpdate": "Unable to update privacy settings."
+            "unableToUpdate": "Unable to update privacy settings.",
+            "yourProfile": "Your profile",
+            "whoCanSeeYou": "Who can see you on {{brand}}.",
+            "viewProfileHint": "Choose who can view your profile details.",
+            "showEmailHint": "Let connected people see your email on your profile."
         },
         "privacyTitle": "Privacy & Data"
     },
@@ -3747,5 +3800,748 @@
         "addYourOwn": "Add your own",
         "uploadCredential": "Upload a Credential",
         "buildMyBrand": "Build My {{brand}}"
+    },
+    "badgeSummit": {
+        "cat": {
+            "vibes": {
+                "label": "Vibes & Community",
+                "desc": "For the mood-shapers and memory-keepers."
+            },
+            "standards": {
+                "label": "Standards & Specs",
+                "desc": "For the spec-keepers and interop builders."
+            },
+            "leaders": {
+                "label": "Leaders & Changemakers",
+                "desc": "For the ones who move everyone forward."
+            },
+            "mastery": {
+                "label": "Brains & Mastery",
+                "desc": "For deep skill and know-how."
+            },
+            "heart": {
+                "label": "Heart & Team",
+                "desc": "For the glue that holds people together."
+            },
+            "bold": {
+                "label": "Bold & Adventurous",
+                "desc": "For the fearless and the first."
+            },
+            "culture": {
+                "label": "Culture & Cool",
+                "desc": "For taste, trends, and star power."
+            },
+            "fun": {
+                "label": "Fun & Energy",
+                "desc": "For the life of the party."
+            },
+            "other": {
+                "label": "Other",
+                "desc": "Everything else."
+            }
+        },
+        "badge": {
+            "Risktaker": {
+                "desc": "For the person who leans into the uncertain moment and moves first, even when the safer choice is right there on the table."
+            },
+            "Opportunist": {
+                "desc": "Reserved for the person who sees the opening three seconds before anyone else and quietly walks through it."
+            },
+            "CoolCat": {
+                "desc": "For the person whose calm makes hard rooms easier and whose vibe is somehow always dialed in."
+            },
+            "Trailblazer": {
+                "desc": "Reserved for the person who goes first, cuts the path, and turns around to wave everyone else through."
+            },
+            "Influencer": {
+                "desc": "For the person whose opinions shape what the rest of the group ends up caring about."
+            },
+            "Connector": {
+                "desc": "Reserved for the person who somehow knows exactly who you should meet and makes the introduction before you finish the sentence."
+            },
+            "Trendsetter": {
+                "desc": "For the person who was into it six months before it was a thing, and will be onto the next thing by the time you catch up."
+            },
+            "Organizer": {
+                "desc": "Reserved for the person who turns a vague group idea into an actual date, place, plan, and shared calendar invite."
+            },
+            "Moderator": {
+                "desc": "For the person who keeps the conversation fair, the tone kind, and the space usable for everyone in it."
+            },
+            "Leader": {
+                "desc": "Reserved for the person others quietly look to when it's time to decide, commit, or move."
+            },
+            "Expert": {
+                "desc": "For the person you text when you need the actual answer, not the guess."
+            },
+            "Aficionado": {
+                "desc": "Reserved for the person whose love for a niche runs deep enough to change how the rest of us appreciate it."
+            },
+            "Psychic": {
+                "desc": "For the person who calls the outcome before it happens and then pretends they didn't."
+            },
+            "Magician": {
+                "desc": "Reserved for the person who pulls off the thing that shouldn't have been possible and won't quite explain how."
+            },
+            "Charmer": {
+                "desc": "For the person who could probably convince a locked door to open on its own."
+            },
+            "Cowboy": {
+                "desc": "Reserved for the person who rides in, does the thing their own way, and rides back out before the rules catch up."
+            },
+            "Perfectionist": {
+                "desc": "For the person who notices the one pixel that's off and cannot rest until it isn't."
+            },
+            "Wanderer": {
+                "desc": "Reserved for the person whose latest location update is somehow always a place you had to look up."
+            },
+            "TeamPlayer": {
+                "desc": "For the person who makes the group stronger just by being in it and never needs to be asked twice."
+            },
+            "Star": {
+                "desc": "Reserved for the person the room notices without them having to try."
+            },
+            "PartyAnimal": {
+                "desc": "For the person still going strong three hours after everyone said they were leaving."
+            },
+            "TroubleMaker": {
+                "desc": "Reserved for the person whose bad ideas make the best stories later."
+            },
+            "Doer": {
+                "desc": "For the person who stops talking about it around the time everyone else is still forming opinions, and just does it."
+            },
+            "Entertainer": {
+                "desc": "Reserved for the person who could make a delayed flight fun and probably has."
+            },
+            "Connoisseur": {
+                "desc": "For the person whose taste is educated enough that you just trust the pick."
+            },
+            "ChangeMaker": {
+                "desc": "Reserved for the person who looks at how things are and quietly starts building how they should be."
+            },
+            "Ambassador": {
+                "desc": "For the person who represents the group well wherever they go, without ever making it feel like a pitch."
+            },
+            "Catalyst": {
+                "desc": "Reserved for the person whose presence in a conversation makes something new actually happen."
+            },
+            "ChallengeMaker": {
+                "desc": "For the person who invents the dare, the game, or the goal that pulls everyone else up a level."
+            },
+            "Challenger": {
+                "desc": "Reserved for the person who pushes the assumption, asks the harder question, and won't let a lazy answer pass."
+            },
+            "Enabler": {
+                "desc": "For the person who quietly clears the path so someone else can do their best work."
+            },
+            "Enthusiast": {
+                "desc": "Reserved for the person whose genuine excitement makes you care about things you didn't know you could care about."
+            },
+            "HotShot": {
+                "desc": "For the person on the streak, delivering the win, and making it look easier than it is."
+            },
+            "Informer": {
+                "desc": "Reserved for the person who reliably shows up with the article, the update, or the heads-up before you needed it."
+            },
+            "Maven": {
+                "desc": "For the person whose accumulated know-how in a domain is basically a public utility at this point."
+            },
+            "Maverick": {
+                "desc": "Reserved for the person who plays their own game and somehow keeps winning it."
+            },
+            "PartyPlanner": {
+                "desc": "For the person who thinks in guest lists, playlists, and vibe curves, and always seems to nail all three."
+            },
+            "Promoter": {
+                "desc": "Reserved for the person whose enthusiastic sharing has quietly built more audiences than they'll ever admit."
+            },
+            "Propagator": {
+                "desc": "For the person who takes a small idea and helps it grow roots in five other communities."
+            },
+            "Sage": {
+                "desc": "Reserved for the person whose considered advice tends to age extremely well."
+            },
+            "Tastemaker": {
+                "desc": "For the person whose picks quietly define what the rest of the group ends up loving."
+            },
+            "VibeCurator": {
+                "desc": "Reserved for the community members who know exactly how to make a room feel better, warmer, stranger, or more alive."
+            },
+            "ChaosCoordinator": {
+                "desc": "For the person who somehow turns confusion, missed messages, late arrivals, and half-formed plans into an actual functioning experience."
+            },
+            "HypeArchitect": {
+                "desc": "Reserved for the rare friend who makes other people feel braver, cooler, funnier, and more capable than they did five minutes ago."
+            },
+            "LoreKeeper": {
+                "desc": "For the community member who remembers every inside joke, legendary night, strange detail, and oddly important piece of group history."
+            },
+            "SideQuestSpecialist": {
+                "desc": "Reserved for the person who can turn a normal day into an unexpected adventure with one suspiciously casual suggestion."
+            },
+            "QuietGenius": {
+                "desc": "For the person who may not always take the spotlight, but regularly drops the exact idea, fix, or observation everyone needed."
+            },
+            "CommunityHelper": {
+                "desc": "Reserved for the community members who show up when someone needs a hand, a pointer, a fix, or just a little extra kindness."
+            },
+            "FoodSniper": {
+                "desc": "Reserved for the community members with impeccable taste and a talent for discovering the best culinary spots."
+            },
+            "VisualStoryteller": {
+                "desc": "For the community member who turns ideas, data, moments, and messy concepts into visuals that people can actually feel and understand."
+            },
+            "LogicMaster": {
+                "desc": "Reserved for the person who brings structure to complexity, catches the hidden flaw, and makes the whole system make sense."
+            },
+            "SchemaWhisperer": {
+                "desc": "Reserved for the community member who can stare into a tangled credential payload and somehow emerge with elegance, order, and valid JSON-LD."
+            },
+            "AlignmentWizard": {
+                "desc": "For the person who can connect a badge to a skill, a skill to a framework, a framework to a job, and somehow make it all seem obvious."
+            },
+            "CLRCartographer": {
+                "desc": "Reserved for the brave soul who helps communities navigate the wild territory between transcripts, credentials, skills, evidence, and learner records."
+            },
+            "VerifiableVibes": {
+                "desc": "For the community member who believes trust is beautiful, signatures are poetry, and verification should work before anyone starts the demo."
+            },
+            "BadgeGoblin": {
+                "desc": "Reserved for the person who wants everything to be a badge, and is usually, annoyingly, kind of right."
+            },
+            "MetadataMystic": {
+                "desc": "For the person who understands that the visible badge is only the charm on the necklace. The real magic is in the structured data underneath."
+            },
+            "InteropDiplomat": {
+                "desc": "Reserved for the patient negotiator who can bring platforms, vendors, wallets, registries, and institutions into the same room without causing a standards incident."
+            },
+            "BackpackElder": {
+                "desc": "For the community member who remembers where the badges came from, why they mattered, and which conversations everyone keeps accidentally rediscovering."
+            },
+            "IssuerTherapist": {
+                "desc": "Reserved for the person who gently helps organizations admit that their badge criteria are unclear, their evidence is vibes, and their taxonomy needs love."
+            },
+            "SpecGremlin": {
+                "desc": "For the person who reads the implementation notes, finds the edge case, asks the terrifying question, and saves everyone six months of pain."
+            }
+        }
+    },
+    "dataShareCenter": {
+        "aiLockedNote": "Turned off to keep you safe. A guardian can enable this.",
+        "diagLockedNote": "Turned off to keep you safe. A guardian can change this.",
+        "aiHeading": "AI & personalization",
+        "aiSubheading": "Smart help that learns from you — only if you say so.",
+        "aiFeaturesDesc": "AI tutoring, insights, and personalization. This may share relevant messages and records with AI providers.",
+        "aiRefreshNote": "AI is on, but the connection needs to be refreshed.",
+        "appDiagnostics": "App diagnostics",
+        "diagnosticsDesc": "Anonymous data that helps us fix and improve things.",
+        "groups": {
+            "ai": "AI & assistants",
+            "school": "Schools",
+            "app": "Apps"
+        },
+        "connectedApps": {
+            "heading": "Connected apps & services",
+            "subtitle": "Everyone you've let in. Tap any to see what they can do — or turn it off.",
+            "searchPlaceholder": "Search apps & services",
+            "emptyTitle": "No apps yet",
+            "emptySubtitle": "When you connect an app, it'll show up here.",
+            "noMatches": "No matches",
+            "noMatchesFor": "Nothing matches “{{query}}”."
+        },
+        "minor": {
+            "eyebrow": "Protected account",
+            "title": "Extra privacy protections are on",
+            "subtitle": "Because this is a younger account, {{brand}} keeps things extra safe.",
+            "aiOff": "AI features are turned off",
+            "noTracking": "No usage tracking or crash reports",
+            "youChoose": "Only you choose what you share"
+        },
+        "trust": {
+            "eyebrow": "Your data",
+            "title": "Your data is yours",
+            "nothingShared": "Nothing is shared yet.",
+            "emptyDetail": "When an app or school asks for your data, you decide — every time.",
+            "sharingWith": "Sharing with {{count}} {{unit}}.",
+            "place": "place",
+            "places": "places",
+            "canRead": "{{count}} can read",
+            "canWriteSuffix": ", {{count}} can also write",
+            "stopAnytime": ". You can stop anytime."
+        }
+    },
+    "issueFlow": {
+        "header": {
+            "json": "JSON",
+            "issuing": "Issuing...",
+            "issue": "Issue",
+            "issueCredential": "Issue Credential"
+        },
+        "provenance": {
+            "importedFrom": "Imported from {{source}}",
+            "dismiss": "Dismiss"
+        },
+        "error": {
+            "tryAgain": "Try Again"
+        },
+        "type": {
+            "heading": "What are you issuing?",
+            "subheading": "Pick a type—your credential takes shape as you go.",
+            "selected": "Type: {{label}}",
+            "browseAll": "Browse all types"
+        },
+        "browser": {
+            "title": "Choose a credential type",
+            "subtitle": "Pick the type that best fits what you’re recognizing.",
+            "searchPlaceholder": "Search types…",
+            "noMatch": "No types match “{{query}}”."
+        },
+        "details": {
+            "name": "Name",
+            "namePlaceholder": "e.g. Web Development Fundamentals",
+            "nameError": "Give your credential a name to continue.",
+            "descLabel": "Description (optional)",
+            "descPlaceholder": "What does this credential represent?",
+            "changeImage": "Change image",
+            "addImage": "Add an image (optional)"
+        },
+        "advanced": {
+            "toggle": "More detail",
+            "criteriaLabel": "How it’s earned (criteria)",
+            "criteriaPlaceholder": "Describe what the recipient did to earn this.",
+            "expiresLabel": "Expires on (optional)",
+            "evidenceHint": "Add evidence and media above in the <0>Evidence & media</0> section."
+        },
+        "display": {
+            "heading": "Display (optional)",
+            "subheading": "Fine-tune how this credential looks. Wallets that don’t support these hints simply ignore them.",
+            "categoryLabel": "Category",
+            "autoPlaceholder": "Automatic (based on type)",
+            "subtypeLabel": "Subtype label",
+            "subtypePlaceholder": "e.g. Trailblazer",
+            "styleLabel": "Display style",
+            "bgColor": "Background color",
+            "accentColor": "Accent color (badge ring)",
+            "accentHint": "Colors the badge ring. Defaults to the category color if unset.",
+            "bgImageLabel": "Background image",
+            "bgPreviewAlt": "Background preview",
+            "remove": "Remove",
+            "changeBgImage": "Change background image",
+            "addBgImage": "Add a background image",
+            "clearField": "Clear {{label}}",
+            "style": {
+                "badge": "Badge",
+                "certificate": "Certificate",
+                "award": "Award",
+                "idCard": "ID card",
+                "course": "Course",
+                "media": "Media"
+            },
+            "styleDesc": {
+                "badge": "A circular emblem with a ribbon. Best for social badges and achievements.",
+                "certificate": "A formal, document-style frame. Good for completions and certifications.",
+                "award": "A trophy-style ribbon that emphasizes recognition and honors.",
+                "idCard": "A wallet-style ID layout with photo and issuer. Great for memberships.",
+                "course": "Tuned for courses, classes, and learning programs.",
+                "media": "A rich tile that showcases an image or video front-and-center."
+            },
+            "cat": {
+                "badge": "Badge",
+                "achievement": "Achievement",
+                "course": "Course",
+                "portfolio": "Portfolio",
+                "assistance": "Assistance",
+                "experience": "Experience",
+                "id": "ID"
+            },
+            "catDesc": {
+                "badge": "Community and social recognition badges.",
+                "achievement": "Awards, certificates, and accomplishments.",
+                "course": "Courses, classes, and learning programs.",
+                "portfolio": "Portfolio pieces and personal work.",
+                "assistance": "Support needs and accommodations.",
+                "experience": "Jobs, internships, and professional experience.",
+                "id": "Identity cards and official credentials."
+            }
+        },
+        "whoFor": "Who is this for?",
+        "whoForDesc": "This shapes the preview and how it’s delivered.",
+        "people": "People",
+        "specificPeople": "Specific people",
+        "link": "Link",
+        "anyoneLink": "Anyone with a link",
+        "addByHint": "Add by name, @username, or email",
+        "linkOnIssue": "We'll create a shareable link when you issue.",
+        "alreadyHave": "Already have something?",
+        "startFromLink": "Start from a link, file, or ID",
+        "sendExisting": "Send one you've made",
+        "startFromSomething": "Start from something",
+        "importIntro": "Paste a link, a Credential Engine ID, or a credential's data — we'll figure out the rest.",
+        "importPlaceholder": "Paste a URL, ce- ID, or credential JSON…",
+        "importSupports": "We support links, IDs, and files",
+        "uploadFile": "Upload file",
+        "pasteInstead": "Open the source, copy its JSON, and paste it above.",
+        "bringingIn": "Bringing it in…",
+        "bringItIn": "Bring it in",
+        "foundIt": "Found it",
+        "fromCredEngine": "From Credential Engine",
+        "useThis": "Use this",
+        "openFailed": "We couldn't open that one. Please try another.",
+        "credSentToast": "Credential sent.",
+        "sendFailed": "Something went wrong sending this credential. Please try again.",
+        "untitled": "Untitled credential",
+        "sendThisCred": "Send this credential",
+        "whosItFor": "Who's it for?",
+        "reuseTitle": "Reuse one you've made",
+        "reuseSubtitle": "Send a credential you manage — pick one to get started.",
+        "searchCreds": "Search your credentials…",
+        "nothingMatches": "Nothing matches “{{query}}”.",
+        "noneIssued": "You haven't issued any credentials yet.",
+        "showMore": "Show more",
+        "previewDesc": "This is exactly what your recipient will receive.",
+        "chooseRecip": "Choose recipient",
+        "editCopy": "Edit a copy instead",
+        "linkReady": "Your link is ready",
+        "credSent": "Credential sent",
+        "linkClaimDesc": "Anyone with this link can claim it.",
+        "onItsWay": "“{{name}}” is on its way.",
+        "copy": "Copy",
+        "sendAnother": "Send another",
+        "sending": "Sending…",
+        "createLink": "Create shareable link",
+        "sendToSelf": "Send to myself",
+        "sendCred": "Send credential",
+        "success": {
+            "theRecipient": "the recipient",
+            "twoNames": "{{first}} and {{second}}",
+            "andOthers": "{{name}} and {{count}} others",
+            "linkCopied": "Link copied.",
+            "shareTitle": "A credential for you",
+            "qrDownloadFail": "Failed to download QR code.",
+            "expires": "Expires {{date}}",
+            "claimLimitOne": "{{count}} claim limit",
+            "claimLimitOther": "{{count}} claims limit",
+            "linkReady": "Your link is ready",
+            "linkDesc": "Anyone with this link or QR code can claim it.",
+            "copyLink": "Copy link",
+            "copied": "Copied",
+            "downloadQr": "Download QR",
+            "issueAnother": "Issue Another",
+            "sent": "Sent!",
+            "deliveredTo": "Delivered to {{recipients}}.",
+            "youMadeIt": "You made it!",
+            "savedToWallet": "Your credential is signed and saved to your wallet.",
+            "viewInWallet": "View in Wallet"
+        },
+        "fields": {
+            "gradeOrResult": "Grade or result",
+            "useFixed": "Use a fixed value",
+            "personalize": "Personalize per recipient",
+            "setPerRecipient": "Set per recipient below",
+            "selectStatus": "Select a status…",
+            "pickGradeType": "Pick a grade type above so this result is saved in a standard format.",
+            "fillDetails": "Fill in the details",
+            "placeholdersDesc": "This credential has placeholders. Give each one a value before issuing.",
+            "sameForAll": "Same for everyone",
+            "perRecipient": "Per recipient",
+            "selectDefault": "Select…"
+        },
+        "media": {
+            "photo": "Photo",
+            "document": "Document",
+            "video": "Video",
+            "link": "Link",
+            "title": "Evidence & media",
+            "subtitle": "Attach proof — photos, documents, videos, or links.",
+            "removeAttachment": "Remove attachment",
+            "urlPlaceholder": "https://example.com/proof",
+            "linkTitle": "Link title (optional)",
+            "noAttachments": "No attachments yet."
+        },
+        "skillsTitle": "Skills",
+        "skillsSubtitle": "Search competencies to align this credential to a framework.",
+        "removeSkill": "Remove {{name}}",
+        "clearSearch": "Clear search",
+        "searching": "Searching…",
+        "suggested": "Suggested",
+        "noMatchingSkills": "No matching skills.",
+        "browseAllFrameworks": "Browse all frameworks",
+        "addSkills": "Add skills",
+        "selectedTapToToggle": "{{count}} selected · tap to add or remove",
+        "addSkillsSubtitle": "Align this credential to competencies from any framework.",
+        "frameworkAlignment": "Framework alignment",
+        "verified": "Verified",
+        "removeAlignment": "Remove alignment",
+        "alignmentsTitle": "Alignments",
+        "alignmentsSubtitle": "External standards and frameworks this credential maps to.",
+        "verifiedSource": "Verified source",
+        "occupationsPrograms": "Occupations & programs",
+        "invalidJsonLine": "Invalid JSON on line {{line}}.",
+        "invalidJson": "This isn’t valid JSON yet.",
+        "mustBeJsonObject": "A credential must be a JSON object.",
+        "checking": "Checking…",
+        "valid": "Valid",
+        "copied": "Copied",
+        "jsonStudioHint": "Edit the credential directly. We’ll keep the issuer and recipient in sync when you issue.",
+        "evidencePerRecipient": "Evidence per recipient",
+        "evidenceSubtitle": "Attach proof specific to each person. Optional.",
+        "catalog": {
+            "Badge": {
+                "label": "Badge",
+                "pick": "A digital badge for an achievement or skill."
+            },
+            "Certificate": {
+                "label": "Certificate",
+                "pick": "A formal certificate recognizing an achievement."
+            },
+            "Course": {
+                "label": "Course",
+                "pick": "Someone completed a course or training."
+            },
+            "Competency": {
+                "label": "Skill",
+                "pick": "Verify a specific skill or competency."
+            },
+            "License": {
+                "label": "License",
+                "pick": "A professional or occupational license."
+            },
+            "Membership": {
+                "label": "Membership",
+                "pick": "Membership in an organization or program."
+            },
+            "MicroCredential": {
+                "label": "Micro-Credential",
+                "pick": "Short-form recognition for focused learning."
+            },
+            "Achievement": {
+                "label": "Achievement",
+                "pick": "A general accomplishment that fits no other type."
+            },
+            "Award": {
+                "label": "Award",
+                "pick": "An honor or prize given for excellence."
+            },
+            "CommunityService": {
+                "label": "Community Service",
+                "pick": "Recognize volunteer or community work."
+            },
+            "CoCurricular": {
+                "label": "Co-Curricular",
+                "pick": "Activity alongside formal study (clubs, sports)."
+            },
+            "CertificateOfCompletion": {
+                "label": "Certificate of Completion",
+                "pick": "Confirms someone finished a program."
+            },
+            "LearningProgram": {
+                "label": "Learning Program",
+                "pick": "A structured multi-part learning program."
+            },
+            "Assessment": {
+                "label": "Assessment",
+                "pick": "Results of a test or evaluation."
+            },
+            "Assignment": {
+                "label": "Assignment",
+                "pick": "A completed piece of coursework."
+            },
+            "Fieldwork": {
+                "label": "Fieldwork",
+                "pick": "Hands-on practical or field experience."
+            },
+            "Degree": {
+                "label": "Degree",
+                "pick": "A general academic degree."
+            },
+            "AssociateDegree": {
+                "label": "Associate Degree",
+                "pick": "A two-year associate degree."
+            },
+            "BachelorDegree": {
+                "label": "Bachelor's Degree",
+                "pick": "A four-year undergraduate degree."
+            },
+            "MasterDegree": {
+                "label": "Master's Degree",
+                "pick": "A graduate-level master’s degree."
+            },
+            "DoctoralDegree": {
+                "label": "Doctoral Degree",
+                "pick": "A doctoral degree (PhD or equivalent)."
+            },
+            "ResearchDoctorate": {
+                "label": "Research Doctorate",
+                "pick": "A research-focused doctorate."
+            },
+            "ProfessionalDoctorate": {
+                "label": "Professional Doctorate",
+                "pick": "A practice-oriented doctorate."
+            },
+            "Diploma": {
+                "label": "Diploma",
+                "pick": "A diploma for completed study."
+            },
+            "SecondarySchoolDiploma": {
+                "label": "High School Diploma",
+                "pick": "A secondary / high-school diploma."
+            },
+            "GeneralEducationDevelopment": {
+                "label": "GED",
+                "pick": "A high-school equivalency (GED)."
+            },
+            "Certification": {
+                "label": "Certification",
+                "pick": "An industry or professional certification."
+            },
+            "ApprenticeshipCertificate": {
+                "label": "Apprenticeship",
+                "pick": "Completion of an apprenticeship."
+            },
+            "JourneymanCertificate": {
+                "label": "Journeyman",
+                "pick": "A journeyman-level trade credential."
+            },
+            "MasterCertificate": {
+                "label": "Master Certificate",
+                "pick": "A master-level trade credential."
+            },
+            "QualityAssuranceCredential": {
+                "label": "Quality Assurance",
+                "pick": "A quality-assurance or compliance credential."
+            },
+            "fam": {
+                "recognition": {
+                    "label": "Recognition",
+                    "blurb": "Honor an accomplishment, contribution, or moment."
+                },
+                "learning": {
+                    "label": "Learning",
+                    "blurb": "Someone completed a course, program, or skill."
+                },
+                "degrees": {
+                    "label": "Degrees & Diplomas",
+                    "blurb": "A formal academic degree or diploma."
+                },
+                "professional": {
+                    "label": "Professional",
+                    "blurb": "Licensure, certification, or a trade credential."
+                },
+                "belonging": {
+                    "label": "Belonging",
+                    "blurb": "Membership in an organization or program."
+                }
+            }
+        },
+        "result": {
+            "LetterGrade": {
+                "label": "Letter grade",
+                "eg": "e.g. A-"
+            },
+            "Percent": {
+                "label": "Percent",
+                "eg": "e.g. 95"
+            },
+            "GradePointAverage": {
+                "label": "GPA",
+                "eg": "e.g. 3.8"
+            },
+            "RawScore": {
+                "label": "Points",
+                "eg": "e.g. 720"
+            },
+            "Status": {
+                "label": "Status",
+                "eg": ""
+            },
+            "status": {
+                "Completed": "Completed",
+                "Enrolled": "Enrolled",
+                "Failed": "Failed",
+                "InProgress": "In Progress",
+                "OnHold": "On Hold",
+                "Provisional": "Provisional",
+                "Withdrew": "Withdrew"
+            }
+        },
+        "field": {
+            "completionDate": {
+                "label": "Completion date"
+            },
+            "startDate": {
+                "label": "Start date"
+            },
+            "creditsEarned": {
+                "label": "Credits earned",
+                "ph": "e.g. 3"
+            },
+            "term": {
+                "label": "Term",
+                "ph": "e.g. Fall 2025"
+            },
+            "licenseNumber": {
+                "label": "License number",
+                "ph": "e.g. RN-1234567"
+            },
+            "role": {
+                "label": "Role or level",
+                "ph": "e.g. Gold Member"
+            },
+            "creditHours": {
+                "label": "Credit hours",
+                "ph": "e.g. 10"
+            },
+            "humanCode": {
+                "label": "Course code",
+                "ph": "e.g. CS101"
+            },
+            "fieldOfStudy": {
+                "label": "Field of study",
+                "ph": "e.g. Computer Science"
+            },
+            "specialization": {
+                "label": "Specialization",
+                "ph": "e.g. Machine Learning"
+            },
+            "version": {
+                "label": "Version",
+                "ph": "e.g. 2.1"
+            },
+            "expiryDate": {
+                "label": "Expires on"
+            },
+            "memberId": {
+                "label": "Member ID",
+                "ph": "e.g. M-00482"
+            }
+        },
+        "gate": {
+            "pickType": "Pick a type to begin",
+            "fixJson": "Fix the JSON to continue",
+            "addName": "Add a name to continue",
+            "addRecip": "Add a recipient to continue"
+        },
+        "toastIssued": "Credential issued.",
+        "saveFailed": "Credential was issued, but it could not be saved to your account.",
+        "discard": {
+            "title": "Discard this link?",
+            "keep": "Keep",
+            "discard": "Discard"
+        },
+        "preview": {
+            "willLook": "This is how your credential will look.",
+            "pickToStart": "Pick a type to start designing your credential."
+        },
+        "err": {
+            "network": "Connection issue. Check your internet and try again.",
+            "timeout": "That took longer than expected. Please try again.",
+            "session": "Your session may have expired. Sign in again and try once more.",
+            "server": "Our servers hit a snag. Please try again in a moment.",
+            "linkFail": "We couldn't create a shareable link. Please try again.",
+            "setupFail": "We couldn't set up issuing for your account. Please try again.",
+            "recipient": "We couldn't reach one of your recipients. Double-check the names or emails and try again.",
+            "invalid": "Some details on this credential aren't valid yet. Please review and try again.",
+            "generic": "Something went wrong issuing your credential. Please try again."
+        }
     }
 }

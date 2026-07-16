@@ -7,7 +7,10 @@ import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url
 import { switchedProfileStore, walletStore } from 'learn-card-base/stores/walletStore';
 
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
-import { requireCurrentUserPrivateKey } from 'learn-card-base/helpers/privateKeyHelpers';
+import {
+    getCurrentUserPrivateKey,
+    requireCurrentUserPrivateKey,
+} from 'learn-card-base/helpers/privateKeyHelpers';
 import { waitForSQLiteReady } from 'learn-card-base/SQL/sqliteReady';
 import {
     getDefaultCategoryForCredential,
@@ -794,13 +797,20 @@ export const useWallet = () => {
     };
 
     const getWalletOrFallback = async () => {
-        if (isLoggedIn) {
+        // Don't trust `isLoggedIn` alone: during early boot it can still be
+        // false while the private key is already available from secure storage.
+        // Keep this read outside the fallback catch so storage failures are not
+        // mistaken for an absent key.
+        const hasPrivateKey = isLoggedIn || Boolean(await getCurrentUserPrivateKey());
+
+        if (hasPrivateKey) {
             try {
                 return await getWallet();
             } catch (e) {
                 log.debug('getWalletOrFallback::error', e);
             }
         }
+
         return getBespokeLearnCard('a');
     };
 

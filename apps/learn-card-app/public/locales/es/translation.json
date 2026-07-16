@@ -1068,7 +1068,9 @@
         "guardianLinked": {
             "heading": "¡Todo configurado!",
             "description": "Ahora puedes administrar credenciales para <0>{{name}}</0>. Las aprobaciones futuras aparecerán directamente en la app.",
-            "gotIt": "Entendido"
+            "gotIt": "Entendido",
+            "otherOne": "{{count}} más",
+            "otherOther": "{{count}} más"
         },
         "slides": {
             "getStarted": "Comenzar",
@@ -1167,6 +1169,53 @@
         "country": {
             "search": "Buscar países",
             "title": "Seleccionar país"
+        },
+        "scrollToChoose": "Desliza para elegir",
+        "dobMonth": "Mes",
+        "dobDay": "Día",
+        "dobYear": "Año",
+        "v2": {
+            "signInAgain": "Algo salió mal. Vuelve a iniciar sesión.",
+            "tryAgain": "Algo salió mal. Inténtalo de nuevo.",
+            "dobFuture": "La fecha de nacimiento no puede ser futura.",
+            "invalidUserId": "ID de usuario inválido",
+            "welcomeTitle": "Bienvenido — vamos a configurarte",
+            "welcomeSubtitle": "Solo un par de cosas rápidas para personalizar {{brand}} y mantenerte seguro.",
+            "country": "País",
+            "selectCountry": "Seleccionar país",
+            "under13Title": "Se requiere un padre o tutor",
+            "under13Desc": "Debes tener 13 años o más para crear tu propia cuenta. Toca Continuar y ayudaremos a un padre o tutor a agregarte a una cuenta familiar.",
+            "usNoticeTitle": "Aviso para padres",
+            "usNoticeDesc": "Como eres menor de 18 años, necesitamos el permiso de tu padre o tutor para recopilar tu información. Al continuar, confirmas que tienes su permiso.",
+            "usConsentCheck": "Tengo el permiso de mi padre/tutor",
+            "euConsentDesc": "Debido a las leyes de privacidad de tu país, necesitamos el permiso de tu padre o tutor para crear tu cuenta.",
+            "guardianEmail": "Correo del padre/tutor",
+            "guardianEmailHint": "guardian@example.com",
+            "continue": "Continuar",
+            "makeItYours": "Hazlo tuyo",
+            "makeItYoursDesc": "Personaliza cómo apareces en la red.",
+            "yourName": "Tu nombre",
+            "username": "usuario",
+            "publicHandle": "Identificador público",
+            "charCount": "3–25 caracteres",
+            "dashesOnly": "Solo letras, números y guiones",
+            "checkingAvail": "Comprobando disponibilidad…",
+            "available": "Disponible",
+            "alreadyTaken": "Ya está en uso",
+            "findYouHint": "Tus amigos pueden encontrarte con esto.",
+            "privacyTitle": "Tu privacidad",
+            "privacyDesc": "Configurado según tu edad. Cámbialo cuando quieras en Ajustes.",
+            "brandAi": "{{brand}} AI",
+            "aiMinorNote": "Las funciones de IA están desactivadas para menores.",
+            "analytics": "Analíticas",
+            "bugReports": "Informes de errores",
+            "createMy": "Crear mi {{brand}}",
+            "almostThere": "¡Ya casi!",
+            "youreIn": "¡Ya estás dentro!",
+            "guardianEmailed": "Enviamos un correo a tu tutor para que apruebe tu cuenta. Ya puedes empezar a explorar — algunas funciones se desbloquean cuando lo confirme.",
+            "ready": "Tu {{brand}} está listo.",
+            "whoAreYou": "¿Quién eres? (Opcional)",
+            "explore": "Explorar {{brand}}"
         }
     },
     "profile": {
@@ -1352,7 +1401,11 @@
             "connectionRequestsDesc": "Decide quién puede enviarte nuevas solicitudes de conexión.",
             "connectionRequestsAnyone": "Cualquiera",
             "connectionRequestsInviteOnly": "Solo por invitación",
-            "unableToUpdate": "No se pudo actualizar la configuración de privacidad."
+            "unableToUpdate": "No se pudo actualizar la configuración de privacidad.",
+            "yourProfile": "Tu perfil",
+            "whoCanSeeYou": "Quién puede verte en {{brand}}.",
+            "viewProfileHint": "Elige quién puede ver los detalles de tu perfil.",
+            "showEmailHint": "Permite que las personas conectadas vean tu correo en tu perfil."
         }
     },
     "contacts": {
@@ -3738,5 +3791,748 @@
         "addYourOwn": "Agrega la tuya",
         "uploadCredential": "Sube una credencial",
         "buildMyBrand": "Crea mi {{brand}}"
+    },
+    "badgeSummit": {
+        "cat": {
+            "vibes": {
+                "label": "Buena onda y comunidad",
+                "desc": "Para quienes marcan el ánimo y guardan los recuerdos."
+            },
+            "standards": {
+                "label": "Estándares y especificaciones",
+                "desc": "Para quienes cuidan las specs y construyen la interoperabilidad."
+            },
+            "leaders": {
+                "label": "Líderes y agentes de cambio",
+                "desc": "Para quienes nos hacen avanzar a todos."
+            },
+            "mastery": {
+                "label": "Ingenio y maestría",
+                "desc": "Para el talento profundo y el saber hacer."
+            },
+            "heart": {
+                "label": "Corazón y equipo",
+                "desc": "Para el pegamento que mantiene unida a la gente."
+            },
+            "bold": {
+                "label": "Audaces y aventureros",
+                "desc": "Para los valientes y los primeros."
+            },
+            "culture": {
+                "label": "Cultura y estilo",
+                "desc": "Para el buen gusto, las tendencias y el carisma."
+            },
+            "fun": {
+                "label": "Diversión y energía",
+                "desc": "Para el alma de la fiesta."
+            },
+            "other": {
+                "label": "Otros",
+                "desc": "Todo lo demás."
+            }
+        },
+        "badge": {
+            "Risktaker": {
+                "desc": "Para quien se lanza al momento incierto y da el primer paso, aunque la opción segura esté justo ahí sobre la mesa."
+            },
+            "Opportunist": {
+                "desc": "Reservado para quien ve la oportunidad tres segundos antes que nadie y la aprovecha sin hacer ruido."
+            },
+            "CoolCat": {
+                "desc": "Para quien con su calma vuelve más llevaderas las salas difíciles y siempre parece tener el ánimo en su punto."
+            },
+            "Trailblazer": {
+                "desc": "Reservado para quien va primero, abre el camino y se da la vuelta para hacer pasar a todos los demás."
+            },
+            "Influencer": {
+                "desc": "Para quien con sus opiniones moldea lo que al resto del grupo termina importándole."
+            },
+            "Connector": {
+                "desc": "Reservado para quien sabe exactamente a quién deberías conocer y hace la presentación antes de que termines la frase."
+            },
+            "Trendsetter": {
+                "desc": "Para quien ya estaba en eso seis meses antes de que fuera tendencia, y ya andará en lo próximo cuando tú te enteres."
+            },
+            "Organizer": {
+                "desc": "Reservado para quien convierte una idea vaga del grupo en una fecha, un lugar, un plan y una invitación en el calendario compartido."
+            },
+            "Moderator": {
+                "desc": "Para quien mantiene la conversación justa, el tono amable y el espacio cómodo para todos."
+            },
+            "Leader": {
+                "desc": "Reservado para esa persona a quien los demás miran sin decir nada cuando toca decidir, comprometerse o avanzar."
+            },
+            "Expert": {
+                "desc": "Para esa persona a la que le escribes cuando necesitas la respuesta de verdad, no una suposición."
+            },
+            "Aficionado": {
+                "desc": "Reservado para quien ama tanto un tema de nicho que cambia la forma en que los demás lo apreciamos."
+            },
+            "Psychic": {
+                "desc": "Para quien predice el resultado antes de que pase y luego hace como que no fue nada."
+            },
+            "Magician": {
+                "desc": "Reservado para quien logra lo que no debería haber sido posible y no termina de explicar cómo."
+            },
+            "Charmer": {
+                "desc": "Para quien probablemente podría convencer a una puerta cerrada de que se abra sola."
+            },
+            "Cowboy": {
+                "desc": "Reservado para quien llega, hace las cosas a su manera y se marcha antes de que las reglas lo alcancen."
+            },
+            "Perfectionist": {
+                "desc": "Para quien nota ese único píxel descuadrado y no descansa hasta que deja de estarlo."
+            },
+            "Wanderer": {
+                "desc": "Reservado para quien su última ubicación siempre es, no se sabe cómo, un lugar que tuviste que buscar en el mapa."
+            },
+            "TeamPlayer": {
+                "desc": "Para quien hace más fuerte al grupo con solo estar en él y nunca hay que pedírselo dos veces."
+            },
+            "Star": {
+                "desc": "Reservado para esa persona a quien la sala nota sin que tenga que intentarlo."
+            },
+            "PartyAnimal": {
+                "desc": "Para quien sigue a tope tres horas después de que todos dijeron que ya se iban."
+            },
+            "TroubleMaker": {
+                "desc": "Reservado para quien sus malas ideas se convierten después en las mejores anécdotas."
+            },
+            "Doer": {
+                "desc": "Para quien deja de hablar del tema cuando los demás todavía están opinando, y simplemente lo hace."
+            },
+            "Entertainer": {
+                "desc": "Reservado para quien haría divertido hasta un vuelo retrasado, y probablemente ya lo ha hecho."
+            },
+            "Connoisseur": {
+                "desc": "Para quien tiene un gusto tan formado que simplemente confías en lo que elige."
+            },
+            "ChangeMaker": {
+                "desc": "Reservado para quien mira cómo están las cosas y, sin hacer ruido, empieza a construir cómo deberían ser."
+            },
+            "Ambassador": {
+                "desc": "Para quien representa bien al grupo dondequiera que va, sin que nunca parezca un discurso de venta."
+            },
+            "Catalyst": {
+                "desc": "Reservado para quien con su sola presencia en una conversación hace que algo nuevo de verdad ocurra."
+            },
+            "ChallengeMaker": {
+                "desc": "Para quien inventa el reto, el juego o la meta que sube de nivel a todos los demás."
+            },
+            "Challenger": {
+                "desc": "Reservado para quien cuestiona el supuesto, hace la pregunta más difícil y no deja pasar una respuesta perezosa."
+            },
+            "Enabler": {
+                "desc": "Para quien despeja el camino sin hacer ruido para que otra persona haga su mejor trabajo."
+            },
+            "Enthusiast": {
+                "desc": "Reservado para quien con su emoción genuina te hace interesarte por cosas que no sabías que podían importarte."
+            },
+            "HotShot": {
+                "desc": "Para quien está en racha, se lleva la victoria y hace que parezca más fácil de lo que es."
+            },
+            "Informer": {
+                "desc": "Reservado para quien siempre aparece con el artículo, la novedad o el aviso antes de que lo necesitaras."
+            },
+            "Maven": {
+                "desc": "Para quien su saber acumulado en un tema es, a estas alturas, prácticamente un servicio público."
+            },
+            "Maverick": {
+                "desc": "Reservado para quien juega su propio juego y, no se sabe cómo, lo sigue ganando."
+            },
+            "PartyPlanner": {
+                "desc": "Para quien piensa en listas de invitados, playlists y curvas de ambiente, y siempre parece clavar las tres."
+            },
+            "Promoter": {
+                "desc": "Reservado para quien con su forma entusiasta de compartir ha creado más audiencias de las que jamás admitirá."
+            },
+            "Propagator": {
+                "desc": "Para quien toma una pequeña idea y la ayuda a echar raíces en otras cinco comunidades."
+            },
+            "Sage": {
+                "desc": "Reservado para quien sus consejos meditados suelen envejecer extraordinariamente bien."
+            },
+            "Tastemaker": {
+                "desc": "Para quien sus elecciones definen, sin hacer ruido, lo que el resto del grupo termina amando."
+            },
+            "VibeCurator": {
+                "desc": "Reservado para los miembros de la comunidad que saben exactamente cómo hacer que una sala se sienta mejor, más cálida, más curiosa o más viva."
+            },
+            "ChaosCoordinator": {
+                "desc": "Para quien de algún modo convierte la confusión, los mensajes perdidos, las llegadas tarde y los planes a medias en una experiencia que de verdad funciona."
+            },
+            "HypeArchitect": {
+                "desc": "Reservado para ese raro amigo que hace que los demás se sientan más valientes, más geniales, más graciosos y más capaces que hace cinco minutos."
+            },
+            "LoreKeeper": {
+                "desc": "Para el miembro de la comunidad que recuerda cada chiste interno, cada noche legendaria, cada detalle raro y cada pedazo curiosamente importante de la historia del grupo."
+            },
+            "SideQuestSpecialist": {
+                "desc": "Reservado para quien puede convertir un día normal en una aventura inesperada con una sugerencia sospechosamente casual."
+            },
+            "QuietGenius": {
+                "desc": "Para quien quizá no siempre se lleva los reflectores, pero suelta con frecuencia justo la idea, el arreglo o la observación que todos necesitaban."
+            },
+            "CommunityHelper": {
+                "desc": "Reservado para los miembros de la comunidad que aparecen cuando alguien necesita una mano, una pista, un arreglo o un poco más de amabilidad."
+            },
+            "FoodSniper": {
+                "desc": "Reservado para los miembros de la comunidad con un gusto impecable y un talento para descubrir los mejores rincones gastronómicos."
+            },
+            "VisualStoryteller": {
+                "desc": "Para el miembro de la comunidad que convierte ideas, datos, momentos y conceptos enredados en visuales que la gente de verdad puede sentir y entender."
+            },
+            "LogicMaster": {
+                "desc": "Reservado para quien pone orden en la complejidad, detecta el fallo escondido y hace que todo el sistema cobre sentido."
+            },
+            "SchemaWhisperer": {
+                "desc": "Reservado para el miembro de la comunidad que puede clavar la mirada en un payload de credenciales enredado y salir de él con elegancia, orden y un JSON-LD válido."
+            },
+            "AlignmentWizard": {
+                "desc": "Para quien puede conectar una insignia con una habilidad, una habilidad con un marco, un marco con un empleo, y hacer que todo parezca obvio."
+            },
+            "CLRCartographer": {
+                "desc": "Reservado para el alma valiente que ayuda a las comunidades a navegar el territorio salvaje entre expedientes, credenciales, habilidades, evidencias y registros de aprendizaje."
+            },
+            "VerifiableVibes": {
+                "desc": "Para el miembro de la comunidad que cree que la confianza es hermosa, que las firmas son poesía y que la verificación debería funcionar antes de que alguien empiece la demo."
+            },
+            "BadgeGoblin": {
+                "desc": "Reservado para quien quiere que todo sea una insignia y, molestamente, casi siempre tiene algo de razón."
+            },
+            "MetadataMystic": {
+                "desc": "Para quien entiende que la insignia visible es solo el dije del collar. La verdadera magia está en los datos estructurados que hay debajo."
+            },
+            "InteropDiplomat": {
+                "desc": "Reservado para el negociador paciente que puede reunir a plataformas, proveedores, wallets, registros e instituciones en la misma sala sin provocar un incidente de estándares."
+            },
+            "BackpackElder": {
+                "desc": "Para el miembro de la comunidad que recuerda de dónde vinieron las insignias, por qué importaron y qué conversaciones todos siguen redescubriendo por accidente."
+            },
+            "IssuerTherapist": {
+                "desc": "Reservado para quien ayuda con delicadeza a las organizaciones a admitir que sus criterios de insignias no están claros, que su evidencia es pura vibra y que su taxonomía necesita cariño."
+            },
+            "SpecGremlin": {
+                "desc": "Para quien lee las notas de implementación, encuentra el caso límite, hace la pregunta aterradora y le ahorra a todos seis meses de sufrimiento."
+            }
+        }
+    },
+    "dataShareCenter": {
+        "aiLockedNote": "Desactivado para mantenerte a salvo. Un tutor puede activarlo.",
+        "diagLockedNote": "Desactivado para mantenerte a salvo. Un tutor puede cambiarlo.",
+        "aiHeading": "IA & personalización",
+        "aiSubheading": "Ayuda inteligente que aprende de ti — solo si tú lo permites.",
+        "aiFeaturesDesc": "Tutoría con IA, insights y personalización. Esto puede compartir mensajes y registros relevantes con proveedores de IA.",
+        "aiRefreshNote": "La IA está activada, pero hay que actualizar la conexión.",
+        "appDiagnostics": "Diagnóstico de la app",
+        "diagnosticsDesc": "Datos anónimos que nos ayudan a corregir y mejorar cosas.",
+        "groups": {
+            "ai": "IA & asistentes",
+            "school": "Escuelas",
+            "app": "Aplicaciones"
+        },
+        "connectedApps": {
+            "heading": "Aplicaciones & servicios conectados",
+            "subtitle": "Todo a lo que has dado acceso. Toca cualquiera para ver qué puede hacer — o desactívalo.",
+            "searchPlaceholder": "Buscar aplicaciones & servicios",
+            "emptyTitle": "Aún no hay aplicaciones",
+            "emptySubtitle": "Cuando conectes una aplicación, aparecerá aquí.",
+            "noMatches": "Sin coincidencias",
+            "noMatchesFor": "No hay nada que coincida con “{{query}}”."
+        },
+        "minor": {
+            "eyebrow": "Cuenta protegida",
+            "title": "Las protecciones de privacidad adicionales están activadas",
+            "subtitle": "Como esta es una cuenta más joven, {{brand}} mantiene todo aún más seguro.",
+            "aiOff": "Las funciones de IA están desactivadas",
+            "noTracking": "Sin seguimiento de uso ni informes de fallos",
+            "youChoose": "Solo tú eliges lo que compartes"
+        },
+        "trust": {
+            "eyebrow": "Tus datos",
+            "title": "Tus datos son tuyos",
+            "nothingShared": "Aún no compartes nada.",
+            "emptyDetail": "Cuando una aplicación o escuela pida tus datos, tú decides — cada vez.",
+            "sharingWith": "Compartiendo con {{count}} {{unit}}.",
+            "place": "lugar",
+            "places": "lugares",
+            "canRead": "{{count}} pueden leer",
+            "canWriteSuffix": ", {{count}} también pueden escribir",
+            "stopAnytime": ". Puedes detenerlo cuando quieras."
+        }
+    },
+    "issueFlow": {
+        "header": {
+            "json": "JSON",
+            "issuing": "Emitiendo...",
+            "issue": "Emitir",
+            "issueCredential": "Emitir credencial"
+        },
+        "provenance": {
+            "importedFrom": "Importado de {{source}}",
+            "dismiss": "Descartar"
+        },
+        "error": {
+            "tryAgain": "Intentar de nuevo"
+        },
+        "type": {
+            "heading": "¿Qué vas a emitir?",
+            "subheading": "Elige un tipo—tu credencial toma forma a medida que avanzas.",
+            "selected": "Tipo: {{label}}",
+            "browseAll": "Ver todos los tipos"
+        },
+        "browser": {
+            "title": "Elige un tipo de credencial",
+            "subtitle": "Elige el tipo que mejor se ajuste a lo que estás reconociendo.",
+            "searchPlaceholder": "Buscar tipos…",
+            "noMatch": "Ningún tipo coincide con “{{query}}”."
+        },
+        "details": {
+            "name": "Nombre",
+            "namePlaceholder": "p. ej. Web Development Fundamentals",
+            "nameError": "Dale un nombre a tu credencial para continuar.",
+            "descLabel": "Descripción (opcional)",
+            "descPlaceholder": "¿Qué representa esta credencial?",
+            "changeImage": "Cambiar imagen",
+            "addImage": "Añadir una imagen (opcional)"
+        },
+        "advanced": {
+            "toggle": "Más detalle",
+            "criteriaLabel": "Cómo se obtiene (criterios)",
+            "criteriaPlaceholder": "Describe qué hizo el destinatario para obtenerla.",
+            "expiresLabel": "Vence el (opcional)",
+            "evidenceHint": "Añade evidencia y multimedia arriba en la sección <0>Evidencia & multimedia</0>."
+        },
+        "display": {
+            "heading": "Visualización (opcional)",
+            "subheading": "Ajusta cómo se ve esta credencial. Las carteras que no admiten estas indicaciones simplemente las ignoran.",
+            "categoryLabel": "Categoría",
+            "autoPlaceholder": "Automático (según el tipo)",
+            "subtypeLabel": "Etiqueta de subtipo",
+            "subtypePlaceholder": "p. ej. Trailblazer",
+            "styleLabel": "Estilo de visualización",
+            "bgColor": "Color de fondo",
+            "accentColor": "Color de acento (anillo de la insignia)",
+            "accentHint": "Colorea el anillo de la insignia. Por defecto usa el color de la categoría si no se define.",
+            "bgImageLabel": "Imagen de fondo",
+            "bgPreviewAlt": "Vista previa del fondo",
+            "remove": "Quitar",
+            "changeBgImage": "Cambiar imagen de fondo",
+            "addBgImage": "Añadir una imagen de fondo",
+            "clearField": "Borrar {{label}}",
+            "style": {
+                "badge": "Insignia",
+                "certificate": "Certificado",
+                "award": "Premio",
+                "idCard": "Tarjeta de ID",
+                "course": "Curso",
+                "media": "Multimedia"
+            },
+            "styleDesc": {
+                "badge": "Un emblema circular con una cinta. Ideal para insignias sociales y logros.",
+                "certificate": "Un marco formal con estilo de documento. Bueno para finalizaciones y certificaciones.",
+                "award": "Una cinta estilo trofeo que enfatiza el reconocimiento y los honores.",
+                "idCard": "Un diseño de ID estilo cartera con foto y emisor. Ideal para membresías.",
+                "course": "Optimizado para cursos, clases y programas de aprendizaje.",
+                "media": "Un mosaico enriquecido que destaca una imagen o un video en primer plano."
+            },
+            "cat": {
+                "badge": "Insignia",
+                "achievement": "Logro",
+                "course": "Curso",
+                "portfolio": "Portafolio",
+                "assistance": "Asistencia",
+                "experience": "Experiencia",
+                "id": "ID"
+            },
+            "catDesc": {
+                "badge": "Insignias de reconocimiento comunitario y social.",
+                "achievement": "Premios, certificados y logros.",
+                "course": "Cursos, clases y programas de aprendizaje.",
+                "portfolio": "Piezas de portafolio y trabajo personal.",
+                "assistance": "Necesidades de apoyo y adaptaciones.",
+                "experience": "Empleos, prácticas y experiencia profesional.",
+                "id": "Tarjetas de identidad y credenciales oficiales."
+            }
+        },
+        "success": {
+            "theRecipient": "el destinatario",
+            "twoNames": "{{first}} y {{second}}",
+            "andOthers": "{{name}} y {{count}} más",
+            "linkCopied": "Enlace copiado.",
+            "shareTitle": "Una credencial para ti",
+            "qrDownloadFail": "No se pudo descargar el código QR.",
+            "expires": "Vence {{date}}",
+            "claimLimitOne": "Límite de {{count}} reclamo",
+            "claimLimitOther": "Límite de {{count}} reclamos",
+            "linkReady": "Tu enlace está listo",
+            "linkDesc": "Cualquiera con este enlace o código QR puede reclamarla.",
+            "copyLink": "Copiar enlace",
+            "copied": "Copiado",
+            "downloadQr": "Descargar QR",
+            "issueAnother": "Emitir otra",
+            "sent": "¡Enviada!",
+            "deliveredTo": "Entregada a {{recipients}}.",
+            "youMadeIt": "¡Lo lograste!",
+            "savedToWallet": "Tu credencial está firmada y guardada en tu cartera.",
+            "viewInWallet": "Ver en la cartera"
+        },
+        "fields": {
+            "gradeOrResult": "Calificación o resultado",
+            "useFixed": "Usar un valor fijo",
+            "personalize": "Personalizar por destinatario",
+            "setPerRecipient": "Establecer por destinatario abajo",
+            "selectStatus": "Selecciona un estado…",
+            "pickGradeType": "Elige un tipo de calificación arriba para que este resultado se guarde en un formato estándar.",
+            "fillDetails": "Completa los detalles",
+            "placeholdersDesc": "Esta credencial tiene marcadores de posición. Dale un valor a cada uno antes de emitir.",
+            "sameForAll": "Igual para todos",
+            "perRecipient": "Por destinatario",
+            "selectDefault": "Selecciona…"
+        },
+        "media": {
+            "photo": "Foto",
+            "document": "Documento",
+            "video": "Video",
+            "link": "Enlace",
+            "title": "Evidencia & multimedia",
+            "subtitle": "Adjunta pruebas — fotos, documentos, videos o enlaces.",
+            "removeAttachment": "Quitar adjunto",
+            "urlPlaceholder": "https://example.com/proof",
+            "linkTitle": "Título del enlace (opcional)",
+            "noAttachments": "Aún no hay adjuntos."
+        },
+        "whoFor": "¿Para quién es esto?",
+        "whoForDesc": "Esto determina la vista previa y cómo se entrega.",
+        "people": "Personas",
+        "specificPeople": "Personas específicas",
+        "link": "Enlace",
+        "anyoneLink": "Cualquier persona con un enlace",
+        "addByHint": "Añade por nombre, @usuario o correo",
+        "linkOnIssue": "Crearemos un enlace para compartir cuando emitas.",
+        "alreadyHave": "¿Ya tienes algo?",
+        "startFromLink": "Empieza desde un enlace, archivo o ID",
+        "sendExisting": "Envía una que hayas creado",
+        "startFromSomething": "Empieza desde algo",
+        "importIntro": "Pega un enlace, un ID de Credential Engine o los datos de una credencial — nosotros nos encargamos del resto.",
+        "importPlaceholder": "Pega una URL, un ID ce- o el JSON de la credencial…",
+        "importSupports": "Admitimos enlaces, IDs y archivos",
+        "uploadFile": "Subir archivo",
+        "pasteInstead": "Abre la fuente, copia su JSON y pégalo arriba.",
+        "bringingIn": "Importándola…",
+        "bringItIn": "Importarla",
+        "foundIt": "La encontramos",
+        "fromCredEngine": "De Credential Engine",
+        "useThis": "Usar esta",
+        "openFailed": "No pudimos abrir esa. Prueba con otra.",
+        "credSentToast": "Credencial enviada.",
+        "sendFailed": "Algo salió mal al enviar esta credencial. Inténtalo de nuevo.",
+        "untitled": "Credencial sin título",
+        "sendThisCred": "Enviar esta credencial",
+        "whosItFor": "¿Para quién es?",
+        "reuseTitle": "Reutiliza una que hayas creado",
+        "reuseSubtitle": "Envía una credencial que gestionas — elige una para empezar.",
+        "searchCreds": "Busca tus credenciales…",
+        "nothingMatches": "No hay coincidencias para “{{query}}”.",
+        "noneIssued": "Aún no has emitido ninguna credencial.",
+        "showMore": "Mostrar más",
+        "previewDesc": "Esto es exactamente lo que recibirá tu destinatario.",
+        "chooseRecip": "Elegir destinatario",
+        "editCopy": "Mejor edita una copia",
+        "linkReady": "Tu enlace está listo",
+        "credSent": "Credencial enviada",
+        "linkClaimDesc": "Cualquier persona con este enlace puede reclamarla.",
+        "onItsWay": "“{{name}}” está en camino.",
+        "copy": "Copiar",
+        "sendAnother": "Enviar otra",
+        "sending": "Enviando…",
+        "createLink": "Crear enlace para compartir",
+        "sendToSelf": "Enviármela a mí",
+        "sendCred": "Enviar credencial",
+        "skillsTitle": "Habilidades",
+        "skillsSubtitle": "Busca competencias para alinear esta credencial con un marco.",
+        "removeSkill": "Eliminar {{name}}",
+        "clearSearch": "Borrar búsqueda",
+        "searching": "Buscando…",
+        "suggested": "Sugeridas",
+        "noMatchingSkills": "No hay habilidades coincidentes.",
+        "browseAllFrameworks": "Explorar todos los marcos",
+        "addSkills": "Añadir habilidades",
+        "selectedTapToToggle": "{{count}} seleccionadas · toca para añadir o quitar",
+        "addSkillsSubtitle": "Alinea esta credencial con competencias de cualquier marco.",
+        "frameworkAlignment": "Alineación con el marco",
+        "verified": "Verificado",
+        "removeAlignment": "Eliminar alineación",
+        "alignmentsTitle": "Alineaciones",
+        "alignmentsSubtitle": "Estándares y marcos externos con los que se relaciona esta credencial.",
+        "verifiedSource": "Fuente verificada",
+        "occupationsPrograms": "Ocupaciones & programas",
+        "invalidJsonLine": "JSON no válido en la línea {{line}}.",
+        "invalidJson": "Esto aún no es JSON válido.",
+        "mustBeJsonObject": "Una credencial debe ser un objeto JSON.",
+        "checking": "Comprobando…",
+        "valid": "Válido",
+        "copied": "Copiado",
+        "jsonStudioHint": "Edita la credencial directamente. Mantendremos sincronizados el emisor y el destinatario cuando emitas.",
+        "evidencePerRecipient": "Evidencia por destinatario",
+        "evidenceSubtitle": "Adjunta pruebas específicas para cada persona. Opcional.",
+        "catalog": {
+            "Badge": {
+                "label": "Insignia",
+                "pick": "Una insignia digital para un logro o una habilidad."
+            },
+            "Certificate": {
+                "label": "Certificado",
+                "pick": "Un certificado formal que reconoce un logro."
+            },
+            "Course": {
+                "label": "Curso",
+                "pick": "Alguien completó un curso o capacitación."
+            },
+            "Competency": {
+                "label": "Habilidad",
+                "pick": "Verifica una habilidad o competencia específica."
+            },
+            "License": {
+                "label": "Licencia",
+                "pick": "Una licencia profesional u ocupacional."
+            },
+            "Membership": {
+                "label": "Membresía",
+                "pick": "Membresía en una organización o programa."
+            },
+            "MicroCredential": {
+                "label": "Microcredencial",
+                "pick": "Reconocimiento breve para un aprendizaje específico."
+            },
+            "Achievement": {
+                "label": "Logro",
+                "pick": "Un logro general que no encaja en ningún otro tipo."
+            },
+            "Award": {
+                "label": "Premio",
+                "pick": "Un honor o premio otorgado por excelencia."
+            },
+            "CommunityService": {
+                "label": "Servicio comunitario",
+                "pick": "Reconoce el trabajo voluntario o comunitario."
+            },
+            "CoCurricular": {
+                "label": "Cocurricular",
+                "pick": "Actividad paralela al estudio formal (clubes, deportes)."
+            },
+            "CertificateOfCompletion": {
+                "label": "Certificado de finalización",
+                "pick": "Confirma que alguien terminó un programa."
+            },
+            "LearningProgram": {
+                "label": "Programa de aprendizaje",
+                "pick": "Un programa de aprendizaje estructurado de varias partes."
+            },
+            "Assessment": {
+                "label": "Evaluación",
+                "pick": "Resultados de una prueba o evaluación."
+            },
+            "Assignment": {
+                "label": "Tarea",
+                "pick": "Un trabajo de curso completado."
+            },
+            "Fieldwork": {
+                "label": "Trabajo de campo",
+                "pick": "Experiencia práctica o de campo."
+            },
+            "Degree": {
+                "label": "Título",
+                "pick": "Un título académico general."
+            },
+            "AssociateDegree": {
+                "label": "Título de asociado",
+                "pick": "Un título de asociado de dos años."
+            },
+            "BachelorDegree": {
+                "label": "Licenciatura",
+                "pick": "Un título universitario de cuatro años."
+            },
+            "MasterDegree": {
+                "label": "Maestría",
+                "pick": "Un título de posgrado de maestría."
+            },
+            "DoctoralDegree": {
+                "label": "Doctorado",
+                "pick": "Un doctorado (PhD o equivalente)."
+            },
+            "ResearchDoctorate": {
+                "label": "Doctorado de investigación",
+                "pick": "Un doctorado orientado a la investigación."
+            },
+            "ProfessionalDoctorate": {
+                "label": "Doctorado profesional",
+                "pick": "Un doctorado orientado a la práctica."
+            },
+            "Diploma": {
+                "label": "Diploma",
+                "pick": "Un diploma por estudios completados."
+            },
+            "SecondarySchoolDiploma": {
+                "label": "Diploma de bachillerato",
+                "pick": "Un diploma de educación secundaria / bachillerato."
+            },
+            "GeneralEducationDevelopment": {
+                "label": "GED",
+                "pick": "Una equivalencia de bachillerato (GED)."
+            },
+            "Certification": {
+                "label": "Certificación",
+                "pick": "Una certificación industrial o profesional."
+            },
+            "ApprenticeshipCertificate": {
+                "label": "Aprendizaje",
+                "pick": "Finalización de un aprendizaje."
+            },
+            "JourneymanCertificate": {
+                "label": "Oficial",
+                "pick": "Una credencial de oficio de nivel oficial."
+            },
+            "MasterCertificate": {
+                "label": "Certificado de maestro",
+                "pick": "Una credencial de oficio de nivel maestro."
+            },
+            "QualityAssuranceCredential": {
+                "label": "Garantía de calidad",
+                "pick": "Una credencial de garantía de calidad o cumplimiento."
+            },
+            "fam": {
+                "recognition": {
+                    "label": "Reconocimiento",
+                    "blurb": "Honra un logro, una contribución o un momento."
+                },
+                "learning": {
+                    "label": "Aprendizaje",
+                    "blurb": "Alguien completó un curso, programa o habilidad."
+                },
+                "degrees": {
+                    "label": "Títulos & Diplomas",
+                    "blurb": "Un título académico o diploma formal."
+                },
+                "professional": {
+                    "label": "Profesional",
+                    "blurb": "Licencia, certificación o credencial de oficio."
+                },
+                "belonging": {
+                    "label": "Pertenencia",
+                    "blurb": "Membresía en una organización o programa."
+                }
+            }
+        },
+        "result": {
+            "LetterGrade": {
+                "label": "Calificación con letra",
+                "eg": "p. ej. A-"
+            },
+            "Percent": {
+                "label": "Porcentaje",
+                "eg": "p. ej. 95"
+            },
+            "GradePointAverage": {
+                "label": "GPA",
+                "eg": "p. ej. 3.8"
+            },
+            "RawScore": {
+                "label": "Puntos",
+                "eg": "p. ej. 720"
+            },
+            "Status": {
+                "label": "Estado",
+                "eg": ""
+            },
+            "status": {
+                "Completed": "Completado",
+                "Enrolled": "Inscrito",
+                "Failed": "Reprobado",
+                "InProgress": "En curso",
+                "OnHold": "En pausa",
+                "Provisional": "Provisional",
+                "Withdrew": "Retirado"
+            }
+        },
+        "field": {
+            "completionDate": {
+                "label": "Fecha de finalización"
+            },
+            "startDate": {
+                "label": "Fecha de inicio"
+            },
+            "creditsEarned": {
+                "label": "Créditos obtenidos",
+                "ph": "p. ej. 3"
+            },
+            "term": {
+                "label": "Periodo",
+                "ph": "p. ej. Otoño 2025"
+            },
+            "licenseNumber": {
+                "label": "Número de licencia",
+                "ph": "p. ej. RN-1234567"
+            },
+            "role": {
+                "label": "Rol o nivel",
+                "ph": "p. ej. Miembro Oro"
+            },
+            "creditHours": {
+                "label": "Horas crédito",
+                "ph": "p. ej. 10"
+            },
+            "humanCode": {
+                "label": "Código del curso",
+                "ph": "p. ej. CS101"
+            },
+            "fieldOfStudy": {
+                "label": "Campo de estudio",
+                "ph": "p. ej. Ciencias de la Computación"
+            },
+            "specialization": {
+                "label": "Especialización",
+                "ph": "p. ej. Aprendizaje automático"
+            },
+            "version": {
+                "label": "Versión",
+                "ph": "p. ej. 2.1"
+            },
+            "expiryDate": {
+                "label": "Vence el"
+            },
+            "memberId": {
+                "label": "ID de miembro",
+                "ph": "p. ej. M-00482"
+            }
+        },
+        "gate": {
+            "pickType": "Elige un tipo para empezar",
+            "fixJson": "Corrige el JSON para continuar",
+            "addName": "Añade un nombre para continuar",
+            "addRecip": "Añade un destinatario para continuar"
+        },
+        "toastIssued": "Credencial emitida.",
+        "saveFailed": "La credencial se emitió, pero no se pudo guardar en tu cuenta.",
+        "discard": {
+            "title": "¿Descartar este enlace?",
+            "keep": "Conservar",
+            "discard": "Descartar"
+        },
+        "preview": {
+            "willLook": "Así se verá tu credencial.",
+            "pickToStart": "Elige un tipo para empezar a diseñar tu credencial."
+        },
+        "err": {
+            "network": "Problema de conexión. Revisa tu conexión a internet e inténtalo de nuevo.",
+            "timeout": "Esto tardó más de lo esperado. Inténtalo de nuevo.",
+            "session": "Puede que tu sesión haya caducado. Inicia sesión de nuevo e inténtalo otra vez.",
+            "server": "Nuestros servidores tuvieron un problema. Inténtalo de nuevo en un momento.",
+            "linkFail": "No pudimos crear un enlace para compartir. Inténtalo de nuevo.",
+            "setupFail": "No pudimos configurar la emisión para tu cuenta. Inténtalo de nuevo.",
+            "recipient": "No pudimos contactar a uno de tus destinatarios. Revisa los nombres o correos e inténtalo de nuevo.",
+            "invalid": "Algunos datos de esta credencial aún no son válidos. Revísalos e inténtalo de nuevo.",
+            "generic": "Algo salió mal al emitir tu credencial. Inténtalo de nuevo."
+        }
     }
 }

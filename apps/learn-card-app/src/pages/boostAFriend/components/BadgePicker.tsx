@@ -10,6 +10,7 @@ import {
 } from '../boostAFriend.helpers';
 import { LCAStylesPackRegistryEntry, BadgeGroup } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
+import { tBadgeCategoryLabel, tBadgeCategoryDesc } from '../badgePackI18n';
 
 interface BadgePickerProps {
     onSelect: (badge: BadgePreset, vibeColor: string) => void;
@@ -207,11 +208,19 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
                                 <div key={groupData.group.id} className="space-y-3">
                                     <div className="px-6 sm:px-1">
                                         <h2 className="text-lg sm:text-xl font-semibold text-grayscale-900">
-                                            {groupData.group.label}
+                                            {groupData.group.id === 'more'
+                                                ? groupData.group.label
+                                                : tBadgeCategoryLabel(
+                                                      groupData.group.id,
+                                                      groupData.group.label
+                                                  )}
                                         </h2>
                                         {groupData.group.description && (
                                             <p className="text-sm text-grayscale-500 mt-0.5">
-                                                {groupData.group.description}
+                                                {tBadgeCategoryDesc(
+                                                    groupData.group.id,
+                                                    groupData.group.description
+                                                )}
                                             </p>
                                         )}
                                     </div>
