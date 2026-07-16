@@ -23,7 +23,7 @@ export const TroopIDPreviewFrontFace: React.FC<{
     } else if (isInNetworkViewMode) {
         title = 'National Admin Name';
     } else if (isInTroopViewMode && isInLeaderViewMode) {
-        title = 'Leader Name';
+        title = 'Troop Leader Name';
     } else if (isInTroopViewMode && isInMemberViewMode) {
         title = 'Scout Name';
     }
