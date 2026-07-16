@@ -236,8 +236,9 @@ describe('e2e: verifier rejection surfaces VpSubmitError', () => {
             ]);
 
             expect(result.submitted.status).toBe(200);
+            // OID4VP 1.0 §8.1: each query id maps to an ARRAY of presentations.
             expect(result.dcqlVpToken).toEqual(
-                expect.objectContaining({ degree: expect.any(String) })
+                expect.objectContaining({ degree: [expect.any(String)] })
             );
 
             const record = session.submissions[0]!;
