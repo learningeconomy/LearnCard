@@ -8,8 +8,15 @@ export type { CredentialLifecycleStatus } from './deriveLifecycleStatus';
 export { deriveLifecycleStatus } from './deriveLifecycleStatus';
 
 /**
- * Lazily verify a held credential's status (revoked/suspended), cached by URI.
- * Runs when the card mounts; fail-open so a check error never renders as revoked.
+ * Resolve a held credential's lifecycle status (revoked/suspended), cached by URI.
+ *
+ * Primary source is the authoritative backend status (the CREDENTIAL_SENT/RECEIVED
+ * relationship status the issuer view + activity feed use). We prefer it over
+ * client-side verifyCredential because the WASM status-list check enforces revocation
+ * but does not reliably surface a *set suspension bit*, so a suspended credential would
+ * otherwise render as active on the holder's card. Falls back to client verification
+ * when the backend can't answer (e.g. self-issued creds with no CREDENTIAL_SENT edge, or
+ * the network method being unavailable). Fail-open so an error never renders as revoked.
  */
 export const useCredentialStatus = (
     credential: VC | undefined,
@@ -29,8 +36,30 @@ export const useCredentialStatus = (
         enabled: enabled && !!credential && !!uri,
         staleTime: 5 * 60 * 1000,
         queryFn: async (): Promise<CredentialLifecycleStatus> => {
+            const wallet = await initWallet();
+
+            // 1) Authoritative backend status (source of truth for revoke/suspend).
             try {
-                const wallet = await initWallet();
+                const getStatuses = (wallet as any)?.invoke?.getMyCredentialLifecycleStatuses as
+                    | ((options: {
+                          uris: string[];
+                      }) => Promise<Record<string, CredentialLifecycleStatus>>)
+                    | undefined;
+                const statuses = await getStatuses?.({ uris: [uri as string] });
+                const backendStatus = statuses?.[uri as string];
+                if (
+                    backendStatus === 'revoked' ||
+                    backendStatus === 'suspended' ||
+                    backendStatus === 'active'
+                ) {
+                    return backendStatus;
+                }
+            } catch {
+                // fall through to client verification
+            }
+
+            // 2) Fallback: client-side verification of the credential's status list.
+            try {
                 // prettify=false returns the raw VerificationCheck (with structured
                 // `status` entries). The exposed invoke type narrows the 3rd arg to
                 // `true`, so cast to reach the raw-result overload.
