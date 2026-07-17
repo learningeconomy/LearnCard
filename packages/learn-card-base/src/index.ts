@@ -175,6 +175,8 @@ export * from './stores/aiInsightRefreshStore';
 export * from './stores/syncProgressStore';
 export * from './stores/pendingContractSyncStore';
 export * from './stores/boostPreviewStore';
+export * from './stores/demoSessionStore';
+export * from './helpers/demoWalletAdapter';
 export {
     messages,
     threads,

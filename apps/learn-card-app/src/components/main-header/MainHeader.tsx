@@ -15,6 +15,7 @@ import HeaderBranding from '../headerBranding/HeaderBranding';
 import Burger from '../svgs/Burger';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 import ProfileAlertsIsland from './ProfileAlertsIsland';
+import SampleWalletPill from '../learncard/sample-wallet/SampleWalletPill';
 import MainSubHeader from '../main-subheader/MainSubHeader';
 
 import { SubheaderTypeEnum } from '../main-subheader/MainSubHeader.types';
@@ -156,6 +157,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                         </IonCol>
 
                         <IonCol size="10" className="flex justify-end items-center gap-2">
+                            <SampleWalletPill />
                             {isLoggedIn ? (
                                 <ProfileAlertsIsland
                                     branding={branding}
