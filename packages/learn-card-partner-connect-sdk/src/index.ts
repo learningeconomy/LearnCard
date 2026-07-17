@@ -57,8 +57,9 @@ import type {
 } from './types';
 
 // Re-export the class as a value plus all type exports.
+// `MockHost` is an internal implementation detail (constructed via
+// `createPartnerConnect({ mock, mockOptions })`); only its options type is public.
 export { PartnerConnectError } from './types';
-export { MockHost } from './mock-host';
 export type * from './types';
 
 /** Maximum time to poll for sync completion before giving up (10 minutes) */
