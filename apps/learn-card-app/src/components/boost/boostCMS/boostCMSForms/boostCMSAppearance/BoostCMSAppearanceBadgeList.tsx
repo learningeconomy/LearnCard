@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 import {
-    useFilestack,
+    useImageUpload,
     UploadRes,
     LCAStylesPackRegistryEntry,
     getBoostMetadata,
@@ -105,7 +105,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
         setActiveForm(BoostCMSActiveAppearanceForm.appearanceForm);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },

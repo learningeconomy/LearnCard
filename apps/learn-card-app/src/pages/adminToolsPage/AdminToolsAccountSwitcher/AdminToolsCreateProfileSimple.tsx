@@ -18,7 +18,7 @@ import {
     useWallet,
     useToast,
     useModal,
-    useFilestack,
+    useImageUpload,
     useCreateBoost,
     useCurrentUser,
     useGetCurrentLCNUser,
@@ -141,7 +141,7 @@ const AdminToolsCreateProfileSimple: React.FC<AdminToolsCreateProfileSimpleProps
         }
     }, [families]);
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data: UploadRes) => {
             setImage(data?.url);

@@ -23,7 +23,7 @@ const log = getLogger('embed-claim-guide');
 import {
     useWallet,
     useToast,
-    useFilestack,
+    useImageUpload,
     ToastTypeEnum,
     useGetCurrentLCNUser,
 } from 'learn-card-base';
@@ -403,7 +403,7 @@ const ConfigureStep: React.FC<{
         handleFileSelect: handleLogoUpload,
         isLoading: isUploadingLogo,
         error: logoUploadError,
-    } = useFilestack({
+    } = useImageUpload({
         onUpload: (url: string) => {
             setBranding({ ...branding, partnerLogoUrl: url });
         },
