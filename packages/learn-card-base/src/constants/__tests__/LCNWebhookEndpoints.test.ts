@@ -42,4 +42,12 @@ describe('getNotificationsEndpoint', () => {
             'https://staging.api.scoutnetwork.org/api/notifications/send'
         );
     });
+
+    it('does not treat scoutnetwork.org substrings in other hostnames as ScoutPass', () => {
+        networkStore.set.apiEndpoint('https://scoutnetwork.org.evil.test/trpc');
+
+        expect(getNotificationsEndpoint()).toBe(
+            'https://scoutnetwork.org.evil.test/api/notifications/send'
+        );
+    });
 });
