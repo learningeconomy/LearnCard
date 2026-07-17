@@ -88,14 +88,21 @@ export const DI_VP_SUPPORTED_CRYPTOSUITES = [
  *
  * Selection policy:
  * - No `proof_types_supported` → `jwt` (historical default; most issuers).
- * - `jwt` advertised → `jwt`.
- * - Only `di_vp` advertised → `di_vp`, with a cryptosuite picked from the
- *   intersection of the issuer's `proof_signing_alg_values_supported` and
+ * - `jwt` advertised with a mutually supported signing algorithm → `jwt`.
+ *   Per §8.2.1 each proof-type entry carries
+ *   `proof_signing_alg_values_supported`; when `signerAlg` is provided and
+ *   the issuer's list doesn't include it, `jwt` is skipped so a viable
+ *   `di_vp` path can be used instead of sending a proof the issuer must
+ *   reject.
+ * - `di_vp` advertised (and `jwt` unavailable or alg-incompatible) →
+ *   `di_vp`, with a cryptosuite picked from the intersection of the
+ *   issuer's `proof_signing_alg_values_supported` and
  *   {@link DI_VP_SUPPORTED_CRYPTOSUITES}.
- * - Neither supported → `unsupported_proof_type` error.
+ * - No mutually supported proof type → `proof_signing_failed` error.
  */
 export const selectKeyProofType = (
-    configDef: Record<string, unknown> | undefined
+    configDef: Record<string, unknown> | undefined,
+    signerAlg?: string
 ): KeyProofSelection => {
     const proofTypes = configDef?.proof_types_supported;
 
@@ -103,7 +110,9 @@ export const selectKeyProofType = (
 
     const entries = proofTypes as Record<string, unknown>;
 
-    if ('jwt' in entries) return { proofType: 'jwt' };
+    const jwtAdvertised = 'jwt' in entries;
+
+    if (jwtAdvertised && jwtEntryAcceptsAlg(entries.jwt, signerAlg)) return { proofType: 'jwt' };
 
     if ('di_vp' in entries) {
         const diVpEntry = entries.di_vp;
@@ -130,12 +139,51 @@ export const selectKeyProofType = (
         return { proofType: 'di_vp', cryptosuite };
     }
 
+    if (jwtAdvertised) {
+        throw new VciError(
+            'proof_signing_failed',
+            `Issuer accepts jwt key proofs but not the wallet signer's algorithm "${signerAlg}" (issuer: ${describeJwtAlgs(
+                entries.jwt
+            )})`
+        );
+    }
+
     throw new VciError(
         'proof_signing_failed',
         `Issuer's proof_types_supported advertises none of the wallet's key proof types (issuer: ${Object.keys(
             entries
         ).join(', ')}; wallet: jwt, di_vp)`
     );
+};
+
+/**
+ * OID4VCI 1.0 §8.2.1: a proof-type entry's
+ * `proof_signing_alg_values_supported` constrains which algorithms the
+ * issuer accepts. Missing/empty lists are treated as unrestricted
+ * (lenient — several live issuers omit the field), as is an absent
+ * `signerAlg` (callers that don't know their algorithm keep the historical
+ * behavior).
+ */
+const jwtEntryAcceptsAlg = (jwtEntry: unknown, signerAlg?: string): boolean => {
+    if (!signerAlg) return true;
+
+    const advertised =
+        jwtEntry && typeof jwtEntry === 'object'
+            ? (jwtEntry as Record<string, unknown>).proof_signing_alg_values_supported
+            : undefined;
+
+    if (!Array.isArray(advertised) || advertised.length === 0) return true;
+
+    return advertised.includes(signerAlg);
+};
+
+const describeJwtAlgs = (jwtEntry: unknown): string => {
+    const advertised =
+        jwtEntry && typeof jwtEntry === 'object'
+            ? (jwtEntry as Record<string, unknown>).proof_signing_alg_values_supported
+            : undefined;
+
+    return Array.isArray(advertised) ? advertised.join(', ') : 'unspecified';
 };
 
 /**

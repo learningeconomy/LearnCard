@@ -386,7 +386,40 @@ const handleUnsignedRequestObject = (
         );
     }
 
+    // OID4VP 1.0 §5.9.1: under the redirect_uri prefix the verifier's
+    // identity IS the response target, so a canonical `redirect_uri:<value>`
+    // client-id that doesn't equal it is a spoof (identity says one URL,
+    // the presentation goes to another). The legacy
+    // `client_id_scheme=redirect_uri` form only requires same-origin —
+    // deployed draft-22 verifiers use distinct paths. [pex-compat]
+    if (prefix === 'redirect_uri') {
+        const responseTarget = asString(claims.response_uri) ?? asString(claims.redirect_uri);
+        const { value } = deriveClientIdPrefix(clientId, legacyScheme);
+
+        if (clientId.startsWith('redirect_uri:')) {
+            if (value !== responseTarget) {
+                throw new RequestObjectError(
+                    'client_id_mismatch',
+                    `redirect_uri client-id "${value}" does not equal the request's response target "${responseTarget}" (OID4VP 1.0 §5.9.1)`
+                );
+            }
+        } else if (responseTarget && !isSameOriginUrl(value, responseTarget)) {
+            throw new RequestObjectError(
+                'client_id_mismatch',
+                `client_id_scheme=redirect_uri client-id "${value}" is not same-origin with the request's response target "${responseTarget}"`
+            );
+        }
+    }
+
     return finalizeRequest(buildRequestFromClaims(clientId, prefix, claims), opts);
+};
+
+const isSameOriginUrl = (a: string, b: string): boolean => {
+    try {
+        return new URL(a).origin === new URL(b).origin;
+    } catch {
+        return false;
+    }
 };
 
 const loadRequestPayload = async (
@@ -1133,11 +1166,26 @@ const buildRequestFromClaims = (
         );
     }
 
-    const transactionData =
-        Array.isArray(claims.transaction_data) &&
-        claims.transaction_data.every(x => typeof x === 'string')
-            ? (claims.transaction_data as string[])
-            : undefined;
+    // OID4VP 1.0 §5.1/§8.5: `transaction_data` MUST be a non-empty array of
+    // base64url-encoded strings. Mirror the strict URL-parameter validation
+    // (see `parse.ts:parseTransactionData`) — silently coercing a malformed
+    // claim to `undefined` would let a request bypass the §8.4
+    // cannot-honor-transaction-data rejection downstream.
+    let transactionData: string[] | undefined;
+    if (claims.transaction_data !== undefined && claims.transaction_data !== null) {
+        if (
+            !Array.isArray(claims.transaction_data) ||
+            claims.transaction_data.length === 0 ||
+            !claims.transaction_data.every(x => typeof x === 'string')
+        ) {
+            throw new VpError(
+                'invalid_transaction_data',
+                'transaction_data MUST be a non-empty array of base64url-encoded strings'
+            );
+        }
+
+        transactionData = claims.transaction_data as string[];
+    }
 
     const verifierInfo = Array.isArray(claims.verifier_info)
         ? (claims.verifier_info as unknown[])

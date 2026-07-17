@@ -178,7 +178,7 @@ const requestCredentialsFromPreAuthTokenCore = async (args: {
         const proofSelection =
             specVersion === 'draft-13' // [draft-13-compat] draft 13 only defines the jwt proof type
                 ? ({ proofType: 'jwt' } as const)
-                : selectKeyProofType(configDef);
+                : selectKeyProofType(configDef, signer.alg);
 
         if (proofSelection.proofType === 'di_vp' && !diVpSigner) {
             throw new VciError(

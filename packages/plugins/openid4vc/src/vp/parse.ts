@@ -162,9 +162,7 @@ export const resolveAuthorizationRequest = async (
         // by_reference_request_uri path fetches a URL, so POST + wallet_nonce
         // apply there; the inline `request` JWS path ignores them.
         const isUriRef = parsed.kind === 'by_reference_request_uri';
-        const rawMethod = parsed.rawParams.get('request_uri_method');
-        const requestUriMethod =
-            rawMethod === 'post' ? 'post' : rawMethod === 'get' ? 'get' : undefined;
+        const requestUriMethod = parseRequestUriMethod(parsed.rawParams.get('request_uri_method'));
         const walletNonce =
             isUriRef && requestUriMethod === 'post' ? randomWalletNonce() : undefined;
 
@@ -424,10 +422,12 @@ const buildRequestFromParams = (params: URLSearchParams): AuthorizationRequest =
     // and Request-Object-mode aligned: plugin code downstream can
     // rely on `client_id_scheme` being a normalized prefix in both
     // paths, regardless of which encoding the verifier picked.
-    const { prefix: derivedPrefix } = deriveClientIdPrefix(
-        clientId,
-        params.get('client_id_scheme') ?? undefined
-    );
+    const derived = deriveClientIdPrefix(clientId, params.get('client_id_scheme') ?? undefined);
+
+    const derivedPrefix = resolveUnsignedClientIdPrefix(derived, clientId, {
+        responseUri,
+        redirectUri,
+    });
 
     return {
         client_id: clientId,
@@ -518,6 +518,87 @@ const parseRequestUriMethod = (raw: string | null): 'get' | 'post' | undefined =
         );
     }
     return raw;
+};
+
+/**
+ * Client-id prefixes whose trust model REQUIRES a verified signature:
+ * an unsigned by-value Authorization Request claiming one of these is a
+ * spoof by construction (OID4VP 1.0 §5.9 mandates a signed Request
+ * Object for them), so it's rejected at the door. `redirect_uri` and
+ * `pre-registered` are the only prefixes valid without a signature.
+ */
+const SIGNED_REQUEST_ONLY_PREFIXES: ReadonlySet<string> = new Set([
+    'did',
+    'x509_san_dns',
+    'x509_hash',
+    'verifier_attestation',
+    'https',
+]);
+
+/**
+ * Security perimeter for UNSIGNED by-value Authorization Requests
+ * (signed Request Objects enforce this separately in
+ * `request-object.ts`). Three rules:
+ *
+ * 1. A bare `https://...` client_id with no explicit scheme is
+ *    surfaced as `pre-registered`, not `https` — that's the draft-22
+ *    default for an absent `client_id_scheme` AND the 1.0 rule for a
+ *    prefix-less client_id (federation requires the explicit
+ *    `openid_federation:` form). Labeling it `https` would falsely
+ *    imply a signature-verified federation identity. [pex-compat]
+ * 2. Signature-requiring prefixes are rejected — without a JWS there
+ *    is nothing binding the request to the claimed DID / cert / URL,
+ *    so an attacker deep link could impersonate a trusted verifier
+ *    while pointing `response_uri` at itself.
+ * 3. `redirect_uri` client-ids must match the response target
+ *    (§5.9.1: the identity IS the redirect target). The canonical
+ *    `redirect_uri:<value>` form requires exact equality; the legacy
+ *    `client_id_scheme=redirect_uri` param form only requires
+ *    same-origin, because deployed draft-22 verifiers routinely use
+ *    distinct paths for client_id and response_uri. [pex-compat]
+ */
+const resolveUnsignedClientIdPrefix = (
+    derived: ReturnType<typeof deriveClientIdPrefix>,
+    clientId: string,
+    target: { responseUri?: string; redirectUri?: string }
+): ReturnType<typeof deriveClientIdPrefix>['prefix'] => {
+    if (derived.prefix === 'https' && derived.inferred) return 'pre-registered';
+
+    if (SIGNED_REQUEST_ONLY_PREFIXES.has(derived.prefix)) {
+        throw new VpError(
+            'invalid_client_id_scheme',
+            `Unsigned Authorization Request uses client-id prefix "${derived.prefix}", which requires a signed Request Object (OID4VP 1.0 §5.9); only redirect_uri and pre-registered are valid unsigned`
+        );
+    }
+
+    if (derived.prefix === 'redirect_uri') {
+        const responseTarget = target.responseUri ?? target.redirectUri;
+        const isCanonicalForm = clientId.startsWith('redirect_uri:');
+
+        if (isCanonicalForm) {
+            if (derived.value !== responseTarget) {
+                throw new VpError(
+                    'invalid_client_id_scheme',
+                    `redirect_uri client-id "${derived.value}" does not equal the request's response target "${responseTarget}" (OID4VP 1.0 §5.9.1)`
+                );
+            }
+        } else if (responseTarget && !isSameOrigin(derived.value, responseTarget)) {
+            throw new VpError(
+                'invalid_client_id_scheme',
+                `client_id_scheme=redirect_uri client-id "${derived.value}" is not same-origin with the request's response target "${responseTarget}"`
+            );
+        }
+    }
+
+    return derived.prefix;
+};
+
+const isSameOrigin = (a: string, b: string): boolean => {
+    try {
+        return new URL(a).origin === new URL(b).origin;
+    } catch {
+        return false;
+    }
 };
 
 /**

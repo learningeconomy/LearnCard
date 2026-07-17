@@ -212,6 +212,63 @@ describe('selectKeyProofType', () => {
             /none of the wallet's key proof types/
         );
     });
+
+    it('keeps jwt when the signer alg is in the jwt proof_signing_alg_values_supported', () => {
+        expect(
+            selectKeyProofType(
+                {
+                    proof_types_supported: {
+                        jwt: { proof_signing_alg_values_supported: ['ES256', 'EdDSA'] },
+                    },
+                },
+                'EdDSA'
+            )
+        ).toEqual({ proofType: 'jwt' });
+    });
+
+    it('keeps jwt when the jwt entry advertises no algorithm restriction', () => {
+        expect(selectKeyProofType({ proof_types_supported: { jwt: {} } }, 'EdDSA')).toEqual({
+            proofType: 'jwt',
+        });
+    });
+
+    it('falls back to di_vp when the jwt algs exclude the signer alg', () => {
+        expect(
+            selectKeyProofType(
+                {
+                    proof_types_supported: {
+                        jwt: { proof_signing_alg_values_supported: ['ES256'] },
+                        di_vp: { proof_signing_alg_values_supported: ['eddsa-rdfc-2022'] },
+                    },
+                },
+                'EdDSA'
+            )
+        ).toEqual({ proofType: 'di_vp', cryptosuite: 'eddsa-rdfc-2022' });
+    });
+
+    it('throws when jwt algs exclude the signer alg and no di_vp is advertised', () => {
+        expect(() =>
+            selectKeyProofType(
+                {
+                    proof_types_supported: {
+                        jwt: { proof_signing_alg_values_supported: ['ES256'] },
+                    },
+                },
+                'EdDSA'
+            )
+        ).toThrow(/not the wallet signer's algorithm "EdDSA"/);
+    });
+
+    it('keeps the historical jwt preference when no signer alg is supplied', () => {
+        expect(
+            selectKeyProofType({
+                proof_types_supported: {
+                    jwt: { proof_signing_alg_values_supported: ['ES256'] },
+                    di_vp: { proof_signing_alg_values_supported: ['eddsa-rdfc-2022'] },
+                },
+            })
+        ).toEqual({ proofType: 'jwt' });
+    });
 });
 
 describe('buildDiVpProof', () => {

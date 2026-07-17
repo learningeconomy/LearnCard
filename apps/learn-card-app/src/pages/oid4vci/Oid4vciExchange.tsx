@@ -203,7 +203,9 @@ const Oid4vciExchange: React.FC = () => {
                 // handles unbranded issuers gracefully.
                 let metadata: CredentialIssuerMetadata | undefined;
                 try {
-                    metadata = await fetchCredentialIssuerMetadata(persisted.flowHandle.issuer);
+                    ({ metadata } = await fetchCredentialIssuerMetadata(
+                        persisted.flowHandle.issuer
+                    ));
                 } catch (metadataError) {
                     log.warn(
                         'OID4VCI auth-code return: failed to refetch metadata for success-screen branding',
@@ -257,7 +259,9 @@ const Oid4vciExchange: React.FC = () => {
                 // without it. We don\u2019t block consent on this network call.
                 let metadata: CredentialIssuerMetadata | undefined;
                 try {
-                    metadata = await fetchCredentialIssuerMetadata(resolved.credential_issuer);
+                    ({ metadata } = await fetchCredentialIssuerMetadata(
+                        resolved.credential_issuer
+                    ));
                 } catch (metadataError) {
                     log.warn(
                         'OID4VCI: failed to fetch issuer metadata, falling back to URL display',

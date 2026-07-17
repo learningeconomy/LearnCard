@@ -59,7 +59,19 @@ export type VpErrorCode =
      * OID4VP 1.0 §5.10/§8.5: `request_uri_method` was present with a value
      * other than the case-sensitive `get` / `post`.
      */
-    | 'invalid_request_uri_method';
+    | 'invalid_request_uri_method'
+    /**
+     * OID4VP 1.0 §5.9: the Authorization Request's client-id prefix is
+     * incompatible with how the request was transported. Unsigned by-value
+     * requests may only use `redirect_uri` or `pre-registered` — prefixes
+     * whose trust model depends on verifying a signature (`did`,
+     * `x509_san_dns`, `x509_hash`, `verifier_attestation`, federation)
+     * MUST arrive as a signed Request Object; accepting them unsigned
+     * would let any deep link impersonate a verified verifier identity.
+     * Also raised when a `redirect_uri` client-id doesn't match the
+     * request's response target (§5.9.1).
+     */
+    | 'invalid_client_id_scheme';
 
 /**
  * Thrown by the parser/resolver and by PEX selection helpers. The `code`

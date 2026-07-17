@@ -485,7 +485,10 @@ export const fetchCredentialsForToken = async (
         const proofSelection =
             args.flowHandle.specVersion === 'draft-13' // [draft-13-compat] draft 13 only defines the jwt proof type
                 ? ({ proofType: 'jwt' } as const)
-                : selectKeyProofType(configDef as Record<string, unknown> | undefined);
+                : selectKeyProofType(
+                      configDef as Record<string, unknown> | undefined,
+                      args.signer.alg
+                  );
 
         if (proofSelection.proofType === 'di_vp' && !args.diVpSigner) {
             throw new VciError(

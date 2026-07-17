@@ -675,3 +675,109 @@ describe('verifyAndDecodeRequestObject — unsigned JSON Request Objects', () =>
         );
     });
 });
+
+/* -------------------------------------------------------------------------- */
+/*                       transaction_data claim validation                    */
+/* -------------------------------------------------------------------------- */
+
+describe('verifyAndDecodeRequestObject — transaction_data claim', () => {
+    it('preserves a valid non-empty string array', async () => {
+        const key = await makeVerifierKey();
+        const jws = await signRequestObject(
+            key,
+            baseClaims(key, { transaction_data: ['eyJmYWtlIjoidGQifQ'] })
+        );
+
+        const request = await verifyAndDecodeRequestObject({ inlineJwt: jws });
+
+        expect(request.transaction_data).toEqual(['eyJmYWtlIjoidGQifQ']);
+    });
+
+    it.each([
+        ['empty array', []],
+        ['array with non-string entries', [42]],
+        ['non-array object', {}],
+        ['bare string', 'eyJmYWtlIjoidGQifQ'],
+    ])('rejects a malformed transaction_data claim (%s)', async (_label, transactionData) => {
+        const key = await makeVerifierKey();
+        const jws = await signRequestObject(
+            key,
+            baseClaims(key, { transaction_data: transactionData })
+        );
+
+        await expect(verifyAndDecodeRequestObject({ inlineJwt: jws })).rejects.toMatchObject({
+            code: 'invalid_transaction_data',
+        });
+    });
+});
+
+describe('verifyAndDecodeRequestObject — unsigned redirect_uri equality (OID4VP 1.0 §5.9.1)', () => {
+    const requestUri = 'https://verifier.example.com/exchanges/eq/request';
+
+    const unsignedBase = {
+        response_type: 'vp_token',
+        response_mode: 'direct_post',
+        nonce: 'nonce-eq',
+        dcql_query: {
+            credentials: [
+                {
+                    id: 'credential',
+                    format: 'ldp_vc',
+                    meta: {
+                        type_values: [['https://www.w3.org/2018/credentials#VerifiableCredential']],
+                    },
+                },
+            ],
+        },
+    };
+
+    it('rejects a canonical redirect_uri: client-id that differs from the response target', async () => {
+        const fetchImpl = mockFetch({
+            [requestUri]: {
+                body: {
+                    ...unsignedBase,
+                    client_id: 'redirect_uri:https://trusted.example/callback',
+                    response_uri: 'https://attacker.example/collect',
+                },
+            },
+        });
+
+        await expect(verifyAndDecodeRequestObject({ requestUri, fetchImpl })).rejects.toMatchObject(
+            { code: 'client_id_mismatch' }
+        );
+    });
+
+    it('rejects a legacy client_id_scheme=redirect_uri client-id that is cross-origin with the response target', async () => {
+        const fetchImpl = mockFetch({
+            [requestUri]: {
+                body: {
+                    ...unsignedBase,
+                    client_id: 'https://trusted.example/verify',
+                    client_id_scheme: 'redirect_uri',
+                    response_uri: 'https://attacker.example/collect',
+                },
+            },
+        });
+
+        await expect(verifyAndDecodeRequestObject({ requestUri, fetchImpl })).rejects.toMatchObject(
+            { code: 'client_id_mismatch' }
+        );
+    });
+
+    it('accepts a legacy client_id_scheme=redirect_uri client-id that is same-origin with the response target', async () => {
+        const fetchImpl = mockFetch({
+            [requestUri]: {
+                body: {
+                    ...unsignedBase,
+                    client_id: 'https://verifier.example.com/verify',
+                    client_id_scheme: 'redirect_uri',
+                    response_uri: 'https://verifier.example.com/exchanges/eq/response',
+                },
+            },
+        });
+
+        const request = await verifyAndDecodeRequestObject({ requestUri, fetchImpl });
+
+        expect(request.client_id_scheme).toBe('redirect_uri');
+    });
+});

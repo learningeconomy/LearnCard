@@ -524,6 +524,19 @@ describe('resolveAuthorizationRequest', () => {
             code: 'invalid_request_object',
         });
     });
+
+    it('rejects an invalid request_uri_method on a by-reference request instead of falling back to GET', async () => {
+        const fetchMock = jest.fn();
+
+        await expect(
+            resolveAuthorizationRequest(
+                'openid4vp://?request_uri=https%3A%2F%2Fverifier.example.com%2Freq.jwt&request_uri_method=POST',
+                fetchMock as unknown as typeof fetch
+            )
+        ).rejects.toMatchObject({ code: 'invalid_request_uri_method' });
+
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
 });
 
 describe('VpError shape', () => {
@@ -576,5 +589,114 @@ describe('OID4VP 1.0 §5 request parameters', () => {
         expect(() => asRequest(buildByValueUri({ request_uri_method: 'POST' }))).toThrow(
             expect.objectContaining({ code: 'invalid_request_uri_method' })
         );
+    });
+});
+
+describe('unsigned by-value client-id prefix enforcement (OID4VP 1.0 §5.9)', () => {
+    const asRequest = (uri: string) => {
+        const parsed = parseAuthorizationRequestUri(uri);
+        if (parsed.kind !== 'by_value') throw new Error('expected by_value');
+        return parsed.request;
+    };
+
+    const rejected = expect.objectContaining({ code: 'invalid_client_id_scheme' });
+
+    it('rejects the canonical decentralized_identifier: prefix on an unsigned request', () => {
+        expect(() =>
+            asRequest(
+                buildByValueUri({
+                    client_id: 'decentralized_identifier:did:example:trusted-verifier',
+                    response_uri: 'https://attacker.example/collect',
+                })
+            )
+        ).toThrow(rejected);
+    });
+
+    it('rejects the legacy client_id_scheme=did form on an unsigned request', () => {
+        expect(() =>
+            asRequest(
+                buildByValueUri({
+                    client_id: 'did:example:trusted-verifier',
+                    client_id_scheme: 'did',
+                })
+            )
+        ).toThrow(rejected);
+    });
+
+    it('rejects a bare did: client_id on an unsigned request', () => {
+        expect(() =>
+            asRequest(buildByValueUri({ client_id: 'did:web:trusted-verifier.example' }))
+        ).toThrow(rejected);
+    });
+
+    it.each([
+        ['x509_san_dns', 'x509_san_dns:verifier.example.com'],
+        ['x509_hash', 'x509_hash:Uvo3HtuIxuhwVR69KO9M0Q'],
+        ['verifier_attestation', 'verifier_attestation:verifier.example.com'],
+    ])('rejects the %s prefix on an unsigned request', (_prefix, clientId) => {
+        expect(() => asRequest(buildByValueUri({ client_id: clientId }))).toThrow(rejected);
+    });
+
+    it('rejects the legacy client_id_scheme=https form on an unsigned request', () => {
+        expect(() =>
+            asRequest(
+                buildByValueUri({
+                    client_id: 'https://verifier.example.com',
+                    client_id_scheme: 'https',
+                })
+            )
+        ).toThrow(rejected);
+    });
+
+    it('downgrades a bare https client_id with no scheme to pre-registered [pex-compat]', () => {
+        const req = asRequest(buildByValueUri());
+
+        expect(req.client_id).toBe('https://verifier.example.com');
+        expect(req.client_id_scheme).toBe('pre-registered');
+    });
+
+    it('accepts the canonical redirect_uri: prefix when it equals the response target', () => {
+        const req = asRequest(
+            buildByValueUri({
+                client_id: 'redirect_uri:https://verifier.example.com/callback',
+            })
+        );
+
+        expect(req.client_id_scheme).toBe('redirect_uri');
+    });
+
+    it('rejects the canonical redirect_uri: prefix when it differs from the response target', () => {
+        expect(() =>
+            asRequest(
+                buildByValueUri({
+                    client_id: 'redirect_uri:https://trusted.example/callback',
+                    response_uri: 'https://attacker.example/collect',
+                })
+            )
+        ).toThrow(rejected);
+    });
+
+    it('accepts legacy client_id_scheme=redirect_uri with a same-origin response target [pex-compat]', () => {
+        const req = asRequest(
+            buildByValueUri({
+                client_id: 'https://verifier.example.com/openid4vc/verify',
+                client_id_scheme: 'redirect_uri',
+                response_uri: 'https://verifier.example.com/verify/session-1',
+            })
+        );
+
+        expect(req.client_id_scheme).toBe('redirect_uri');
+    });
+
+    it('rejects legacy client_id_scheme=redirect_uri with a cross-origin response target', () => {
+        expect(() =>
+            asRequest(
+                buildByValueUri({
+                    client_id: 'https://trusted.example/openid4vc/verify',
+                    client_id_scheme: 'redirect_uri',
+                    response_uri: 'https://attacker.example/collect',
+                })
+            )
+        ).toThrow(rejected);
     });
 });
