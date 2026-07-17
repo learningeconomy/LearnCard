@@ -35,6 +35,7 @@ import { ListingActions } from './ListingActions';
 import { PromotionMenu } from './PromotionMenu';
 import { ConsentContractPreview } from './ConsentContractPreview';
 import * as m from '../../../paraglide/messages.js';
+import { formatLocaleDate } from '../../../i18n/formatters';
 
 interface ListingDetailProps {
     listing: ExtendedAppStoreListing;
@@ -108,7 +109,7 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
     const formatSubmissionDate = (dateStr?: string): string => {
         if (!dateStr) return m['appStoreAdmin.listing.unknownDate']();
         const date = new Date(dateStr);
-        return date.toLocaleDateString('en-US', {
+        return formatLocaleDate(date, {
             year: 'numeric',
             month: 'short',
             day: 'numeric',

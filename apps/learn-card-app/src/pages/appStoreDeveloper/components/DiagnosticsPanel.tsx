@@ -11,6 +11,7 @@ import {
 
 import * as m from '../../../paraglide/messages.js';
 import { mDynamic } from '../../../i18n/mDynamic';
+import { formatLocaleTime } from '../../../i18n/formatters';
 
 import type { AppPermission } from '../types';
 import { PERMISSION_OPTIONS } from '../types';
@@ -62,7 +63,7 @@ export const DiagnosticsPanel: React.FC<DiagnosticsPanelProps> = ({
     const errorCount = events.filter(e => e.status === 'error').length;
 
     const formatTime = (date: Date) => {
-        return date.toLocaleTimeString('en-US', {
+        return formatLocaleTime(date, {
             hour: '2-digit',
             minute: '2-digit',
             second: '2-digit',
