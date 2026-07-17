@@ -277,6 +277,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             issuerOverride: issuerName,
             issueeOverride: issueeName,
             verificationItems,
+            lifecycleStatus,
             handleCloseModal: () => closeModal(),
             handleShareBoost: () => presentShareBoostLink(),
             onDotsClick: () => {
@@ -330,6 +331,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             issuerOverride: issuerName,
             issueeOverride: issueeName,
             verificationItems,
+            lifecycleStatus,
             handleShareBoost: () => presentShareBoostLink(),
             handleCloseModal: () => closeModal(),
             subjectImageComponent: subjectProfileImageElement,

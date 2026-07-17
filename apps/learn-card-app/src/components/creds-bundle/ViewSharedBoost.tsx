@@ -345,6 +345,7 @@ const ViewSharedBoost: React.FC<{
                                         hideFrontFaceDetails
                                         isFrontOverride={isFront}
                                         setIsFrontOverride={setIsFront}
+                                        lifecycleStatus={lifecycleStatus}
                                     />
                                 </div>
                             </div>

@@ -7,6 +7,7 @@ import { VCDisplayCard2 } from '@learncard/react';
 import { BoostPreviewTabsEnum } from '../../../boost-preview-tabs/boost-preview-tabs.helpers';
 import { boostPreviewStore } from 'learn-card-base';
 import { prettifyVerificationItems } from 'learn-card-base/helpers/verificationPrettifier';
+import { applyLifecycleStatusToVerifications } from 'learn-card-base/helpers/lifecycleVerification.helpers';
 import BoostMediaPreview from './BoostMediaPreview';
 import BoostDetailsSideBar from './BoostDetailsSideBar';
 import BoostDetailsSideMenu from './BoostDetailsSideMenu';
@@ -45,6 +46,7 @@ export type IssueHistory = {
 export type BoostPreviewProps = {
     credential: VC;
     verificationItems: VerificationItem[];
+    lifecycleStatus?: 'active' | 'revoked' | 'suspended';
     categoryType: BoostCategoryOptionsEnum;
     customThumbComponent: React.ReactNode;
     customBodyCardComponent: React.ReactNode;
@@ -116,6 +118,7 @@ const RibbonCategory: React.FC<{ categoryType: BoostCategoryOptionsEnum }> = ({ 
 const BoostPreview: React.FC<BoostPreviewProps> = ({
     credential: _credential,
     verificationItems,
+    lifecycleStatus,
     categoryType,
     issueHistory,
     issueeOverride,
@@ -187,6 +190,10 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     } else if (showVerifications) {
         verifications = vcVerifications;
     }
+
+    // Reflect the authoritative revoked/suspended status in the side-panel verifications
+    // list (the client status check can't see a set suspension bit).
+    verifications = applyLifecycleStatusToVerifications(verifications, lifecycleStatus);
 
     const detailVerificationItems = isClrChildCredential ? verificationItems : verifications;
 

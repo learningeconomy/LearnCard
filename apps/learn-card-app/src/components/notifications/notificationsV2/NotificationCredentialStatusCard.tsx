@@ -96,6 +96,7 @@ const NotificationCredentialStatusCard: React.FC<NotificationCredentialStatusCar
                 notification={notification as any}
                 onDismiss={() => closeModal()}
                 hideEndorsementRequestCard
+                lifecycleStatus={variant === 'unsuspended' ? 'active' : variant}
             />
         );
     };
