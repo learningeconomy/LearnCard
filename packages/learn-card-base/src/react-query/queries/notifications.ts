@@ -73,12 +73,17 @@ export const useGetUserNotifications = (
 };
 
 /* Get unread user notifications (up to 30) */
-export const useGetUnreadUserNotifications = () => {
+export const useGetUnreadUserNotifications = (options?: {
+    refetchInterval?: number;
+    enabled?: boolean;
+}) => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
 
     return useQuery({
         queryKey: ['useGetUnreadUserNotifications', switchedDid ?? ''],
+        refetchInterval: options?.refetchInterval,
+        enabled: options?.enabled,
         queryFn: async () => {
             const wallet = await initWallet();
             const options = {
