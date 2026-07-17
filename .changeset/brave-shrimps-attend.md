@@ -3,4 +3,4 @@
 "learn-card-base": patch
 ---
 
-fix: Query Param Merging
+feat: Live Notifications

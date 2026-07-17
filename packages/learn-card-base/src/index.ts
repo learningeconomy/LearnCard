@@ -24,6 +24,7 @@ export * from './components/QRCodeScannerOverlay/QRCodeScannerOverlay';
 export * from './components/QRCodeScannerOverlay/QRCodeScannerFooter';
 export * from './components/ErrorBoundary';
 export * from './components/push-notifications/PushNotificationListener';
+export * from './components/push-notifications/PushNotificationToast';
 export * from './components/earned-and-managed-tabs/EarnedAndManagedTabs';
 export * from './components/sharecreds/ShareCredentialsModal';
 export * from './components/boost/boostOptions/boostOptions';
