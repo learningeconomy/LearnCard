@@ -19,8 +19,10 @@ export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({ message,
     const shouldReduceMotion = useReducedMotion();
 
     const primaryAction = message.actions.find(a => a.style !== 'dismiss');
-    const hasExplicitDismiss = message.actions.some(a => a.style === 'dismiss');
-    const showCloseX = message.dismissible && !hasExplicitDismiss;
+    // Unlike the modal, the banner never renders dismiss-style actions — so a
+    // dismissible banner must always offer the close X or it becomes unclosable
+    // (e.g. the Capgo nudge, whose "Later" dismiss action has nowhere to render).
+    const showCloseX = message.dismissible;
 
     const handleAction = async (action: InAppMessageAction) => {
         if (isLoading || isCapgoTarget) return;
@@ -42,28 +44,44 @@ export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({ message,
     const renderCapgoState = () => {
         if (capgo.status === 'error') {
             return (
-                <div className="mt-3 p-2.5 bg-red-50/80 backdrop-blur border border-red-100 rounded-xl flex items-start gap-2">
-                    <IonIcon
-                        icon={alertCircleOutline}
-                        className="text-red-400 text-base mt-0.5 shrink-0"
-                    />
-                    <span className="text-xs text-red-700 leading-relaxed">
-                        {capgo.error || 'Something went wrong. Please try again.'}
-                    </span>
+                <div className="mt-3 space-y-2">
+                    <div className="p-2.5 bg-red-50/80 backdrop-blur border border-red-100 rounded-xl flex items-start gap-2">
+                        <IonIcon
+                            icon={alertCircleOutline}
+                            className="text-red-400 text-base mt-0.5 shrink-0"
+                        />
+                        <span className="text-xs text-red-700 leading-relaxed">
+                            {capgo.error || 'Something went wrong. Please try again.'}
+                        </span>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="text-xs text-grayscale-500 hover:text-grayscale-900 transition-colors font-medium py-1"
+                    >
+                        Close
+                    </button>
                 </div>
             );
         }
 
         if (capgo.status === 'uptodate') {
             return (
-                <div className="mt-3 p-2.5 bg-emerald-50/80 backdrop-blur border border-emerald-100 rounded-xl flex items-start gap-2">
-                    <IonIcon
-                        icon={checkmarkCircleOutline}
-                        className="text-emerald-500 text-base mt-0.5 shrink-0"
-                    />
-                    <span className="text-xs text-emerald-700 leading-relaxed">
-                        {"You're on the latest version."}
-                    </span>
+                <div className="mt-3 space-y-2">
+                    <div className="p-2.5 bg-emerald-50/80 backdrop-blur border border-emerald-100 rounded-xl flex items-start gap-2">
+                        <IonIcon
+                            icon={checkmarkCircleOutline}
+                            className="text-emerald-500 text-base mt-0.5 shrink-0"
+                        />
+                        <span className="text-xs text-emerald-700 leading-relaxed">
+                            {"You're on the latest version."}
+                        </span>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="text-xs text-grayscale-500 hover:text-grayscale-900 transition-colors font-medium py-1"
+                    >
+                        Done
+                    </button>
                 </div>
             );
         }
@@ -116,13 +134,19 @@ export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({ message,
             >
                 <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-80" />
 
-                {message.media && message.media.type !== 'youtube' && (
+                {message.media && message.media.type !== 'youtube' ? (
                     <img
                         src={message.media.url}
                         alt={message.media.alt ?? ''}
                         className="w-12 h-12 rounded-[12px] object-cover shrink-0 border border-white/60 shadow-sm"
                     />
-                )}
+                ) : message.emoji ? (
+                    <div className="w-12 h-12 rounded-[12px] bg-white/70 backdrop-blur border border-white/60 shadow-sm flex items-center justify-center shrink-0">
+                        <span className="text-[24px] leading-none" aria-hidden="true">
+                            {message.emoji}
+                        </span>
+                    </div>
+                ) : null}
 
                 <div className="flex-1 min-w-0 pt-0.5">
                     <h3 className="text-sm font-semibold text-grayscale-900 pr-6 truncate tracking-[-0.01em]">

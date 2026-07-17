@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useToast, ToastTypeEnum } from '../hooks/useToast';
 import { useInAppMessages } from './useInAppMessages';
 import { markMessageSeen } from './dismissalStore';
 import { iamDebug } from './debug';
@@ -12,12 +11,12 @@ import {
 } from './usePresentationGate';
 import { InAppMessageModal } from './InAppMessageModal';
 import { InAppMessageBanner } from './InAppMessageBanner';
+import { InAppMessageToast } from './InAppMessageToast';
 
 export type InAppMessageHostProps = PresentationGateOptions;
 
 export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => {
     const { message } = useInAppMessages();
-    const { presentToast } = useToast();
     const { canPresent, reason } = useInAppMessagePresentationGate(gateOptions);
     const override = useInAppMessageOverride();
 
@@ -84,18 +83,13 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
         });
 
         if (!isOverride) markMessageSeen(active.id, active.frequency);
+    }, [active, isOverride]);
 
-        if (active.presentation === 'toast') {
-            presentToast(active.body ? `${active.title} — ${active.body}` : active.title, {
-                type: ToastTypeEnum.Success,
-                hasDismissButton: true,
-            });
+    if (!active) return null;
 
-            close(active.id);
-        }
-    }, [active, isOverride, presentToast, close]);
-
-    if (!active || active.presentation === 'toast') return null;
+    if (active.presentation === 'toast') {
+        return <InAppMessageToast message={active} onClose={() => close(active.id)} />;
+    }
 
     if (active.presentation === 'banner') {
         return <InAppMessageBanner message={active} onClose={() => close(active.id)} />;

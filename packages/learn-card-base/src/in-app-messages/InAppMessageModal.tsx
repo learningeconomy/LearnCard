@@ -94,7 +94,15 @@ export const InAppMessageModal: React.FC<InAppMessageModalProps> = ({ message, o
                     )}
 
                     <div className="p-6 sm:p-8 space-y-6">
-                        {message.media && <MessageMedia media={message.media} />}
+                        {message.media ? (
+                            <MessageMedia media={message.media} />
+                        ) : message.emoji ? (
+                            <div className="mx-auto w-16 h-16 rounded-full bg-white/70 backdrop-blur border border-white/60 shadow-sm flex items-center justify-center">
+                                <span className="text-[32px] leading-none" aria-hidden="true">
+                                    {message.emoji}
+                                </span>
+                            </div>
+                        ) : null}
 
                         <div className="space-y-2 px-2">
                             <h2 className="text-[22px] font-semibold text-grayscale-900 tracking-[-0.01em]">
@@ -116,35 +124,45 @@ export const InAppMessageModal: React.FC<InAppMessageModalProps> = ({ message, o
                                     if (isCapgoTarget) {
                                         if (capgo.status === 'error') {
                                             return (
-                                                <div
-                                                    key={index}
-                                                    className="p-3.5 bg-red-50/80 backdrop-blur border border-red-100 rounded-[20px] flex items-start gap-2.5 text-left"
-                                                >
-                                                    <IonIcon
-                                                        icon={alertCircleOutline}
-                                                        className="text-red-400 text-lg mt-0.5 shrink-0"
-                                                    />
-                                                    <span className="text-sm text-red-700 leading-relaxed">
-                                                        {capgo.error ||
-                                                            'Something went wrong. Please try again.'}
-                                                    </span>
+                                                <div key={index} className="space-y-3">
+                                                    <div className="p-3.5 bg-red-50/80 backdrop-blur border border-red-100 rounded-[20px] flex items-start gap-2.5 text-left">
+                                                        <IonIcon
+                                                            icon={alertCircleOutline}
+                                                            className="text-red-400 text-lg mt-0.5 shrink-0"
+                                                        />
+                                                        <span className="text-sm text-red-700 leading-relaxed">
+                                                            {capgo.error ||
+                                                                'Something went wrong. Please try again.'}
+                                                        </span>
+                                                    </div>
+                                                    <button
+                                                        onClick={onClose}
+                                                        className="text-sm text-grayscale-500 hover:text-grayscale-900 transition-colors py-2 font-medium w-full"
+                                                    >
+                                                        Close
+                                                    </button>
                                                 </div>
                                             );
                                         }
 
                                         if (capgo.status === 'uptodate') {
                                             return (
-                                                <div
-                                                    key={index}
-                                                    className="p-3.5 bg-emerald-50/80 backdrop-blur border border-emerald-100 rounded-[20px] flex items-start gap-2.5 text-left"
-                                                >
-                                                    <IonIcon
-                                                        icon={checkmarkCircleOutline}
-                                                        className="text-emerald-500 text-lg mt-0.5 shrink-0"
-                                                    />
-                                                    <span className="text-sm text-emerald-700 leading-relaxed">
-                                                        {"You're on the latest version."}
-                                                    </span>
+                                                <div key={index} className="space-y-3">
+                                                    <div className="p-3.5 bg-emerald-50/80 backdrop-blur border border-emerald-100 rounded-[20px] flex items-start gap-2.5 text-left">
+                                                        <IonIcon
+                                                            icon={checkmarkCircleOutline}
+                                                            className="text-emerald-500 text-lg mt-0.5 shrink-0"
+                                                        />
+                                                        <span className="text-sm text-emerald-700 leading-relaxed">
+                                                            {"You're on the latest version."}
+                                                        </span>
+                                                    </div>
+                                                    <button
+                                                        onClick={onClose}
+                                                        className="text-sm text-grayscale-500 hover:text-grayscale-900 transition-colors py-2 font-medium w-full"
+                                                    >
+                                                        Done
+                                                    </button>
                                                 </div>
                                             );
                                         }

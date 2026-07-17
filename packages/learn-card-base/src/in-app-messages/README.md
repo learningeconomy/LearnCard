@@ -154,19 +154,20 @@ and reloads. Shown as a non-blocking banner, at most once every 3 days.
 
 ### Message
 
-| Field          | Type                                     | Default   | Notes                                                     |
-| -------------- | ---------------------------------------- | --------- | --------------------------------------------------------- |
-| `id`           | `string`                                 | —         | Stable key; used to persist dismissal / frequency state   |
-| `priority`     | `number`                                 | `0`       | Highest matching message wins                             |
-| `dismissible`  | `boolean`                                | `true`    | `false` = required/blocking (no close affordance)         |
-| `frequency`    | `"once" \| "session" \| "always" \| {…}` | `"once"`  | See [Frequency](#frequency)                               |
-| `presentation` | `"modal" \| "banner" \| "toast"`         | `"modal"` | `toast` uses the app toast; no media/actions              |
-| `media`        | `{ type, url, aspect?, alt? }`           | —         | `type`: `youtube \| image \| gif`; `aspect` e.g. `"16:9"` |
-| `title`        | `string`                                 | —         | Required                                                  |
-| `body`         | `string`                                 | —         | Optional                                                  |
-| `actions`      | `Action[]`                               | `[]`      | See [Actions](#actions)                                   |
-| `targeting`    | `Predicate`                              | —         | Omitted → matches everyone                                |
-| `enabled`      | `boolean`                                | `true`    | Set `false` to disable without removing from the flag     |
+| Field          | Type                                     | Default   | Notes                                                         |
+| -------------- | ---------------------------------------- | --------- | ------------------------------------------------------------- |
+| `id`           | `string`                                 | —         | Stable key; used to persist dismissal / frequency state       |
+| `priority`     | `number`                                 | `0`       | Highest matching message wins                                 |
+| `dismissible`  | `boolean`                                | `true`    | `false` = required/blocking (no close affordance)             |
+| `frequency`    | `"once" \| "session" \| "always" \| {…}` | `"once"`  | See [Frequency](#frequency)                                   |
+| `presentation` | `"modal" \| "banner" \| "toast"`         | `"modal"` | `toast` is a glass capsule, auto-dismisses; no media/actions  |
+| `media`        | `{ type, url, aspect?, alt? }`           | —         | `type`: `youtube \| image \| gif`; `aspect` e.g. `"16:9"`     |
+| `emoji`        | `string`                                 | —         | Hero glyph shown when `media` is not set (modal/banner/toast) |
+| `title`        | `string`                                 | —         | Required                                                      |
+| `body`         | `string`                                 | —         | Optional                                                      |
+| `actions`      | `Action[]`                               | `[]`      | See [Actions](#actions)                                       |
+| `targeting`    | `Predicate`                              | —         | Omitted → matches everyone                                    |
+| `enabled`      | `boolean`                                | `true`    | Set `false` to disable without removing from the flag         |
 
 ### Actions
 

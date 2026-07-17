@@ -176,6 +176,8 @@ export const inAppMessageValidator = z
         frequency: inAppMessageFrequencyValidator,
         presentation: inAppMessagePresentationValidator,
         media: inAppMessageMediaValidator.optional(),
+        /** Optional emoji hero glyph — rendered only when `media` is not set. */
+        emoji: z.string().optional(),
         title: z.string(),
         body: z.string().optional(),
         actions: z.array(inAppMessageActionValidator).default([]),

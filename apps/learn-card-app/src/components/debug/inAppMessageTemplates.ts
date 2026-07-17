@@ -184,6 +184,7 @@ export const IN_APP_MESSAGE_TEMPLATES: InAppMessageTemplate[] = [
         category: 'Announcements',
         json: {
             id: 'survey-request-example',
+            emoji: '💬',
             priority: 10,
             frequency: { everyDays: 30 },
             presentation: 'modal',
@@ -330,6 +331,7 @@ export const IN_APP_MESSAGE_TEMPLATES: InAppMessageTemplate[] = [
         category: 'Targeting',
         json: {
             id: 'web-only-example',
+            emoji: '📲',
             frequency: { everyDays: 14 },
             presentation: 'banner',
             title: 'LearnCard is better in the app',
@@ -398,6 +400,7 @@ export const IN_APP_MESSAGE_TEMPLATES: InAppMessageTemplate[] = [
         category: 'Operational',
         json: {
             id: 'maintenance-notice-example',
+            emoji: '🛠️',
             priority: 500,
             frequency: 'always',
             presentation: 'banner',
@@ -419,6 +422,7 @@ export const IN_APP_MESSAGE_TEMPLATES: InAppMessageTemplate[] = [
         category: 'Operational',
         json: {
             id: 'policy-update-example',
+            emoji: '📄',
             priority: 300,
             frequency: 'once',
             presentation: 'modal',
@@ -430,7 +434,7 @@ export const IN_APP_MESSAGE_TEMPLATES: InAppMessageTemplate[] = [
                     style: 'primary',
                     action: {
                         type: 'externalLink',
-                        path: 'https://www.learncard.com/learncard-privacy-policy',
+                        url: 'https://www.learncard.com/learncard-privacy-policy',
                     },
                 },
                 { label: 'Done', style: 'dismiss', action: { type: 'dismiss' } },
@@ -444,6 +448,7 @@ export const IN_APP_MESSAGE_TEMPLATES: InAppMessageTemplate[] = [
         category: 'Operational',
         json: {
             id: 'session-tip-example',
+            emoji: '💡',
             frequency: 'session',
             presentation: 'toast',
             title: 'Tip: share credentials with a QR code',

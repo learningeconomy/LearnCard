@@ -13,4 +13,5 @@ export * from './usePresentationGate';
 export * from './MessageMedia';
 export * from './InAppMessageModal';
 export * from './InAppMessageBanner';
+export * from './InAppMessageToast';
 export * from './InAppMessageHost';

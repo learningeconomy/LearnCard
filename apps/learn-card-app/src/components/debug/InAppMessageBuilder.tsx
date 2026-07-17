@@ -58,6 +58,7 @@ interface BuilderState {
     dismissible: boolean;
     mediaType: '' | 'youtube' | 'image' | 'gif';
     mediaUrl: string;
+    emoji: string;
     combinator: 'all' | 'any';
     conditions: BuilderCondition[];
     actions: BuilderAction[];
@@ -91,6 +92,7 @@ const initialState: BuilderState = {
     dismissible: true,
     mediaType: '',
     mediaUrl: '',
+    emoji: '',
     combinator: 'all',
     conditions: [],
     actions: [emptyAction()],
@@ -150,6 +152,7 @@ const buildDraftJson = (s: BuilderState): Record<string, unknown> => {
         priority: Number(s.priority),
         dismissible: s.dismissible,
         ...(s.mediaType && s.mediaUrl ? { media: { type: s.mediaType, url: s.mediaUrl } } : {}),
+        ...(s.emoji.trim() ? { emoji: s.emoji.trim() } : {}),
         actions,
         ...(targeting ? { targeting } : {}),
     };
@@ -272,6 +275,7 @@ export const InAppMessageBuilder: React.FC<{
             dismissible: m.dismissible,
             mediaType: m.media?.type ?? '',
             mediaUrl: m.media?.url ?? '',
+            emoji: m.emoji ?? '',
             combinator: targeting && 'any' in targeting ? 'any' : 'all',
             conditions,
             actions: m.actions.map(a => ({
@@ -462,6 +466,19 @@ export const InAppMessageBuilder: React.FC<{
                     />
                 )}
             </FieldRow>
+
+            {!state.mediaType && (
+                <FieldRow label="emoji">
+                    <input
+                        type="text"
+                        value={state.emoji}
+                        onChange={e => set('emoji', e.target.value)}
+                        placeholder="Optional hero glyph, used when no media"
+                        style={debugFieldInputStyle}
+                        className={fieldInputClass}
+                    />
+                </FieldRow>
+            )}
 
             <div className="space-y-1 bg-gray-900/40 rounded p-2">
                 <div className="flex items-center justify-between">
