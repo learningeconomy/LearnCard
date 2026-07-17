@@ -35,6 +35,11 @@ export const useCredentialStatus = (
         queryKey: ['credentialStatus', uri],
         enabled: enabled && !!credential && !!uri,
         staleTime: 5 * 60 * 1000,
+        // The React Query cache is persisted (see FullApp), so without this a stale
+        // status (e.g. 'active' cached before a revoke/suspend) survives a hard refresh
+        // and only clears on logout. Always re-check on mount: the persisted value renders
+        // instantly, then the cheap authoritative backend query refreshes it.
+        refetchOnMount: 'always',
         queryFn: async (): Promise<CredentialLifecycleStatus> => {
             const wallet = await initWallet();
 

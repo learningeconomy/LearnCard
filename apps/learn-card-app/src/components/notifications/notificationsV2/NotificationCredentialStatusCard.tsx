@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import moment from 'moment';
 import { ErrorBoundary } from '@sentry/react';
 
@@ -6,8 +6,7 @@ import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { useModal, ModalTypes, useGetResolvedCredential } from 'learn-card-base';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { CredentialStatusSealIcon } from 'learn-card-base/components/CredentialBadge/CredentialStatusSealIcon';
-import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
-import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
+import BoostClaimCard from '../../boost/claim-boost-card/BoostClaimCard';
 
 import { VC } from '@learncard/types';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
@@ -39,41 +38,6 @@ const VARIANT_STYLES: Record<
     },
 };
 
-/**
- * Full credential view shown when "View Credential" is tapped. Renders the same
- * flippable card used across the app (VCDisplayCardWrapper2) with a BoostFooter for
- * Details/Close, so the holder sees the credential in full (with its revoked/suspended
- * treatment) rather than being routed away to a list page.
- */
-const CredentialViewModalContent: React.FC<{ credential: VC; onClose: () => void }> = ({
-    credential,
-    onClose,
-}) => {
-    const [isFront, setIsFront] = useState(true);
-
-    return (
-        <div className="relative w-full h-full flex flex-col">
-            <section className="h-full w-full overflow-y-auto disable-scrollbars pt-6 pb-32 flex flex-col items-center">
-                <VCDisplayCardWrapper2
-                    credential={credential}
-                    checkProof={false}
-                    hideNavButtons
-                    hideQRCode
-                    isFrontOverride={isFront}
-                    setIsFrontOverride={setIsFront}
-                />
-            </section>
-            <footer className="absolute bottom-0 left-0 w-full z-[9999]">
-                <BoostFooter
-                    handleClose={onClose}
-                    handleDetails={isFront ? () => setIsFront(false) : undefined}
-                    handleBack={isFront ? undefined : () => setIsFront(true)}
-                />
-            </footer>
-        </div>
-    );
-};
-
 type NotificationCredentialStatusCardProps = {
     notification: NotificationType;
     variant: CredentialStatusVariant;
@@ -87,8 +51,9 @@ type NotificationCredentialStatusCardProps = {
  *
  * Renders the server-provided title/body with a state-appropriate seal icon and
  * accent color. Tapping resolves the affected credential (from data.vcUris) and
- * opens the full credential view in a modal (revoked/suspended credentials render
- * desaturated with a status pill there).
+ * opens it in the standard credential view (BoostClaimCard), the same modal the
+ * other notification cards use — so the holder sees the full card + verifications
+ * detail panel (revoked/suspended credentials render desaturated there too).
  */
 const NotificationCredentialStatusCard: React.FC<NotificationCredentialStatusCardProps> = ({
     notification,
@@ -119,8 +84,19 @@ const NotificationCredentialStatusCard: React.FC<NotificationCredentialStatusCar
         const credential = (Array.isArray(unwrapped) ? unwrapped[0] : unwrapped) as VC | undefined;
         if (!credential) return; // resolution failed (e.g. cred removed from storage); no-op
 
+        // Open the same credential view the other notification cards use. The credential
+        // is already held (claimed), so render in completed/view mode — no claim action.
         newModal(
-            <CredentialViewModalContent credential={credential} onClose={() => closeModal()} />
+            <BoostClaimCard
+                credential={credential}
+                credentialUri={uri}
+                showFooter={false}
+                showBoostFooter
+                acceptCredentialCompleted
+                notification={notification as any}
+                onDismiss={() => closeModal()}
+                hideEndorsementRequestCard
+            />
         );
     };
 
