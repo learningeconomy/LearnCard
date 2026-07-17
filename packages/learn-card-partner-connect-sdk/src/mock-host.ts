@@ -124,6 +124,8 @@ export class MockHost {
     private styleEl: HTMLStyleElement | null = null;
     private stackEl: HTMLElement | null = null;
     private readonly activeToasts = new Map<string, ActiveToast>();
+    /** Pending exit-animation timers, tracked so `destroy()` can cancel them. */
+    private readonly exitTimers = new Set<ReturnType<typeof setTimeout>>();
     private idSeq = 0;
     private destroyed = false;
 
@@ -328,6 +330,9 @@ export class MockHost {
 
         for (const entry of this.activeToasts.values()) clearTimeout(entry.timeoutId);
         this.activeToasts.clear();
+
+        for (const timer of this.exitTimers) clearTimeout(timer);
+        this.exitTimers.clear();
 
         for (const node of this.domNodes) node.remove();
         this.domNodes.clear();
@@ -784,10 +789,12 @@ export class MockHost {
 
         const { node } = entry;
         node.classList.add('lc-mock-out');
-        setTimeout(() => {
+        const exitTimer = setTimeout(() => {
+            this.exitTimers.delete(exitTimer);
             node.remove();
             this.domNodes.delete(node);
         }, 200);
+        this.exitTimers.add(exitTimer);
     }
 
     private ensureStack(): HTMLElement | null {
