@@ -1,4 +1,5 @@
 import * as m from '../../../../paraglide/messages.js';
+import { useLocale } from '../../../../i18n';
 import { TransP } from '../../../../i18n/TransP';
 import React, { useState, useMemo, useEffect } from 'react';
 import { Copy, Check, Award, ChevronDown } from 'lucide-react';
@@ -125,6 +126,8 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
     const requestBackgroundIssuance = config?.requestBackgroundIssuance ?? false;
 
     // Build snippets per template, or a generic one if no templates exist
+    const locale = useLocale();
+
     const snippets = useMemo(() => {
         if (templates.length > 0) {
             return templates.map(t => ({
@@ -165,7 +168,7 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                 ),
             },
         ];
-    }, [templates, publishableKey, partnerName, branding, requestBackgroundIssuance]);
+    }, [templates, publishableKey, partnerName, branding, requestBackgroundIssuance, locale]);
 
     // Reset index when templates array shrinks below current selection
     useEffect(() => {

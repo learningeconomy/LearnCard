@@ -17,6 +17,7 @@ import {
 } from 'learn-card-base/helpers/boostCustomTypeHelpers';
 
 import * as m from '../../../../../../paraglide/messages.js';
+import { useLocale } from '../../../../../../i18n';
 
 import {
     AchievementTemplate,
@@ -112,6 +113,8 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
     });
 
     // Categories available for custom types (user-friendly subset)
+    const locale = useLocale();
+
     const walletCategories = useMemo(
         () => [
             {
@@ -162,7 +165,7 @@ export const AchievementEditor: React.FC<AchievementEditorProps> = ({
                 walletFolder: 'Assistance',
             },
         ],
-        []
+        [locale]
     );
 
     // Update achievementType when custom type settings change

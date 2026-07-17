@@ -8,6 +8,7 @@
  */
 
 import * as m from '../../../../paraglide/messages.js';
+import { useLocale } from '../../../../i18n';
 import React, { useMemo } from 'react';
 import { useGetCurrentLCNUser } from 'learn-card-base';
 
@@ -43,12 +44,14 @@ export const TemplatesTab: React.FC<TemplatesTabProps> = ({
         return null;
     }, [propBranding, currentLCNUser]);
 
+    const locale = useLocale();
+
     const project = useMemo(
         () => ({
             id: integrationId,
             name: m['developerPortal.dashboards.tabs.templates.projectName'](),
         }),
-        [integrationId]
+        [integrationId, locale]
     );
 
     const handleComplete = () => {

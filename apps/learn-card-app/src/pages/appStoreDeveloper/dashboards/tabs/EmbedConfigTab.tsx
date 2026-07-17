@@ -1,4 +1,5 @@
 import * as m from '../../../../paraglide/messages.js';
+import { useLocale } from '../../../../i18n';
 import React, { useState, useEffect, useMemo } from 'react';
 import { Globe, X, Plus, Palette, Settings, Upload, Loader2, Award } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
@@ -105,14 +106,19 @@ export const EmbedConfigTab: React.FC<EmbedConfigTabProps> = ({ integration, tem
     // Live preview credential
     const safeIdx = Math.min(selectedTemplateIdx, Math.max(0, templates.length - 1));
     const selectedTemplate = templates[safeIdx];
+    const locale = useLocale();
+
     const credential = useMemo(
         () => ({
+            // Spread first: it previously came last and overwrote `name`, so the
+            // untitledTemplate fallback never applied (and an unnamed template
+            // rendered `undefined`).
+            ...(selectedTemplate || {}),
             name:
                 selectedTemplate?.name ||
                 m['developerPortal.dashboards.tabs.embedConfig.untitledTemplate'](),
-            ...(selectedTemplate || {}),
         }),
-        [selectedTemplate]
+        [selectedTemplate, locale]
     );
 
     const publishableKey = integration.publishableKey || '';
