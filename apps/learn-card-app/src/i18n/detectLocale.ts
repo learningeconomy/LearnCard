@@ -75,6 +75,30 @@ function readTenantDefaultLocale(): string | undefined {
 }
 
 /**
+ * The active tenant's `i18n.supportedLanguages`. Populated by the bootstrap
+ * layer before React mounts (same as the default-locale cache above).
+ */
+let cachedTenantSupported: readonly string[] | undefined;
+export function setTenantSupportedLanguagesCache(langs: readonly string[] | undefined): void {
+    cachedTenantSupported = langs && langs.length ? langs : undefined;
+}
+
+/**
+ * Intersect the app's compiled languages with the active tenant's
+ * `supportedLanguages`. A tenant that only enables `['en']` (the schema default —
+ * only LearnCard overrides all four) must not auto-select or expose es/fr/ar just
+ * because the app happens to compile them. Returns all compiled languages when
+ * the tenant cache is unset or the intersection would be empty (never lock the
+ * user out).
+ */
+export function getEffectiveSupportedLanguages<T extends string>(compiled: readonly T[]): T[] {
+    if (!cachedTenantSupported) return [...compiled];
+    const tenant = new Set(cachedTenantSupported);
+    const effective = compiled.filter(l => tenant.has(l));
+    return effective.length ? effective : [...compiled];
+}
+
+/**
  * Strips the regional suffix from a BCP-47 locale tag. `'ko-KR'` → `'ko'`,
  * `'pt-BR'` → `'pt'`, `'zh-Hans-CN'` → `'zh'`. Empty/undefined returns the
  * input unchanged so callers can chain `?? next`.

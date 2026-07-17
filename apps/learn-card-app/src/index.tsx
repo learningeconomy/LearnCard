@@ -1,6 +1,6 @@
 import './constants/sentry';
 import { LocaleProvider } from './i18n';
-import { setTenantDefaultLocaleCache } from './i18n/detectLocale';
+import { setTenantDefaultLocaleCache, setTenantSupportedLanguagesCache } from './i18n/detectLocale';
 import { createRoot } from 'react-dom/client';
 import { Buffer } from 'buffer';
 import { SplashScreen } from '@capacitor/splash-screen';
@@ -29,6 +29,7 @@ import * as Sentry from '@sentry/browser';
     // and `navigator.language` isn't a supported locale. Must run BEFORE the
     // React tree mounts (resolveInitialLocale runs in useState init).
     setTenantDefaultLocaleCache(tenantConfig?.i18n?.defaultLanguage);
+    setTenantSupportedLanguagesCache(tenantConfig?.i18n?.supportedLanguages);
 
     if (Capacitor.isNativePlatform()) {
         try {

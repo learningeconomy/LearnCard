@@ -15,7 +15,11 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { setLocale as paraglideSetLocale, getLocale } from '../paraglide/runtime.js';
 
-import { detectInitialLocale, detectInitialLocaleSync } from './detectLocale';
+import {
+    detectInitialLocale,
+    detectInitialLocaleSync,
+    getEffectiveSupportedLanguages,
+} from './detectLocale';
 
 // Mirror of Paraglide's runtime `MessagePart` (a JSDoc typedef in
 // ../paraglide/runtime.js, not a TS export). Field types match the generated
@@ -70,13 +74,14 @@ const LocaleContext = createContext<LocaleContextValue | null>(null);
  * after first render when running on iOS/Android.
  */
 function resolveInitialLocale(): SupportedLanguage {
-    const detected = detectInitialLocaleSync(SUPPORTED_LANGUAGES, 'en');
+    const supported = getEffectiveSupportedLanguages(SUPPORTED_LANGUAGES);
+    const detected = detectInitialLocaleSync(supported, 'en');
     // Paraglide's getLocale() is the runtime baseLocale (typically 'en'). If the
     // sync chain returned that and it's a no-op, prefer Paraglide's own value
     // so any future server-side strategy stays consistent.
     if (detected === 'en') {
         const gl = getLocale();
-        if ((SUPPORTED_LANGUAGES as readonly string[]).includes(gl)) {
+        if ((supported as readonly string[]).includes(gl)) {
             return gl as SupportedLanguage;
         }
     }
@@ -126,11 +131,9 @@ export const LocaleProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const hasManualChoice =
             typeof localStorage !== 'undefined' && !!localStorage.getItem('i18n.language');
         if (hasManualChoice) return;
-        void detectInitialLocale(SUPPORTED_LANGUAGES, 'en').then(detected => {
-            if (
-                detected !== locale &&
-                (SUPPORTED_LANGUAGES as readonly string[]).includes(detected)
-            ) {
+        const supported = getEffectiveSupportedLanguages(SUPPORTED_LANGUAGES);
+        void detectInitialLocale(supported, 'en').then(detected => {
+            if (detected !== locale && (supported as readonly string[]).includes(detected)) {
                 // Don't persist (we don't want to record an auto choice as a
                 // manual one — that would block future re-detection if the user
                 // moves device locales).
