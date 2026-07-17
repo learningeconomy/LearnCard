@@ -8,10 +8,14 @@ import { usePassportActivities } from './usePassportActivities';
 import {
     toActivityFeedVM,
     groupActivitiesByMonth,
+    isHiddenActivity,
     type ActivityFilterId,
+    type ActivityFeedItemVM,
 } from './activityFeed.helpers';
 import { ActivityFeedItem } from './ActivityFeedItem';
 import { ActivityFilterPopover } from './ActivityFilterPopover';
+import { ActivityDetailOverlay } from './ActivityDetailOverlay';
+import { RecentlyAdded } from './RecentlyAdded';
 
 export const PassportActivityFeed: React.FC = () => {
     const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
@@ -19,6 +23,7 @@ export const PassportActivityFeed: React.FC = () => {
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState<ActivityFilterId>('all');
     const [filterOpen, setFilterOpen] = useState(false);
+    const [selected, setSelected] = useState<ActivityFeedItemVM | null>(null);
     const sentinelRef = useRef<HTMLDivElement>(null);
 
     const { data, isPending, isError, isFetching, hasNextPage, fetchNextPage } =
@@ -30,8 +35,18 @@ export const PassportActivityFeed: React.FC = () => {
     }, [onScreen, hasNextPage, fetchNextPage]);
 
     const groups = useMemo(() => {
-        const records = data?.pages?.flatMap(p => p?.records ?? []) ?? [];
-        let vms = records.map(r => toActivityFeedVM(r, myProfileId));
+        // Dedupe by id: grouped/paged results can surface the same activity more
+        // than once (e.g. cursor timestamp ties across pages), and duplicate React
+        // keys corrupt list reconciliation. Keep the first occurrence.
+        const seen = new Set<string>();
+        const records = (data?.pages?.flatMap(p => p?.records ?? []) ?? []).filter(r => {
+            if (!r?.id || seen.has(r.id)) return false;
+            seen.add(r.id);
+            return true;
+        });
+        let vms = records
+            .filter(r => !isHiddenActivity(r?.boost?.category))
+            .map(r => toActivityFeedVM(r, myProfileId));
         if (filter !== 'all') vms = vms.filter(vm => vm.category === filter);
         if (search.trim()) {
             const q = search.trim().toLowerCase();
@@ -50,9 +65,11 @@ export const PassportActivityFeed: React.FC = () => {
     // profile still loading as part of the pending state and hold the rows.
     const waiting = isPending || currentLCNUserLoading;
     const isEmpty = !waiting && !isError && groups.length === 0;
+    const activeFilterCount = filter === 'all' ? 0 : 1;
 
     return (
         <section className="w-full max-w-[840px] mx-auto mt-[24px]">
+            <RecentlyAdded />
             <h3 className="font-poppins text-[13px] tracking-[1px] text-grayscale-500 mb-[10px]">
                 ACTIVITY
             </h3>
@@ -72,10 +89,13 @@ export const PassportActivityFeed: React.FC = () => {
                     <button
                         type="button"
                         onClick={() => setFilterOpen(o => !o)}
-                        className="flex items-center gap-2 rounded-[12px] bg-[#EEEEFB] px-4 py-[10px] font-poppins text-[14px] font-medium uppercase tracking-[0.5px] text-[#5457C7]"
+                        className="flex items-center gap-2 rounded-[12px] bg-[#EEEEFB] px-4 py-[10px] font-poppins text-[14px] font-medium uppercase tracking-[0.5px]"
                     >
-                        Filter
-                        <SortButton className="h-[18px] w-[18px]" />
+                        <span className="text-grayscale-700">Filter</span>
+                        {activeFilterCount > 0 && (
+                            <span className="text-indigo-500">{activeFilterCount}</span>
+                        )}
+                        <SortButton className="h-[18px] w-[18px] text-indigo-500" />
                     </button>
                     {/* TODO(LC-1919 polish): close popover on outside-click / Escape. */}
                     {filterOpen && (
@@ -125,7 +145,11 @@ export const PassportActivityFeed: React.FC = () => {
                                 </p>
                                 <ol className="flex flex-col">
                                     {group.items.map(item => (
-                                        <ActivityFeedItem key={item.id} item={item} />
+                                        <ActivityFeedItem
+                                            key={item.id}
+                                            item={item}
+                                            onSelect={setSelected}
+                                        />
                                     ))}
                                 </ol>
                             </div>
@@ -138,6 +162,9 @@ export const PassportActivityFeed: React.FC = () => {
                     )}
                 </div>
             </div>
+            {selected && (
+                <ActivityDetailOverlay item={selected} onClose={() => setSelected(null)} />
+            )}
         </section>
     );
 };

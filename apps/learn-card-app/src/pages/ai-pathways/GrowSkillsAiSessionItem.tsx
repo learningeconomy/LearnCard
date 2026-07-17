@@ -2,7 +2,6 @@ import React, { useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { useModal } from 'learn-card-base';
 
-import { ChevronRight } from 'lucide-react';
 import GrowSkillsSkillChips from './GrowSkillsSkillChips';
 import { type GrowSkillsPathway } from './useGrowSkillsContent';
 import { AiSessionsIconWithShape } from 'learn-card-base/svgs/wallet/AiSessionsIcon';
@@ -83,7 +82,6 @@ const GrowSkillsAiSessionItem: React.FC<GrowSkillsAiSessionItemProps> = ({ data 
                             {title}
                         </h3>
                     </div>
-                    <ChevronRight className="w-[20px] h-[20px] text-grayscale-700 flex-shrink-0" />
                 </div>
 
                 <p className="text-[14px] text-grayscale-600 font-notoSans text-left">

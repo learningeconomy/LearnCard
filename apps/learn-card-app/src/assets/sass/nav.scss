@@ -44,6 +44,18 @@ ion-tab-bar.lc-footer-nav {
         --background-focused: transparent;
         --background-focused-opacity: 0;
         --background-activated: transparent;
+
+        // Ionic's default tab label truncates (overflow:hidden + ellipsis),
+        // which turned "Dashboard" into "Dashboa…". Let the label size to its
+        // content and stay on one line so the full word renders. The button
+        // keeps flex:1, so a slightly wider label just overflows its column
+        // center-aligned (whitespace only) rather than clipping.
+        ion-label {
+            overflow: visible;
+            white-space: nowrap;
+            text-overflow: unset;
+            max-width: none;
+        }
     }
 
     // Figma "LearnCard Footer Nav - V3" (node 2364-82185): the row is inset 20px
@@ -63,6 +75,17 @@ ion-tab-bar.lc-footer-nav {
 
         ion-tab-button:last-child {
             margin-right: 40px;
+        }
+    }
+
+    // In the ~400–500px band the fixed 40px right inset is large relative to the
+    // (still-tight) flex columns, so "Apps" reads as leaning too far right vs the
+    // 20px left menu inset. Match the left inset (20px) here for balanced edges.
+    // Above 500px the columns are wide enough that the full 40px Figma inset
+    // reads as intended, so the rule above wins outside this band.
+    @media (min-width: 200px) and (max-width: 400px) {
+        ion-tab-button:last-child {
+            margin-right: 20px;
         }
     }
 }
@@ -142,4 +165,3 @@ ion-tab-bar.lc-footer-nav {
     flex-direction: column;
     width: 100%;
 }
-

@@ -1,5 +1,42 @@
 # @learncard/network-brain-service
 
+## 3.16.10
+
+### Patch Changes
+
+-   [#1408](https://github.com/learningeconomy/LearnCard/pull/1408) [`c92534e3ceadbdbe4a79311f7d60dfd7cc54e015`](https://github.com/learningeconomy/LearnCard/commit/c92534e3ceadbdbe4a79311f7d60dfd7cc54e015) Thanks [@Custard7](https://github.com/Custard7)! - fix: did:web SAs
+
+## 3.16.9
+
+### Patch Changes
+
+-   [#1374](https://github.com/learningeconomy/LearnCard/pull/1374) [`61e0a198c1166ec468f812caac8d7a3ddbd42edd`](https://github.com/learningeconomy/LearnCard/commit/61e0a198c1166ec468f812caac8d7a3ddbd42edd) Thanks [@Custard7](https://github.com/Custard7)! - fix: Activity Feed
+
+## 3.16.8
+
+### Patch Changes
+
+-   [#1367](https://github.com/learningeconomy/LearnCard/pull/1367) [`f1e7b459a4650cf2fb9236369950efcaea935c3f`](https://github.com/learningeconomy/LearnCard/commit/f1e7b459a4650cf2fb9236369950efcaea935c3f) Thanks [@smurflo2](https://github.com/smurflo2)! - Revive Scouts, fix various bugs
+
+-   [#1358](https://github.com/learningeconomy/LearnCard/pull/1358) [`f76ff1a3d0439c71c1011bfc5b670002eb6fbea3`](https://github.com/learningeconomy/LearnCard/commit/f76ff1a3d0439c71c1011bfc5b670002eb6fbea3) Thanks [@Custard7](https://github.com/Custard7)! - feat: Quick Build Journeys
+
+-   Updated dependencies [[`f1e7b459a4650cf2fb9236369950efcaea935c3f`](https://github.com/learningeconomy/LearnCard/commit/f1e7b459a4650cf2fb9236369950efcaea935c3f), [`c0b5edb671ba3704b44547f9d0ef99f6f0e090ba`](https://github.com/learningeconomy/LearnCard/commit/c0b5edb671ba3704b44547f9d0ef99f6f0e090ba), [`cf94fe131249454752fa9c57edd1f356858ab3ad`](https://github.com/learningeconomy/LearnCard/commit/cf94fe131249454752fa9c57edd1f356858ab3ad)]:
+    -   @learncard/email-templates@1.0.4
+    -   @learncard/types@5.17.6
+    -   @learncard/learn-card-plugin@1.2.27
+    -   @learncard/core@9.4.27
+    -   @learncard/helpers@1.3.9
+    -   @learncard/did-web-plugin@1.1.27
+    -   @learncard/didkey-plugin@1.1.27
+    -   @learncard/didkit-plugin@1.9.7
+    -   @learncard/didkit-plugin-node@0.2.25
+    -   @learncard/encryption-plugin@1.1.27
+    -   @learncard/vc-plugin@1.5.7
+    -   @learncard/vc-templates-plugin@1.1.27
+    -   @learncard/crypto-plugin@1.1.27
+    -   @learncard/dynamic-loader-plugin@1.1.27
+    -   @learncard/expiration-plugin@1.2.27
+
 ## 3.16.7
 
 ### Patch Changes

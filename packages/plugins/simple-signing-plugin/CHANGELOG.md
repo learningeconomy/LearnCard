@@ -1,5 +1,19 @@
 # lca-api-plugin
 
+## 1.1.32
+
+### Patch Changes
+
+-   Updated dependencies [[`147d2a5fda49ba33f20077400ac3aae633bddb05`](https://github.com/learningeconomy/LearnCard/commit/147d2a5fda49ba33f20077400ac3aae633bddb05)]:
+    -   @learncard/simple-signing-client@1.1.32
+
+## 1.1.31
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/simple-signing-client@1.1.31
+
 ## 1.1.30
 
 ### Patch Changes

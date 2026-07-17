@@ -39,7 +39,6 @@ export const CATEGORY_TO_SUBCATEGORY_LIST: {
 
         { title: 'Generic', type: AchievementTypes.Achievement },
         { title: 'Formal Award', type: AchievementTypes.Award },
-        { title: 'Online Badge', type: AchievementTypes.Badge },
         { title: 'Community Service', type: AchievementTypes.CommunityService },
 
         // extended ( Achievement ) category types
@@ -129,6 +128,7 @@ export const CATEGORY_TO_SUBCATEGORY_LIST: {
         { title: 'Board', type: AchievementTypes.Board },
     ],
     [BoostCategoryOptionsEnum.socialBadge]: [
+        { title: 'Badge', type: AchievementTypes.Badge },
         { title: 'Risk Taker', type: AchievementTypes.RiskTaker },
         { title: 'Opportunist', type: AchievementTypes.Opportunist },
         { title: 'Cool Cat', type: AchievementTypes.CoolCat },

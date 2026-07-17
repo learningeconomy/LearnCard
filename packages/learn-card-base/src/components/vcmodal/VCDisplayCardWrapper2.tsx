@@ -182,10 +182,14 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
 
         // VC Display Metadata
         displayType,
-        idBackgroundImage,
-        idDimBackgroundImage,
+        subtype,
+        accentColor,
+        backgroundColor,
+        backgroundImage,
         idFontColor,
         idAccentColor,
+        idDisplayBackgroundImage,
+        idDisplayDimBackgroundImage,
     } = useGetVCInfo(credential, categoryType || _category);
 
     const { data: knownDIDRegistry } = useKnownDIDRegistry(issuerDid);
@@ -285,9 +289,11 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
             display: {
                 ...(credential.display ?? {}),
                 displayType: String(displayType).toLowerCase(),
+                ...(backgroundColor ? { backgroundColor } : {}),
+                ...(backgroundImage ? { backgroundImage } : {}),
             },
         };
-    }, [credential, displayType]);
+    }, [credential, displayType, backgroundColor, backgroundImage]);
 
     const subtitleDisplayType = achievementType ? formattedAchievementType : displayType;
 
@@ -328,8 +334,8 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
                             issueeName={useCurrentUserName ? currentUser?.name : issueeName}
                             issuerThumbnail={idIssuerThumbnailSrc}
                             showIssuerImage={showIdIssuerThumbnail}
-                            backgroundImage={idBackgroundImage}
-                            dimBackgroundImage={idDimBackgroundImage}
+                            backgroundImage={idDisplayBackgroundImage}
+                            dimBackgroundImage={idDisplayDimBackgroundImage}
                             fontColor={idFontColor}
                             accentColor={idAccentColor}
                             idIssuerName={issuerName}
@@ -339,6 +345,8 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
                     ) : (
                         <CredentialBadge
                             achievementType={achievementType}
+                            subtype={subtype}
+                            accentColor={accentColor}
                             fallbackCircleText={overrideCardTitle || title}
                             boostType={category}
                             badgeThumbnail={overrideCardImageUrl || badgeThumbnail!}

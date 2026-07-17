@@ -17,7 +17,7 @@ const CATEGORY_DISPLAY_LABELS: Record<string, string> = {
     'Work History': 'Experiences',
     'Learning History': 'Studies',
     'Achievement': 'Achievements',
-    'Social Badge': 'Boosts',
+    'Social Badge': 'Badges',
     'ID': 'IDs',
     'Membership': 'Membership',
 };

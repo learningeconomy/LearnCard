@@ -45,7 +45,7 @@ const categoryToConfig: Record<string, CategoryConfig> = {
         boostCategory: CredentialCategoryEnum.socialBadge, // category
         subheaderType: SubheaderTypeEnum.SocialBadge, // header type
 
-        title: 'Boosts',
+        title: 'Badges',
         iconColor: 'text-blue-700',
         dividerLineColor: 'blue-400',
         searchInputColor: 'blue-400',
@@ -130,6 +130,13 @@ const CredentialPage: React.FC<CredentialPageProps> = ({ category }) => {
 
     const config =
         categoryToConfig[category] ?? categoryToConfig[CredentialCategoryEnum.workHistory];
+
+    useEffect(
+        () => () => {
+            newCredsStore.set.clearNewCreds(config.boostCategory);
+        },
+        [config.boostCategory]
+    );
 
     const _activeTab = query.get('managed')
         ? CredentialListTabEnum.Managed

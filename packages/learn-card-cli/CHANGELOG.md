@@ -1,5 +1,34 @@
 # @learncard/cli
 
+## 3.4.9
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-plugin@2.3.33
+    -   @learncard/simple-signing-plugin@1.1.32
+    -   @learncard/init@2.4.7
+    -   @learncard/holder-continuity@0.2.9
+
+## 3.4.8
+
+### Patch Changes
+
+-   [#1359](https://github.com/learningeconomy/LearnCard/pull/1359) [`ca6760392066c4ca5daf0061e740523a63b6cf52`](https://github.com/learningeconomy/LearnCard/commit/ca6760392066c4ca5daf0061e740523a63b6cf52) Thanks [@smurflo2](https://github.com/smurflo2)! - Fix CLI
+
+-   Updated dependencies [[`c0b5edb671ba3704b44547f9d0ef99f6f0e090ba`](https://github.com/learningeconomy/LearnCard/commit/c0b5edb671ba3704b44547f9d0ef99f6f0e090ba)]:
+    -   @learncard/types@5.17.6
+    -   @learncard/holder-continuity@0.2.8
+    -   @learncard/core@9.4.27
+    -   @learncard/init@2.4.6
+    -   @learncard/didkit-plugin@1.9.7
+    -   @learncard/learn-cloud-plugin@2.3.32
+    -   @learncard/ler-rs-plugin@0.1.18
+    -   @learncard/linked-claims-plugin@0.2.27
+    -   @learncard/open-badge-v2-plugin@1.1.28
+    -   @learncard/render-method-plugin@3.0.7
+    -   @learncard/simple-signing-plugin@1.1.31
+
 ## 3.4.7
 
 ### Patch Changes

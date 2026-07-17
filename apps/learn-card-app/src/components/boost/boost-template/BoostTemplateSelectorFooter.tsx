@@ -85,7 +85,7 @@ const BoostTemplateSelectorFooter: React.FC<BoostTemplateSelectorFooterProps> = 
                 }}
                 className="bg-cyan-101 text-grayscale-900 text-[17px] px-[20px] py-[5px] rounded-[40px] font-poppins font-[600] w-full flex gap-[5px] justify-center items-center shadow-button-bottom border-[2px] border-solid border-white mb-[10px] max-w-[600px] mx-auto"
             >
-                AI Boost Wizard
+                AI Badge Wizard
                 <BoostWizardIcon className="h-[35px] w-[35px]" />
             </button>
             <div className="max-w-[600px] flex items-center justify-between mx-auto w-full gap-[10px]">

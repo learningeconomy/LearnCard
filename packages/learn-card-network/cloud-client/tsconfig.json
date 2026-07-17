@@ -10,7 +10,6 @@
         "alwaysStrict": true,
         "strictNullChecks": true,
         "noUncheckedIndexedAccess": true,
-
         "noImplicitAny": true,
         "noImplicitReturns": true,
         "noImplicitThis": true,
@@ -18,7 +17,6 @@
         "noUnusedParameters": true,
         "allowUnreachableCode": false,
         "noFallthroughCasesInSwitch": true,
-
         "target": "es2022",
         "outDir": "dist",
         "rootDir": "src",
@@ -26,12 +24,12 @@
         "declarationMap": true,
         "emitDeclarationOnly": true,
         "sourceMap": true,
-
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
         "allowJs": false,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true
     },
-    "exclude": ["./dist/**/*", "./node_modules/**/*"]
+    "exclude": ["./dist/**/*", "./node_modules/**/*"],
+    "include": ["src"]
 }

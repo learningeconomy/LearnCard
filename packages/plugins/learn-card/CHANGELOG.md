@@ -1,5 +1,16 @@
 # learn-card-core
 
+## 1.2.27
+
+### Patch Changes
+
+-   [#1368](https://github.com/learningeconomy/LearnCard/pull/1368) [`cf94fe131249454752fa9c57edd1f356858ab3ad`](https://github.com/learningeconomy/LearnCard/commit/cf94fe131249454752fa9c57edd1f356858ab3ad) Thanks [@goblincore](https://github.com/goblincore)! - fix: map raw credential-verification diagnostics to friendly copy. did:web issuer resolution runs in-browser and fails (CORS/offline) with raw messages like "Unable to resolve: Error sending HTTP request (.../.well-known/did.json) ... Failed to fetch"; the Credential Verifications panel rendered these (and WASM stack frames) verbatim. `prettifyVerificationItem` now maps resolution/fetch failures to "Issuer — Could not be reached" and other raw engine diagnostics to "Verification — Could not be verified".
+
+-   Updated dependencies [[`c0b5edb671ba3704b44547f9d0ef99f6f0e090ba`](https://github.com/learningeconomy/LearnCard/commit/c0b5edb671ba3704b44547f9d0ef99f6f0e090ba)]:
+    -   @learncard/types@5.17.6
+    -   @learncard/core@9.4.27
+    -   @learncard/didkit-plugin@1.9.7
+
 ## 1.2.26
 
 ### Patch Changes

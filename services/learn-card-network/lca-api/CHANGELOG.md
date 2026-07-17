@@ -1,5 +1,27 @@
 # @welibraryos/lca-api-service
 
+## 1.2.20
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.4.7
+
+## 1.2.19
+
+### Patch Changes
+
+-   [#1367](https://github.com/learningeconomy/LearnCard/pull/1367) [`f1e7b459a4650cf2fb9236369950efcaea935c3f`](https://github.com/learningeconomy/LearnCard/commit/f1e7b459a4650cf2fb9236369950efcaea935c3f) Thanks [@smurflo2](https://github.com/smurflo2)! - Revive Scouts, fix various bugs
+
+-   Updated dependencies [[`f1e7b459a4650cf2fb9236369950efcaea935c3f`](https://github.com/learningeconomy/LearnCard/commit/f1e7b459a4650cf2fb9236369950efcaea935c3f), [`c0b5edb671ba3704b44547f9d0ef99f6f0e090ba`](https://github.com/learningeconomy/LearnCard/commit/c0b5edb671ba3704b44547f9d0ef99f6f0e090ba)]:
+    -   @learncard/email-templates@1.0.4
+    -   @learncard/types@5.17.6
+    -   @learncard/core@9.4.27
+    -   @learncard/init@2.4.6
+    -   @learncard/did-web-plugin@1.1.27
+    -   @learncard/didkit-plugin@1.9.7
+    -   @learncard/didkit-plugin-node@0.2.25
+
 ## 1.2.18
 
 ### Patch Changes

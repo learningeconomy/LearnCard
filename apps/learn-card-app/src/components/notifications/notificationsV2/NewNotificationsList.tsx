@@ -7,6 +7,8 @@ import { IonSpinner } from '@ionic/react';
 import ArrowCircle from 'learn-card-base/svgs/ArrowCircle';
 import GenericErrorBoundary from '../../generic/GenericErrorBoundary';
 import NotificationCardContainer from './NotificationCardContainer';
+import GroupedConsentFlowCard from './GroupedConsentFlowCard';
+import { buildNotificationListItems } from './consentFlowGrouping';
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../../theme/icons';
@@ -37,10 +39,7 @@ const NewNotificationsList: React.FC<NewNotificationsListProps> = ({
 
     const primaryColor = colorSet.primaryColor;
 
-    const { data, isLoading, refetch, isRefetching, isFetching } = useGetUserNotifications(
-        options,
-        filter
-    );
+    const { data, isLoading, refetch, isFetching } = useGetUserNotifications(options, filter);
 
     useEffect(() => {
         if (!isLoading && data) {
@@ -51,28 +50,35 @@ const NewNotificationsList: React.FC<NewNotificationsListProps> = ({
 
     useLoadingLine(isLoading || isFetching);
 
-    const queryOptions = { options, filter };
+    const flatNotifications: NotificationType[] =
+        data?.pages?.flatMap(group => group?.notifications ?? []) ?? [];
 
-    const renderNotifications =
-        data &&
-        data.pages.map((group, i) => (
-            <React.Fragment key={i}>
-                {group?.notifications?.map((notification: NotificationType) => {
-                    return (
-                        <GenericErrorBoundary key={notification?._id}>
-                            <NotificationCardContainer
-                                queryOptions={queryOptions}
-                                notification={notification}
-                            />
-                        </GenericErrorBoundary>
-                    );
-                })}
-            </React.Fragment>
-        ));
+    const listItems = buildNotificationListItems(flatNotifications);
+
+    const renderNotifications = listItems.map(item => {
+        if (item.kind === 'consentGroup') {
+            return (
+                <GenericErrorBoundary key={`group-${item.key}`}>
+                    <GroupedConsentFlowCard notifications={item.notifications} />
+                </GenericErrorBoundary>
+            );
+        }
+
+        return (
+            <GenericErrorBoundary key={item.notification?._id}>
+                <NotificationCardContainer notification={item.notification} />
+            </GenericErrorBoundary>
+        );
+    });
 
     const handleRefetch = () => refetch();
 
-    const notificationsLoading = isRefetching || isLoading;
+    // Gate the full-screen spinner on the INITIAL load only. Including
+    // `isRefetching` here tore the whole list down and rebuilt it on every
+    // background refetch — that caused the constant flashing and remounted each
+    // card (wiping local accepted state). Background refetches now surface only
+    // via the subtle top loading line (useLoadingLine above).
+    const notificationsLoading = isLoading;
 
     return (
         <div className="m-auto max-w-[600px] h-full bg-white">
