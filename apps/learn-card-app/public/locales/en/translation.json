@@ -879,7 +879,8 @@
             },
             "error": {
                 "invalidEmail": "Missing or Invalid Email"
-            }
+            },
+            "label": "Email"
         },
         "footer": {
             "terms": "Terms",

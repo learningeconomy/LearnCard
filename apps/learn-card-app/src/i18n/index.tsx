@@ -101,14 +101,22 @@ export const LocaleProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         return initial;
     });
     const changeLocale = useCallback((lang: SupportedLanguage) => {
-        // 1. Persist to localStorage
-        if (typeof localStorage !== 'undefined') {
-            localStorage.setItem('i18n.language', lang);
-        }
-        // 2. Update Paraglide's internal _locale (no page reload)
+        // 1. Switch in-memory FIRST so a storage failure can never abort the
+        //    actual locale change. localStorage.setItem throws (SecurityError) in
+        //    private/restricted contexts; if that ran first and threw, the user
+        //    would be stuck in the old locale.
         paraglideSetLocale(lang, { reload: false });
-        // 3. Trigger React re-render
         setLocaleState(lang);
+
+        // 2. Best-effort persistence — never fatal to the switch above.
+        if (typeof localStorage !== 'undefined') {
+            try {
+                localStorage.setItem('i18n.language', lang);
+            } catch {
+                // Private mode / storage disabled — the choice just won't persist
+                // across reloads. The in-memory switch already succeeded.
+            }
+        }
     }, []);
 
     // First-launch native-locale upgrade. Only runs if the user hasn't yet

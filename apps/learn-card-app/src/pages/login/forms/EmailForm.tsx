@@ -334,7 +334,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 } justify-center`}
             >
                 <input
-                    aria-label="Email"
+                    aria-label={m['login.email.label']()}
                     className={`${emailInputBaseClassName} ${resolvedEmailInputClassName} ${emailInputErrorClassName}`}
                     placeholder={m['login.email.placeholder']()}
                     onChange={e => setEmail(e.target.value)}
