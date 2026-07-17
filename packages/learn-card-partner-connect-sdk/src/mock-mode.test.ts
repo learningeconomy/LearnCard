@@ -75,7 +75,7 @@ describe('mock mode activation', () => {
         expect(createPartnerConnect({ mock: true }).isMocked()).toBe(true);
     });
 
-    it('auto-mocks on any standalone host, including non-localhost deploy previews', () => {
+    it('does NOT auto-mock on non-local standalone hosts (deploy previews, production)', async () => {
         const original = Object.getOwnPropertyDescriptor(window, 'location');
         Object.defineProperty(window, 'location', {
             configurable: true,
@@ -87,10 +87,116 @@ describe('mock mode activation', () => {
         });
 
         try {
-            expect(createPartnerConnect().isMocked()).toBe(true);
-            expect(createPartnerConnect({ mock: false }).isMocked()).toBe(false);
+            const lc = createPartnerConnect();
+            expect(lc.isMocked()).toBe(false);
+            await expect(lc.requestIdentity()).rejects.toMatchObject({
+                code: 'LC_NOT_EMBEDDED',
+            });
+
+            expect(createPartnerConnect({ mock: true }).isMocked()).toBe(true);
         } finally {
             if (original) Object.defineProperty(window, 'location', original);
+        }
+    });
+
+    it('auto-mocks on *.local and *.localhost dev hosts', () => {
+        const original = Object.getOwnPropertyDescriptor(window, 'location');
+
+        for (const hostname of ['myapp.local', 'myapp.localhost']) {
+            Object.defineProperty(window, 'location', {
+                configurable: true,
+                value: { hostname, search: '', href: `http://${hostname}/` },
+            });
+
+            try {
+                expect(createPartnerConnect().isMocked()).toBe(true);
+            } finally {
+                if (original) Object.defineProperty(window, 'location', original);
+            }
+        }
+    });
+});
+
+describe('embedded parent classification', () => {
+    let originalTop: PropertyDescriptor | undefined;
+    let originalLocation: PropertyDescriptor | undefined;
+
+    const embedIn = (ancestorOrigin: string | null, hostname = 'localhost'): void => {
+        Object.defineProperty(window, 'top', {
+            configurable: true,
+            get: () => ({} as Window),
+        });
+        Object.defineProperty(window, 'location', {
+            configurable: true,
+            value: {
+                hostname,
+                search: '',
+                href: `http://${hostname}/`,
+                ...(ancestorOrigin ? { ancestorOrigins: [ancestorOrigin] } : {}),
+            },
+        });
+    };
+
+    beforeEach(() => {
+        originalTop = Object.getOwnPropertyDescriptor(window, 'top');
+        originalLocation = Object.getOwnPropertyDescriptor(window, 'location');
+    });
+
+    afterEach(() => {
+        if (originalTop) Object.defineProperty(window, 'top', originalTop);
+        if (originalLocation) Object.defineProperty(window, 'location', originalLocation);
+    });
+
+    it('never mocks when the parent is a configured LearnCard origin', () => {
+        embedIn('https://learncard.app');
+        expect(createPartnerConnect().isMocked()).toBe(false);
+    });
+
+    it('auto-mocks immediately inside a foreign (non-LearnCard) iframe on a local dev host', () => {
+        embedIn('https://storybook.example.com');
+        expect(createPartnerConnect().isMocked()).toBe(true);
+    });
+
+    it('fails fast instead of hanging inside a foreign iframe when mocking is off', async () => {
+        embedIn('https://storybook.example.com');
+        const lc = createPartnerConnect({ mock: false });
+        await expect(lc.requestIdentity()).rejects.toMatchObject({ code: 'LC_NOT_EMBEDDED' });
+    });
+
+    it('probes an ambiguous localhost parent and mocks when nothing answers', async () => {
+        embedIn('http://localhost:6006');
+        const lc = createPartnerConnect({ hostProbeTimeout: 40 });
+        expect(lc.isMocked()).toBe(false);
+
+        const identity = await lc.requestIdentity();
+        expect(lc.isMocked()).toBe(true);
+        expect(identity.user.did).toBeDefined();
+    });
+
+    it('stays in real-host mode when the probe is answered', async () => {
+        embedIn('http://localhost');
+
+        const answerProbe = (event: MessageEvent): void => {
+            const data = event.data as { action?: string; requestId?: string; protocol?: string };
+            if (data?.action !== 'GET_SYNC_STATUS' || !data.requestId) return;
+            window.postMessage(
+                {
+                    protocol: data.protocol,
+                    requestId: data.requestId,
+                    type: 'SUCCESS',
+                    data: { status: 'ready' },
+                },
+                'http://localhost'
+            );
+        };
+        window.addEventListener('message', answerProbe);
+
+        try {
+            const lc = createPartnerConnect({ hostProbeTimeout: 500 });
+            await new Promise(resolve => setTimeout(resolve, 100));
+            expect(lc.isMocked()).toBe(false);
+        } finally {
+            window.removeEventListener('message', answerProbe);
         }
     });
 });
@@ -178,11 +284,57 @@ describe('mock coherence (reads reflect this session writes)', () => {
         const lc = createPartnerConnect({ mockOptions: { ui: false } });
         await lc.sendCredential({ templateAlias: 'algebra' });
 
-        const context = await lc.requestLearnerContext();
+        const context = await lc.requestLearnerContext({ format: 'structured' });
         expect(context.raw?.credentials.length).toBe(1);
 
         const search = await lc.askCredentialSearch({ query: [], challenge: 'c', domain: 'd' });
         expect(search.verifiablePresentation?.verifiableCredential.length).toBe(1);
+    });
+
+    it('learner context omits raw data unless format is structured', async () => {
+        const lc = createPartnerConnect({ mockOptions: { ui: false } });
+        await lc.sendCredential({ templateAlias: 'algebra' });
+
+        const context = await lc.requestLearnerContext();
+        expect(context.raw).toBeUndefined();
+        expect(context.prompt).toContain('algebra');
+    });
+
+    it('learner context respects includeCredentials: false', async () => {
+        const lc = createPartnerConnect({ mockOptions: { ui: false } });
+        await lc.sendCredential({
+            templateAlias: 'algebra',
+            templateData: { name: 'Algebra 101' },
+        });
+
+        const context = await lc.requestLearnerContext({
+            includeCredentials: false,
+            format: 'structured',
+        });
+        expect(context.raw?.credentials.length).toBe(0);
+        expect(context.prompt).not.toContain('Algebra 101');
+    });
+
+    it('AI sessions reuse one topic: first call creates it, later calls report isNewTopic false', async () => {
+        const lc = createPartnerConnect({ mockOptions: { ui: false } });
+        const summaryData = {
+            title: 'Session',
+            summary: 'Mock summary',
+            learned: [],
+            nextSteps: [],
+            reflections: [],
+            skills: [],
+        };
+
+        const first = await lc.sendAiSessionCredential({ sessionTitle: 'One', summaryData });
+        expect(first.isNewTopic).toBe(true);
+        expect(first.topicCredentialUri).toBeDefined();
+
+        const second = await lc.sendAiSessionCredential({ sessionTitle: 'Two', summaryData });
+        expect(second.isNewTopic).toBe(false);
+        expect(second.topicUri).toBe(first.topicUri);
+        expect(second.topicCredentialUri).toBeUndefined();
+        expect(second.sessionCredentialUri).not.toBe(first.sessionCredentialUri);
     });
 
     it('preventDuplicateClaim returns the existing credential', async () => {

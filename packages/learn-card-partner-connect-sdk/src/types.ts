@@ -111,11 +111,15 @@ export interface PartnerConnectOptions {
      * demo-able, and testable without being embedded — and then behaves
      * identically (real host) once embedded, with no code changes.
      *
-     * - `'auto'` **(default)**: mock automatically whenever the SDK is **not
-     *    embedded** in a LearnCard host — local dev, deploy previews (Netlify,
-     *    Lovable, Vercel, …), anywhere standalone. Each mocked call surfaces a
-     *    labeled toast plus a console log so it's clear the host is simulated.
-     * - `true`: always mock, even when embedded (useful in tests).
+     * - `'auto'` **(default)**: mock only when **no LearnCard host is present
+     *    AND the app is running on a local dev host** (`localhost`,
+     *    `127.0.0.1`, `[::1]`, `*.localhost`, `*.local`). This covers local
+     *    dev and local Storybook, but deliberately never fabricates identity
+     *    or consent on a production or preview origin. Each mocked call
+     *    surfaces a labeled toast plus a console log so it's clear the host
+     *    is simulated.
+     * - `true`: always mock, even when embedded. Use this for remote deploy
+     *    previews (Netlify, Lovable, Vercel, …), CI, and tests.
      * - `false`: never mock. Standalone calls reject immediately with
      *    `LC_NOT_EMBEDDED`. Set this in production builds meant to run only
      *    inside LearnCard.
@@ -129,6 +133,16 @@ export interface PartnerConnectOptions {
      * mode is not active. See {@link MockHostOptions}.
      */
     mockOptions?: MockHostOptions;
+
+    /**
+     * How long (ms) to wait for the host to answer the one-time presence
+     * probe used when the SDK is embedded in an iframe whose parent cannot
+     * be confirmed as LearnCard (e.g. a same-origin Storybook canvas on
+     * localhost). Only used with `mock: 'auto'` on local dev hosts.
+     *
+     * @default 1500
+     */
+    hostProbeTimeout?: number;
 }
 
 /**

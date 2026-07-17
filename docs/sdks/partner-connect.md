@@ -138,7 +138,8 @@ interface PartnerConnectOptions {
 
     /**
      * Automatic standalone mock mode.
-     * 'auto' (default) mocks whenever standalone (not embedded); true always mocks; false never mocks.
+     * 'auto' (default) mocks only when no LearnCard host is present AND the
+     * page runs on a local dev host; true always mocks; false never mocks.
      * @default 'auto'
      */
     mock?: boolean | 'auto';
@@ -147,6 +148,13 @@ interface PartnerConnectOptions {
      * Mock behavior overrides (UI, logging, persistence, fake DID, namespace).
      */
     mockOptions?: MockHostOptions;
+
+    /**
+     * Wait (ms) for the host presence probe when embedded in a frame whose
+     * parent can't be confirmed as LearnCard.
+     * @default 1500
+     */
+    hostProbeTimeout?: number;
 }
 ```
 
@@ -883,7 +891,7 @@ Also available as `PartnerConnect.isEmbedded()` (static) and `learnCard.isEmbedd
 
 The SDK only does real work when it's embedded inside LearnCard — that's what answers its requests. Run your app on its own (local dev, a preview deploy, tests) and there's nothing to answer. Standalone calls that aren't mocked reject immediately with `LC_NOT_EMBEDDED` (instead of hanging until the request timeout), plus a one-time console hint.
 
-Mock mode fixes this automatically. Whenever the SDK isn't embedded — local dev, or a deploy preview on Netlify / Lovable / Vercel / etc. — it stands in for LearnCard so your app stays fully usable:
+Mock mode fixes this automatically in local development. Whenever no LearnCard host is present and your app runs on a local dev host (`localhost`, `127.0.0.1`, `[::1]`, `*.localhost`, `*.local`), the SDK stands in for LearnCard so your app stays fully usable:
 
 -   **Every method shows a branded toast** describing what would happen once embedded — e.g. `sendCredential` → _"✅ In LearnCard, the user would receive **[name]** here"_, `incrementCounter` → _"Counter **coins** → **10**"_, `launchFeature` → _"Would open **/wallet**"_. Strong, visible feedback for every call.
 -   `requestConsent(...)` grants automatically and shows a "mock consent" toast; counters (`incrementCounter` / `getCounter` / `getCounters`) save to the browser and survive reloads.
@@ -891,12 +899,18 @@ Mock mode fixes this automatically. Whenever the SDK isn't embedded — local de
 -   `requestIdentity`, notifications, learner context, and sync status return sensible placeholder data.
 -   Everything is also logged to the console with a `[LearnCard SDK · MOCK]` prefix.
 
-No flags, no separate build. Your app is demo-able standalone and behaves exactly the same against the real host once embedded.
+No flags, no separate build in local dev. Your app is demo-able locally and behaves exactly the same against the real host once embedded.
+
+{% hint style="warning" %}
+**`'auto'` never mocks on production or remote preview origins.** A real user opening your app's URL directly must never receive a fabricated identity or auto-granted consent. For remote deploy previews (Netlify, Lovable, Vercel, …), CI, and tests, opt in explicitly with `mock: true`.
+{% endhint %}
+
+If your app is embedded in something that isn't LearnCard (a cross-origin Storybook canvas, a preview shell), calls don't hang: the SDK mocks on local dev hosts and otherwise rejects fast with `LC_NOT_EMBEDDED`. When the parent can't be identified (Firefox, or a same-origin localhost wrapper), a one-time side-effect-free presence probe decides — the SDK only mocks if no host answers within `hostProbeTimeout` (default 1500 ms).
 
 Every mocked call shows a labeled toast and a `[LearnCard SDK · MOCK]` console log, so it's clear the SDK is simulating rather than talking to a real host. For a production build meant to run only inside LearnCard, set `mock: false` — standalone calls then reject immediately with `LC_NOT_EMBEDDED`.
 
 ```typescript
-// Mocks whenever standalone; real host when embedded.
+// Mocks in local dev when standalone; real host when embedded in LearnCard.
 const learnCard = createPartnerConnect();
 
 await learnCard.sendCredential({ templateAlias: 'course-completion' });
@@ -905,7 +919,7 @@ await learnCard.sendCredential({ templateAlias: 'course-completion' });
 **Overrides:**
 
 ```typescript
-createPartnerConnect({ mock: true }); // always mock (even embedded; tests)
+createPartnerConnect({ mock: true }); // always mock (remote previews, CI, tests)
 createPartnerConnect({ mock: false }); // never mock (standalone → LC_NOT_EMBEDDED)
 createPartnerConnect({
     mockOptions: {

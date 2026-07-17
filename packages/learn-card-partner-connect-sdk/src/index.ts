@@ -65,6 +65,34 @@ export type * from './types';
 /** Maximum time to poll for sync completion before giving up (10 minutes) */
 const SYNC_STATUS_POLL_MAX_DURATION_MS = 10 * 60 * 1000;
 
+/** Default wait for the host presence probe (see `hostProbeTimeout`). */
+const DEFAULT_HOST_PROBE_TIMEOUT_MS = 1500;
+
+/**
+ * Whether a hostname is a local development host. `mock: 'auto'` only ever
+ * activates on these, so a standalone page on a production or preview origin
+ * never silently fabricates identity, consent, or credentials.
+ */
+const isLocalDevHost = (hostname: string): boolean =>
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '[::1]' ||
+    hostname === '::1' ||
+    hostname.endsWith('.localhost') ||
+    hostname.endsWith('.local');
+
+/**
+ * Who is on the other side of our iframe boundary, as far as we can tell:
+ * - 'learncard': ancestor origin matches a configured host pattern — real host.
+ * - 'foreign': ancestor origin is known and matches nothing — an unrelated
+ *   wrapper (Storybook manager on another origin, preview shells, …). No
+ *   LearnCard host will ever answer.
+ * - 'ambiguous': not embedded-verifiable — the ancestor origin is unavailable
+ *   (Firefox) or only matches the native-app localhost heuristic, which any
+ *   local wrapper (e.g. Storybook on localhost:6006) also matches.
+ */
+type ParentKind = 'learncard' | 'foreign' | 'ambiguous';
+
 /**
  * Detect whether the current page is running inside an embedded iframe.
  *
@@ -138,6 +166,11 @@ export class PartnerConnect {
     private mockHost: MockHost | null = null;
     private embedded = false;
     private warnedNoHost = false;
+    private hostProbeTimeout: number = DEFAULT_HOST_PROBE_TIMEOUT_MS;
+    /** Whether a real LearnCard host is believed to be listening. */
+    private hostReachable = false;
+    /** Pending probe decision; requests queue behind it when set. */
+    private activation: Promise<void> | null = null;
 
     constructor(options?: PartnerConnectOptions) {
         // Normalize hostOrigin to an array for whitelist validation
@@ -156,16 +189,117 @@ export class PartnerConnect {
         this.protocol = options?.protocol || 'LEARNCARD_V1';
         this.requestTimeout = options?.requestTimeout || 30000;
         this.allowNativeAppOrigins = options?.allowNativeAppOrigins ?? true;
+        this.hostProbeTimeout = options?.hostProbeTimeout ?? DEFAULT_HOST_PROBE_TIMEOUT_MS;
         this.pendingRequests = new Map();
         this.configureActiveOrigin();
         this.setupMessageListener();
         this.embedded = isEmbedded();
 
+        this.configureMockActivation(options);
+    }
+
+    /**
+     * Decide whether this instance talks to a real host, simulates one, or
+     * fails fast — the resolution of the `mock` option against the runtime
+     * embed context. See the `mock` option docs for the contract.
+     */
+    private configureMockActivation(options?: PartnerConnectOptions): void {
         const mockSetting = options?.mock ?? 'auto';
-        const shouldMock = mockSetting === true || (mockSetting === 'auto' && !this.embedded);
-        if (shouldMock) {
+
+        if (mockSetting === true) {
             this.mockHost = new MockHost(options?.mockOptions);
+            return;
         }
+
+        if (!this.embedded) {
+            // Standalone page: no host can answer. hostReachable stays false,
+            // so un-mocked calls fail fast with LC_NOT_EMBEDDED.
+            if (mockSetting === 'auto' && this.isLocalDevContext()) {
+                this.mockHost = new MockHost(options?.mockOptions);
+            }
+            return;
+        }
+
+        switch (this.classifyParent()) {
+            case 'learncard':
+                this.hostReachable = true;
+                return;
+
+            case 'foreign':
+                // Known non-LearnCard wrapper (e.g. cross-origin Storybook):
+                // never postMessage into the 30s timeout. Mock on local dev,
+                // fail fast everywhere else.
+                if (mockSetting === 'auto' && this.isLocalDevContext()) {
+                    this.mockHost = new MockHost(options?.mockOptions);
+                }
+                return;
+
+            case 'ambiguous':
+                if (mockSetting === 'auto' && this.isLocalDevContext()) {
+                    // Could be a real (local/native) LearnCard host or a local
+                    // wrapper like Storybook. Ask: if the host answers a cheap
+                    // side-effect-free probe, stay real; otherwise mock.
+                    this.hostReachable = true;
+                    this.activation = this.probeHost(options);
+                } else {
+                    // Outside local dev, auto-mock is off the table anyway —
+                    // preserve the long-standing assumption that an
+                    // unverifiable parent is the real host.
+                    this.hostReachable = true;
+                }
+                return;
+        }
+    }
+
+    private isLocalDevContext(): boolean {
+        if (typeof window === 'undefined') return false;
+        return isLocalDevHost(window.location.hostname);
+    }
+
+    private classifyParent(): ParentKind {
+        const ancestorOrigin = this.readAncestorOrigin();
+
+        if (!ancestorOrigin) return 'ambiguous';
+
+        // Trust requires an explicit configured pattern match. The native-app
+        // heuristic (any localhost origin) is NOT enough to call the parent
+        // LearnCard — Storybook's manager frame matches it too.
+        if (this.matchesConfiguredOrigin(ancestorOrigin)) return 'learncard';
+        if (this.allowNativeAppOrigins && this.isOriginNativeApp(ancestorOrigin)) {
+            return 'ambiguous';
+        }
+
+        return 'foreign';
+    }
+
+    private matchesConfiguredOrigin(origin: string): boolean {
+        return this.hostOrigins.some(entry => PartnerConnect.matchesOriginPattern(origin, entry));
+    }
+
+    /**
+     * One-time host presence probe for the ambiguous-parent case. Sends a
+     * side-effect-free `GET_SYNC_STATUS`; an answer proves a live LearnCard
+     * host (responses are origin-checked), a timeout means nobody is
+     * listening and the mock takes over. Requests issued while the probe is
+     * in flight queue behind the decision instead of racing it.
+     */
+    private probeHost(options?: PartnerConnectOptions): Promise<void> {
+        return this.postToHost('GET_SYNC_STATUS', undefined, this.hostProbeTimeout)
+            .then(() => {
+                this.activation = null;
+            })
+            .catch(() => {
+                this.activation = null;
+                if (this.isInitialized) {
+                    this.hostReachable = false;
+                    this.mockHost = new MockHost(options?.mockOptions);
+                    console.warn(
+                        '[LearnCard SDK] Embedded in a frame, but no LearnCard host answered ' +
+                            `within ${this.hostProbeTimeout}ms — activating standalone mock mode. ` +
+                            'If a real local host was just slow to boot, raise `hostProbeTimeout`.'
+                    );
+                }
+            });
     }
 
     /**
@@ -456,6 +590,14 @@ export class PartnerConnect {
                 return;
             }
 
+            // Only responses may settle a pending request. Without this, an
+            // echoed/looped-back copy of our own outbound request (same
+            // requestId, no type) would evict the entry and leave the caller
+            // hanging with its timeout already cleared.
+            if (data.type !== 'SUCCESS' && data.type !== 'ERROR') {
+                return;
+            }
+
             // Look up the pending request
             const pending = this.pendingRequests.get(data.requestId);
             if (!pending) {
@@ -493,9 +635,19 @@ export class PartnerConnect {
     }
 
     /**
-     * Send a message to the parent window and return a Promise
+     * Send a message to the parent window and return a Promise. While a host
+     * presence probe is pending, requests queue behind its decision so they
+     * are answered by whichever side (real host or mock) actually exists.
      */
     private sendMessage<T = unknown>(action: string, payload?: unknown): Promise<T> {
+        if (this.activation) {
+            return this.activation.then(() => this.dispatchMessage<T>(action, payload));
+        }
+
+        return this.dispatchMessage<T>(action, payload);
+    }
+
+    private dispatchMessage<T = unknown>(action: string, payload?: unknown): Promise<T> {
         if (!this.isInitialized) {
             return Promise.reject(
                 new PartnerConnectError('SDK_NOT_INITIALIZED', 'SDK is not initialized')
@@ -511,17 +663,19 @@ export class PartnerConnect {
                 });
         }
 
-        // Not embedded and not mocking: no host will ever answer this message,
-        // so fail immediately with an actionable error instead of hanging until
+        // No reachable host and not mocking (standalone page, or embedded in
+        // a non-LearnCard wrapper): no host will ever answer this message, so
+        // fail immediately with an actionable error instead of hanging until
         // the request timeout fires.
-        if (!this.embedded) {
+        if (!this.hostReachable) {
             if (!this.warnedNoHost) {
                 this.warnedNoHost = true;
                 console.error(
-                    '[LearnCard SDK] Not running inside a LearnCard host, so SDK calls cannot ' +
-                        'complete. Embed your app in LearnCard, or pass `mock: true` to simulate ' +
-                        'the host during standalone development. Use isEmbedded() to branch your ' +
-                        'UI before calling.'
+                    '[LearnCard SDK] No LearnCard host is present (the app is standalone or ' +
+                        'inside a non-LearnCard frame), so SDK calls cannot complete. Embed ' +
+                        'your app in LearnCard, or pass `mock: true` to simulate the host ' +
+                        'during standalone development. Use isEmbedded() to branch your UI ' +
+                        'before calling.'
                 );
             }
 
@@ -533,21 +687,24 @@ export class PartnerConnect {
             );
         }
 
+        return this.postToHost<T>(action, payload, this.requestTimeout);
+    }
+
+    private postToHost<T = unknown>(action: string, payload: unknown, timeout: number): Promise<T> {
         return new Promise<T>((resolve, reject) => {
             const requestId = this.generateRequestId(action);
 
-            // Set up timeout
             const timeoutId = setTimeout(() => {
                 if (this.pendingRequests.has(requestId)) {
                     this.pendingRequests.delete(requestId);
                     reject(
                         new PartnerConnectError(
                             'LC_TIMEOUT',
-                            `Request ${action} timed out after ${this.requestTimeout}ms`
+                            `Request ${action} timed out after ${timeout}ms`
                         )
                     );
                 }
-            }, this.requestTimeout);
+            }, timeout);
 
             // Store the pending request
             this.pendingRequests.set(requestId, {
