@@ -34,7 +34,7 @@ type AuthGrant = {
     scope: string;
 };
 
-const STEPS = [
+const getSteps = () => [
     { id: 'api-token', title: m['developerPortal.guides.serverWebhooks.steps.apiToken']() },
     {
         id: 'webhook-endpoint',
@@ -750,7 +750,7 @@ const ServerWebhooksGuide: React.FC<{
     selectedIntegration: LCNIntegration | null;
     setSelectedIntegration: (integration: LCNIntegration | null) => void;
 }> = ({ selectedIntegration }) => {
-    const guideState = useGuideState('server-webhooks', STEPS.length, selectedIntegration);
+    const guideState = useGuideState('server-webhooks', getSteps().length, selectedIntegration);
 
     const [apiToken, setApiToken] = useState('');
     const [webhookUrl, setWebhookUrl] = useState('');
@@ -807,8 +807,8 @@ const ServerWebhooksGuide: React.FC<{
             <div className="mb-8">
                 <StepProgress
                     currentStep={guideState.currentStep}
-                    totalSteps={STEPS.length}
-                    steps={STEPS}
+                    totalSteps={getSteps().length}
+                    steps={getSteps()}
                     completedSteps={guideState.state.completedSteps}
                     onStepClick={guideState.goToStep}
                 />

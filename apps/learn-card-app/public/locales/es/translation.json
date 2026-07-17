@@ -912,7 +912,8 @@
             },
             "error": {
                 "invalidEmail": "Correo faltante o inválido"
-            }
+            },
+            "label": "Correo electrónico"
         },
         "phone": {
             "placeholder": "Número de teléfono",
