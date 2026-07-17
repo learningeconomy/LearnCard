@@ -10,12 +10,12 @@ type CheckListItemProps = {
 
 export const CheckListItem: React.FC<CheckListItemProps> = ({ checkListItem, onOpen }) => {
     return (
-        <li className="w-full">
+        <li className="w-full border-b border-grayscale-200 last:border-b-0">
             <button
                 type="button"
                 onClick={onOpen}
                 aria-label={`${checkListItem.title}. ${checkListItem.description}`}
-                className="w-full rounded-[20px] border border-grayscale-200 bg-white px-4 py-4 text-left transition-colors hover:bg-grayscale-10"
+                className="w-full py-4 text-left transition-opacity hover:opacity-80"
             >
                 <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">

@@ -76,7 +76,9 @@ const tryReadClipboardForClaim = async (): Promise<string | null> => {
     }
 };
 
-export const PasteOrUploadClaimModal: React.FC = () => {
+export type PasteOrUploadClaimMode = 'claim-link' | 'qr-code';
+
+export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }> = ({ mode }) => {
     const { closeModal, replaceModal, newModal } = useModal();
     const { presentToast } = useToast();
     const safeArea = useSafeArea();
@@ -97,6 +99,15 @@ export const PasteOrUploadClaimModal: React.FC = () => {
     }, []);
 
     const route = useClaimInputRouter({ defaultSource: 'paste' });
+    const showClaimLink = mode !== 'qr-code';
+    const showQrUpload = mode !== 'claim-link';
+    const title = mode === 'qr-code' ? 'Upload a QR Code' : 'Use a Claim Link';
+    const subtitle =
+        mode === 'qr-code'
+            ? 'Upload an image with a credential QR code'
+            : mode === 'claim-link'
+            ? 'Paste a LearnCard or wallet claim link'
+            : 'Paste a link or upload a QR';
 
     let footerBottom = safeArea.bottom;
     if (Capacitor.isNativePlatform()) footerBottom = 20 + safeArea.bottom;
@@ -179,8 +190,7 @@ export const PasteOrUploadClaimModal: React.FC = () => {
                 const scanResult = await QrScanner.scanImage(file, {
                     returnDetailedScanResult: true,
                 });
-                const decoded =
-                    typeof scanResult === 'string' ? scanResult : scanResult.data;
+                const decoded = typeof scanResult === 'string' ? scanResult : scanResult.data;
                 if (!decoded) {
                     setErrorCopy(
                         "We couldn't find a QR code in that image. Make sure the QR fills most of the photo and isn't blurry."
@@ -267,10 +277,10 @@ export const PasteOrUploadClaimModal: React.FC = () => {
                             </div>
                             <div className="flex flex-col items-start justify-center">
                                 <h5 className="text-[22px] font-semibold text-grayscale-900 font-poppins leading-[24px]">
-                                    Use a Claim Link
+                                    {title}
                                 </h5>
                                 <p className="text-[14px] text-grayscale-700 font-notoSans leading-[20px] mt-[2px]">
-                                    Paste a link or upload a QR
+                                    {subtitle}
                                 </p>
                             </div>
                         </div>
@@ -279,90 +289,97 @@ export const PasteOrUploadClaimModal: React.FC = () => {
             </IonHeader>
 
             <section className="h-full bg-grayscale-100 ion-padding overflow-y-scroll pb-[200px]">
-                <div className="w-full bg-white flex flex-col gap-[15px] shadow-bottom-2-4 p-[15px] mt-4 rounded-[15px]">
-                    <div className="flex flex-col items-start justify-center gap-[5px]">
-                        <h4 className="text-[20px] text-grayscale-900 font-notoSans text-left">
-                            Got a credential link?
-                        </h4>
-                        <p className="text-[14px] text-grayscale-600 font-notoSans text-left">
-                            Paste it below to continue.
-                        </p>
+                {showClaimLink && (
+                    <div className="w-full bg-white flex flex-col gap-[15px] shadow-bottom-2-4 p-[15px] mt-4 rounded-[15px]">
+                        <div className="flex flex-col items-start justify-center gap-[5px]">
+                            <h4 className="text-[20px] text-grayscale-900 font-notoSans text-left">
+                                Got a credential link?
+                            </h4>
+                            <p className="text-[14px] text-grayscale-600 font-notoSans text-left">
+                                Paste a LearnCard or external wallet claim link below.
+                            </p>
+                        </div>
+
+                        <input
+                            id="claim-link-input"
+                            type="text"
+                            value={pasted}
+                            onChange={e => {
+                                setPasted(e.target.value);
+                                setErrorCopy(null);
+                            }}
+                            placeholder="https://… or openid-credential-offer://…"
+                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                            disabled={isProcessing}
+                        />
+
+                        <button
+                            type="button"
+                            onClick={handleContinueWithPaste}
+                            disabled={continueDisabled}
+                            className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                            {isProcessing ? (
+                                <span className="flex items-center justify-center gap-2">
+                                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    Checking…
+                                </span>
+                            ) : (
+                                'Continue'
+                            )}
+                        </button>
                     </div>
+                )}
 
-                    <input
-                        id="claim-link-input"
-                        type="text"
-                        value={pasted}
-                        onChange={e => {
-                            setPasted(e.target.value);
-                            setErrorCopy(null);
-                        }}
-                        placeholder="https://… or openid-credential-offer://…"
-                        className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
-                        disabled={isProcessing}
-                    />
+                {showQrUpload && (
+                    <div className="w-full bg-white flex flex-col gap-[15px] shadow-bottom-2-4 p-[15px] mt-4 rounded-[15px]">
+                        <div className="flex flex-col items-start justify-center gap-[5px]">
+                            <h4 className="text-[20px] text-grayscale-900 font-notoSans text-left">
+                                Got a QR code?
+                            </h4>
+                            <p className="text-[14px] text-grayscale-600 font-notoSans text-left">
+                                Drop an image, or pick one from your device.
+                            </p>
+                        </div>
 
-                    <button
-                        type="button"
-                        onClick={handleContinueWithPaste}
-                        disabled={continueDisabled}
-                        className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                        {isProcessing ? (
-                            <span className="flex items-center justify-center gap-2">
-                                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                Checking…
-                            </span>
-                        ) : (
-                            'Continue'
-                        )}
-                    </button>
-                </div>
-
-                <div className="w-full bg-white flex flex-col gap-[15px] shadow-bottom-2-4 p-[15px] mt-4 rounded-[15px]">
-                    <div className="flex flex-col items-start justify-center gap-[5px]">
-                        <h4 className="text-[20px] text-grayscale-900 font-notoSans text-left">
-                            Got a QR code?
-                        </h4>
-                        <p className="text-[14px] text-grayscale-600 font-notoSans text-left">
-                            Drop an image, or pick one from your device.
-                        </p>
-                    </div>
-
-                    <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        {...dragHandlers}
-                        disabled={isProcessing}
-                        className={`w-full py-6 px-4 rounded-xl border-2 border-dashed transition-colors text-center disabled:opacity-40 disabled:cursor-not-allowed ${
-                            isDragging
-                                ? 'border-emerald-500 bg-emerald-50'
-                                : 'border-grayscale-300 hover:border-grayscale-400 hover:bg-grayscale-10'
-                        }`}
-                    >
-                        <p
-                            className={`text-sm font-medium ${
-                                isDragging ? 'text-emerald-700' : 'text-grayscale-700'
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            onDragEnter={dragHandlers.onDragEnter}
+                            onDragOver={dragHandlers.onDragOver}
+                            onDragLeave={dragHandlers.onDragLeave}
+                            onDrop={dragHandlers.onDrop}
+                            disabled={isProcessing}
+                            className={`w-full py-6 px-4 rounded-xl border-2 border-dashed transition-colors text-center disabled:opacity-40 disabled:cursor-not-allowed ${
+                                isDragging
+                                    ? 'border-emerald-500 bg-emerald-50'
+                                    : 'border-grayscale-300 hover:border-grayscale-400 hover:bg-grayscale-10'
                             }`}
                         >
-                            {isDragging ? 'Drop it!' : 'Choose an image'}
-                        </p>
-                        <p
-                            className={`text-xs mt-1 ${
-                                isDragging ? 'text-emerald-600' : 'text-grayscale-500'
-                            }`}
-                        >
-                            {isDragging ? 'Release to upload' : 'or drop it here'}
-                        </p>
-                    </button>
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={onChangeFile}
-                        className="hidden"
-                    />
-                </div>
+                            <p
+                                className={`text-sm font-medium ${
+                                    isDragging ? 'text-emerald-700' : 'text-grayscale-700'
+                                }`}
+                            >
+                                {isDragging ? 'Drop it!' : 'Choose an image'}
+                            </p>
+                            <p
+                                className={`text-xs mt-1 ${
+                                    isDragging ? 'text-emerald-600' : 'text-grayscale-500'
+                                }`}
+                            >
+                                {isDragging ? 'Release to upload' : 'or drop it here'}
+                            </p>
+                        </button>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={onChangeFile}
+                            className="hidden"
+                        />
+                    </div>
+                )}
 
                 {errorCopy && (
                     <div className="w-full p-3 mt-4 bg-red-50 border border-red-100 rounded-2xl">
