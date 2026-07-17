@@ -24,6 +24,7 @@ import PresentVcModalListener from './components/modalListener/ModalListener';
 import QRCodeScannerListener from './components/qrcode-scanner-listener/QRCodeScannerListener';
 import NetworkListener from './components/network-listener/NetworkListener';
 import CredentialSyncListener from './components/credential-sync-listener/CredentialSyncListener';
+import NotificationToastListener from './components/notification-toast-listener/NotificationToastListener';
 import PathwayProgressReactorMount from './pages/pathways/events/PathwayProgressReactorMount';
 import { installPathwaysDevGlobals } from './pages/pathways/dev/pathwaysDevGlobals';
 import { QRCodeScannerStore } from 'learn-card-base';
@@ -211,6 +212,7 @@ const FullApp: React.FC = () => {
                                         <PushNotificationListener />
                                         <PresentVcModalListener />
                                         <CredentialSyncListener />
+                                        <NotificationToastListener />
                                         {/* Subscribes the pathway-progress reactor to
                                             the wallet event bus. Placed alongside the
                                             other app-level listeners so every claim
