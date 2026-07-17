@@ -3,7 +3,7 @@
 > Promise-based JavaScript SDK for secure cross-origin communication between partner apps and LearnCard
 
 {% hint style="info" %}
-**Last verified against `@learncard/partner-connect` v0.3.10.** When in doubt, the runtime types in `packages/learn-card-partner-connect-sdk/src/types.ts` and the Zod validators in `@learncard/types` (`packages/learn-card-types/src/lcn.ts`) are the source of truth.
+**The runtime types in `packages/learn-card-partner-connect-sdk/src/types.ts` and the Zod validators in `@learncard/types` (`packages/learn-card-types/src/lcn.ts`) are the source of truth.
 {% endhint %}
 
 The Partner Connect SDK transforms complex `postMessage` communication into clean, modern Promise-based functions. It handles the entire cross-origin message lifecycle, including request queuing, origin validation, and timeout management.
