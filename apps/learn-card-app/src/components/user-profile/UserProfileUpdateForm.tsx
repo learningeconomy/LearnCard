@@ -43,7 +43,7 @@ import CountrySelectorModal from '../onboarding/onboardingNetworkForm/components
 import IssuerStatusCard from './IssuerStatusCard';
 import countries from '../../constants/countries.json';
 
-import { useFilestack, UploadRes } from 'learn-card-base';
+import { useImageUpload, UploadRes } from 'learn-card-base';
 
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
@@ -167,7 +167,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
         setUploadProgress(false);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
