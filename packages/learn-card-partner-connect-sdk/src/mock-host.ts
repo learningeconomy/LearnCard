@@ -121,6 +121,9 @@ export class MockHost {
     /** DOM nodes injected for visual feedback, tracked for cleanup. */
     private readonly domNodes = new Set<HTMLElement>();
 
+    /** The app's single AI Topic, created lazily by the first AI session. */
+    private aiTopic: { topicUri: string; topicCredentialUri: string } | null = null;
+
     private styleEl: HTMLStyleElement | null = null;
     private stackEl: HTMLElement | null = null;
     private readonly activeToasts = new Map<string, ActiveToast>();
@@ -280,21 +283,32 @@ export class MockHost {
             }
 
             case 'REQUEST_LEARNER_CONTEXT': {
-                const held = this.selfCredentials();
+                const opts = (payload ?? {}) as {
+                    includeCredentials?: boolean;
+                    format?: string;
+                };
+                const includeCredentials = opts.includeCredentials !== false;
+                const structured = opts.format === 'structured';
+                const held = includeCredentials ? this.selfCredentials() : [];
                 this.toast({
                     icon: '🧠',
-                    segments: held.length
+                    segments: !includeCredentials
+                        ? ['Learner profile requested with credentials excluded.']
+                        : held.length
                         ? ['Learner profile: ', { b: String(held.length) }, ' credential(s).']
                         : ["In LearnCard, the user's learner profile would load. Empty in mock."],
                 });
-                const prompt = held.length
+                const prompt = !includeCredentials
+                    ? 'Mock learner context: credentials were not requested.'
+                    : held.length
                     ? `Mock learner context. Credentials held: ${held.map(c => c.name).join(', ')}.`
                     : 'Mock learner context: this user has no credentials in standalone mode.';
                 return Promise.resolve({
                     status: 'ready',
                     prompt,
                     did: this.identity.did,
-                    raw: { credentials: held.map(c => c.credential) },
+                    // Matches the real host: `raw` only ships for format: 'structured'.
+                    ...(structured ? { raw: { credentials: held.map(c => c.credential) } } : {}),
                 });
             }
 
@@ -444,8 +458,16 @@ export class MockHost {
 
             case 'get-template-recipients': {
                 const matched = this.credentials.filter(c => this.matchesTemplate(c, event));
-                const limit = typeof event.limit === 'number' ? event.limit : undefined;
-                const page = limit ? matched.slice(0, limit) : matched;
+                const limit =
+                    typeof event.limit === 'number' && event.limit > 0 ? event.limit : undefined;
+                // Cursor pagination: the cursor is the offset of the next record,
+                // issued by the previous page so callers can walk the full list.
+                const parsedCursor =
+                    typeof event.cursor === 'string' ? Number.parseInt(event.cursor, 10) : 0;
+                const offset = Number.isFinite(parsedCursor) && parsedCursor > 0 ? parsedCursor : 0;
+                const page = limit ? matched.slice(offset, offset + limit) : matched.slice(offset);
+                const nextOffset = offset + page.length;
+                const hasMore = nextOffset < matched.length;
                 this.toast({
                     icon: '👥',
                     segments: [
@@ -456,7 +478,8 @@ export class MockHost {
                 });
                 return Promise.resolve({
                     records: page.map(c => this.toRecipientRecord(c)),
-                    hasMore: limit ? matched.length > limit : false,
+                    hasMore,
+                    ...(hasMore ? { cursor: String(nextOffset) } : {}),
                     total: matched.length,
                 });
             }
@@ -535,11 +558,24 @@ export class MockHost {
                         { b: sessionTitle },
                     ],
                 });
+
+                // Mirrors the real host's topic hierarchy: the first session
+                // creates the app's AI Topic (returning its credential URI);
+                // later sessions reuse it and report isNewTopic: false.
+                const isNewTopic = this.aiTopic === null;
+                if (!this.aiTopic) {
+                    this.aiTopic = {
+                        topicUri: this.nextUri('lc:mock:topic'),
+                        topicCredentialUri: this.nextUri('lc:mock:topic-credential'),
+                    };
+                }
+
                 return Promise.resolve({
-                    topicUri: this.nextUri('lc:mock:topic'),
+                    topicUri: this.aiTopic.topicUri,
+                    ...(isNewTopic ? { topicCredentialUri: this.aiTopic.topicCredentialUri } : {}),
                     sessionCredentialUri: record.credentialUri,
                     sessionBoostUri,
-                    isNewTopic: true,
+                    isNewTopic,
                 });
             }
 
@@ -651,6 +687,12 @@ export class MockHost {
         return Object.keys(this.loadCounters());
     }
 
+    /**
+     * The load → patch → save cycle below runs synchronously within one task,
+     * so increments in the same tab can never interleave. Concurrent writes
+     * from *other tabs* sharing the namespace can still be lost — acceptable
+     * for a dev-only mock, and inherent to `localStorage` without web locks.
+     */
     private writeCounter(key: string, value: number): void {
         const entry: StoredCounter = { value, updatedAt: new Date().toISOString() };
 
