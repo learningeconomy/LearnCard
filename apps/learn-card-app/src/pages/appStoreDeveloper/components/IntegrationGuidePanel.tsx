@@ -83,7 +83,7 @@ const StepCard: React.FC<{
 );
 
 // Scope options for API tokens
-const SCOPE_OPTIONS = [
+const getScopeOptions = () => [
     {
         label: m['developerPortal.integrationGuide.scopeOptions.fullAccess'](),
         value: '*:*',
@@ -278,14 +278,14 @@ const InlineAPITokenManager: React.FC = () => {
                             onChange={e => setSelectedScope(e.target.value)}
                             className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                         >
-                            {SCOPE_OPTIONS.map(option => (
+                            {getScopeOptions().map(option => (
                                 <option key={option.value} value={option.value}>
                                     {option.label}
                                 </option>
                             ))}
                         </select>
                         <p className="text-xs text-gray-500 mt-1">
-                            {SCOPE_OPTIONS.find(o => o.value === selectedScope)?.description}
+                            {getScopeOptions().find(o => o.value === selectedScope)?.description}
                         </p>
                     </div>
 
@@ -527,10 +527,10 @@ const InlineSigningAuthoritySetup: React.FC = () => {
 };
 
 // Map permissions to their corresponding API methods
-const PERMISSION_TO_METHODS: Record<
+const getPermissionToMethods = (): Record<
     AppPermission,
     { method: string; description: string; code: string }
-> = {
+> => ({
     request_identity: {
         method: 'requestIdentity()',
         description: m['developerPortal.integrationGuide.permMethods.requestIdentity'](),
@@ -570,7 +570,7 @@ const PERMISSION_TO_METHODS: Record<
         description: m['developerPortal.integrationGuide.permMethods.templateIssuance'](),
         code: `await learnCard.initiateTemplateIssue('template-id', ['recipient@email.com']);`,
     },
-};
+});
 
 const EmbeddedIframeGuide: React.FC<{ selectedPermissions?: AppPermission[] }> = ({
     selectedPermissions = [],
@@ -671,7 +671,7 @@ log.info('User Profile:', identity.profile);`}
                 {selectedPermissions.length > 0 ? (
                     <div className="space-y-3">
                         {selectedPermissions.map(permission => {
-                            const methodInfo = PERMISSION_TO_METHODS[permission];
+                            const methodInfo = getPermissionToMethods()[permission];
                             if (!methodInfo) return null;
                             return (
                                 <div
