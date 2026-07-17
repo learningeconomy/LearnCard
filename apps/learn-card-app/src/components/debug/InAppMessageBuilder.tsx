@@ -21,7 +21,10 @@ import { Eye, Plus, Trash2 } from 'lucide-react';
 import { inAppMessageValidator, type InAppMessage } from '@learncard/types';
 import { setInAppMessageOverride } from 'learn-card-base';
 
-import { IN_APP_MESSAGE_TEMPLATES } from './inAppMessageTemplates';
+import {
+    IN_APP_MESSAGE_TEMPLATES,
+    IN_APP_MESSAGE_TEMPLATE_CATEGORIES,
+} from './inAppMessageTemplates';
 
 type BuilderActionType = 'internalLink' | 'externalLink' | 'appStore' | 'capgoUpdate' | 'dismiss';
 
@@ -332,10 +335,16 @@ export const InAppMessageBuilder: React.FC<{
                         Load a template…
                     </option>
 
-                    {IN_APP_MESSAGE_TEMPLATES.map(t => (
-                        <option key={t.key} value={t.key}>
-                            {t.label}
-                        </option>
+                    {IN_APP_MESSAGE_TEMPLATE_CATEGORIES.map(category => (
+                        <optgroup key={category} label={category}>
+                            {IN_APP_MESSAGE_TEMPLATES.filter(t => t.category === category).map(
+                                t => (
+                                    <option key={t.key} value={t.key}>
+                                        {t.label}
+                                    </option>
+                                )
+                            )}
+                        </optgroup>
                     ))}
                 </select>
             </FieldRow>

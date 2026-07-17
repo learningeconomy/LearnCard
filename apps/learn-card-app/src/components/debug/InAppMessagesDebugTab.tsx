@@ -51,7 +51,10 @@ import {
 } from 'learn-card-base';
 
 import { KVRow, Section, useCopyToClipboard } from './debugComponents';
-import { IN_APP_MESSAGE_TEMPLATES } from './inAppMessageTemplates';
+import {
+    IN_APP_MESSAGE_TEMPLATES,
+    IN_APP_MESSAGE_TEMPLATE_CATEGORIES,
+} from './inAppMessageTemplates';
 import { InAppMessageBuilder, debugFieldInputStyle } from './InAppMessageBuilder';
 
 const SEEN_STORAGE_KEY = 'lcb-in-app-messages-seen';
@@ -602,18 +605,30 @@ export const InAppMessagesDebugTab: React.FC = () => {
 
             <Section title="Preview" icon={<Eye className="w-3 h-3 text-gray-500" />}>
                 <div className="space-y-2">
-                    <div className="grid grid-cols-1 gap-1">
-                        {IN_APP_MESSAGE_TEMPLATES.map(t => (
-                            <button
-                                key={t.key}
-                                type="button"
-                                onClick={() => handlePreviewTemplate(t.json)}
-                                title={t.description}
-                                className="flex items-center gap-1.5 text-[11px] bg-gray-800 hover:bg-gray-700 text-gray-200 px-2 py-1 rounded transition-colors text-left"
-                            >
-                                <MessageSquare className="w-3 h-3 shrink-0 text-gray-500" />
-                                {t.label}
-                            </button>
+                    <div className="space-y-1.5">
+                        {IN_APP_MESSAGE_TEMPLATE_CATEGORIES.map(category => (
+                            <div key={category}>
+                                <p className="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5">
+                                    {category}
+                                </p>
+
+                                <div className="grid grid-cols-1 gap-1">
+                                    {IN_APP_MESSAGE_TEMPLATES.filter(
+                                        t => t.category === category
+                                    ).map(t => (
+                                        <button
+                                            key={t.key}
+                                            type="button"
+                                            onClick={() => handlePreviewTemplate(t.json)}
+                                            title={t.description}
+                                            className="flex items-center gap-1.5 text-[11px] bg-gray-800 hover:bg-gray-700 text-gray-200 px-2 py-1 rounded transition-colors text-left"
+                                        >
+                                            <MessageSquare className="w-3 h-3 shrink-0 text-gray-500" />
+                                            {t.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         ))}
                     </div>
 
