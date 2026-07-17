@@ -63,9 +63,16 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
     );
 
     useEffect(() => {
-        if (!active) return;
+        if (!active) {
+            // Only reset dedupe state for overrides: clearing a preview must
+            // allow the same draft (same id) to be previewed again, while real
+            // messages keep their once-per-appearance semantics intact.
+            if (shownRef.current?.startsWith('override:')) shownRef.current = null;
 
-        const key = isOverride ? `override:${active.id}` : active.id;
+            return;
+        }
+
+        const key = isOverride ? `override:${active.id}:${active.presentation}` : active.id;
 
         if (shownRef.current === key) return;
 
