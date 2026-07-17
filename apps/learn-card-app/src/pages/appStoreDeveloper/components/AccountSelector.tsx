@@ -7,7 +7,7 @@ import { Building, Plus, Check, Loader2, AlertCircle, ChevronDown, ChevronUp } f
 import {
     useWallet,
     useToast,
-    useFilestack,
+    useImageUpload,
     useCreateBoost,
     useCurrentUser,
     useGetCurrentLCNUser,
@@ -161,7 +161,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({
         profileId ?? ''
     );
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url: string, _file: File, data: UploadRes) => {
             setImage(data?.url);

@@ -20,7 +20,7 @@ const log = getLogger('organization-setup-step');
 import {
     useWallet,
     useToast,
-    useFilestack,
+    useImageUpload,
     useCreateBoost,
     useCurrentUser,
     useGetCurrentLCNUser,
@@ -126,7 +126,7 @@ export const OrganizationSetupStep: React.FC<OrganizationSetupStepProps> = ({
         profileId ?? ''
     );
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data: UploadRes) => {
             setImage(data?.url);

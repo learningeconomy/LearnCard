@@ -10,7 +10,7 @@ import {
     LCAStylesPackRegistryEntry,
     BoostCategoryOptionsEnum,
     BoostPageViewMode,
-    useFilestack,
+    useImageUpload,
 } from 'learn-card-base';
 import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEarnedCard';
 
@@ -58,7 +58,7 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
     const stylePackImageUrl = resolveBadgeStyle(badge, stylePacks).imageUrl;
     const effectiveImageUrl = imageUrl?.trim() || stylePackImageUrl;
 
-    const { handleFileSelect, isLoading: isUploadingImage } = useFilestack({
+    const { handleFileSelect, isLoading: isUploadingImage } = useImageUpload({
         onUpload: url => onImageUrlChange?.(url),
     });
 

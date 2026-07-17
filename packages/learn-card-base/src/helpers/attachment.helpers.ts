@@ -1,25 +1,16 @@
 import { getCoverImageUrl, isYoutubeUrl } from './youtube.helpers';
+import { isKnownImageUploadUrl } from '../storage/image-upload';
+import { getMetadata } from '../filestack/images/images.helpers';
 
 export const getFileMetadata = async (url: string) => {
-    const isFilestack = url.includes('filestack');
-    if (!isFilestack) return;
+    if (!isKnownImageUploadUrl(url)) return;
 
-    const urlParams = url.split('.com/')[1]?.split('/');
-    if (!urlParams) return;
-    const handle = urlParams[urlParams.length - 1];
-
-    let fetchFailed = false;
-    const data = await fetch(`https://cdn.filestackcontent.com/${handle}/metadata`)
-        .then(res => res.json())
-        .catch(() => (fetchFailed = true));
-
-    if (fetchFailed) return;
-
-    const fileExtension = data.filename.split('.')[1];
+    const metadata = await getMetadata(url);
+    const fileExtension = metadata.filename.split('.').pop()?.toLowerCase();
 
     return {
         fileExtension,
-        sizeInBytes: data.size,
+        sizeInBytes: metadata.size,
         numberOfPages: undefined,
     };
 };

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { HexColorPicker } from 'react-colorful';
 
 import {
-    useFilestack,
+    useImageUpload,
     UploadRes,
     BoostCategoryOptionsEnum,
     isCustomBoostType,
@@ -135,7 +135,7 @@ const BoostCMSAppearanceForm: React.FC<BoostCMSAppearanceFormProps> = ({
         handleStateChange('backgroundImage', data?.url);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
