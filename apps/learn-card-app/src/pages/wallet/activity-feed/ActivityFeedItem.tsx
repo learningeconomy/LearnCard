@@ -40,7 +40,14 @@ export const ActivityFeedItem: React.FC<{
                     item.unread ? 'bg-emerald-50' : ''
                 }`}
             >
-                <div className="relative shrink-0 h-[44px] w-[44px]">
+                <div
+                    className="relative shrink-0 h-[44px] w-[44px]"
+                    style={
+                        item.lifecycleStatus !== 'active'
+                            ? { filter: 'grayscale(1) brightness(0.95)' }
+                            : undefined
+                    }
+                >
                     {item.isSelf ? (
                         <div className="flex items-center justify-center h-[44px] w-[44px]">
                             <ActivityCredentialIcon
@@ -85,6 +92,17 @@ export const ActivityFeedItem: React.FC<{
                         <p className="font-poppins text-[13px] text-grayscale-500 truncate">
                             {item.credentialType}
                         </p>
+                    )}
+                    {item.lifecycleStatus !== 'active' && (
+                        <span
+                            className="inline-block mt-1 rounded-full px-[8px] py-[1px] text-[11px] font-bold uppercase tracking-wide text-white"
+                            style={{
+                                backgroundColor:
+                                    item.lifecycleStatus === 'revoked' ? '#DC2626' : '#EA580C',
+                            }}
+                        >
+                            {item.statusLabel}
+                        </span>
                     )}
                 </div>
 
