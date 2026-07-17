@@ -30,6 +30,7 @@ import {
 
 import useTheme from '../../theme/hooks/useTheme';
 import useHeaderScrollSync from '../../hooks/useHeaderScrollSync';
+import useDebounce from '../../hooks/useDebounce';
 import { IconSetEnum } from '../../theme/icons';
 
 const getActiveRouteTab = (url: string): AddressBookTabsEnum | undefined => {
@@ -56,14 +57,28 @@ const AddressBook: React.FC = () => {
 
     const { url } = useRouteMatch();
     const { presentToast } = useToast();
-    const searchInputRef = useRef<HTMLIonInputElement>(null);
+    const searchInputRef = useRef<HTMLInputElement>(null);
 
     // Block profile mutation
     const { mutate: blockProfile } = useBlockProfileMutation();
 
-    // Search state and query
+    // Search state and query. The input is fully controlled by `search` (updated
+    // immediately per keystroke), while the network query runs off a debounced
+    // copy so we don't fire a request on every character.
     const [search, setSearch] = useState<string>('');
-    const { data: connections, isLoading: loading, refetch } = useGetSearchProfiles(search);
+    const [debouncedSearch, setDebouncedSearch] = useState<string>('');
+    const {
+        data: connections,
+        isLoading: loading,
+        refetch,
+    } = useGetSearchProfiles(debouncedSearch);
+
+    const updateDebouncedSearch = useDebounce(() => setDebouncedSearch(search), 350);
+
+    useEffect(() => {
+        updateDebouncedSearch();
+        return () => (updateDebouncedSearch as any).cancel?.();
+    }, [search, updateDebouncedSearch]);
 
     // Active tab (derived from the route URL) and connection count state
     const initialTab = getActiveRouteTab(url) || AddressBookTabsEnum.Connections;
@@ -116,10 +131,12 @@ const AddressBook: React.FC = () => {
     // Search input handlers
     const handleSearch = useCallback((value: string) => setSearch(value), []);
     const handleSearchFocus = useCallback(() => {
-        searchInputRef.current?.blur();
-        searchInputRef.current?.setFocus();
+        searchInputRef.current?.focus();
     }, []);
-    const clearSearch = useCallback(() => setSearch(''), []);
+    const clearSearch = useCallback(() => {
+        setSearch('');
+        setDebouncedSearch('');
+    }, []);
 
     // Derived booleans for search result rendering
     const isSearching = search.length > 0;
