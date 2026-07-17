@@ -54,11 +54,11 @@ import type { TerminationKindSpec } from './types';
 // peer < trusted < institution.
 // ---------------------------------------------------------------------------
 
-const TRUST_TIER_OPTIONS: ReadonlyArray<{
+const getTrustTierOptions = (): ReadonlyArray<{
     value: OutcomeTrustTier;
     label: string;
     hint: string;
-}> = [
+}> => [
     { value: 'self', label: 'Self', hint: 'The learner says so' },
     { value: 'peer', label: 'Peer', hint: 'Another learner or endorser' },
     {
@@ -105,15 +105,9 @@ const RequirementSatisfiedEditor: React.FC<{
 
     return (
         <div className="space-y-4">
-            <SummaryCard
-                requirement={value.requirement}
-                minTrustTier={value.minTrustTier}
-            />
+            <SummaryCard requirement={value.requirement} minTrustTier={value.minTrustTier} />
 
-            <RequirementEditor
-                value={value.requirement}
-                onChange={handleRequirementChange}
-            />
+            <RequirementEditor value={value.requirement} onChange={handleRequirementChange} />
 
             <div className="space-y-1.5">
                 <label className={LABEL} htmlFor="req-trust">
@@ -124,11 +118,9 @@ const RequirementSatisfiedEditor: React.FC<{
                     id="req-trust"
                     className={INPUT}
                     value={value.minTrustTier}
-                    onChange={e =>
-                        handleTrustTier(e.target.value as OutcomeTrustTier)
-                    }
+                    onChange={e => handleTrustTier(e.target.value as OutcomeTrustTier)}
                 >
-                    {TRUST_TIER_OPTIONS.map(opt => (
+                    {getTrustTierOptions().map(opt => (
                         <option key={opt.value} value={opt.value}>
                             {opt.label} — {opt.hint}
                         </option>
@@ -136,9 +128,8 @@ const RequirementSatisfiedEditor: React.FC<{
                 </select>
 
                 <p className="text-[11px] text-grayscale-500 leading-snug">
-                    Only credentials from issuers at this tier or higher will
-                    complete the step. Tiers stack: institution clears
-                    trusted, trusted clears peer, and so on.
+                    Only credentials from issuers at this tier or higher will complete the step.
+                    Tiers stack: institution clears trusted, trusted clears peer, and so on.
                 </p>
             </div>
         </div>
@@ -185,16 +176,11 @@ const SummaryCard: React.FC<{
 
         <div className="min-w-0 flex-1 text-xs text-grayscale-800 leading-relaxed">
             <p>
-                <span className="font-medium">Completes when</span> the
-                learner's wallet receives{' '}
-                <span className="font-medium">
-                    {summarizeRequirement(requirement)}
-                </span>
-                .
+                <span className="font-medium">Completes when</span> the learner's wallet receives{' '}
+                <span className="font-medium">{summarizeRequirement(requirement)}</span>.
             </p>
             <p className="mt-1 text-[11px] text-emerald-700">
-                Issuer trust: <span className="font-medium">{minTrustTier}</span>{' '}
-                or higher.
+                Issuer trust: <span className="font-medium">{minTrustTier}</span> or higher.
             </p>
         </div>
     </div>
