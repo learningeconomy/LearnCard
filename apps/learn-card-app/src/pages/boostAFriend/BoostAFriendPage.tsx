@@ -41,6 +41,7 @@ import { useBadgeGroups } from '../../registries/useBadgeGroups';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
 import { BoostCategoryOptionsEnum, BoostPageViewMode } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
+import { useLocale } from '../../i18n';
 
 type Step = 'pick' | 'personalize' | 'send' | 'celebrate';
 
@@ -310,6 +311,8 @@ const BoostAFriendPage: React.FC = () => {
         setStep('pick');
     };
 
+    const locale = useLocale();
+
     const celebrateCredential = useMemo(() => {
         if (!selectedBadge) return null;
         return buildPreviewCredential({
@@ -336,6 +339,8 @@ const BoostAFriendPage: React.FC = () => {
         stylePacks,
         categoryFallback,
         currentLCNUser,
+        ,
+        locale,
     ]);
 
     const celebrateCard = celebrateCredential && (

@@ -25,6 +25,8 @@ import {
     CLR2_TYPES,
 } from './types';
 
+import * as m from '../../../../../paraglide/messages.js';
+
 // Known system variables that are auto-injected at issuance time
 const SYSTEM_VARIABLES = ['issue_date', 'issuer_did', 'recipient_did'];
 
@@ -1288,7 +1290,7 @@ const validateAchievementUrls = (
         if (!/^https?:\/\//i.test(criteriaId.value) && !/^urn:/i.test(criteriaId.value)) {
             errors.push({
                 field: `${prefix}.criteria.id`,
-                message: 'Must be a valid URL (e.g., https://example.com)',
+                message: m['developerPortal.credentialBuilder.validation.invalidUrl'](),
             });
         }
     }
@@ -1300,7 +1302,7 @@ const validateAchievementUrls = (
             if (!/^https?:\/\//i.test(a.targetUrl.value) && !/^urn:/i.test(a.targetUrl.value)) {
                 errors.push({
                     field: `${prefix}.alignment.${i}.targetUrl`,
-                    message: 'Must be a valid URL (e.g., https://example.com)',
+                    message: m['developerPortal.credentialBuilder.validation.invalidUrl'](),
                 });
             }
         }
@@ -1313,7 +1315,7 @@ const validateAchievementUrls = (
         if (!ctidPattern.test(ctid.value)) {
             errors.push({
                 field: `${prefix}.ctid`,
-                message: 'Invalid CTID format. Must be ce-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+                message: m['developerPortal.credentialBuilder.validation.invalidCtid'](),
             });
         }
     }
@@ -1338,7 +1340,7 @@ export const validateTemplate = (template: OBv3CredentialTemplate): FieldValidat
         if (achievements.length === 0 && embeddedVCs.length === 0) {
             errors.push({
                 field: 'achievements-list',
-                message: 'At least one achievement or embedded credential is required',
+                message: m['developerPortal.credentialBuilder.validation.atLeastOneAchievement'](),
             });
         }
 
@@ -1361,13 +1363,19 @@ export const validateTemplate = (template: OBv3CredentialTemplate): FieldValidat
             if (assoc.sourceAchievementId && !validIds.has(assoc.sourceAchievementId)) {
                 errors.push({
                     field: `associations.${i}.source`,
-                    message: 'Source achievement not found',
+                    message:
+                        m[
+                            'developerPortal.credentialBuilder.validation.sourceAchievementNotFound'
+                        ](),
                 });
             }
             if (assoc.targetAchievementId && !validIds.has(assoc.targetAchievementId)) {
                 errors.push({
                     field: `associations.${i}.target`,
-                    message: 'Target achievement not found',
+                    message:
+                        m[
+                            'developerPortal.credentialBuilder.validation.targetAchievementNotFound'
+                        ](),
                 });
             }
         }
@@ -1397,7 +1405,10 @@ export const validateTemplate = (template: OBv3CredentialTemplate): FieldValidat
         !template.credentialSubject.achievement.name.value &&
         !template.credentialSubject.achievement.name.isDynamic
     ) {
-        errors.push({ field: 'achievement.name', message: 'Achievement name is required' });
+        errors.push({
+            field: 'achievement.name',
+            message: m['developerPortal.credentialBuilder.validation.achievementNameRequired'](),
+        });
     }
 
     errors.push(...validateAchievementUrls(template.credentialSubject.achievement, 'achievement'));

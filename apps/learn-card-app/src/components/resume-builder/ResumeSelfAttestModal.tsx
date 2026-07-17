@@ -29,6 +29,7 @@ import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
 import type { ResumeSectionKey } from './resume-builder.helpers';
 import { switchedProfileStore } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
+import { useLocale } from '../../i18n';
 
 type ResumeSelfAttestModalProps = {
     category: ResumeSectionKey;
@@ -144,9 +145,11 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
         }
     };
 
+    const locale = useLocale();
+
     const heading = useMemo(
         () => metadata?.titleSingular ?? m['passport.resumeBuilder.credential'](),
-        [metadata]
+        [metadata, locale]
     );
 
     return (

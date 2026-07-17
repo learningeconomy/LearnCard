@@ -9,6 +9,8 @@
 import React, { useState } from 'react';
 import { Link2, ChevronDown, ChevronRight, ShieldCheck, FileText } from 'lucide-react';
 
+import * as m from '../../../../../../paraglide/messages.js';
+
 import { OBv3CredentialTemplate } from '../types';
 import { CollapsibleSection } from '../FieldEditor';
 
@@ -37,7 +39,7 @@ const getVcName = (vc: Record<string, unknown>): string => {
 
     if (meaningful.length > 0) return String(meaningful[0]);
 
-    return 'Embedded Credential';
+    return m['developerPortal.credentialBuilder.linkedCredentials.embedded']();
 };
 
 // Extract the achievement type from an embedded VC
@@ -80,11 +82,13 @@ export const LinkedCredentialsSection: React.FC<LinkedCredentialsSectionProps> =
 
     return (
         <CollapsibleSection
-            title="Linked Credentials"
+            title={m['developerPortal.credentialBuilder.sectionTitles.linkedCredentials']()}
             icon={<Link2 className="w-4 h-4" />}
             isExpanded={isExpanded}
             onToggle={onToggle}
-            badge={`${credentials.length} signed`}
+            badge={`${credentials.length} ${m[
+                'developerPortal.credentialBuilder.linkedCredentials.signedBadge'
+            ]()}`}
         >
             <div className="space-y-2">
                 <div className="px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg">
@@ -92,8 +96,7 @@ export const LinkedCredentialsSection: React.FC<LinkedCredentialsSectionProps> =
                         <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
 
                         <p className="text-xs text-emerald-800">
-                            These are pre-signed verifiable credentials embedded in this CLR.
-                            They are read-only and will be preserved as-is in the output.
+                            {m['developerPortal.credentialBuilder.linkedCredentials.description']()}
                         </p>
                     </div>
                 </div>
@@ -126,18 +129,24 @@ export const LinkedCredentialsSection: React.FC<LinkedCredentialsSectionProps> =
 
                                     <div className="flex items-center gap-2 mt-0.5">
                                         {achievementType && (
-                                            <span className="text-xs text-gray-500">{achievementType}</span>
+                                            <span className="text-xs text-gray-500">
+                                                {achievementType}
+                                            </span>
                                         )}
 
                                         {issuerName && (
                                             <span className="text-xs text-gray-400 truncate">
-                                                by {issuerName}
+                                                {m[
+                                                    'developerPortal.credentialBuilder.linkedCredentials.by'
+                                                ]({ name: issuerName })}
                                             </span>
                                         )}
 
                                         {hasProof && (
                                             <span className="text-xs bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded">
-                                                signed
+                                                {m[
+                                                    'developerPortal.credentialBuilder.linkedCredentials.signedBadge'
+                                                ]()}
                                             </span>
                                         )}
                                     </div>

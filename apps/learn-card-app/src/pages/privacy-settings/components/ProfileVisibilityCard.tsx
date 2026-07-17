@@ -5,6 +5,7 @@ import { AllowConnectionRequestsEnum, ProfileVisibilityEnum } from '@learncard/t
 import { RadioGroup } from 'learn-card-base';
 
 import * as m from '../../../paraglide/messages.js';
+import { useLocale } from '../../../i18n';
 import type { DataSharingProfileViewModel } from '../DataSharingCenter.types';
 import GlassCard from './GlassCard';
 
@@ -21,6 +22,8 @@ const ProfileVisibilityCard: React.FC<ProfileVisibilityCardProps> = ({
     onChangeConnectionRequests,
     delay = 0,
 }) => {
+    const locale = useLocale();
+
     const visibilityOptions = useMemo(
         () => [
             {
@@ -36,7 +39,7 @@ const ProfileVisibilityCard: React.FC<ProfileVisibilityCardProps> = ({
                 label: m['settings.privacy.visibilityPrivate'](),
             },
         ],
-        []
+        [locale]
     );
 
     const connectionRequestOptions = useMemo(
@@ -50,7 +53,7 @@ const ProfileVisibilityCard: React.FC<ProfileVisibilityCardProps> = ({
                 label: m['settings.privacy.connectionRequestsInviteOnly'](),
             },
         ],
-        []
+        [locale]
     );
 
     return (
