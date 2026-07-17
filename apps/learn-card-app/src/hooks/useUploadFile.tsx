@@ -20,6 +20,8 @@ import {
     getCategoryForCredential,
     useSyncAllCredentialsToContractsMutation,
     categoryMetadata,
+    filestack,
+    BoostMediaOptionsEnum,
 } from 'learn-card-base';
 import { useAiInsightCredentialMutation } from 'learn-card-base/hooks/useAiInsightCredential';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
@@ -31,6 +33,73 @@ export type RawArtifactType = {
     fileSize: string;
     fileType: string;
     type: string;
+};
+
+const ATTACHMENTS_CONTEXT = {
+    xsd: 'https://www.w3.org/2001/XMLSchema#',
+    attachments: {
+        '@id': 'https://www.example.org/boost-attachments',
+        '@container': '@set',
+        '@context': {
+            title: {
+                '@id': 'https://www.example.org/attachmentTitle',
+                '@type': 'xsd:string',
+            },
+            type: {
+                '@id': 'https://www.example.org/attachmentType',
+                '@type': 'xsd:string',
+            },
+            url: {
+                '@id': 'https://www.example.org/attachmentUrl',
+                '@type': 'xsd:string',
+            },
+            fileName: {
+                '@id': 'https://www.example.org/attachmentFileName',
+                '@type': 'xsd:string',
+            },
+            fileSize: {
+                '@id': 'https://www.example.org/attachmentFileSize',
+                '@type': 'xsd:string',
+            },
+            fileType: {
+                '@id': 'https://www.example.org/attachmentFileType',
+                '@type': 'xsd:string',
+            },
+        },
+    },
+};
+
+export const addCertificateAttachment = (vc: any, rawArtifactVc: any): any => {
+    const artifact = rawArtifactVc?.rawArtifact;
+    if (!artifact?.url || artifact?.type !== UploadTypesEnum.Certificate) return vc;
+
+    const attachment = {
+        title: artifact.fileName,
+        fileName: artifact.fileName,
+        fileSize: artifact.fileSize,
+        fileType: artifact.fileType,
+        url: artifact.url,
+        type: ['PNG', 'JPG', 'JPEG', 'WEBP'].includes(artifact.fileType)
+            ? BoostMediaOptionsEnum.photo
+            : BoostMediaOptionsEnum.document,
+    };
+    const existingAttachments = Array.isArray(vc?.attachments) ? vc.attachments : [];
+    const contexts = Array.isArray(vc?.['@context'])
+        ? vc['@context']
+        : vc?.['@context']
+        ? [vc['@context']]
+        : [];
+
+    return {
+        ...vc,
+        '@context': [...contexts, ATTACHMENTS_CONTEXT],
+        attachments: [
+            attachment,
+            ...existingAttachments.filter(
+                (existing: { url?: string }) => existing?.url !== attachment.url
+            ),
+        ],
+    };
 };
 
 // Helper function to get formatted file size string (e.g., "1.5 MB")
@@ -171,7 +240,16 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             const base64Data = await toBase64(file);
             if (base64Data) setBase64Data(base64Data);
 
-            const rawArtifactCredential = await createRawArtifactVC(file, walletDid, uploadType);
+            const artifactUrl =
+                uploadType === UploadTypesEnum.Certificate
+                    ? ((await filestack.upload(file)) as { url: string }).url
+                    : undefined;
+            const rawArtifactCredential = await createRawArtifactVC(
+                file,
+                walletDid,
+                uploadType,
+                artifactUrl
+            );
             setRawArtifactCredential(rawArtifactCredential);
             setIsUploading(false);
 
@@ -203,8 +281,18 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             const _base64Datas = await Promise.all(Array.from(files).map(toBase64));
             if (_base64Datas) setBase64Datas(_base64Datas);
 
+            const fileArray = Array.from(files);
+            const artifactUrls = await Promise.all(
+                fileArray.map(async file =>
+                    uploadType === UploadTypesEnum.Certificate
+                        ? ((await filestack.upload(file)) as { url: string }).url
+                        : undefined
+                )
+            );
             const rawArtifactCredentials = await Promise.all(
-                Array.from(files).map(file => createRawArtifactVC(file, walletDid, uploadType))
+                fileArray.map((file, index) =>
+                    createRawArtifactVC(file, walletDid, uploadType, artifactUrls[index])
+                )
             );
             setRawArtifactCredentials(rawArtifactCredentials);
             setIsUploading(false);
@@ -486,7 +574,13 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                 const wallet = await initWallet();
                 const issuedVCs = await Promise.all(
                     selectedVcs.map(async vc => {
-                        const issuedVc = await wallet.invoke.issueCredential(vc);
+                        const credentialWithAttachment = addCertificateAttachment(
+                            vc,
+                            rawArtifactVc
+                        );
+                        const issuedVc = await wallet.invoke.issueCredential(
+                            credentialWithAttachment
+                        );
                         const { credentialUri: uri, category } = await storeAndAddVCToWallet(
                             issuedVc
                         );
@@ -572,7 +666,13 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             if (vcs?.vcs?.length > 0) {
                 const issuedVCs = await Promise.all(
                     vcs.vcs.map(async ({ vc }) => {
-                        const issuedVc = await wallet.invoke.issueCredential(vc);
+                        const credentialWithAttachment = addCertificateAttachment(
+                            vc,
+                            rawArtifactCredential
+                        );
+                        const issuedVc = await wallet.invoke.issueCredential(
+                            credentialWithAttachment
+                        );
                         const { credentialUri: uri, category } = await storeAndAddVCToWallet(
                             issuedVc
                         );
@@ -684,7 +784,13 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                         if (fname) filenamesWithCreds.push(fname);
                         const issuedVCs = await Promise.all(
                             vcs.vcs.map(async ({ vc }) => {
-                                const issuedVc = await wallet.invoke.issueCredential(vc);
+                                const credentialWithAttachment = addCertificateAttachment(
+                                    vc,
+                                    rawVC
+                                );
+                                const issuedVc = await wallet.invoke.issueCredential(
+                                    credentialWithAttachment
+                                );
                                 const { credentialUri: uri, category } =
                                     await storeAndAddVCToWallet(issuedVc);
                                 return { uri, category };
@@ -811,7 +917,12 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
     };
 };
 
-export const createRawArtifactVC = async (file: File, did: string, uploadType: string) => {
+export const createRawArtifactVC = async (
+    file: File,
+    did: string,
+    uploadType: string,
+    artifactUrl?: string
+) => {
     const { name, type, size } = getFileInfo(file);
     const base64Data = await toBase64(file);
 
@@ -834,6 +945,7 @@ export const createRawArtifactVC = async (file: File, did: string, uploadType: s
                         fileName: { '@id': 'lcn:rawArtifactFileName', '@type': 'xsd:string' },
                         fileSize: { '@id': 'lcn:rawArtifactFileSize', '@type': 'xsd:string' },
                         fileType: { '@id': 'lcn:rawArtifactFileType', '@type': 'xsd:string' },
+                        url: { '@id': 'lcn:rawArtifactUrl', '@type': 'xsd:string' },
                     },
                 },
             },
@@ -851,6 +963,7 @@ export const createRawArtifactVC = async (file: File, did: string, uploadType: s
             fileType: type,
             fileSize: size,
             data: base64Data,
+            ...(artifactUrl ? { url: artifactUrl } : {}),
         },
     };
 };
