@@ -41,7 +41,7 @@ type AuthGrant = {
     description?: string;
 };
 
-const STEPS = [
+const getSteps = () => [
     { id: 'api-token', title: m['developerPortal.guides.issueCredentials.steps.apiToken']() },
     {
         id: 'signing-authority',
@@ -55,7 +55,7 @@ const STEPS = [
     { id: 'go-live', title: m['developerPortal.guides.issueCredentials.steps.goLive']() },
 ];
 
-const SCOPE_OPTIONS = [
+const getScopeOptions = () => [
     {
         label: m['developerPortal.guides.issueCredentials.scopeOptions.fullAccess'](),
         value: '*:*',
@@ -240,7 +240,7 @@ const ApiTokenStep: React.FC<{
                             onChange={e => setSelectedScope(e.target.value)}
                             className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         >
-                            {SCOPE_OPTIONS.map(option => (
+                            {getScopeOptions().map(option => (
                                 <option key={option.value} value={option.value}>
                                     {option.label}
                                 </option>
@@ -248,7 +248,7 @@ const ApiTokenStep: React.FC<{
                         </select>
 
                         <p className="text-xs text-gray-500 mt-1">
-                            {SCOPE_OPTIONS.find(o => o.value === selectedScope)?.description}
+                            {getScopeOptions().find(o => o.value === selectedScope)?.description}
                         </p>
                     </div>
 
@@ -1304,7 +1304,7 @@ interface IssueCredentialsConfig {
 
 // Main component
 const IssueCredentialsGuide: React.FC<GuideProps> = ({ selectedIntegration }) => {
-    const guideState = useGuideState('issue-credentials', STEPS.length, selectedIntegration);
+    const guideState = useGuideState('issue-credentials', getSteps().length, selectedIntegration);
 
     // Restore persisted config on mount
     const savedConfig = guideState.getConfig<IssueCredentialsConfig>('issueCredentialsConfig');
@@ -1342,9 +1342,9 @@ const IssueCredentialsGuide: React.FC<GuideProps> = ({ selectedIntegration }) =>
         (index: number) => {
             if (index === guideState.currentStep) return true;
             if (index < guideState.currentStep) return true;
-            if (guideState.isStepComplete(STEPS[index].id)) return true;
+            if (guideState.isStepComplete(getSteps()[index].id)) return true;
             for (let i = 0; i < index; i++) {
-                if (!guideState.isStepComplete(STEPS[i].id)) return false;
+                if (!guideState.isStepComplete(getSteps()[i].id)) return false;
             }
             return true;
         },
@@ -1372,8 +1372,8 @@ const IssueCredentialsGuide: React.FC<GuideProps> = ({ selectedIntegration }) =>
             <div className="mb-8">
                 <StepProgress
                     currentStep={guideState.currentStep}
-                    totalSteps={STEPS.length}
-                    steps={STEPS}
+                    totalSteps={getSteps().length}
+                    steps={getSteps()}
                     completedSteps={guideState.state.completedSteps}
                     onStepClick={guideState.goToStep}
                     isStepNavigable={canNavigateToStep}

@@ -345,7 +345,7 @@ interface Feature {
     comingSoon?: boolean;
 }
 
-const FEATURES: Feature[] = [
+const getFeatures = (): Feature[] => [
     {
         id: 'issue-credentials',
         title: m['developerPortal.guides.embedApp.features.issueCredentials'](),
@@ -413,7 +413,7 @@ const FEATURES: Feature[] = [
     },
 ];
 
-const STEPS = [
+const getSteps = () => [
     { id: 'getting-started', title: m['developerPortal.guides.embedApp.steps.gettingStarted']() },
     {
         id: 'signing-authority',
@@ -1019,7 +1019,7 @@ const ChooseFeaturesStep: React.FC<{
     setSelectedFeatures: (features: string[]) => void;
 }> = ({ onComplete, onBack, selectedFeatures, setSelectedFeatures }) => {
     const toggleFeature = (featureId: string) => {
-        const feature = FEATURES.find(f => f.id === featureId);
+        const feature = getFeatures().find(f => f.id === featureId);
 
         if (feature?.comingSoon) return; // Don't allow selection of coming soon features
 
@@ -1085,7 +1085,7 @@ const ChooseFeaturesStep: React.FC<{
     };
 
     const hasFeatureWithSetup = selectedFeatures.some(
-        id => FEATURES.find(f => f.id === id)?.requiresSetup
+        id => getFeatures().find(f => f.id === id)?.requiresSetup
     );
 
     return (
@@ -1102,7 +1102,7 @@ const ChooseFeaturesStep: React.FC<{
 
             {/* Feature cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {FEATURES.map(feature => {
+                {getFeatures().map(feature => {
                     const isSelected = selectedFeatures.includes(feature.id);
                     const isComingSoon = feature.comingSoon === true;
                     const colors = getColorClasses(feature.color, isSelected, isComingSoon);
@@ -1210,7 +1210,7 @@ const ChooseFeaturesStep: React.FC<{
 
                     <div className="flex flex-wrap gap-2">
                         {selectedFeatures.map(id => {
-                            const feature = FEATURES.find(f => f.id === id);
+                            const feature = getFeatures().find(f => f.id === id);
 
                             return feature ? (
                                 <span
@@ -3530,7 +3530,7 @@ const FeatureSetupStep: React.FC<{
 }) => {
     // Get features that require setup
     const featuresNeedingSetup = selectedFeatures
-        .map(id => FEATURES.find(f => f.id === id))
+        .map(id => getFeatures().find(f => f.id === id))
         .filter((f): f is Feature => f !== undefined && f.requiresSetup);
 
     // Skip rendering when no features need setup.
@@ -6314,7 +6314,7 @@ const YourAppStep: React.FC<{
  * 
  * Features configured:
  * ${selectedFeatures
-     .map(id => `  - ${FEATURES.find(f => f.id === id)?.title || id}`)
+     .map(id => `  - ${getFeatures().find(f => f.id === id)?.title || id}`)
      .join('\n * ')}
  * 
  * ================================================================
@@ -7132,7 +7132,7 @@ initializeApp();`);
 
                 <div className="flex flex-wrap gap-2">
                     {selectedFeatures.map(id => {
-                        const feature = FEATURES.find(f => f.id === id);
+                        const feature = getFeatures().find(f => f.id === id);
 
                         return feature ? (
                             <span
@@ -7493,7 +7493,7 @@ initializeApp();`);
 
 // Main component
 const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedIntegration }) => {
-    const guideState = useGuideState('embed-app', STEPS.length, selectedIntegration);
+    const guideState = useGuideState('embed-app', getSteps().length, selectedIntegration);
     const { useListingsForIntegration } = useDeveloperPortal();
     const { data: listings } = useListingsForIntegration(selectedIntegration?.id || null);
 
@@ -7558,14 +7558,14 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
 
     // Reset guide if step is out of bounds (e.g., after changing step count)
     useEffect(() => {
-        if (guideState.currentStep >= STEPS.length) {
+        if (guideState.currentStep >= getSteps().length) {
             guideState.goToStep(0);
         }
     }, [guideState.currentStep]);
 
     // Check if we should skip feature setup step
     const featuresNeedingSetup = selectedFeatures.filter(
-        id => FEATURES.find(f => f.id === id)?.requiresSetup
+        id => getFeatures().find(f => f.id === id)?.requiresSetup
     );
 
     // Reset feature index when features change to prevent out-of-bounds issues
@@ -7640,9 +7640,9 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
         (index: number) => {
             if (index === guideState.currentStep) return true;
             if (index < guideState.currentStep) return true;
-            if (guideState.isStepComplete(STEPS[index].id)) return true;
+            if (guideState.isStepComplete(getSteps()[index].id)) return true;
             for (let i = 0; i < index; i++) {
-                if (!guideState.isStepComplete(STEPS[i].id)) return false;
+                if (!guideState.isStepComplete(getSteps()[i].id)) return false;
             }
             return true;
         },
@@ -7665,8 +7665,8 @@ const EmbedAppGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelectedI
             <div className="mb-8">
                 <StepProgress
                     currentStep={guideState.currentStep}
-                    totalSteps={STEPS.length}
-                    steps={STEPS}
+                    totalSteps={getSteps().length}
+                    steps={getSteps()}
                     completedSteps={guideState.state.completedSteps}
                     onStepClick={handleStepClick}
                     isStepNavigable={canNavigateToStep}

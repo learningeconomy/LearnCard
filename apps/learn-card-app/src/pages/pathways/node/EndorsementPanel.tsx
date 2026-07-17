@@ -20,10 +20,10 @@ import { v4 as uuid } from 'uuid';
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
 import type { EndorsementRef } from '../types';
 
-const RELATIONSHIP_OPTIONS: Array<{
+const getRelationshipOptions = (): Array<{
     value: EndorsementRef['endorserRelationship'];
     label: string;
-}> = [
+}> => [
     { value: 'mentor', label: 'Mentor' },
     { value: 'peer', label: 'Peer' },
     { value: 'guardian', label: 'Guardian' },
@@ -185,7 +185,7 @@ const EndorsementPanel: React.FC<EndorsementPanelProps> = ({
                                            text-grayscale-900 bg-white focus:outline-none focus:ring-2
                                            focus:ring-emerald-500 focus:border-transparent font-poppins"
                             >
-                                {RELATIONSHIP_OPTIONS.map(o => (
+                                {getRelationshipOptions().map(o => (
                                     <option key={o.value} value={o.value}>
                                         {o.label}
                                     </option>

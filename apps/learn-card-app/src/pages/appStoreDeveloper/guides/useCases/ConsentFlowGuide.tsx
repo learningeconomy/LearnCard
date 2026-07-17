@@ -42,7 +42,7 @@ type AuthGrant = {
     description?: string;
 };
 
-const SCOPE_OPTIONS = [
+const getScopeOptions = () => [
     {
         label: m['developerPortal.guides.consentFlow.apiSetupStep.fullAccess'](),
         value: '*:*',
@@ -55,7 +55,7 @@ const SCOPE_OPTIONS = [
     },
 ];
 
-const STEPS = [
+const getSteps = () => [
     {
         id: 'create-contract',
         title: m['developerPortal.guides.consentFlow.steps.createContract'](),
@@ -522,7 +522,7 @@ const APISetupStep: React.FC<{
                             onChange={e => setSelectedScope(e.target.value)}
                             className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         >
-                            {SCOPE_OPTIONS.map(option => (
+                            {getScopeOptions().map(option => (
                                 <option key={option.value} value={option.value}>
                                     {option.label}
                                 </option>
@@ -530,7 +530,7 @@ const APISetupStep: React.FC<{
                         </select>
 
                         <p className="text-xs text-gray-500 mt-1">
-                            {SCOPE_OPTIONS.find(o => o.value === selectedScope)?.description}
+                            {getScopeOptions().find(o => o.value === selectedScope)?.description}
                         </p>
                     </div>
 
@@ -1106,7 +1106,7 @@ interface ConsentFlowGuideConfig {
 const ConsentFlowGuide: React.FC<GuideProps> = ({ selectedIntegration }) => {
     const { useUpdateIntegration } = useDeveloperPortal();
     const updateIntegrationMutation = useUpdateIntegration();
-    const guideState = useGuideState('consent-flow', STEPS.length, selectedIntegration);
+    const guideState = useGuideState('consent-flow', getSteps().length, selectedIntegration);
 
     // Ensure guideType is set to 'consent-flow' when entering this guide
     useEffect(() => {
@@ -1219,9 +1219,9 @@ const ConsentFlowGuide: React.FC<GuideProps> = ({ selectedIntegration }) => {
         (index: number) => {
             if (index === guideState.currentStep) return true;
             if (index < guideState.currentStep) return true;
-            if (guideState.isStepComplete(STEPS[index].id)) return true;
+            if (guideState.isStepComplete(getSteps()[index].id)) return true;
             for (let i = 0; i < index; i++) {
-                if (!guideState.isStepComplete(STEPS[i].id)) return false;
+                if (!guideState.isStepComplete(getSteps()[i].id)) return false;
             }
             return true;
         },
@@ -1233,8 +1233,8 @@ const ConsentFlowGuide: React.FC<GuideProps> = ({ selectedIntegration }) => {
             <div className="mb-8">
                 <StepProgress
                     currentStep={guideState.currentStep}
-                    totalSteps={STEPS.length}
-                    steps={STEPS}
+                    totalSteps={getSteps().length}
+                    steps={getSteps()}
                     completedSteps={guideState.state.completedSteps}
                     onStepClick={handleStepClick}
                     isStepNavigable={canNavigateToStep}

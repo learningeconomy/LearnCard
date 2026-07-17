@@ -41,7 +41,9 @@ interface CategoryConfig {
     tabBackgroundColor: string;
 }
 
-const categoryToConfig: Record<string, CategoryConfig> = {
+// A function (not a module-level const) so the translated `title`s resolve at
+// render time — a const would freeze them in the import-time locale.
+const getCategoryToConfig = (): Record<string, CategoryConfig> => ({
     [CredentialCategoryEnum.socialBadge]: {
         boostCategory: CredentialCategoryEnum.socialBadge, // category
         subheaderType: SubheaderTypeEnum.SocialBadge, // header type
@@ -112,7 +114,7 @@ const categoryToConfig: Record<string, CategoryConfig> = {
         searchInputColor: 'blue-300',
         tabBackgroundColor: 'blue-300',
     },
-};
+});
 
 type CredentialPageProps = {
     category: keyof typeof CredentialCategoryEnum;
@@ -129,6 +131,7 @@ const CredentialPage: React.FC<CredentialPageProps> = ({ category }) => {
 
     const { data: currentLCNUser } = useIsCurrentUserLCNUser();
 
+    const categoryToConfig = getCategoryToConfig();
     const config =
         categoryToConfig[category] ?? categoryToConfig[CredentialCategoryEnum.workHistory];
 
