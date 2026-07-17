@@ -35,12 +35,12 @@ const EndorsementMediaTypeForm: React.FC<{
 
     const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
-        onUpload: (_url, _file, data) => onUpload(data),
+        onUpload: (_url, file, data) => onUpload(file, data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
     });
 
-    const onUpload = (data: UploadRes) => {
-        const fileInfo = getAttachmentFileInfo(data?._file);
+    const onUpload = (file: File, data: UploadRes) => {
+        const fileInfo = getAttachmentFileInfo(file);
 
         setMedia({
             url: data?.url,

@@ -1,6 +1,8 @@
 import * as filestack from './filestack.helpers';
 import * as unsplash from './unsplash.helpers';
 import { createResource, Resource } from './Resource';
+import { DefaultMetadata, type ImageMetadata } from './imageMetadata';
+export { DefaultMetadata, getUrlsFromSrcSet, type ImageMetadata } from './imageMetadata';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from '../../config/tenantDefaults';
 import { getImageUploadProvider } from '../../storage/image-upload';
 
@@ -33,7 +35,7 @@ const getImageProviderForUrl = (url?: string) => {
 };
 
 export const getProvider = (url?: string): keyof typeof Providers | null => {
-    if (getImageProviderForUrl(url)) return 'filestack';
+    if (getImageProviderForUrl(url)?.name === 'filestack') return 'filestack';
 
     if (url && isUnsplashUrl(url)) return 'unsplash';
 
@@ -91,26 +93,6 @@ export const resizeAndChangeQuality = (
     return url;
 };
 
-export type ImageMetadata = {
-    filename: string;
-    mimetype: string;
-    size: number;
-    uploaded: number;
-    writeable: boolean;
-    height: number;
-    width: number;
-};
-
-export const DefaultMetadata: ImageMetadata = {
-    filename: '',
-    mimetype: '',
-    size: 1,
-    uploaded: 1,
-    writeable: false,
-    height: 1,
-    width: 1,
-};
-
 export const getMetadata = async (url: string): Promise<ImageMetadata> => {
     const imageProvider = getImageProviderForUrl(url);
 
@@ -122,23 +104,6 @@ export const getMetadata = async (url: string): Promise<ImageMetadata> => {
 };
 
 export const DEFAULT_RESOLUTIONS = [200, 400, 600];
-
-/**
- * Gets an array of URLs from a srcSet string
- *
- * @param srcSet HTML srcSet string (e.g. 'test.com/img 100w, test.com/img2 200w')
- *
- * @return URLs
- */
-export const getUrlsFromSrcSet = (srcSet: string): [string, string][] => {
-    return srcSet.split(/,? /).reduce<[string, string][]>((accumulator, current, index, array) => {
-        if (index % 2 === 0) return accumulator;
-
-        accumulator.push([array[index - 1], current]);
-
-        return accumulator;
-    }, []);
-};
 
 // Simple cache object to keep track of images already seen/loaded
 const cache = new Map<string, any>();

@@ -5,7 +5,7 @@ import {
     DefaultMetadata,
     getUrlsFromSrcSet,
     type ImageMetadata,
-} from '../../../filestack/images/images.helpers';
+} from '../../../filestack/images/imageMetadata';
 import type {
     TenantFilestackStorageConfig,
     TenantStorageConfig,
@@ -230,6 +230,7 @@ export const createFilestackProvider = (storage: TenantStorageConfig): ImageUplo
         const handle = getHandle(url);
 
         if (!handle) return url;
+        if (!options) return `${cdnBase}/preview/${handle}`;
 
         const resize = options?.width
             ? `resize=width:${options.width}${options.height ? `,height:${options.height}` : ''}/`

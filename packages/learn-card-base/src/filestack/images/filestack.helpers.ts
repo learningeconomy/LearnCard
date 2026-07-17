@@ -1,6 +1,6 @@
 import localForage from 'localforage';
 
-import { ImageMetadata, DefaultMetadata, getUrlsFromSrcSet } from './images.helpers';
+import { DefaultMetadata, getUrlsFromSrcSet, type ImageMetadata } from './imageMetadata';
 import { getLogger } from '../../logging/logger';
 
 const log = getLogger('filestack-helpers');

@@ -1,4 +1,4 @@
-import type { ImageMetadata } from '../../filestack/images/images.helpers';
+import type { ImageMetadata } from '../../filestack/images/imageMetadata';
 
 export type UploadRes = {
     filename: string;

@@ -6,7 +6,7 @@ export const getFileMetadata = async (url: string) => {
     if (!isKnownImageUploadUrl(url)) return;
 
     const metadata = await getMetadata(url);
-    const fileExtension = metadata.filename ? metadata.filename.split('.')[1] : undefined;
+    const fileExtension = metadata.filename.split('.').pop()?.toLowerCase();
 
     return {
         fileExtension,

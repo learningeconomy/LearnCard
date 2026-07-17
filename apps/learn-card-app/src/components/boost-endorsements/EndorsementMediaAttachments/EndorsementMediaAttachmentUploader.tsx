@@ -24,14 +24,14 @@ export const EndorsementMediaAttachmentUploader: React.FC<{
 
     const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
-        onUpload: (_url, _file, data) => onImageUpload(data),
+        onUpload: (_url, file, data) => onImageUpload(file, data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
     });
 
     const { handleFileSelect: handleDocumentSelect, isLoading: fileUploadLoading } = useImageUpload(
         {
             fileType: VIEWER_MIME_TYPES,
-            onUpload: (_url, _file, data) => onDocumentUpload(data),
+            onUpload: (_url, file, data) => onDocumentUpload(file, data),
             options: { onProgress: event => setUploadProgress(event.totalPercent) },
         }
     );
@@ -50,10 +50,10 @@ export const EndorsementMediaAttachmentUploader: React.FC<{
         setActiveMediaType(undefined);
     };
 
-    const onImageUpload = (data: UploadRes) => {
+    const onImageUpload = (file: File, data: UploadRes) => {
         setUploadProgress(false);
 
-        const fileInfo = getAttachmentFileInfo(data?._file);
+        const fileInfo = getAttachmentFileInfo(file);
 
         setLocalMedia({
             url: data?.url,
@@ -65,10 +65,10 @@ export const EndorsementMediaAttachmentUploader: React.FC<{
         setActiveMediaType(EndorsementMediaOptionsEnum.photo);
     };
 
-    const onDocumentUpload = (data: UploadRes) => {
+    const onDocumentUpload = (file: File, data: UploadRes) => {
         setUploadProgress(false);
 
-        const fileInfo = getAttachmentFileInfo(data?._file);
+        const fileInfo = getAttachmentFileInfo(file);
 
         setLocalMedia({
             url: data?.url,

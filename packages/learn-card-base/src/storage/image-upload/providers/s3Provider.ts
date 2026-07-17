@@ -1,4 +1,4 @@
-import { DefaultMetadata } from '../../../filestack/images/images.helpers';
+import { DefaultMetadata } from '../../../filestack/images/imageMetadata';
 import type { TenantS3StorageConfig, TenantStorageConfig } from '../../../config/tenantConfig';
 import { getLogger } from '../../../logging/logger';
 import type { ImageUploadOptions, ImageUploadProvider, UploadRes } from '../types';
@@ -35,6 +35,15 @@ export const createS3Provider = (storage: TenantStorageConfig): ImageUploadProvi
             return new URL(url).pathname.replace(/^\//, '');
         } catch {
             return url.replace(`${cdnBase}/`, '').replace(/^\//, '');
+        }
+    };
+    const getFilename = (url: string): string => {
+        const filename = getHandle(url).split('/').pop() ?? '';
+
+        try {
+            return decodeURIComponent(filename);
+        } catch {
+            return filename;
         }
     };
 
@@ -125,7 +134,7 @@ export const createS3Provider = (storage: TenantStorageConfig): ImageUploadProvi
         uploadFromUrl,
         getCdnUrl,
         getHandle,
-        getMetadata: async () => DefaultMetadata,
+        getMetadata: async url => ({ ...DefaultMetadata, filename: getFilename(url) }),
         getFileType: async () => '',
         fixUrl: url => url,
         resizeUrl: url => url,

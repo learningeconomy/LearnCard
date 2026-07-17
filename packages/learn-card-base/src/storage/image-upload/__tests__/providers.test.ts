@@ -8,6 +8,8 @@ import type {
 } from '../../../config/tenantConfig';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from '../../../config/tenantDefaults';
 import { isKnownImageUploadUrl, setImageUploadConfigFromTenant } from '../config';
+import { getProvider } from '../../../filestack/images/images.helpers';
+import { getFileMetadata } from '../../../helpers/attachment.helpers';
 
 vi.mock('../../../filestack/ReactFileStackClient', () => ({
     client: {
@@ -52,6 +54,16 @@ describe('image upload providers', () => {
 
         expect(provider.fixUrl('https://cdn.example.com/abc', 'image/png', true)).toContain(
             'https://cdn.example.com/rotate=deg:exif/auto_image/output=format:webp/abc'
+        );
+    });
+
+    it('uses Filestack document previews without changing thumbnail previews', () => {
+        const provider = createFilestackProvider(filestackConfig);
+        const url = 'https://cdn.example.com/abc';
+
+        expect(provider.getPreviewUrl(url)).toBe('https://cdn.example.com/preview/abc');
+        expect(provider.getPreviewUrl(url, { width: 300, height: 200 })).toBe(
+            'https://cdn.example.com/output=format:jpg/resize=width:300,height:200/abc'
         );
     });
 
@@ -101,5 +113,19 @@ describe('image upload providers', () => {
         expect(isKnownImageUploadUrl('https://example.com/cdn.filestackcontent.com/legacy')).toBe(
             false
         );
+    });
+
+    it('derives S3 attachment metadata from the object key', async () => {
+        setImageUploadConfigFromTenant({
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+            storage: s3Config,
+        });
+
+        const url = 'https://cdn.mytenant.app/documents/my.resume.pdf';
+
+        expect(getProvider(url)).toBeNull();
+        await expect(getFileMetadata(url)).resolves.toMatchObject({
+            fileExtension: 'pdf',
+        });
     });
 });
