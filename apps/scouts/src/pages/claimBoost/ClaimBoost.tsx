@@ -163,8 +163,8 @@ export const ClaimBoostModal: React.FC<{
     });
 
     const { newModal: newLoaderModal, closeModal: closeLoaderModal } = useModal({
-        mobile: ModalTypes.Cancel,
-        desktop: ModalTypes.Cancel,
+        mobile: ModalTypes.FullScreen,
+        desktop: ModalTypes.FullScreen,
     });
 
     const openLoggedOutModal = () => {
@@ -310,7 +310,7 @@ export const ClaimBoostModal: React.FC<{
         actionButtonText = 'Accept';
     }
 
-    const isTroopIdClaim = isTroopCredential(boost);
+    const isTroopIdClaim = boost ? isTroopCredential(boost) : false;
 
     const boostExists = !!boost && !loading;
 
@@ -394,27 +394,51 @@ export const ClaimBoostModal: React.FC<{
 };
 
 const ClaimBoost: React.FC = () => {
+    const history = useHistory();
+    const query = usePathQuery();
+    const isLoggedIn = useIsLoggedIn();
+
     const { newModal, closeAllModals } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
     });
 
-    const query = usePathQuery();
-    const uriParam = query.get('boostUri') || undefined;
-    const challengeParam = query.get('challenge') || undefined;
+    const boostUri = query.get('boostUri') || undefined;
+    const challenge = query.get('challenge') || undefined;
+    const redirectTo = `${history.location.pathname}${history.location.search}`;
 
     useEffect(() => {
+        redirectStore.set.lcnRedirect(redirectTo);
+    }, [redirectTo]);
+
+    useEffect(() => {
+        if (!isLoggedIn) return;
+
         // opens 2 modals for some reason, but looks fine...
         newModal(
             <ClaimBoostModal
-                uri={uriParam}
-                claimChallenge={challengeParam}
+                uri={boostUri}
+                claimChallenge={challenge}
                 dismissClaimModal={closeAllModals}
             />
         );
         // only open once per route load
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [isLoggedIn, boostUri, challenge]);
+
+    if (!isLoggedIn) {
+        return (
+            <ClaimBoostLoggedOutPrompt
+                handleCloseModal={() => history.push('/')}
+                handleRedirectTo={() => {
+                    const redirectTo = `${history.location.pathname}${history.location.search}`;
+
+                    redirectStore.set.lcnRedirect(redirectTo);
+                    history.push(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+                }}
+            />
+        );
+    }
 
     return <IonPage className="bg-grayscale-100" />;
 };
