@@ -282,7 +282,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                     {loading && (
                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full">
                             <IonSpinner color="black" />
-                            <p className="mt-2 font-bold text-lg">Loading...</p>
+                            <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                         </section>
                     )}
                     {!loading && connections.length > 0 && search?.length === 0 && (
@@ -315,7 +315,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                     {isLoading && search?.length > 0 && (
                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
                             <IonSpinner color="black" />
-                            <p className="mt-2 font-bold text-lg">Loading...</p>
+                            <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                         </section>
                     )}
                     {search?.length > 0 && searchResults?.length > 0 && !isLoading && (

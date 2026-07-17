@@ -3,6 +3,7 @@ import Typewriter from 'typewriter-effect';
 import _ from 'lodash-es';
 
 import * as m from '../../../paraglide/messages.js';
+import { useLocale } from '../../../i18n';
 
 import { IonContent, IonPage, IonRow } from '@ionic/react';
 import { useTenantBrandingAssets } from '../../../config/brandingAssets';
@@ -10,6 +11,8 @@ import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 import { useTheme } from '../../../theme/hooks/useTheme';
 
 export const LoginLoadingPage: React.FC = () => {
+    const locale = useLocale();
+
     const messages = useMemo(
         () =>
             _.shuffle([
@@ -25,7 +28,7 @@ export const LoginLoadingPage: React.FC = () => {
                 m['login.loader.messages.9'](),
                 // eslint-disable-next-line react-hooks/exhaustive-deps -- Paraglide messages are static at runtime; shuffle on mount only
             ]),
-        []
+        [locale]
     );
     const { textLogo } = useTenantBrandingAssets();
     const { theme } = useTheme();

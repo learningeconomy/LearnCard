@@ -65,3 +65,39 @@ jobs:
             # apps/learn-card-app/scripts/check-i18n-keys.mjs.
             - name: Check for missing i18n message keys
               run: node apps/learn-card-app/scripts/check-i18n-keys.mjs
+
+            # Interpolation integrity: every es/fr/ar value must carry the same
+            # {{vars}} and <n> markup as its en source. Renamed/hallucinated vars
+            # and markup drift fail hard; correct linguistic drops are allowlisted
+            # in scripts/i18n-marker-allowlist.json.
+            - name: Check i18n interpolation markers
+              run: node apps/learn-card-app/scripts/check-i18n-markers.mjs --strict
+
+            # English-fallback guard: no es/fr/ar value may be a verbatim copy of
+            # the English source (renders English under a non-English UI). Verified
+            # legitimate cognates/brand/code are baselined in
+            # scripts/i18n-untranslated-allowlist.json.
+            - name: Check for untranslated (English-fallback) i18n values
+              run: node apps/learn-card-app/scripts/check-i18n-untranslated.mjs --strict
+
+    # Separate job: unlike I18nKeys (pure-Node, no install), this one needs eslint
+    # + @typescript-eslint/parser, so it pays for the dependency install.
+    I18nMemos:
+        name: Check for locale-frozen i18n memos
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v3
+              with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
+
+            # `m['key']()` resolved eagerly inside a useMemo with no locale dep
+            # sticks in the mount-time locale after a language switch. AST-based
+            # (eslint-rules/no-frozen-i18n-memo.js) because regex can't tell an
+            # eager call from one deferred inside an event handler.
+            - name: Run frozen-memo guard
+              working-directory: apps/learn-card-app
+              run: bun run i18n:check-memos

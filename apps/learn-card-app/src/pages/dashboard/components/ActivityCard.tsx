@@ -13,6 +13,7 @@ import type { NotificationType } from 'packages/plugins/lca-api-plugin/src/types
 import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEarnedCard';
 
 import * as m from '../../../paraglide/messages.js';
+import { useLocale } from '../../../i18n';
 
 type ActivityRecord = {
     id: string;
@@ -199,6 +200,8 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
 }) => {
     const history = useHistory();
 
+    const locale = useLocale();
+
     const actionableItems = useMemo<ActionableItem[]>(() => {
         const out: ActionableItem[] = [];
 
@@ -250,7 +253,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
         }
 
         return out;
-    }, [pendingConnections, pendingContractRequests, notifications, history]);
+    }, [pendingConnections, pendingContractRequests, notifications, history, locale]);
 
     const actionableTotal = actionableItems.length;
     const visibleActionable = actionableItems.slice(0, MAX_ACTIONABLE);

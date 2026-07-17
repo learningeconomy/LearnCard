@@ -2,10 +2,9 @@ import React from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
 import { ChevronDown, X } from 'lucide-react';
 
-import {
-    useGetCurrentLCNUser,
-    useModal,
-} from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
+
+import { useGetCurrentLCNUser, useModal } from 'learn-card-base';
 
 import { AccountSelector, AccountProfile } from './AccountSelector';
 
@@ -14,11 +13,10 @@ export interface AccountSwitcherProps {
 }
 
 // Regex to detect integration ID in URL path (UUID format)
-const INTEGRATION_ID_REGEX = /\/integrations\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+const INTEGRATION_ID_REGEX =
+    /\/integrations\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 
-export const AccountSwitcher: React.FC<AccountSwitcherProps> = ({
-    onAccountSwitch,
-}) => {
+export const AccountSwitcher: React.FC<AccountSwitcherProps> = ({ onAccountSwitch }) => {
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { newModal, closeModal } = useModal();
     const location = useLocation();
@@ -40,7 +38,9 @@ export const AccountSwitcher: React.FC<AccountSwitcherProps> = ({
         newModal(
             <div className="bg-white rounded-2xl w-full max-w-md mx-auto overflow-hidden">
                 <div className="flex items-center justify-between p-4 border-b border-gray-100">
-                    <h2 className="text-lg font-semibold text-gray-800">Switch Account</h2>
+                    <h2 className="text-lg font-semibold text-gray-800">
+                        {m['developerPortal.components.accountSwitcher.switchAccount']()}
+                    </h2>
 
                     <button
                         onClick={closeModal}

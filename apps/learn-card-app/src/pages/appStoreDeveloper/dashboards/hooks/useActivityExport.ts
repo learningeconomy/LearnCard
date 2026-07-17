@@ -5,6 +5,7 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('use-activity-export');
 
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
+import * as m from '../../../../paraglide/messages.js';
 
 import {
     CredentialActivityRecord,
@@ -48,21 +49,23 @@ interface CsvRow {
     activityId: string;
 }
 
-const CSV_HEADERS = [
-    'Credential Name',
-    'Credential Category',
-    'Recipient Name',
-    'Recipient ID',
-    'Recipient Type',
-    'Status',
-    'Delivery Method',
-    'Date Sent',
-    'Date Claimed',
-    'Time to Claim (hours)',
-    'Error Details',
-    'Source',
-    'Activity ID',
-];
+function getCsvHeaders(): string[] {
+    return [
+        m['developerPortal.dashboards.csv.headers.credentialName'](),
+        m['developerPortal.dashboards.csv.headers.credentialCategory'](),
+        m['developerPortal.dashboards.csv.headers.recipientName'](),
+        m['developerPortal.dashboards.csv.headers.recipientId'](),
+        m['developerPortal.dashboards.csv.headers.recipientType'](),
+        m['developerPortal.dashboards.csv.headers.status'](),
+        m['developerPortal.dashboards.csv.headers.deliveryMethod'](),
+        m['developerPortal.dashboards.csv.headers.dateSent'](),
+        m['developerPortal.dashboards.csv.headers.dateClaimed'](),
+        m['developerPortal.dashboards.csv.headers.timeToClaim'](),
+        m['developerPortal.dashboards.csv.headers.errorDetails'](),
+        m['developerPortal.dashboards.csv.headers.source'](),
+        m['developerPortal.dashboards.csv.headers.activityId'](),
+    ];
+}
 
 const UTF8_BOM = '\uFEFF';
 
@@ -82,11 +85,11 @@ function escapeCSVField(field: string): string {
 function formatRecipientType(type: string): string {
     switch (type) {
         case 'email':
-            return 'Email';
+            return m['developerPortal.dashboards.activity.recipientType.email']();
         case 'phone':
-            return 'Phone';
+            return m['developerPortal.dashboards.activity.recipientType.phone']();
         case 'profile':
-            return 'Profile';
+            return m['developerPortal.dashboards.activity.recipientType.profile']();
         default:
             return type;
     }
@@ -95,20 +98,25 @@ function formatRecipientType(type: string): string {
 function deriveStatus(chain: CredentialActivityRecord[]): string {
     const eventTypes = chain.map(e => e.eventType);
 
-    if (eventTypes.includes('CLAIMED')) return 'Claimed';
-    if (eventTypes.includes('FAILED')) return 'Failed';
-    if (eventTypes.includes('EXPIRED')) return 'Expired';
-    if (eventTypes.includes('DELIVERED')) return 'Delivered';
-    if (eventTypes.includes('CREATED')) return 'Sent';
+    if (eventTypes.includes('CLAIMED'))
+        return m['developerPortal.dashboards.activity.csvStatus.claimed']();
+    if (eventTypes.includes('FAILED'))
+        return m['developerPortal.dashboards.activity.csvStatus.failed']();
+    if (eventTypes.includes('EXPIRED'))
+        return m['developerPortal.dashboards.activity.csvStatus.expired']();
+    if (eventTypes.includes('DELIVERED'))
+        return m['developerPortal.dashboards.activity.csvStatus.delivered']();
+    if (eventTypes.includes('CREATED'))
+        return m['developerPortal.dashboards.activity.csvStatus.sent']();
 
-    return 'Unknown';
+    return m['developerPortal.dashboards.activity.csvStatus.unknown']();
 }
 
 function deriveDeliveryMethod(record: CredentialActivityRecord): string {
     if (record.recipientType === 'email' || record.recipientType === 'phone') {
-        return 'Email Delivery';
+        return m['developerPortal.dashboards.activity.deliveryMethod.email']();
     }
-    return 'Direct to Profile';
+    return m['developerPortal.dashboards.activity.deliveryMethod.direct']();
 }
 
 function findEventTimestamp(
@@ -238,7 +246,10 @@ async function downloadCsvNative(
         directory: Directory.Documents,
     });
 
-    presentToast(`CSV saved to Documents: ${filename}`, ToastTypeEnum.Success);
+    presentToast(
+        m['developerPortal.dashboards.activity.csvSaved']({ filename }),
+        ToastTypeEnum.Success
+    );
 }
 
 export function useActivityExport(): {
@@ -378,7 +389,7 @@ export function useActivityExport(): {
                 }
 
                 let csvContent = UTF8_BOM;
-                csvContent += CSV_HEADERS.map(escapeCSVField).join(',') + '\n';
+                csvContent += getCsvHeaders().map(escapeCSVField).join(',') + '\n';
 
                 for (const record of allRecords) {
                     const chain = chainMap[record.activityId] || [record];
@@ -402,7 +413,10 @@ export function useActivityExport(): {
                     setState({
                         isExporting: false,
                         progress: null,
-                        error: err instanceof Error ? err : new Error('Export failed'),
+                        error:
+                            err instanceof Error
+                                ? err
+                                : new Error(m['developerPortal.dashboards.export.exportFailed']()),
                     });
                 }
                 return false;

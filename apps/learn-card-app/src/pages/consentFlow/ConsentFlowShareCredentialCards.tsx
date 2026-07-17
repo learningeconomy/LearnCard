@@ -153,7 +153,7 @@ const VerifiableDataCredentialCard: React.FC<{
                 <p className="mt-1 text-sm leading-relaxed text-grayscale-700">
                     {dataKey
                         ? isLoading
-                            ? 'Loading verifiable data...'
+                            ? m['common.loadingVerifiableData']()
                             : formatVerifiableDataSummary(savedData)
                         : 'This credential does not expose a data key.'}
                 </p>

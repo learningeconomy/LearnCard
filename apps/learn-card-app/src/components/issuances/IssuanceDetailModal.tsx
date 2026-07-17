@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { formatLocaleDate, formatLocaleTime } from '../../i18n/formatters';
 import {
     CheckCircle2,
     AlertTriangle,
@@ -338,14 +339,14 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                             <div className="min-w-0 flex-1">
                                 <p className="text-sm text-gray-500">Event Time</p>
                                 <p className="font-medium text-gray-900">
-                                    {timestamp.toLocaleDateString('en-US', {
+                                    {formatLocaleDate(timestamp, {
                                         weekday: 'short',
                                         year: 'numeric',
                                         month: 'short',
                                         day: 'numeric',
                                     })}
                                     {' at '}
-                                    {timestamp.toLocaleTimeString('en-US', {
+                                    {formatLocaleTime(timestamp, {
                                         hour: '2-digit',
                                         minute: '2-digit',
                                     })}
@@ -445,7 +446,7 @@ export const IssuanceDetailModal: React.FC<IssuanceDetailModalProps> = ({
                                                         </div>
 
                                                         <span className="text-xs text-gray-400">
-                                                            {eventTime.toLocaleTimeString('en-US', {
+                                                            {formatLocaleTime(eventTime, {
                                                                 hour: '2-digit',
                                                                 minute: '2-digit',
                                                             })}

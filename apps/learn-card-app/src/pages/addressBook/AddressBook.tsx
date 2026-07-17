@@ -16,6 +16,7 @@ import AddressBookPendingConnections from './addressBookPendingConnections/Addre
 import AddressBookConnectionRequests from './addressBookConnectionRequests/AddressBookConnectionRequests';
 import AddressBookBlockedContacts from './addressBookBlockedContacts/AddressBookBlockedContacts';
 import AddressBookTabs from './addressBookTabs/AddressBookTabs';
+import * as m from '../../paraglide/messages.js';
 
 import {
     useGetSearchProfiles,
@@ -197,7 +198,9 @@ const AddressBook: React.FC = () => {
                                     {showLoadingSpinner && (
                                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full my-4">
                                             <IonSpinner color="black" />
-                                            <p className="mt-2 font-bold text-lg">Loading...</p>
+                                            <p className="mt-2 font-bold text-lg">
+                                                {m['common.loading']()}
+                                            </p>
                                         </section>
                                     )}
 
