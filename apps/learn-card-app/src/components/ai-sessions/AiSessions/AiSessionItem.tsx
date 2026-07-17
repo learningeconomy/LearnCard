@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatLocaleDate } from '../../../i18n/formatters';
 
 import { m } from '../../../paraglide/messages.js';
 
@@ -83,7 +84,7 @@ export const AiSessionItem: React.FC<{
     const subtitleTutor = sessionApp?.name || session?.record?.app || 'AI Tutor';
     const sessionImage = sessionApp?.img || session?.vc?.image || topicVc?.image;
     const dateLabel = isCompleted
-        ? new Date(session?.vc?.issuanceDate ?? Date.now()).toLocaleDateString('en-US', {
+        ? formatLocaleDate(new Date(session?.vc?.issuanceDate ?? Date.now()), {
               month: 'short',
               day: 'numeric',
           })
