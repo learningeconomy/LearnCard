@@ -20,14 +20,22 @@ import {
     resolveLanguageSelectorConfig,
     type LanguageSelectorConfig,
 } from './languageSelectorConfig';
-import { useLocale, useChangeLocale } from './index';
+import { useLocale, useChangeLocale, SUPPORTED_LANGUAGES } from './index';
+import { getEffectiveSupportedLanguages } from './detectLocale';
 
 /** Resolve the current language-selector configuration from LaunchDarkly. */
 export const useLanguageSelectorConfig = (): LanguageSelectorConfig => {
     const flags = useFlags();
     const flagValue = flags?.hideLanguageSelector;
 
-    return useMemo(() => resolveLanguageSelectorConfig(flagValue), [flagValue]);
+    return useMemo(
+        () =>
+            resolveLanguageSelectorConfig(
+                flagValue,
+                getEffectiveSupportedLanguages(SUPPORTED_LANGUAGES)
+            ),
+        [flagValue]
+    );
 };
 
 /**

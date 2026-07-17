@@ -23,7 +23,7 @@ import * as m from '../../../../paraglide/messages.js';
 import { StepProgress, CodeOutputPanel, StatusIndicator } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
 
-const STEPS = [
+const getSteps = () => [
     {
         id: 'understand',
         title: m['developerPortal.guides.verifyCredentials.steps.understandVCs'](),
@@ -587,7 +587,7 @@ const VerifyCredentialsGuide: React.FC<{
     selectedIntegration: LCNIntegration | null;
     setSelectedIntegration: (integration: LCNIntegration | null) => void;
 }> = ({ selectedIntegration }) => {
-    const guideState = useGuideState('verify-credentials', STEPS.length, selectedIntegration);
+    const guideState = useGuideState('verify-credentials', getSteps().length, selectedIntegration);
 
     const handleStepComplete = (stepId: string) => {
         guideState.markStepComplete(stepId);
@@ -628,8 +628,8 @@ const VerifyCredentialsGuide: React.FC<{
             <div className="mb-8">
                 <StepProgress
                     currentStep={guideState.currentStep}
-                    totalSteps={STEPS.length}
-                    steps={STEPS}
+                    totalSteps={getSteps().length}
+                    steps={getSteps()}
                     completedSteps={guideState.state.completedSteps}
                     onStepClick={guideState.goToStep}
                 />

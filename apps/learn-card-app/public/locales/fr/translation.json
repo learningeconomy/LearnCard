@@ -912,7 +912,8 @@
             },
             "error": {
                 "invalidEmail": "E-mail manquant ou invalide"
-            }
+            },
+            "label": "E-mail"
         },
         "phone": {
             "placeholder": "Numéro de téléphone",

@@ -44,7 +44,7 @@ const friendlyError = (e: unknown): string => {
     return m['recovery.somethingWrong']();
 };
 
-const RECOVERY_COPY: Record<RecoveryReason, { title: string; description: string }> = {
+const getRecoveryCopy = (): Record<RecoveryReason, { title: string; description: string }> => ({
     new_device: {
         title: m['recovery.verifyIdentity'](),
         description: m['recovery.newDeviceDesc'](),
@@ -57,12 +57,12 @@ const RECOVERY_COPY: Record<RecoveryReason, { title: string; description: string
         title: m['recovery.restoreAccess'](),
         description: m['recovery.restoreAccessDesc'](),
     },
-};
+});
 
-const DEFAULT_COPY = {
+const getDefaultCopy = () => ({
     title: m['recovery.restoreAccess'](),
     description: m['recovery.restoreAccessShort'](),
-};
+});
 
 export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     availableMethods,
@@ -230,13 +230,15 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
             <div className="p-6 max-w-md mx-auto">
                 <div className="text-center mb-6">
                     <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
-                        {recoveryReason ? RECOVERY_COPY[recoveryReason].title : DEFAULT_COPY.title}
+                        {recoveryReason
+                            ? getRecoveryCopy()[recoveryReason].title
+                            : getDefaultCopy().title}
                     </h2>
 
                     <p className="text-sm text-grayscale-600 leading-relaxed">
                         {recoveryReason
-                            ? RECOVERY_COPY[recoveryReason].description
-                            : DEFAULT_COPY.description}
+                            ? getRecoveryCopy()[recoveryReason].description
+                            : getDefaultCopy().description}
                     </p>
                 </div>
 

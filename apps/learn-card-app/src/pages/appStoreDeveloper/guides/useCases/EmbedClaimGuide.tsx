@@ -39,7 +39,7 @@ import type { ManagedTemplate } from '../../dashboards/hooks/useTemplateDetails'
 import type { GuideProps } from '../GuidePage';
 import { getResolvedTenantConfig, getLCNApiUrl } from '../../../../config/bootstrapTenantConfig';
 
-const STEPS = [
+const getSteps = () => [
     { id: 'publishable-key', title: m['developerPortal.guides.embedClaim.steps.publishableKey']() },
     { id: 'add-target', title: m['developerPortal.guides.embedClaim.steps.addTarget']() },
     { id: 'load-sdk', title: m['developerPortal.guides.embedClaim.steps.loadSdk']() },
@@ -1277,7 +1277,7 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
         ensureSigningAuthority().catch(err => log.error('ensureSigningAuthority failed', err));
     }, []);
 
-    const guideState = useGuideState('embed-claim', STEPS.length, selectedIntegration);
+    const guideState = useGuideState('embed-claim', getSteps().length, selectedIntegration);
 
     // Derive publishable key from selected integration
     const publishableKey = selectedIntegration?.publishableKey || '';
@@ -1404,9 +1404,9 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
         (index: number) => {
             if (index === guideState.currentStep) return true;
             if (index < guideState.currentStep) return true;
-            if (guideState.isStepComplete(STEPS[index].id)) return true;
+            if (guideState.isStepComplete(getSteps()[index].id)) return true;
             for (let i = 0; i < index; i++) {
-                if (!guideState.isStepComplete(STEPS[i].id)) return false;
+                if (!guideState.isStepComplete(getSteps()[i].id)) return false;
             }
             return true;
         },
@@ -1418,8 +1418,8 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
             <div className="mb-8">
                 <StepProgress
                     currentStep={guideState.currentStep}
-                    totalSteps={STEPS.length}
-                    steps={STEPS}
+                    totalSteps={getSteps().length}
+                    steps={getSteps()}
                     completedSteps={guideState.state.completedSteps}
                     onStepClick={handleStepClick}
                     isStepNavigable={canNavigateToStep}
