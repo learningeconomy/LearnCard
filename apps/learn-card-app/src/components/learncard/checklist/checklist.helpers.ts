@@ -27,7 +27,7 @@ export const checklistItems: ChecklistItem[] = [
     },
     {
         id: 2,
-        title: 'Add Certificates',
+        title: 'Add Certificate',
         type: ChecklistEnum.uploadCertificates,
         uploadType: UploadTypesEnum.Certificate,
     },
