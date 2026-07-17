@@ -88,6 +88,11 @@ export const useCapgoUpdate = (): CapgoUpdateState & { startUpdate: () => Promis
             iamDebug('capgo:applying', { version });
             setState(s => ({ ...s, status: 'applying', progress: 100 }));
 
+            // Deliberately no terminal "success" state after set(): applying
+            // the bundle reloads the webview and tears down this JS context,
+            // so the "Installing..." UI is the last frame the user sees. If a
+            // non-reloading update path is ever introduced, this needs a
+            // success state or the spinner will hang forever.
             await CapacitorUpdater.set({ id: bundle.id });
         } catch (err) {
             const message = (err as { message?: string })?.message ?? '';

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
 
 import { useInAppMessages } from './useInAppMessages';
 import { markMessageSeen } from './dismissalStore';
@@ -82,20 +83,34 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
             override: isOverride,
         });
 
+        // Marked seen on first render, not on interaction. Safe because this
+        // only runs post-gate (auth settled + route allowed + settleDelayMs of
+        // stability), so a transient boot/navigation flicker cannot burn a
+        // "once" impression. If the gate's settle debounce is ever removed,
+        // revisit this.
         if (!isOverride) markMessageSeen(active.id, active.frequency);
     }, [active, isOverride]);
 
-    if (!active) return null;
+    // AnimatePresence must live here, in the always-mounted host: the
+    // presented component is removed wholesale on close, so exit animations
+    // only play if the presence boundary survives that unmount.
+    const key = active ? `${active.id}:${active.presentation}` : null;
 
-    if (active.presentation === 'toast') {
-        return <InAppMessageToast message={active} onClose={() => close(active.id)} />;
-    }
+    return (
+        <AnimatePresence>
+            {active && active.presentation === 'toast' && (
+                <InAppMessageToast key={key} message={active} onClose={() => close(active.id)} />
+            )}
 
-    if (active.presentation === 'banner') {
-        return <InAppMessageBanner message={active} onClose={() => close(active.id)} />;
-    }
+            {active && active.presentation === 'banner' && (
+                <InAppMessageBanner key={key} message={active} onClose={() => close(active.id)} />
+            )}
 
-    return <InAppMessageModal message={active} onClose={() => close(active.id)} />;
+            {active && active.presentation === 'modal' && (
+                <InAppMessageModal key={key} message={active} onClose={() => close(active.id)} />
+            )}
+        </AnimatePresence>
+    );
 };
 
 export default InAppMessageHost;

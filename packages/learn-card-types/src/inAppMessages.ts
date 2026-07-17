@@ -77,6 +77,10 @@ export const inAppMessageActionStyleValidator = z
     .default('secondary');
 export type InAppMessageActionStyle = z.infer<typeof inAppMessageActionStyleValidator>;
 
+// Action validators use .passthrough() (old clients tolerate new fields on
+// actions), while predicate validators are .strict() so a typo in targeting
+// fails closed at parse time instead of silently matching everyone.
+
 /** Navigate to an in-app route (react-router path). */
 export const internalLinkActionValidator = z
     .object({ type: z.literal('internalLink'), path: z.string() })

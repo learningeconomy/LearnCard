@@ -5,6 +5,33 @@ export interface MessageMediaProps {
     media: InAppMessageMedia;
 }
 
+// Parsed with URL/URLSearchParams instead of a regex: the previous
+// `watch\?.+&v=` pattern backtracked polynomially on adversarial input
+// (CodeQL js/polynomial-redos). Linear by construction.
+export const getYouTubeVideoId = (raw: string): string | null => {
+    try {
+        const url = new URL(raw);
+        const host = url.hostname.toLowerCase();
+        const segments = url.pathname.split('/').filter(Boolean);
+
+        if (host === 'youtu.be' || host === 'www.youtu.be') return segments[0] ?? null;
+
+        if (host === 'youtube.com' || host.endsWith('.youtube.com')) {
+            const v = url.searchParams.get('v');
+
+            if (v) return v;
+
+            if (segments[0] === 'embed' || segments[0] === 'v' || segments[0] === 'shorts') {
+                return segments[1] ?? null;
+            }
+        }
+
+        return null;
+    } catch {
+        return null;
+    }
+};
+
 export const MessageMedia: React.FC<MessageMediaProps> = ({ media }) => {
     const getAspectRatio = (aspect: string) => {
         const [w, h] = aspect.split(':').map(Number);
@@ -13,11 +40,7 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({ media }) => {
     };
 
     if (media.type === 'youtube') {
-        // Extract video ID from various YouTube URL formats
-        const match = media.url.match(
-            /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/
-        );
-        const videoId = match ? match[1] : null;
+        const videoId = getYouTubeVideoId(media.url);
 
         if (!videoId) return null;
 

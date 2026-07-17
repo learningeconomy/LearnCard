@@ -16,7 +16,7 @@ const parseSemver = (raw: string): [number, number, number] | null => {
     const core = raw.trim().replace(/^v/i, '').split(/[-+]/)[0];
     const parts = core.split('.');
 
-    if (parts.length === 0 || parts.length > 3) return null;
+    if (parts.length > 3) return null;
 
     const nums = parts.map(p => Number(p));
 

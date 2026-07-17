@@ -119,6 +119,12 @@ export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({ message,
             y: 0,
             transition: { type: 'spring', damping: 25, stiffness: 300 },
         },
+        exit: {
+            opacity: 0,
+            scale: shouldReduceMotion ? 1 : 0.96,
+            y: shouldReduceMotion ? 0 : -12,
+            transition: { duration: 0.2 },
+        },
     };
 
     return (
@@ -131,6 +137,7 @@ export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({ message,
                 variants={variants}
                 initial="hidden"
                 animate="visible"
+                exit="exit"
             >
                 <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-80" />
 

@@ -49,6 +49,12 @@ const EMPTY_REPORT: InAppMessagesReport = {
     winnerId: null,
 };
 
+// Module-level singletons backing the dev tooling (window.__inAppMessages,
+// the debug panel). They assume the single-host invariant: exactly one
+// InAppMessageHost is mounted per app. Multiple concurrent callers would
+// clobber each other's snapshots (harmless for rendering — each hook call
+// derives its own state — but the "last report" would be whichever
+// evaluated most recently).
 let lastReport: InAppMessagesReport = EMPTY_REPORT;
 let lastMessages: InAppMessage[] = [];
 
