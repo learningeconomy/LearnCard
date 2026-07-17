@@ -5,10 +5,11 @@ import SlimCaretRight from '../../svgs/SlimCaretRight';
 
 type CheckListItemProps = {
     checkListItem: ChecklistItem;
+    count?: number;
     onOpen: () => void;
 };
 
-export const CheckListItem: React.FC<CheckListItemProps> = ({ checkListItem, onOpen }) => {
+export const CheckListItem: React.FC<CheckListItemProps> = ({ checkListItem, count, onOpen }) => {
     return (
         <li className="w-full">
             <button
@@ -26,7 +27,14 @@ export const CheckListItem: React.FC<CheckListItemProps> = ({ checkListItem, onO
                             {checkListItem.description}
                         </p>
                     </div>
-                    <SlimCaretRight className="w-6 h-6 shrink-0 text-grayscale-400 mt-0.5" />
+                    <div className="flex items-center justify-end text-grayscale-600 font-poppins text-sm">
+                        {count ? (
+                            <>
+                                <span>{count}</span>{' '}
+                            </>
+                        ) : null}
+                        <SlimCaretRight className="text-grayscale-400 w-[20px] h-auto" />
+                    </div>
                 </div>
             </button>
         </li>

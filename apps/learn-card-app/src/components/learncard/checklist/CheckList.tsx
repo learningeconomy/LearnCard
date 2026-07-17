@@ -5,7 +5,9 @@ import {
     useModal,
     ChecklistEnum,
     ChecklistItem,
+    UploadTypesEnum,
     checklistItems,
+    useGetCheckListStatus,
 } from 'learn-card-base';
 
 import CheckListItem from './CheckListItem';
@@ -15,6 +17,7 @@ export const CheckList: React.FC<{ activeChecklistStep?: ChecklistEnum }> = ({
     activeChecklistStep,
 }) => {
     const { newModal } = useModal();
+    const { checklistItemCounts } = useGetCheckListStatus();
 
     const handleOpenChecklistManager = (checkListItem: ChecklistItem) => {
         newModal(
@@ -49,6 +52,11 @@ export const CheckList: React.FC<{ activeChecklistStep?: ChecklistEnum }> = ({
                     {checklistItems.map((item: ChecklistItem) => (
                         <CheckListItem
                             checkListItem={item}
+                            count={
+                                item.uploadType
+                                    ? checklistItemCounts?.[item.uploadType as UploadTypesEnum]
+                                    : undefined
+                            }
                             key={item.type}
                             onOpen={() => handleOpenChecklistManager(item)}
                         />

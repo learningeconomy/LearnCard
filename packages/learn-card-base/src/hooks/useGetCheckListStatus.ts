@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 
 import {
     UploadTypesEnum,
+    useGetChecklistCredentialCounts,
     useGetCertCredential,
     useGetDiplomaCredential,
     useGetRawVCsCredential,
     useGetResumeCredential,
     useGetTranscriptCredential,
-} from 'learn-card-base';
+} from '../react-query/queries/checklist';
 
 export enum ChecklistEnum {
     uploadResume = 'uploadResume',
@@ -35,14 +36,14 @@ export const checklistItems: ChecklistItem[] = [
         title: 'Add Resume',
         description: 'Best for work history, roles, and dates.',
         type: ChecklistEnum.uploadResume,
-        uploadType: 'resume',
+        uploadType: UploadTypesEnum.Resume,
     },
     {
         id: 2,
         title: 'Add Certificate',
         description: 'Best for training, courses, and earned credentials.',
         type: ChecklistEnum.uploadCertificates,
-        uploadType: 'certificate',
+        uploadType: UploadTypesEnum.Certificate,
     },
     // {
     //     id: 3,
@@ -55,14 +56,14 @@ export const checklistItems: ChecklistItem[] = [
         title: 'Add Transcript',
         description: 'Best for verified education history and coursework.',
         type: ChecklistEnum.uploadTranscripts,
-        uploadType: 'transcript',
+        uploadType: UploadTypesEnum.Transcript,
     },
     {
         id: 5,
         title: 'Add Diploma',
         description: 'Best for confirming degree completion and graduation.',
         type: ChecklistEnum.uploadDiplomas,
-        uploadType: 'diploma',
+        uploadType: UploadTypesEnum.Diploma,
     },
     // {
     //     id: 6,
@@ -93,6 +94,8 @@ export const useGetCheckListStatus = () => {
     const { data: diplomaCredential, refetch: refetchDiplomaCredential } =
         useGetDiplomaCredential();
     const { data: rawVCsCredential, refetch: refetchRawVCsCredential } = useGetRawVCsCredential();
+    const { data: checklistItemCounts, refetch: refetchChecklistCredentialCounts } =
+        useGetChecklistCredentialCounts();
 
     const [checklistItemsWithStatus, setChecklistItemsWithStatus] = useState(checklistItems);
     const [completedItems, setCompletedItems] = useState<number>(0);
@@ -167,6 +170,7 @@ export const useGetCheckListStatus = () => {
         await refetchTranscriptCredential();
         await refetchDiplomaCredential();
         await refetchRawVCsCredential();
+        await refetchChecklistCredentialCounts();
     };
 
     const numStepsRemaining = checklistItems.length - completedItems;
@@ -175,6 +179,7 @@ export const useGetCheckListStatus = () => {
         checklistItemsWithStatus,
         completedItems,
         numStepsRemaining,
+        checklistItemCounts,
         refetchCheckListStatus,
     };
 };
