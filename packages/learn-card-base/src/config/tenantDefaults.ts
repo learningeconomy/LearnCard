@@ -115,6 +115,11 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         posthogHost: undefined,
     },
 
+    registries: {
+        badgePackUrls: ['https://peerbadges.com/api/public/badges.json'],
+        badgePackAssets: [],
+    },
+
     links: {
         appStoreUrl: 'https://apps.apple.com/us/app/learncard/id1635841898',
         playStoreUrl: 'https://play.google.com/store/apps/details?id=com.learncard.app',
