@@ -1,10 +1,13 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { useHistory } from 'react-router-dom';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 
 import { ModalTypes, QRCodeScannerStore, useModal, getLogger } from 'learn-card-base';
 
 import IssueManagedBoostSelector from '../../launchPad/LaunchPadHeader/IssueManagedBoostSelector';
+import useBoostRecoveryCheck from '../../../hooks/useBoostRecoveryCheck';
 
 const log = getLogger('dashboard');
 
@@ -30,10 +33,13 @@ type AddToLearnCardActions = {
 };
 
 const useAddToLearnCardActions = (): AddToLearnCardActions => {
-    const { newModal: openRightModal } = useModal({
+    const history = useHistory();
+    const flags = useFlags();
+    const { newModal: openRightModal, closeAllModals } = useModal({
         mobile: ModalTypes.Right,
         desktop: ModalTypes.Right,
     });
+    const { checkAndPromptRecovery } = useBoostRecoveryCheck();
 
     useEffect(() => {
         void importPasteOrUploadClaimModal().catch(err => {
@@ -51,6 +57,14 @@ const useAddToLearnCardActions = (): AddToLearnCardActions => {
     };
 
     const openIssueCredential = () => {
+        if (flags?.enableSimpleSend) {
+            checkAndPromptRecovery(() => {
+                closeAllModals();
+                history.push('/issue');
+            });
+            return;
+        }
+
         openRightModal(
             <IssueManagedBoostSelector />,
             { hideButton: true, sectionClassName: '!max-w-[500px]' },

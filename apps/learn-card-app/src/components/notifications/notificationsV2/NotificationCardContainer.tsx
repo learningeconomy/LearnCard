@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import moment from 'moment';
 import {
     useUpdateNotification,
@@ -6,7 +6,6 @@ import {
     useMarkNotificationRead,
     useGetProfile,
     useGetCurrentLCNUser,
-    switchedProfileStore,
 } from 'learn-card-base';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import { notificationCardStyles } from './types';
@@ -20,12 +19,10 @@ import NotificationGuardianOutcomeCard from './NotificationGuardianOutcomeCard';
 import NotificationAppNotificationCard from './NotificationAppNotificationCard';
 import NotificationCredentialStatusCard from './NotificationCredentialStatusCard';
 import { useQueryClient } from '@tanstack/react-query';
-import { useIonAlert } from '@ionic/react';
 
 type NotificationCardProps = {
     className?: string;
     notification: NotificationType;
-    queryOptions?: any;
 };
 
 export const NOTIFICATION_TYPES = {
@@ -55,10 +52,8 @@ const log = getLogger('notification-card-container');
 export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
     className,
     notification: _notification,
-    queryOptions,
 }) => {
     const { data, isLoading } = useGetProfile(_notification.from.profileId);
-    const switchedDid = switchedProfileStore.use.switchedDid();
 
     const notification = data ? { ..._notification, from: data, message: {} } : _notification;
 
@@ -79,13 +74,13 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
     }
 
     const { type, message, from, to, sent } = notification;
-    const [presentAlert, dismissAlert] = useIonAlert();
     const displayDate = moment(sent).format('MMMM Do, YYYY');
 
     const queryClient = useQueryClient();
-    const { mutate: acceptConnectionRequest, isPending: acceptConnectionLoading } =
+    const { mutateAsync: acceptConnectionRequest, isPending: acceptConnectionLoading } =
         useAcceptConnectionRequestMutation();
-    const { mutate: updateNotification } = useUpdateNotification();
+    const { mutate: updateNotification, mutateAsync: updateNotificationAsync } =
+        useUpdateNotification();
 
     const { mutate: markNotificationAsRead } = useMarkNotificationRead();
     const { refetch: refetchCurrentLCNUser } = useGetCurrentLCNUser();
@@ -110,152 +105,82 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
         });
     };
 
+    // Local accepted state is the source of truth for the button after the user
+    // clicks Accept. The server does not round-trip `actionStatus` on the
+    // notifications refetch triggered by updateNotification, so relying on the
+    // refetched notification would revert the button to "Accept".
+    const [locallyAccepted, setLocallyAccepted] = useState(false);
+
+    const finalizeAcceptedUi = async () => {
+        try {
+            await updateNotificationAsync({
+                notificationId: notification?._id,
+                payload: { actionStatus: 'COMPLETED', read: true },
+            });
+        } catch (error) {
+            log.warn('Failed to persist notification meta after accept', error);
+        }
+
+        queryClient.setQueriesData({ queryKey: ['useGetUserNotifications'] }, (old: any) => {
+            if (!old?.pages) return old;
+
+            return {
+                ...old,
+                pages: old.pages.map((page: any) => ({
+                    ...page,
+                    notifications: page?.notifications?.map((n: any) =>
+                        n?._id === notification?._id
+                            ? { ...n, actionStatus: 'COMPLETED', read: true }
+                            : n
+                    ),
+                })),
+            };
+        });
+
+        queryClient.invalidateQueries({ queryKey: ['useGetUnreadUserNotifications'] });
+
+        [
+            'connections',
+            'getConnectionRequests',
+            'paginatedConnections',
+            'paginatedPendingConnections',
+            'paginatedConnectionRequests',
+        ].forEach(key => queryClient.invalidateQueries({ queryKey: [key] }));
+    };
+
     const handleConnectionRequest = async () => {
-        await acceptConnectionRequest(
-            { profileId: notification?.from?.profileId },
-            {
-                async onSuccess(data, variables, context) {
-                    await updateNotification({
-                        notificationId: notification?._id,
-                        payload: { actionStatus: 'COMPLETED', read: true },
-                    });
+        if (
+            locallyAccepted ||
+            notification?.actionStatus === 'COMPLETED' ||
+            acceptConnectionLoading
+        ) {
+            return;
+        }
 
-                    //update query cache
-                    const currentQuery = queryClient.getQueryData([
-                        'useGetUserNotifications',
-                        switchedDid ?? '',
-                        queryOptions?.options,
-                        queryOptions?.filter,
-                    ]);
+        // Optimistically flip the button. The server occasionally rejects the
+        // accept *after* creating the connection (e.g. a post-write notification
+        // step fails), so we treat both success and "already connected" as
+        // accepted, and only roll back on a genuine failure.
+        setLocallyAccepted(true);
 
-                    if (currentQuery) {
-                        // find notification in query cache
-                        // const updatedQueryNotifications = currentQuery?.notifications?.map(
-                        //     _notification => {
-                        //         if (_notification?._id === notification?._id) {
-                        //             _notification.actionStatus = 'COMPLETED';
-                        //             return _notification;
-                        //         }
-                        //         return _notification;
-                        //     }
-                        // );
-                        // Note the below is for infiniteQuery hook, above commented out is normal....todo, handle this better.
-                        const updatedQueryNotifications = currentQuery?.pages.map(page => {
-                            return {
-                                hasMore: page?.hasMore,
-                                notifications: page?.notifications?.filter(_notification => {
-                                    if (_notification?._id === notification?._id) {
-                                        _notification.actionStatus = 'COMPLETED';
-                                        _notification.read = true;
-                                        return _notification;
-                                    }
-                                    return _notification;
-                                }),
-                            };
-                        });
+        try {
+            await acceptConnectionRequest({ profileId: notification?.from?.profileId });
+        } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
 
-                        const updatedQuery = {
-                            ...currentQuery,
-                            notifications: updatedQueryNotifications,
-                        };
-
-                        // update to the new value
-                        queryClient.setQueryData(
-                            [
-                                'useGetUserNotifications',
-                                switchedDid ?? '',
-                                queryOptions?.options,
-                                queryOptions?.filter,
-                            ],
-                            updatedQuery
-                        );
-                    }
-
-                    return true;
-                },
-                async onError(err, variables, context) {
-                    log.info('///ON ERROR CONNECTION REQUEST', err);
-                    if (err?.toString()?.includes('Profiles are already connected')) {
-                        log.info('//profiles already connected mutation firing');
-                        await updateNotification({
-                            notificationId: notification?._id,
-                            payload: { actionStatus: 'COMPLETED', read: true },
-                        });
-                        const currentQuery = queryClient.getQueryData([
-                            'useGetUserNotifications',
-                            switchedDid ?? '',
-                            queryOptions?.options,
-                            queryOptions?.filter,
-                        ]);
-
-                        presentAlert({
-                            backdropDismiss: false,
-                            cssClass: 'boost-confirmation-alert',
-                            header: 'You are already connected.',
-                            buttons: [
-                                {
-                                    text: 'Okay',
-                                    role: 'confirm',
-                                    handler: async () => {
-                                        //extract to helper function....
-                                        if (currentQuery) {
-                                            // find notification in query cache
-                                            // Note the below is for infiniteQuery hook, above commented out is normal....todo, handle this better.
-                                            const updatedQueryNotifications =
-                                                currentQuery?.pages.map(page => {
-                                                    return {
-                                                        hasMore: page?.hasMore,
-                                                        notifications: page?.notifications?.filter(
-                                                            _notification => {
-                                                                if (
-                                                                    _notification?._id ===
-                                                                    notification?._id
-                                                                ) {
-                                                                    _notification.actionStatus =
-                                                                        'COMPLETED';
-                                                                    _notification.read = true;
-                                                                    return _notification;
-                                                                }
-                                                                return _notification;
-                                                            }
-                                                        ),
-                                                    };
-                                                });
-
-                                            const updatedQuery = {
-                                                ...currentQuery,
-                                                notifications: updatedQueryNotifications,
-                                            };
-
-                                            // update to the new value
-                                            queryClient.setQueryData(
-                                                [
-                                                    'useGetUserNotifications',
-                                                    switchedDid ?? '',
-                                                    queryOptions?.options,
-                                                    queryOptions?.filter,
-                                                ],
-                                                updatedQuery
-                                            );
-                                            dismissAlert();
-                                        }
-                                    },
-                                },
-                            ],
-                        });
-
-                        log.info('//profiles already connected mutation firing complete');
-                        return true;
-                    }
-                    return false;
-                },
+            if (!message.includes('Profiles are already connected')) {
+                setLocallyAccepted(false);
+                log.error('Failed to accept connection request', err);
+                return;
             }
-        );
+        }
+
+        await finalizeAcceptedUi();
     };
 
     /* Someone has sent you a connection request to accept */
     if (type === NOTIFICATION_TYPES.CONNECTION_REQUEST) {
-        const actionStatus = notification?.actionStatus === 'COMPLETED' ? true : false;
+        const actionStatus = notification?.actionStatus === 'COMPLETED' || locallyAccepted;
         return (
             <ConnectionRequestCard
                 title={message?.body ?? ''}
@@ -272,7 +197,7 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
     }
     /* Someone has sent you a connection request from an expired invite */
     if (type === NOTIFICATION_TYPES.CONNECTION_REQUEST_EXPIRED_INVITE) {
-        const actionStatus = notification?.actionStatus === 'COMPLETED' ? true : false;
+        const actionStatus = notification?.actionStatus === 'COMPLETED' || locallyAccepted;
         return (
             <ConnectionRequestCard
                 title={message?.body ?? ''}

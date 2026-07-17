@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 
 // import X from '../../../assets/images/X.svg';
 import X from 'learn-card-base/svgs/X';
@@ -45,7 +45,6 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
     handleRead,
     cardLoading,
 }) => {
-    const [isAccepted, setisAccepted] = useState<boolean>(acceptStatus);
     const [isRead, setisRead] = useState<boolean>(notification?.read);
 
     // Ref for the element that we want to detect whether on screen
@@ -53,24 +52,15 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
 
     const onScreen: boolean = useOnScreen<HTMLDivElement>(ref, '-130px');
 
-    useEffect(() => {
-        setisAccepted(acceptStatus);
-    }, [acceptStatus]);
-
     const { textStyles, viewButtonStyles, claimedButtonStyles, unclaimedButtonStyles, typeText } =
         UserNotificationTypeStyles[UserNotificationTypeEnum.ConnectionRequest];
 
-    const claimButtonStyles = isAccepted ? claimedButtonStyles : unclaimedButtonStyles;
+    const claimButtonStyles = acceptStatus ? claimedButtonStyles : unclaimedButtonStyles;
 
-    let buttonText: string = '';
+    const buttonText: string = acceptStatus ? 'Accepted' : 'Accept';
 
-    if (isAccepted) {
-        buttonText = 'Accepted';
-    } else if (!isAccepted) {
-        buttonText = 'Accept';
-    }
-
-    const handleAcceptConnection = async () => {
+    const handleAcceptConnection = async (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.stopPropagation();
         if (!acceptStatus && !isLoading) {
             await handleButtonClick?.();
         }
@@ -141,7 +131,7 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
                             name="notification-claim-button"
                         >
                             {isLoading ? 'Loading...' : buttonText}
-                            {isAccepted && <Checkmark className="h-[24px] p-0 m-0" />}{' '}
+                            {acceptStatus && <Checkmark className="h-[24px] p-0 m-0" />}{' '}
                         </button>
 
                         <button
