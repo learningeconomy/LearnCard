@@ -176,7 +176,9 @@ export * from './stores/syncProgressStore';
 export * from './stores/pendingContractSyncStore';
 export * from './stores/boostPreviewStore';
 export * from './stores/demoSessionStore';
+export * from './stores/demoGateStore';
 export * from './helpers/demoWalletAdapter';
+export * from './hooks/useDemoGate';
 export {
     messages,
     threads,

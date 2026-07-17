@@ -562,6 +562,31 @@ useGetConnections();
 useGetPaginatedConnections();
 ```
 
+## Sample Wallet (Demo Mode)
+
+A local-only "lens" that lets users explore a fully populated wallet without writing anything to LearnCloud or the network. Entry/exit is instant: a persona's snapshot credentials live in a Zustand store and wallet-facing reads are served from it while active.
+
+**Core principle**: Demo mode changes what the user sees of **their own record** — never their relationships with other people or organizations. Wallet-index surfaces (credentials, skills) come along for free via the lens; user-owned content surfaces (insights, pathways) get pre-authored persona content; relationship/trust surfaces (families, data sharing/consent, app installs) are never faked — writes there hit the gate sheet.
+
+### File Map
+
+| File                                                          | Purpose                                                                                                                                                                                                                                                                               |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/learn-card-base/src/stores/demoSessionStore.ts`     | Session state (`activePersonaId`, `demoRecords`, `demoVCs`) + non-reactive helpers. Demo URIs use the `lc:demo:` prefix                                                                                                                                                               |
+| `packages/learn-card-base/src/helpers/demoWalletAdapter.ts`   | `wrapWalletForDemo()` — Proxy applied to EVERY wallet in `getBespokeLearnCard()`. Demo active: index reads served from demo store, `read.get` resolves `lc:demo:` URIs, all index/store writes + mutating invoke methods reject with `DemoModeError`. Demo inactive: pure passthrough |
+| `packages/learn-card-base/src/stores/demoGateStore.ts`        | Gate sheet open/close state (store, not context, so non-React code can open it)                                                                                                                                                                                                       |
+| `packages/learn-card-base/src/hooks/useDemoGate.ts`           | Point-of-use gate: `if (!guardDemoAction('Share')) return;`                                                                                                                                                                                                                           |
+| `apps/learn-card-app/src/components/learncard/sample-wallet/` | Persona catalog (`samplePersonas.ts`), enter/exit hook (`useSampleWallet.ts`), UI (box, selector, header pill, gate sheet)                                                                                                                                                            |
+
+### Invariants (do not break)
+
+-   **New features are demo-safe by default** — every wallet from `getBespokeLearnCard()` is wrapped; do NOT construct wallets that bypass it
+-   Demo data never touches LearnCloud/Neo4j; exit = clear one store namespace
+-   Demo session clears on logout (`handleAppLogout`) and profile switch (`switchProfile`)
+-   Credential list/count queryKeys include the active persona id for cache separation
+-   A blocked write is a **conversion moment**, not an error: `MutationCache.onError` in `FullApp.tsx` + an `unhandledrejection` listener map `DemoModeError` to the `SampleWalletGateSheet` ("Switch to My Wallet" / "Keep Exploring"). Prefer pre-empting with `useDemoGate().guardDemoAction()` at high-traffic write actions
+-   `queueAiInsightCredentialRefresh` skips in demo mode — never derive real writes from demo data
+
 ## Self-Issued Credentials Pattern
 
 When a user self-issues a credential (e.g., creating a network and receiving their own admin ID), you MUST call `acceptCredential` after `sendBoostCredential`:

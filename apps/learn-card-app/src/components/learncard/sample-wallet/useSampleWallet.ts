@@ -21,6 +21,10 @@ export const useSampleWallet = () => {
             queryClient.invalidateQueries({ queryKey: ['useGetCredentialCount'] }),
             queryClient.invalidateQueries({ queryKey: ['useGetCredentials'] }),
             queryClient.invalidateQueries({ queryKey: ['useGetSkills'] }),
+            queryClient.invalidateQueries({ queryKey: ['useVerifiableData'] }),
+            queryClient.invalidateQueries({ queryKey: ['useAiInsightCredential'] }),
+            queryClient.invalidateQueries({ queryKey: ['useExistingAiInsightCredential'] }),
+            queryClient.invalidateQueries({ queryKey: ['useAiPathways'] }),
         ]);
     };
 
