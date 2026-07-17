@@ -139,10 +139,11 @@ interface PartnerConnectOptions {
     /**
      * Automatic standalone mock mode.
      * 'auto' (default) mocks only when no LearnCard host is present AND the
-     * page runs on a local dev host; true always mocks; false never mocks.
+     * page runs on a local dev host; 'standalone' mocks whenever no host is
+     * present, on any origin; true always mocks; false never mocks.
      * @default 'auto'
      */
-    mock?: boolean | 'auto';
+    mock?: boolean | 'auto' | 'standalone';
 
     /**
      * Mock behavior overrides (UI, logging, persistence, fake DID, namespace).
@@ -902,8 +903,15 @@ Mock mode fixes this automatically in local development. Whenever no LearnCard h
 No flags, no separate build in local dev. Your app is demo-able locally and behaves exactly the same against the real host once embedded.
 
 {% hint style="warning" %}
-**`'auto'` never mocks on production or remote preview origins.** A real user opening your app's URL directly must never receive a fabricated identity or auto-granted consent. For remote deploy previews (Netlify, Lovable, Vercel, …), CI, and tests, opt in explicitly with `mock: true`.
+**`'auto'` never mocks on production or remote preview origins.** A real user opening your app's URL directly must never receive a fabricated identity or auto-granted consent. For remote deploy previews (Netlify, Lovable, Vercel, …) that should demo standalone anywhere but use the real host once embedded, opt in with `mock: 'standalone'`. For CI and tests that should always mock, use `mock: true`.
 {% endhint %}
+
+| `mock`             | Standalone, local dev | Standalone, remote origin     | Embedded in LearnCard |
+| ------------------ | --------------------- | ----------------------------- | --------------------- |
+| `'auto'` (default) | mock                  | fail fast (`LC_NOT_EMBEDDED`) | real host             |
+| `'standalone'`     | mock                  | mock                          | real host             |
+| `true`             | mock                  | mock                          | mock                  |
+| `false`            | fail fast             | fail fast                     | real host             |
 
 If your app is embedded in something that isn't LearnCard (a cross-origin Storybook canvas, a preview shell), calls don't hang: the SDK mocks on local dev hosts and otherwise rejects fast with `LC_NOT_EMBEDDED`. When the parent can't be identified (Firefox, or a same-origin localhost wrapper), a one-time side-effect-free presence probe decides — the SDK only mocks if no host answers within `hostProbeTimeout` (default 1500 ms).
 
@@ -919,7 +927,8 @@ await learnCard.sendCredential({ templateAlias: 'course-completion' });
 **Overrides:**
 
 ```typescript
-createPartnerConnect({ mock: true }); // always mock (remote previews, CI, tests)
+createPartnerConnect({ mock: 'standalone' }); // mock when no host, on any origin; real when embedded
+createPartnerConnect({ mock: true }); // always mock, even embedded (CI, tests)
 createPartnerConnect({ mock: false }); // never mock (standalone → LC_NOT_EMBEDDED)
 createPartnerConnect({
     mockOptions: {

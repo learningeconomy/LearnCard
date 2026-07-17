@@ -94,6 +94,7 @@ describe('mock mode activation', () => {
             });
 
             expect(createPartnerConnect({ mock: true }).isMocked()).toBe(true);
+            expect(createPartnerConnect({ mock: 'standalone' }).isMocked()).toBe(true);
         } finally {
             if (original) Object.defineProperty(window, 'location', original);
         }
@@ -167,6 +168,25 @@ describe('embedded parent classification', () => {
         embedIn('http://localhost:6006');
         const lc = createPartnerConnect({ hostProbeTimeout: 40 });
         expect(lc.isMocked()).toBe(false);
+
+        const identity = await lc.requestIdentity();
+        expect(lc.isMocked()).toBe(true);
+        expect(identity.user.did).toBeDefined();
+    });
+
+    it("mock: 'standalone' mocks inside a foreign iframe even on a non-local host", () => {
+        embedIn('https://preview-shell.example.com', 'my-app.lovable.app');
+        expect(createPartnerConnect({ mock: 'standalone' }).isMocked()).toBe(true);
+    });
+
+    it("mock: 'standalone' uses the real host when embedded in a LearnCard origin", () => {
+        embedIn('https://learncard.app', 'my-app.lovable.app');
+        expect(createPartnerConnect({ mock: 'standalone' }).isMocked()).toBe(false);
+    });
+
+    it("mock: 'standalone' probes an ambiguous parent on non-local hosts and mocks when unanswered", async () => {
+        embedIn('http://localhost:6006', 'my-app.lovable.app');
+        const lc = createPartnerConnect({ mock: 'standalone', hostProbeTimeout: 40 });
 
         const identity = await lc.requestIdentity();
         expect(lc.isMocked()).toBe(true);

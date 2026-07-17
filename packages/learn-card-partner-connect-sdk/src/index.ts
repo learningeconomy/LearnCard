@@ -211,10 +211,17 @@ export class PartnerConnect {
             return;
         }
 
+        // Whether this origin may fall back to mocking when no host answers:
+        // 'standalone' anywhere, 'auto' only on local dev hosts (a standalone
+        // production page must never fabricate identity or consent), false
+        // nowhere.
+        const canAutoMock =
+            mockSetting === 'standalone' || (mockSetting === 'auto' && this.isLocalDevContext());
+
         if (!this.embedded) {
             // Standalone page: no host can answer. hostReachable stays false,
             // so un-mocked calls fail fast with LC_NOT_EMBEDDED.
-            if (mockSetting === 'auto' && this.isLocalDevContext()) {
+            if (canAutoMock) {
                 this.mockHost = new MockHost(options?.mockOptions);
             }
             return;
@@ -227,24 +234,24 @@ export class PartnerConnect {
 
             case 'foreign':
                 // Known non-LearnCard wrapper (e.g. cross-origin Storybook):
-                // never postMessage into the 30s timeout. Mock on local dev,
+                // never postMessage into the 30s timeout. Mock where allowed,
                 // fail fast everywhere else.
-                if (mockSetting === 'auto' && this.isLocalDevContext()) {
+                if (canAutoMock) {
                     this.mockHost = new MockHost(options?.mockOptions);
                 }
                 return;
 
             case 'ambiguous':
-                if (mockSetting === 'auto' && this.isLocalDevContext()) {
-                    // Could be a real (local/native) LearnCard host or a local
-                    // wrapper like Storybook. Ask: if the host answers a cheap
+                if (canAutoMock) {
+                    // Could be a real (local/native) LearnCard host or an
+                    // unrelated wrapper. Ask: if the host answers a cheap
                     // side-effect-free probe, stay real; otherwise mock.
                     this.hostReachable = true;
                     this.activation = this.probeHost(options);
                 } else {
-                    // Outside local dev, auto-mock is off the table anyway —
-                    // preserve the long-standing assumption that an
-                    // unverifiable parent is the real host.
+                    // Mocking is off the table here anyway — preserve the
+                    // long-standing assumption that an unverifiable parent
+                    // is the real host.
                     this.hostReachable = true;
                 }
                 return;

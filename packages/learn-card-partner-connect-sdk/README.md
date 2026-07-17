@@ -81,9 +81,10 @@ interface PartnerConnectOptions {
     /**
      * Controls automatic standalone mock mode.
      * 'auto' (default) mocks only when no LearnCard host is present AND the
-     * page runs on a local dev host; true always mocks; false never mocks.
+     * page runs on a local dev host; 'standalone' mocks whenever no host is
+     * present, on any origin; true always mocks; false never mocks.
      */
-    mock?: boolean | 'auto';
+    mock?: boolean | 'auto' | 'standalone';
 
     /**
      * Fine-grained mock behavior (UI, logging, persistence, fake DID).
@@ -219,10 +220,19 @@ const res = await learnCard.sendCredential({ templateAlias: 'course-completion' 
 **`'auto'` is deliberately scoped to local dev hosts.** A standalone page on a
 production or remote preview origin never auto-mocks — otherwise a real user
 opening your app's URL directly would receive a fabricated identity and
-auto-granted consent. For remote deploy previews (Netlify, Lovable, Vercel, …),
-CI, and tests, opt in explicitly with `mock: true`. Every mocked call shows a
-labeled toast and a `[LearnCard SDK · MOCK]` console log, so it's clear the SDK
-is simulating rather than talking to a real host.
+auto-granted consent. For remote deploy previews (Netlify, Lovable, Vercel, …)
+that should demo standalone anywhere but go real once embedded, opt in with
+`mock: 'standalone'`; for CI and tests that should always mock, use
+`mock: true`. Every mocked call shows a labeled toast and a
+`[LearnCard SDK · MOCK]` console log, so it's clear the SDK is simulating
+rather than talking to a real host.
+
+| `mock`             | Standalone, local dev | Standalone, remote origin     | Embedded in LearnCard |
+| ------------------ | --------------------- | ----------------------------- | --------------------- |
+| `'auto'` (default) | mock                  | fail fast (`LC_NOT_EMBEDDED`) | real host             |
+| `'standalone'`     | mock                  | mock                          | real host             |
+| `true`             | mock                  | mock                          | mock                  |
+| `false`            | fail fast             | fail fast                     | real host             |
 
 **Unrelated iframes don't fool it.** If your app is embedded in something that
 isn't LearnCard (a cross-origin Storybook canvas, a preview shell), calls no
@@ -239,7 +249,10 @@ instead of showing simulated data.
 Override the default behavior when needed:
 
 ```typescript
-// Always mock, even while embedded (remote previews, CI, tests):
+// Mock wherever no host is present (remote previews), real host when embedded:
+createPartnerConnect({ mock: 'standalone' });
+
+// Always mock, even while embedded (CI, tests):
 createPartnerConnect({ mock: true });
 
 // Never mock (standalone calls reject fast with LC_NOT_EMBEDDED):

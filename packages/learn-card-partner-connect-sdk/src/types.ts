@@ -118,15 +118,22 @@ export interface PartnerConnectOptions {
      *    or consent on a production or preview origin. Each mocked call
      *    surfaces a labeled toast plus a console log so it's clear the host
      *    is simulated.
-     * - `true`: always mock, even when embedded. Use this for remote deploy
-     *    previews (Netlify, Lovable, Vercel, …), CI, and tests.
+     * - `'standalone'`: mock whenever **no LearnCard host is present**, on
+     *    any origin — including remote deploy previews (Netlify, Lovable,
+     *    Vercel, …) — and use the real host when embedded in LearnCard. The
+     *    one-flag setting for apps that must demo standalone anywhere. Only
+     *    choose it when a user opening your app's URL directly should see
+     *    simulated data.
+     * - `true`: always mock, **even when embedded in a real LearnCard host**.
+     *    Use this for CI and tests; for previews that should go real once
+     *    embedded, prefer `'standalone'`.
      * - `false`: never mock. Standalone calls reject immediately with
      *    `LC_NOT_EMBEDDED`. Set this in production builds meant to run only
      *    inside LearnCard.
      *
      * @default 'auto'
      */
-    mock?: boolean | 'auto';
+    mock?: boolean | 'auto' | 'standalone';
 
     /**
      * Fine-grained configuration for standalone mock mode. Ignored when mock
