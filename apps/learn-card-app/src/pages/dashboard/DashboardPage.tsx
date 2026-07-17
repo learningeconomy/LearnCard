@@ -25,6 +25,7 @@ import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 
 import QrCodeUserCardModal from '../../components/qrcode-user-card/QRCodeUserCard';
+import useOpenNotifications from '../../components/notifications/useOpenNotifications';
 import { summarizeConsent } from '../../components/data-sharing/consentSummary';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useModal, ModalTypes, useBrandingConfig } from 'learn-card-base';
@@ -47,6 +48,7 @@ import {
 
 import DashboardView from './DashboardView';
 import DashboardRoleSwitcher from './components/DashboardRoleSwitcher';
+import PendingApprovalBanner from '../../components/pending-approval-banner/PendingApprovalBanner';
 import type {
     DashboardViewModel,
     DashboardEmptyTip,
@@ -70,6 +72,7 @@ import { useSkillProfileCompletion } from '../ai-pathways/ai-pathways-skill-prof
 import { DEFAULT_REGISTRY } from './quickActions/registry';
 import { resolveSlots } from './quickActions/resolveSlots';
 import type { ActionHandlers, DashboardState, SlotIcons } from './quickActions/types';
+import { isHiddenActivity } from '../wallet/activity-feed/activityFeed.helpers';
 
 import ScanIcon from 'learn-card-base/svgs/ScanIcon';
 import LinkOutlinedIcon from 'learn-card-base/svgs/LinkOutlinedIcon';
@@ -125,6 +128,7 @@ const DashboardPage: React.FC = () => {
         () =>
             (allCredentials?.pages?.flatMap(p => p?.records ?? []) ?? []).filter(record => {
                 if (isVerifiableDataRecord(record)) return false;
+                if (isHiddenActivity(record.category)) return false;
                 if (selfAssignedSkillsUri && record.uri === selfAssignedSkillsUri) return false;
                 if (record.title?.trim() === SELF_ASSIGNED_SKILLS_BOOST_NAME) return false;
                 return true;
@@ -198,6 +202,7 @@ const DashboardPage: React.FC = () => {
     // LC-1921: shared right-loading profile/settings modal, same entry point as
     // the side-menu Settings row and the header avatar.
     const openMyLearnCard = useOpenMyLearnCard();
+    const openNotifications = useOpenNotifications();
     const openQrScanner = () => {
         openHeaderModal(
             <QrCodeUserCardModal
@@ -478,6 +483,8 @@ const DashboardPage: React.FC = () => {
             professionalTitle: skillProfileData?.professionalTitle,
             onAvatarClick: openMyLearnCard,
             onScanQrTopRight: openQrScanner,
+            onNotificationsClick: openNotifications,
+            unreadCount: unreadNotifications.length,
             roleSwitcher: <DashboardRoleSwitcher />,
         },
         heroSlot,
@@ -517,6 +524,7 @@ const DashboardPage: React.FC = () => {
                     scrollEvents
                     onIonScroll={onHeaderScroll}
                 >
+                    {currentLCNUser?.approved === false && <PendingApprovalBanner />}
                     <DashboardView vm={viewModel} />
                 </IonContent>
             </ErrorBoundary>

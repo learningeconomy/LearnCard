@@ -1,10 +1,10 @@
+import { getDidWeb as getSharedDidWeb } from '@learncard/helpers';
 import { ProfileInstance } from '@models';
 import { ProfileType } from 'types/profile';
 import { getProfileByDid } from '@accesslayer/profile/read';
 
-/** Generates a did:web for a user given the domain of the app */
 export const getDidWeb = (domain: string, profileId: string): string =>
-    `did:web:${domain}:users:${profileId}`;
+    getSharedDidWeb(domain, profileId);
 
 /** Generates a did:web for an app listing given the domain and slug */
 export const getAppDidWeb = (domain: string, slug: string): string =>

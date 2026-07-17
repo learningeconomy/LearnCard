@@ -336,7 +336,7 @@ export const IssueCredentialView: React.FC<IssueCredentialViewProps> = ({
                                 )}
                             </div>
 
-                            <div className="desktop:w-[340px] shrink-0 desktop:sticky desktop:top-[84px]">
+                            <div className="desktop:w-[340px] [@media(min-width:992px)_and_(max-width:1155px)]:w-[240px] shrink-0 desktop:sticky desktop:top-[84px]">
                                 <HeroCanvas
                                     credential={previewCredential}
                                     credentialType={credentialType}

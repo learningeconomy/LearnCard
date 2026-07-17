@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import TotalSkillsCount from './TotalSkillsCount';
@@ -24,6 +24,8 @@ import SkillsMyHub from './SkillsMyHub';
 import SkillsAdminPanel from './SkillsAdminPanel';
 import BrowseFrameworkPage from '../SkillFrameworks/BrowseFrameworkPage';
 import { SkillFramework } from '../../components/boost/boost';
+import { useIsCurrentUserLCNUser } from 'learn-card-base';
+import { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
 
 enum TabEnum {
     MY_HUB = 'My Hub',
@@ -31,6 +33,7 @@ enum TabEnum {
 }
 
 const SkillsPage: React.FC = () => {
+    const { data: isNetworkUser } = useIsCurrentUserLCNUser();
     const {
         data: allResolvedCreds,
         isFetching: credentialsFetching,
@@ -39,8 +42,8 @@ const SkillsPage: React.FC = () => {
         refetch,
     } = useGetCredentialsForSkills();
 
-    const [selectedTab, setSelectedTab] = useState<TabEnum>(TabEnum.ADMIN_PANEL);
-    const [frameworkToBrowse, setFrameworkToBrowse] = useState<SkillFramework | null>(null);
+    const [selectedTab, setSelectedTab] = useState<TabEnum>(TabEnum.MY_HUB);
+    const [frameworkToBrowse, setFrameworkToBrowse] = useState<ApiFrameworkInfo | null>(null);
 
     // const flags = useFlags();
     // const showAiInsights = flags?.showAiInsights;
@@ -49,28 +52,47 @@ const SkillsPage: React.FC = () => {
 
     useLoadingLine(credentialsBackgroundFetching);
 
+    const resolvedCreds = Array.isArray(allResolvedCreds) ? allResolvedCreds : [];
+
     let isBoostsEmpty = false;
-    if ((!allResolvedBoostsLoading && allResolvedCreds?.length === 0) || allResolvedBoostsLoading) {
+    if ((!allResolvedBoostsLoading && resolvedCreds.length === 0) || allResolvedBoostsLoading) {
         isBoostsEmpty = true;
     } else {
         isBoostsEmpty = false;
     }
 
-    const skillsMap = mapBoostsToSkills(allResolvedCreds);
+    const skillsMap = mapBoostsToSkills(resolvedCreds as any) as Record<
+        string,
+        { length?: number; totalSubskills?: number }
+    >;
 
     // Calculate total count of skills and subskills
-    const totalSkills = Object.values(skillsMap).reduce(
-        (total, category) => total + (category?.length || 0),
+    const skillCategories = Object.values(skillsMap) as Array<{
+        length?: number;
+        totalSubskills?: number;
+    }>;
+
+    const totalSkills = skillCategories.reduce(
+        (total: number, category) => total + (category?.length || 0),
         0
     );
-    const totalSubskills = Object.values(skillsMap).reduce(
-        (total, category) => total + (category?.totalSubskills || 0),
+    const totalSubskills = skillCategories.reduce(
+        (total: number, category) => total + (category?.totalSubskills || 0),
         0
     );
 
     const total = (totalSkills || 0) + (totalSubskills || 0);
 
     const isHub = selectedTab === TabEnum.MY_HUB;
+    const canShowAdminPanel = isNetworkUser === true;
+
+    const visibleTabs = canShowAdminPanel ? Object.values(TabEnum) : [TabEnum.MY_HUB];
+
+    useEffect(() => {
+        if (!canShowAdminPanel && selectedTab === TabEnum.ADMIN_PANEL) {
+            setSelectedTab(TabEnum.MY_HUB);
+        }
+    }, [canShowAdminPanel, selectedTab]);
 
     if (frameworkToBrowse) {
         // could remove this if we want to use the modal instead (which we're currently doing)
@@ -84,7 +106,7 @@ const SkillsPage: React.FC = () => {
 
     return (
         <IonPage className="bg-violet-200">
-            <GenericErrorBoundary category={CredentialCategoryEnum.skill}>
+            <GenericErrorBoundary>
                 <MainHeader
                     showBackButton
                     subheaderType={SubheaderTypeEnum.Skill}
@@ -96,28 +118,30 @@ const SkillsPage: React.FC = () => {
                             {/* {showAiInsights && <SkillsInsightCard />} */}
                             {/* <TotalSkillsCount total={total} /> */}
 
-                            <div
-                                className={`flex items-center justify-start w-full ${
-                                    isHub ? 'mb-[10px]' : 'mb-[15px]'
-                                }`}
-                            >
-                                {Object.values(TabEnum).map(tab => (
-                                    <button
-                                        key={tab}
-                                        onClick={() => setSelectedTab(tab)}
-                                        className={`px-[14px] py-[7px] rounded-[5px] font-[500] font-poppins text-[14px] ${
-                                            tab === selectedTab
-                                                ? 'bg-violet-100 text-grayscale-900'
-                                                : 'text-grayscale-600'
-                                        }`}
-                                    >
-                                        {tab}
-                                    </button>
-                                ))}
-                            </div>
+                            {visibleTabs.length > 1 && (
+                                <div
+                                    className={`flex items-center justify-start w-full ${
+                                        isHub ? 'mb-[10px]' : 'mb-[15px]'
+                                    }`}
+                                >
+                                    {visibleTabs.map(tab => (
+                                        <button
+                                            key={tab}
+                                            onClick={() => setSelectedTab(tab)}
+                                            className={`px-[14px] py-[7px] rounded-[5px] font-[500] font-poppins text-[14px] ${
+                                                tab === selectedTab
+                                                    ? 'bg-violet-100 text-grayscale-900'
+                                                    : 'text-grayscale-600'
+                                            }`}
+                                        >
+                                            {tab}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
 
                             {selectedTab === TabEnum.MY_HUB && <SkillsMyHub />}
-                            {selectedTab === TabEnum.ADMIN_PANEL && (
+                            {selectedTab === TabEnum.ADMIN_PANEL && canShowAdminPanel && (
                                 <SkillsAdminPanel setFrameworkToBrowse={setFrameworkToBrowse} />
                             )}
                         </div>

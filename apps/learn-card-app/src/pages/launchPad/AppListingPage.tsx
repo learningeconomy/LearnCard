@@ -164,12 +164,12 @@ const AppListingPage: React.FC = () => {
         if (isCheckingInstalled) return;
         if (!listing) return;
         if (installIntent?.listingId !== listingId) return;
-        // Wait for onboarding to finish — OnboardingContainer sets this flag
+        // Wait for onboarding to finish — OnboardingFlow sets this flag
         if (isOnboardingOpen) return;
 
-        // For new-user path: OnboardingContainer is opened via newModal() (a portal),
+        // For new-user path: OnboardingFlow is opened via newModal() (a portal),
         // so its useEffect fires *after* this one in the same render cycle.
-        // The 300ms delay gives OnboardingContainer time to mount, set isOnboardingOpen=true,
+        // The 300ms delay gives OnboardingFlow time to mount, set isOnboardingOpen=true,
         // and claim installIntent before we act on it.
         const timer = setTimeout(() => {
             // Re-check after delay using fresh store values (avoids stale-closure issues)

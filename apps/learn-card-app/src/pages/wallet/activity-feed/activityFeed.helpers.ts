@@ -49,6 +49,9 @@ const CATEGORY_LOOKUP: Record<string, CredentialCategoryEnum> = (() => {
         map[value.toLowerCase()] = value as CredentialCategoryEnum;
         map[key.toLowerCase()] = value as CredentialCategoryEnum;
     }
+    map['ai session'] = CredentialCategoryEnum.aiTopic;
+    map['ai sessions'] = CredentialCategoryEnum.aiTopic;
+    map['ai-topic'] = CredentialCategoryEnum.aiTopic;
     return map;
 })();
 

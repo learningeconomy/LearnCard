@@ -35,7 +35,7 @@ const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
 
     return (
         <>
-            <div className="bg-grayscale-50 px-[15px] py-[20px] rounded-[15px] flex flex-col gap-[30px] w-full shadow-bottom-4-4 max-w-[568px] overflow-hidden">
+            <div className="bg-grayscale-50 px-[15px] py-[20px] rounded-[15px] flex flex-col gap-[30px] w-full shadow-bottom-4-4 max-w-full overflow-hidden">
                 <div className="flex flex-col gap-[5px]">
                     <div className="flex items-center gap-[10px] text-grayscale-900">
                         <SkillsIconWithShape className="w-[50px] h-[50px]" />
@@ -69,9 +69,9 @@ const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
                     onViewAll={() => openGrowSkillsModal('Media')}
                     renderItem={card =>
                         card.type === 'youtube-media' ? (
-                            <GrowSkillsYouTubeMediaItem video={card.video} className="h-full" />
+                            <GrowSkillsYouTubeMediaItem video={card.video} />
                         ) : (
-                            <GrowSkillsMediaItem occupation={card.occupation} className="h-full" />
+                            <GrowSkillsMediaItem occupation={card.occupation} />
                         )
                     }
                     getItemKey={card =>
@@ -91,7 +91,7 @@ const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
             </div>
 
             {emptyPathways && (
-                <div className="flex items-center justify-center w-full rounded-[10px] max-w-[600px] mt-4">
+                <div className="flex items-center justify-center w-full rounded-[10px] max-w-full mt-4">
                     <AiPathwaysEmptyPlaceholder />
                 </div>
             )}

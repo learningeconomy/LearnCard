@@ -1,16 +1,29 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
-import { VC, VP } from '@learncard/types';
-import { IonContent, IonPage, IonFooter, IonToolbar, IonRow, IonLoading } from '@ionic/react';
-import { Gift, Check, X as XIcon, Loader2, AlertCircle, Home, HelpCircle } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { VC, VP, VerificationItem } from '@learncard/types';
+import { prettifyVerificationItems } from 'learn-card-base/helpers/verificationPrettifier';
+import { IonContent, IonPage, IonFooter, IonLoading } from '@ionic/react';
+import { Gift, Check, AlertCircle, Home, HelpCircle } from 'lucide-react';
 
 import { getLogger } from 'learn-card-base';
 const log = getLogger('exchange-accept-credentials');
 
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
-import X from 'learn-card-base/svgs/X';
+import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
+import BoostDetailsSideMenu from '../../components/boost/boostCMS/BoostPreview/BoostDetailsSideMenu';
+import BoostDetailsSideBar from '../../components/boost/boostCMS/BoostPreview/BoostDetailsSideBar';
 
-import { useWallet, useToast, ToastTypeEnum, BoostPageViewMode } from 'learn-card-base';
+import {
+    useWallet,
+    useToast,
+    ToastTypeEnum,
+    BoostPageViewMode,
+    useModal,
+    ModalTypes,
+    useDeviceTypeByWidth,
+    CredentialCategoryEnum,
+} from 'learn-card-base';
 import {
     useAnalytics,
     AnalyticsEvents,
@@ -31,8 +44,6 @@ import { publishWalletEvent } from '../pathways/events/walletEventBus';
 
 import { VCAPIRequestStrategy } from './ClaimFromRequest';
 
-import useTheme from '../../theme/hooks/useTheme';
-
 interface ExchangeAcceptCredentialsProps {
     verifiablePresentation: VP; // Contains the verifiablePresentation from the server
     onAccept: (body: any, credentialClaimCount: number) => void; // Callback to continue the exchange
@@ -44,10 +55,6 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     onAccept,
     strategy,
 }) => {
-    const { colors } = useTheme();
-    const primaryColor = colors?.defaults?.primaryColor;
-
-    const [isFront, setIsFront] = useState(true);
     const [claiming, setClaiming] = useState(false);
     const [isClaimed, setIsClaimed] = useState(false);
 
@@ -80,10 +87,40 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
     const history = useHistory();
     const { presentToast } = useToast();
-    const { storeAndAddVCToWallet } = useWallet();
+    const { storeAndAddVCToWallet, initWallet } = useWallet();
     const { track } = useAnalytics();
     const { capture, snapshotRef } = useProfileSnapshotCapture();
+    const { newModal } = useModal();
+    const { isMobile } = useDeviceTypeByWidth();
     const flowStartedAt = useRef(Date.now());
+
+    // Verify the (single) credential so the Details panel/sidebar shows real
+    // Proof / Status / Expiration rows. Always run — the verification block is
+    // shown on both mobile (Details modal) and desktop (persistent sidebar).
+    const [verificationItems, setVerificationItems] = useState<VerificationItem[]>([]);
+    useEffect(() => {
+        const cred = credentials[0];
+        if (!cred) return;
+
+        let cancelled = false;
+        (async () => {
+            try {
+                const wallet = await initWallet();
+                const verifications = await wallet?.invoke?.verifyCredential(cred, {}, true);
+                if (!cancelled) {
+                    setVerificationItems(prettifyVerificationItems(verifications ?? []));
+                }
+            } catch (err) {
+                log.warn('Failed to verify claim credential', err);
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+        // `credentials` is captured once from the VP at mount and never changes.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleClaim = async () => {
         if (selectedCredentials.length === 0) {
@@ -190,42 +227,74 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
         }
     };
 
-    const renderSingleCredential = () => {
-        const credential = credentials[0];
+    // getDefaultCategoryForCredential can throw on malformed credentials, so
+    // resolve defensively for the detail views (categoryType is optional on
+    // both BoostDetailsSideMenu and BoostDetailsSideBar). Mirrors the guarded
+    // resolution used for post-claim routing in ClaimFromRequest.
+    const resolveDetailsCategoryType = (cred: VC): CredentialCategoryEnum | undefined => {
+        try {
+            return getDefaultCategoryForCredential(cred) as CredentialCategoryEnum;
+        } catch (err) {
+            log.warn('Failed to resolve credential category for details view', err);
+            return undefined;
+        }
+    };
+
+    // Mobile "Details" side panel — parity with ClaimBoost's footer.
+    const openSingleCredentialDetails = (credential: VC) => {
+        newModal(
+            <BoostDetailsSideMenu
+                credential={credential}
+                categoryType={resolveDetailsCategoryType(credential)}
+                verificationItems={verificationItems}
+                renderMethodCredential={credential}
+            />,
+            {
+                className: '!bg-transparent',
+                hideButton: true,
+            },
+            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+        );
+    };
+
+    const renderSingleCredentialCard = (credential: VC) => {
         const name = credential.name || 'Credential';
 
         return (
-            <div className="px-[40px] pb-[100px] vc-preview-modal-safe-area h-full overflow-y-auto">
-                <section className="w-full flex justify-center py-16">
-                    <VCDisplayCardWrapper2
-                        overrideCardTitle={name}
-                        credential={credential}
-                        checkProof={false}
-                        hideNavButtons
-                        isFrontOverride={isFront}
-                        setIsFrontOverride={setIsFront}
-                    />
-                </section>
-            </div>
+            <VCDisplayCardWrapper2
+                useCurrentUserName
+                credential={credential}
+                overrideCardTitle={name}
+                customFooterComponent={<div />}
+                checkProof={false}
+                hideNavButtons
+                hideFrontFaceDetails={false}
+                // Disable the click-to-flip: the back face is superseded by the
+                // Details overlay. Passing a no-op setter (and omitting
+                // isFrontOverride) keeps the card fixed on its front face, the
+                // same way the read-only detail views (BoostPreview/ClaimBoost)
+                // suppress the flip.
+                setIsFrontOverride={() => {}}
+            />
         );
     };
 
     const renderMultipleCredentials = () => (
-        <div className="min-h-full bg-gradient-to-br from-emerald-50 via-white to-cyan-50 pb-[120px]">
-            <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="min-h-full bg-grayscale-100 pb-[120px] font-poppins">
+            <div className="max-w-4xl mx-auto px-4 py-6 animate-fade-in-up">
                 {/* Header */}
                 <div className="text-center mb-6">
-                    <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-500/25">
-                        <Gift className="w-8 h-8 text-white" />
+                    <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-sm border border-grayscale-200">
+                        <Gift className="w-8 h-8 text-emerald-600" />
                     </div>
 
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                        {credentials.length} Credentials Ready to Claim
+                    <h1 className="text-xl font-semibold text-grayscale-900 mb-2">
+                        {credentials.length} credentials ready to claim
                     </h1>
 
-                    <p className="text-gray-600 text-sm max-w-md mx-auto">
+                    <p className="text-grayscale-600 text-sm max-w-md mx-auto leading-relaxed">
                         Tap each credential to select or deselect it. Only selected credentials will
-                        be added to your wallet.
+                        be added to your account.
                     </p>
                 </div>
 
@@ -254,35 +323,35 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                 </div>
 
                 {/* Summary footer */}
-                <div className="mt-6 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
+                <div className="mt-6 p-5 bg-white rounded-[20px] border border-grayscale-200 shadow-sm">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div
                                 className={`w-10 h-10 rounded-full flex items-center justify-center ${
                                     selectedCredentials.length > 0
-                                        ? 'bg-emerald-100'
-                                        : 'bg-gray-100'
+                                        ? 'bg-emerald-50'
+                                        : 'bg-grayscale-100'
                                 }`}
                             >
                                 <Check
                                     className={`w-5 h-5 ${
                                         selectedCredentials.length > 0
                                             ? 'text-emerald-600'
-                                            : 'text-gray-400'
+                                            : 'text-grayscale-400'
                                     }`}
                                 />
                             </div>
 
                             <div>
-                                <p className="font-medium text-gray-900">
+                                <p className="font-medium text-grayscale-900 text-sm">
                                     {selectedCredentials.length} of {credentials.length} credential
                                     {credentials.length !== 1 ? 's' : ''} selected
                                 </p>
 
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-grayscale-500">
                                     {selectedCredentials.length === 0
                                         ? 'Select at least one to continue'
-                                        : 'These will be added to your wallet'}
+                                        : 'These will be added to your account'}
                                 </p>
                             </div>
                         </div>
@@ -296,11 +365,11 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                                     setSelectedIndices(new Set(credentials.map((_, i) => i)));
                                 }
                             }}
-                            className="text-sm text-cyan-600 hover:text-cyan-700 font-medium"
+                            className="text-sm text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
                         >
                             {selectedCredentials.length === credentials.length
-                                ? 'Deselect All'
-                                : 'Select All'}
+                                ? 'Deselect all'
+                                : 'Select all'}
                         </button>
                     </div>
                 </div>
@@ -312,32 +381,32 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
         return (
             <IonPage>
                 <IonContent fullscreen className="ion-padding">
-                    <div className="min-h-full bg-gradient-to-br from-amber-50 via-white to-orange-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-3xl shadow-xl max-w-md w-full overflow-hidden">
+                    <div className="min-h-full bg-grayscale-100 flex items-center justify-center p-4 font-poppins">
+                        <div className="bg-white rounded-[20px] shadow-xl max-w-md w-full overflow-hidden safe-area-top-margin animate-fade-in-up">
                             {/* Header with icon */}
-                            <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-8 text-center">
-                                <div className="w-20 h-20 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                    <AlertCircle className="w-10 h-10 text-white" />
+                            <div className="bg-white px-6 py-8 text-center border-b border-grayscale-200">
+                                <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                                    <AlertCircle className="w-8 h-8 text-amber-500" />
                                 </div>
 
-                                <h1 className="text-2xl font-bold text-white mb-2">
-                                    No Credentials Found
+                                <h1 className="text-xl font-semibold text-grayscale-900 mb-2">
+                                    No credentials found
                                 </h1>
 
-                                <p className="text-amber-100 text-sm">
+                                <p className="text-grayscale-500 text-sm">
                                     This link doesn't contain any credentials
                                 </p>
                             </div>
 
                             {/* Content */}
                             <div className="p-6">
-                                <div className="space-y-4 mb-6">
-                                    <p className="text-gray-600 text-center text-sm">
+                                <div className="space-y-5 mb-6">
+                                    <p className="text-grayscale-600 text-center text-sm leading-relaxed">
                                         The credential link you followed doesn't have any
                                         credentials to claim. This could happen if:
                                     </p>
 
-                                    <ul className="text-sm text-gray-500 space-y-2 pl-4">
+                                    <ul className="text-sm text-grayscale-600 space-y-2 pl-4">
                                         <li className="flex items-start gap-2">
                                             <span className="text-amber-500 mt-0.5">•</span>
                                             The credential has already been claimed
@@ -348,17 +417,17 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                                         </li>
                                         <li className="flex items-start gap-2">
                                             <span className="text-amber-500 mt-0.5">•</span>
-                                            The issuer removed the credential
+                                            The sender removed the credential
                                         </li>
                                     </ul>
 
                                     {/* Suggestion box */}
-                                    <div className="bg-cyan-50 border border-cyan-200 rounded-xl p-4">
-                                        <p className="text-xs font-medium text-cyan-600 uppercase tracking-wide mb-2">
+                                    <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5">
+                                        <p className="text-xs font-medium text-amber-700 uppercase tracking-wide mb-2">
                                             What to do
                                         </p>
 
-                                        <p className="text-sm text-cyan-800">
+                                        <p className="text-sm text-amber-800 leading-relaxed">
                                             Contact the person or organization that sent you this
                                             link to request a new one.
                                         </p>
@@ -369,20 +438,20 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                                 <div className="space-y-3">
                                     <button
                                         onClick={() => history.push('/')}
-                                        className="w-full py-4 px-6 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold rounded-xl hover:from-cyan-600 hover:to-blue-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25"
+                                        className="w-full py-3 px-4 bg-grayscale-900 text-white font-medium text-sm rounded-[20px] hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                                     >
-                                        <Home className="w-5 h-5" />
-                                        Go to Home
+                                        <Home className="w-4 h-4" />
+                                        Go to home
                                     </button>
 
                                     <button
                                         onClick={() =>
                                             window.open('mailto:support@learncard.com', '_blank')
                                         }
-                                        className="w-full py-3 px-6 text-gray-500 font-medium rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
+                                        className="w-full py-3 px-4 text-sm text-grayscale-600 font-medium rounded-[20px] hover:text-grayscale-900 hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
                                     >
                                         <HelpCircle className="w-4 h-4" />
-                                        Contact Support
+                                        Contact support
                                     </button>
                                 </div>
                             </div>
@@ -393,34 +462,77 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
         );
     }
 
+    const claimBtnText = isClaimed ? 'Claimed' : claiming ? 'Loading...' : 'Accept';
+
+    // Single-credential claim — full credential view, matching ClaimBoost:
+    // themed background, edge-to-edge scroll area (no phantom padding / inset
+    // scrollbar), and the shared frosted BoostFooter (Close / Details / Accept).
+    if (credentials.length === 1) {
+        const credential = credentials[0];
+
+        return (
+            <IonPage>
+                <IonLoading isOpen={claiming} message={'Claiming Credential(s)...'} />
+                <div className="flex h-full bg-grayscale-100">
+                    <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0 bg-grayscale-100">
+                        <section
+                            className={`px-6 w-full safe-area-top-margin overflow-y-auto max-h-full pb-32 disable-scrollbars ${
+                                Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'
+                            }`}
+                        >
+                            <div className="pb-4 vc-preview-modal-safe-area h-full w-full">
+                                {renderSingleCredentialCard(credential)}
+                            </div>
+                        </section>
+                    </section>
+
+                    <footer className="w-full flex justify-center items-center ion-no-border absolute bottom-0 z-10">
+                        <BoostFooter
+                            handleClose={() => history.push('/')}
+                            handleDetails={
+                                isMobile ? () => openSingleCredentialDetails(credential) : undefined
+                            }
+                            handleClaim={handleClaim}
+                            claimBtnText={claimBtnText}
+                            disableClaimButton={claiming || isClaimed}
+                            useFullCloseButton={!isMobile}
+                        />
+                    </footer>
+
+                    {/* On desktop the Details footer button is hidden; show the
+                        persistent Details/Endorsements sidebar instead, matching
+                        the credential detail view (ClaimBoost/BoostPreview). */}
+                    {!isMobile && (
+                        <BoostDetailsSideBar
+                            credential={credential}
+                            categoryType={resolveDetailsCategoryType(credential)}
+                            verificationItems={verificationItems}
+                            renderMethodCredential={credential}
+                        />
+                    )}
+                </div>
+            </IonPage>
+        );
+    }
+
+    // Multiple-credential claim — grid selection view (unchanged).
     return (
         <IonPage>
             <IonLoading isOpen={claiming} message={'Claiming Credential(s)...'} />
             <IonContent fullscreen color="grayscale-100" className="ion-padding">
-                {credentials.length === 1 ? renderSingleCredential() : renderMultipleCredentials()}
+                {renderMultipleCredentials()}
             </IonContent>
             <IonFooter
                 mode="ios"
-                className="w-full flex justify-center items-center p-[15px] ion-no-border absolute bottom-0"
+                className="w-full flex justify-center items-center ion-no-border absolute bottom-0"
             >
-                <IonToolbar color="transparent" mode="ios">
-                    <IonRow className="relative z-10 w-full flex flex-nowrap justify-center items-center gap-4">
-                        <button
-                            onClick={() => history.push('/')} // Or some other cancel action
-                            className="w-[50px] h-[50px] min-h-[50px] min-w-[50px] bg-white rounded-full flex items-center justify-center shadow-3xl"
-                        >
-                            <X className="text-black w-[30px]" />
-                        </button>
-
-                        <button
-                            onClick={handleClaim}
-                            disabled={claiming || isClaimed}
-                            className={`flex items-center justify-center bg-${primaryColor} text-white py-2 mr-3 font-bold text-2xl tracking-wider rounded-[40px] shadow-2xl w-[200px] max-w-[320px] ml-2 normal font-poppins`}
-                        >
-                            {isClaimed ? 'Claimed' : 'Accept'}
-                        </button>
-                    </IonRow>
-                </IonToolbar>
+                <BoostFooter
+                    handleClose={() => history.push('/')}
+                    handleClaim={handleClaim}
+                    claimBtnText={claimBtnText}
+                    disableClaimButton={claiming || isClaimed}
+                    useFullCloseButton={false}
+                />
             </IonFooter>
         </IonPage>
     );
