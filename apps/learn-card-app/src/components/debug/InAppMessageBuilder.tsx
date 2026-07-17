@@ -98,6 +98,23 @@ const initialState: BuilderState = {
     actions: [emptyAction()],
 };
 
+const EMOJI_PRESETS = [
+    '🎉',
+    '✨',
+    '🚀',
+    '💡',
+    '📣',
+    '🔔',
+    '🛠️',
+    '📄',
+    '🔒',
+    '📲',
+    '💬',
+    '🏆',
+    '🎓',
+    '❤️',
+] as const;
+
 const csvToList = (csv: string): string[] =>
     csv
         .split(',')
@@ -468,16 +485,36 @@ export const InAppMessageBuilder: React.FC<{
             </FieldRow>
 
             {!state.mediaType && (
-                <FieldRow label="emoji">
-                    <input
-                        type="text"
-                        value={state.emoji}
-                        onChange={e => set('emoji', e.target.value)}
-                        placeholder="Optional hero glyph, used when no media"
-                        style={debugFieldInputStyle}
-                        className={fieldInputClass}
-                    />
-                </FieldRow>
+                <div className="space-y-1">
+                    <FieldRow label="emoji">
+                        <input
+                            type="text"
+                            value={state.emoji}
+                            onChange={e => set('emoji', e.target.value)}
+                            placeholder="Optional hero glyph, used when no media"
+                            style={debugFieldInputStyle}
+                            className={fieldInputClass}
+                        />
+                    </FieldRow>
+
+                    <div className="flex items-center gap-1 flex-wrap pl-[70px]">
+                        {EMOJI_PRESETS.map(emoji => (
+                            <button
+                                key={emoji}
+                                type="button"
+                                onClick={() => set('emoji', state.emoji === emoji ? '' : emoji)}
+                                title={state.emoji === emoji ? 'Clear emoji' : `Use ${emoji}`}
+                                className={`w-7 h-7 flex items-center justify-center rounded text-[15px] leading-none transition-colors ${
+                                    state.emoji === emoji
+                                        ? 'bg-sky-700/60 ring-1 ring-sky-500'
+                                        : 'bg-gray-800 hover:bg-gray-700'
+                                }`}
+                            >
+                                {emoji}
+                            </button>
+                        ))}
+                    </div>
+                </div>
             )}
 
             <div className="space-y-1 bg-gray-900/40 rounded p-2">
