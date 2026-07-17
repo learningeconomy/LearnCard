@@ -22,6 +22,7 @@ import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
 import { useAnalytics } from '../../analytics';
 import * as m from '../../paraglide/messages.js';
+import { useLocale } from '../../i18n';
 
 type ProfileVisibilityValue =
     (typeof ProfileVisibilityEnum.enum)[keyof typeof ProfileVisibilityEnum.enum];
@@ -102,6 +103,8 @@ const PrivacySettingsModal: React.FC = () => {
     const allowConnectionRequests =
         profile?.allowConnectionRequests ?? AllowConnectionRequestsEnum.enum.anyone;
 
+    const locale = useLocale();
+
     const visibilityOptions = useMemo(
         () => [
             {
@@ -117,7 +120,7 @@ const PrivacySettingsModal: React.FC = () => {
                 label: m['settings.privacy.visibilityPrivate'](),
             },
         ],
-        []
+        [locale]
     );
 
     const connectionRequestOptions = useMemo(
@@ -131,7 +134,7 @@ const PrivacySettingsModal: React.FC = () => {
                 label: m['settings.privacy.connectionRequestsInviteOnly'](),
             },
         ],
-        []
+        [locale]
     );
 
     const handleProfileUpdate = useCallback(

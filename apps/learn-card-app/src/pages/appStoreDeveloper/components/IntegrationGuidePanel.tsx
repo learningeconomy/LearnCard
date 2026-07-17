@@ -29,6 +29,7 @@ import {
 import { getLogger } from 'learn-card-base';
 const log = getLogger('integration-guide-panel');
 
+import * as m from '../../../paraglide/messages.js';
 import { OBv3CredentialBuilder } from '../../../components/credentials/OBv3CredentialBuilder';
 import { Clipboard } from '@capacitor/clipboard';
 import { CodeBlock } from './CodeBlock';
@@ -83,19 +84,31 @@ const StepCard: React.FC<{
 
 // Scope options for API tokens
 const SCOPE_OPTIONS = [
-    { label: 'Full Access', value: '*:*', description: 'Complete access to all resources' },
-    { label: 'Read Only', value: '*:read', description: 'Read access to all resources' },
     {
-        label: 'Profile Management',
+        label: m['developerPortal.integrationGuide.scopeOptions.fullAccess'](),
+        value: '*:*',
+        description: m['developerPortal.integrationGuide.scopeOptions.fullAccessDesc'](),
+    },
+    {
+        label: m['developerPortal.integrationGuide.scopeOptions.readOnly'](),
+        value: '*:read',
+        description: m['developerPortal.integrationGuide.scopeOptions.readOnlyDesc'](),
+    },
+    {
+        label: m['developerPortal.integrationGuide.scopeOptions.profileMgmt'](),
         value: 'profile:* profileManager:*',
-        description: 'Manage profiles',
+        description: m['developerPortal.integrationGuide.scopeOptions.profileMgmtDesc'](),
     },
     {
-        label: 'Credential Management',
+        label: m['developerPortal.integrationGuide.scopeOptions.credMgmt'](),
         value: 'credential:* presentation:* boosts:*',
-        description: 'Manage credentials',
+        description: m['developerPortal.integrationGuide.scopeOptions.credMgmtDesc'](),
     },
-    { label: 'Contracts', value: 'contracts:*', description: 'Manage contracts' },
+    {
+        label: m['developerPortal.integrationGuide.scopeOptions.contracts'](),
+        value: 'contracts:*',
+        description: m['developerPortal.integrationGuide.scopeOptions.contractsDesc'](),
+    },
 ];
 
 // Inline API Token Manager component
@@ -137,7 +150,7 @@ const InlineAPITokenManager: React.FC = () => {
             const wallet = await initWallet();
             await wallet.invoke.addAuthGrant({
                 name: newTokenName.trim(),
-                description: 'Created from Integration Guide',
+                description: m['developerPortal.integrationGuide.apiTokens.createdFromGuide'](),
                 scope: selectedScope,
             });
 
@@ -175,9 +188,14 @@ const InlineAPITokenManager: React.FC = () => {
 
     const revokeToken = async (grant: Partial<AuthGrant>) => {
         const confirmed = await confirm({
-            text: `Are you sure you want to ${grant.status === 'active' ? 'revoke' : 'delete'} "${
-                grant.name
-            }"?`,
+            text:
+                grant.status === 'active'
+                    ? m['developerPortal.integrationGuide.apiTokens.confirmRevoke']({
+                          name: grant.name!,
+                      })
+                    : m['developerPortal.integrationGuide.apiTokens.confirmDelete']({
+                          name: grant.name!,
+                      }),
             onConfirm: async () => {},
             cancelButtonClassName:
                 'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-2 w-[100px]',
@@ -216,10 +234,10 @@ const InlineAPITokenManager: React.FC = () => {
             <div className="flex items-center justify-between">
                 <p className="text-xs text-gray-600">
                     {loading
-                        ? 'Loading...'
-                        : `${activeGrants.length} active token${
-                              activeGrants.length !== 1 ? 's' : ''
-                          }`}
+                        ? m['common.loading']()
+                        : m['developerPortal.integrationGuide.apiTokens.activeTokens']({
+                              count: activeGrants.length,
+                          })}
                 </p>
 
                 {!showCreateForm && (
@@ -228,7 +246,7 @@ const InlineAPITokenManager: React.FC = () => {
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500 text-white rounded-lg text-xs font-medium hover:bg-indigo-600 transition-colors"
                     >
                         <Plus className="w-3 h-3" />
-                        New Token
+                        {m['developerPortal.integrationGuide.apiTokens.newToken']()}
                     </button>
                 )}
             </div>
@@ -238,20 +256,22 @@ const InlineAPITokenManager: React.FC = () => {
                 <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-lg space-y-3">
                     <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Token Name
+                            {m['developerPortal.integrationGuide.apiTokens.tokenName']()}
                         </label>
                         <input
                             type="text"
                             value={newTokenName}
                             onChange={e => setNewTokenName(e.target.value)}
-                            placeholder="e.g., Production API"
+                            placeholder={m[
+                                'developerPortal.integrationGuide.apiTokens.tokenNamePlaceholder'
+                            ]()}
                             className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                         />
                     </div>
 
                     <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Scope / Permissions
+                            {m['developerPortal.integrationGuide.apiTokens.scopePermissions']()}
                         </label>
                         <select
                             value={selectedScope}
@@ -275,7 +295,9 @@ const InlineAPITokenManager: React.FC = () => {
                             disabled={creating || !newTokenName.trim()}
                             className="flex-1 px-3 py-2 bg-indigo-500 text-white rounded-lg text-sm font-medium hover:bg-indigo-600 transition-colors disabled:opacity-50"
                         >
-                            {creating ? 'Creating...' : 'Create Token'}
+                            {creating
+                                ? m['developerPortal.integrationGuide.apiTokens.creating']()
+                                : m['developerPortal.integrationGuide.apiTokens.createToken']()}
                         </button>
 
                         <button
@@ -286,7 +308,7 @@ const InlineAPITokenManager: React.FC = () => {
                             }}
                             className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
                         >
-                            Cancel
+                            {m['common.cancel']()}
                         </button>
                     </div>
                 </div>
@@ -305,7 +327,8 @@ const InlineAPITokenManager: React.FC = () => {
                                     {grant.name}
                                 </p>
                                 <p className="text-xs text-gray-500">
-                                    Created {new Date(grant.createdAt!).toLocaleDateString()}
+                                    {m['developerPortal.integrationGuide.apiTokens.createdOn']()}{' '}
+                                    {new Date(grant.createdAt!).toLocaleDateString()}
                                 </p>
                             </div>
 
@@ -313,7 +336,7 @@ const InlineAPITokenManager: React.FC = () => {
                                 <button
                                     onClick={() => copyToken(grant.id!)}
                                     className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                                    title="Copy token"
+                                    title={m['developerPortal.integrationGuide.common.copyToken']()}
                                 >
                                     {copiedId === grant.id ? (
                                         <Check className="w-4 h-4 text-green-500" />
@@ -325,7 +348,9 @@ const InlineAPITokenManager: React.FC = () => {
                                 <button
                                     onClick={() => revokeToken(grant)}
                                     className="p-1.5 hover:bg-red-50 rounded-lg transition-colors"
-                                    title="Revoke token"
+                                    title={m[
+                                        'developerPortal.integrationGuide.common.revokeToken'
+                                    ]()}
                                 >
                                     <Trash2 className="w-4 h-4 text-red-500" />
                                 </button>
@@ -339,9 +364,11 @@ const InlineAPITokenManager: React.FC = () => {
             {!loading && activeGrants.length === 0 && !showCreateForm && (
                 <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
                     <Key className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600">No API tokens yet</p>
+                    <p className="text-sm text-gray-600">
+                        {m['developerPortal.integrationGuide.apiTokens.noTokensYet']()}
+                    </p>
                     <p className="text-xs text-gray-500 mt-1">
-                        Create one to authenticate your backend
+                        {m['developerPortal.integrationGuide.apiTokens.noTokensHint']()}
                     </p>
                 </div>
             )}
@@ -349,7 +376,8 @@ const InlineAPITokenManager: React.FC = () => {
             {/* Security note */}
             <div className="p-2 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-xs text-red-800">
-                    <strong>Security:</strong> Never expose your API key in client-side code.
+                    <strong>{m['developerPortal.integrationGuide.common.security']()}:</strong>{' '}
+                    {m['developerPortal.integrationGuide.apiTokens.securityNote']()}
                 </p>
             </div>
         </div>
@@ -407,11 +435,13 @@ const InlineSigningAuthoritySetup: React.FC = () => {
                 authority.name
             );
 
-            presentToast('Signing authority created successfully', { hasDismissButton: true });
+            presentToast(m['developerPortal.integrationGuide.signingAuthority.createdSuccess'](), {
+                hasDismissButton: true,
+            });
             fetchSigningAuthority();
         } catch (err) {
             log.error('Failed to create signing authority:', err);
-            presentToast('Failed to create signing authority', {
+            presentToast(m['developerPortal.integrationGuide.signingAuthority.createdFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -425,7 +455,9 @@ const InlineSigningAuthoritySetup: React.FC = () => {
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
                 <div className="flex items-center gap-2 text-gray-500">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-sm">Checking signing authority...</span>
+                    <span className="text-sm">
+                        {m['developerPortal.integrationGuide.signingAuthority.checking']()}
+                    </span>
                 </div>
             </div>
         );
@@ -441,11 +473,12 @@ const InlineSigningAuthoritySetup: React.FC = () => {
 
                     <div className="flex-1">
                         <p className="text-sm font-medium text-emerald-800">
-                            Signing Authority Configured
+                            {m['developerPortal.integrationGuide.signingAuthority.configured']()}
                         </p>
                         <p className="text-xs text-emerald-600 mt-0.5">
-                            Using:{' '}
-                            <code className="bg-emerald-100 px-1 rounded">{primarySAName}</code>
+                            {m['developerPortal.integrationGuide.signingAuthority.using']({
+                                name: primarySAName,
+                            })}
                         </p>
                     </div>
                 </div>
@@ -461,9 +494,11 @@ const InlineSigningAuthoritySetup: React.FC = () => {
                 </div>
 
                 <div className="flex-1">
-                    <p className="text-sm font-medium text-amber-800">No Signing Authority Found</p>
+                    <p className="text-sm font-medium text-amber-800">
+                        {m['developerPortal.integrationGuide.signingAuthority.notFound']()}
+                    </p>
                     <p className="text-xs text-amber-700 mt-1">
-                        A signing authority is required to sign credentials. Create one to continue.
+                        {m['developerPortal.integrationGuide.signingAuthority.notFoundDesc']()}
                     </p>
 
                     <button
@@ -474,12 +509,14 @@ const InlineSigningAuthoritySetup: React.FC = () => {
                         {creating ? (
                             <>
                                 <Loader2 className="w-3 h-3 animate-spin" />
-                                Creating...
+                                {m['developerPortal.integrationGuide.signingAuthority.creating']()}
                             </>
                         ) : (
                             <>
                                 <Plus className="w-3 h-3" />
-                                Create Default Signing Authority
+                                {m[
+                                    'developerPortal.integrationGuide.signingAuthority.createDefault'
+                                ]()}
                             </>
                         )}
                     </button>
@@ -496,41 +533,41 @@ const PERMISSION_TO_METHODS: Record<
 > = {
     request_identity: {
         method: 'requestIdentity()',
-        description: 'Returns user DID & profile',
+        description: m['developerPortal.integrationGuide.permMethods.requestIdentity'](),
         code: `const { did, profile } = await learnCard.requestIdentity();`,
     },
     send_credential: {
         method: 'sendCredential()',
-        description: 'Send VC to wallet',
+        description: m['developerPortal.integrationGuide.permMethods.sendCredential'](),
         code: `await learnCard.sendCredential({
     credential: myVerifiableCredential
 });`,
     },
     launch_feature: {
         method: 'launchFeature()',
-        description: 'Navigate host wallet',
+        description: m['developerPortal.integrationGuide.permMethods.launchFeature'](),
         code: `await learnCard.launchFeature('/wallet', 'View your credentials');`,
     },
     credential_search: {
         method: 'askCredentialSearch()',
-        description: 'Search user credentials',
+        description: m['developerPortal.integrationGuide.permMethods.credentialSearch'](),
         code: `const results = await learnCard.askCredentialSearch({
     type: ['VerifiableCredential', 'Achievement']
 });`,
     },
     credential_by_id: {
         method: 'askCredentialSpecific()',
-        description: 'Get specific credential',
+        description: m['developerPortal.integrationGuide.permMethods.credentialById'](),
         code: `const credential = await learnCard.askCredentialSpecific('credential-id-123');`,
     },
     request_consent: {
         method: 'requestConsent()',
-        description: 'Request user consent',
+        description: m['developerPortal.integrationGuide.permMethods.requestConsent'](),
         code: `const consent = await learnCard.requestConsent('contract-uri');`,
     },
     template_issuance: {
         method: 'initiateTemplateIssue()',
-        description: 'Issue from template/boost',
+        description: m['developerPortal.integrationGuide.permMethods.templateIssuance'](),
         code: `await learnCard.initiateTemplateIssue('template-id', ['recipient@email.com']);`,
     },
 };
@@ -542,24 +579,25 @@ const EmbeddedIframeGuide: React.FC<{ selectedPermissions?: AppPermission[] }> =
         <div className="space-y-6">
             <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-xl">
                 <p className="text-sm text-cyan-800">
-                    Create an embedded app that runs inside the LearnCard wallet. Your app can
-                    request user identity, send credentials, and more.
+                    {m['developerPortal.integrationGuide.iframe.intro']()}
                 </p>
             </div>
 
             <StepCard
                 step={1}
-                title="Set Up Your Website"
+                title={m['developerPortal.integrationGuide.iframe.step1Title']()}
                 icon={<Globe className="w-5 h-5 text-gray-500" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    Create and host a website that can be embedded in an iframe. You'll need to
-                    configure CORS headers.
+                    {m['developerPortal.integrationGuide.iframe.step1Desc']()}
                 </p>
 
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg mb-4">
                     <p className="text-xs text-amber-800">
-                        <strong>Important:</strong> Your server must include these response headers:
+                        <span className="font-semibold">
+                            {m['developerPortal.integrationGuide.common.important']()}:
+                        </span>{' '}
+                        {m['developerPortal.integrationGuide.iframe.step1Important']()}
                     </p>
                 </div>
 
@@ -578,17 +616,17 @@ Access-Control-Allow-Headers: Content-Type`}
 
             <StepCard
                 step={2}
-                title="Install the SDK"
+                title={m['developerPortal.integrationGuide.iframe.step2Title']()}
                 icon={<Package className="w-5 h-5 text-gray-500" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    Install the LearnCard Partner Connect SDK to communicate with the wallet.
+                    {m['developerPortal.integrationGuide.iframe.step2Desc']()}
                 </p>
 
                 <CodeBlock code={`npm install @learncard/partner-connect`} />
 
                 <p className="text-xs text-gray-500 mt-3">
-                    Or use yarn:{' '}
+                    {m['developerPortal.integrationGuide.iframe.step2OrYarn']()}
                     <code className="bg-gray-100 px-1.5 py-0.5 rounded">
                         yarn add @learncard/partner-connect
                     </code>
@@ -597,11 +635,11 @@ Access-Control-Allow-Headers: Content-Type`}
 
             <StepCard
                 step={3}
-                title="Initialize Partner Connect"
+                title={m['developerPortal.integrationGuide.iframe.step3Title']()}
                 icon={<Code className="w-5 h-5 text-gray-500" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    Set up the SDK in your application to communicate with the LearnCard wallet.
+                    {m['developerPortal.integrationGuide.iframe.step3Desc']()}
                 </p>
 
                 <CodeBlock
@@ -619,11 +657,15 @@ log.info('User Profile:', identity.profile);`}
                 />
             </StepCard>
 
-            <StepCard step={4} title="Use the API" icon={<Zap className="w-5 h-5 text-gray-500" />}>
+            <StepCard
+                step={4}
+                title={m['developerPortal.integrationGuide.iframe.step4Title']()}
+                icon={<Zap className="w-5 h-5 text-gray-500" />}
+            >
                 <p className="text-sm text-gray-600 mb-4">
                     {selectedPermissions.length > 0
-                        ? 'Based on your selected permissions, here are the methods you can use:'
-                        : 'Select permissions above to see relevant API methods. Here are some common ones:'}
+                        ? m['developerPortal.integrationGuide.iframe.step4DescHasPerms']()
+                        : m['developerPortal.integrationGuide.iframe.step4DescNoPerms']()}
                 </p>
 
                 {selectedPermissions.length > 0 ? (
@@ -657,7 +699,9 @@ log.info('User Profile:', identity.profile);`}
                                     requestIdentity()
                                 </code>
                                 <span className="text-xs text-gray-500">
-                                    Returns user DID & profile
+                                    {m[
+                                        'developerPortal.integrationGuide.permMethods.requestIdentity'
+                                    ]()}
                                 </span>
                             </div>
                             <CodeBlock
@@ -670,7 +714,11 @@ log.info('User Profile:', identity.profile);`}
                                 <code className="text-xs font-mono text-cyan-700 bg-cyan-50 px-2 py-1 rounded">
                                     sendCredential()
                                 </code>
-                                <span className="text-xs text-gray-500">Send VC to wallet</span>
+                                <span className="text-xs text-gray-500">
+                                    {m[
+                                        'developerPortal.integrationGuide.permMethods.sendCredential'
+                                    ]()}
+                                </span>
                             </div>
                             <CodeBlock
                                 code={`await learnCard.sendCredential({ credential: myVerifiableCredential });`}
@@ -681,28 +729,30 @@ log.info('User Profile:', identity.profile);`}
 
                 {selectedPermissions.length > 0 && (
                     <p className="text-xs text-gray-500 mt-4 italic">
-                        💡 Tip: You've selected {selectedPermissions.length} permission
-                        {selectedPermissions.length > 1 ? 's' : ''}. The methods above correspond to
-                        your selections.
+                        {m['developerPortal.integrationGuide.iframe.step4Tip']({
+                            count: selectedPermissions.length,
+                        })}
                     </p>
                 )}
             </StepCard>
 
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Full API Reference</h4>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                    {m['developerPortal.integrationGuide.iframe.apiRefTitle']()}
+                </h4>
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-xs">
                         <thead>
                             <tr className="border-b border-gray-200">
                                 <th className="text-left py-2 pr-4 text-gray-600 font-medium">
-                                    Method
+                                    {m['developerPortal.integrationGuide.common.method']()}
                                 </th>
                                 <th className="text-left py-2 pr-4 text-gray-600 font-medium">
-                                    Description
+                                    {m['developerPortal.integrationGuide.common.description']()}
                                 </th>
                                 <th className="text-left py-2 text-gray-600 font-medium">
-                                    Returns
+                                    {m['developerPortal.integrationGuide.common.returns']()}
                                 </th>
                             </tr>
                         </thead>
@@ -712,7 +762,11 @@ log.info('User Profile:', identity.profile);`}
                                 <td className="py-2 pr-4 font-mono text-cyan-700">
                                     requestIdentity()
                                 </td>
-                                <td className="py-2 pr-4">Request user identity (SSO)</td>
+                                <td className="py-2 pr-4">
+                                    {m[
+                                        'developerPortal.integrationGuide.iframe.apiRefRowIdentity'
+                                    ]()}
+                                </td>
                                 <td className="py-2">IdentityResponse</td>
                             </tr>
 
@@ -720,7 +774,11 @@ log.info('User Profile:', identity.profile);`}
                                 <td className="py-2 pr-4 font-mono text-cyan-700">
                                     sendCredential(vc)
                                 </td>
-                                <td className="py-2 pr-4">Send VC to user's wallet</td>
+                                <td className="py-2 pr-4">
+                                    {m[
+                                        'developerPortal.integrationGuide.iframe.apiRefRowSendCred'
+                                    ]()}
+                                </td>
                                 <td className="py-2">SendCredentialResponse</td>
                             </tr>
 
@@ -728,7 +786,9 @@ log.info('User Profile:', identity.profile);`}
                                 <td className="py-2 pr-4 font-mono text-cyan-700">
                                     launchFeature(path)
                                 </td>
-                                <td className="py-2 pr-4">Launch feature in host</td>
+                                <td className="py-2 pr-4">
+                                    {m['developerPortal.integrationGuide.iframe.apiRefRowLaunch']()}
+                                </td>
                                 <td className="py-2">void</td>
                             </tr>
 
@@ -736,7 +796,9 @@ log.info('User Profile:', identity.profile);`}
                                 <td className="py-2 pr-4 font-mono text-cyan-700">
                                     askCredentialSearch(vpr)
                                 </td>
-                                <td className="py-2 pr-4">Request credentials by query</td>
+                                <td className="py-2 pr-4">
+                                    {m['developerPortal.integrationGuide.iframe.apiRefRowSearch']()}
+                                </td>
                                 <td className="py-2">CredentialSearchResponse</td>
                             </tr>
 
@@ -744,7 +806,11 @@ log.info('User Profile:', identity.profile);`}
                                 <td className="py-2 pr-4 font-mono text-cyan-700">
                                     askCredentialSpecific(id)
                                 </td>
-                                <td className="py-2 pr-4">Request specific credential</td>
+                                <td className="py-2 pr-4">
+                                    {m[
+                                        'developerPortal.integrationGuide.iframe.apiRefRowSpecific'
+                                    ]()}
+                                </td>
                                 <td className="py-2">CredentialSpecificResponse</td>
                             </tr>
 
@@ -752,7 +818,11 @@ log.info('User Profile:', identity.profile);`}
                                 <td className="py-2 pr-4 font-mono text-cyan-700">
                                     requestConsent(uri)
                                 </td>
-                                <td className="py-2 pr-4">Request user consent</td>
+                                <td className="py-2 pr-4">
+                                    {m[
+                                        'developerPortal.integrationGuide.iframe.apiRefRowConsent'
+                                    ]()}
+                                </td>
                                 <td className="py-2">ConsentResponse</td>
                             </tr>
 
@@ -760,13 +830,19 @@ log.info('User Profile:', identity.profile);`}
                                 <td className="py-2 pr-4 font-mono text-cyan-700">
                                     initiateTemplateIssue(id)
                                 </td>
-                                <td className="py-2 pr-4">Issue from template/boost</td>
+                                <td className="py-2 pr-4">
+                                    {m['developerPortal.integrationGuide.iframe.apiRefRowIssue']()}
+                                </td>
                                 <td className="py-2">TemplateIssueResponse</td>
                             </tr>
 
                             <tr>
                                 <td className="py-2 pr-4 font-mono text-cyan-700">destroy()</td>
-                                <td className="py-2 pr-4">Clean up SDK</td>
+                                <td className="py-2 pr-4">
+                                    {m[
+                                        'developerPortal.integrationGuide.iframe.apiRefRowDestroy'
+                                    ]()}
+                                </td>
                                 <td className="py-2">void</td>
                             </tr>
                         </tbody>
@@ -780,7 +856,7 @@ log.info('User Profile:', identity.profile);`}
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 w-full p-3 bg-cyan-500 text-white rounded-xl text-sm font-medium hover:bg-cyan-600 transition-colors"
             >
-                View Full Documentation
+                {m['developerPortal.integrationGuide.common.viewFullDocs']()}
                 <ExternalLink className="w-4 h-4" />
             </a>
         </div>
@@ -860,33 +936,34 @@ await learnCard.invoke.send({
             />
             <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
                 <p className="text-sm text-indigo-800">
-                    Use the Consent Redirect flow to collect user consent and credentials from your
-                    external application. Users will be redirected to LearnCard to grant
-                    permissions, then back to your app with their credentials.
+                    {m['developerPortal.integrationGuide.consent.intro']()}
                 </p>
             </div>
 
             <StepCard
                 step={1}
-                title="Create a Consent Flow Contract"
+                title={m['developerPortal.integrationGuide.consent.step1Title']()}
                 icon={<Globe className="w-5 h-5 text-gray-500" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    First, create or select a Consent Flow Contract that defines what permissions
-                    your app needs. You can do this in the Developer Portal or via the API.
+                    {m['developerPortal.integrationGuide.consent.step1Desc']()}
                 </p>
 
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg mb-4">
                     <p className="text-xs text-amber-800">
-                        <strong>Important:</strong> Copy and save your Contract URI — you'll need it
-                        to send credentials later.
+                        <strong>{m['developerPortal.integrationGuide.common.important']()}:</strong>{' '}
+                        {m['developerPortal.integrationGuide.consent.step1Important']()}
                     </p>
                 </div>
 
                 {hasContractUri ? (
                     <div className="p-3 bg-green-50 border border-green-200 rounded-lg mb-3">
                         <p className="text-xs text-green-800 mb-2">
-                            <strong>✓ Contract Selected:</strong> Your consent flow contract URI:
+                            <span className="font-semibold">
+                                {m[
+                                    'developerPortal.integrationGuide.consent.step1ContractSelected'
+                                ]()}
+                            </span>
                         </p>
                         <code className="text-xs bg-green-100 px-2 py-1 rounded break-all block">
                             {contractUri}
@@ -895,7 +972,9 @@ await learnCard.invoke.send({
                 ) : (
                     <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg mb-3">
                         <p className="text-xs text-gray-600">
-                            Select a consent flow contract above to see your URI here.
+                            {m[
+                                'developerPortal.components.integrationGuide.consent.step1SelectContractDesc'
+                            ]()}
                         </p>
                     </div>
                 )}
@@ -908,13 +987,11 @@ const consentFlowContractURI = '${displayContractUri}';`}
 
             <StepCard
                 step={2}
-                title="Set Up Your Redirect Handler"
+                title={m['developerPortal.integrationGuide.consent.step2Title']()}
                 icon={<Code className="w-5 h-5 text-gray-500" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    Create an endpoint to handle the redirect from LearnCard. The user&apos;s DID
-                    and a VP JWT (containing a delegate credential) will be included in the URL
-                    parameters.
+                    {m['developerPortal.integrationGuide.consent.step2Desc']()}
                 </p>
 
                 <CodeBlock
@@ -936,20 +1013,17 @@ app.get('/api/learncard/callback', async (req, res) => {
                 />
 
                 <p className="text-xs text-gray-500 mt-3">
-                    Store the <code className="bg-gray-100 px-1.5 py-0.5 rounded">did</code> and{' '}
-                    <code className="bg-gray-100 px-1.5 py-0.5 rounded">vp</code> (a VP JWT
-                    containing a delegate credential) to identify and send credentials to this user
-                    later.
+                    {m['developerPortal.integrationGuide.consent.step2Note']()}
                 </p>
             </StepCard>
 
             <StepCard
                 step={3}
-                title="Create an API Key"
+                title={m['developerPortal.integrationGuide.consent.step3Title']()}
                 icon={<Key className="w-5 h-5 text-gray-500" />}
             >
                 <p className="text-sm text-gray-600 mb-4">
-                    Generate an API key to authenticate your backend with the LearnCard Network.
+                    {m['developerPortal.integrationGuide.consent.step3Desc']()}
                 </p>
 
                 <InlineAPITokenManager />
@@ -957,17 +1031,17 @@ app.get('/api/learncard/callback', async (req, res) => {
 
             <StepCard
                 step={4}
-                title="Initialize LearnCard on Your Backend"
+                title={m['developerPortal.integrationGuide.consent.step4Title']()}
                 icon={<Package className="w-5 h-5 text-gray-500" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    Install and initialize the LearnCard SDK in your backend application.
+                    {m['developerPortal.integrationGuide.consent.step4Desc']()}
                 </p>
 
                 <CodeBlock code={`npm install @learncard/init`} />
 
                 <p className="text-xs text-gray-500 mt-3 mb-3">
-                    Then initialize with your API key:
+                    {m['developerPortal.components.integrationGuide.consent.step4InitDesc']()}
                 </p>
 
                 <CodeBlock
@@ -984,13 +1058,11 @@ log.info('LearnCard DID:', learnCard.id.did());`}
 
             <StepCard
                 step={5}
-                title="Send Credentials to Users"
+                title={m['developerPortal.integrationGuide.consent.step5Title']()}
                 icon={<Zap className="w-5 h-5 text-gray-500" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    When you're ready to send a credential to a user, use the simplified{' '}
-                    <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">send</code> method.
-                    This handles credential creation, signing, and delivery in one call.
+                    {m['developerPortal.integrationGuide.consent.step5Desc']()}
                 </p>
 
                 {/* Credential Builder Button */}
@@ -1000,13 +1072,15 @@ log.info('LearnCard DID:', learnCard.id.did());`}
                         className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl text-sm font-medium hover:from-cyan-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
                     >
                         <Award className="w-4 h-4" />
-                        Build Your Credential
+                        {m['developerPortal.integrationGuide.consent.step5BuildCred']()}
                     </button>
 
                     {builtCredential && (
                         <div className="mt-2 flex items-center gap-2 text-xs text-emerald-600">
                             <Check className="w-3.5 h-3.5" />
-                            <span>Custom credential added to code below</span>
+                            <span>
+                                {m['developerPortal.integrationGuide.consent.step5CredAdded']()}
+                            </span>
                         </div>
                     )}
                 </div>
@@ -1015,37 +1089,41 @@ log.info('LearnCard DID:', learnCard.id.did());`}
 
                 <div className="mt-4 p-3 bg-cyan-50 border border-cyan-200 rounded-lg">
                     <p className="text-xs text-cyan-800">
-                        <strong>What this does:</strong> Creates a credential template, issues it to
-                        the user, and writes it to your consent flow contract — all in one call.
+                        <span className="font-semibold">
+                            {m['developerPortal.integrationGuide.common.whatThisDoes']()}:
+                        </span>{' '}
+                        {m['developerPortal.integrationGuide.consent.step5WhatsThis']()}
                     </p>
                 </div>
             </StepCard>
 
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Flow Summary</h4>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                    {m['developerPortal.integrationGuide.common.flowSummary']()}
+                </h4>
 
                 <ol className="text-xs text-gray-600 space-y-2 list-decimal list-inside">
-                    <li>User clicks "Connect with LearnCard" in your app</li>
-                    <li>User is redirected to LearnCard to grant consent</li>
-                    <li>LearnCard redirects back to your app with their DID</li>
-                    <li>Your backend stores the user's DID</li>
-                    <li>When ready, your backend issues credentials to that DID</li>
+                    <li>{m['developerPortal.integrationGuide.consent.flowStep1']()}</li>
+                    <li>{m['developerPortal.integrationGuide.consent.flowStep2']()}</li>
+                    <li>{m['developerPortal.integrationGuide.consent.flowStep3']()}</li>
+                    <li>{m['developerPortal.integrationGuide.consent.flowStep4']()}</li>
+                    <li>{m['developerPortal.integrationGuide.consent.flowStep5']()}</li>
                 </ol>
             </div>
 
             <StepCard
                 step={6}
-                title="Additional Functions (Optional)"
+                title={m['developerPortal.integrationGuide.consent.step6Title']()}
                 icon={<Database className="w-5 h-5 text-gray-500" />}
             >
                 <p className="text-sm text-gray-600 mb-4">
-                    As the contract owner, you can also query consent data and transactions:
+                    {m['developerPortal.integrationGuide.consent.step6Desc']()}
                 </p>
 
                 <div className="space-y-4">
                     <div>
                         <p className="text-xs text-gray-500 mb-2 font-medium">
-                            Get all consented data for your contract:
+                            {m['developerPortal.integrationGuide.consent.step6AllData']()}
                         </p>
                         <CodeBlock
                             code={`// Query all consent records for your contract
@@ -1062,7 +1140,7 @@ log.info('Consented records:', consentData.records);`}
 
                     <div>
                         <p className="text-xs text-gray-500 mb-2 font-medium">
-                            Get consent data for a specific user:
+                            {m['developerPortal.integrationGuide.consent.step6UserData']()}
                         </p>
                         <CodeBlock
                             code={`// Query consent data involving a specific DID
@@ -1083,7 +1161,7 @@ log.info('User consent records:', userConsentData.records);`}
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 w-full p-3 bg-indigo-500 text-white rounded-xl text-sm font-medium hover:bg-indigo-600 transition-colors"
             >
-                View Full Documentation
+                {m['developerPortal.integrationGuide.common.viewFullDocs']()}
                 <ExternalLink className="w-4 h-4" />
             </a>
         </div>
@@ -1096,19 +1174,17 @@ const ServerHeadlessGuide: React.FC<{ webhookUrl?: string }> = ({ webhookUrl }) 
         <div className="space-y-6">
             <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
                 <p className="text-sm text-emerald-800">
-                    Server Headless integration uses the <strong>Universal Inbox API</strong> to
-                    issue credentials directly to users via email or phone — no wallet interaction
-                    required from your side.
+                    {m['developerPortal.integrationGuide.server.intro']()}
                 </p>
             </div>
 
             <StepCard
                 step={1}
-                title="Configure Signing Authority"
+                title={m['developerPortal.integrationGuide.server.step1Title']()}
                 icon={<Shield className="w-5 h-5 text-gray-500" />}
             >
                 <p className="text-sm text-gray-600 mb-4">
-                    A signing authority is required to sign credentials on your behalf.
+                    {m['developerPortal.integrationGuide.server.step1Desc']()}
                 </p>
 
                 <InlineSigningAuthoritySetup />
@@ -1116,11 +1192,11 @@ const ServerHeadlessGuide: React.FC<{ webhookUrl?: string }> = ({ webhookUrl }) 
 
             <StepCard
                 step={2}
-                title="Create an API Key"
+                title={m['developerPortal.integrationGuide.server.step2Title']()}
                 icon={<Key className="w-5 h-5 text-gray-500" />}
             >
                 <p className="text-sm text-gray-600 mb-4">
-                    Generate an API key to authenticate your backend with the LearnCard Network.
+                    {m['developerPortal.integrationGuide.server.step2Desc']()}
                 </p>
 
                 <InlineAPITokenManager />
@@ -1128,17 +1204,17 @@ const ServerHeadlessGuide: React.FC<{ webhookUrl?: string }> = ({ webhookUrl }) 
 
             <StepCard
                 step={3}
-                title="Initialize LearnCard SDK"
+                title={m['developerPortal.integrationGuide.server.step3Title']()}
                 icon={<Package className="w-5 h-5 text-gray-500" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    Install and initialize the LearnCard SDK in your backend application.
+                    {m['developerPortal.integrationGuide.server.step3Desc']()}
                 </p>
 
                 <CodeBlock code={`npm install @learncard/init`} />
 
                 <p className="text-xs text-gray-500 mt-3 mb-3">
-                    Then initialize with your API key:
+                    {m['developerPortal.integrationGuide.server.step3Init']()}
                 </p>
 
                 <CodeBlock
@@ -1153,12 +1229,11 @@ const learnCard = await initLearnCard({
 
             <StepCard
                 step={4}
-                title="Issue Credential via Universal Inbox"
+                title={m['developerPortal.integrationGuide.server.step4Title']()}
                 icon={<Send className="w-5 h-5 text-gray-500" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    Send credentials to users by email or phone. LearnCard handles delivery
-                    automatically.
+                    {m['developerPortal.integrationGuide.server.step4Desc']()}
                 </p>
 
                 <CodeBlock
@@ -1216,20 +1291,21 @@ log.info(result);
 
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg mt-4">
                     <p className="text-xs text-blue-800">
-                        <strong>What happens:</strong> If the recipient has a LearnCard wallet
-                        linked to that email, the credential is delivered instantly. Otherwise, they
-                        receive an email with a claim link.
+                        <span className="font-semibold">
+                            {m['developerPortal.integrationGuide.common.whatHappens']()}:
+                        </span>{' '}
+                        {m['developerPortal.integrationGuide.server.step4WhatsThis']()}
                     </p>
                 </div>
             </StepCard>
 
             <StepCard
                 step={5}
-                title="Handle Webhook Events (Optional)"
+                title={m['developerPortal.integrationGuide.server.step5Title']()}
                 icon={<Webhook className="w-5 h-5 text-gray-500" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    Receive notifications when credentials are delivered or claimed.
+                    {m['developerPortal.integrationGuide.server.step5Desc']()}
                 </p>
 
                 <CodeBlock
@@ -1254,11 +1330,11 @@ app.post('/webhooks/learncard', (req, res) => {
 
             <StepCard
                 step={6}
-                title="REST API Alternative"
+                title={m['developerPortal.integrationGuide.server.step6Title']()}
                 icon={<Server className="w-5 h-5 text-gray-500" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    You can also use the REST API directly without the SDK.
+                    {m['developerPortal.integrationGuide.server.step6Desc']()}
                 </p>
 
                 <CodeBlock
@@ -1289,46 +1365,44 @@ app.post('/webhooks/learncard', (req, res) => {
             </StepCard>
 
             <div className="p-4 bg-gray-100 rounded-xl">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Flow Summary</h4>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                    {m['developerPortal.integrationGuide.common.flowSummary']()}
+                </h4>
 
                 <div className="space-y-2 text-xs text-gray-600">
                     <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-medium">
                             1
                         </div>
-                        <span>
-                            Your server calls{' '}
-                            <code className="bg-white px-1.5 py-0.5 rounded">inbox.issue</code> with
-                            email + credential
-                        </span>
+                        <span>{m['developerPortal.integrationGuide.server.flowStep1']()}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-medium">
                             2
                         </div>
-                        <span>LearnCard signs the credential with your signing authority</span>
+                        <span>{m['developerPortal.integrationGuide.server.flowStep2']()}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-medium">
                             3
                         </div>
-                        <span>If user has wallet → delivered instantly to their inbox</span>
+                        <span>{m['developerPortal.integrationGuide.server.flowStep3']()}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-medium">
                             4
                         </div>
-                        <span>If new user → email sent with magic link to claim</span>
+                        <span>{m['developerPortal.integrationGuide.server.flowStep4']()}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-medium">
                             5
                         </div>
-                        <span>Webhook notifies you of delivery status</span>
+                        <span>{m['developerPortal.integrationGuide.server.flowStep5']()}</span>
                     </div>
                 </div>
             </div>
@@ -1339,7 +1413,7 @@ app.post('/webhooks/learncard', (req, res) => {
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 w-full p-3 bg-emerald-500 text-white rounded-xl text-sm font-medium hover:bg-emerald-600 transition-colors"
             >
-                View Universal Inbox Documentation
+                {m['developerPortal.integrationGuide.server.viewDocs']()}
                 <ExternalLink className="w-4 h-4" />
             </a>
         </div>
@@ -1352,34 +1426,33 @@ const DirectLinkGuide: React.FC<{ url?: string }> = ({ url }) => {
         <div className="space-y-6">
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
                 <p className="text-sm text-blue-800">
-                    Direct Link is the simplest integration — users click your app and are
-                    redirected to your URL with optional query parameters for user context.
+                    {m['developerPortal.integrationGuide.directLink.intro']()}
                 </p>
             </div>
 
             <StepCard
                 step={1}
-                title="Configure Your Redirect URL"
+                title={m['developerPortal.integrationGuide.directLink.step1Title']()}
                 icon={<Globe className="w-5 h-5 text-gray-500" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    Provide the URL where users will be redirected when they launch your app.
+                    {m['developerPortal.integrationGuide.directLink.step1Desc']()}
                 </p>
 
                 <CodeBlock code={url || 'https://yourapp.com'} />
 
                 <p className="text-xs text-gray-500 mt-3">
-                    This URL is configured in the Launch Configuration step.
+                    {m['developerPortal.integrationGuide.directLink.step1Note']()}
                 </p>
             </StepCard>
 
             <StepCard
                 step={2}
-                title="Handle User Context (Optional)"
+                title={m['developerPortal.integrationGuide.directLink.step2Title']()}
                 icon={<Code className="w-5 h-5 text-gray-500" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    LearnCard can append the user's DID as a query parameter for identification.
+                    {m['developerPortal.integrationGuide.directLink.step2Desc']()}
                 </p>
 
                 <CodeBlock
@@ -1399,11 +1472,11 @@ if (userDid) {
 
             <StepCard
                 step={3}
-                title="Verify User Identity (Optional)"
+                title={m['developerPortal.integrationGuide.directLink.step3Title']()}
                 icon={<Key className="w-5 h-5 text-gray-500" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    If you need to verify the user's identity, you can resolve their DID.
+                    {m['developerPortal.integrationGuide.directLink.step3Desc']()}
                 </p>
 
                 <CodeBlock
@@ -1418,22 +1491,24 @@ log.info('User Profile:', didDocument);`}
             </StepCard>
 
             <div className="p-4 bg-gray-100 rounded-xl">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">When to Use Direct Link</h4>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                    {m['developerPortal.integrationGuide.directLink.whenToUse']()}
+                </h4>
 
                 <ul className="space-y-1 text-xs text-gray-600">
                     <li className="flex items-center gap-2">
                         <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                        Simple web apps that don't need wallet interaction
+                        {m['developerPortal.integrationGuide.directLink.useCase1']()}
                     </li>
 
                     <li className="flex items-center gap-2">
                         <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                        External services or portals
+                        {m['developerPortal.integrationGuide.directLink.useCase2']()}
                     </li>
 
                     <li className="flex items-center gap-2">
                         <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                        Apps that only need user identification
+                        {m['developerPortal.integrationGuide.directLink.useCase3']()}
                     </li>
                 </ul>
             </div>
@@ -1447,25 +1522,23 @@ const AITutorGuide: React.FC<{ aiTutorUrl?: string }> = ({ aiTutorUrl }) => {
         <div className="space-y-6">
             <div className="p-4 bg-violet-50 border border-violet-200 rounded-xl">
                 <p className="text-sm text-violet-800">
-                    AI Tutor apps let users select learning topics and launch personalized tutoring
-                    sessions. LearnCard handles topic selection and passes context to your app.
+                    {m['developerPortal.integrationGuide.aiTutor.intro']()}
                 </p>
             </div>
 
             <StepCard
                 step={1}
-                title="Configure Your AI Tutor URL"
+                title={m['developerPortal.integrationGuide.aiTutor.step1Title']()}
                 icon={<Sparkles className="w-5 h-5 text-gray-500" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    Provide your AI tutor's base URL. Users will be redirected with topic and DID
-                    parameters.
+                    {m['developerPortal.integrationGuide.aiTutor.step1Desc']()}
                 </p>
 
                 <CodeBlock code={aiTutorUrl || 'https://yourtutor.com'} />
 
                 <p className="text-xs text-gray-500 mt-3">
-                    Users will be redirected to:{' '}
+                    {m['developerPortal.integrationGuide.aiTutor.step1Redirect']()}{' '}
                     <code className="bg-gray-100 px-1 rounded">
                         {aiTutorUrl || 'https://yourtutor.com'}/chats?did=...&topic=...
                     </code>
@@ -1474,11 +1547,11 @@ const AITutorGuide: React.FC<{ aiTutorUrl?: string }> = ({ aiTutorUrl }) => {
 
             <StepCard
                 step={2}
-                title="Handle Launch Parameters"
+                title={m['developerPortal.integrationGuide.aiTutor.step2Title']()}
                 icon={<Code className="w-5 h-5 text-gray-500" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    Your app receives the user's DID and selected topic as query parameters.
+                    {m['developerPortal.integrationGuide.aiTutor.step2Desc']()}
                 </p>
 
                 <CodeBlock
@@ -1500,11 +1573,11 @@ initTutorSession({
 
             <StepCard
                 step={3}
-                title="Track Learning Progress (Optional)"
+                title={m['developerPortal.integrationGuide.aiTutor.step3Title']()}
                 icon={<Database className="w-5 h-5 text-gray-500" />}
             >
                 <p className="text-sm text-gray-600 mb-3">
-                    Issue credentials for completed learning milestones.
+                    {m['developerPortal.integrationGuide.aiTutor.step3Desc']()}
                 </p>
 
                 <CodeBlock
@@ -1536,45 +1609,44 @@ await learnCard.invoke.send({
             </StepCard>
 
             <div className="p-4 bg-gray-100 rounded-xl">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">User Flow</h4>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                    {m['developerPortal.integrationGuide.aiTutor.userFlow']()}
+                </h4>
 
                 <div className="space-y-2 text-xs text-gray-600">
                     <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-medium">
                             1
                         </div>
-                        <span>User clicks "Open" on your AI Tutor app</span>
+                        <span>{m['developerPortal.integrationGuide.aiTutor.flowStep1']()}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-medium">
                             2
                         </div>
-                        <span>Topic selection modal appears (New Topic or Revisit)</span>
+                        <span>{m['developerPortal.integrationGuide.aiTutor.flowStep2']()}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-medium">
                             3
                         </div>
-                        <span>User enters or selects a learning topic</span>
+                        <span>{m['developerPortal.integrationGuide.aiTutor.flowStep3']()}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-medium">
                             4
                         </div>
-                        <span>
-                            Redirected to your app with{' '}
-                            <code className="bg-white px-1 rounded">?did=...&topic=...</code>
-                        </span>
+                        <span>{m['developerPortal.integrationGuide.aiTutor.flowStep4']()}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center font-medium">
                             5
                         </div>
-                        <span>Your AI tutor starts the personalized session</span>
+                        <span>{m['developerPortal.integrationGuide.aiTutor.flowStep5']()}</span>
                     </div>
                 </div>
             </div>
@@ -1605,7 +1677,7 @@ export const IntegrationGuidePanel: React.FC<IntegrationGuidePanelProps> = ({
             default:
                 return (
                     <div className="p-8 text-center text-gray-500">
-                        <p>Integration guide coming soon for this launch type.</p>
+                        <p>{m['developerPortal.integrationGuide.panel.comingSoon']()}</p>
                     </div>
                 );
         }
@@ -1614,19 +1686,19 @@ export const IntegrationGuidePanel: React.FC<IntegrationGuidePanelProps> = ({
     const getTitle = () => {
         switch (launchType) {
             case 'EMBEDDED_IFRAME':
-                return 'Embedded Iframe Integration';
+                return m['developerPortal.integrationGuide.panel.iframeTitle']();
             case 'SECOND_SCREEN':
-                return 'Second Screen Integration';
+                return m['developerPortal.integrationGuide.panel.consentTitle']();
             case 'DIRECT_LINK':
-                return 'Direct Link Integration';
+                return m['developerPortal.integrationGuide.panel.directLinkTitle']();
             case 'CONSENT_REDIRECT':
-                return 'Consent Flow Integration';
+                return m['developerPortal.integrationGuide.panel.consentTitle']();
             case 'SERVER_HEADLESS':
-                return 'Server Headless Integration';
+                return m['developerPortal.integrationGuide.panel.serverTitle']();
             case 'AI_TUTOR':
-                return 'AI Tutor Integration';
+                return m['developerPortal.integrationGuide.panel.aiTutorTitle']();
             default:
-                return 'Integration Guide';
+                return m['developerPortal.integrationGuide.panel.title']();
         }
     };
 
@@ -1655,7 +1727,9 @@ export const IntegrationGuidePanel: React.FC<IntegrationGuidePanelProps> = ({
 
                         <div>
                             <h3 className="text-lg font-semibold text-white">{getTitle()}</h3>
-                            <p className="text-xs text-cyan-100">Step-by-step developer guide</p>
+                            <p className="text-xs text-cyan-100">
+                                {m['developerPortal.integrationGuide.panel.subtitle']()}
+                            </p>
                         </div>
                     </div>
 

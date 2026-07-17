@@ -5,6 +5,8 @@
 import React from 'react';
 import { Calendar } from 'lucide-react';
 
+import * as m from '../../../../../../paraglide/messages.js';
+
 import { OBv3CredentialTemplate, TemplateFieldValue, staticField, systemField } from '../types';
 import { FieldEditor, CollapsibleSection } from '../FieldEditor';
 
@@ -40,21 +42,25 @@ export const DatesSection: React.FC<DatesSectionProps> = ({
 
     return (
         <CollapsibleSection
-            title="Dates"
+            title={m['developerPortal.credentialBuilder.sectionTitles.dates']()}
             icon={<Calendar className="w-4 h-4 text-rose-600" />}
             isExpanded={isExpanded}
             onToggle={onToggle}
         >
             <FieldEditor
-                label="Issuance Date"
-                field={systemField('The current timestamp when the credential is issued (ISO 8601 format)')}
+                label={m['developerPortal.credentialBuilder.dates.issuanceDate']()}
+                field={systemField(
+                    'The current timestamp when the credential is issued (ISO 8601 format)'
+                )}
                 onChange={() => {}}
-                helpText="Automatically set to the current date/time when the credential is issued"
+                helpText={m['developerPortal.credentialBuilder.dates.issuanceDateHelp']()}
             />
 
             <div className="mt-4">
                 <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm font-medium text-gray-700">Expiration Date</label>
+                    <label className="text-sm font-medium text-gray-700">
+                        {m['developerPortal.credentialBuilder.dates.expirationDate']()}
+                    </label>
 
                     <button
                         type="button"
@@ -65,7 +71,9 @@ export const DatesSection: React.FC<DatesSectionProps> = ({
                                 : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                         }`}
                     >
-                        {hasExpiration ? 'Remove Expiration' : 'Add Expiration'}
+                        {hasExpiration
+                            ? m['developerPortal.credentialBuilder.dates.removeExpiration']()
+                            : m['developerPortal.credentialBuilder.dates.addExpiration']()}
                     </button>
                 </div>
 
@@ -73,16 +81,18 @@ export const DatesSection: React.FC<DatesSectionProps> = ({
                     <FieldEditor
                         label=""
                         field={template.validUntil || staticField('')}
-                        onChange={(f) => updateField('validUntil', f)}
-                        placeholder="2025-01-15T00:00:00Z"
-                        helpText="When the credential expires (optional, ISO 8601 format)"
+                        onChange={f => updateField('validUntil', f)}
+                        placeholder={m[
+                            'developerPortal.credentialBuilder.dates.expirationPlaceholder'
+                        ]()}
+                        helpText={m['developerPortal.credentialBuilder.dates.expirationHelp']()}
                         showDynamicToggle={!disableDynamicFields}
                     />
                 )}
 
                 {!hasExpiration && (
                     <p className="text-xs text-gray-400 italic">
-                        No expiration date - credential will be valid indefinitely
+                        {m['developerPortal.credentialBuilder.dates.noExpiration']()}
                     </p>
                 )}
             </div>

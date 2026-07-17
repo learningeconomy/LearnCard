@@ -240,7 +240,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                         color="grayscale-900"
                         className="scale-[2] mb-8 mt-6"
                     />
-                    <p className="font-poppins text-grayscale-900">Loading...</p>
+                    <p className="font-poppins text-grayscale-900">{m['common.loading']()}</p>
                 </div>
             </IonPage>
         );

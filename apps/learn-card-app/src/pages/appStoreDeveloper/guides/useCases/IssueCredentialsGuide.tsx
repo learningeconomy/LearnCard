@@ -24,6 +24,7 @@ import { useWallet, useToast, ToastTypeEnum, useConfirmation } from 'learn-card-
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import { Clipboard } from '@capacitor/clipboard';
 
+import * as m from '../../../../paraglide/messages.js';
 import { StepProgress, CodeOutputPanel, StatusIndicator, GoLiveStep } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
 import { TemplateListManager } from '../../components/TemplateListManager';
@@ -41,19 +42,30 @@ type AuthGrant = {
 };
 
 const STEPS = [
-    { id: 'api-token', title: 'Create API Token' },
-    { id: 'signing-authority', title: 'Set Up Signing' },
-    { id: 'create-templates', title: 'Create Templates' },
-    { id: 'issue', title: 'Issue & Verify' },
-    { id: 'go-live', title: 'Go Live' },
+    { id: 'api-token', title: m['developerPortal.guides.issueCredentials.steps.apiToken']() },
+    {
+        id: 'signing-authority',
+        title: m['developerPortal.guides.issueCredentials.steps.signingAuthority'](),
+    },
+    {
+        id: 'create-templates',
+        title: m['developerPortal.guides.issueCredentials.steps.createTemplates'](),
+    },
+    { id: 'issue', title: m['developerPortal.guides.issueCredentials.steps.issue']() },
+    { id: 'go-live', title: m['developerPortal.guides.issueCredentials.steps.goLive']() },
 ];
 
 const SCOPE_OPTIONS = [
-    { label: 'Full Access', value: '*:*', description: 'Complete access to all resources' },
     {
-        label: 'Credentials Only',
+        label: m['developerPortal.guides.issueCredentials.scopeOptions.fullAccess'](),
+        value: '*:*',
+        description: m['developerPortal.guides.issueCredentials.scopeOptions.fullAccessDesc'](),
+    },
+    {
+        label: m['developerPortal.guides.issueCredentials.scopeOptions.credentialsOnly'](),
         value: 'credential:* presentation:*',
-        description: 'Issue and manage credentials',
+        description:
+            m['developerPortal.guides.issueCredentials.scopeOptions.credentialsOnlyDesc'](),
     },
 ];
 
@@ -100,7 +112,8 @@ const ApiTokenStep: React.FC<{
 
             await wallet.invoke.addAuthGrant({
                 name: newTokenName.trim(),
-                description: 'Created from Integration Guide',
+                description:
+                    m['developerPortal.guides.issueCredentials.apiTokenStep.createdFromGuide'](),
                 scope: selectedScope,
             });
 
@@ -172,11 +185,12 @@ const ApiTokenStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Create an API Token</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.issueCredentials.apiTokenStep.title']()}
+                </h3>
 
                 <p className="text-gray-600">
-                    Your server needs an API token to authenticate with LearnCard. This token should
-                    be kept secret and never exposed in client-side code.
+                    {m['developerPortal.guides.issueCredentials.apiTokenStep.description']()}
                 </p>
             </div>
 
@@ -200,7 +214,9 @@ const ApiTokenStep: React.FC<{
                 <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Token Name
+                            {m[
+                                'developerPortal.guides.issueCredentials.apiTokenStep.tokenNameLabel'
+                            ]()}
                         </label>
 
                         <input
@@ -214,7 +230,9 @@ const ApiTokenStep: React.FC<{
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Permissions
+                            {m[
+                                'developerPortal.guides.issueCredentials.apiTokenStep.permissionsLabel'
+                            ]()}
                         </label>
 
                         <select
@@ -240,7 +258,13 @@ const ApiTokenStep: React.FC<{
                             disabled={creating || !newTokenName.trim()}
                             className="flex-1 px-4 py-2.5 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 disabled:opacity-50 transition-colors"
                         >
-                            {creating ? 'Creating...' : 'Create Token'}
+                            {creating
+                                ? m[
+                                      'developerPortal.guides.issueCredentials.apiTokenStep.creatingButton'
+                                  ]()
+                                : m[
+                                      'developerPortal.guides.issueCredentials.apiTokenStep.createTokenButton'
+                                  ]()}
                         </button>
 
                         <button
@@ -250,7 +274,9 @@ const ApiTokenStep: React.FC<{
                             }}
                             className="px-4 py-2.5 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition-colors"
                         >
-                            Cancel
+                            {m[
+                                'developerPortal.guides.issueCredentials.apiTokenStep.cancelButton'
+                            ]()}
                         </button>
                     </div>
                 </div>
@@ -268,7 +294,9 @@ const ApiTokenStep: React.FC<{
                                 <p className="font-medium text-gray-800">{grant.name}</p>
 
                                 <p className="text-sm text-gray-500">
-                                    Created {new Date(grant.createdAt!).toLocaleDateString()}
+                                    {m[
+                                        'developerPortal.guides.issueCredentials.apiTokenStep.createdLabel'
+                                    ]({ date: new Date(grant.createdAt!).toLocaleDateString() })}
                                 </p>
                             </div>
 
@@ -282,7 +310,9 @@ const ApiTokenStep: React.FC<{
                                     ) : (
                                         <Copy className="w-4 h-4" />
                                     )}
-                                    Copy
+                                    {m[
+                                        'developerPortal.guides.issueCredentials.apiTokenStep.copyTokenButton'
+                                    ]()}
                                 </button>
 
                                 <button
@@ -304,15 +334,14 @@ const ApiTokenStep: React.FC<{
                     className="flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-300 text-gray-600 hover:border-indigo-400 hover:text-indigo-600 rounded-xl w-full justify-center font-medium transition-colors"
                 >
                     <Plus className="w-4 h-4" />
-                    Create New Token
+                    {m['developerPortal.guides.issueCredentials.apiTokenStep.createNewButton']()}
                 </button>
             )}
 
             {/* Security warning */}
             <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
                 <p className="text-sm text-red-800">
-                    <strong>Security:</strong> Never expose your API token in client-side code or
-                    commit it to version control.
+                    {m['developerPortal.guides.issueCredentials.apiTokenStep.securityWarning']()}
                 </p>
             </div>
 
@@ -322,7 +351,7 @@ const ApiTokenStep: React.FC<{
                 disabled={!hasActiveToken}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-                Continue
+                {m['developerPortal.guides.issueCredentials.apiTokenStep.continueButton']()}
                 <ArrowRight className="w-4 h-4" />
             </button>
         </div>
@@ -409,12 +438,13 @@ const SigningAuthorityStep: React.FC<{
         <div className="space-y-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                    Set Up Signing Authority
+                    {m['developerPortal.guides.issueCredentials.signingAuthorityStep.title']()}
                 </h3>
 
                 <p className="text-gray-600">
-                    A signing authority cryptographically signs your credentials, making them
-                    verifiable. This proves the credentials actually came from you.
+                    {m[
+                        'developerPortal.guides.issueCredentials.signingAuthorityStep.description'
+                    ]()}
                 </p>
             </div>
 
@@ -423,15 +453,25 @@ const SigningAuthorityStep: React.FC<{
                 status={loading ? 'loading' : hasSigningAuthority ? 'ready' : 'warning'}
                 label={
                     loading
-                        ? 'Checking...'
+                        ? m[
+                              'developerPortal.guides.issueCredentials.signingAuthorityStep.statusChecking'
+                          ]()
                         : hasSigningAuthority
-                        ? 'Signing authority configured'
-                        : 'No signing authority found'
+                        ? m[
+                              'developerPortal.guides.issueCredentials.signingAuthorityStep.statusReady'
+                          ]()
+                        : m[
+                              'developerPortal.guides.issueCredentials.signingAuthorityStep.statusWarning'
+                          ]()
                 }
                 description={
                     hasSigningAuthority
-                        ? `Using: ${primarySA?.name}`
-                        : 'Create one to sign credentials'
+                        ? m[
+                              'developerPortal.guides.issueCredentials.signingAuthorityStep.statusReadyHint'
+                          ]({ name: primarySA?.name })
+                        : m[
+                              'developerPortal.guides.issueCredentials.signingAuthorityStep.statusWarningHint'
+                          ]()
                 }
             />
 
@@ -445,12 +485,16 @@ const SigningAuthorityStep: React.FC<{
                     {creating ? (
                         <>
                             <Loader2 className="w-4 h-4 animate-spin" />
-                            Creating...
+                            {m[
+                                'developerPortal.guides.issueCredentials.signingAuthorityStep.creatingButton'
+                            ]()}
                         </>
                     ) : (
                         <>
                             <Shield className="w-4 h-4" />
-                            Create Signing Authority
+                            {m[
+                                'developerPortal.guides.issueCredentials.signingAuthorityStep.createButton'
+                            ]()}
                         </>
                     )}
                 </button>
@@ -466,12 +510,16 @@ const SigningAuthorityStep: React.FC<{
                     {creating ? (
                         <>
                             <Loader2 className="w-4 h-4 animate-spin" />
-                            Recreating...
+                            {m[
+                                'developerPortal.guides.issueCredentials.signingAuthorityStep.recreatingButton'
+                            ]()}
                         </>
                     ) : (
                         <>
                             <RefreshCw className="w-4 h-4" />
-                            Recreate Signing Authority
+                            {m[
+                                'developerPortal.guides.issueCredentials.signingAuthorityStep.recreateButton'
+                            ]()}
                         </>
                     )}
                 </button>
@@ -479,12 +527,29 @@ const SigningAuthorityStep: React.FC<{
 
             {/* Info about what it does */}
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                <h4 className="font-medium text-blue-800 mb-2">What does this do?</h4>
+                <h4 className="font-medium text-blue-800 mb-2">
+                    {m['developerPortal.guides.issueCredentials.signingAuthorityStep.infoTitle']()}
+                </h4>
 
                 <ul className="text-sm text-blue-700 space-y-1">
-                    <li>• Creates a cryptographic key pair for signing</li>
-                    <li>• Registers the key with LearnCard's verification network</li>
-                    <li>• Allows anyone to verify credentials you issue</li>
+                    <li>
+                        {'•'}{' '}
+                        {m[
+                            'developerPortal.guides.issueCredentials.signingAuthorityStep.infoItem1'
+                        ]()}
+                    </li>
+                    <li>
+                        {'•'}{' '}
+                        {m[
+                            'developerPortal.guides.issueCredentials.signingAuthorityStep.infoItem2'
+                        ]()}
+                    </li>
+                    <li>
+                        {'•'}{' '}
+                        {m[
+                            'developerPortal.guides.issueCredentials.signingAuthorityStep.infoItem3'
+                        ]()}
+                    </li>
                 </ul>
             </div>
 
@@ -495,7 +560,7 @@ const SigningAuthorityStep: React.FC<{
                     className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back
+                    {m['developerPortal.guides.issueCredentials.signingAuthorityStep.backButton']()}
                 </button>
 
                 <button
@@ -503,7 +568,9 @@ const SigningAuthorityStep: React.FC<{
                     disabled={!hasSigningAuthority}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                    Continue
+                    {m[
+                        'developerPortal.guides.issueCredentials.signingAuthorityStep.continueButton'
+                    ]()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
@@ -524,11 +591,12 @@ const CreateTemplatesStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Create Templates</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.issueCredentials.createTemplatesStep.title']()}
+                </h3>
 
                 <p className="text-gray-600">
-                    Design your credential templates using the visual builder. Each template becomes
-                    a reusable Boost that you can reference by URI when issuing credentials via API.
+                    {m['developerPortal.guides.issueCredentials.createTemplatesStep.description']()}
                 </p>
             </div>
 
@@ -552,7 +620,9 @@ const CreateTemplatesStep: React.FC<{
                         className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        Back
+                        {m[
+                            'developerPortal.guides.issueCredentials.createTemplatesStep.backButton'
+                        ]()}
                     </button>
 
                     <button
@@ -560,14 +630,18 @@ const CreateTemplatesStep: React.FC<{
                         disabled={!hasTemplates || isBuilderOpen}
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                        Continue
+                        {m[
+                            'developerPortal.guides.issueCredentials.createTemplatesStep.continueButton'
+                        ]()}
                         <ArrowRight className="w-4 h-4" />
                     </button>
                 </div>
 
                 {isBuilderOpen && (
                     <p className="text-xs text-amber-600 text-center">
-                        Save or cancel the template you&apos;re editing before continuing.
+                        {m[
+                            'developerPortal.guides.issueCredentials.createTemplatesStep.builderOpenWarning'
+                        ]()}
                     </p>
                 )}
             </div>
@@ -837,11 +911,12 @@ else:
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Issue & Verify</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.issueCredentials.issueVerifyStep.title']()}
+                </h3>
 
                 <p className="text-gray-600">
-                    Use your template to issue credentials via API. Select a template and recipient,
-                    then run the generated code in your application.
+                    {m['developerPortal.guides.issueCredentials.issueVerifyStep.description']()}
                 </p>
             </div>
 
@@ -856,7 +931,9 @@ else:
 
                             <div>
                                 <p className="text-sm font-medium text-gray-700">
-                                    Credential Template
+                                    {m[
+                                        'developerPortal.guides.issueCredentials.issueVerifyStep.credentialTemplate'
+                                    ]()}
                                 </p>
 
                                 <p className="text-xs text-cyan-700 font-medium">
@@ -870,7 +947,13 @@ else:
                                 onClick={() => setShowTemplateSelector(!showTemplateSelector)}
                                 className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1"
                             >
-                                {showTemplateSelector ? 'Hide' : 'Change'}
+                                {showTemplateSelector
+                                    ? m[
+                                          'developerPortal.guides.issueCredentials.issueVerifyStep.hideButton'
+                                      ]()
+                                    : m[
+                                          'developerPortal.guides.issueCredentials.issueVerifyStep.changeButton'
+                                      ]()}
                                 {showTemplateSelector ? (
                                     <ChevronUp className="w-4 h-4" />
                                 ) : (
@@ -882,7 +965,9 @@ else:
 
                     {selectedTemplate && (
                         <p className="text-xs text-gray-500 mt-2 font-mono truncate">
-                            URI: {selectedTemplate.boostUri}
+                            {m['developerPortal.guides.issueCredentials.issueVerifyStep.uriLabel']({
+                                uri: selectedTemplate.boostUri,
+                            })}
                         </p>
                     )}
 
@@ -926,12 +1011,16 @@ else:
                     <div className="flex items-center gap-2">
                         <AlertCircle className="w-5 h-5 text-amber-600" />
                         <p className="text-sm text-amber-800">
-                            No templates found.{' '}
+                            {m[
+                                'developerPortal.guides.issueCredentials.issueVerifyStep.noTemplatesFound'
+                            ]()}{' '}
                             <button
                                 onClick={onBack}
                                 className="text-cyan-600 hover:underline font-medium"
                             >
-                                Go back to create one
+                                {m[
+                                    'developerPortal.guides.issueCredentials.issueVerifyStep.goBackToCreate'
+                                ]()}
                             </button>
                             .
                         </p>
@@ -948,7 +1037,11 @@ else:
                         </div>
 
                         <div>
-                            <p className="text-sm font-medium text-gray-700">API Token</p>
+                            <p className="text-sm font-medium text-gray-700">
+                                {m[
+                                    'developerPortal.guides.issueCredentials.issueVerifyStep.apiTokenLabel'
+                                ]()}
+                            </p>
 
                             <p className="text-xs text-gray-500">
                                 {apiToken ? (
@@ -957,7 +1050,11 @@ else:
                                         {displayTokenName}
                                     </span>
                                 ) : (
-                                    <span className="text-amber-600">Select a token to use</span>
+                                    <span className="text-amber-600">
+                                        {m[
+                                            'developerPortal.guides.issueCredentials.issueVerifyStep.selectTokenHint'
+                                        ]()}
+                                    </span>
                                 )}
                             </p>
                         </div>
@@ -981,13 +1078,19 @@ else:
                         {loadingGrants ? (
                             <div className="flex items-center gap-2 text-sm text-gray-500">
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                Loading tokens...
+                                {m[
+                                    'developerPortal.guides.issueCredentials.issueVerifyStep.loadingTokens'
+                                ]()}
                             </div>
                         ) : authGrants.length === 0 ? (
                             <p className="text-sm text-gray-500">
-                                No API tokens found.{' '}
+                                {m[
+                                    'developerPortal.guides.issueCredentials.issueVerifyStep.noApiTokensFound'
+                                ]()}{' '}
                                 <button onClick={onBack} className="text-cyan-600 hover:underline">
-                                    Go back to create one
+                                    {m[
+                                        'developerPortal.guides.issueCredentials.issueVerifyStep.goBackToCreate'
+                                    ]()}
                                 </button>
                                 .
                             </p>
@@ -1009,8 +1112,13 @@ else:
                                             </p>
 
                                             <p className="text-xs text-gray-500">
-                                                Created{' '}
-                                                {new Date(grant.createdAt!).toLocaleDateString()}
+                                                {m[
+                                                    'developerPortal.guides.issueCredentials.apiTokenStep.createdLabel'
+                                                ]({
+                                                    date: new Date(
+                                                        grant.createdAt!
+                                                    ).toLocaleDateString(),
+                                                })}
                                             </p>
                                         </div>
 
@@ -1028,28 +1136,33 @@ else:
             {/* Recipient email */}
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Recipient
-                    <span className="text-gray-400 font-normal"> (email, DID, or profile ID)</span>
+                    {m['developerPortal.guides.issueCredentials.issueVerifyStep.recipientLabel']()}
+                    <span className="text-gray-400 font-normal">
+                        {m[
+                            'developerPortal.guides.issueCredentials.issueVerifyStep.recipientHint'
+                        ]()}
+                    </span>
                 </label>
 
                 <input
                     type="text"
                     value={recipientEmail}
                     onChange={e => setRecipientEmail(e.target.value)}
-                    placeholder="recipient@example.com"
+                    placeholder={m[
+                        'developerPortal.guides.issueCredentials.issueVerifyStep.recipientPlaceholder'
+                    ]()}
                     className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
                     style={{ colorScheme: 'light' }}
                 />
 
                 <p className="text-xs text-gray-500 mt-1">
-                    Enter a recipient to see the send code. Supports email, DID, phone, or profile
-                    ID.
+                    {m['developerPortal.guides.issueCredentials.issueVerifyStep.recipientDesc']()}
                 </p>
             </div>
 
             {/* Code output */}
             <CodeOutputPanel
-                title="Your Code"
+                title={m['developerPortal.guides.issueCredentials.issueVerifyStep.yourCode']()}
                 snippets={{
                     typescript: codeSnippet,
                     python: pythonSnippet,
@@ -1066,12 +1179,15 @@ else:
 
                     <div className="flex-1">
                         <h4 className="font-medium text-gray-800 mb-1">
-                            Check for Sent Credentials
+                            {m[
+                                'developerPortal.guides.issueCredentials.issueVerifyStep.checkCredentials'
+                            ]()}
                         </h4>
 
                         <p className="text-sm text-gray-600 mb-3">
-                            After running your code, click below to check if the credential was sent
-                            successfully.
+                            {m[
+                                'developerPortal.guides.issueCredentials.issueVerifyStep.checkCredentialsDesc'
+                            ]()}
                         </p>
 
                         {!isPolling && !pollResult && (
@@ -1081,7 +1197,9 @@ else:
                                 className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
                                 <RefreshCw className="w-4 h-4" />
-                                Check for Sent Credentials
+                                {m[
+                                    'developerPortal.guides.issueCredentials.issueVerifyStep.checkButton'
+                                ]()}
                             </button>
                         )}
 
@@ -1090,7 +1208,9 @@ else:
                                 <div className="flex items-center gap-2 text-indigo-600">
                                     <Loader2 className="w-4 h-4 animate-spin" />
                                     <span className="text-sm font-medium">
-                                        Checking for new credentials...
+                                        {m[
+                                            'developerPortal.guides.issueCredentials.issueVerifyStep.checkingLabel'
+                                        ]()}
                                     </span>
                                 </div>
 
@@ -1098,7 +1218,9 @@ else:
                                     onClick={stopPolling}
                                     className="text-sm text-gray-500 hover:text-gray-700"
                                 >
-                                    Cancel
+                                    {m[
+                                        'developerPortal.guides.issueCredentials.issueVerifyStep.cancelButton'
+                                    ]()}
                                 </button>
                             </div>
                         )}
@@ -1131,7 +1253,9 @@ else:
                                             onClick={startPolling}
                                             className="text-sm text-indigo-600 hover:underline mt-1"
                                         >
-                                            Try again
+                                            {m[
+                                                'developerPortal.guides.issueCredentials.issueVerifyStep.tryAgain'
+                                            ]()}
                                         </button>
                                     )}
                                 </div>
@@ -1140,7 +1264,10 @@ else:
 
                         {!apiToken && (
                             <p className="text-xs text-amber-600 mt-2">
-                                ⚠️ Select an API token above to enable verification.
+                                {'⚠️'}{' '}
+                                {m[
+                                    'developerPortal.guides.issueCredentials.issueVerifyStep.noTokenWarning'
+                                ]()}
                             </p>
                         )}
                     </div>
@@ -1154,14 +1281,14 @@ else:
                     className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back
+                    {m['developerPortal.guides.issueCredentials.issueVerifyStep.backButton']()}
                 </button>
 
                 <button
                     onClick={onComplete}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                 >
-                    Continue to Go Live
+                    {m['developerPortal.guides.issueCredentials.issueVerifyStep.continueButton']()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
@@ -1228,7 +1355,7 @@ const IssueCredentialsGuide: React.FC<GuideProps> = ({ selectedIntegration }) =>
         return (
             <div className="text-center py-12">
                 <p className="text-gray-500">
-                    Please select an integration from the header dropdown to continue.
+                    {m['developerPortal.guides.issueCredentials.noIntegration']()}
                 </p>
             </div>
         );
@@ -1291,13 +1418,13 @@ const IssueCredentialsGuide: React.FC<GuideProps> = ({ selectedIntegration }) =>
                     guideType="issue-credentials"
                     onBack={guideState.prevStep}
                     completedItems={[
-                        'Created API token for server-side access',
-                        'Configured signing authority',
-                        'Created credential templates',
-                        'Tested issuing and verification',
+                        m['developerPortal.guides.issueCredentials.goLive.completedItems0'](),
+                        m['developerPortal.guides.issueCredentials.goLive.completedItems1'](),
+                        m['developerPortal.guides.issueCredentials.goLive.completedItems2'](),
+                        m['developerPortal.guides.issueCredentials.goLive.completedItems3'](),
                     ]}
-                    title="Ready to Issue Credentials!"
-                    description="You've set up everything needed to issue verifiable credentials via API. Activate your integration to start issuing in production."
+                    title={m['developerPortal.guides.issueCredentials.goLive.title']()}
+                    description={m['developerPortal.guides.issueCredentials.goLive.description']()}
                 />
             </div>
         </div>

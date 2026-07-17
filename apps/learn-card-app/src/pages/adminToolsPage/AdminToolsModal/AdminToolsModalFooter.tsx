@@ -5,6 +5,7 @@ import { IonFooter } from '@ionic/react';
 
 import { useModal } from 'learn-card-base';
 import { useSafeArea } from 'learn-card-base/hooks/useSafeArea';
+import * as m from '../../../paraglide/messages.js';
 
 const AdminToolsModalFooter: React.FC<{
     isDisabled?: boolean;
@@ -44,7 +45,7 @@ const AdminToolsModalFooter: React.FC<{
                                 isDisabled ? 'bg-grayscale-300' : 'bg-emerald-700'
                             }`}
                         >
-                            {isLoading ? 'Loading...' : 'Save'}
+                            {isLoading ? m['common.loading']() : m['common.save']()}
                         </button>
                     )}
                 </div>

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import * as m from '../../../paraglide/messages.js';
 import { createPortal } from 'react-dom';
 import { useHistory, useLocation } from 'react-router-dom';
 import { ChevronDown, Plus, Loader2, Check, Settings, LayoutDashboard } from 'lucide-react';
@@ -106,7 +107,9 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
         return (
             <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg">
                 <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                <span className="text-sm text-gray-500">Loading...</span>
+                <span className="text-sm text-gray-500">
+                    {m['developerPortal.components.headerIntegrationSelector.loading']()}
+                </span>
             </div>
         );
     }
@@ -168,7 +171,9 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
                                     type="text"
                                     value={newName}
                                     onChange={e => setNewName(e.target.value)}
-                                    placeholder="Integration name..."
+                                    placeholder={m[
+                                        'developerPortal.components.headerIntegrationSelector.integrationNamePlaceholder'
+                                    ]()}
                                     className="flex-1 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                                     onKeyDown={e => {
                                         if (e.key === 'Enter') handleCreate();
@@ -198,7 +203,11 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
                             className="w-full px-4 py-2.5 text-left flex items-center gap-2 text-cyan-600 hover:bg-cyan-50 transition-colors"
                         >
                             <Plus className="w-4 h-4" />
-                            <span className="text-sm font-medium">New Project</span>
+                            <span className="text-sm font-medium">
+                                {m[
+                                    'developerPortal.components.headerIntegrationSelector.newProject'
+                                ]()}
+                            </span>
                         </button>
                     )}
                 </div>
@@ -214,7 +223,8 @@ export const HeaderIntegrationSelector: React.FC<HeaderIntegrationSelectorProps>
                 className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
             >
                 <span className="text-sm font-medium text-gray-700 max-w-[140px] truncate">
-                    {selectedIntegration?.name || 'Select Project'}
+                    {selectedIntegration?.name ||
+                        m['developerPortal.components.headerIntegrationSelector.selectProject']()}
                 </span>
 
                 <ChevronDown

@@ -22,6 +22,7 @@ const log = getLogger('server-webhooks-guide');
 import { useWallet, useToast, ToastTypeEnum, useConfirmation } from 'learn-card-base';
 import { Clipboard } from '@capacitor/clipboard';
 
+import * as m from '../../../../paraglide/messages.js';
 import { StepProgress, CodeOutputPanel, StatusIndicator } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
 
@@ -34,10 +35,13 @@ type AuthGrant = {
 };
 
 const STEPS = [
-    { id: 'api-token', title: 'API Token' },
-    { id: 'webhook-endpoint', title: 'Create Endpoint' },
-    { id: 'handle-events', title: 'Handle Events' },
-    { id: 'test', title: 'Test It' },
+    { id: 'api-token', title: m['developerPortal.guides.serverWebhooks.steps.apiToken']() },
+    {
+        id: 'webhook-endpoint',
+        title: m['developerPortal.guides.serverWebhooks.steps.createEndpoint'](),
+    },
+    { id: 'handle-events', title: m['developerPortal.guides.serverWebhooks.steps.handleEvents']() },
+    { id: 'test', title: m['developerPortal.guides.serverWebhooks.steps.testIt']() },
 ];
 
 // Step 1: API Token
@@ -122,11 +126,12 @@ const ApiTokenStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Create an API Token</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.serverWebhooks.apiTokenStep.title']()}
+                </h3>
 
                 <p className="text-gray-600">
-                    You'll need an API token to authenticate webhook requests and make API calls
-                    from your server.
+                    {m['developerPortal.guides.serverWebhooks.apiTokenStep.description']()}
                 </p>
             </div>
 
@@ -134,12 +139,21 @@ const ApiTokenStep: React.FC<{
                 status={loading ? 'loading' : hasActiveToken ? 'ready' : 'warning'}
                 label={
                     loading
-                        ? 'Checking...'
+                        ? m['developerPortal.guides.serverWebhooks.apiTokenStep.statusChecking']()
                         : hasActiveToken
-                        ? `${activeGrants.length} token${activeGrants.length > 1 ? 's' : ''} ready`
-                        : 'No tokens found'
+                        ? m['developerPortal.guides.serverWebhooks.apiTokenStep.statusReady']({
+                              count: activeGrants.length,
+                              context: activeGrants.length !== 1 ? 'plural' : '',
+                          })
+                        : m['developerPortal.guides.serverWebhooks.apiTokenStep.statusWarning']()
                 }
-                description={hasActiveToken ? 'Copy a token to use' : 'Create one to continue'}
+                description={
+                    hasActiveToken
+                        ? m['developerPortal.guides.serverWebhooks.apiTokenStep.statusReadyHint']()
+                        : m[
+                              'developerPortal.guides.serverWebhooks.apiTokenStep.statusWarningHint'
+                          ]()
+                }
             />
 
             {/* Token list */}
@@ -154,7 +168,9 @@ const ApiTokenStep: React.FC<{
                                 <p className="font-medium text-gray-800">{grant.name}</p>
 
                                 <p className="text-sm text-gray-500">
-                                    Created {new Date(grant.createdAt!).toLocaleDateString()}
+                                    {m[
+                                        'developerPortal.guides.serverWebhooks.apiTokenStep.createdLabel'
+                                    ]({ date: new Date(grant.createdAt!).toLocaleDateString() })}
                                 </p>
                             </div>
 
@@ -167,7 +183,9 @@ const ApiTokenStep: React.FC<{
                                 ) : (
                                     <Copy className="w-4 h-4" />
                                 )}
-                                Copy
+                                {m[
+                                    'developerPortal.guides.serverWebhooks.apiTokenStep.copyButton'
+                                ]()}
                             </button>
                         </div>
                     ))}
@@ -179,14 +197,18 @@ const ApiTokenStep: React.FC<{
                 <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Token Name
+                            {m[
+                                'developerPortal.guides.serverWebhooks.apiTokenStep.tokenNameLabel'
+                            ]()}
                         </label>
 
                         <input
                             type="text"
                             value={newTokenName}
                             onChange={e => setNewTokenName(e.target.value)}
-                            placeholder="e.g., Webhook Server"
+                            placeholder={m[
+                                'developerPortal.guides.serverWebhooks.apiTokenStep.tokenNamePlaceholder'
+                            ]()}
                             className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                     </div>
@@ -197,7 +219,11 @@ const ApiTokenStep: React.FC<{
                             disabled={creating || !newTokenName.trim()}
                             className="flex-1 px-4 py-2.5 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 disabled:opacity-50 transition-colors"
                         >
-                            {creating ? 'Creating...' : 'Create'}
+                            {creating
+                                ? m[
+                                      'developerPortal.guides.serverWebhooks.apiTokenStep.creatingButton'
+                                  ]()
+                                : m['common.create']()}
                         </button>
 
                         <button
@@ -207,7 +233,7 @@ const ApiTokenStep: React.FC<{
                             }}
                             className="px-4 py-2.5 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition-colors"
                         >
-                            Cancel
+                            {m['common.cancel']()}
                         </button>
                     </div>
                 </div>
@@ -219,7 +245,7 @@ const ApiTokenStep: React.FC<{
                     className="flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-300 text-gray-600 hover:border-indigo-400 hover:text-indigo-600 rounded-xl w-full justify-center font-medium transition-colors"
                 >
                     <Plus className="w-4 h-4" />
-                    Create New Token
+                    {m['developerPortal.guides.serverWebhooks.apiTokenStep.createNewButton']()}
                 </button>
             )}
 
@@ -228,7 +254,7 @@ const ApiTokenStep: React.FC<{
                 disabled={!hasActiveToken}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-                Continue
+                {m['developerPortal.guides.serverWebhooks.apiTokenStep.continueButton']()}
                 <ArrowRight className="w-4 h-4" />
             </button>
         </div>
@@ -246,18 +272,19 @@ const WebhookEndpointStep: React.FC<{
         <div className="space-y-6">
             <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                    Create Your Webhook Endpoint
+                    {m['developerPortal.guides.serverWebhooks.webhookEndpointStep.title']()}
                 </h3>
 
                 <p className="text-gray-600">
-                    Create an HTTPS endpoint on your server that can receive POST requests from
-                    LearnCard.
+                    {m['developerPortal.guides.serverWebhooks.webhookEndpointStep.description']()}
                 </p>
             </div>
 
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Your Webhook URL
+                    {m[
+                        'developerPortal.guides.serverWebhooks.webhookEndpointStep.yourWebhookUrl'
+                    ]()}
                 </label>
 
                 <input
@@ -270,7 +297,9 @@ const WebhookEndpointStep: React.FC<{
             </div>
 
             <CodeOutputPanel
-                title="Endpoint Setup"
+                title={m[
+                    'developerPortal.guides.serverWebhooks.webhookEndpointStep.codePanelTitle'
+                ]()}
                 snippets={{
                     typescript: `// Express.js webhook handler
 import express from 'express';
@@ -348,13 +377,31 @@ def webhook():
             />
 
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                <h4 className="font-medium text-amber-800 mb-2">Requirements</h4>
+                <h4 className="font-medium text-amber-800 mb-2">
+                    {m[
+                        'developerPortal.guides.serverWebhooks.webhookEndpointStep.requirementsTitle'
+                    ]()}
+                </h4>
 
                 <ul className="text-sm text-amber-700 space-y-1">
-                    <li>• Must be HTTPS (not HTTP)</li>
-                    <li>• Respond within 30 seconds</li>
-                    <li>• Return 2xx status code on success</li>
-                    <li>• Verify the signature header</li>
+                    <li>
+                        {m['developerPortal.guides.serverWebhooks.webhookEndpointStep.reqHttps']()}
+                    </li>
+                    <li>
+                        {m[
+                            'developerPortal.guides.serverWebhooks.webhookEndpointStep.reqResponseTime'
+                        ]()}
+                    </li>
+                    <li>
+                        {m[
+                            'developerPortal.guides.serverWebhooks.webhookEndpointStep.reqStatus2xx'
+                        ]()}
+                    </li>
+                    <li>
+                        {m[
+                            'developerPortal.guides.serverWebhooks.webhookEndpointStep.reqSignature'
+                        ]()}
+                    </li>
                 </ul>
             </div>
 
@@ -364,14 +411,14 @@ def webhook():
                     className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back
+                    {m['common.back']()}
                 </button>
 
                 <button
                     onClick={onComplete}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                 >
-                    Continue
+                    {m['common.continue']()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
@@ -385,20 +432,44 @@ const HandleEventsStep: React.FC<{
     onBack: () => void;
 }> = ({ onComplete, onBack }) => {
     const eventTypes = [
-        { type: 'credential.received', description: 'A credential was sent to a user' },
-        { type: 'credential.accepted', description: 'User accepted a credential' },
-        { type: 'consent.granted', description: 'User granted consent to a contract' },
-        { type: 'consent.revoked', description: 'User revoked consent' },
-        { type: 'connection.created', description: 'New connection established' },
+        {
+            type: 'credential.received',
+            description:
+                m['developerPortal.guides.serverWebhooks.handleEventsStep.eventReceived'](),
+        },
+        {
+            type: 'credential.accepted',
+            description:
+                m['developerPortal.guides.serverWebhooks.handleEventsStep.eventAccepted'](),
+        },
+        {
+            type: 'consent.granted',
+            description:
+                m['developerPortal.guides.serverWebhooks.handleEventsStep.eventConsentGranted'](),
+        },
+        {
+            type: 'consent.revoked',
+            description:
+                m['developerPortal.guides.serverWebhooks.handleEventsStep.eventConsentRevoked'](),
+        },
+        {
+            type: 'connection.created',
+            description:
+                m[
+                    'developerPortal.guides.serverWebhooks.handleEventsStep.eventConnectionCreated'
+                ](),
+        },
     ];
 
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Handle Events</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.serverWebhooks.handleEventsStep.title']()}
+                </h3>
 
                 <p className="text-gray-600">
-                    LearnCard sends different event types. Handle each one based on your needs.
+                    {m['developerPortal.guides.serverWebhooks.handleEventsStep.description']()}
                 </p>
             </div>
 
@@ -416,7 +487,7 @@ const HandleEventsStep: React.FC<{
             </div>
 
             <CodeOutputPanel
-                title="Event Handler"
+                title={m['developerPortal.guides.serverWebhooks.handleEventsStep.codePanelTitle']()}
                 snippets={{
                     typescript: `async function processEvent(event: WebhookEvent) {
     switch (event.type) {
@@ -467,14 +538,14 @@ async function handleCredentialAccepted(data: any) {
                     className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back
+                    {m['common.back']()}
                 </button>
 
                 <button
                     onClick={onComplete}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                 >
-                    Continue
+                    {m['common.continue']()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
@@ -495,7 +566,10 @@ const TestStep: React.FC<{
 
     const handleTest = async () => {
         if (!webhookUrl) {
-            setTestResult({ success: false, message: 'Please enter a webhook URL' });
+            setTestResult({
+                success: false,
+                message: m['developerPortal.guides.serverWebhooks.testStep.enterUrlError'](),
+            });
             return;
         }
 
@@ -509,12 +583,12 @@ const TestStep: React.FC<{
 
             setTestResult({
                 success: true,
-                message: 'Test event sent! Check your server logs.',
+                message: m['developerPortal.guides.serverWebhooks.testStep.testSuccess'](),
             });
         } catch (err) {
             setTestResult({
                 success: false,
-                message: 'Failed to send test event',
+                message: m['developerPortal.guides.serverWebhooks.testStep.testFailed'](),
             });
         } finally {
             setTesting(false);
@@ -524,16 +598,20 @@ const TestStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Test Your Webhook</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.serverWebhooks.testStep.title']()}
+                </h3>
 
                 <p className="text-gray-600">
-                    Make sure your webhook endpoint is working correctly before going live.
+                    {m['developerPortal.guides.serverWebhooks.testStep.description']()}
                 </p>
             </div>
 
             {/* Checklist */}
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                <h4 className="font-medium text-gray-800 mb-3">Pre-flight checklist</h4>
+                <h4 className="font-medium text-gray-800 mb-3">
+                    {m['developerPortal.guides.serverWebhooks.testStep.preflightTitle']()}
+                </h4>
 
                 <div className="space-y-2">
                     <div className="flex items-center gap-2">
@@ -541,7 +619,7 @@ const TestStep: React.FC<{
                             className={`w-4 h-4 ${apiToken ? 'text-emerald-600' : 'text-gray-300'}`}
                         />
                         <span className={apiToken ? 'text-gray-800' : 'text-gray-400'}>
-                            API token created
+                            {m['developerPortal.guides.serverWebhooks.testStep.tokenCreated']()}
                         </span>
                     </div>
 
@@ -552,7 +630,9 @@ const TestStep: React.FC<{
                             }`}
                         />
                         <span className={webhookUrl ? 'text-gray-800' : 'text-gray-400'}>
-                            Webhook URL configured
+                            {m[
+                                'developerPortal.guides.serverWebhooks.testStep.webhookConfigured'
+                            ]()}
                         </span>
                     </div>
 
@@ -571,7 +651,7 @@ const TestStep: React.FC<{
                                     : 'text-gray-400'
                             }
                         >
-                            HTTPS enabled
+                            {m['developerPortal.guides.serverWebhooks.testStep.httpsEnabled']()}
                         </span>
                     </div>
                 </div>
@@ -581,10 +661,13 @@ const TestStep: React.FC<{
             <div className="p-4 border border-gray-200 rounded-xl">
                 <div className="flex items-center justify-between mb-3">
                     <div>
-                        <h4 className="font-medium text-gray-800">Send Test Event</h4>
+                        <h4 className="font-medium text-gray-800">
+                            {m['developerPortal.guides.serverWebhooks.testStep.sendTestTitle']()}
+                        </h4>
 
                         <p className="text-sm text-gray-500">
-                            {webhookUrl || 'No webhook URL set'}
+                            {webhookUrl ||
+                                m['developerPortal.guides.serverWebhooks.testStep.noWebhookUrl']()}
                         </p>
                     </div>
 
@@ -596,12 +679,16 @@ const TestStep: React.FC<{
                         {testing ? (
                             <>
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                Sending...
+                                {m[
+                                    'developerPortal.guides.serverWebhooks.testStep.sendingButton'
+                                ]()}
                             </>
                         ) : (
                             <>
                                 <Webhook className="w-4 h-4" />
-                                Send Test
+                                {m[
+                                    'developerPortal.guides.serverWebhooks.testStep.sendTestButton'
+                                ]()}
                             </>
                         )}
                     </button>
@@ -626,10 +713,12 @@ const TestStep: React.FC<{
                     <Rocket className="w-8 h-8 text-emerald-600" />
                 </div>
 
-                <h4 className="text-lg font-semibold text-gray-800 mb-2">Webhooks ready!</h4>
+                <h4 className="text-lg font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.serverWebhooks.testStep.readyTitle']()}
+                </h4>
 
                 <p className="text-gray-600">
-                    Your server can now receive real-time events from LearnCard.
+                    {m['developerPortal.guides.serverWebhooks.testStep.readyDescription']()}
                 </p>
             </div>
 
@@ -639,7 +728,7 @@ const TestStep: React.FC<{
                     className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back
+                    {m['common.back']()}
                 </button>
 
                 <a
@@ -648,7 +737,7 @@ const TestStep: React.FC<{
                     rel="noopener noreferrer"
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                 >
-                    Full Documentation
+                    {m['developerPortal.guides.serverWebhooks.testStep.fullDocs']()}
                     <ExternalLink className="w-4 h-4" />
                 </a>
             </div>

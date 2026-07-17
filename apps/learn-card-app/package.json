@@ -142,6 +142,7 @@
         "start": "vite --host",
         "i18n:check-ast": "eslint --no-eslintrc -c .eslintrc-i18n.cjs --resolve-plugins-relative-to ../.. --ext .tsx,.ts src/pages/appStoreDeveloper src/pages/appStoreAdmin",
         "i18n:check-guides": "node scripts/check-i18n-guides.mjs",
+        "i18n:check-untranslated": "node scripts/check-i18n-untranslated.mjs",
         "start-p-4000": "vite --port=4000",
         "storybook": "storybook dev -p 6007",
         "build-storybook": "storybook build",
@@ -180,7 +181,9 @@
         "appflow:install": "bun install --ignore-scripts --frozen-lockfile && bunx nx build learn-card-app",
         "preview": "vite preview --host --port=3000",
         "neo4j-browser": "open-cli http://localhost:7474/browser?preselectAuthMethod=NO_AUTH",
-        "bench:learner-context": "playwright test tests/learner-context-perf.spec.ts --config=playwright.learner-context.config.ts --reporter=line"
+        "bench:learner-context": "playwright test tests/learner-context-perf.spec.ts --config=playwright.learner-context.config.ts --reporter=line",
+        "i18n:check-markers": "node scripts/check-i18n-markers.mjs",
+        "i18n:check-memos": "eslint --no-eslintrc --no-inline-config -c .eslintrc-i18n-memo.cjs --rulesdir eslint-rules --resolve-plugins-relative-to ../.. --ext .tsx,.ts src"
     },
     "browserslist": {
         "production": [
