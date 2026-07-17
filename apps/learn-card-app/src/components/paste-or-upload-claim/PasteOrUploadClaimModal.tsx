@@ -14,18 +14,32 @@ import AddContactView, {
     AddContactViewMode,
 } from '../../pages/addressBook/addContactView/AddContactView';
 
-const unrecognizedCopyFor = (reason: UnrecognizedReason): string => {
+const unrecognizedCopyFor = (reason: UnrecognizedReason, source: ClaimInputSource): string => {
+    const isQrImage = source === 'image_upload';
+
     switch (reason) {
         case 'empty':
-            return 'Paste a link or upload a QR code image to continue.';
+            return isQrImage
+                ? 'Choose an image with a credential QR code to continue.'
+                : 'Paste a claim link to continue.';
         case 'malformed_url':
-            return "That doesn't look like a claim link. Try copying the whole link, starting with https://, openid-credential-offer://, or similar.";
+            return isQrImage
+                ? "We found a QR code, but its link isn't valid. Try a different image."
+                : "That doesn't look like a claim link. Copy the whole link and try again.";
         case 'unknown_scheme':
-            return "We don't recognize this kind of link yet. The link looks valid, but the format isn't supported.";
+            return isQrImage
+                ? "We found a QR code, but it doesn't use a supported credential format."
+                : "We don't recognize this kind of claim link yet.";
         case 'invalid_vc':
             return "That looks like a credential, but we couldn't read it. Ask the issuer for a fresh copy.";
+        case 'interaction_unavailable':
+            return isQrImage
+                ? 'We found the QR code, but its credential is unavailable or expired.'
+                : 'We could not open that claim link. It may be unavailable or expired.';
         case 'unknown_format':
-            return "We couldn't make sense of that. Paste a claim link or upload a QR code image.";
+            return isQrImage
+                ? "We found a QR code, but it doesn't contain a supported credential claim."
+                : "We couldn't use that claim link. Check that you copied the full link and try again.";
     }
 };
 
@@ -119,7 +133,9 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
                 const result = await route(input, source);
 
                 if (result.kind === 'unrecognized') {
-                    if (mountedRef.current) setErrorCopy(unrecognizedCopyFor(result.reason));
+                    if (mountedRef.current) {
+                        setErrorCopy(unrecognizedCopyFor(result.reason, source));
+                    }
                     return false;
                 }
 
