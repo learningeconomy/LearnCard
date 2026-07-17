@@ -33,7 +33,7 @@ export const AddGamePrompt: React.FC<AddGamePromptProps> = ({
         return (
             <div className="w-full flex flex-col items-center justify-center min-h-[300px]">
                 <IonSpinner name="crescent" color="grayscale-900" className="scale-[2] mb-8 mt-6" />
-                <p className="font-poppins text-grayscale-900">Loading...</p>
+                <p className="font-poppins text-grayscale-900">{m['common.loading']()}</p>
             </div>
         );
     }

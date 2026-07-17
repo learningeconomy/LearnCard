@@ -14,6 +14,7 @@ import {
 } from 'learn-card-base';
 import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEarnedCard';
 import * as m from '../../../paraglide/messages.js';
+import { useLocale } from '../../../i18n';
 import { tBadgeDesc } from '../badgePackI18n';
 
 interface BadgePersonalizeProps {
@@ -64,6 +65,8 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
         onUpload: url => onImageUrlChange?.(url),
     });
 
+    const locale = useLocale();
+
     const previewCredential = useMemo(() => {
         const displayTitle = title.trim() || m['boostAFriend.yourBadge']();
         return buildPreviewCredential({
@@ -86,6 +89,8 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
         vibeColor,
         effectiveImageUrl,
         issuerName,
+        ,
+        locale,
     ]);
 
     return (

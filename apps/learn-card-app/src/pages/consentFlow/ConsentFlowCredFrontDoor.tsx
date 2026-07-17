@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import * as m from '../../paraglide/messages.js';
 import { useHistory } from 'react-router-dom';
 
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
@@ -159,7 +160,9 @@ const ConsentFlowCredFrontDoor: React.FC<ConsentFlowCredFrontDoorProps> = ({
                         {!resolvedBoost && (
                             <div className="flex flex-col items-center gap-[10px]">
                                 <IonSpinner className="h-[34px] w-[34px]" />
-                                <span className="text-white text-[18px]">Loading...</span>
+                                <span className="text-white text-[18px]">
+                                    {m['common.loading']()}
+                                </span>
                             </div>
                         )}
                     </>

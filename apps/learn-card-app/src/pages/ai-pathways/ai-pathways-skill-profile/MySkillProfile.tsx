@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { formatLocaleDate } from '../../../i18n/formatters';
 
 import { Capacitor } from '@capacitor/core';
 
@@ -38,7 +39,7 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({ className = '' }) => {
     }, [isFetched, percentage]);
 
     const formattedEditDate = lastEditedDate
-        ? new Date(lastEditedDate).toLocaleDateString('en-US', {
+        ? formatLocaleDate(new Date(lastEditedDate), {
               month: 'short',
               day: 'numeric',
               year: 'numeric',

@@ -134,7 +134,7 @@ const RoleSection: React.FC<RoleSectionProps> = ({
                 <div className="flex items-center justify-center gap-[10px] px-[10px] py-[10px] text-grayscale-600 min-h-[92px]">
                     <span className="h-[16px] w-[16px] shrink-0 animate-spin rounded-full border-2 border-grayscale-200 border-t-grayscale-900" />
                     <span className="text-[14px] leading-[20px]">
-                        {loadingMessage || 'Loading roles...'}
+                        {loadingMessage || m['ai.loadingRoles']()}
                     </span>
                 </div>
             ) : occupations.length > 0 ? (

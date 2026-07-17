@@ -10,6 +10,7 @@ import {
 } from '../boostAFriend.helpers';
 import { LCAStylesPackRegistryEntry, BadgeGroup } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
+import { useLocale } from '../../../i18n';
 import { tBadgeCategoryLabel, tBadgeCategoryDesc } from '../badgePackI18n';
 
 interface BadgePickerProps {
@@ -74,6 +75,8 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
         );
     };
 
+    const locale = useLocale();
+
     const groupedPresets = useMemo(() => {
         if (search) return null;
 
@@ -99,7 +102,7 @@ export const BadgePicker: React.FC<BadgePickerProps> = ({
         }
 
         return groups;
-    }, [presets, badgeGroups, search]);
+    }, [presets, badgeGroups, search, locale]);
 
     return (
         <div className="flex flex-col h-full animate-fade-in-up">

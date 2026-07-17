@@ -21,6 +21,7 @@ import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContrac
 import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
 import { useAnalytics } from '../../analytics';
 import * as m from '../../paraglide/messages.js';
+import { useLocale } from '../../i18n';
 import DataSharingCenterView from './DataSharingCenterView';
 import type {
     ConnectionRequestsValue,
@@ -108,6 +109,8 @@ const PrivacySettingsPage: React.FC = () => {
             consent?.status !== 'withdrawn'
     );
 
+    const locale = useLocale();
+
     const vm = useMemo<DataSharingCenterViewModel>(() => {
         const analyticsEnabled = preferences?.analyticsEnabled ?? !isMinor;
         const bugReportsEnabled = preferences?.bugReportsEnabled ?? !isMinor;
@@ -192,6 +195,8 @@ const PrivacySettingsPage: React.FC = () => {
         handleProfileUpdate,
         updatePreferences,
         setAnalyticsEnabled,
+        ,
+        locale,
     ]);
 
     return (

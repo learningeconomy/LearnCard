@@ -14,6 +14,7 @@ import { UploadTypesEnum, useModal } from 'learn-card-base';
 
 import useTheme from '../../../../theme/hooks/useTheme';
 import * as m from '../../../../paraglide/messages.js';
+import { mDynamic } from '../../../../i18n/mDynamic';
 
 // Dotted catalog key prefixes for each upload type's rotating loader quotes.
 // Quotes are resolved at RENDER time via the message function (not module load)
@@ -45,7 +46,7 @@ export const ChecklistLoader: React.FC<{ fileType: UploadTypesEnum; onDismiss?: 
     // (calling the message function at module load would freeze the load-time locale).
     const quotePrefix = QUOTE_KEY_PREFIX[activeType];
     const activeQuotes = Array.from({ length: QUOTE_COUNT[activeType] }, (_, i) =>
-        m[`${quotePrefix}.q${i}`]()
+        mDynamic(`${quotePrefix}.q${i}`)
     );
 
     const { colors } = useTheme();

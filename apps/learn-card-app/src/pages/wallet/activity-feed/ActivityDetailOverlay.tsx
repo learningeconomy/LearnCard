@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { formatLocaleDate } from '../../../i18n/formatters';
 import { useHistory } from 'react-router-dom';
 import { IonIcon } from '@ionic/react';
 import { closeOutline, arrowForwardOutline, calendarOutline } from 'ionicons/icons';
@@ -38,7 +39,7 @@ export const ActivityDetailOverlay: React.FC<{
         };
     }, []);
 
-    const formattedDate = new Date(item.timestamp).toLocaleDateString('en-US', {
+    const formattedDate = formatLocaleDate(new Date(item.timestamp), {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
