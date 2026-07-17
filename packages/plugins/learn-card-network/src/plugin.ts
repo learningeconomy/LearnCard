@@ -618,8 +618,19 @@ export async function getLearnCardNetworkPlugin(
 
                 const newDid = await client.profile.createProfile.mutate(profile);
 
-                userData = await client.profile.getProfile.query();
                 did = newDid;
+
+                // Warm the profile cache in the background instead of blocking the
+                // return; ensureUser() lazily re-fetches if a method needs userData
+                // before this resolves.
+                client.profile.getProfile
+                    .query()
+                    .then(res => {
+                        if (!userData) userData = res;
+                    })
+                    .catch(error => {
+                        _learnCard.debug?.('LCN: post-create getProfile failed (non-fatal)', error);
+                    });
 
                 return newDid;
             },

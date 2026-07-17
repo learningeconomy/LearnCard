@@ -175,7 +175,11 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
             try {
                 setIsLoading(true);
                 setIsCreateLoading(true);
+                const flowStart = performance.now();
                 const wallet = await initWallet();
+                const initWalletMs = Math.round(performance.now() - flowStart);
+
+                const createStart = performance.now();
                 const didWeb = await wallet.invoke.createProfile({
                     profileId: profileId,
                     displayName: name,
@@ -184,6 +188,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                     image: photo,
                     notificationsWebhook: getNotificationsEndpoint(),
                 });
+                const createProfileMs = Math.round(performance.now() - createStart);
 
                 if (didWeb) {
                     // Give consent to LearnCard Network contract
@@ -195,10 +200,20 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                     } catch (consentErr) {
                         log.warn('Network consent error:', consentErr);
                     }
-                    await refetchIsCurrentUserLCNUser();
-                    await wallet.invoke.resetLCAClient();
+                    const cacheResetStart = performance.now();
+                    await Promise.all([
+                        refetchIsCurrentUserLCNUser(),
+                        wallet.invoke.resetLCAClient(),
+                    ]);
+                    // resetQueries refetches all active queries (including
+                    // useGetCurrentLCNUser), so no manual refetch is needed
                     await queryClient.resetQueries();
-                    await refetch(); // refetch to sync -> useGetCurrentLCNUser hook
+                    log.info('createProfile.timing', {
+                        initWalletMs,
+                        createProfileMs,
+                        cacheResetMs: Math.round(performance.now() - cacheResetStart),
+                        totalMs: Math.round(performance.now() - flowStart),
+                    });
                     handleCloseModal();
                     setIsLoading(false);
                     setIsCreateLoading(false);
