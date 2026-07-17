@@ -182,7 +182,8 @@
         "preview": "vite preview --host --port=3000",
         "neo4j-browser": "open-cli http://localhost:7474/browser?preselectAuthMethod=NO_AUTH",
         "bench:learner-context": "playwright test tests/learner-context-perf.spec.ts --config=playwright.learner-context.config.ts --reporter=line",
-        "i18n:check-markers": "node scripts/check-i18n-markers.mjs"
+        "i18n:check-markers": "node scripts/check-i18n-markers.mjs",
+        "i18n:check-memos": "eslint --no-eslintrc --no-inline-config -c .eslintrc-i18n-memo.cjs --rulesdir eslint-rules --resolve-plugins-relative-to ../.. --ext .tsx,.ts src"
     },
     "browserslist": {
         "production": [

@@ -1,4 +1,5 @@
 import * as m from '../../../../paraglide/messages.js';
+import { useLocale } from '../../../../i18n';
 import React, { useState, useMemo } from 'react';
 import { FileText, Copy, Check, Shield, Send, Info } from 'lucide-react';
 import { Clipboard } from '@capacitor/clipboard';
@@ -26,6 +27,8 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
     // ============================================================
     // EXTRACT CONTRACTS FROM GUIDE STATE
     // ============================================================
+    const locale = useLocale();
+
     const configuredContracts = useMemo<ConfiguredContract[]>(() => {
         const contracts: ConfiguredContract[] = [];
 
@@ -75,7 +78,7 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
         }
 
         return contracts;
-    }, [integration?.guideState]);
+    }, [integration?.guideState, locale]);
 
     const copyContractUri = async (uri: string) => {
         await Clipboard.write({ string: uri });
