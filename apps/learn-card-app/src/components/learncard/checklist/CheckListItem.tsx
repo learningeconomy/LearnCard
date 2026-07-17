@@ -10,7 +10,7 @@ type CheckListItemProps = {
 
 export const CheckListItem: React.FC<CheckListItemProps> = ({ checkListItem, onOpen }) => {
     return (
-        <li className="w-full border-b border-grayscale-200 last:border-b-0">
+        <li className="w-full">
             <button
                 type="button"
                 onClick={onOpen}
