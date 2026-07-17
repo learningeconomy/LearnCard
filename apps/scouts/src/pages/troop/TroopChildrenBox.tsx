@@ -136,23 +136,21 @@ const TroopChildrenBox: React.FC<Props> = ({ networkName, boostUri, credential, 
         () =>
             newModal(
                 <NetworkListDisplay
-                    count={counts.globalNetworks}
                     networkName={networkName}
-                    uri={uri}
+                    uri={uri ?? ''}
                     parentLevel={TroopParentLevel.global}
                 />
             ),
-        [counts.globalNetworks, newModal, networkName, uri]
+        [newModal, networkName, uri]
     );
 
     const openTroopsModal = useCallback(
-        (parentLevel: TroopParentLevel, count?: number) =>
+        (parentLevel: TroopParentLevel) =>
             newModal(
                 <TroopsModal
-                    count={count}
                     networkName={networkName}
                     credentialType={CredentialCategoryEnum.troops}
-                    uri={uri}
+                    uri={uri ?? ''}
                     parentLevel={parentLevel}
                 />
             ),
@@ -160,14 +158,14 @@ const TroopChildrenBox: React.FC<Props> = ({ networkName, boostUri, credential, 
     );
 
     const openCredentialModal = useCallback(
-        (category: CredentialCategoryEnum) => {
+        (category: CredentialCategoryEnum.meritBadge | CredentialCategoryEnum.socialBadge) => {
             boostSearchStore.set.contextCredential(credential);
             boostSearchStore.set.boostUri(boostUri);
 
             newModal(
                 <TroopCredentialsModal
-                    parentUri={uri}
-                    troopName={networkName}
+                    parentUri={uri ?? ''}
+                    troopName={networkName ?? ''}
                     credentialType={category}
                     childGenerations={isNetworkAdmin ? 1 : undefined}
                 />
@@ -181,7 +179,7 @@ const TroopChildrenBox: React.FC<Props> = ({ networkName, boostUri, credential, 
     /* ------------------------------------------------------------------------ */
     const rows = useMemo(() => {
         /** Small helper to show “…” while loading. */
-        const fmt = (value?: number) => value ?? '…';
+        const fmt = (value?: number) => String(value ?? '…');
 
         switch (role) {
             case ScoutsRoleEnum.global:
@@ -196,8 +194,7 @@ const TroopChildrenBox: React.FC<Props> = ({ networkName, boostUri, credential, 
                         Icon: GreenScoutsPledge2,
                         mainText: 'Troops',
                         caretText: fmt(counts.globalTroops),
-                        onClick: () =>
-                            openTroopsModal(TroopParentLevel.global, counts.globalTroops),
+                        onClick: () => openTroopsModal(TroopParentLevel.global),
                     },
                     showAnalyticsOption
                         ? {
@@ -215,8 +212,7 @@ const TroopChildrenBox: React.FC<Props> = ({ networkName, boostUri, credential, 
                         Icon: GreenScoutsPledge2,
                         mainText: 'Troops',
                         caretText: fmt(counts.nationalTroops),
-                        onClick: () =>
-                            openTroopsModal(TroopParentLevel.national, counts.nationalTroops),
+                        onClick: () => openTroopsModal(TroopParentLevel.national),
                     },
                     {
                         Icon: PurpleMeritBadgesIcon,

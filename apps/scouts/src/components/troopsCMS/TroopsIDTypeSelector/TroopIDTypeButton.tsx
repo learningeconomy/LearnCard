@@ -188,10 +188,10 @@ export const TroopIDTypeButton: React.FC<TroopIDTypeButtonProps> = ({
                             )}
                         </div>
                         <p className="flex flex-col justify-center items-start font-notoSans text-[17px] text-grayscale-900">
-                            Leader ID
+                            Troop Leader ID
                             {leadersListLength > 0 && (
                                 <span className="text-[14px] text-grayscale-500 font-notoSans font-[500] leading-normal">
-                                    {conditionalPluralize(leadersListLength, 'Leader')}
+                                    {conditionalPluralize(leadersListLength, 'Troop Leader')}
                                 </span>
                             )}
                         </p>
