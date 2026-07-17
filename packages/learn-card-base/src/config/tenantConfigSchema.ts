@@ -90,6 +90,29 @@ export const tenantAuthConfigSchema = z
     })
     .passthrough();
 
+export const tenantFilestackStorageConfigSchema = z
+    .object({
+        provider: z.literal('filestack'),
+        apiKey: z.string().default('A7RsW3VzfSNO2TCsFJ6Eiz'),
+        cdnDomain: z.string().default('cdn.filestackcontent.com'),
+        apiDomain: z.string().default('www.filestackapi.com'),
+    })
+    .passthrough();
+
+export const tenantS3StorageConfigSchema = z
+    .object({
+        provider: z.literal('s3'),
+        uploadEndpoint: urlOrPlaceholder(),
+        cdnDomain: z.string(),
+        bucket: z.string().optional(),
+    })
+    .passthrough();
+
+export const tenantStorageConfigSchema = z.discriminatedUnion('provider', [
+    tenantFilestackStorageConfigSchema,
+    tenantS3StorageConfigSchema,
+]);
+
 const deleteSuccessStylesSchema = z
     .object({
         containerClass: z.string(),
@@ -285,6 +308,12 @@ export const tenantConfigSchema = z
 
         apis: tenantApiConfigSchema,
         auth: tenantAuthConfigSchema,
+        storage: tenantStorageConfigSchema.default({
+            provider: 'filestack',
+            apiKey: 'A7RsW3VzfSNO2TCsFJ6Eiz',
+            cdnDomain: 'cdn.filestackcontent.com',
+            apiDomain: 'www.filestackapi.com',
+        }),
         branding: tenantBrandingConfigSchema,
         features: tenantFeatureConfigSchema,
         observability: tenantObservabilityConfigSchema,
@@ -307,6 +336,9 @@ export type TenantApiConfig = z.infer<typeof tenantApiConfigSchema>;
 export type TenantAuthConfig = z.infer<typeof tenantAuthConfigSchema>;
 export type TenantFirebaseConfig = z.infer<typeof tenantFirebaseConfigSchema>;
 export type TenantWeb3AuthConfig = z.infer<typeof tenantWeb3AuthConfigSchema>;
+export type TenantStorageConfig = z.infer<typeof tenantStorageConfigSchema>;
+export type TenantFilestackStorageConfig = z.infer<typeof tenantFilestackStorageConfigSchema>;
+export type TenantS3StorageConfig = z.infer<typeof tenantS3StorageConfigSchema>;
 export type TenantBrandingConfig = z.infer<typeof tenantBrandingConfigSchema>;
 export type TenantFeatureConfig = z.infer<typeof tenantFeatureConfigSchema>;
 export type TenantObservabilityConfig = z.infer<typeof tenantObservabilityConfigSchema>;

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ImagePlus, Loader2, SlidersHorizontal, ChevronDown, X } from 'lucide-react';
 
 import {
-    useFilestack,
+    useImageUpload,
     SelectInput,
     parseLcTags,
     buildLcTags,
@@ -253,7 +253,7 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
 
     const canMakeDynamic = recipientMode === 'people' && recipients.length > 1;
 
-    const { handleFileSelect, isLoading: imageUploading } = useFilestack({
+    const { handleFileSelect, isLoading: imageUploading } = useImageUpload({
         fileType: 'image/*',
         resizeBeforeUploading: true,
         onUpload: (url: string) => patchAchievement({ image: staticField(url) }),
@@ -270,7 +270,7 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
         [ach, hints, patchAchievement]
     );
 
-    const { handleFileSelect: handleBgSelect, isLoading: bgUploading } = useFilestack({
+    const { handleFileSelect: handleBgSelect, isLoading: bgUploading } = useImageUpload({
         fileType: 'image/*',
         resizeBeforeUploading: true,
         onUpload: (url: string) => setHints({ backgroundImage: url }),
