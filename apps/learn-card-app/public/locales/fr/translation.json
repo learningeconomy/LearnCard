@@ -3378,6 +3378,28 @@
                 "title": "Profil d'Organisation requis",
                 "description": "Pour créer un contrat, vous devez être connecté avec un profil d'Organisation. Si vous n'en avez pas encore, veuillez d'abord créer un profil d'Organisation."
             }
+        },
+        "networkSwitch": {
+            "dialing": "Connexion au nouveau réseau…",
+            "calibrating": "Calibrage des flux de données…",
+            "authenticating": "Authentification de la connexion sécurisée…",
+            "handshake": "Établissement de la liaison chiffrée…",
+            "routing": "Acheminement des paquets via le nouveau point de terminaison…",
+            "syncing": "Synchronisation avec le cluster de stockage mis à jour…",
+            "optimizing": "Optimisation des protocoles de transfert…",
+            "verifying": "Vérification des identifiants réseau…",
+            "finalizing": "Finalisation du lien sécurisé…"
+        },
+        "storageSwitch": {
+            "packing": "Emballage des cartons de données…",
+            "rolling": "Approche du chariot de stockage…",
+            "checkingMap": "Consultation du plan de stockage…",
+            "dusting": "Dépoussiérage des nouvelles étagères…",
+            "labeling": "Étiquetage des bacs de rangement…",
+            "polishing": "Astiquage des armoires de données…",
+            "nothingLeft": "Vérification qu’il ne reste rien…",
+            "newKey": "Insertion de la nouvelle clé dans la serrure…",
+            "closingDoor": "Fermeture de l’ancienne porte de stockage…"
         }
     },
     "dataSharing": {
@@ -3945,7 +3967,7 @@
                 "upgradeNow": "Mettre à Jour Maintenant",
                 "upgrading": "Mise à jour en cours...",
                 "remindMeLater": "Me Rappeler Plus Tard",
-                "upgradeFailed": "Échec de la mise à jour. Veuillez réessayer.",
+                "upgradeFailed": "La mise à niveau a échoué. Veuillez réessayer.",
                 "unexpectedError": "Une erreur inattendue s'est produite",
                 "noSlugAssigned": "Aucun slug attribué",
                 "slugLabel": "Slug : {{slug}}",

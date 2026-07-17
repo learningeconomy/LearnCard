@@ -39,7 +39,9 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
                     onDismiss();
                 }, 2000);
             } else {
-                setUpgradeError('Upgrade failed. Please try again.');
+                setUpgradeError(
+                    m['developerPortal.components.appDidUpgradeDialog.upgradeFailed']()
+                );
             }
         } catch (error) {
             log.error('Upgrade failed:', error);

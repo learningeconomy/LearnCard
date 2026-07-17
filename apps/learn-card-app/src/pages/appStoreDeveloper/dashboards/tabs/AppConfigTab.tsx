@@ -674,7 +674,7 @@ module.exports = nextConfig;`;
                                         <div className="flex-1">
                                             <span className="text-sm font-medium text-gray-700">
                                                 {result.messageKey
-                                                    ? m[result.messageKey]()
+                                                    ? mDynamic(result.messageKey)
                                                     : result.label}
                                             </span>
                                         </div>
@@ -693,7 +693,7 @@ module.exports = nextConfig;`;
                                                     }`}
                                                 >
                                                     {result.messageKey
-                                                        ? m[result.messageKey]()
+                                                        ? mDynamic(result.messageKey)
                                                         : result.message}
                                                 </span>
                                             )}

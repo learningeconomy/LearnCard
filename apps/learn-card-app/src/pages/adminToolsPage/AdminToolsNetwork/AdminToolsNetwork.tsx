@@ -44,16 +44,16 @@ export const networkOptionsList: NetworkOption[] = [
 ];
 
 export const getNetworkSwitchMessages = () => [
-    'Dialing into the new network…',
-    'Calibrating data streams…',
-    'Authenticating secure connection…',
-    'Establishing encrypted handshake…',
-    'Routing packets through the new endpoint…',
-    'Syncing with updated storage cluster…',
-    'Optimizing transfer protocols…',
-    'Verifying network credentials…',
+    m['adminTools.networkSwitch.dialing'](),
+    m['adminTools.networkSwitch.calibrating'](),
+    m['adminTools.networkSwitch.authenticating'](),
+    m['adminTools.networkSwitch.handshake'](),
+    m['adminTools.networkSwitch.routing'](),
+    m['adminTools.networkSwitch.syncing'](),
+    m['adminTools.networkSwitch.optimizing'](),
+    m['adminTools.networkSwitch.verifying'](),
     m['common.loadingConfiguration'](),
-    'Finalizing secure link…',
+    m['adminTools.networkSwitch.finalizing'](),
 ];
 
 const AdminToolsNetworkOption: React.FC<{ option: AdminToolOption; showFooter?: boolean }> = ({

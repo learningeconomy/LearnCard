@@ -4,6 +4,7 @@ import { IonPage, IonContent, IonSpinner } from '@ionic/react';
 import { ArrowLeft, ArrowRight, Send, Loader2, AlertCircle, Save, FileEdit } from 'lucide-react';
 
 import * as m from '../../paraglide/messages.js';
+import { mDynamic } from '../../i18n/mDynamic';
 
 import { useModal, ModalTypes } from 'learn-card-base';
 
@@ -67,8 +68,8 @@ const SubmissionForm: React.FC = () => {
     // locale after a runtime language switch.
     const resolvedSteps = STEPS.map(s => ({
         id: s.id,
-        title: m[s.titleKey](),
-        description: m[s.descriptionKey](),
+        title: mDynamic(s.titleKey),
+        description: mDynamic(s.descriptionKey),
     }));
 
     const { useListing, useCreateListing, useUpdateListing, useSubmitForReview } =

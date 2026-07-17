@@ -3384,6 +3384,28 @@
                 "title": "Organization Profile Required",
                 "description": "To create a contract, you must be logged in as an Organization Profile. If you don't have one yet, please create an Organization Profile first."
             }
+        },
+        "networkSwitch": {
+            "dialing": "Dialing into the new network…",
+            "calibrating": "Calibrating data streams…",
+            "authenticating": "Authenticating secure connection…",
+            "handshake": "Establishing encrypted handshake…",
+            "routing": "Routing packets through the new endpoint…",
+            "syncing": "Syncing with updated storage cluster…",
+            "optimizing": "Optimizing transfer protocols…",
+            "verifying": "Verifying network credentials…",
+            "finalizing": "Finalizing secure link…"
+        },
+        "storageSwitch": {
+            "packing": "Packing up the data boxes…",
+            "rolling": "Rolling the storage cart over…",
+            "checkingMap": "Checking the storage map…",
+            "dusting": "Dusting off the new shelves…",
+            "labeling": "Labeling the storage bins…",
+            "polishing": "Polishing the data cabinets…",
+            "nothingLeft": "Making sure nothing’s left behind…",
+            "newKey": "Putting the new key in the lock…",
+            "closingDoor": "Closing the old storage door…"
         }
     },
     "dataSharing": {

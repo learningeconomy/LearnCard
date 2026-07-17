@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import * as m from '../../../paraglide/messages.js';
+import { mDynamic } from '../../../i18n/mDynamic';
 import { useHistory } from 'react-router-dom';
 import { IonPage, IonContent } from '@ionic/react';
 import {
@@ -104,7 +105,9 @@ const IntegrationCard: React.FC<IntegrationCardProps> = ({
                     <StatusIcon className={`w-3.5 h-3.5 ${statusConfig.color}`} />
 
                     <span className={`text-xs font-medium ${statusConfig.color}`}>
-                        {statusConfig.labelKey ? m[statusConfig.labelKey]() : statusConfig.label}
+                        {statusConfig.labelKey
+                            ? mDynamic(statusConfig.labelKey)
+                            : statusConfig.label}
                     </span>
                 </div>
             </div>

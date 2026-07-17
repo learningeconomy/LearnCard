@@ -5,6 +5,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 
 import * as m from '../../../paraglide/messages.js';
+import { mDynamic } from '../../../i18n/mDynamic';
 
 import { AppStoreHeader } from '../components/AppStoreHeader';
 import { HeaderIntegrationSelector } from '../components/HeaderIntegrationSelector';
@@ -193,7 +194,7 @@ const GuidePage: React.FC = () => {
 
     return (
         <IonPage>
-            <AppStoreHeader title={m[useCaseConfig.titleKey]()} rightContent={headerContent} />
+            <AppStoreHeader title={mDynamic(useCaseConfig.titleKey)} rightContent={headerContent} />
 
             <IonContent className="ion-padding">
                 {isUnlocked ? (
@@ -202,7 +203,7 @@ const GuidePage: React.FC = () => {
                         setSelectedIntegration={handleSetSelectedIntegration}
                     />
                 ) : (
-                    <LockedGuideOverlay guideName={m[useCaseConfig.titleKey]()} />
+                    <LockedGuideOverlay guideName={mDynamic(useCaseConfig.titleKey)} />
                 )}
             </IonContent>
         </IonPage>

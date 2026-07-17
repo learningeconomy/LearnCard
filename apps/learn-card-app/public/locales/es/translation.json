@@ -3378,6 +3378,28 @@
                 "title": "Se requiere un perfil de Organización",
                 "description": "Para crear un contrato, debes haber iniciado sesión como perfil de Organización. Si aún no tienes uno, crea primero un perfil de Organización."
             }
+        },
+        "networkSwitch": {
+            "dialing": "Conectando con la nueva red…",
+            "calibrating": "Calibrando los flujos de datos…",
+            "authenticating": "Autenticando la conexión segura…",
+            "handshake": "Estableciendo el enlace cifrado…",
+            "routing": "Enrutando paquetes por el nuevo endpoint…",
+            "syncing": "Sincronizando con el clúster de almacenamiento actualizado…",
+            "optimizing": "Optimizando los protocolos de transferencia…",
+            "verifying": "Verificando las credenciales de red…",
+            "finalizing": "Finalizando el enlace seguro…"
+        },
+        "storageSwitch": {
+            "packing": "Empaquetando las cajas de datos…",
+            "rolling": "Acercando el carrito de almacenamiento…",
+            "checkingMap": "Consultando el mapa de almacenamiento…",
+            "dusting": "Quitando el polvo de los estantes nuevos…",
+            "labeling": "Etiquetando los contenedores…",
+            "polishing": "Puliendo los archivadores de datos…",
+            "nothingLeft": "Comprobando que no quede nada atrás…",
+            "newKey": "Poniendo la nueva llave en la cerradura…",
+            "closingDoor": "Cerrando la puerta del almacén antiguo…"
         }
     },
     "dataSharing": {
@@ -3945,7 +3967,7 @@
                 "upgradeNow": "Actualizar Ahora",
                 "upgrading": "Actualizando...",
                 "remindMeLater": "Recordármelo Después",
-                "upgradeFailed": "Error en la actualización. Inténtalo de nuevo.",
+                "upgradeFailed": "La actualización falló. Inténtalo de nuevo.",
                 "unexpectedError": "Ocurrió un error inesperado",
                 "noSlugAssigned": "Sin slug asignado",
                 "slugLabel": "Slug: {{slug}}",

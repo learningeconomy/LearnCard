@@ -1,4 +1,5 @@
 import * as m from '../../../../paraglide/messages.js';
+import { mDynamic } from '../../../../i18n/mDynamic';
 import React, { useState, useEffect } from 'react';
 import {
     Palette,
@@ -435,7 +436,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                                 style={{ backgroundColor: color.primary }}
                             />
 
-                            <span className="text-xs text-gray-600">{m[color.nameKey]()}</span>
+                            <span className="text-xs text-gray-600">{mDynamic(color.nameKey)}</span>
                         </button>
                     ))}
                 </div>

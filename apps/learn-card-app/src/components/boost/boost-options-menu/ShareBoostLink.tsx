@@ -129,12 +129,6 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
             : myProfileLoading
             ? m['common.loading']()
             : m['common.unknown']();
-
-        issueeName = myProfile
-            ? myProfile?.displayName
-            : myProfileLoading
-            ? m['common.loading']()
-            : m['common.unknown']();
     } else {
         issueeName = cred?.credentialSubject?.id;
     }

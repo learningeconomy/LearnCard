@@ -1,5 +1,6 @@
 import React from 'react';
 import * as m from '../../paraglide/messages.js';
+import { mDynamic } from '../../i18n/mDynamic';
 
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
@@ -76,7 +77,7 @@ const LoginWelcomePanel: React.FC = () => {
                             key={label}
                             className="px-4 py-2 rounded-full text-sm font-medium text-white/90 bg-white/10 backdrop-blur-sm"
                         >
-                            {m[pillKeyMap[label] ?? label]()}
+                            {mDynamic(pillKeyMap[label] ?? label)}
                         </span>
                     ))}
                 </div>

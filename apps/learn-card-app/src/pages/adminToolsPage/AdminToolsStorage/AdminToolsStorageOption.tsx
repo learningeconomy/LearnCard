@@ -41,16 +41,16 @@ export const storageOptionsList: StorageOption[] = [
 ];
 
 export const getStorageSwitchMessages = () => [
-    'Packing up the data boxes…',
-    'Rolling the storage cart over…',
+    m['adminTools.storageSwitch.packing'](),
+    m['adminTools.storageSwitch.rolling'](),
     m['common.loadingDataTruck'](),
-    'Checking the storage map…',
-    'Dusting off the new shelves…',
-    'Labeling the storage bins…',
-    'Polishing the data cabinets…',
-    'Making sure nothing’s left behind…',
-    'Putting the new key in the lock…',
-    'Closing the old storage door…',
+    m['adminTools.storageSwitch.checkingMap'](),
+    m['adminTools.storageSwitch.dusting'](),
+    m['adminTools.storageSwitch.labeling'](),
+    m['adminTools.storageSwitch.polishing'](),
+    m['adminTools.storageSwitch.nothingLeft'](),
+    m['adminTools.storageSwitch.newKey'](),
+    m['adminTools.storageSwitch.closingDoor'](),
 ];
 
 const AdminToolsStorageOption: React.FC<{ option: AdminToolOption; showFooter?: boolean }> = ({

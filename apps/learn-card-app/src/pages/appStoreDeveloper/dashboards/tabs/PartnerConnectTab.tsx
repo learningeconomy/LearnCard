@@ -822,7 +822,7 @@ export const PartnerConnectTab: React.FC<PartnerConnectTabProps> = ({
                    id =>
                        `  - ${
                            FEATURES.find(f => f.id === id)?.titleKey
-                               ? m[FEATURES.find(f => f.id === id)!.titleKey]()
+                               ? mDynamic(FEATURES.find(f => f.id === id)!.titleKey)
                                : id
                        }`
                )
@@ -1691,7 +1691,9 @@ log.info('User:', identity.profile.displayName);`;
                                                         </h4>
                                                         <p className="mt-2 text-gray-600 text-sm leading-relaxed">
                                                             {selectedMethod.descriptionKey
-                                                                ? m[selectedMethod.descriptionKey]()
+                                                                ? mDynamic(
+                                                                      selectedMethod.descriptionKey
+                                                                  )
                                                                 : selectedMethod.description}
                                                         </p>
                                                     </div>
@@ -1736,7 +1738,9 @@ log.info('User:', identity.profile.displayName);`;
                                                                     </div>
                                                                     <p className="mt-1 text-sm text-gray-600">
                                                                         {param.descKey
-                                                                            ? m[param.descKey]()
+                                                                            ? mDynamic(
+                                                                                  param.descKey
+                                                                              )
                                                                             : param.description}
                                                                     </p>
                                                                 </div>
@@ -1761,7 +1765,9 @@ log.info('User:', identity.profile.displayName);`;
                                                     </code>
                                                     <p className="mt-1 text-sm text-gray-600">
                                                         {selectedMethod.returns.descKey
-                                                            ? m[selectedMethod.returns.descKey]()
+                                                            ? mDynamic(
+                                                                  selectedMethod.returns.descKey
+                                                              )
                                                             : selectedMethod.returns.description}
                                                     </p>
 
