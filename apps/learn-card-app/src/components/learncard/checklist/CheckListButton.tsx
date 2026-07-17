@@ -77,10 +77,10 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                 </div>
                 <div className="flex flex-col gap-[5px] flex-1 min-w-0">
                     <div className="flex flex-col">
-                        <span className="text-[16px] font-poppins text-grayscale-900 leading-[normal] text-left">
+                        <span className="text-[15px] font-poppins text-grayscale-900 leading-[normal] text-left">
                             Build My {brandingConfig.name}
                         </span>
-                        <span className="text-[12px] font-poppins font-medium text-grayscale-600 leading-[normal]">
+                        <span className="text-[11px] font-poppins font-medium text-grayscale-600 leading-[normal]">
                             {isParsing
                                 ? 'Processing documents...'
                                 : hasPendingReview
