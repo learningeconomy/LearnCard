@@ -129,11 +129,11 @@ export const InAppMessageBanner: React.FC<InAppMessageBannerProps> = ({ message,
 
     return (
         <div
-            className="fixed top-0 left-0 right-0 z-[9998] pointer-events-none"
+            className="fixed top-0 left-0 right-0 z-[9998] pointer-events-none px-3"
             style={{ paddingTop: 'env(safe-area-inset-top)' }}
         >
             <motion.div
-                className="mx-auto max-w-[600px] bg-white/80 backdrop-blur-xl rounded-[24px] shadow-[0_16px_40px_rgba(0,0,0,0.12),0_4px_12px_rgba(0,0,0,0.06)] border border-white/60 m-3 p-4 font-poppins pointer-events-auto flex items-start gap-3 relative overflow-hidden"
+                className="mx-auto max-w-[600px] bg-white/80 backdrop-blur-xl rounded-[24px] shadow-[0_16px_40px_rgba(0,0,0,0.12),0_4px_12px_rgba(0,0,0,0.06)] border border-white/60 my-3 p-4 font-poppins pointer-events-auto flex items-start gap-3 relative overflow-hidden"
                 variants={variants}
                 initial="hidden"
                 animate="visible"
