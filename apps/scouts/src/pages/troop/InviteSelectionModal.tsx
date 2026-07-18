@@ -10,6 +10,8 @@ interface InviteSelectionModalProps {
     onInviteScout: () => void;
     handleCloseModal: () => void;
     scoutNoun: string;
+    leaderImage?: string;
+    scoutImage?: string;
 }
 
 const InviteSelectionModal: React.FC<InviteSelectionModalProps> = ({
@@ -17,11 +19,15 @@ const InviteSelectionModal: React.FC<InviteSelectionModalProps> = ({
     onInviteScout,
     handleCloseModal,
     scoutNoun,
+    leaderImage,
+    scoutImage,
 }) => {
     return (
         <div className="w-full flex flex-col items-center justify-center px-3 py-7 bg-white rounded-2xl">
-            <h2 className="text-xl font-poppins font-semibold text-grayscale-900 mb-6 text-center">{m['troops.invite.title']()}</h2>
-            
+            <h2 className="text-xl font-poppins font-semibold text-grayscale-900 mb-6 text-center">
+                {m['troops.invite.title']()}
+            </h2>
+
             <div className="flex flex-col gap-4 w-full">
                 <button
                     onClick={() => {
@@ -30,11 +36,23 @@ const InviteSelectionModal: React.FC<InviteSelectionModalProps> = ({
                     className="flex items-center gap-4 w-full p-4 rounded-xl border-2 border-grayscale-100 hover:border-sp-green-forest transition-colors text-left"
                 >
                     <div className="flex shrink-0 items-center justify-center h-12 w-12 rounded-full overflow-hidden bg-grayscale-100">
-                        <LeaderIdThumbPlaceholder className="h-full w-full object-cover" />
+                        {leaderImage ? (
+                            <img
+                                src={leaderImage}
+                                alt="Troop Leader"
+                                className="h-full w-full object-cover"
+                            />
+                        ) : (
+                            <LeaderIdThumbPlaceholder className="h-full w-full object-cover" />
+                        )}
                     </div>
                     <div>
-                        <p className="font-semibold text-grayscale-900 line-clamp-1">{m['troops.invite.lLeader']()}</p>
-                        <p className="text-sm text-grayscale-500 line-clamp-2">{m['troops.invite.lDesc']()}</p>
+                        <p className="font-semibold text-grayscale-900 line-clamp-1">
+                            {m['troops.invite.lLeader']()}
+                        </p>
+                        <p className="text-sm text-grayscale-500 line-clamp-2">
+                            {m['troops.invite.lDesc']()}
+                        </p>
                     </div>
                 </button>
 
@@ -45,11 +63,23 @@ const InviteSelectionModal: React.FC<InviteSelectionModalProps> = ({
                     className="flex items-center gap-4 w-full p-4 rounded-xl border-2 border-grayscale-100 hover:border-sp-green-forest transition-colors text-left"
                 >
                     <div className="flex shrink-0 items-center justify-center h-12 w-12 rounded-full overflow-hidden bg-grayscale-100">
-                        <ScoutIdThumbPlaceholder className="h-full w-full object-cover" />
+                        {scoutImage ? (
+                            <img
+                                src={scoutImage}
+                                alt="Scout"
+                                className="h-full w-full object-cover"
+                            />
+                        ) : (
+                            <ScoutIdThumbPlaceholder className="h-full w-full object-cover" />
+                        )}
                     </div>
                     <div>
-                        <p className="font-semibold text-grayscale-900 line-clamp-1">{m['troops.invite.lScout']()}</p>
-                        <p className="text-sm text-grayscale-500 line-clamp-2">{m['troops.invite.sDesc']()}</p>
+                        <p className="font-semibold text-grayscale-900 line-clamp-1">
+                            {m['troops.invite.lScout']()}
+                        </p>
+                        <p className="text-sm text-grayscale-500 line-clamp-2">
+                            {m['troops.invite.sDesc']()}
+                        </p>
                     </div>
                 </button>
             </div>

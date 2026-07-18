@@ -88,7 +88,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum }> = ({ branding = BrandingEnu
                 : currentLCNUser;
 
         if (!isCurrentLCNUser) {
-            handlePresentJoinNetworkModal();
+            void handlePresentJoinNetworkModal({ forceOpen: true });
             return;
         }
 
@@ -165,7 +165,9 @@ const SideMenu: React.FC<{ branding: BrandingEnum }> = ({ branding = BrandingEnu
                     className="ion-no-border ion-no-padding px-4"
                     style={{ '--border-width': '0', '--border-color': 'transparent' }}
                 >
-                    <p className="text-grayscale-900 opacity-50 text-xs">{m['sidemenu.version']({ version })}</p>
+                    <p className="text-grayscale-900 opacity-50 text-xs">
+                        {m['sidemenu.version']({ version })}
+                    </p>
                 </IonToolbar>
             </IonFooter>
         </IonMenu>

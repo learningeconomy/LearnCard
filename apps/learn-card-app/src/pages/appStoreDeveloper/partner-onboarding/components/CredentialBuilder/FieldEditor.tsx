@@ -17,7 +17,7 @@ import {
 
 import * as m from '../../../../../paraglide/messages.js';
 
-import { useFilestack } from 'learn-card-base';
+import { useImageUpload } from 'learn-card-base';
 
 import { TemplateFieldValue, staticField, dynamicField } from './types';
 import { labelToVariableName } from './utils';
@@ -77,7 +77,7 @@ export const FieldEditor: React.FC<FieldEditorProps> = ({
         [label]
     );
 
-    const { handleFileSelect, isLoading: isUploading } = useFilestack({
+    const { handleFileSelect, isLoading: isUploading } = useImageUpload({
         onUpload: (url: string) => {
             handleValueChange(url);
         },

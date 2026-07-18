@@ -60,6 +60,7 @@ import {
 } from 'learn-card-base';
 import currentUserStore from 'learn-card-base/stores/currentUserStore';
 import { walletStore } from 'learn-card-base/stores/walletStore';
+import { walletModeStore } from 'learn-card-base/stores/walletModeStore';
 import { pushUtilities } from 'learn-card-base/utils/pushUtilities';
 import { getRandomBaseColor } from 'learn-card-base/helpers/colorHelpers';
 import { getCurrentUserPrivateKey } from 'learn-card-base/helpers/privateKeyHelpers';
@@ -178,9 +179,7 @@ const ScoutsDeviceLinkOverlay: React.FC<{
         return (
             <Overlay>
                 <div className="p-6 text-center">
-                    <p className="text-sm text-red-600 mb-4">
-                        {error ?? m['auth.noDeviceKey']()}
-                    </p>
+                    <p className="text-sm text-red-600 mb-4">{error ?? m['auth.noDeviceKey']()}</p>
 
                     <button
                         onClick={onClose}
@@ -834,6 +833,7 @@ const AuthSessionManager: React.FC<{
                 }
 
                 setWallet(newWallet);
+                walletModeStore.set.mode('full');
 
                 emitAuthSuccess(
                     'auth:wallet_ready',
@@ -891,6 +891,7 @@ const AuthSessionManager: React.FC<{
             setLcnProfile(null);
             setRecoveryMethodCount(null);
             walletInitRef.current = false;
+            walletModeStore.set.mode(null);
         }
     }, [coordinator.state.status, wallet]);
 
@@ -915,6 +916,7 @@ const AuthSessionManager: React.FC<{
                 currentUserStore.set.currentUserPK(null);
                 currentUserStore.set.currentUserIsLoggedIn(false);
                 walletStore.set.wallet(null);
+                walletModeStore.set.mode(null);
             }
         }, 1500);
 

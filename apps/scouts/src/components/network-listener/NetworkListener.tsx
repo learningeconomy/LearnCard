@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useToast, ToastTypeEnum } from 'learn-card-base';
+import React, { useEffect } from 'react';
+import { useToast, ToastTypeEnum, connectivityStore } from 'learn-card-base';
 import { useNetworkStatus } from './useNetworkStatus';
 import * as m from '../../paraglide/messages.js';
 
@@ -8,19 +8,20 @@ export const NetworkListener = () => {
     const { presentToast: present, dismissToast: dismiss } = useToast();
 
     useEffect(() => {
+        if (isConnected !== undefined) {
+            connectivityStore.set.report(isConnected);
+        }
+
         if (!isConnected && isConnected !== undefined) {
-            present(
-                m['networkPrompts.toasts.lostConn'](),
-                {
-                    duration: 3000000,
-                    type: ToastTypeEnum.Error,
-                    hasDismissButton: true,
-                }
-            );
+            present(m['networkPrompts.toasts.lostConn'](), {
+                duration: 3000000,
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         } else if (isConnected) {
             dismiss();
         }
-    }, [isConnected]);
+    }, [isConnected, present, dismiss]);
 
     return <></>;
 };

@@ -73,7 +73,7 @@ export const BoostCMSConfirmationPrompt: React.FC<{
     return (
         <section className="py-5 bg-white">
             <div className="flex flex-col items-center justify-center w-full px-4">
-                <div className="w-full flex flex-col items-center justify-center">
+                <div className="w-full flex flex-col items-center justify-center text-grayscale-900">
                     <div className="flex flex-col">
                         <div className="w-full flex items-center justify-center">
                             <h6 className="tracking-[12px] text-base font-bold text-black">
@@ -81,7 +81,9 @@ export const BoostCMSConfirmationPrompt: React.FC<{
                             </h6>
                         </div>
                     </div>
-                    <h6 className="font-semi-bold text-black text-2xl mb-4 mt-4">{m['boostCMS.areYouSure']()}</h6>
+                    <h6 className="font-semi-bold text-black text-2xl mb-4 mt-4">
+                        {m['boostCMS.areYouSure']()}
+                    </h6>
                     {promptText}
                     {currentStep !== BoostCMSStepsEnum.confirmation &&
                         currentStep !== BoostCMSStepsEnum.issueTo &&

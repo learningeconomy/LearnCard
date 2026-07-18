@@ -20,7 +20,7 @@ import {
     BoostCMSAppearanceDisplayTypeEnum,
     useModal,
     ModalTypes,
-    useFilestack,
+    useImageUpload,
     UploadRes,
     BoostCMSMediaState,
     useBoostCMSMediaState,
@@ -215,10 +215,10 @@ export const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps>
         onSaveComplete?.();
     };
 
-    const onUpload = (data: UploadRes) => {
+    const onUpload = (file: File, data: UploadRes) => {
         setUploadProgress(false);
 
-        const fileInfo = getAttachmentFileInfo(data?._file);
+        const fileInfo = getAttachmentFileInfo(file);
 
         updateSlice('photos', [
             ...state.photos,
@@ -233,16 +233,16 @@ export const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps>
         setShowCloseButtonState?.(false);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
-        onUpload: (_url, _file, data) => onUpload(data),
+        onUpload: (_url, file, data) => onUpload(file, data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
     });
 
-    const onDocumentUpload = (data: UploadRes) => {
+    const onDocumentUpload = (file: File, data: UploadRes) => {
         setUploadProgress(false);
 
-        const fileInfo = getAttachmentFileInfo(data?._file);
+        const fileInfo = getAttachmentFileInfo(file);
 
         updateSlice('documents', [
             ...state.documents,
@@ -257,11 +257,13 @@ export const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps>
         setShowCloseButtonState?.(false);
     };
 
-    const { handleFileSelect: handleDocumentSelect, isLoading: fileUploadLoading } = useFilestack({
-        fileType: VIEWER_MIME_TYPES,
-        onUpload: (_url, _file, data) => onDocumentUpload(data),
-        options: { onProgress: event => setUploadProgress(event.totalPercent) },
-    });
+    const { handleFileSelect: handleDocumentSelect, isLoading: fileUploadLoading } = useImageUpload(
+        {
+            fileType: VIEWER_MIME_TYPES,
+            onUpload: (_url, file, data) => onDocumentUpload(file, data),
+            options: { onProgress: event => setUploadProgress(event.totalPercent) },
+        }
+    );
 
     if (activeMediaType === BoostMediaOptionsEnum.photo) {
         return (

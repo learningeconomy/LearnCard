@@ -12,8 +12,7 @@ import NewBoostSelectMenu from '../../components/boost/boost-select-menu/NewBoos
 // @ts-ignore
 import EmptySocialBoostIcon from '../../assets/images/emptySocialBoost.svg';
 import Plus from '../../components/svgs/Plus';
-import { closeAll } from '../../helpers/uiHelpers';
-import NewJoinNetworkPrompt from '../../components/network-prompts/NewJoinNetworkPrompt';
+import { useJoinLCNetworkModal } from '../../components/network-prompts/hooks/useJoinLCNetworkModal';
 
 import {
     usePathQuery,
@@ -28,11 +27,10 @@ import {
     useGetPaginatedManagedBoosts,
     useGetCredentialCount,
     useCountBoosts,
-    useModal,
-    ModalTypes,
-    useIsLoggedIn,
     categoryMetadata,
     BoostCategoryOptionsEnum,
+    useModal,
+    ModalTypes,
 } from 'learn-card-base';
 
 import * as m from '../../paraglide/messages.js';
@@ -49,6 +47,7 @@ const BoostsPage: React.FC = () => {
         mobile: ModalTypes.FullScreen,
         desktop: ModalTypes.FullScreen,
     });
+
     const query = usePathQuery();
 
     const _activeTab = query.get('managed')
@@ -93,32 +92,7 @@ const BoostsPage: React.FC = () => {
 
     const { iconColor, textColor } = SubheaderContentType[SubheaderTypeEnum.SocialBadge];
 
-    const { newModal: newNetworkModal, closeModal: closeNetworkModal } = useModal({
-        mobile: ModalTypes.FullScreen,
-        desktop: ModalTypes.FullScreen,
-    });
-
-    const openNetworkModal = () => {
-        newNetworkModal(
-            <NewJoinNetworkPrompt
-                handleCloseModal={() => {
-                    closeNetworkModal();
-                    closeAll?.();
-                }}
-                showNotificationsModal={false}
-            />
-        );
-    };
-    const { data, isLoading } = useIsCurrentUserLCNUser();
-    const isLoggedIn = useIsLoggedIn();
-
-    const handlePresentJoinNetworkModal = async () => {
-        if (!isLoading && !data && isLoggedIn) {
-            openNetworkModal();
-            return { prompted: true };
-        }
-        return { prompted: false };
-    };
+    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
 
     const plusButtonOverride = (
         <button
@@ -131,7 +105,7 @@ const BoostsPage: React.FC = () => {
                         : currentLCNUser;
 
                 if (!isCurrentLCNUser) {
-                    handlePresentJoinNetworkModal();
+                    void handlePresentJoinNetworkModal({ forceOpen: true });
                     return;
                 }
 

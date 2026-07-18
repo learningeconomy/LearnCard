@@ -11,7 +11,7 @@ import {
     EndorsementMediaOptionsEnum,
     EndorsementMediaAttachment,
 } from '../EndorsementForm/endorsement-state.helpers';
-import { useFilestack, UploadRes, useModal, getAttachmentFileInfo } from 'learn-card-base';
+import { useImageUpload, UploadRes, useModal, getAttachmentFileInfo } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import * as m from '../../../paraglide/messages.js';
 
@@ -49,14 +49,14 @@ const EndorsementMediaTypeForm: React.FC<{
     const [mediaTitle, setMediaTitle] = useState<string>(media?.title ?? '');
     const [mediaUrl, setMediaUrl] = useState<string>(media?.url ?? '');
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
-        onUpload: (_url, _file, data) => onUpload(data),
+        onUpload: (_url, file, data) => onUpload(file, data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
     });
 
-    const onUpload = (data: UploadRes) => {
-        const fileInfo = getAttachmentFileInfo(data?._file);
+    const onUpload = (file: File, data: UploadRes) => {
+        const fileInfo = getAttachmentFileInfo(file);
 
         setMedia({
             url: data?.url,

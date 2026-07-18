@@ -39,6 +39,7 @@ import {
 import useLogout from '../../hooks/useLogout';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 import { getSigningLearnCard } from 'learn-card-base/helpers/walletHelpers';
+import useJoinLCNetworkModal from '../network-prompts/hooks/useJoinLCNetworkModal';
 
 import {
     DEFAULT_COLOR_LIGHT,
@@ -90,6 +91,7 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
 
     const { newModal, closeModal } = useModal();
     const { handleLogout, isLoggingOut } = useLogout();
+    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
 
     const { data: isNetworkUser } = useIsCurrentUserLCNUser();
     const notInNetwork = isNetworkUser === false;
@@ -572,6 +574,16 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                         <span className="py-[10px] text-grayscale-900 font-notoSans text-[17px] text-center line-clamp-4">
                             {description}
                         </span>
+                        {notInNetwork && (
+                            <button
+                                onClick={() => {
+                                    void handlePresentJoinNetworkModal({ forceOpen: true });
+                                }}
+                                className="bg-grayscale-800 text-white font-notoSans text-[17px] font-semibold px-[20px] py-[7px] rounded-[10px] mb-[10px]"
+                            >
+                                Complete Profile
+                            </button>
+                        )}
 
                         <div>
                             {rows.map((r, index) => {

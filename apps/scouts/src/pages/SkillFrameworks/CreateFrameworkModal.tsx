@@ -4,7 +4,7 @@ import {
     ModalTypes,
     useModal,
     useWallet,
-    useFilestack,
+    useImageUpload,
     conditionalPluralize,
     BoostUserTypeEnum,
     ShortBoostState,
@@ -55,7 +55,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
         issueTo: [],
     });
 
-    const { handleFileSelect, isLoading: isUploadingImage } = useFilestack({
+    const { handleFileSelect, isLoading: isUploadingImage } = useImageUpload({
         onUpload: url => setImage(url),
         fileType: IMAGE_MIME_TYPES,
     });
@@ -321,7 +321,9 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                 <div className="flex items-center gap-[10px] text-grayscale-900">
                     <SkillsFrameworkIcon className="w-[40px] h-[40px]" color="currentColor" />
                     <h5 className="text-[22px] font-poppins font-[600] leading-[24px]">
-                        {isEdit ? m['skillFrameworks.editFwOpt']() : m['skillFrameworks.createFwTitle']()}
+                        {isEdit
+                            ? m['skillFrameworks.editFwOpt']()
+                            : m['skillFrameworks.createFwTitle']()}
                     </h5>
                 </div>
             </div>
@@ -447,9 +449,17 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                         }
                     >
                         {isEdit ? (
-                            <>{updateFrameworkMutation.isPending ? m['common.updating']() : m['skillFrameworks.update']()}</>
+                            <>
+                                {updateFrameworkMutation.isPending
+                                    ? m['common.updating']()
+                                    : m['skillFrameworks.update']()}
+                            </>
                         ) : (
-                            <>{createFrameworkMutation.isPending ? m['common.creating']() : m['common.create']()}</>
+                            <>
+                                {createFrameworkMutation.isPending
+                                    ? m['common.creating']()
+                                    : m['common.create']()}
+                            </>
                         )}
                     </button>
                 </div>

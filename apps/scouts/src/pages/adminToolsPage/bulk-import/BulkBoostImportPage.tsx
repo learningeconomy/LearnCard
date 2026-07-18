@@ -14,7 +14,8 @@ import {
     useConfirmation,
     useCreateBoost,
     useGetProfile,
-    useFilestack,
+    useImageUpload,
+    isKnownImageUploadUrl,
     useGetBoost,
     useModal,
     useToast,
@@ -130,7 +131,7 @@ const BulkBoostImportPage: React.FC = () => {
     const { data: networkBoost } = useGetBoost(parentUri);
     const networkName = networkBoost?.meta?.edits?.name ?? networkBoost?.name;
 
-    const { uploadImageFromUrl, singleImageUpload } = useFilestack({
+    const { uploadImageFromUrl, singleImageUpload } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (url, _file, data) => {},
     });
@@ -479,14 +480,14 @@ const BulkBoostImportPage: React.FC = () => {
         try {
             await Promise.all(
                 csvData.map(async data => {
-                    // upload images if they're not already in filestack
+                    // upload images if they're not already in configured image storage
                     let badgeThumb = data[DataKeys.image];
-                    if (badgeThumb && !badgeThumb.includes('filestack')) {
+                    if (badgeThumb && !isKnownImageUploadUrl(badgeThumb)) {
                         badgeThumb = await uploadImageFromUrl(badgeThumb);
                     }
 
                     let bgImage = data[DataKeys.backgroundImage];
-                    if (bgImage && !bgImage.includes('filestack')) {
+                    if (bgImage && !isKnownImageUploadUrl(bgImage)) {
                         bgImage = await uploadImageFromUrl(bgImage);
                     }
 
@@ -600,7 +601,10 @@ const BulkBoostImportPage: React.FC = () => {
 
     const loadingText = isUploadingImages
         ? m['adminTools.bulkImport.uploadingImages']({ progress: uploadProgress })
-        : m['adminTools.bulkImport.importingBoosts']({ created: numBoostsCreated, total: csvData.length });
+        : m['adminTools.bulkImport.importingBoosts']({
+              created: numBoostsCreated,
+              total: csvData.length,
+          });
 
     const showZipInput = zipUploaded || (fileUploaded && hasMissingImages);
 
@@ -620,7 +624,9 @@ const BulkBoostImportPage: React.FC = () => {
 
                 <div className="flex flex-col gap-[20px] max-w-[600px] mx-auto">
                     <div className="flex gap-[10px] items-center">
-                        <span className="font-[600] w-[100px]">{m['adminTools.bulkImport.csvData']()}</span>
+                        <span className="font-[600] w-[100px]">
+                            {m['adminTools.bulkImport.csvData']()}
+                        </span>
                         <input
                             ref={fileInputRef}
                             type="file"
@@ -640,7 +646,9 @@ const BulkBoostImportPage: React.FC = () => {
 
                     {showZipInput && (
                         <div className="flex gap-[10px] items-center">
-                            <span className="font-[600] w-[100px]">{m['adminTools.bulkImport.imagesZip']()}</span>
+                            <span className="font-[600] w-[100px]">
+                                {m['adminTools.bulkImport.imagesZip']()}
+                            </span>
                             <input
                                 ref={zipInputRef}
                                 type="file"

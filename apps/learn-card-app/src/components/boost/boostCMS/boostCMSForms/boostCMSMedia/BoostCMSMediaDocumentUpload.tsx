@@ -8,7 +8,7 @@ import { IonCol, IonRow, IonInput } from '@ionic/react';
 import FileIcon from 'learn-card-base/svgs/FileIcon';
 
 import useTheme from '../../../../../theme/hooks/useTheme';
-import { useFilestack, UploadRes } from 'learn-card-base';
+import { useImageUpload, UploadRes } from 'learn-card-base';
 
 import { VIEWER_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
@@ -65,7 +65,7 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
             })
         );
     };
-    const { handleFileSelect: handleDocumentSelect, isLoading: uploadLoading } = useFilestack({
+    const { handleFileSelect: handleDocumentSelect, isLoading: uploadLoading } = useImageUpload({
         fileType: VIEWER_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },

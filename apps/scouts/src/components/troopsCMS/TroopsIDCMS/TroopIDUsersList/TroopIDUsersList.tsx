@@ -117,35 +117,42 @@ export const TroopIDUsersList: React.FC<TroopIDUsersListProps> = ({
                         <div className="flex mb-2">
                             <button
                                 onClick={() => setActiveTab(TroopIDUserListTabsEnum.all)}
-                                className={`text-sm font-notoSans font-semibold mr-2 ${activeTab === TroopIDUserListTabsEnum.all
+                                className={`text-sm font-notoSans font-semibold mr-2 ${
+                                    activeTab === TroopIDUserListTabsEnum.all
                                         ? 'text-sp-blue-ocean'
                                         : 'text-grayscale-700'
-                                    }`}
+                                }`}
                             >
                                 {m['boostCMS.all']()}
                             </button>
                             {scoutsListCount > 0 && (
                                 <button
                                     onClick={() => setActiveTab(TroopIDUserListTabsEnum.scouts)}
-                                    className={`text-sm font-notoSans font-semibold mr-2 text-grayscale-700 ${activeTab === TroopIDUserListTabsEnum.scouts
+                                    className={`text-sm font-notoSans font-semibold mr-2 text-grayscale-700 ${
+                                        activeTab === TroopIDUserListTabsEnum.scouts
                                             ? 'text-sp-blue-ocean'
                                             : 'text-grayscale-700'
-                                        }`}
+                                    }`}
                                 >
-                                    {scoutsListCount} {conditionalPluralize(scoutsListCount, m['troops.scoutOne']())}
+                                    {scoutsListCount}{' '}
+                                    {conditionalPluralize(scoutsListCount, m['troops.scoutOne']())}
                                 </button>
                             )}
 
                             {leadersListCount > 0 && (
                                 <button
                                     onClick={() => setActiveTab(TroopIDUserListTabsEnum.leaders)}
-                                    className={`text-sm font-notoSans font-semibold mr-2 text-grayscale-700 ${activeTab === TroopIDUserListTabsEnum.leaders
+                                    className={`text-sm font-notoSans font-semibold mr-2 text-grayscale-700 ${
+                                        activeTab === TroopIDUserListTabsEnum.leaders
                                             ? 'text-sp-blue-ocean'
                                             : 'text-grayscale-700'
-                                        }`}
+                                    }`}
                                 >
                                     {leadersListCount}{' '}
-                                    {conditionalPluralize(leadersListCount, m['troops.leaderOne']())}
+                                    {conditionalPluralize(
+                                        leadersListCount,
+                                        m['troops.leaderOne']()
+                                    )}
                                 </button>
                             )}
                         </div>
@@ -154,7 +161,7 @@ export const TroopIDUsersList: React.FC<TroopIDUsersListProps> = ({
                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-notoSans text-[17px] w-full troops-cms-placeholder"
                         placeholder={m['boost.searchPlaceholder']()}
                         value={search}
-                        onIonInput={e => setSearch(e.detail.value)}
+                        onIonInput={e => setSearch(e.detail.value ?? '')}
                     />
                 </div>
             )}
@@ -163,7 +170,8 @@ export const TroopIDUsersList: React.FC<TroopIDUsersListProps> = ({
 
             {filteredList?.length > 0 &&
                 filteredList.map((user, index) => {
-                    const typeTitle = user?.type === 'scout' ? m['troops.scoutOne']() : m['troops.leaderOne']();
+                    const typeTitle =
+                        user?.type === 'scout' ? m['troops.scoutOne']() : m['troops.leaderOne']();
                     const deleteKey = user?.type === 'scout' ? 'issueTo' : 'admins';
 
                     return (

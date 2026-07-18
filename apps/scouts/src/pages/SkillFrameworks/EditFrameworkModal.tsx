@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as m from '../../paraglide/messages.js';
-import { useModal, useWallet, useFilestack } from 'learn-card-base';
+import { useModal, useWallet, useImageUpload } from 'learn-card-base';
 import { IonInput } from '@ionic/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 // oxlint-disable-next-line no-unused-vars
@@ -22,7 +22,7 @@ const EditFrameworkModal: React.FC<EditFrameworkModalProps> = ({ frameworkId }) 
     const [description, setDescription] = useState('');
     const [image, setImage] = useState<string | undefined>(undefined);
 
-    const { handleFileSelect, isLoading: isUploadingImage } = useFilestack({
+    const { handleFileSelect, isLoading: isUploadingImage } = useImageUpload({
         onUpload: url => setImage(url),
         fileType: 'image/*',
     });
@@ -93,7 +93,9 @@ const EditFrameworkModal: React.FC<EditFrameworkModalProps> = ({ frameworkId }) 
                 </div>
 
                 {isLoading ? (
-                    <div className="py-[20px] text-center text-grayscale-600">{m['common.loading']()}</div>
+                    <div className="py-[20px] text-center text-grayscale-600">
+                        {m['common.loading']()}
+                    </div>
                 ) : (
                     <>
                         <IonInput
@@ -140,7 +142,9 @@ const EditFrameworkModal: React.FC<EditFrameworkModalProps> = ({ frameworkId }) 
                                         <UploadIcon className="w-[25px] h-[25px]" strokeWidth="2" />
                                     </div>
                                     <span className="text-grayscale-800 font-poppins text-[14px] leading-[130%]">
-                                        {isUploadingImage ? m['common.loading']() : m['skillFrameworks.uploadImg']()}
+                                        {isUploadingImage
+                                            ? m['common.loading']()
+                                            : m['skillFrameworks.uploadImg']()}
                                     </span>
                                 </button>
                             )}
@@ -154,7 +158,9 @@ const EditFrameworkModal: React.FC<EditFrameworkModalProps> = ({ frameworkId }) 
                 disabled={!name.trim() || updateFrameworkMutation.isPending || isLoading}
                 className="bg-emerald-700 text-white pl-[20px] pr-[15px] py-[10px] rounded-[30px] flex gap-[10px] items-center justify-center text-[17px] font-[600] font-poppins leading-[130%] tracking-[-0.25px] w-full shadow-bottom-4-4 disabled:bg-grayscale-600"
             >
-                {updateFrameworkMutation.isPending ? m['common.saving']() : m['skillFrameworks.saveChanges']()}
+                {updateFrameworkMutation.isPending
+                    ? m['common.saving']()
+                    : m['skillFrameworks.saveChanges']()}
             </button>
         </div>
     );

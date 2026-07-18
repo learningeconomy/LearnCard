@@ -14,7 +14,7 @@ import BoostCMSMediaDocumentUpload from './BoostCMSMediaDocumentUpload';
 import BoostCMSMediaLinkAttachment from './BoostCMSMediaLinkAttachment';
 import BoostCMSMediaVideoAttachment from './BoostCMSMediaVideoAttachment';
 import {
-    useFilestack,
+    useImageUpload,
     UploadRes,
     BoostCMSMediaState,
     useBoostCMSMediaState,
@@ -146,7 +146,7 @@ const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps> = ({
         setActiveMediaType(BoostMediaOptionsEnum.photo);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
@@ -162,11 +162,13 @@ const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps> = ({
         setActiveMediaType(BoostMediaOptionsEnum.document);
     };
 
-    const { handleFileSelect: handleDocumentSelect, isLoading: fileUploadLoading } = useFilestack({
-        fileType: VIEWER_MIME_TYPES,
-        onUpload: (_url, _file, data) => onDocumentUpload(data),
-        options: { onProgress: event => setUploadProgress(event.totalPercent) },
-    });
+    const { handleFileSelect: handleDocumentSelect, isLoading: fileUploadLoading } = useImageUpload(
+        {
+            fileType: VIEWER_MIME_TYPES,
+            onUpload: (_url, _file, data) => onDocumentUpload(data),
+            options: { onProgress: event => setUploadProgress(event.totalPercent) },
+        }
+    );
 
     if (activeMediaType === BoostMediaOptionsEnum.photo) {
         return (

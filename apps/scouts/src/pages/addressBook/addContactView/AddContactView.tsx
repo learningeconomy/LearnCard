@@ -123,7 +123,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
         const wallet = await initWallet();
 
         if (!currentLCNUser && !currentLCNUserLoading) {
-            handlePresentJoinNetworkModal();
+            void handlePresentJoinNetworkModal({ forceOpen: true });
         }
 
         setLoading(true);
@@ -226,7 +226,8 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                             onClick={e => handleAddBoostIssueTo(e, user?.profileId)}
                             className="w-full flex items-center justify-center bg-indigo-500 rounded-full px-[12px] py-[8px] text-white text-4xl shadow-lg mb-4"
                         >
-                            <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" /> {m['boost.boost']()}
+                            <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                            {m['boost.boost']()}
                         </button>
                     </IonCol>
                 );
@@ -238,7 +239,9 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                                 onClick={e => handleConnectionRequest(e, user?.profileId)}
                                 className="w-full flex items-center justify-center bg-emerald-600 rounded-full px-[12px] py-[8px] text-white text-[18px] font-semibold shadow-lg mb-4"
                             >
-                                {loading ? m['addressBook.loading']() : m['addressBook.requestConnection']()}
+                                {loading
+                                    ? m['addressBook.loading']()
+                                    : m['addressBook.requestConnection']()}
                             </button>
                         ) : (
                             <button
@@ -330,19 +333,31 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
     if (isIssuingBoost) {
         promptText = (
             <p className="text-grayscale-600 text-lg font-semibold text-center">
-                <TransP m={m['addressBook.wouldYouLikeToBoost']} values={{ name: userName }} components={[<br key="br" />]} />
+                <TransP
+                    m={m['addressBook.wouldYouLikeToBoost']}
+                    values={{ name: userName }}
+                    components={[<br key="br" />]}
+                />
             </p>
         );
     } else if (mode === AddContactViewMode?.acceptConnectionRequest) {
         promptText = (
             <p className="text-grayscale-600 text-lg font-semibold text-center">
-                <TransP m={m['addressBook.hasRequestedToConnect']} values={{ name: userName }} components={[<br key="br" />]} />
+                <TransP
+                    m={m['addressBook.hasRequestedToConnect']}
+                    values={{ name: userName }}
+                    components={[<br key="br" />]}
+                />
             </p>
         );
     } else {
         promptText = (
             <p className="text-grayscale-600 text-lg font-semibold text-center">
-                <TransP m={m['addressBook.wouldYouLikeToConnect']} values={{ name: userName }} components={[<br key="br" />]} />
+                <TransP
+                    m={m['addressBook.wouldYouLikeToConnect']}
+                    values={{ name: userName }}
+                    components={[<br key="br" />]}
+                />
             </p>
         );
     }

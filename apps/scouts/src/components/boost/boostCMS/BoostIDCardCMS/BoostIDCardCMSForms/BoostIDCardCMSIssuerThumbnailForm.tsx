@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { useFilestack, UploadRes } from 'learn-card-base';
+import { useImageUpload, UploadRes } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
 import { IonRow, IonSpinner, IonToggle } from '@ionic/react';
@@ -43,7 +43,7 @@ const BoostIDCardCMSIssuerThumbnailForm: React.FC<{
         handleStateChange('idIssuerThumbnail', data?.url);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
@@ -52,7 +52,9 @@ const BoostIDCardCMSIssuerThumbnailForm: React.FC<{
     return (
         <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-2 mb-4 rounded-[20px]">
             <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
-                <p className="text-grayscale-900 font-medium w-10/12">{m['boostCMS.showIssuer']()}</p>
+                <p className="text-grayscale-900 font-medium w-10/12">
+                    {m['boostCMS.showIssuer']()}
+                </p>
                 <IonToggle
                     mode="ios"
                     color="emerald-700"

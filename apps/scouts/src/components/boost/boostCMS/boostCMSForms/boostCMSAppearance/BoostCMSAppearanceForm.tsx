@@ -5,7 +5,7 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 import * as m from '../../../../../paraglide/messages.js';
 
 import {
-    useFilestack,
+    useImageUpload,
     UploadRes,
     BoostCategoryOptionsEnum,
     isCustomBoostType,
@@ -62,9 +62,7 @@ const BoostCMSAppearanceForm: React.FC<{
     const isAdmin = credentials.some(cred => {
         const subject = cred?.credentialSubject;
         if (!subject || Array.isArray(subject)) return false;
-        return ['ext:GlobalID', 'ext:NetworkID'].includes(
-            subject?.achievement?.achievementType
-        );
+        return ['ext:GlobalID', 'ext:NetworkID'].includes(subject?.achievement?.achievementType);
     });
 
     const categoryMetadata = boostCategoryOptions[activeCategoryType];
@@ -142,7 +140,7 @@ const BoostCMSAppearanceForm: React.FC<{
         handleStateChange('backgroundImage', data?.url);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
@@ -164,9 +162,8 @@ const BoostCMSAppearanceForm: React.FC<{
 
     let formBackgroundColor: string = '';
 
-    const {
-        subColor: _subColor,
-    } = boostCategoryOptions[state?.basicInfo?.type as BoostCategoryOptionsEnum];
+    const { subColor: _subColor } =
+        boostCategoryOptions[state?.basicInfo?.type as BoostCategoryOptionsEnum];
     formBackgroundColor = state?.appearance?.backgroundColor
         ? state?.appearance?.backgroundColor
         : '#353E64';
@@ -197,7 +194,9 @@ const BoostCMSAppearanceForm: React.FC<{
                     </>
                 ) : (
                     <div className="flex flex-col items-center justify-center bg-white rounded-[20px] w-full ion-padding font-medium text-lg mb-4">
-                        <h3 className="text-grayscale-700 text-left w-full">{m['boostCMS.badgeThumbnail']()}</h3>
+                        <h3 className="text-grayscale-700 text-left w-full">
+                            {m['boostCMS.badgeThumbnail']()}
+                        </h3>
                         <div className="flex items-center justify-between w-full bg-grayscale-100 rounded-full mt-4">
                             <div className="flex items-center justify-start w-[70%] px-[6px] py-[6px] overflow-hidden">
                                 <div
@@ -209,7 +208,9 @@ const BoostCMSAppearanceForm: React.FC<{
                                     />
                                 </div>
                                 {isDefaultImage && (
-                                    <p className="ml-[10px] text-grayscale-700">{m['boostCMS.default']()}</p>
+                                    <p className="ml-[10px] text-grayscale-700">
+                                        {m['boostCMS.default']()}
+                                    </p>
                                 )}
                             </div>
 
@@ -275,7 +276,9 @@ const BoostCMSAppearanceForm: React.FC<{
                                     )}
                                 </div>
                                 {!state?.appearance?.backgroundImage && (
-                                    <p className="ml-[10px] text-grayscale-700">{m['boostCMS.empty']()}</p>
+                                    <p className="ml-[10px] text-grayscale-700">
+                                        {m['boostCMS.empty']()}
+                                    </p>
                                 )}
                             </div>
 
