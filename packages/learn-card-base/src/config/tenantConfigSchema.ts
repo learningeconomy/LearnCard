@@ -90,6 +90,29 @@ export const tenantAuthConfigSchema = z
     })
     .passthrough();
 
+export const tenantFilestackStorageConfigSchema = z
+    .object({
+        provider: z.literal('filestack'),
+        apiKey: z.string().default('A7RsW3VzfSNO2TCsFJ6Eiz'),
+        cdnDomain: z.string().default('cdn.filestackcontent.com'),
+        apiDomain: z.string().default('www.filestackapi.com'),
+    })
+    .passthrough();
+
+export const tenantS3StorageConfigSchema = z
+    .object({
+        provider: z.literal('s3'),
+        uploadEndpoint: urlOrPlaceholder(),
+        cdnDomain: z.string(),
+        bucket: z.string().optional(),
+    })
+    .passthrough();
+
+export const tenantStorageConfigSchema = z.discriminatedUnion('provider', [
+    tenantFilestackStorageConfigSchema,
+    tenantS3StorageConfigSchema,
+]);
+
 const deleteSuccessStylesSchema = z
     .object({
         containerClass: z.string(),
@@ -242,6 +265,13 @@ export const tenantEmailConfigSchema = z
     })
     .passthrough();
 
+export const tenantI18nConfigSchema = z
+    .object({
+        defaultLanguage: z.string().default('en'),
+        supportedLanguages: z.array(z.string()).default(['en']),
+    })
+    .passthrough();
+
 /** @planned — ecosystem fields reserved for multi-tenant org hierarchy support */
 export const tenantEcosystemConfigSchema = z
     .object({
@@ -285,10 +315,17 @@ export const tenantConfigSchema = z
 
         apis: tenantApiConfigSchema,
         auth: tenantAuthConfigSchema,
+        storage: tenantStorageConfigSchema.default({
+            provider: 'filestack',
+            apiKey: 'A7RsW3VzfSNO2TCsFJ6Eiz',
+            cdnDomain: 'cdn.filestackcontent.com',
+            apiDomain: 'www.filestackapi.com',
+        }),
         branding: tenantBrandingConfigSchema,
         features: tenantFeatureConfigSchema,
         observability: tenantObservabilityConfigSchema,
         links: tenantLinksConfigSchema,
+        i18n: tenantI18nConfigSchema.optional(),
 
         email: tenantEmailConfigSchema.optional(),
         native: tenantNativeConfigSchema.optional(),
@@ -307,12 +344,16 @@ export type TenantApiConfig = z.infer<typeof tenantApiConfigSchema>;
 export type TenantAuthConfig = z.infer<typeof tenantAuthConfigSchema>;
 export type TenantFirebaseConfig = z.infer<typeof tenantFirebaseConfigSchema>;
 export type TenantWeb3AuthConfig = z.infer<typeof tenantWeb3AuthConfigSchema>;
+export type TenantStorageConfig = z.infer<typeof tenantStorageConfigSchema>;
+export type TenantFilestackStorageConfig = z.infer<typeof tenantFilestackStorageConfigSchema>;
+export type TenantS3StorageConfig = z.infer<typeof tenantS3StorageConfigSchema>;
 export type TenantBrandingConfig = z.infer<typeof tenantBrandingConfigSchema>;
 export type TenantFeatureConfig = z.infer<typeof tenantFeatureConfigSchema>;
 export type TenantObservabilityConfig = z.infer<typeof tenantObservabilityConfigSchema>;
 export type TenantLinksConfig = z.infer<typeof tenantLinksConfigSchema>;
 export type TenantNativeConfig = z.infer<typeof tenantNativeConfigSchema>;
 export type TenantEmailConfig = z.infer<typeof tenantEmailConfigSchema>;
+export type TenantI18nConfig = z.infer<typeof tenantI18nConfigSchema>;
 export type TenantEcosystemConfig = z.infer<typeof tenantEcosystemConfigSchema>;
 
 // -----------------------------------------------------------------

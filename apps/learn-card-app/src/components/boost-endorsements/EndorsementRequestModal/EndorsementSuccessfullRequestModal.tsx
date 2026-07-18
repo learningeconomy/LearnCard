@@ -5,6 +5,7 @@ import { EndorsmentThumbWithCircle } from 'learn-card-base/svgs/EndorsementThumb
 import { useTenantBrandingAssets } from '../../../config/brandingAssets';
 
 import { useModal, useIsLoggedIn, useDeviceTypeByWidth } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 
 export const EndorsementSuccessfullRequestModal: React.FC<{ showCloseButton: boolean }> = ({
     showCloseButton,
@@ -27,7 +28,11 @@ export const EndorsementSuccessfullRequestModal: React.FC<{ showCloseButton: boo
             className="flex h-full w-full flex-col items-center justify-center px-4"
             style={loggedOutBGStyles}
         >
-            <img src={textLogo} alt="Logo" className="w-[235px] h-[16px] mb-[80px] object-contain" />
+            <img
+                src={textLogo}
+                alt="Logo"
+                className="w-[235px] h-[16px] mb-[80px] object-contain"
+            />
 
             {/* content */}
             <div className="flex flex-col items-center justify-center bg-white  w-full max-w-[375px] rounded-[20px] pt-4 relative">
@@ -40,12 +45,13 @@ export const EndorsementSuccessfullRequestModal: React.FC<{ showCloseButton: boo
 
                 <div className="w-full flex flex-col items-center justify-center gap-4 pt-[50px] pb-[25px] px-2">
                     <h4 className="text-center w-full text-grayscale-900 text-[22px] font-semibold">
-                        Thanks!
-                        <br /> Your endorsement is temporarily saved.
+                        {m['endorsement.modal.success.thanksPre']()}
+                        <br /> {m['endorsement.modal.success.thanksPost']()}
                     </h4>
                     <div className="w-full flex flex-col items-center justify-center pb-4 px-[12px]">
                         <p className="text-center w-full text-grayscale-900 text-base">
-                            Sign in to send your <br /> endorsement.
+                            {m['endorsement.modal.success.signInBodyPre']()} <br />{' '}
+                            {m['endorsement.modal.success.signInBodyPost']()}
                         </p>
                     </div>
                 </div>
@@ -66,7 +72,7 @@ export const EndorsementSuccessfullRequestModal: React.FC<{ showCloseButton: boo
                             backgroundPosition: 'center',
                         }}
                     />
-                    Sign in to send
+                    {m['endorsement.modal.success.signInButton']()}
                     <EndorsmentThumbWithCircle
                         className={`w-[40px] h-[40px] text-grayscale-700`}
                         fill="#E2E3E9"
@@ -80,7 +86,7 @@ export const EndorsementSuccessfullRequestModal: React.FC<{ showCloseButton: boo
                     }}
                     className={`py-[9px] px-2 items-center justify-center rounded-[16px] font-poppins text-[17px] leading-[24px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] mr-2 max-w-[375px] mt-4 bg-white font-semibold z-9999`}
                 >
-                    Close
+                    {m['common.close']()}
                 </button>
             )}
         </div>

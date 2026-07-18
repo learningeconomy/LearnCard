@@ -2,6 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
+import * as m from '../../../paraglide/messages.js';
+
 import LaunchPadAiSessionComingSoon from './LaunchPadAiSessionsComingSoon';
 
 import {
@@ -54,7 +56,7 @@ const LaunchPadHeaderLinks: React.FC = () => {
                     <p
                         className={`text-${contacts.color} ${styles?.textStyles} font-poppins font-semibold phone:text-[14px]`}
                     >
-                        Contacts
+                        {m['launchpad.header.contacts']()}
                     </p>
                 </Link>
 
@@ -67,7 +69,7 @@ const LaunchPadHeaderLinks: React.FC = () => {
                         <p
                             className={`text-${aiSessions.color} ${styles?.textStyles} font-poppins font-semibold phone:text-[14px] text-center`}
                         >
-                            AI Sessions
+                            {m['launchpad.header.aiSessions']()}
                         </p>
                     </Link>
                 ) : enableLaunchPadUpdates && !isAiEnabled ? (
@@ -75,8 +77,8 @@ const LaunchPadHeaderLinks: React.FC = () => {
                         onClick={() => {
                             const msg =
                                 reason === 'disabled_minor'
-                                    ? 'AI features are not available for users under 18.'
-                                    : 'AI features are currently disabled. You can enable them in Privacy & Data from your profile.';
+                                    ? m['launchpad.aiDisabledMinor']()
+                                    : m['launchpad.aiDisabledPrivacy']();
                             presentToast(msg, { type: ToastTypeEnum.Error });
                         }}
                         className="relative flex flex-col items-center justify-center p-4 rounded-3xl flex-1 xxs:p-1 max-h-[133px] min-h-[133px] opacity-50"
@@ -85,7 +87,7 @@ const LaunchPadHeaderLinks: React.FC = () => {
                         <p
                             className={`text-${aiSessions.color} ${styles?.textStyles} font-poppins font-semibold phone:text-[14px] text-center`}
                         >
-                            AI Sessions
+                            {m['launchpad.header.aiSessions']()}
                         </p>
                     </button>
                 ) : (
@@ -101,7 +103,7 @@ const LaunchPadHeaderLinks: React.FC = () => {
                         <p
                             className={`text-${aiSessions.color} ${styles?.textStyles} font-poppins font-semibold phone:text-[14px] text-center`}
                         >
-                            AI Sessions
+                            {m['launchpad.header.aiSessions']()}
                         </p>
                     </button>
                 )}
@@ -119,7 +121,7 @@ const LaunchPadHeaderLinks: React.FC = () => {
                     <p
                         className={`text-${alerts.color} ${styles?.textStyles} font-poppins font-semibold phone:text-[14px] pt-1`}
                     >
-                        Alerts
+                        {m['launchpad.header.alerts']()}
                     </p>
                 </Link>
             </div>

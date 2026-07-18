@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 import { IonRow, IonCol } from '@ionic/react';
 
@@ -93,7 +94,7 @@ const AddressBookTabs: React.FC<{
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-5 h-5 text-grayscale-400 pointer-events-none" />
                         <input
                             autoCapitalize="on"
-                            placeholder="Search"
+                            placeholder={m['common.search']()}
                             value={search}
                             onChange={e => handleSearch?.(e.target.value)}
                             ref={searchInputRef}

@@ -1,18 +1,11 @@
 import React from 'react';
 
-import {
-    IonCol,
-    IonContent,
-    IonRow,
-    IonGrid,
-    IonToolbar,
-    IonHeader,
-    IonPage,
-} from '@ionic/react';
+import { IonCol, IonContent, IonRow, IonGrid, IonToolbar, IonHeader, IonPage } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import { BoostCMSState } from '../../../boost';
 
 import BoostCMSAppearanceBadgeList from './BoostCMSAppearanceBadgeList';
+import * as m from '../../../../../paraglide/messages.js';
 
 const BoostCMSAppearanceBadgeSelector: React.FC<{
     state: BoostCMSState;
@@ -48,7 +41,7 @@ const BoostCMSAppearanceBadgeSelector: React.FC<{
                         onClick={() => handleCloseModal()}
                         className="text-grayscale-900 text-center text-sm"
                     >
-                        Cancel
+                        {m['common.cancel']()}
                     </button>
                 </div>
             </IonContent>

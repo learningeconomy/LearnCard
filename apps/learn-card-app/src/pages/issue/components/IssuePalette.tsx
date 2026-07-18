@@ -2,13 +2,15 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ImagePlus, Loader2, SlidersHorizontal, ChevronDown, X } from 'lucide-react';
 
 import {
-    useFilestack,
+    useImageUpload,
     SelectInput,
     parseLcTags,
     buildLcTags,
     DisplayTypeEnum,
 } from 'learn-card-base';
 import type { LcDisplayHints } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
+import TransP from '../../../i18n/TransP';
 import { isPlausibleRecipient } from './recipientValidation';
 import { RecipientPicker } from './RecipientPicker';
 import { RecipientMode, Recipient, LinkOptions } from './recipientTypes';
@@ -39,78 +41,78 @@ const INPUT_CLASS =
 const LABEL_CLASS = 'block text-xs font-medium text-grayscale-700 mb-1.5';
 const CARD_CLASS = 'bg-white border border-grayscale-200 rounded-[20px] p-5';
 
-const DISPLAY_TYPE_OPTIONS: {
+const getDisplayTypeOptions = (): {
     value: DisplayTypeEnum;
     displayText: string;
     description: string;
-}[] = [
+}[] => [
     {
         value: DisplayTypeEnum.Badge,
-        displayText: 'Badge',
-        description: 'A circular emblem with a ribbon. Best for social badges and achievements.',
+        displayText: m['issueFlow.display.style.badge'](),
+        description: m['issueFlow.display.styleDesc.badge'](),
     },
     {
         value: DisplayTypeEnum.Certificate,
-        displayText: 'Certificate',
-        description: 'A formal, document-style frame. Good for completions and certifications.',
+        displayText: m['issueFlow.display.style.certificate'](),
+        description: m['issueFlow.display.styleDesc.certificate'](),
     },
     {
         value: DisplayTypeEnum.Award,
-        displayText: 'Award',
-        description: 'A trophy-style ribbon that emphasizes recognition and honors.',
+        displayText: m['issueFlow.display.style.award'](),
+        description: m['issueFlow.display.styleDesc.award'](),
     },
     {
         value: DisplayTypeEnum.ID,
-        displayText: 'ID card',
-        description: 'A wallet-style ID layout with photo and issuer. Great for memberships.',
+        displayText: m['issueFlow.display.style.idCard'](),
+        description: m['issueFlow.display.styleDesc.idCard'](),
     },
     {
         value: DisplayTypeEnum.Course,
-        displayText: 'Course',
-        description: 'Tuned for courses, classes, and learning programs.',
+        displayText: m['issueFlow.display.style.course'](),
+        description: m['issueFlow.display.styleDesc.course'](),
     },
     {
         value: DisplayTypeEnum.Media,
-        displayText: 'Media',
-        description: 'A rich tile that showcases an image or video front-and-center.',
+        displayText: m['issueFlow.display.style.media'](),
+        description: m['issueFlow.display.styleDesc.media'](),
     },
 ];
 
-const CATEGORY_OPTIONS: { value: string; displayText: string; description: string }[] = [
+const getCategoryOptions = (): { value: string; displayText: string; description: string }[] => [
     {
         value: 'Social Badge',
-        displayText: 'Badge',
-        description: 'Community and social recognition badges.',
+        displayText: m['issueFlow.display.cat.badge'](),
+        description: m['issueFlow.display.catDesc.badge'](),
     },
     {
         value: 'Achievement',
-        displayText: 'Achievement',
-        description: 'Awards, certificates, and accomplishments.',
+        displayText: m['issueFlow.display.cat.achievement'](),
+        description: m['issueFlow.display.catDesc.achievement'](),
     },
     {
         value: 'Learning History',
-        displayText: 'Course',
-        description: 'Courses, classes, and learning programs.',
+        displayText: m['issueFlow.display.cat.course'](),
+        description: m['issueFlow.display.catDesc.course'](),
     },
     {
         value: 'Accomplishment',
-        displayText: 'Portfolio',
-        description: 'Portfolio pieces and personal work.',
+        displayText: m['issueFlow.display.cat.portfolio'](),
+        description: m['issueFlow.display.catDesc.portfolio'](),
     },
     {
         value: 'Accommodation',
-        displayText: 'Assistance',
-        description: 'Support needs and accommodations.',
+        displayText: m['issueFlow.display.cat.assistance'](),
+        description: m['issueFlow.display.catDesc.assistance'](),
     },
     {
         value: 'Work History',
-        displayText: 'Experience',
-        description: 'Jobs, internships, and professional experience.',
+        displayText: m['issueFlow.display.cat.experience'](),
+        description: m['issueFlow.display.catDesc.experience'](),
     },
     {
         value: 'ID',
-        displayText: 'ID',
-        description: 'Identity cards and official credentials.',
+        displayText: m['issueFlow.display.cat.id'](),
+        description: m['issueFlow.display.catDesc.id'](),
     },
 ];
 
@@ -171,7 +173,9 @@ const ColorField: React.FC<{
                                 setText('');
                                 onChange(undefined);
                             }}
-                            aria-label={`Clear ${label.toLowerCase()}`}
+                            aria-label={m['issueFlow.display.clearField']({
+                                label: label.toLowerCase(),
+                            })}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-grayscale-400 hover:text-grayscale-700 transition-colors"
                         >
                             <X className="w-4 h-4" />
@@ -253,7 +257,7 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
 
     const canMakeDynamic = recipientMode === 'people' && recipients.length > 1;
 
-    const { handleFileSelect, isLoading: imageUploading } = useFilestack({
+    const { handleFileSelect, isLoading: imageUploading } = useImageUpload({
         fileType: 'image/*',
         resizeBeforeUploading: true,
         onUpload: (url: string) => patchAchievement({ image: staticField(url) }),
@@ -270,7 +274,7 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
         [ach, hints, patchAchievement]
     );
 
-    const { handleFileSelect: handleBgSelect, isLoading: bgUploading } = useFilestack({
+    const { handleFileSelect: handleBgSelect, isLoading: bgUploading } = useImageUpload({
         fileType: 'image/*',
         resizeBeforeUploading: true,
         onUpload: (url: string) => setHints({ backgroundImage: url }),
@@ -315,10 +319,10 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
         <div className="space-y-5 animate-fade-in-up">
             <section className={CARD_CLASS}>
                 <h2 className="text-base font-semibold text-grayscale-900 mb-1">
-                    What are you issuing?
+                    {m['issueFlow.type.heading']()}
                 </h2>
                 <p className="text-sm text-grayscale-600 leading-relaxed mb-4">
-                    Pick a type—your credential takes shape as you go.
+                    {m['issueFlow.type.subheading']()}
                 </p>
                 <TypePicker
                     selectedObv3Type={selectedType?.obv3Type ?? null}
@@ -341,27 +345,27 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                     </section>
 
                     <section className={`${CARD_CLASS} space-y-4`}>
-                        <h3 className="text-base font-semibold text-grayscale-900">Details</h3>
+                        <h3 className="text-base font-semibold text-grayscale-900">
+                            {m['common.details']()}
+                        </h3>
                         <TemplatableField
-                            label="Name"
+                            label={m['issueFlow.details.name']()}
                             field={ach?.name}
                             variableName="name"
                             canMakeDynamic={canMakeDynamic}
                             onChange={setNameField}
                             onBlur={() => setNameTouched(true)}
-                            placeholder="e.g. Web Development Fundamentals"
-                            errorText={
-                                nameInvalid ? 'Give your credential a name to continue.' : undefined
-                            }
+                            placeholder={m['issueFlow.details.namePlaceholder']()}
+                            errorText={nameInvalid ? m['issueFlow.details.nameError']() : undefined}
                         />
                         <TemplatableField
-                            label="Description (optional)"
+                            label={m['issueFlow.details.descLabel']()}
                             field={ach?.description}
                             variableName="description"
                             canMakeDynamic={canMakeDynamic}
                             variant="textarea"
                             rows={3}
-                            placeholder="What does this credential represent?"
+                            placeholder={m['issueFlow.details.descPlaceholder']()}
                             onChange={field => patchAchievement({ description: field })}
                         />
                         <button
@@ -375,7 +379,9 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                             ) : (
                                 <ImagePlus className="w-4 h-4" />
                             )}
-                            {hasImage ? 'Change image' : 'Add an image (optional)'}
+                            {hasImage
+                                ? m['issueFlow.details.changeImage']()
+                                : m['issueFlow.details.addImage']()}
                         </button>
 
                         {selectedType && selectedType.activityFields.length > 0 && (
@@ -410,7 +416,7 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                         >
                             <span className="flex items-center gap-2">
                                 <SlidersHorizontal className="w-4 h-4" />
-                                More detail
+                                {m['issueFlow.advanced.toggle']()}
                             </span>
                             <ChevronDown
                                 className={`w-4 h-4 transition-transform ${
@@ -422,13 +428,13 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                         {showAdvanced && (
                             <div className="pt-5 mt-5 border-t border-grayscale-200 space-y-4 animate-fade-in-up">
                                 <TemplatableField
-                                    label="How it’s earned (criteria)"
+                                    label={m['issueFlow.advanced.criteriaLabel']()}
                                     field={ach?.criteria?.narrative}
                                     variableName="criteria"
                                     canMakeDynamic={canMakeDynamic}
                                     variant="textarea"
                                     rows={2}
-                                    placeholder="Describe what the recipient did to earn this."
+                                    placeholder={m['issueFlow.advanced.criteriaPlaceholder']()}
                                     onChange={field =>
                                         patchAchievement({
                                             criteria: {
@@ -439,7 +445,9 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                                     }
                                 />
                                 <div>
-                                    <label className={LABEL_CLASS}>Expires on (optional)</label>
+                                    <label className={LABEL_CLASS}>
+                                        {m['issueFlow.advanced.expiresLabel']()}
+                                    </label>
                                     <input
                                         type="date"
                                         value={(template.validUntil?.value ?? '').slice(0, 10)}
@@ -457,25 +465,26 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                                     />
                                 </div>
                                 <p className="text-xs text-grayscale-400 leading-relaxed">
-                                    Add evidence and media above in the
-                                    <span className="font-medium text-grayscale-600">
-                                        {' '}
-                                        Evidence &amp; media{' '}
-                                    </span>
-                                    section.
+                                    <TransP
+                                        m={m['issueFlow.advanced.evidenceHint']}
+                                        components={[
+                                            <span className="font-medium text-grayscale-600" />,
+                                        ]}
+                                    />
                                 </p>
 
                                 <div className="pt-4 mt-4 border-t border-grayscale-200 space-y-4">
                                     <h4 className="text-sm font-semibold text-grayscale-900">
-                                        Display (optional)
+                                        {m['issueFlow.display.heading']()}
                                     </h4>
                                     <p className="text-xs text-grayscale-400 leading-relaxed">
-                                        Fine-tune how this credential looks. Wallets that don’t
-                                        support these hints simply ignore them.
+                                        {m['issueFlow.display.subheading']()}
                                     </p>
 
                                     <div>
-                                        <label className={LABEL_CLASS}>Category</label>
+                                        <label className={LABEL_CLASS}>
+                                            {m['issueFlow.display.categoryLabel']()}
+                                        </label>
                                         <SelectInput
                                             value={hints.category ?? null}
                                             onChange={value =>
@@ -484,26 +493,32 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                                                 })
                                             }
                                             allowDeselect
-                                            placeholder="Automatic (based on type)"
-                                            options={CATEGORY_OPTIONS}
+                                            placeholder={m['issueFlow.display.autoPlaceholder']()}
+                                            options={getCategoryOptions()}
                                         />
                                     </div>
 
                                     <div>
-                                        <label className={LABEL_CLASS}>Subtype label</label>
+                                        <label className={LABEL_CLASS}>
+                                            {m['issueFlow.display.subtypeLabel']()}
+                                        </label>
                                         <input
                                             type="text"
                                             value={hints.subtype ?? ''}
                                             onChange={e =>
                                                 setHints({ subtype: e.target.value || undefined })
                                             }
-                                            placeholder="e.g. Trailblazer"
+                                            placeholder={m[
+                                                'issueFlow.display.subtypePlaceholder'
+                                            ]()}
                                             className={INPUT_CLASS}
                                         />
                                     </div>
 
                                     <div>
-                                        <label className={LABEL_CLASS}>Display style</label>
+                                        <label className={LABEL_CLASS}>
+                                            {m['issueFlow.display.styleLabel']()}
+                                        </label>
                                         <SelectInput
                                             value={hints.displayType ?? null}
                                             onChange={value =>
@@ -513,31 +528,33 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                                                 })
                                             }
                                             allowDeselect
-                                            placeholder="Automatic (based on type)"
-                                            options={DISPLAY_TYPE_OPTIONS}
+                                            placeholder={m['issueFlow.display.autoPlaceholder']()}
+                                            options={getDisplayTypeOptions()}
                                         />
                                     </div>
 
                                     <ColorField
-                                        label="Background color"
+                                        label={m['issueFlow.display.bgColor']()}
                                         value={hints.backgroundColor}
                                         onChange={c => setHints({ backgroundColor: c })}
                                     />
 
                                     <ColorField
-                                        label="Accent color (badge ring)"
+                                        label={m['issueFlow.display.accentColor']()}
                                         value={hints.accentColor}
-                                        hint="Colors the badge ring. Defaults to the category color if unset."
+                                        hint={m['issueFlow.display.accentHint']()}
                                         onChange={c => setHints({ accentColor: c })}
                                     />
 
                                     <div>
-                                        <label className={LABEL_CLASS}>Background image</label>
+                                        <label className={LABEL_CLASS}>
+                                            {m['issueFlow.display.bgImageLabel']()}
+                                        </label>
                                         {hints.backgroundImage && (
                                             <div className="mb-2 flex items-center gap-3">
                                                 <img
                                                     src={hints.backgroundImage}
-                                                    alt="Background preview"
+                                                    alt={m['issueFlow.display.bgPreviewAlt']()}
                                                     className="h-12 w-12 rounded-xl object-cover border border-grayscale-200"
                                                 />
                                                 <button
@@ -547,7 +564,7 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                                                     }
                                                     className="text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
                                                 >
-                                                    Remove
+                                                    {m['issueFlow.display.remove']()}
                                                 </button>
                                             </div>
                                         )}
@@ -563,8 +580,8 @@ export const IssuePalette: React.FC<IssuePaletteProps> = ({
                                                 <ImagePlus className="w-4 h-4" />
                                             )}
                                             {hints.backgroundImage
-                                                ? 'Change background image'
-                                                : 'Add a background image'}
+                                                ? m['issueFlow.display.changeBgImage']()
+                                                : m['issueFlow.display.addBgImage']()}
                                         </button>
                                     </div>
                                 </div>

@@ -1,6 +1,9 @@
 import React from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
+import * as m from '../../../paraglide/messages.js';
+import { renderParts } from '../../../i18n';
+
 import CustomSpinner from '../../svgs/CustomSpinner';
 import SlimCaretRight from '../../svgs/SlimCaretRight';
 import CheckListContainer from '../checklist/CheckListContainer';
@@ -88,14 +91,18 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                 <div className="flex flex-col gap-[5px] flex-1 min-w-0">
                     <div className="flex flex-col">
                         <span className="text-[16px] font-poppins text-grayscale-900 leading-[normal]">
-                            Build My {brandingConfig.name}
+                            {m['passport.buildMyLearnCard.title']({ brand: brandingConfig.name })}
                         </span>
                         <span className="text-[12px] font-poppins font-medium text-grayscale-600 leading-[normal]">
                             {isParsing
-                                ? 'Processing documents...'
+                                ? m['passport.buildMyLearnCard.processing']()
                                 : hasPendingReview
-                                ? `${pendingReviewCount} ready for review`
-                                : `${optimizedPercent}% Optimized`}
+                                ? m['passport.buildMyLearnCard.pendingReview']({
+                                      count: pendingReviewCount,
+                                  })
+                                : m['passport.buildMyLearnCard.progress']({
+                                      percent: optimizedPercent,
+                                  })}
                         </span>
                     </div>
                     {!isParsing && !hasPendingReview && (
@@ -152,7 +159,7 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                         featuredCardTextColor ?? 'text-grayscale-900'
                     }`}
                 >
-                    Build My {brandingConfig.name}
+                    {m['passport.buildMyLearnCard.title']({ brand: brandingConfig.name })}
                 </h5>
 
                 {isParsing ? (
@@ -161,12 +168,13 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                             featuredCardTextColor ? 'text-white/70' : 'text-grayscale-700'
                         }`}
                     >
-                        Processing documents...
+                        {m['passport.buildMyLearnCard.processing']()}
                     </p>
                 ) : hasPendingReview ? (
                     <p className="mt-2 text-[13px] leading-[130%] text-amber-600 font-poppins font-semibold text-center">
-                        {pendingReviewCount} credential{pendingReviewCount !== 1 ? 's' : ''} ready
-                        for review
+                        {m['passport.buildMyLearnCard.pendingReview']({
+                            count: pendingReviewCount,
+                        })}
                     </p>
                 ) : (
                     <div className="mt-3">
@@ -185,7 +193,7 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                                 featuredCardTextColor ? 'text-white/70' : 'text-grayscale-600'
                             }`}
                         >
-                            {optimizedPercent}% optimized
+                            {m['passport.buildMyLearnCard.progress']({ percent: optimizedPercent })}
                         </p>
                     </div>
                 )}
@@ -226,7 +234,7 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                             featuredCardTextColor ?? 'text-grayscale-900'
                         }`}
                     >
-                        Build My {brandingConfig.name}
+                        {m['passport.buildMyLearnCard.title']({ brand: brandingConfig.name })}
                     </h5>
                     {isParsing ? (
                         <p
@@ -234,12 +242,13 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                                 featuredCardTextColor ?? 'text-grayscale-900'
                             }`}
                         >
-                            Processing documents...
+                            {m['passport.buildMyLearnCard.processing']()}
                         </p>
                     ) : hasPendingReview ? (
                         <p className="text-[14px] text-amber-600 font-poppins font-semibold">
-                            {pendingReviewCount} credential{pendingReviewCount !== 1 ? 's' : ''}{' '}
-                            ready for review
+                            {m['passport.buildMyLearnCard.pendingReview']({
+                                count: pendingReviewCount,
+                            })}
                         </p>
                     ) : (
                         <p
@@ -247,9 +256,16 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                                 featuredCardTextColor ?? 'text-grayscale-900'
                             }`}
                         >
-                            <span className="font-semibold">{completedItems}</span> of{' '}
-                            <span className="font-semibold">{checklistItems.length}</span> Steps
-                            Completed
+                            {renderParts(
+                                m['passport.buildMyLearnCard.stepsCompleted'].parts({
+                                    completed: completedItems,
+                                    total: checklistItems.length,
+                                }),
+                                {
+                                    '0': <span className="font-semibold" />,
+                                    '1': <span className="font-semibold" />,
+                                }
+                            )}
                         </p>
                     )}
                 </div>

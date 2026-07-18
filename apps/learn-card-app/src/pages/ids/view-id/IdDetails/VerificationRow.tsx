@@ -8,14 +8,54 @@ import CircleCheckmark from 'learn-card-base/svgs/CircleCheckmark';
 
 import { capitalize } from 'learn-card-base';
 import { getColorForVerificationStatus } from '../../../../components/creds-bundle/SharedBoostVerificationBlock';
+import * as m from '../../../../paraglide/messages.js';
 
 type VerificationRowProps = {
     verification: VerificationItem;
 };
 
+// The verification items rendered here are run through `prettifyVerificationItems`
+// upstream (VerificationsBox), which emits capitalized `check` labels and English
+// `message` strings. Map the known ones to the shared `sdk.verification.*` catalog;
+// anything unrecognized passes through as English (mirrors the SDK VerificationRow).
+const CHECK_KEYS: Record<string, string> = {
+    Proof: 'sdk.verification.check.proof',
+    Status: 'sdk.verification.check.status',
+    Expiration: 'sdk.verification.check.expiration',
+};
+
+const MESSAGE_KEYS: Record<string, string> = {
+    Valid: 'sdk.verification.message.valid',
+    Invalid: 'sdk.verification.message.invalid',
+    'Not Revoked': 'sdk.verification.message.notRevoked',
+    Revoked: 'sdk.verification.message.revoked',
+    'Does Not Expire': 'sdk.verification.message.doesNotExpire',
+    Expired: 'sdk.verification.message.expired',
+    Active: 'sdk.verification.message.active',
+    'Boost Credential could not be verified.': 'sdk.verification.message.couldNotVerify',
+    'Boost Credential could not be verified': 'sdk.verification.message.couldNotVerify',
+};
+
+const STATUS_KEYS: Record<string, string> = {
+    success: 'sdk.verification.status.success',
+    error: 'sdk.verification.status.error',
+    failed: 'sdk.verification.status.failed',
+};
+
+const resolveKey = (map: Record<string, string>, raw?: string): string => {
+    if (!raw) return '';
+    const key = map[raw];
+    return key ? (m as unknown as Record<string, () => string>)[key]() : raw;
+};
+
 const VerificationRow: React.FC<VerificationRowProps> = ({ verification }) => {
     const [showInfo, setShowInfo] = useState(false);
     const statusColor = getColorForVerificationStatus(verification.status);
+
+    const statusLabel = resolveKey(STATUS_KEYS, String(verification.status).toLowerCase());
+    const statusText = statusLabel || verification.status;
+    const checkLabel = resolveKey(CHECK_KEYS, verification.check);
+    const translateMessage = (msg?: string): string => resolveKey(MESSAGE_KEYS, msg);
 
     const getIcon = () => {
         switch (verification.status) {
@@ -32,10 +72,10 @@ const VerificationRow: React.FC<VerificationRowProps> = ({ verification }) => {
     const messageOnlyOverride = verification.check === verification.message; // only show message if check and message are identical
 
     let primaryText = verification.check
-        ? `${verification.check}: ${verification.message}`
-        : verification.message;
+        ? `${checkLabel}: ${translateMessage(verification.message)}`
+        : translateMessage(verification.message);
     if (verification.status === VerificationStatusEnum.Failed) {
-        primaryText = verification.message ?? verification.details ?? '';
+        primaryText = translateMessage(verification.message ?? verification.details ?? '');
     }
     primaryText = capitalize(primaryText);
 
@@ -48,7 +88,7 @@ const VerificationRow: React.FC<VerificationRowProps> = ({ verification }) => {
                 style={{ color: statusColor }}
             >
                 {getIcon()}
-                {verification.status}
+                {statusText}
                 {infoText && (
                     <button className="ml-auto" onClick={() => setShowInfo(!showInfo)}>
                         <InfoIcon color={statusColor} />
@@ -64,17 +104,21 @@ const VerificationRow: React.FC<VerificationRowProps> = ({ verification }) => {
             )}
 
             <span className="flex gap-[4px] text-grayscale-900 text-[14px]">
-                {isFailed && (verification.message ?? verification.details ?? '')}
+                {isFailed && translateMessage(verification.message ?? verification.details ?? '')}
                 {!isFailed && verification.check && !messageOnlyOverride && (
                     <>
                         <span className="font-notoSans font-[600] text-[14px]">
-                            {capitalize(verification.check)}:
+                            {capitalize(checkLabel)}:
                         </span>
-                        <span className="font-notoSans text-[14px]">{verification.message}</span>
+                        <span className="font-notoSans text-[14px]">
+                            {translateMessage(verification.message)}
+                        </span>
                     </>
                 )}
                 {!isFailed && (!verification.check || messageOnlyOverride) && (
-                    <span className="font-notoSans text-[14px]">{verification.message}</span>
+                    <span className="font-notoSans text-[14px]">
+                        {translateMessage(verification.message)}
+                    </span>
                 )}
             </span>
         </div>

@@ -1,4 +1,6 @@
 import type React from 'react';
+
+import * as m from '../../../paraglide/messages.js';
 import {
     Award,
     ScrollText,
@@ -422,3 +424,38 @@ export const getTypeByObv3 = (obv3Type: string): CredentialTypeEntry | undefined
 
 export const getTypesForFamily = (family: CredentialFamily): CredentialTypeEntry[] =>
     CREDENTIAL_TYPES.filter(t => t.family === family);
+
+/**
+ * Render-layer i18n for the credential-type catalog.
+ *
+ * The English `label` / `pickWhen` (types) and `label` / `blurb` (families)
+ * above are the source-of-truth fallbacks. These getters resolve a paraglide
+ * message keyed by the stable id (`obv3Type` for types, `id` for families),
+ * falling back to the English data when no translation exists. Consumers should
+ * use these getters instead of reading the raw display fields directly.
+ */
+
+/** Strip a key segment to [A-Za-z0-9] so it is safe inside a paraglide key. */
+const keyify = (id: string): string => id.replace(/[^A-Za-z0-9]/g, '');
+
+/** Resolve a paraglide message by key, falling back to English when absent. */
+const resolve = (key: string, fallback: string): string => {
+    const fn = (m as Record<string, unknown>)[key];
+    return typeof fn === 'function' ? (fn as () => string)() : fallback;
+};
+
+/** Translated display label for a credential type (falls back to English). */
+export const typeLabel = (entry: CredentialTypeEntry): string =>
+    resolve(`issueFlow.catalog.${keyify(entry.obv3Type)}.label`, entry.label);
+
+/** Translated "pick when" hint for a credential type (falls back to English). */
+export const typePickWhen = (entry: CredentialTypeEntry): string =>
+    resolve(`issueFlow.catalog.${keyify(entry.obv3Type)}.pick`, entry.pickWhen);
+
+/** Translated display label for a credential family (falls back to English). */
+export const familyLabel = (family: CredentialFamilyMeta): string =>
+    resolve(`issueFlow.catalog.fam.${keyify(family.id)}.label`, family.label);
+
+/** Translated blurb for a credential family (falls back to English). */
+export const familyBlurb = (family: CredentialFamilyMeta): string =>
+    resolve(`issueFlow.catalog.fam.${keyify(family.id)}.blurb`, family.blurb);

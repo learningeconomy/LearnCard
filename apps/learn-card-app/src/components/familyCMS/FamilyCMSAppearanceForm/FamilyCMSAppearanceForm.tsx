@@ -6,6 +6,7 @@ import FamilyCMSThumbnailSelect from './FamilyCMSThumbnailSelect';
 import FamilyCMSColorPicker from './FamilyCMSColorPicker';
 
 import { FamilyCMSState } from '../familyCMSState';
+import { m } from '../../../paraglide/messages.js';
 
 export const FamilyCMSAppearanceForm: React.FC<{
     state: FamilyCMSState;
@@ -54,7 +55,7 @@ export const FamilyCMSAppearanceForm: React.FC<{
 
             <div className="flex flex-col items-center justify-center bg-white rounded-[20px] w-full mb-[20px]">
                 <h3 className="text-grayscale-900 font-poppins font-normal text-left w-full text-[20px]">
-                    Wallpaper
+                    {m['family.appearance.wallpaper']()}
                 </h3>
 
                 <div className="flex flex-col items-center justify-center w-full bg-grayscale-100 rounded-[15px] mt-4 py-2">
@@ -63,7 +64,7 @@ export const FamilyCMSAppearanceForm: React.FC<{
                     <div className="flex items-center justify-between w-full bg-grayscale-100 p-2 border-b-white border-b-solid border-b-[2px]">
                         <div className="flex items-center justify-between w-full pb-2 pl-[4px]">
                             <p className="text-grayscale-900 font-poppins text-lg flex items-center justify-start w-[80%]">
-                                Fade background
+                                {m['family.appearance.fadeBackground']()}
                             </p>
                             <IonToggle
                                 mode="ios"
@@ -84,7 +85,7 @@ export const FamilyCMSAppearanceForm: React.FC<{
                     <div className="flex items-center justify-between w-full bg-grayscale-100 rounded-[15px] p-2">
                         <div className="flex items-center justify-between w-full py-2 pl-[4px]">
                             <p className="text-grayscale-900 font-poppins text-lg flex items-center justify-start w-[80%]">
-                                Repeat background
+                                {m['family.appearance.repeatBackground']()}
                             </p>
                             <IonToggle
                                 mode="ios"
@@ -105,7 +106,7 @@ export const FamilyCMSAppearanceForm: React.FC<{
             </div>
 
             <FamilyCMSColorPicker
-                title="Wallpaper Background"
+                title={m['family.appearance.wallpaperBackground']()}
                 _color={state?.appearance?.backgroundColor}
                 updateFieldKey="backgroundColor"
                 state={state}

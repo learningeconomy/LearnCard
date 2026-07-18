@@ -2,6 +2,8 @@ import React from 'react';
 
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 
+import * as m from '../../paraglide/messages.js';
+
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 
 import DashboardHeaderCard from './components/DashboardHeaderCard';
@@ -58,7 +60,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
                             <button
                                 type="button"
                                 onClick={header.onScanQrTopRight}
-                                aria-label="Open QR scanner"
+                                aria-label={m['dashboard.header.scanQrAria']()}
                                 className="w-9 h-9 rounded-full bg-grayscale-100 hover:bg-grayscale-200 transition-colors flex items-center justify-center text-grayscale-800 active:scale-95"
                             >
                                 <QRCodeScanner version="2" />

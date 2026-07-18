@@ -40,6 +40,7 @@
  */
 
 import React, { useMemo, useState } from 'react';
+import * as m from '../../../../../paraglide/messages.js';
 
 import { IonIcon } from '@ionic/react';
 import { informationCircleOutline, linkOutline, peopleOutline } from 'ionicons/icons';
@@ -234,7 +235,7 @@ const ConnectionsSection: React.FC<ConnectionsSectionProps> = ({
                                         }
                                         className="shrink-0 text-xs text-grayscale-500 hover:text-red-700 transition-colors"
                                     >
-                                        {bulkActive ? 'Remove from all' : 'Remove'}
+                                        {bulkActive ? 'Remove from all' : m['pathways.removeSkill']()}
                                     </button>
                                 </li>
                             );

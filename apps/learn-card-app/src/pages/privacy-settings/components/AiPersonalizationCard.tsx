@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { IonToggle } from '@ionic/react';
 import { Check, Lock } from 'lucide-react';
 
+import * as m from '../../../paraglide/messages.js';
 import type { DataSharingAiViewModel } from '../DataSharingCenter.types';
 import GlassCard from './GlassCard';
 
@@ -114,20 +115,19 @@ const AiPersonalizationCard: React.FC<AiPersonalizationCardProps> = ({
         >
             <div className="px-1 mb-2">
                 <h3 className="text-[15px] font-semibold text-grayscale-900">
-                    AI &amp; personalization
+                    {m['dataShareCenter.aiHeading']()}
                 </h3>
-                <p className="text-sm text-grayscale-600">
-                    Smart help that learns from you — only if you say so.
-                </p>
+                <p className="text-sm text-grayscale-600">{m['dataShareCenter.aiSubheading']()}</p>
             </div>
 
             <GlassCard className="overflow-hidden">
                 <div className="flex items-center justify-between gap-4 px-5 py-4">
                     <div className="flex-1 min-w-0">
-                        <p className="text-[15px] font-medium text-grayscale-900">AI Features</p>
+                        <p className="text-[15px] font-medium text-grayscale-900">
+                            {m['settings.aiFeatures']()}
+                        </p>
                         <p className="text-sm text-grayscale-500 mt-0.5 leading-relaxed">
-                            AI tutoring, insights, and personalization. This may share relevant
-                            messages and records with AI providers.
+                            {m['dataShareCenter.aiFeaturesDesc']()}
                         </p>
                         {lockedNote && (
                             <p className="flex items-center gap-1.5 text-xs text-sky-700 mt-2 leading-relaxed">
@@ -141,7 +141,7 @@ const AiPersonalizationCard: React.FC<AiPersonalizationCardProps> = ({
                         checked={aiToggleChecked}
                         disabled={disabled || isSyncingAiConsent || retryingAiConsent}
                         onIonChange={e => !disabled && handleAiFeatureToggle(e.detail.checked)}
-                        aria-label="AI Features"
+                        aria-label={m['settings.aiFeatures']()}
                     />
                 </div>
 
@@ -153,19 +153,19 @@ const AiPersonalizationCard: React.FC<AiPersonalizationCardProps> = ({
                     >
                         {aiConnectionStatus === 'connecting' ? (
                             <p className="text-xs text-grayscale-500 leading-relaxed">
-                                Connecting...
+                                {m['dataSharing.connecting']()}
                             </p>
                         ) : aiConnectionStatus === 'disconnecting' ? (
                             <p className="text-xs text-grayscale-500 leading-relaxed">
-                                Disconnecting...
+                                {m['dataSharing.disconnecting']()}
                             </p>
                         ) : (
                             <p className="flex items-center gap-1.5 text-xs text-emerald-600 leading-relaxed">
                                 <Check className="w-3.5 h-3.5 shrink-0" />
                                 <span>
                                     {aiConnectionStatus === 'connected'
-                                        ? 'Connected'
-                                        : 'Successfully Disconnected'}
+                                        ? m['dataSharing.connected']()
+                                        : m['dataSharing.disconnected']()}
                                 </span>
                             </p>
                         )}
@@ -176,14 +176,16 @@ const AiPersonalizationCard: React.FC<AiPersonalizationCardProps> = ({
                     <div className="px-5 pb-4">
                         <div className="rounded-[16px] border border-red-100 bg-red-50 px-4 py-3">
                             <p className="text-sm text-red-700 leading-relaxed">
-                                AI is on, but the connection needs to be refreshed.
+                                {m['dataShareCenter.aiRefreshNote']()}
                                 <button
                                     type="button"
                                     onClick={handleRetryAiConsent}
                                     disabled={retryingAiConsent}
                                     className="ml-1 font-medium underline underline-offset-2 text-red-700 disabled:opacity-60"
                                 >
-                                    {retryingAiConsent ? 'Retrying…' : 'Try again'}
+                                    {retryingAiConsent
+                                        ? m['dataSharing.retrying']()
+                                        : m['dataSharing.tryAgain']()}
                                 </button>
                                 .
                             </p>

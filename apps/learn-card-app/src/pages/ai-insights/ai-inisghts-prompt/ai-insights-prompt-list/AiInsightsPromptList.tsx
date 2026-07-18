@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { m } from '../../../../paraglide/messages.js';
+
 import AiInsightsPromptListItem from './AiInsightsPromptListItem';
 
 import { DEFAULT_PROMPTS } from '../ai-insights-prompt-helpers';
@@ -13,7 +15,7 @@ export const AiInsightsPromptList: React.FC<{ showTitle?: boolean; limit?: numbe
             {showTitle && (
                 <div className="w-full flex items-center justify-start">
                     <h2 className="text-grayscale-600 text-sm font-medium">
-                        Explore Your Insights
+                        {m['aiInsights.exploreYourInsights']()}
                     </h2>
                 </div>
             )}

@@ -6,7 +6,7 @@ import { LCNProfile } from '@learncard/types';
 import { useModal } from 'learn-card-base';
 
 import {
-    requestInsightsOptions,
+    getRequestInsightsOptions,
     RequestInsightStatusEnum,
     RequestInsightsOptionsEnum,
 } from './request-insights.helpers';
@@ -21,7 +21,7 @@ export const RequestInsightsUserCardOptions: React.FC<{
 }> = ({ profile, readStatus, status, handleRequestInsights }) => {
     const { closeModal } = useModal();
 
-    const visibleOptions = requestInsightsOptions.filter(option => {
+    const visibleOptions = getRequestInsightsOptions().filter(option => {
         if (option.type === RequestInsightsOptionsEnum.removeConnection) return false;
         if (
             status === RequestInsightStatusEnum.accepted &&
@@ -46,7 +46,7 @@ export const RequestInsightsUserCardOptions: React.FC<{
             />
             <div className="flex flex-col gap-2 px-3 pb-4">
                 <div className="h-[1px] bg-grayscale-200" />
-                {requestInsightsOptions.map(option => {
+                {getRequestInsightsOptions().map(option => {
                     if (
                         status === RequestInsightStatusEnum.accepted &&
                         (option.type === RequestInsightsOptionsEnum.cancelRequest ||

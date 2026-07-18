@@ -22,6 +22,7 @@ import SkillTag from './SkillTag';
 import { IonInput, IonSpinner } from '@ionic/react';
 import { GenericErrorView } from 'learn-card-base/components/generic/GenericErrorBoundary';
 
+import * as m from '../../paraglide/messages.js';
 import { SkillFrameworkNode } from '../../components/boost/boost';
 import { SkillLevel } from './skillTypes';
 import type { SelectedSkill } from './skillTypes';
@@ -265,7 +266,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
         try {
             if (!webhookUrl) {
                 log.warn('REACT_APP_SKILL_SUGGESTION_WEBHOOK not configured');
-                presentToast('Thank you for your suggestion!', {
+                presentToast(m['skills.search.suggestionThankYou'](), {
                     type: ToastTypeEnum.Success,
                 });
                 return;
@@ -281,12 +282,12 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                 }),
                 mode: 'no-cors',
             });
-            presentToast('Thank you for your suggestion!', {
+            presentToast(m['skills.search.suggestionThankYou'](), {
                 type: ToastTypeEnum.Success,
             });
         } catch (error) {
             log.error('Failed to submit skill suggestion:', error);
-            presentToast('Thank you for your suggestion!', {
+            presentToast(m['skills.search.suggestionThankYou'](), {
                 type: ToastTypeEnum.Success,
             });
         } finally {
@@ -317,7 +318,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                             <IonInput
                                 type="text"
                                 value={searchInput}
-                                placeholder={'Search by skill, goal, or job...'}
+                                placeholder={m['skills.search.searchPlaceholder']()}
                                 maxlength={MAX_SEARCH_LENGTH}
                                 onIonInput={e => setSearchInput(e.detail.value ?? '')}
                                 className="bg-grayscale-100 text-grayscale-800 rounded-[10px] !py-[4px] font-normal !font-notoSans text-[14px] !pl-[44px] !text-left !pr-[36px]"
@@ -347,7 +348,9 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                                             onClick={() => setSelectedSkillsExpanded(prev => !prev)}
                                             className="text-grayscale-600 text-[14px] font-bold"
                                         >
-                                            {selectedSkillsExpanded ? 'View Less' : 'View All'}
+                                            {selectedSkillsExpanded
+                                                ? m['skills.search.viewLess']()
+                                                : m['skills.search.viewAll']()}
                                         </button>
                                     )}
                                 </div>
@@ -541,10 +544,10 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                     {showSkillSuggestionPrompt && (
                         <div className="flex flex-col gap-[10px] pb-[10px] pt-[10px] border-t border-grayscale-200 border-solid">
                             <p className="text-grayscale-900 text-[17px] font-[600] font-poppins">
-                                Didn&apos;t find what you&apos;re looking for?
+                                {m['skills.search.didntFind']()}
                             </p>
                             <p className="font-poppins text-[17px] text-grayscale-700">
-                                We are always adding new skills and your suggestions help!
+                                {m['skills.search.suggestSkillHelp']()}
                             </p>
 
                             <p className="text-grayscale-900 font-poppins text-[17px] font-[600] italic text-center">
@@ -556,7 +559,7 @@ const SkillSearchSelector: React.FC<SkillSearchSelectorProps> = ({
                                 onClick={handleSubmitSkillSuggestion}
                                 disabled={isSubmittingSkillSuggestion}
                             >
-                                Suggest Skill
+                                {m['skills.search.suggestSkill']()}
                             </button>
                         </div>
                     )}

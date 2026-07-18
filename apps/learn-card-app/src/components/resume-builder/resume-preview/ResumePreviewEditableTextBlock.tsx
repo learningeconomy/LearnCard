@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 
 import TrashBin from '../../../components/svgs/TrashBin';
 
+import * as m from '../../../paraglide/messages.js';
+
 type ResumePreviewEditableTextBlockProps = {
     value: string;
     placeholder: string;
@@ -66,7 +68,7 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
                             <div className="flex justify-end px-2 pb-1.5">
                                 {isSelfAttested ? (
                                     <span className="text-grayscale-600 font-semibold text-xs">
-                                        Edited
+                                        {m['passport.resumeBuilder.editable.edited']()}
                                         {onRestoreDefault && (
                                             <>
                                                 <span className="mx-1 text-grayscale-600">•</span>
@@ -75,14 +77,16 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
                                                     className="text-indigo-600 font-semibold text-xs"
                                                     onClick={onRestoreDefault}
                                                 >
-                                                    Restore Default
+                                                    {m[
+                                                        'passport.resumeBuilder.editable.restoreDefault'
+                                                    ]()}
                                                 </button>
                                             </>
                                         )}
                                     </span>
                                 ) : (
                                     <span className="text-grayscale-600 font-semibold text-xs">
-                                        Default Summary
+                                        {m['passport.resumeBuilder.editable.defaultSummary']()}
                                     </span>
                                 )}
                             </div>
@@ -98,7 +102,7 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
                         <button
                             onClick={onRemove}
                             className="shrink-0 text-grayscale-700 bg-grayscale-100 rounded-[10px] p-1 leading-none"
-                            title="Remove"
+                            title={m['passport.resumeBuilder.remove']()}
                         >
                             <TrashBin className="w-[24px] h-[24px]" />
                         </button>

@@ -3,6 +3,7 @@ import { useHistory } from 'react-router-dom';
 
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
 import { lazyWithRetry } from 'learn-card-base';
+import { m } from '../../paraglide/messages.js';
 import { ErrorBoundary } from 'react-error-boundary';
 import { IonContent, IonModal, IonPage } from '@ionic/react';
 import {
@@ -144,7 +145,7 @@ const FamilyPage: React.FC = () => {
         viewMode: viewMode,
         defaultImg: imgSrc,
         category: BoostCategoryOptionsEnum.family,
-        title: 'Families',
+        title: m['family.title'](),
         bgFillerColor: `!bg-${backgroundSecondaryColor}`,
     };
 

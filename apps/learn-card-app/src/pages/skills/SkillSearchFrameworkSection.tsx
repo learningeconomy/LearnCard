@@ -23,6 +23,7 @@ import {
     convertApiSkillNodeToSkillTreeNode,
     ApiSkillNode,
 } from '../../helpers/skillFramework.helpers';
+import * as m from '../../paraglide/messages.js';
 
 type SkillSearchFrameworkSectionProps = {
     framework: GlobalSkillFrameworkConfig;
@@ -198,7 +199,7 @@ const SkillSearchFrameworkSection: React.FC<SkillSearchFrameworkSectionProps> = 
 
             {noResults && (
                 <p className="py-[10px] text-grayscale-600 text-[17px] font-[600] font-poppins">
-                    No results or suggestions
+                    {m['skills.search.noResultsOrSuggestions']()}
                 </p>
             )}
         </div>

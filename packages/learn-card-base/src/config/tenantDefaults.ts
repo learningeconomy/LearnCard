@@ -61,6 +61,13 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         },
     },
 
+    storage: {
+        provider: 'filestack',
+        apiKey: 'A7RsW3VzfSNO2TCsFJ6Eiz',
+        cdnDomain: 'cdn.filestackcontent.com',
+        apiDomain: 'www.filestackapi.com',
+    },
+
     branding: {
         name: 'LearnCard',
         shortName: 'LC',
@@ -148,6 +155,11 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
             'openid-credential-offer',
             'openid4vp',
         ],
+    },
+
+    i18n: {
+        defaultLanguage: 'en',
+        supportedLanguages: ['en'],
     },
 };
 

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { CredentialCategoryEnum } from 'learn-card-base';
 import { useTheme } from '../../../theme/hooks/useTheme';
-import { ACTIVITY_FILTERS, type ActivityFilterId } from './activityFeed.helpers';
+import { getActivityFilters, type ActivityFilterId } from './activityFeed.helpers';
+import * as m from '../../../paraglide/messages.js';
 
 type Props = {
     selected: ActivityFilterId;
@@ -14,11 +15,13 @@ export const ActivityFilterPopover: React.FC<Props> = ({ selected, onApply, onRe
     const [draft, setDraft] = useState<ActivityFilterId>(selected);
     // Apply is a no-op until the draft differs from what's already applied.
     const dirty = draft !== selected;
+    // Recomputed each render so labels track the active locale.
+    const filters = getActivityFilters();
 
     return (
         <div className="w-[320px] flex flex-col gap-4 rounded-[24px] border border-grayscale-100 bg-white p-[18px] shadow-[0_12px_40px_rgba(24,34,78,0.18)]">
             <div className="flex flex-wrap gap-[10px]">
-                {ACTIVITY_FILTERS.map(({ id, label }) => {
+                {filters.map(({ id, label }) => {
                     const isSelected = draft === id;
                     const themed =
                         id === 'all' ? null : getThemedCategory(id as CredentialCategoryEnum);
@@ -49,7 +52,7 @@ export const ActivityFilterPopover: React.FC<Props> = ({ selected, onApply, onRe
                     }}
                     className="flex-1 rounded-full py-[11px] font-poppins text-[15px] font-medium text-grayscale-600"
                 >
-                    Reset
+                    {m['passport.activity.reset']()}
                 </button>
                 <button
                     type="button"
@@ -59,7 +62,7 @@ export const ActivityFilterPopover: React.FC<Props> = ({ selected, onApply, onRe
                         dirty ? 'bg-[#1C2444]' : 'bg-grayscale-300'
                     }`}
                 >
-                    Apply Filter
+                    {m['passport.activity.applyFilter']()}
                 </button>
             </div>
         </div>

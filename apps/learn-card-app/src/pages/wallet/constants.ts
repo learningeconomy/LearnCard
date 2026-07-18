@@ -1,3 +1,4 @@
+import * as m from '../../paraglide/messages.js';
 import { Shapes, WalletIcons } from 'learn-card-base';
 import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
 
@@ -258,3 +259,25 @@ export const walletPageData: WalletPageItem[] = [
         },
     },
 ];
+
+const CATEGORY_KEY_MAP: Record<WalletCategoryTypes, () => string> = {
+    [WalletCategoryTypes.aiSessions]: m['wallet.categories.aiSessions'],
+    [WalletCategoryTypes.aiPathways]: m['wallet.categories.aiPathways'],
+    [WalletCategoryTypes.aiInsights]: m['wallet.categories.aiInsights'],
+    [WalletCategoryTypes.skills]: m['wallet.categories.skills'],
+    [WalletCategoryTypes.socialBadges]: m['wallet.categories.socialBadges'],
+    [WalletCategoryTypes.achievements]: m['wallet.categories.achievements'],
+    [WalletCategoryTypes.learningHistory]: m['wallet.categories.studies'],
+    [WalletCategoryTypes.accomplishments]: m['wallet.categories.portfolio'],
+    [WalletCategoryTypes.accommodations]: m['wallet.categories.assistance'],
+    [WalletCategoryTypes.jobHistory]: m['wallet.categories.experiences'],
+    [WalletCategoryTypes.families]: m['wallet.categories.families'],
+    [WalletCategoryTypes.ids]: m['wallet.categories.ids'],
+};
+
+export const useWalletCategories = (): WalletPageItem[] => {
+    return walletPageData.map(item => ({
+        ...item,
+        title: CATEGORY_KEY_MAP[item.subtype](),
+    }));
+};

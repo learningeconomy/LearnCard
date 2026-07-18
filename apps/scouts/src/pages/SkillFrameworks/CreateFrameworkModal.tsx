@@ -4,7 +4,7 @@ import {
     ModalTypes,
     useModal,
     useWallet,
-    useFilestack,
+    useImageUpload,
     conditionalPluralize,
     BoostUserTypeEnum,
     ShortBoostState,
@@ -54,7 +54,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
         issueTo: [],
     });
 
-    const { handleFileSelect, isLoading: isUploadingImage } = useFilestack({
+    const { handleFileSelect, isLoading: isUploadingImage } = useImageUpload({
         onUpload: url => setImage(url),
         fileType: IMAGE_MIME_TYPES,
     });

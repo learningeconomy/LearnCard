@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatLocaleDate } from '../../i18n/formatters';
 
 import { Hourglass, Check } from 'lucide-react';
 import { IonSpinner } from '@ionic/react';
@@ -44,7 +45,7 @@ const CredentialCard: React.FC<CredentialCardProps> = ({ record, isNew, index })
     };
     const updatedCategory = categoryDisplayMap[category] || category;
 
-    const formattedDate = record.dateEarned.toLocaleDateString('en-US', {
+    const formattedDate = formatLocaleDate(record.dateEarned, {
         month: 'short',
         day: 'numeric',
         year: 'numeric',

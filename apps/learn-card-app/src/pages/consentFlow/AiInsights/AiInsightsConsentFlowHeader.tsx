@@ -4,6 +4,8 @@ import { ConnectIcon } from 'learn-card-base/svgs/ConnectIcon';
 import { UserProfilePicture, ProfilePicture, switchedProfileStore } from 'learn-card-base';
 
 import { LCNProfile } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
+import TransP from '../../../i18n/TransP';
 
 const AiInsightsConsentFlowHeader: React.FC<{
     profile: LCNProfile;
@@ -21,7 +23,7 @@ const AiInsightsConsentFlowHeader: React.FC<{
 
     let text = (
         <p className="text-grayscale-900 text-[22px] font-semibold text-center">
-            Share Insights with <br /> {profile?.displayName}
+            {m['aiInsights.shareInsightsWith']({ name: profile?.displayName ?? '' })}
         </p>
     );
 
@@ -30,8 +32,14 @@ const AiInsightsConsentFlowHeader: React.FC<{
 
         text = (
             <p className="text-grayscale-900 text-[17px] text-center">
-                Share <span className="font-semibold">{childName}</span>'s insights with{' '}
-                <span className="font-semibold">{profile?.displayName}</span>
+                <TransP
+                    m={m['aiInsights.shareChildInsights']}
+                    values={{ child: childName ?? '', teacher: profile?.displayName ?? '' }}
+                    components={[
+                        <span className="font-semibold" />,
+                        <span className="font-semibold" />,
+                    ]}
+                />
             </p>
         );
     }
@@ -39,7 +47,7 @@ const AiInsightsConsentFlowHeader: React.FC<{
     if (isPostConsent) {
         text = (
             <p className="text-grayscale-900 text-[22px] font-semibold text-center">
-                You've successfully shared insights with {profile?.displayName}
+                {m['aiInsights.successfullyShared']({ name: profile?.displayName ?? '' })}
             </p>
         );
     }
@@ -84,9 +92,7 @@ const AiInsightsConsentFlowHeader: React.FC<{
                         </p>
                         <br />
                         <p className="text-grayscale-900 text-sm text-left">
-                            If you approve, your teacher will be able to to see your Top Skills,
-                            Learning Snapshots, Suggested Pathways. They will also be able to send
-                            learning pathway suggestions to you.
+                            {m['aiInsights.approveDescription']()}
                         </p>
                     </div>
                 )}
@@ -95,7 +101,7 @@ const AiInsightsConsentFlowHeader: React.FC<{
                     className="text-indigo-500 text-sm font-semibold text-center"
                     onClick={() => setIsExpanded(!isExpanded)}
                 >
-                    {isExpanded ? 'Got it.' : 'Learn more'}
+                    {isExpanded ? m['common.gotIt']() : m['common.learnMore']()}
                 </button>
             </div>
         </div>

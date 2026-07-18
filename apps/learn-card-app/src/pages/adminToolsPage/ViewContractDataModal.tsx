@@ -17,6 +17,7 @@ import Share from '../../components/svgs/Share';
 import CopyStack from '../../components/svgs/CopyStack';
 import CreateContractModal from './CreateContractModal';
 import ShareContractModal from './ShareContractModal';
+import * as m from '../../paraglide/messages.js';
 import { getInfoFromContractKey } from '../../helpers/contract.helpers';
 
 type ViewContractDataModalProps = {
@@ -394,7 +395,7 @@ const ViewContractDataModal: React.FC<ViewContractDataModalProps> = ({
             {contractLoading && (
                 <div className="w-full h-[120px] flex flex-col gap-[5px] items-center justify-center rounded-[20px] border border-grayscale-200 bg-grayscale-10">
                     <IonSpinner color="dark" />
-                    <span className="text-sm text-grayscale-600">Loading contract...</span>
+                    <span className="text-sm text-grayscale-600">{m['common.loading']()}</span>
                 </div>
             )}
 

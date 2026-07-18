@@ -19,6 +19,7 @@ import {
     useUpdateChecklistItemCategoryMutation,
     categoryMetadata,
 } from 'learn-card-base';
+import * as m from '../../../../../paraglide/messages.js';
 
 export type RawVCFileType = {
     id: string; // LearnCloud record id
@@ -57,8 +58,8 @@ export const CheckListUploadRawVC: React.FC<{
                 onError: error => {
                     log.error('Failed to delete credential', error);
                     onDeleteFailed();
-                    presentToast('Failed to delete. Please try again.', {
-                        title: 'Delete failed',
+                    presentToast(m['passport.buildMyLearnCard.managers.toastDeleteFailed'](), {
+                        title: m['passport.buildMyLearnCard.managers.toastDeleteFailedShort'](),
                         hasDismissButton: true,
                         type: ToastTypeEnum.Error,
                         hasX: true,
@@ -72,7 +73,7 @@ export const CheckListUploadRawVC: React.FC<{
     const confirmDelete = async (id: string, uri: string) => {
         if (
             await confirm({
-                text: `Are you sure you want remove your uploaded credential?`,
+                text: m['passport.buildMyLearnCard.managers.confirmRemove.credential'](),
                 cancelButtonClassName:
                     'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-2 w-[100px] ',
                 confirmButtonClassName:
