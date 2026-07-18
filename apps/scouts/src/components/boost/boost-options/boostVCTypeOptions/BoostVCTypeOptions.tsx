@@ -36,7 +36,10 @@ export const BoostVCTypeOptions: React.FC<BoostVCTypeOptionsProps> = ({
         BoostCategoryOptionsEnum | string | null
     >(boostCategoryType ?? null);
 
-    const title = boostUserType === BoostUserTypeEnum.self ? m['boost.yourselfExclamation']() : m['boost.someoneExclamation']();
+    const title =
+        boostUserType === BoostUserTypeEnum.self
+            ? m['boost.yourselfExclamation']()
+            : m['boost.someoneExclamation']();
     const boostOptions = boostVCTypeOptions[boostUserType];
 
     const subtext =

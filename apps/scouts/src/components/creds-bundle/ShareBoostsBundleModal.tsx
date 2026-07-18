@@ -261,10 +261,14 @@ const ShareBoostsBundleModal = ({
                             </section>
 
                             <div className="text-left">
-                                <p className="text-[14px] uppercase">{m['credsBundle.bundleCreated']()}</p>
+                                <p className="text-[14px] uppercase">
+                                    {m['credsBundle.bundleCreated']()}
+                                </p>
 
                                 <br />
-                                <strong className="text-[20px]">{m['credsBundle.yourPin']({ pin: pinNum })}</strong>
+                                <strong className="text-[20px]">
+                                    {m['credsBundle.yourPin']({ pin: pinNum })}
+                                </strong>
                                 <br />
                                 <br />
                                 <strong className="text-[14px] mt-[20px] text-left">

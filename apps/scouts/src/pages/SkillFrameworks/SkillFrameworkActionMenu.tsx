@@ -66,9 +66,7 @@ const SkillFrameworkActionMenu: React.FC<SkillFrameworkActionMenuProps> = ({ fra
     const handleDelete = () => {
         if (!frameworkId) return;
 
-        const confirmed = window.confirm(
-            m['skillFrameworks.confirmDelFw']()
-        );
+        const confirmed = window.confirm(m['skillFrameworks.confirmDelFw']());
 
         if (confirmed) {
             deleteFrameworkMutation.mutate(frameworkId);

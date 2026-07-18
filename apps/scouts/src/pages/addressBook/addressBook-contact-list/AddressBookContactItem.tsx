@@ -92,8 +92,9 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
             label: m['addressBook.troopStatusNationalAdmin'](),
             icon: (
                 <GirlScoutsIcon
-                    className={`absolute top-[-5px] w-[25px] ${isDesktop ? 'left-[30px]' : 'left-[20px]'
-                        }`}
+                    className={`absolute top-[-5px] w-[25px] ${
+                        isDesktop ? 'left-[30px]' : 'left-[20px]'
+                    }`}
                 />
             ),
         },
@@ -140,10 +141,10 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         prev?.map((connection: any) =>
                             connection.profileId === profileId
                                 ? {
-                                    ...connection,
-                                    connectionStatus:
-                                        LCNProfileConnectionStatusEnum.enum.PENDING_REQUEST_SENT,
-                                }
+                                      ...connection,
+                                      connectionStatus:
+                                          LCNProfileConnectionStatusEnum.enum.PENDING_REQUEST_SENT,
+                                  }
                                 : connection
                         )
                     );
@@ -179,19 +180,22 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         prev?.map((connection: any) =>
                             connection.profileId === profileId
                                 ? {
-                                    ...connection,
-                                    connectionStatus:
-                                        LCNProfileConnectionStatusEnum.enum.NOT_CONNECTED,
-                                }
+                                      ...connection,
+                                      connectionStatus:
+                                          LCNProfileConnectionStatusEnum.enum.NOT_CONNECTED,
+                                  }
                                 : connection
                         )
                     );
                 },
                 onError: (error: any) => {
-                    presentToast(error?.message || m['addressBook.toasts.unableToCancelRequest'](), {
-                        type: ToastTypeEnum.Error,
-                        hasDismissButton: true,
-                    });
+                    presentToast(
+                        error?.message || m['addressBook.toasts.unableToCancelRequest'](),
+                        {
+                            type: ToastTypeEnum.Error,
+                            hasDismissButton: true,
+                        }
+                    );
                 },
             }
         );
@@ -211,10 +215,10 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         prev?.map((connection: any) =>
                             connection.profileId === profileId
                                 ? {
-                                    ...connection,
-                                    connectionStatus:
-                                        LCNProfileConnectionStatusEnum.enum.CONNECTED,
-                                }
+                                      ...connection,
+                                      connectionStatus:
+                                          LCNProfileConnectionStatusEnum.enum.CONNECTED,
+                                  }
                                 : connection
                         )
                     );
@@ -226,10 +230,13 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                     });
                 },
                 onError: (error: any) => {
-                    presentToast(error?.message || m['addressBook.toasts.unableToAcceptRequest'](), {
-                        type: ToastTypeEnum.Error,
-                        hasDismissButton: true,
-                    });
+                    presentToast(
+                        error?.message || m['addressBook.toasts.unableToAcceptRequest'](),
+                        {
+                            type: ToastTypeEnum.Error,
+                            hasDismissButton: true,
+                        }
+                    );
                 },
             }
         );
@@ -303,7 +310,11 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
         if (!showRequestButton) return null;
         switch (contact.connectionStatus) {
             case LCNProfileConnectionStatusEnum.enum.CONNECTED:
-                return <button className="text-emerald-600 font-bold text-sm">{m['addressBook.connected']()}</button>;
+                return (
+                    <button className="text-emerald-600 font-bold text-sm">
+                        {m['addressBook.connected']()}
+                    </button>
+                );
             case LCNProfileConnectionStatusEnum.enum.NOT_CONNECTED:
                 return (
                     <button
@@ -359,7 +370,10 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         }}
                         className="text-indigo-600 font-semibold text-sm font-notoSans"
                     >
-                        <span className="text-grayscale-800">{m['addressBook.pendingRequest']()}</span>{m['addressBook.separatorBullet']()}{' '}
+                        <span className="text-grayscale-800">
+                            {m['addressBook.pendingRequest']()}
+                        </span>
+                        {m['addressBook.separatorBullet']()}{' '}
                         {cancelLoading ? m['addressBook.loading']() : m['common.cancel']()}
                     </button>
                 );
@@ -421,11 +435,13 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                 )}
                 {highlightedCreds.length !== 0 && (
                     <p className="text-grayscale-600 font-notoSans text-[12px] font-semibold">
-                        {troopStatus.label}{' '}{m['addressBook.separatorBullet']()}{' '}{chosenHighlightedCred?.name}
+                        {troopStatus.label} {m['addressBook.separatorBullet']()}{' '}
+                        {chosenHighlightedCred?.name}
                     </p>
                 )}
                 <p className="text-grayscale-600 font-semibold font-notoSans text-[12px] line-clamp-2">
-                    {m['addressBook.profileIdPrefix']()}{contact.profileId}
+                    {m['addressBook.profileIdPrefix']()}
+                    {contact.profileId}
                 </p>
                 {renderActionButton()}
                 {showAcceptButton && (
@@ -453,7 +469,9 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         }}
                         className="text-emerald-600 font-semibold text-sm font-notoSans"
                     >
-                        {acceptLoading ? m['addressBook.loading']() : m['addressBook.acceptRequest']()}
+                        {acceptLoading
+                            ? m['addressBook.loading']()
+                            : m['addressBook.acceptRequest']()}
                     </button>
                 )}
                 {showUnblockButton && (
@@ -508,7 +526,9 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         }}
                         className="text-rose-600 font-bold text-base"
                     >
-                        {cancelLoading ? m['addressBook.loading']() : m['addressBook.cancelRequest']()}
+                        {cancelLoading
+                            ? m['addressBook.loading']()
+                            : m['addressBook.cancelRequest']()}
                     </button>
                 )}
             </div>

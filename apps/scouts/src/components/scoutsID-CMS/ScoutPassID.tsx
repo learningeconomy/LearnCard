@@ -47,7 +47,9 @@ const ScoutPassID: React.FC<{
                     )}
 
                     {showIssueDate && (
-                        <span className="font-notoSans font-[600] text-[12px]">{m['scoutsId.issuedDate']()}</span>
+                        <span className="font-notoSans font-[600] text-[12px]">
+                            {m['scoutsId.issuedDate']()}
+                        </span>
                     )}
                 </div>
             </div>

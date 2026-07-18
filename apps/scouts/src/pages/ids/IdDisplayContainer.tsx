@@ -270,7 +270,8 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                                 }}
                                 className="flex items-center justify-center bg-white rounded-full pl-[2.5px] pr-[10px] py-[4px] text-grayscale-800 text-base font-medium shadow-bottom"
                             >
-                                <RibbonAwardIcon className="ml-[5px] h-[23px] w-[23px] mr-1" /> {m['scoutsId.send']()}
+                                <RibbonAwardIcon className="ml-[5px] h-[23px] w-[23px] mr-1" />{' '}
+                                {m['scoutsId.send']()}
                             </button>
                         )}
                     </IonCol>

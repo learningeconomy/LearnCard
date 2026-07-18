@@ -154,9 +154,7 @@ const BoostCMSCategoryAndTypeSelector: React.FC<BoostCMSSelectorProps> = ({
                                 <TransP
                                     m={m['common.searchResults.noResultsFor']}
                                     values={{ query: search }}
-                                    components={[
-                                        <span className="text-black italic" key="q" />,
-                                    ]}
+                                    components={[<span className="text-black italic" key="q" />]}
                                 />
                             </p>
                             {!flags?.disableCmsCustomization && (

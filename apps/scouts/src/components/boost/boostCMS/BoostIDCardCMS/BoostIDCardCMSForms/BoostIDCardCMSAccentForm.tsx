@@ -54,7 +54,9 @@ const BoostIDCardAccentForm: React.FC<{
                     </button>
                 </div>
                 <HexColorPicker
-                    color={state?.appearance?.accentColor ? state?.appearance?.accentColor : '#4F46E5'}
+                    color={
+                        state?.appearance?.accentColor ? state?.appearance?.accentColor : '#4F46E5'
+                    }
                     onChange={handleColorChange}
                 />
             </div>

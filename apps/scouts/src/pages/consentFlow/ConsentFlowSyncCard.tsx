@@ -293,7 +293,9 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
             // Show generic unknown error modal for all other errors
             newModal(
                 <div className="w-full bg-white rounded-[16px] shadow-3xl p-5 text-center">
-                    <h3 className="text-xl font-semibold text-grayscale-900 mb-2">{m['consentFlow.unknownError']()}</h3>
+                    <h3 className="text-xl font-semibold text-grayscale-900 mb-2">
+                        {m['consentFlow.unknownError']()}
+                    </h3>
                     <p className="text-sm text-grayscale-700 mb-5">
                         {m['consentFlow.unknownErrorDesc']()}
                     </p>
@@ -399,7 +401,11 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                     >
                         {m[loading ? 'consentFlow.allowing' : 'consentFlow.allow']()}
                     </button>
-                    <IonLoading isOpen={isPending} message={m['consentFlow.consenting']()} mode="ios" />
+                    <IonLoading
+                        isOpen={isPending}
+                        message={m['consentFlow.consenting']()}
+                        mode="ios"
+                    />
                     <button
                         onClick={() => {
                             history.push('/');

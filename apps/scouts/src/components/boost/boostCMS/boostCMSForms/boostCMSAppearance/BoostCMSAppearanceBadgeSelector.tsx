@@ -2,15 +2,7 @@ import React from 'react';
 
 import * as m from '../../../../../paraglide/messages.js';
 
-import {
-    IonCol,
-    IonContent,
-    IonRow,
-    IonGrid,
-    IonToolbar,
-    IonHeader,
-    IonPage,
-} from '@ionic/react';
+import { IonCol, IonContent, IonRow, IonGrid, IonToolbar, IonHeader, IonPage } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import { BoostCMSState } from '../../../boost';
 

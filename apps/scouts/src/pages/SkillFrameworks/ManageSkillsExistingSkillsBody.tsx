@@ -133,7 +133,9 @@ const ManageSkillsExistingSkillsBody: React.FC<ManageSkillsExistingSkillsBodyPro
                     className="bg-grayscale-100 text-grayscale-900 pl-[20px] pr-[15px] py-[7px] rounded-[30px] flex gap-[10px] items-center justify-center text-[17px] font-[600] font-notoSans leading-[24px] tracking-[0.25px] disabled:opacity-70"
                 >
                     <FileExportIcon className="w-[25px] h-[25px]" color="currentColor" />
-                    {isExporting ? m['skillFrameworks.exporting']() : m['skillFrameworks.exportFw']()}
+                    {isExporting
+                        ? m['skillFrameworks.exporting']()
+                        : m['skillFrameworks.exportFw']()}
                 </button>
             </div>
 

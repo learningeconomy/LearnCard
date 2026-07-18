@@ -233,7 +233,9 @@ const QrCodeUserCard: React.FC<{
                         bgColor="transparent"
                     />
                 </div>
-                <p className="font-rubik text-lg text-gray-800 mt-4">{m['scanner.scanConnect']()}</p>
+                <p className="font-rubik text-lg text-gray-800 mt-4">
+                    {m['scanner.scanConnect']()}
+                </p>
             </div>
 
             <div className="w-full flex items-center justify-center">

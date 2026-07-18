@@ -71,17 +71,17 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
     showCloseButton,
     showBoostButton,
     showRequestButton,
-    handleConnectionRequest = () => { },
+    handleConnectionRequest = () => {},
     showDeleteButton,
-    handleRemoveConnection = () => { },
+    handleRemoveConnection = () => {},
     showAcceptButton,
-    handleAcceptConnectionRequest = () => { },
+    handleAcceptConnectionRequest = () => {},
     showCancelButton,
-    handleCancelConnectionRequest = () => { },
+    handleCancelConnectionRequest = () => {},
     showBlockButton,
-    handleBlockUser = () => { },
+    handleBlockUser = () => {},
     showUnblockButton,
-    handleUnblockUser = () => { },
+    handleUnblockUser = () => {},
     history,
 }) => {
     const { presentToast } = useToast();
@@ -154,13 +154,10 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                     className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-solid border-b-[2px] last:border-b-0"
                     onClick={e => {
                         e.stopPropagation();
-                        showConfirmationAlert(
-                            m['addressBook.confirmConnection'](),
-                            async () => {
-                                handleConnectionRequest?.(e, contact?.profileId);
-                                handleCloseModal();
-                            }
-                        );
+                        showConfirmationAlert(m['addressBook.confirmConnection'](), async () => {
+                            handleConnectionRequest?.(e, contact?.profileId);
+                            handleCloseModal();
+                        });
                     }}
                 >
                     <p className="text-grayscale-900">{m['addressBook.requestConnection']()}</p>
@@ -322,7 +319,9 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                 );
                             }}
                         >
-                            <p className="text-grayscale-900">{m['addressBook.unblockContact']()}</p>
+                            <p className="text-grayscale-900">
+                                {m['addressBook.unblockContact']()}
+                            </p>
                             <Block className="ml-[5px] h-[30px] w-[30px] text-grayscale-700" />
                         </button>
                     )}

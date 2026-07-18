@@ -142,7 +142,8 @@ export const NotificationsSubHeader: React.FC<{
                         onClick={handleMarkAllRead}
                         className="text-[14px] text-grayscale-800 flex items-center justify-center font-semibold min-w-[140px] rounded-[36px] border-solid border-[1px] border-grayscale-200 py-[7px] px-[20px]"
                     >
-                        {m['notifications.archiveAll']()} <X className="ml-[5px] w-[15px] h-[15px]" />
+                        {m['notifications.archiveAll']()}{' '}
+                        <X className="ml-[5px] w-[15px] h-[15px]" />
                     </button>
                 )}
             </IonGrid>
@@ -171,7 +172,11 @@ export const NotificationsSubHeader: React.FC<{
                                     : ''
                             }`}
                         >
-                            {!isLoading ? m['notifications.archivedWithCount']({ count: numberArchived ?? 0 }) : m['notifications.archived']()}
+                            {!isLoading
+                                ? m['notifications.archivedWithCount']({
+                                      count: numberArchived ?? 0,
+                                  })
+                                : m['notifications.archived']()}
                         </button>
                     </IonCol>
                 </IonRow>

@@ -8,11 +8,7 @@ import SkillsAdminPanelFramework from './SkillsAdminPanelFramework';
 import SelectFrameworkToManageModal from '../SkillFrameworks/SelectFrameworkToManageModal';
 import { IonSpinner } from '@ionic/react';
 
-import {
-    useModal,
-    ModalTypes,
-    useListMySkillFrameworks,
-} from 'learn-card-base';
+import { useModal, ModalTypes, useListMySkillFrameworks } from 'learn-card-base';
 import { SetState } from 'packages/shared-types/dist';
 import * as m from '../../paraglide/messages.js';
 import { SkillFramework } from '../../components/boost/boost';
@@ -56,7 +52,9 @@ const SkillsAdminPanel: React.FC<SkillsAdminPanelProps> = ({ setFrameworkToBrows
             {!isLoadingFrameworks && (
                 <>
                     <h2 className="text-left text-grayscale-900 text-[20px] font-poppins">
-                        {frameworks?.length === 1 ? m['skills.compFwOne']() : m['skills.compFwOther']({ count: frameworks?.length ?? 0 })}
+                        {frameworks?.length === 1
+                            ? m['skills.compFwOne']()
+                            : m['skills.compFwOther']({ count: frameworks?.length ?? 0 })}
                     </h2>
 
                     <div className="flex flex-col gap-[10px]">

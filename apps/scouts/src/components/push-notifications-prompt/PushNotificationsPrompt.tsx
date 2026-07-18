@@ -72,7 +72,11 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                 <IonCol className="flex items-center justify-around w-full max-w-[600px]">
                     <div className="relative flex flex-col items-center justify-center p-4 rounded-3xl flex-1">
                         <div className="absolute top-0 left-[%50] w-[70px] h-[70px] bg-rose-100 rounded-full" />
-                        <img src={NotificationImage} alt={m['notifications.notificationIcon']()} className="z-50" />
+                        <img
+                            src={NotificationImage}
+                            alt={m['notifications.notificationIcon']()}
+                            className="z-50"
+                        />
                     </div>
                 </IonCol>
             </IonRow>

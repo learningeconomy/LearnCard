@@ -11,7 +11,9 @@ const ClaimBoostLoading: React.FC = () => {
             <IonContent className="">
                 <IonCol className="flex m-auto items-center flex-wrap w-full h-full">
                     <div className="flex flex-col w-full h-full items-center justify-center">
-                    <h3 className="text-black text-2xl font-medium">{m['claimBoost.claiming']()}</h3>
+                        <h3 className="text-black text-2xl font-medium">
+                            {m['claimBoost.claiming']()}
+                        </h3>
                         <div className="max-w-[150px]">
                             <Lottie
                                 loop

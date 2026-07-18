@@ -57,10 +57,13 @@ const AddressBookConnectionRequests: React.FC<{
                     },
                     onError(error: any, variables, context) {
                         refetch();
-                        presentToast(error?.message || m['addressBook.toasts.unableToBlockUser'](), {
-                            type: ToastTypeEnum.Error,
-                            hasDismissButton: true,
-                        });
+                        presentToast(
+                            error?.message || m['addressBook.toasts.unableToBlockUser'](),
+                            {
+                                type: ToastTypeEnum.Error,
+                                hasDismissButton: true,
+                            }
+                        );
                     },
                 }
             );

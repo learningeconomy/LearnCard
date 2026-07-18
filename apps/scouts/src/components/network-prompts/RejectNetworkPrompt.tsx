@@ -19,7 +19,10 @@ export const RejectNetworkPrompt: React.FC<{ handleCloseModal: () => void }> = (
 
     const openNetworkModal = () => {
         newModal(
-            <JoinNetworkModalWrapper handleCloseModal={closeModal} showNotificationsModal={false} />,
+            <JoinNetworkModalWrapper
+                handleCloseModal={closeModal}
+                showNotificationsModal={false}
+            />,
             {},
             { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
         );
@@ -32,7 +35,9 @@ export const RejectNetworkPrompt: React.FC<{ handleCloseModal: () => void }> = (
                     <h6 className="tracking-[12px] text-base font-bold text-black">SCOUTPASS</h6>
                 </IonCol>
                 <IonCol className="w-full flex items-center justify-center mt-8">
-                    <h6 className="text-center text-black text-2xl">{m['networkPrompts.reject.noProblem']()}</h6>
+                    <h6 className="text-center text-black text-2xl">
+                        {m['networkPrompts.reject.noProblem']()}
+                    </h6>
                 </IonCol>
                 <IonCol className="w-full flex items-center justify-center mt-8">
                     <h6 className="text-center text-black text-2xl">
@@ -46,7 +51,9 @@ export const RejectNetworkPrompt: React.FC<{ handleCloseModal: () => void }> = (
                     <p className="text-center text-sm font-semibold px-[16px] text-grayscale-600">
                         <TransP
                             m={m['networkPrompts.reject.credAccess']}
-                            components={[<span key="scoutpass-num" className="text-indigo-500 font-bold" />]}
+                            components={[
+                                <span key="scoutpass-num" className="text-indigo-500 font-bold" />,
+                            ]}
                         />
                     </p>
                 </IonCol>
@@ -89,7 +96,9 @@ export const RejectNetworkPrompt: React.FC<{ handleCloseModal: () => void }> = (
                     <button onClick={openPP} className="text-indigo-500 font-bold text-sm">
                         {m['login.privacyPolicy']()}
                     </button>
-                    <span className="text-indigo-500 font-bold text-sm">&nbsp;{m['networkPrompts.separator']()}&nbsp;</span>
+                    <span className="text-indigo-500 font-bold text-sm">
+                        &nbsp;{m['networkPrompts.separator']()}&nbsp;
+                    </span>
                     <button onClick={openToS} className="text-indigo-500 font-bold text-sm">
                         {m['login.termsOfService']()}
                     </button>

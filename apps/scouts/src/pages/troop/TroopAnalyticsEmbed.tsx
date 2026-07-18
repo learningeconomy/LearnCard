@@ -144,7 +144,9 @@ const TroopAnalyticsEmbed: React.FC<TroopAnalyticsEmbedProps> = ({
             )}
 
             {!error && !iframeUrl && (
-                <p className="text-center flex-grow flex items-center justify-center">{m['common.loading']()}</p>
+                <p className="text-center flex-grow flex items-center justify-center">
+                    {m['common.loading']()}
+                </p>
             )}
 
             {!error && iframeUrl && (

@@ -42,7 +42,9 @@ const BoostIDCardCMSMembersForm: React.FC<{
             {showAbout && (
                 <>
                     <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
-                        <p className="text-grayscale-900 font-medium w-10/12">{m['boostCMS.publicMembers']()}</p>
+                        <p className="text-grayscale-900 font-medium w-10/12">
+                            {m['boostCMS.publicMembers']()}
+                        </p>
                         <IonToggle
                             mode="ios"
                             color="emerald-700"
@@ -56,7 +58,9 @@ const BoostIDCardCMSMembersForm: React.FC<{
                         />
                     </div>
                     <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
-                        <p className="text-grayscale-900 font-medium w-10/12">{m['boostCMS.autoConnect']()}</p>
+                        <p className="text-grayscale-900 font-medium w-10/12">
+                            {m['boostCMS.autoConnect']()}
+                        </p>
                         <IonToggle
                             mode="ios"
                             color="emerald-700"

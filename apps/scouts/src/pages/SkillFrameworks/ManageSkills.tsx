@@ -448,7 +448,10 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
             return;
         }
 
-        const confirmationText = type === 'back' ? m['skillFrameworks.yesStartOver']() : m['skillFrameworks.yesCancel']();
+        const confirmationText =
+            type === 'back'
+                ? m['skillFrameworks.yesStartOver']()
+                : m['skillFrameworks.yesCancel']();
         newModal(
             <ManageSkillsCancelUpdateModal
                 confirmationText={confirmationText}
@@ -496,7 +499,9 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                         <Pencil className="w-[40px] h-[40px] text-grayscale-900" version={3} />
                     )}
                     <h5 className="text-[22px] font-[600] text-grayscale-900 font-poppins leading-[24px]">
-                        {isManageJsonVersion ? m['skillFrameworks.manageJson']() : m['skillFrameworks.mgComps']()}
+                        {isManageJsonVersion
+                            ? m['skillFrameworks.manageJson']()
+                            : m['skillFrameworks.mgComps']()}
                     </h5>
                     {isManageJsonVersion && (
                         <button

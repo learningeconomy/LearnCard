@@ -109,7 +109,9 @@ const ManageSkillsJsonUploadedBody: React.FC<ManageSkillsJsonUploadedBodyProps> 
                                             isPrematureSave ? 'text-orange-700' : 'text-indigo-500'
                                         }`}
                                     >
-                                        <p className="font-poppins">{m['skillFrameworks.willImport']()}</p>
+                                        <p className="font-poppins">
+                                            {m['skillFrameworks.willImport']()}
+                                        </p>
 
                                         <ul className="list-disc list-inside pl-[8px]">
                                             <li className="font-poppins">
@@ -118,7 +120,9 @@ const ManageSkillsJsonUploadedBody: React.FC<ManageSkillsJsonUploadedBodyProps> 
                                                 </span>{' '}
                                                 {numberOfTiers === 1
                                                     ? m['skillFrameworks.tierOne']()
-                                                    : m['skillFrameworks.tierOther']({ count: numberOfTiers })}
+                                                    : m['skillFrameworks.tierOther']({
+                                                          count: numberOfTiers,
+                                                      })}
                                             </li>
                                             <li className="font-poppins">
                                                 <span className="font-bold font-poppins">
@@ -146,7 +150,9 @@ const ManageSkillsJsonUploadedBody: React.FC<ManageSkillsJsonUploadedBodyProps> 
                                     </p>
 
                                     <div className="text-emerald-501 text-[14px]">
-                                        <p className="font-poppins">{m['skillFrameworks.willImport']()}</p>
+                                        <p className="font-poppins">
+                                            {m['skillFrameworks.willImport']()}
+                                        </p>
 
                                         <ul className="list-disc list-inside pl-[8px]">
                                             <li className="font-poppins">
@@ -155,7 +161,9 @@ const ManageSkillsJsonUploadedBody: React.FC<ManageSkillsJsonUploadedBodyProps> 
                                                 </span>{' '}
                                                 {numberOfTiers === 1
                                                     ? m['skillFrameworks.tierOne']()
-                                                    : m['skillFrameworks.tierOther']({ count: numberOfTiers })}
+                                                    : m['skillFrameworks.tierOther']({
+                                                          count: numberOfTiers,
+                                                      })}
                                             </li>
                                             <li className="font-poppins">
                                                 <span className="font-bold font-poppins">
@@ -217,7 +225,9 @@ const ManageSkillsJsonUploadedBody: React.FC<ManageSkillsJsonUploadedBodyProps> 
                                         <ManageSkillsConfirmationModal
                                             mainText={m['skillFrameworks.replaceJsonQ']()}
                                             secondaryText={m['skillFrameworks.replaceJsonDesc']()}
-                                            confirmationButtonText={m['skillFrameworks.yesReplaceJson']()}
+                                            confirmationButtonText={m[
+                                                'skillFrameworks.yesReplaceJson'
+                                            ]()}
                                             onConfirm={triggerFileInput}
                                         />,
                                         {

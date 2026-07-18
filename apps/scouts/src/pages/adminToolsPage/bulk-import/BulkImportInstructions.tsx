@@ -13,7 +13,7 @@ const BulkBoostImportInstructions: React.FC = () => {
                             className="text-blue-700 underline"
                             target="_blank"
                             href="https://docs.google.com/spreadsheets/d/1CQNRq3c3mMRA6FQWC3iw8X27OxD98E7LjtyI5dgv0jo/copy"
-                        />
+                        />,
                     ]}
                 />
                 <ul className="ml-8 mt-2 list-disc">

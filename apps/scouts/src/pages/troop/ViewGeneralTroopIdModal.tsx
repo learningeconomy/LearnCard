@@ -75,7 +75,12 @@ const ViewGeneralTroopIdModal: React.FC<ViewGeneralTroopIdModalProps> = ({
                     <ViewTroopIdTemplate
                         idThumb={credential?.boostID?.idThumbnail}
                         idMainText={`${roleName}`}
-                        idSubText={m['troops.membersList.issuedSub']({ count: recipientCount ?? 0, person: m[recipientCount === 1 ? 'boost.person_one' : 'boost.person_other']() })}
+                        idSubText={m['troops.membersList.issuedSub']({
+                            count: recipientCount ?? 0,
+                            person: m[
+                                recipientCount === 1 ? 'boost.person_one' : 'boost.person_other'
+                            ](),
+                        })}
                         idExtraInfo={
                             <div className="flex">
                                 {recipients.slice(0, 5)?.map((r, index) => (

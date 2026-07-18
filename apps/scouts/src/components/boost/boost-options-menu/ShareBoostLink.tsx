@@ -92,15 +92,27 @@ const ShareBoostLink: React.FC<{
     const { data: myProfile, isLoading: myProfileLoading } = useGetProfile();
 
     if (issuerProfileId) {
-        issuerName = issuerProfile ? issuerProfile?.displayName : isIssuerLoading ? m['common.loading']() : m['common.unknown']();
+        issuerName = issuerProfile
+            ? issuerProfile?.displayName
+            : isIssuerLoading
+            ? m['common.loading']()
+            : m['common.unknown']();
     } else {
         issuerName = getIssuerNameNonBoost(cred);
     }
 
     if (issueeProfileId) {
-        issueeName = issueeProfile ? issueeProfile?.displayName : isIssueeLoading ? m['common.loading']() : m['common.unknown']();
+        issueeName = issueeProfile
+            ? issueeProfile?.displayName
+            : isIssueeLoading
+            ? m['common.loading']()
+            : m['common.unknown']();
     } else {
-        issueeName = myProfile ? myProfile?.displayName : myProfileLoading ? m['common.loading']() : m['common.unknown']();
+        issueeName = myProfile
+            ? myProfile?.displayName
+            : myProfileLoading
+            ? m['common.loading']()
+            : m['common.unknown']();
     }
 
     if (issueeProfileId || issueeDid?.includes('did:web:scoutnetwork.org')) {
@@ -278,10 +290,15 @@ const ShareBoostLink: React.FC<{
                             {title}
                         </p>
                         <p className="w-full text-grayscale-900 font-normal text-sm px-4 text-center">
-                            {m['boost.issuedToName']({ name: truncateWithEllipsis(issueeName ?? '', 25) })}
+                            {m['boost.issuedToName']({
+                                name: truncateWithEllipsis(issueeName ?? '', 25),
+                            })}
                         </p>
                         <p className="w-full text-grayscale-900 font-normal text-sm px-4 text-center">
-                            {m['boost.byIssuer']({ name: truncateWithEllipsis(issuerName ?? '', 25), date: issueDate ?? '' })}
+                            {m['boost.byIssuer']({
+                                name: truncateWithEllipsis(issuerName ?? '', 25),
+                                date: issueDate ?? '',
+                            })}
                         </p>
                     </div>
 

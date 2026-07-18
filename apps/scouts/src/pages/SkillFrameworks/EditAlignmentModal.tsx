@@ -290,11 +290,17 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
 
                     {isTier ? (
                         <p className="text-center font-poppins text-[14px] text-grayscale-700 tracking-[-0.25px]">
-                            <TransP m={m['skillFrameworks.tierDesc']} components={[<span key="b" className="font-[600]" />]} />
+                            <TransP
+                                m={m['skillFrameworks.tierDesc']}
+                                components={[<span key="b" className="font-[600]" />]}
+                            />
                         </p>
                     ) : (
                         <p className="text-center font-poppins text-[14px] text-grayscale-700 tracking-[-0.25px]">
-                            <TransP m={m['skillFrameworks.compDesc']} components={[<span key="b" className="font-[600]" />]} />
+                            <TransP
+                                m={m['skillFrameworks.compDesc']}
+                                components={[<span key="b" className="font-[600]" />]}
+                            />
                         </p>
                     )}
                 </div>

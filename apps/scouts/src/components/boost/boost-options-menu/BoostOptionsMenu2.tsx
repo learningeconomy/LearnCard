@@ -107,7 +107,8 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
                     onClick={selfBoostConfirmationAlert}
                     className="flex items-center font-medium justify-center bg-sp-purple-base rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg"
                 >
-                    <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" /> {m['common.delete']()}
+                    <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                    {m['common.delete']()}
                 </button>
             </div>
 
@@ -119,7 +120,8 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
                         }}
                         className="flex items-center font-medium justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg"
                     >
-                        <LinkChain className="ml-[5px] h-[30px] w-[30px] mr-2" /> {m['common.share']()}
+                        <LinkChain className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                        {m['common.share']()}
                     </button>
                 </div>
             )}
@@ -129,7 +131,8 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
                     onClick={presentViewJsonModal}
                     className="flex items-center font-medium justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg"
                 >
-                    <CopyStack className="ml-[5px] h-[30px] w-[30px] mr-2" /> {m['boost.viewJson']()}
+                    <CopyStack className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                    {m['boost.viewJson']()}
                 </button>
             </div>
         </section>

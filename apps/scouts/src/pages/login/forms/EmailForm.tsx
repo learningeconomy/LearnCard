@@ -250,12 +250,16 @@ const EmailForm: React.FC = () => {
         setPassword('');
     };
 
-    const resendCodeButtonText = isResendCodeLoading ? m['common.sendingCode']() : m['common.resendCode']();
+    const resendCodeButtonText = isResendCodeLoading
+        ? m['common.sendingCode']()
+        : m['common.resendCode']();
 
     let disabled = isLoading;
     if (currentStep === EmailFormStepsEnum.email) {
         formTitle = (
-            <p className="font-medium text-sm text-grayscale-600 uppercase">{m['login.loginWithEmail']()}</p>
+            <p className="font-medium text-sm text-grayscale-600 uppercase">
+                {m['login.loginWithEmail']()}
+            </p>
         );
         const emailError = errors.email?.[0];
         activeStep = (
@@ -282,7 +286,13 @@ const EmailForm: React.FC = () => {
             <p className={`w-full text-grayscale-800 text-lg text-center`}>
                 <TransP
                     m={m['common.enterVerificationCode']}
-                    components={[<span className="text-sp-purple-base underline font-bold" onClick={resetForm} key="reset" />]}
+                    components={[
+                        <span
+                            className="text-sp-purple-base underline font-bold"
+                            onClick={resetForm}
+                            key="reset"
+                        />,
+                    ]}
                 />
             </p>
         );
@@ -324,7 +334,9 @@ const EmailForm: React.FC = () => {
                     type="password"
                 />
                 <IonCol size="12" className="flex items-center justify-end mt-3">
-                    <p className="mr-3 text-gray-700 font-medium text-lg">{m['common.staySignedIn']()}</p>{' '}
+                    <p className="mr-3 text-gray-700 font-medium text-lg">
+                        {m['common.staySignedIn']()}
+                    </p>{' '}
                     <IonToggle />
                 </IonCol>
             </IonCol>
@@ -347,7 +359,13 @@ const EmailForm: React.FC = () => {
                     <p className="mr-3 text-gray-700 font-medium text-lg">
                         <TransP
                             m={m['common.agreeToTerms']}
-                            components={[<IonRouterLink href="#" className="font-semibold login-terms-span" key="terms" />]}
+                            components={[
+                                <IonRouterLink
+                                    href="#"
+                                    className="font-semibold login-terms-span"
+                                    key="terms"
+                                />,
+                            ]}
                         />
                     </p>{' '}
                     <IonCheckbox />

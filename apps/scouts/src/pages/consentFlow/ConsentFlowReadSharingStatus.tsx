@@ -9,7 +9,11 @@ import * as m from '../../paraglide/messages.js';
 
 const ConsentFlowReadSharingStatus: React.FC<ConsentFlowReadSharingStatusProps> = ({ term }) => {
     if (term.sharing === false || (!term.shareAll && (term.shared?.length ?? 0) === 0)) {
-        return <output className="text-grayscale-600 text-sm font-semibold">{m['consentFlow.off']()}</output>;
+        return (
+            <output className="text-grayscale-600 text-sm font-semibold">
+                {m['consentFlow.off']()}
+            </output>
+        );
     }
 
     return (

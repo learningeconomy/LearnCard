@@ -171,7 +171,9 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
                             <span className="flex items-center gap-[2px]">
                                 <PuzzlePiece version="filled" />
                                 {m['skillFrameworks.skillsCount']({
-                                    count: isTopLevel ? totalCompetencies : competenciesInCurrentNode,
+                                    count: isTopLevel
+                                        ? totalCompetencies
+                                        : competenciesInCurrentNode,
                                 })}
                             </span>
                         </span>

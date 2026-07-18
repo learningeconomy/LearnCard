@@ -115,7 +115,8 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
                         className="flex items-center justify-center bg-sp-purple-base rounded-full px-[18px] py-[12px] font-medium text-white text-2xl w-full shadow-lg disabled:opacity-[50%]"
                         disabled={localState?.issueTo.length === 0}
                     >
-                        <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" /> {m['boost.send']()}
+                        <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                        {m['boost.send']()}
                     </button>
                     {boostStatus === 'LIVE' && (
                         <IonCol className="w-full flex items-center justify-center mt-[40px] p-0">
@@ -132,7 +133,8 @@ const ShortBoostSomeoneScreen: React.FC<ShortBoostSomeoneScreenProps> = ({
                                 }}
                                 className="flex items-center font-medium justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg normal tracking-wide"
                             >
-                                <LinkChain className="ml-[5px] h-[30px] w-[30px] mr-2" /> {m['boost.generateLink']()}
+                                <LinkChain className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                                {m['boost.generateLink']()}
                             </button>
                         </IonCol>
                     )}

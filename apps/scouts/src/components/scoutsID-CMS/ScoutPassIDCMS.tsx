@@ -110,7 +110,9 @@ export const ScoutPassIDCMS: React.FC<{
                 <div className="bg-white rounded-b-[20px] shadow-soft-bottom">
                     <div className="ion-padding ">
                         <div className="w-full flex items-center justify-end border-b-solid border-b-grayscale-100 border-b-[2px] pb-2">
-                            <p className="font-poppins text-grayscale-600 font-semibold">{m['scoutsId.display']()}</p>
+                            <p className="font-poppins text-grayscale-600 font-semibold">
+                                {m['scoutsId.display']()}
+                            </p>
                         </div>
 
                         <div className="w-full flex items-end justify-between mb-2 mt-4">

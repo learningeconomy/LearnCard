@@ -76,7 +76,12 @@ export const SharedBoostVerificationItem: React.FC<{
             </p>
             <p className="flex items-center justify-between text-sm mb-1 capitalize text-grayscale-900">
                 {check}
-                {message && <span className="font-semibold text-wrap">{':\u00A0'}{message}</span>}
+                {message && (
+                    <span className="font-semibold text-wrap">
+                        {':\u00A0'}
+                        {message}
+                    </span>
+                )}
             </p>
         </div>
     );

@@ -83,12 +83,12 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
 
     const { data, isLoading } = useGetResolvedCredential(notification?.data?.vcUris?.[0]);
     const { mutate, isLoading: acceptCredentialLoading } = useAcceptCredentialMutation();
-    const {
-        mutate: updateNotification,
-    } = useUpdateNotification();
+    const { mutate: updateNotification } = useUpdateNotification();
     const boostVc = data;
     const unwrappedCred = data && unwrapBoostCredential(boostVc);
-    const credCategory = boostVc && (getDefaultCategoryForCredential(unwrappedCred as any) as CredentialCategoryEnum);
+    const credCategory =
+        boostVc &&
+        (getDefaultCategoryForCredential(unwrappedCred as any) as CredentialCategoryEnum);
     const credImgUrl = boostVc && getImageUrlFromCredential(unwrappedCred as any);
     const notificationCategoryFromCredCategory =
         credCategory && CATEGORY_TO_NOTIFICATION_ENUM[credCategory];
@@ -103,12 +103,8 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
         });
     };
 
-    const {
-        textStyles,
-        claimedButtonStyles,
-        unclaimedButtonStyles,
-        typeText,
-    } = NotificationTypeStyles[notificationCategoryFromCredCategory ?? 'loading'];
+    const { textStyles, claimedButtonStyles, unclaimedButtonStyles, typeText } =
+        NotificationTypeStyles[notificationCategoryFromCredCategory ?? 'loading'];
 
     const claimButtonStyles = isClaimed ? claimedButtonStyles : unclaimedButtonStyles;
 
@@ -294,7 +290,8 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                                 className="text-grayscale-600 normal-case font-normal text-[12px] notification-card-type-issue-date"
                                 data-testid="notification-cred-issue-date"
                             >
-                                {'• '}{issueDate}
+                                {'• '}
+                                {issueDate}
                             </span>
                         )}
                     </p>

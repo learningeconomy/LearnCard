@@ -73,7 +73,9 @@ export const BoostFrameworkSkillSelector: React.FC<{
     return (
         <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
             <IonCol size="12" className="w-full bg-white flex items-center justify-between">
-                <h1 className="text-black text-xl p-0 m-0 font-notoSans">{m['boostCMS.skills']()}</h1>
+                <h1 className="text-black text-xl p-0 m-0 font-notoSans">
+                    {m['boostCMS.skills']()}
+                </h1>
                 <button
                     onClick={() => {
                         handleSelectSkills();

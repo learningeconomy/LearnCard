@@ -73,7 +73,9 @@ const AddressBookQRCode: React.FC<{
             <ModalLayout handleOnClick={handleCloseModal} allowScroll>
                 <div className="flex w-full flex-col items-center justify-center">
                     <div className="flex flex-col w-full items-center justify-center">
-                        <h6 className={`m-0 p-0 text-2xl font-medium font-rubik`}>{m['addressBook.addContact']()}</h6>
+                        <h6 className={`m-0 p-0 text-2xl font-medium font-rubik`}>
+                            {m['addressBook.addContact']()}
+                        </h6>
                         <p className="m-0 p-0">{m['addressBook.scanCodeDesc']()}</p>
                     </div>
                 </div>

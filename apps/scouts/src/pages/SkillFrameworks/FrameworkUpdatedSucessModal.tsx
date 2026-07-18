@@ -61,7 +61,9 @@ const FrameworkUpdatedSucessModal: React.FC<FrameworkUpdatedSucessModalProps> = 
                                     <strong className="font-[600] font-poppins">
                                         {skillsCreated === 1
                                             ? m['skillFrameworks.skillOne']()
-                                            : m['skillFrameworks.skillOther']({ count: skillsCreated })}
+                                            : m['skillFrameworks.skillOther']({
+                                                  count: skillsCreated,
+                                              })}
                                     </strong>
                                     {tiersCreated > 0 && m['skillFrameworks.andWord']()}
                                 </>
@@ -73,7 +75,9 @@ const FrameworkUpdatedSucessModal: React.FC<FrameworkUpdatedSucessModalProps> = 
                                         : m['skillFrameworks.tierOther']({ count: tiersCreated })}
                                 </strong>
                             )}{' '}
-                            {skillsCreated + tiersCreated === 1 ? m['skillFrameworks.hasAdded']() : m['skillFrameworks.haveAdded']()}
+                            {skillsCreated + tiersCreated === 1
+                                ? m['skillFrameworks.hasAdded']()
+                                : m['skillFrameworks.haveAdded']()}
                         </p>
                     )}
                     {(skillsUpdated > 0 || tiersUpdated > 0) && (
@@ -83,7 +87,9 @@ const FrameworkUpdatedSucessModal: React.FC<FrameworkUpdatedSucessModalProps> = 
                                     <strong className="font-[600] font-poppins">
                                         {skillsUpdated === 1
                                             ? m['skillFrameworks.skillOne']()
-                                            : m['skillFrameworks.skillOther']({ count: skillsUpdated })}
+                                            : m['skillFrameworks.skillOther']({
+                                                  count: skillsUpdated,
+                                              })}
                                     </strong>
                                     {tiersUpdated > 0 && m['skillFrameworks.andWord']()}
                                 </>
@@ -95,7 +101,9 @@ const FrameworkUpdatedSucessModal: React.FC<FrameworkUpdatedSucessModalProps> = 
                                         : m['skillFrameworks.tierOther']({ count: tiersUpdated })}
                                 </strong>
                             )}{' '}
-                            {skillsUpdated + tiersUpdated === 1 ? m['skillFrameworks.hasUpdated']() : m['skillFrameworks.haveUpdated']()}
+                            {skillsUpdated + tiersUpdated === 1
+                                ? m['skillFrameworks.hasUpdated']()
+                                : m['skillFrameworks.haveUpdated']()}
                         </p>
                     )}
                     {(skillsDeleted > 0 || tiersDeleted > 0) && (
@@ -105,7 +113,9 @@ const FrameworkUpdatedSucessModal: React.FC<FrameworkUpdatedSucessModalProps> = 
                                     <strong className="font-[600] font-poppins">
                                         {skillsDeleted === 1
                                             ? m['skillFrameworks.skillOne']()
-                                            : m['skillFrameworks.skillOther']({ count: skillsDeleted })}
+                                            : m['skillFrameworks.skillOther']({
+                                                  count: skillsDeleted,
+                                              })}
                                     </strong>
                                     {tiersDeleted > 0 && m['skillFrameworks.andWord']()}
                                 </>
@@ -117,7 +127,9 @@ const FrameworkUpdatedSucessModal: React.FC<FrameworkUpdatedSucessModalProps> = 
                                         : m['skillFrameworks.tierOther']({ count: tiersDeleted })}
                                 </strong>
                             )}{' '}
-                            {skillsDeleted + tiersDeleted === 1 ? m['skillFrameworks.hasRemoved']() : m['skillFrameworks.haveRemoved']()}
+                            {skillsDeleted + tiersDeleted === 1
+                                ? m['skillFrameworks.hasRemoved']()
+                                : m['skillFrameworks.haveRemoved']()}
                         </p>
                     )}
                 </div>

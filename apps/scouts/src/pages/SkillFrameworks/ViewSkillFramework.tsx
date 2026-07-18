@@ -202,7 +202,9 @@ const ViewSkillFramework: React.FC<ViewSkillFrameworkProps> = ({ framework }) =>
         <div className="h-full relative bg-grayscale-100">
             <section className="h-full bg-grayscale-100 pt-[30px] px-[20px] pb-[200px] overflow-y-auto z-0">
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-[18px] font-semibold text-grayscale-900">{m['skillFrameworks.skills']()}</h2>
+                    <h2 className="text-[18px] font-semibold text-grayscale-900">
+                        {m['skillFrameworks.skills']()}
+                    </h2>
                     <div className="inline-flex rounded-full bg-white p-1 shadow-button-bottom border border-grayscale-200">
                         <button
                             className={`px-3 py-1 rounded-full text-sm font-medium ${

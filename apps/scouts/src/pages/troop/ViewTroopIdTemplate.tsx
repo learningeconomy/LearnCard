@@ -147,7 +147,9 @@ const ViewTroopIdTemplate: React.FC<ViewTroopIdTemplateProps> = ({
                     <div className="flex flex-col items-center gap-[7px]">
                         <div className="flex flex-col items-center text-grayscale-900">
                             <span className="font-notoSans text-[17px] text-center">
-                                {m['troops.template.issuedTo']({ name: idMainText ?? m['common.unknown']() })}
+                                {m['troops.template.issuedTo']({
+                                    name: idMainText ?? m['common.unknown'](),
+                                })}
                                 <br />
                                 {m['troops.template.by']({ issuer: credential?.name })}
                             </span>
@@ -182,8 +184,12 @@ const ViewTroopIdTemplate: React.FC<ViewTroopIdTemplateProps> = ({
                                     {isAlreadyClaimed && m['troops.template.joined']()}
                                     {!isAlreadyClaimed && (
                                         <>
-                                            {isClaiming ? m['troops.template.joining']() + ' ' : m['troops.template.joinBtn']() + ' '}
-                                            {!isGlobal && !isNational && m['troops.template.joinTroop']()}
+                                            {isClaiming
+                                                ? m['troops.template.joining']() + ' '
+                                                : m['troops.template.joinBtn']() + ' '}
+                                            {!isGlobal &&
+                                                !isNational &&
+                                                m['troops.template.joinTroop']()}
                                         </>
                                     )}
                                 </button>

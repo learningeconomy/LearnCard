@@ -111,7 +111,13 @@ export const BoostPackOptionsModal: React.FC<{
                         <p className="text-grayscale-700">
                             <TransP
                                 m={m['boost.noBoostPackFound']}
-                                values={{ type: category === BoostCategoryOptionsEnum.socialBadge ? 'Boost' : 'Badge', search }}
+                                values={{
+                                    type:
+                                        category === BoostCategoryOptionsEnum.socialBadge
+                                            ? 'Boost'
+                                            : 'Badge',
+                                    search,
+                                }}
                                 components={[<em key="em" className="font-medium not-italic" />]}
                             />
                         </p>

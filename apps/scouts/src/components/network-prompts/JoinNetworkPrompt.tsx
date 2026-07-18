@@ -178,7 +178,8 @@ export const JoinNetworkPrompt: React.FC<{
         }
     };
 
-    const networkPromptTitle = step === 1 ? m['networkPrompts.join.title']() : m['networkPrompts.join.createUid']();
+    const networkPromptTitle =
+        step === 1 ? m['networkPrompts.join.title']() : m['networkPrompts.join.createUid']();
 
     return (
         <>
@@ -300,7 +301,9 @@ export const JoinNetworkPrompt: React.FC<{
                     <button onClick={openPP} className="text-indigo-500 font-bold text-sm">
                         {m['login.privacyPolicy']()}
                     </button>
-                    <span className="text-indigo-500 font-bold text-sm">&nbsp;{m['networkPrompts.separator']()}&nbsp;</span>
+                    <span className="text-indigo-500 font-bold text-sm">
+                        &nbsp;{m['networkPrompts.separator']()}&nbsp;
+                    </span>
                     <button onClick={openToS} className="text-indigo-500 font-bold text-sm">
                         {m['login.termsOfService']()}
                     </button>

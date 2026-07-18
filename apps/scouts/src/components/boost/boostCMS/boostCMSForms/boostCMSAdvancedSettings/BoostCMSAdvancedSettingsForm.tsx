@@ -66,7 +66,10 @@ const BoostCMSAdvancedSettingsForm: React.FC<{
             <div className="w-full h-full transparent flex items-center justify-center">
                 <IonDatetime
                     onIonChange={e => {
-                        handleStateChange('expirationDate', moment(e.detail.value as string).toISOString());
+                        handleStateChange(
+                            'expirationDate',
+                            moment(e.detail.value as string).toISOString()
+                        );
                     }}
                     value={
                         state?.basicInfo?.expirationDate

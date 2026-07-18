@@ -32,9 +32,7 @@ export const StylePackCategoryModal: React.FC<StylePackCategoryModalProps> = ({
     const isAdmin = credentials.some(cred => {
         const subject = cred?.credentialSubject;
         if (!subject || Array.isArray(subject)) return false;
-        return ['ext:GlobalID', 'ext:NetworkID'].includes(
-            subject?.achievement?.achievementType
-        );
+        return ['ext:GlobalID', 'ext:NetworkID'].includes(subject?.achievement?.achievementType);
     });
 
     const handleSelectCategory = (category: StylePackCategories) => {
@@ -49,8 +47,6 @@ export const StylePackCategoryModal: React.FC<StylePackCategoryModalProps> = ({
             item => item.title === targetType
         );
     }
-
-
 
     return (
         <div className="w-full">
@@ -98,49 +94,51 @@ export const StylePackCategoryModal: React.FC<StylePackCategoryModalProps> = ({
                     </button>
 
                     {/* Category options */}
-                    {boostOptions.map(({
-                        id,
-                        IconComponent,
-                        iconCircleClass,
-                        iconClassName,
-                        title,
-                        type,
-                    }) => {
-                        const isActive = (activeStylePackCategory as string) === type;
+                    {boostOptions.map(
+                        ({ id, IconComponent, iconCircleClass, iconClassName, title, type }) => {
+                            const isActive = (activeStylePackCategory as string) === type;
 
-                        return (
-                            <button
-                                key={id}
-                                onClick={() => handleSelectCategory(type as unknown as StylePackCategories)}
-                                className={`w-full flex items-center justify-between rounded-full p-2 mt-4 shadow-sm hover:shadow-md transition-shadow ${
-                                    isActive
-                                        ? 'border-2 border-emerald-700 bg-emerald-50'
-                                        : 'bg-white border-2 border-transparent'
-                                }`}
-                                aria-pressed={isActive}
-                            >
-                                <div className="flex items-center flex-1 min-w-0">
-                                    <div className={`flex items-center justify-center h-[40px] w-[40px] rounded-full shrink-0 ${iconCircleClass}`}>
-                                        <IconComponent className={iconClassName} />
+                            return (
+                                <button
+                                    key={id}
+                                    onClick={() =>
+                                        handleSelectCategory(type as unknown as StylePackCategories)
+                                    }
+                                    className={`w-full flex items-center justify-between rounded-full p-2 mt-4 shadow-sm hover:shadow-md transition-shadow ${
+                                        isActive
+                                            ? 'border-2 border-emerald-700 bg-emerald-50'
+                                            : 'bg-white border-2 border-transparent'
+                                    }`}
+                                    aria-pressed={isActive}
+                                >
+                                    <div className="flex items-center flex-1 min-w-0">
+                                        <div
+                                            className={`flex items-center justify-center h-[40px] w-[40px] rounded-full shrink-0 ${iconCircleClass}`}
+                                        >
+                                            <IconComponent className={iconClassName} />
+                                        </div>
+                                        <div className="flex flex-col min-w-0 ml-2">
+                                            <h3 className="text-left font-semibold text-grayscale-900 uppercase text-xs font-notoSans">
+                                                {title}
+                                            </h3>
+                                            <p className="text-[17px] text-grayscale-900 font-normal text-left">
+                                                {m['boostCMS.stylePacksFor']({ title })}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div className="flex flex-col min-w-0 ml-2">
-                                        <h3 className="text-left font-semibold text-grayscale-900 uppercase text-xs font-notoSans">
-                                            {title}
-                                        </h3>
-                                        <p className="text-[17px] text-grayscale-900 font-normal text-left">
-                                            {m['boostCMS.stylePacksFor']({ title })}
-                                        </p>
-                                    </div>
-                                </div>
 
-                                {isActive && (
-                                    <div className="ml-2 shrink-0 flex items-center justify-center rounded-full bg-emerald-700 p-1">
-                                        <Checkmark className="text-white h-6 w-6" aria-hidden="true" />
-                                    </div>
-                                )}
-                            </button>
-                        );
-                    })}
+                                    {isActive && (
+                                        <div className="ml-2 shrink-0 flex items-center justify-center rounded-full bg-emerald-700 p-1">
+                                            <Checkmark
+                                                className="text-white h-6 w-6"
+                                                aria-hidden="true"
+                                            />
+                                        </div>
+                                    )}
+                                </button>
+                            );
+                        }
+                    )}
                 </div>
             </div>
         </div>

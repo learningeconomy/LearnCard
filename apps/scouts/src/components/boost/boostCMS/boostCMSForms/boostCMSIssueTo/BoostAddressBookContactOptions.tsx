@@ -269,7 +269,8 @@ const BoostAddressBookContactOptions: React.FC<{
                         onClick={() => handleAddYoself()}
                         className="flex items-center justify-center bg-indigo-500 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg font-medium"
                     >
-                        <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" /> {m['boostCMS.boostMyself']()}
+                        <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                        {m['boostCMS.boostMyself']()}
                     </button>
                 </IonRow>
                 <IonRow className="w-full flex items-center justify-center mt-4">
@@ -278,7 +279,8 @@ const BoostAddressBookContactOptions: React.FC<{
                         onClick={() => handleAddSomeoneElse()}
                         className="flex items-center justify-center bg-indigo-500 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg font-medium"
                     >
-                        <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" /> {m['boostCMS.boostOthers']()}
+                        <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                        {m['boostCMS.boostOthers']()}
                     </button>
                 </IonRow>
                 {/* <IonCol className="w-full flex items-center justify-center">
@@ -314,7 +316,8 @@ const BoostAddressBookContactOptions: React.FC<{
                             onClick={handleScan}
                             className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-medium text-2xl w-full shadow-lg modal-btn-mobile"
                         >
-                            <Camera className="ml-[5px] h-[30px] w-[30px] mr-2" /> {m['boostCMS.scanUserCode']()}
+                            <Camera className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                            {m['boostCMS.scanUserCode']()}
                         </button>
                     </IonCol>
                 )}

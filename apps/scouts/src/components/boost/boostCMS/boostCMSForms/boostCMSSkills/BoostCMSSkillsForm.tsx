@@ -286,7 +286,9 @@ export const BoostCMSSkillsForm: React.FC<{
                 className="w-full flex-col items-center justify-center bg-white rounded-[20px]"
             >
                 <div className="flex items-center justify-between w-full ion-padding">
-                    <h1 className="font-mouse text-black text-3xl p-0 m-0">{m['boostCMS.skills']()}</h1>
+                    <h1 className="font-mouse text-black text-3xl p-0 m-0">
+                        {m['boostCMS.skills']()}
+                    </h1>
 
                     <button
                         onClick={() => openSkillsModal()}

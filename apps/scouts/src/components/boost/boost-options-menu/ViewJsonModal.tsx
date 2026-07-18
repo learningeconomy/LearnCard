@@ -47,7 +47,9 @@ const ViewJsonModal: React.FC<ViewJsonModalProps> = ({ boost }) => {
     return (
         <div className="bg-white p-6 rounded-lg max-h-[90vh] flex flex-col">
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold font-notoSans text-grayscale-900">{m['boost.jsonView']()}</h2>
+                <h2 className="text-xl font-bold font-notoSans text-grayscale-900">
+                    {m['boost.jsonView']()}
+                </h2>
                 <button onClick={closeModal} className="text-red-600 flex items-center">
                     <X className="w-[20px] h-[20px] mr-2" /> {m['common.close']()}
                 </button>

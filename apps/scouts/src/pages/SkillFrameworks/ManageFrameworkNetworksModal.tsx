@@ -95,9 +95,16 @@ const ManageFrameworkNetworksModal: React.FC<ManageFrameworkNetworksModalProps> 
 
             resolvedNetworks.push({
                 uri: boostId,
-                name: boost.name || (credType === 'global' ? m['skillFrameworks.globalNet']() : m['skillFrameworks.regionalNet']()),
+                name:
+                    boost.name ||
+                    (credType === 'global'
+                        ? m['skillFrameworks.globalNet']()
+                        : m['skillFrameworks.regionalNet']()),
                 image: (boost.meta as any)?.image,
-                type: credType === 'global' ? m['skillFrameworks.globalNet']() : m['skillFrameworks.regionalNet'](),
+                type:
+                    credType === 'global'
+                        ? m['skillFrameworks.globalNet']()
+                        : m['skillFrameworks.regionalNet'](),
             });
         });
 
@@ -232,7 +239,9 @@ const ManageFrameworkNetworksModal: React.FC<ManageFrameworkNetworksModalProps> 
                     disabled={updateNetworksMutation.isPending}
                     className="bg-emerald-700 text-white px-[20px] py-[7px] rounded-[30px] text-[17px] font-poppins flex-1 font-[600] leading-[130%] tracking-[-0.25px] shadow-button-bottom disabled:bg-grayscale-600"
                 >
-                    {updateNetworksMutation.isPending ? m['common.saving']() : m['skillFrameworks.saveWithCount']({ count: selected.length })}
+                    {updateNetworksMutation.isPending
+                        ? m['common.saving']()
+                        : m['skillFrameworks.saveWithCount']({ count: selected.length })}
                 </button>
             </div>
         </section>

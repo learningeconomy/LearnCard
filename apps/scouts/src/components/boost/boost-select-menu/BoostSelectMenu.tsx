@@ -194,7 +194,8 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
                             onClick={handleNewBoostModal}
                             className="mx-[20px] flex items-center justify-center bg-indigo-500 rounded-full px-[18px] py-[12px] font-medium text-white text-2xl w-full shadow-lg"
                         >
-                            <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" /> {m['boost.newBoost']()}
+                            <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                            {m['boost.newBoost']()}
                         </button>
                     </IonCol>
                 </IonRow>

@@ -52,7 +52,7 @@ const UserOptions: React.FC<{
     const onLogout = () => {
         handleCloseModal();
         handleLogout();
-    }
+    };
 
     const presentCenterModal = () => {
         newCenterModal(

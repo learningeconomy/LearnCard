@@ -129,9 +129,15 @@ const DeleteUserConfirmationPrompt: React.FC<{
                 <p className="ion-text-center mt-2 font-normal text-sm tracking-wider bg-white px-2 delete-user-prompt-text max-w-[400px]">
                     <TransP m={m['userProfile.deleteWarning']} components={[<b key="b" />]} />
                 </p>
-                <h2 className="ion-text-center text-lg font-semibold mt-4">{m['userProfile.confirmByTyping']()}</h2>
+                <h2 className="ion-text-center text-lg font-semibold mt-4">
+                    {m['userProfile.confirmByTyping']()}
+                </h2>
                 <p className="ion-text-center text-base font-bold">
-                    <TransP m={m['userProfile.confirmBelow']} values={{ phrase }} components={[<br key="br" />]} />
+                    <TransP
+                        m={m['userProfile.confirmBelow']}
+                        values={{ phrase }}
+                        components={[<br key="br" />]}
+                    />
                 </p>
             </IonRow>
             <IonRow className="flex flex-col items-center justify-center w-full ion-padding mt-3">

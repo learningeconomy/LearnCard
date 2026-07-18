@@ -125,9 +125,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                         <span className="font-[600] text-center">
                             {m['consentFlow.willDisconnect']()}
                         </span>
-                        <span className="text-center">
-                            {m['consentFlow.delCredsQ']()}
-                        </span>
+                        <span className="text-center">{m['consentFlow.delCredsQ']()}</span>
                     </div>
                 ),
                 confirmText: m['consentFlow.yes'](),
@@ -200,7 +198,8 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                             className="flex flex-col items-center justify-between w-full bg-white rounded-[20px] ion-padding"
                         >
                             <p className="text-grayscale-900 text-base w-full text-left mb-4 font-medium">
-                                {contractDetails?.owner?.displayName || contractDetails?.name} {m['consentFlow.useDataTo']()}
+                                {contractDetails?.owner?.displayName || contractDetails?.name}{' '}
+                                {m['consentFlow.useDataTo']()}
                             </p>
                             <p className="text-grayscale-600 text-sm w-full text-left">
                                 {contractDetails?.reasonForAccessing}
@@ -229,7 +228,9 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                                     : 'text-grayscale-400'
                                             }`}
                                         >
-                                            {m['consentFlow.' + (allReadToggle ? 'active' : 'off')]()}
+                                            {m[
+                                                'consentFlow.' + (allReadToggle ? 'active' : 'off')
+                                            ]()}
                                         </output>
                                         <p className="font-poppins text-grayscale-100 text-xl">
                                             {m['consentFlow.liveSyncAll']()}
@@ -294,7 +295,9 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                                     : 'text-grayscale-400'
                                             }`}
                                         >
-                                            {m['consentFlow.' + (allWriteToggle ? 'active' : 'off')]()}
+                                            {m[
+                                                'consentFlow.' + (allWriteToggle ? 'active' : 'off')
+                                            ]()}
                                         </output>
                                         <p className="font-poppins text-grayscale-100 text-xl">
                                             {m['consentFlow.allowAll']()}
@@ -373,7 +376,11 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                 disabled={isLoadingContractCreds}
                             >
                                 {/* <BrokenLink className="mr-2" />{' '} */}
-                                {m[isWithdrawingConsent ? 'consentFlow.disconnecting' : 'consentFlow.disconnect']()}
+                                {m[
+                                    isWithdrawingConsent
+                                        ? 'consentFlow.disconnecting'
+                                        : 'consentFlow.disconnect'
+                                ]()}
                             </button>
                         </IonCol>
                     </IonRow>

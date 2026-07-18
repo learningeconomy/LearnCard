@@ -56,12 +56,14 @@ const BulkImportMissingImagesError: React.FC<BulkImportMissingImagesErrorProps> 
                     </li>
                 ))}
                 {missingImages.length > 5 && (
-                    <li>{m['adminTools.bulkImport.moreRecords']({ count: missingImages.length - 5 })}</li>
+                    <li>
+                        {m['adminTools.bulkImport.moreRecords']({
+                            count: missingImages.length - 5,
+                        })}
+                    </li>
                 )}
             </ul>
-            <p className="text-red-700">
-                {m['adminTools.bulkImport.missingImagesHelp']()}
-            </p>
+            <p className="text-red-700">{m['adminTools.bulkImport.missingImagesHelp']()}</p>
         </div>
     );
 };

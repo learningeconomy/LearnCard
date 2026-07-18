@@ -34,17 +34,11 @@ export const ChapiPrompt: React.FC<{ handleCloseModal: () => void }> = ({ handle
             </div>
 
             <div className="w-full flex flex-col items-center justify-center text-left px-4">
-                <p>
-                    {m['credsBundle.chapiDesc1']()}
-                </p>
+                <p>{m['credsBundle.chapiDesc1']()}</p>
                 <br />
-                <p>
-                    {m['credsBundle.chapiDesc2']()}
-                </p>
+                <p>{m['credsBundle.chapiDesc2']()}</p>
                 <br />
-                <p>
-                    {m['credsBundle.chapiDesc3']()}
-                </p>
+                <p>{m['credsBundle.chapiDesc3']()}</p>
             </div>
 
             <div className="w-full flex items-center justify-center mt-2 mb-2">

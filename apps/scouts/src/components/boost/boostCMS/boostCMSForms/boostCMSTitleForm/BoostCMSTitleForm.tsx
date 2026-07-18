@@ -58,7 +58,9 @@ const BoostCMSTitleForm: React.FC<{
 
     return (
         <div className="max-w-[600px] flex flex-col items-start justify-center w-full mt-2">
-            {showTitle && <p className="font-medium ml-[5px] mb-[5px]">{m['boostCMS.boostTitle']()}</p>}
+            {showTitle && (
+                <p className="font-medium ml-[5px] mb-[5px]">{m['boostCMS.boostTitle']()}</p>
+            )}
             <IonTextarea
                 autocapitalize="on"
                 value={basicInfo?.name}

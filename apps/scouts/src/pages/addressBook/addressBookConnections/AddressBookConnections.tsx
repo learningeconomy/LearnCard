@@ -187,11 +187,14 @@ const AddressBookConnections: React.FC<{
                     },
                     onError(error, variables, context) {
                         refetch();
-                        presentToast(error?.message || m['addressBook.toasts.unableToBlockUser'](), {
-                            // @ts-ignore
-                            type: ToastTypeEnum.Error,
-                            hasDismissButton: true,
-                        });
+                        presentToast(
+                            error?.message || m['addressBook.toasts.unableToBlockUser'](),
+                            {
+                                // @ts-ignore
+                                type: ToastTypeEnum.Error,
+                                hasDismissButton: true,
+                            }
+                        );
                     },
                 }
             );

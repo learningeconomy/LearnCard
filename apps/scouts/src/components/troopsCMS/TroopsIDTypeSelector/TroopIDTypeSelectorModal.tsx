@@ -5,7 +5,6 @@ import * as m from '../../../paraglide/messages.js';
 
 import TroopIDTypeSelectorListItem from './TroopIDTypeSelectorListItem';
 
-
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { troopsCMSViewModeDefaults, TroopsCMSViewModeEnum } from '../troopCMSState';
@@ -21,7 +20,7 @@ const TroopIDTypeSelectorModal: React.FC<{
 }> = ({ handleCloseModal, earnedBoostIDs = [], isLoading, onSuccess }) => {
     // oxlint-disable-next-line no-unused-vars
     const flags = useFlags();
-   const canCreateGlobalIDs = flags?.canCreateGlobalAdminId ?? false;
+    const canCreateGlobalIDs = flags?.canCreateGlobalAdminId ?? false;
 
     const [_viewMode, _setViewMode] = useState<TroopsCMSViewModeEnum | null>(null);
 
@@ -38,7 +37,6 @@ const TroopIDTypeSelectorModal: React.FC<{
     );
 
     const allowedIDTypesToCreate = [];
-
 
     if (!globalAdminId && canCreateGlobalIDs) {
         allowedIDTypesToCreate.push(troopsCMSViewModeDefaults?.global);

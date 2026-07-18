@@ -33,7 +33,10 @@ const SharedBoostPageFooter: React.FC = () => {
                     </div>
                     <div>
                         <p className="flex text-white text-xs">
-                            <TransP m={m['credsBundle.footerTagline']} components={[<u key="u" />]} />
+                            <TransP
+                                m={m['credsBundle.footerTagline']}
+                                components={[<u key="u" />]}
+                            />
                         </p>
                     </div>
                     <div className="w-[214px]" />
@@ -69,7 +72,8 @@ export const SharedBoostPageFooterMobile: React.FC = () => {
                         onClick={openToS}
                         className="flex items-center justify-center text-emerald-600 font-bold text-xs mr-2"
                     >
-                        {m['login.termsOfService']()} <span className="text-grayscale-900">{' •'}</span>
+                        {m['login.termsOfService']()}{' '}
+                        <span className="text-grayscale-900">{' •'}</span>
                     </button>
                     <button
                         onClick={openPP}

@@ -24,7 +24,11 @@ const CurrenciesPage: React.FC = () => {
             <IonContent fullscreen className="currencies-page" color={'cyan-700'}>
                 <CurvedBackdropEl className="bg-cyan-300" />
                 <section className="flex flex-col pt-[10px] px-[20px] text-center justify-center">
-                    <img src={imgSrc} alt={m['currencies.altImg']()} className="relative max-w-[250px] m-auto" />
+                    <img
+                        src={imgSrc}
+                        alt={m['currencies.altImg']()}
+                        className="relative max-w-[250px] m-auto"
+                    />
                     <strong className="relative">{m['currencies.none']()}</strong>
                 </section>
             </IonContent>

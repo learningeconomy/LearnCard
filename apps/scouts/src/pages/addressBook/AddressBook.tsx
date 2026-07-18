@@ -210,7 +210,9 @@ const AddressBook: React.FC = () => {
                                             {m['addressBook.allContacts']()}
                                         </span>
                                         <span className="text-grayscale-800 text-[17px] font-normal font-notoSans">
-                                            {m['addressBook.contactsCount']({ count: connectionCount })}
+                                            {m['addressBook.contactsCount']({
+                                                count: connectionCount,
+                                            })}
                                         </span>
                                     </div>
                                     <CaretDown className="ml-auto mr-[15px] mt-[15px]" />
@@ -227,7 +229,10 @@ const AddressBook: React.FC = () => {
                                     <div className="flex flex-col items-start">
                                         <p>{resolvedCredential?.boostCredential?.name}</p>
                                         <p>
-                                            {troopCount && m['addressBook.contactsCount']({ count: troopCount[1] })}
+                                            {troopCount &&
+                                                m['addressBook.contactsCount']({
+                                                    count: troopCount[1],
+                                                })}
                                         </p>
                                     </div>
                                     <CaretDown className="ml-auto mr-[15px] mt-[15px]" />
@@ -248,7 +253,9 @@ const AddressBook: React.FC = () => {
                             {showLoadingSpinner && (
                                 <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full my-4">
                                     <IonSpinner color="black" />
-                                    <p className="mt-2 font-bold text-lg">{m['addressBook.loading']()}</p>
+                                    <p className="mt-2 font-bold text-lg">
+                                        {m['addressBook.loading']()}
+                                    </p>
                                 </section>
                             )}
 

@@ -110,7 +110,9 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
                             disabled={!newAdminProfileId.trim() || addAdminMutation.isPending}
                             className="bg-emerald-700 text-white px-[20px] py-[7px] rounded-[30px] text-[14px] font-poppins font-[600] disabled:bg-grayscale-600 whitespace-nowrap"
                         >
-                            {addAdminMutation.isPending ? m['skillFrameworks.adding']() : m['skillFrameworks.addAdmin']()}
+                            {addAdminMutation.isPending
+                                ? m['skillFrameworks.adding']()
+                                : m['skillFrameworks.addAdmin']()}
                         </button>
                     </div>
                 </div>

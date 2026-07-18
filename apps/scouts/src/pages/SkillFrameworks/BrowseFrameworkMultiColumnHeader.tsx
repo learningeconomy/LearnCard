@@ -194,10 +194,18 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                                         disabled={!changesExist && !isApproveFlow}
                                     >
                                         {isApproveFlow && (
-                                            <>{useShortText ? m['common.verify']() : m['skillFrameworks.approveFw']()}</>
+                                            <>
+                                                {useShortText
+                                                    ? m['common.verify']()
+                                                    : m['skillFrameworks.approveFw']()}
+                                            </>
                                         )}
                                         {!isApproveFlow && (
-                                            <>{useShortText ? m['common.save']() : m['skillFrameworks.saveFw']()}</>
+                                            <>
+                                                {useShortText
+                                                    ? m['common.save']()
+                                                    : m['skillFrameworks.saveFw']()}
+                                            </>
                                         )}
                                     </button>
                                 </>
@@ -223,7 +231,9 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                                             version={3}
                                             className="w-[25px] h-[25px] shrink-0"
                                         />
-                                        {useShortText ? m['common.edit']() : m['skillFrameworks.editFwOpt']()}
+                                        {useShortText
+                                            ? m['common.edit']()
+                                            : m['skillFrameworks.editFwOpt']()}
                                     </button>
                                     <button
                                         onClick={openManageJsonModal}
@@ -233,7 +243,9 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                                             className="w-[25px] h-[25px] shrink-0"
                                             version="with-slash"
                                         />
-                                        {useShortText ? m['skillFrameworks.json']() : m['skillFrameworks.manageJson']()}
+                                        {useShortText
+                                            ? m['skillFrameworks.json']()
+                                            : m['skillFrameworks.manageJson']()}
                                     </button>
                                 </>
                             )}

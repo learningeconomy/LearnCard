@@ -97,7 +97,11 @@ export const TroopsCMSFooter: React.FC<TroopsCMSFooterProps> = ({
                 {isInIDMode && (
                     <>
                         {editIdOnlyMode && (
-                            <IonLoading mode="ios" message={m['common.saving']()} isOpen={isSaving} />
+                            <IonLoading
+                                mode="ios"
+                                message={m['common.saving']()}
+                                isOpen={isSaving}
+                            />
                         )}
                         <div className={`w-full flex items-center justify-center ${footerStyles}`}>
                             <div className="w-full flex items-center justify-between max-w-[600px] ion-padding">

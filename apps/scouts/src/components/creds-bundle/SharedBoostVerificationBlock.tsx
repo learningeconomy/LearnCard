@@ -185,7 +185,9 @@ const SharedBoostVerificationBlock: React.FC<{
                         <div className={innerContainerStyles}>
                             <div className="w-full ion-padding bg-white rounded-[12px] pt-6 pb-8 shadow-bottom">
                                 <button className="w-full flex items-center justify-between mb-2">
-                                    <p className="text-grayscale-900">{m['sdk.verification.title']()}</p>
+                                    <p className="text-grayscale-900">
+                                        {m['sdk.verification.title']()}
+                                    </p>
 
                                     <button type="button">
                                         <InfoIcon
@@ -214,7 +216,9 @@ const SharedBoostVerificationBlock: React.FC<{
                                             className="w-full rounded-[12px] text-left mt-2 text-[#2F99F0] font-notoSans font-[400] mb-2"
                                             onClick={() => setViewJson(!viewJson)}
                                         >
-                                            {viewJson ? m['verification.hideJson']() : m['verification.viewJson']()}
+                                            {viewJson
+                                                ? m['verification.hideJson']()
+                                                : m['verification.viewJson']()}
                                         </button>
                                         <button onClick={copyToClipBoard} type="button">
                                             <CopyStack className="text-[#2F99F0] w-[24px] h-[24px]" />
@@ -245,7 +249,8 @@ const SharedBoostVerificationBlock: React.FC<{
                     <IonTitle>{m['boost.jsonView']()}</IonTitle>
                     <IonButtons slot="end">
                         <IonButton onClick={() => setIsJsonModalOpen(false)}>
-                            <X className="text-red-600 w-[20px] h-[20px] mr-2" /> {m['common.close']()}
+                            <X className="text-red-600 w-[20px] h-[20px] mr-2" />{' '}
+                            {m['common.close']()}
                         </IonButton>
                     </IonButtons>
                 </IonToolbar>

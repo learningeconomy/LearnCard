@@ -65,7 +65,9 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
 
     const role = getScoutsRole(credential);
     const troopOrNetwork =
-        role === ScoutsRoleEnum.scout || role === ScoutsRoleEnum.leader ? m['troops.troop']() : m['troops.network']();
+        role === ScoutsRoleEnum.scout || role === ScoutsRoleEnum.leader
+            ? m['troops.troop']()
+            : m['troops.network']();
     const isScoutMember = type === 'Scout' || type === 'Member';
 
     const { data: resolvedCredential } = useResolveBoost(boostUri);
@@ -95,16 +97,25 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
 
     const handleRevokeScout = async () => {
         await confirm({
-            text: m['troops.options.removeConfirm']({ owner: ownerName, credential: credential?.name ?? '' }),
+            text: m['troops.options.removeConfirm']({
+                owner: ownerName,
+                credential: credential?.name ?? '',
+            }),
             onConfirm: async () => {
                 try {
                     await revokeBoostRecipient({
                         boostUri,
                         recipientProfileId: ownerProfileId,
                     });
-                    presentToast(m['troops.options.removedMsg']({ owner: ownerName, credential: credential?.name ?? '' }), {
-                        type: ToastTypeEnum.Success,
-                    });
+                    presentToast(
+                        m['troops.options.removedMsg']({
+                            owner: ownerName,
+                            credential: credential?.name ?? '',
+                        }),
+                        {
+                            type: ToastTypeEnum.Success,
+                        }
+                    );
                     closeAllModals();
                 } catch (error) {
                     log.error('Failed to revoke scout:', error);
@@ -137,7 +148,10 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
             });
         } else {
             await confirm({
-                text: m['troops.options.removeConfirm']({ owner: ownerName, credential: credential?.name ?? '' }),
+                text: m['troops.options.removeConfirm']({
+                    owner: ownerName,
+                    credential: credential?.name ?? '',
+                }),
                 onConfirm: async () => {
                     const removedAdmin = await wallet?.invoke?.removeBoostAdmin(
                         boostUri,
@@ -178,7 +192,11 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
                 />
             )}
 
-            <IdOptionRow text={m['troops.actions.viewTroopId']()} icon={<GreenScoutsIdCard />} onClick={handleViewId} />
+            <IdOptionRow
+                text={m['troops.actions.viewTroopId']()}
+                icon={<GreenScoutsIdCard />}
+                onClick={handleViewId}
+            />
 
             {isPersonalId && (
                 <IdOptionRow
@@ -191,7 +209,11 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
                 />
             )}
 
-            <IdOptionRow text={m['troops.actions.viewJson']()} icon={<CodeIcon />} onClick={handleViewJson} />
+            <IdOptionRow
+                text={m['troops.actions.viewJson']()}
+                icon={<CodeIcon />}
+                onClick={handleViewJson}
+            />
 
             {isPersonalId && (
                 <IdOptionRow

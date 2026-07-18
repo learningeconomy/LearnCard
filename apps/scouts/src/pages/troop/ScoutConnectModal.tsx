@@ -228,7 +228,12 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                         credential={boost}
                         name={type}
                         thumbSrc={boost?.boostID?.idThumbnail}
-                        subTextOverride={m['troops.membersList.issuedSub']({ count: recipientCount ?? 0, person: m[recipientCount === 1 ? 'boost.person_one' : 'boost.person_other']() })}
+                        subTextOverride={m['troops.membersList.issuedSub']({
+                            count: recipientCount ?? 0,
+                            person: m[
+                                recipientCount === 1 ? 'boost.person_one' : 'boost.person_other'
+                            ](),
+                        })}
                         issuedDateOverride={
                             <div className="flex">
                                 {recipients?.slice(0, 5)?.map((r, index) => (
@@ -294,7 +299,9 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                         }}
                         disabled={!claimLink}
                     >
-                        <p className="text-[17px] font-notoSans font-normal">{m['troops.connect.showQr']()}</p>
+                        <p className="text-[17px] font-notoSans font-normal">
+                            {m['troops.connect.showQr']()}
+                        </p>
                         <QRCodeIcon height="30px" width="30px" />
                     </button>
                 </IonItem>
@@ -306,7 +313,9 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                         onClick={handleShare}
                         disabled={!claimLink}
                     >
-                        <p className="text-[17px] font-notoSans font-normal">{m['troops.connect.share']()}</p>
+                        <p className="text-[17px] font-notoSans font-normal">
+                            {m['troops.connect.share']()}
+                        </p>
                         <ShareArrow />
                     </button>
                 </IonItem>
@@ -337,7 +346,9 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                         }}
                         className="flex justify-between items-center w-full"
                     >
-                        <p className="text-[17px] font-notoSans font-normal">{m['troops.connect.browse']()}</p>
+                        <p className="text-[17px] font-notoSans font-normal">
+                            {m['troops.connect.browse']()}
+                        </p>
                         <AddUserIcon />
                     </button>
                 </IonItem>

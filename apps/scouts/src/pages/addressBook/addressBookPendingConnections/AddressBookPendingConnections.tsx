@@ -62,11 +62,14 @@ const AddressBookPendingConnections: React.FC<{
                 },
                 onError(error, variables, context) {
                     refetch();
-                    presentToast(error?.message || m['addressBook.toasts.unableToCancelRequest'](), {
-                        // @ts-ignore
-                        type: ToastTypeEnum.Error,
-                        hasDismissButton: true,
-                    });
+                    presentToast(
+                        error?.message || m['addressBook.toasts.unableToCancelRequest'](),
+                        {
+                            // @ts-ignore
+                            type: ToastTypeEnum.Error,
+                            hasDismissButton: true,
+                        }
+                    );
                 },
             }
         );
@@ -96,11 +99,14 @@ const AddressBookPendingConnections: React.FC<{
                     },
                     onError(error, variables, context) {
                         refetch();
-                        presentToast(error?.message || m['addressBook.toasts.unableToBlockUser'](), {
-                            // @ts-ignore
-                            type: ToastTypeEnum.Error,
-                            hasDismissButton: true,
-                        });
+                        presentToast(
+                            error?.message || m['addressBook.toasts.unableToBlockUser'](),
+                            {
+                                // @ts-ignore
+                                type: ToastTypeEnum.Error,
+                                hasDismissButton: true,
+                            }
+                        );
                     },
                 }
             );

@@ -43,7 +43,9 @@ const PushNotificationsSettings: React.FC<{
             <IonRow key={setting.id} className="w-full flex items-center justify-center px-2">
                 <IonCol className="w-full max-w-[600px] flex-col ion-padding">
                     <div className="w-full flex items-center justify-between">
-                        <p className="text-grayscale-900 font-semibold w-10/12">{getSettingTitle(setting.type)}</p>
+                        <p className="text-grayscale-900 font-semibold w-10/12">
+                            {getSettingTitle(setting.type)}
+                        </p>
                         <IonToggle
                             mode="ios"
                             checked={settings[PushNotificationSettingsEnum[setting.type]]}

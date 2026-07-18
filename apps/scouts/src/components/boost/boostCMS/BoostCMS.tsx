@@ -650,7 +650,9 @@ const BoostCMS: React.FC<{
 
     const handleConfirmationModal = () => {
         const buttonText =
-            currentStep === BoostCMSStepsEnum.issueTo ? m['boostCMS.continueIssue']() : m['boostCMS.continueEdit']();
+            currentStep === BoostCMSStepsEnum.issueTo
+                ? m['boostCMS.continueIssue']()
+                : m['boostCMS.continueEdit']();
         newModal(
             <BoostCMSConfirmationPrompt
                 state={state}

@@ -90,7 +90,9 @@ export const AdminToolsBulkBoostImportUploadStep: React.FC<{
                 <h4 className="text-indigo-500 font-notoSans text-left mb-2 text-sm font-semibold">
                     {m['adminTools.bulkImport.step2']()}
                 </h4>
-                <p className="text-xl text-grayscale-900 text-left mb-4">{m['adminTools.bulkImport.uploadCsv']()}</p>
+                <p className="text-xl text-grayscale-900 text-left mb-4">
+                    {m['adminTools.bulkImport.uploadCsv']()}
+                </p>
 
                 <p className="text-left text-grayscale-700 text-sm">
                     {m['adminTools.bulkImport.zipDescription']()}
@@ -99,7 +101,8 @@ export const AdminToolsBulkBoostImportUploadStep: React.FC<{
                 <div className="w-full flex gap-[5px] rounded-[10px] bg-indigo-100 justify-center ion-padding mt-4">
                     <div className="flex flex-col">
                         <p className="flex items-center justify-start text-[18px] text-indigo-600 font-poppins font-[600]">
-                            <CircleCheckOutlineIcon className="inline mr-2" /> {m['adminTools.bulkImport.checkBeforeUploading']()}
+                            <CircleCheckOutlineIcon className="inline mr-2" />{' '}
+                            {m['adminTools.bulkImport.checkBeforeUploading']()}
                         </p>
                         <p className="text-xs text-indigo-600 font-poppins mt-2">
                             {m['adminTools.bulkImport.checkBeforeUploadingDesc']()}
@@ -120,7 +123,8 @@ export const AdminToolsBulkBoostImportUploadStep: React.FC<{
                             onClick={triggerFileInput}
                             className={`w-full flex rounded-[30px] items-center justify-center  py-2 font-semibold text-[17px] bg-indigo-500 text-white mt-4`}
                         >
-                            <UploadIcon className="inline mr-2" strokeWidth="2" /> {m['common.upload']()}
+                            <UploadIcon className="inline mr-2" strokeWidth="2" />{' '}
+                            {m['common.upload']()}
                         </button>
                     </>
                 )}
@@ -173,7 +177,9 @@ export const AdminToolsBulkBoostImportUploadStep: React.FC<{
                             ) : (
                                 <UploadIcon className="inline mr-2" strokeWidth="2" />
                             )}
-                            {showLoader ? m['common.loading']() + '...' : m['adminTools.bulkImport.uploadImagesZip']()}
+                            {showLoader
+                                ? m['common.loading']() + '...'
+                                : m['adminTools.bulkImport.uploadImagesZip']()}
                         </button>
                     </>
                 )}
@@ -209,7 +215,8 @@ export const AdminToolsBulkBoostImportUploadStep: React.FC<{
                         onClick={handlePreviewAllCredentials}
                         className={`w-full flex rounded-[30px] items-center justify-center  py-2 font-semibold text-[17px] bg-emerald-700 text-white mt-4`}
                     >
-                        <EyeIcon className="inline mr-2" /> {m['adminTools.bulkImport.previewCredentials']({ count: csvData.length })}
+                        <EyeIcon className="inline mr-2" />{' '}
+                        {m['adminTools.bulkImport.previewCredentials']({ count: csvData.length })}
                     </button>
                 )}
             </div>

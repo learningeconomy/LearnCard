@@ -130,7 +130,8 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
                                 className="text-grayscale-600 normal-case font-normal text-[12px] notification-card-type-issue-date"
                                 data-testid="notification-cred-issue-date"
                             >
-                                {'• '}{issueDate}
+                                {'• '}
+                                {issueDate}
                             </span>
                         )}
                     </p>

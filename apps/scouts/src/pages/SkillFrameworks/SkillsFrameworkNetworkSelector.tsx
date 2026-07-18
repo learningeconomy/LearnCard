@@ -71,7 +71,11 @@ const SkillsFrameworkNetworkSelector: React.FC<SkillsFrameworkNetworkSelectorPro
 
             resolvedNetworks.push({
                 uri: boostId,
-                name: boost.name || (credType === 'global' ? m['skillFrameworks.globalNetwork']() : m['skillFrameworks.nationalNetwork']()),
+                name:
+                    boost.name ||
+                    (credType === 'global'
+                        ? m['skillFrameworks.globalNetwork']()
+                        : m['skillFrameworks.nationalNetwork']()),
                 image: (boost.meta as any)?.image,
                 type: credType === 'global' ? 'Global Network' : 'National Network',
             });

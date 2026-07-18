@@ -134,7 +134,10 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                                             {m['credsBundle.createBundleDesc']()}
                                         </p>
                                         <p className="font-[500] text-grayscale-700 text-center">
-                                            {m['credsBundle.selectedCount']({ count: totalSelectedCount, type: name })}
+                                            {m['credsBundle.selectedCount']({
+                                                count: totalSelectedCount,
+                                                type: name,
+                                            })}
                                         </p>
                                     </div>
 
@@ -151,7 +154,10 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                                         {errorMessage && !credentialsLoading && (
                                             <div className="mt-[50px]">
                                                 <p className="text-red-500 font-bold">
-                                                    {m['credsBundle.errorFetching']({ type: name, error: errorMessage })}
+                                                    {m['credsBundle.errorFetching']({
+                                                        type: name,
+                                                        error: errorMessage,
+                                                    })}
                                                 </p>
                                             </div>
                                         )}

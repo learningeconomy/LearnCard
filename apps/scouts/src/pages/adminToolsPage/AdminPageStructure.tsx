@@ -51,7 +51,9 @@ const AdminPageStructure: React.FC<AdminPageStructureProps> = ({
                                 {m['adminTools.noAccessTitle']()}
                             </h1>
 
-                            <span className="text-grayscale-400">{m['adminTools.noAccessSubtitle']()}</span>
+                            <span className="text-grayscale-400">
+                                {m['adminTools.noAccessSubtitle']()}
+                            </span>
                         </>
                     )}
                 </IonCol>

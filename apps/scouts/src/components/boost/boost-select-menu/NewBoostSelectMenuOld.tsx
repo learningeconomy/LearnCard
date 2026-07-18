@@ -100,12 +100,12 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
             return (
                 <div className="w-full flex items-center justify-start px-2 mt-2 border-b-2 border-solid border-grayscale-200 pb-2">
                     <p className="text-grayscale-700">
-                            <TransP
-                                m={m['boost.noResultsFoundFor']}
-                                values={{ title, search }}
-                                components={[<em key="em" className="font-medium" />]}
-                            />
-                        </p>
+                        <TransP
+                            m={m['boost.noResultsFoundFor']}
+                            values={{ title, search }}
+                            components={[<em key="em" className="font-medium" />]}
+                        />
+                    </p>
                 </div>
             );
         }

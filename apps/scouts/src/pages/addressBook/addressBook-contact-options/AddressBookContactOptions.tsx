@@ -131,7 +131,9 @@ const AddressBookContactOptions: React.FC<{
         <div className="py-[20px]">
             <div className="flex w-full flex-col items-center justify-center mb-4">
                 <div className="flex w-full items-center justify-center">
-                    <h6 className={`m-0 p-0 text-2xl font-medium font-rubik`}>{m['addressBook.addContact']()}</h6>
+                    <h6 className={`m-0 p-0 text-2xl font-medium font-rubik`}>
+                        {m['addressBook.addContact']()}
+                    </h6>
                 </div>
             </div>
             <div className="w-full flex items-center justify-center px-4">
@@ -139,7 +141,8 @@ const AddressBookContactOptions: React.FC<{
                     onClick={() => openQRCodeModal()}
                     className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] font-medium text-white text-2xl w-full shadow-lg"
                 >
-                    <QRCodeScanner className="ml-[5px] h-[30px] w-[30px] mr-2" /> {m['addressBook.showCode']()}
+                    <QRCodeScanner className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                    {m['addressBook.showCode']()}
                 </button>
             </div>
 
@@ -149,7 +152,8 @@ const AddressBookContactOptions: React.FC<{
                         onClick={handleScan}
                         className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg modal-btn-mobile"
                     >
-                        <Camera className="ml-[5px] h-[30px] w-[30px] mr-2" /> {m['addressBook.scanCode']()}
+                        <Camera className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                        {m['addressBook.scanCode']()}
                     </button>
                 </div>
             )}
@@ -159,7 +163,8 @@ const AddressBookContactOptions: React.FC<{
                     onClick={handleShare}
                     className="flex items-center justify-center font-medium bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg"
                 >
-                    <LinkChain className="ml-[5px] h-[30px] w-[30px] mr-2" /> {m['addressBook.shareCode']()}
+                    <LinkChain className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                    {m['addressBook.shareCode']()}
                 </button>
             </div>
 
@@ -169,7 +174,8 @@ const AddressBookContactOptions: React.FC<{
                         onClick={onSearchClick}
                         className="flex items-center justify-center font-medium bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg"
                     >
-                        <Search className="ml-[5px] h-[24px] w-[25px] mr-2" /> {m['common.search']()}
+                        <Search className="ml-[5px] h-[24px] w-[25px] mr-2" />{' '}
+                        {m['common.search']()}
                     </button>
                 </div>
             )}

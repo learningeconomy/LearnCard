@@ -166,7 +166,9 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
             showNoSearchResults = !scoutsLoading && scouts?.length === 0 && search?.length > 0;
             noConnectionsString = m['boost.noTroopMembers']();
             headerText = conditionalPluralize(scouts?.length ?? 0, m['boost.scoutMemberOne']());
-            searchPlaceholder = m['boost.searchTroop']({ name: contextCredential?.name ?? m['boost.troop']() });
+            searchPlaceholder = m['boost.searchTroop']({
+                name: contextCredential?.name ?? m['boost.troop'](),
+            });
             connectionsToShow = scouts ?? [];
         }
         if (isNetworkAdmin) {
@@ -180,8 +182,13 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
             showNoSearchResults =
                 !networkLoading && networkMembers?.length === 0 && search?.length > 0;
             noConnectionsString = m['boost.noNetworkMembers']();
-            headerText = conditionalPluralize(networkMembers?.length ?? 0, m['boost.networkMemberLabelOne']());
-            searchPlaceholder = m['boost.searchNetwork']({ name: contextCredential?.name ?? m['boost.network']() });
+            headerText = conditionalPluralize(
+                networkMembers?.length ?? 0,
+                m['boost.networkMemberLabelOne']()
+            );
+            searchPlaceholder = m['boost.searchNetwork']({
+                name: contextCredential?.name ?? m['boost.network'](),
+            });
             connectionsToShow = networkMembers;
         }
     }

@@ -52,7 +52,9 @@ export const BoostSuccessConfirmation: React.FC<{
                 </div>
 
                 <div className="w-full flex items-end justify-center mb-6">
-                    <h3 className="text-grayscale-800 text-4xl text-center">{m['boostCMS.sent']()}</h3>
+                    <h3 className="text-grayscale-800 text-4xl text-center">
+                        {m['boostCMS.sent']()}
+                    </h3>
                 </div>
                 <div className="w-full flex flex-col items-center justify-center mb-4">
                     <h3 className="text-grayscale-800 text-3xl text-center">
@@ -64,7 +66,10 @@ export const BoostSuccessConfirmation: React.FC<{
                             values={{
                                 type: state?.basicInfo?.type ?? '',
                                 count: String(state?.issueTo?.length || 0),
-                                person: (state?.issueTo?.length || 0) === 1 ? m['boostCMS.person']() : m['boostCMS.people'](),
+                                person:
+                                    (state?.issueTo?.length || 0) === 1
+                                        ? m['boostCMS.person']()
+                                        : m['boostCMS.people'](),
                             }}
                             components={[
                                 <span key="t" className="text-grayscale-800 font-semibold" />,

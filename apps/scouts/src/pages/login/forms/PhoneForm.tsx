@@ -228,7 +228,9 @@ const PhoneForm: React.FC = () => {
     let activeStep: React.ReactNode | null = null;
     let formTitle: React.ReactNode | null = null;
     let buttonTitle: string | null = null;
-    const resendCodeButtonText = isResendCodeLoading ? m['common.sendingCode']() : m['common.resendCode']();
+    const resendCodeButtonText = isResendCodeLoading
+        ? m['common.sendingCode']()
+        : m['common.resendCode']();
 
     if (currentStep === PhoneFormStepsEnum.phone) {
         formTitle = (
@@ -265,7 +267,13 @@ const PhoneForm: React.FC = () => {
             <p className=" text-grayscale-600 font-bold text-center text-lg">
                 <TransP
                     m={m['common.enterVerificationCode']}
-                    components={[<span className="login-start-over-span text-indigo-500" onClick={resetForm} key="reset" />]}
+                    components={[
+                        <span
+                            className="login-start-over-span text-indigo-500"
+                            onClick={resetForm}
+                            key="reset"
+                        />,
+                    ]}
                 />
             </p>
         );
@@ -293,7 +301,9 @@ const PhoneForm: React.FC = () => {
         );
         buttonTitle = isLoading ? m['common.verifying']() : m['common.verify']();
     } else if (currentStep === PhoneFormStepsEnum.passwordExistingUser) {
-        formTitle = <p className="font-medium text-grayscale-600 uppercase">{m['common.password']()}</p>;
+        formTitle = (
+            <p className="font-medium text-grayscale-600 uppercase">{m['common.password']()}</p>
+        );
         activeStep = (
             <IonCol size="12">
                 <IonInput
@@ -306,7 +316,9 @@ const PhoneForm: React.FC = () => {
                     type="password"
                 />
                 <IonCol size="12" className="flex items-center justify-end mt-3">
-                    <p className="mr-3 text-gray-700 font-medium text-lg">{m['common.staySignedIn']()}</p>{' '}
+                    <p className="mr-3 text-gray-700 font-medium text-lg">
+                        {m['common.staySignedIn']()}
+                    </p>{' '}
                     <IonToggle />
                 </IonCol>
             </IonCol>
@@ -329,7 +341,13 @@ const PhoneForm: React.FC = () => {
                     <p className="mr-3 text-gray-700 font-medium text-lg">
                         <TransP
                             m={m['common.agreeToTerms']}
-                            components={[<IonRouterLink href="#" className="font-semibold login-terms-span" key="terms" />]}
+                            components={[
+                                <IonRouterLink
+                                    href="#"
+                                    className="font-semibold login-terms-span"
+                                    key="terms"
+                                />,
+                            ]}
                         />
                     </p>{' '}
                     <IonCheckbox />

@@ -125,7 +125,9 @@ const TroopID: React.FC<TroopIDProps> = ({
                 </span>
                 {issuedDateOverride || (
                     <span className="font-notoSans font-[600] text-[12px]">
-                        {issueDate ? m['troops.id.issued']({ date: issueDate }) : m['common.unknown']()}
+                        {issueDate
+                            ? m['troops.id.issued']({ date: issueDate })
+                            : m['common.unknown']()}
                     </span>
                 )}
             </div>

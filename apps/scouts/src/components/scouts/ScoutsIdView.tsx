@@ -42,7 +42,9 @@ const ScoutsIdView: React.FC<ScoutsIdViewProps> = ({ user }) => {
                     <span className="font-notoSans font-[600] text-[17px] leading-[24px] tracking-[0.25px]">
                         {idName}
                     </span>
-                    <span className="font-notoSans font-[600] text-[12px]">{m['auth.handleLabel']({ profileId })}</span>
+                    <span className="font-notoSans font-[600] text-[12px]">
+                        {m['auth.handleLabel']({ profileId })}
+                    </span>
                     {/* {issuedDateOverride || (
                         <span className="font-notoSans font-[600] text-[12px]">
                             Issued {issueDate || 'Unkown'}

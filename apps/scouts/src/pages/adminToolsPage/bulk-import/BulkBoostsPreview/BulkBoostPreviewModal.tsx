@@ -32,7 +32,9 @@ const BulkBoostPreviewModal: React.FC<{
             <div className="absolute top-0 left-0 bg-white px-4 py-[24px] shadow-header w-full z-10">
                 <div className="max-w-[600px] flex items-center justify-between mx-auto">
                     <h2 className="text-grayscale-800 text-xl">
-                        {m['adminTools.bulkImport.previewCredentials']({ count: _csvData?.length ?? 0 })}
+                        {m['adminTools.bulkImport.previewCredentials']({
+                            count: _csvData?.length ?? 0,
+                        })}
                     </h2>
                 </div>
             </div>

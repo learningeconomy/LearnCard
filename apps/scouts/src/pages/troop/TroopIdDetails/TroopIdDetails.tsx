@@ -62,7 +62,11 @@ export const TroopIdDetails: React.FC<TroopIdDetailsProps> = ({
     return (
         <section className="flex flex-col gap-[10px] w-full">
             {(description || expiration) && (
-                <TruncateTextBox headerText={m['troops.details.title']()} subHeaderText={m['troops.details.about']()} text={description}>
+                <TruncateTextBox
+                    headerText={m['troops.details.title']()}
+                    subHeaderText={m['troops.details.about']()}
+                    text={description}
+                >
                     {/* {expiration && (
                         <p className="text-grayscale-800 font-poppins font-[600] text-[12px] leading-[18px] mb-0">
                             Expire{isExpired ? 'd' : 's'} on {expiration}
@@ -75,14 +79,18 @@ export const TroopIdDetails: React.FC<TroopIdDetailsProps> = ({
                                     {/* isGeneralView => *Created by [Troop 222]* on [date]  */}
                                     {/* !isGeneralView => *Issued by:* [Troop 222]  */}
                                     <span className="font-[600] text-grayscale-900 font-notoSans">
-                                        {isGeneralView ? m['troops.details.createdBy']({ name: troopName }) : m['troops.details.issuedBy']()}
+                                        {isGeneralView
+                                            ? m['troops.details.createdBy']({ name: troopName })
+                                            : m['troops.details.issuedBy']()}
                                     </span>
                                     <span className="text-grayscale-700 font-notoSans">
                                         {isGeneralView
-                                            ? m['troops.details.onDate']({ date: format(
-                                                new Date(credential.issuanceDate),
-                                                'MMMM dd, yyyy'
-                                            ) })
+                                            ? m['troops.details.onDate']({
+                                                  date: format(
+                                                      new Date(credential.issuanceDate),
+                                                      'MMMM dd, yyyy'
+                                                  ),
+                                              })
                                             : troopName}
                                     </span>
                                 </div>

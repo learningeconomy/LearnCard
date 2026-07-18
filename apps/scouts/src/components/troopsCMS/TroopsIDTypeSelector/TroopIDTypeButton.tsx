@@ -192,7 +192,10 @@ export const TroopIDTypeButton: React.FC<TroopIDTypeButtonProps> = ({
                             {m['troops.leaderId']()}
                             {leadersListLength > 0 && (
                                 <span className="text-[14px] text-grayscale-500 font-notoSans font-[500] leading-normal">
-                                    {conditionalPluralize(leadersListLength, m['troops.leaderOne']())}
+                                    {conditionalPluralize(
+                                        leadersListLength,
+                                        m['troops.leaderOne']()
+                                    )}
                                 </span>
                             )}
                         </p>

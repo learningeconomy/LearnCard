@@ -111,7 +111,9 @@ export const TroopCMSAppearanceForm: React.FC<{
             {isInIDMode && (
                 <>
                     <div className="w-full flex items-center justify-end border-b-solid border-b-grayscale-100 border-b-[2px] pb-2 mt-4">
-                        <p className="font-notoSans text-grayscale-600 font-semibold">{m['scoutsId.display']()}</p>
+                        <p className="font-notoSans text-grayscale-600 font-semibold">
+                            {m['scoutsId.display']()}
+                        </p>
                     </div>
                     <div className="w-full flex items-end justify-between mb-2 mt-4">
                         <h3 className="text-grayscale-900 text-left w-full font-notoSans text-[20px] mb-2">

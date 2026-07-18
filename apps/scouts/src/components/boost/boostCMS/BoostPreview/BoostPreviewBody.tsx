@@ -99,9 +99,17 @@ export const BoostPreviewBody: React.FC<BoostPreviewBodyProps> = ({
                                     m={m['boostCMS.issuedToCount']}
                                     values={{
                                         count: String(count),
-                                        person: count === 1 ? m['boostCMS.person']() : m['boostCMS.people'](),
+                                        person:
+                                            count === 1
+                                                ? m['boostCMS.person']()
+                                                : m['boostCMS.people'](),
                                     }}
-                                    components={[<span key="c" className="text-grayscale-900 font-semibold" />]}
+                                    components={[
+                                        <span
+                                            key="c"
+                                            className="text-grayscale-900 font-semibold"
+                                        />,
+                                    ]}
                                 />
                             </p>
                         )}
@@ -109,7 +117,12 @@ export const BoostPreviewBody: React.FC<BoostPreviewBodyProps> = ({
                             <TransP
                                 m={m['boostCMS.by']}
                                 values={{ name: currentUser?.name ?? '' }}
-                                components={[<span key="n" className="font-bold text-gray-900 text-center" />]}
+                                components={[
+                                    <span
+                                        key="n"
+                                        className="font-bold text-gray-900 text-center"
+                                    />,
+                                ]}
                             />
                         </p>
                     </>

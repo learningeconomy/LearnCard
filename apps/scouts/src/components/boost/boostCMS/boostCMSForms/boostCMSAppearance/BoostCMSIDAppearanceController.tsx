@@ -80,7 +80,9 @@ const BoostCMSIDAppearanceController: React.FC<{
         <div className="flex items-center justify-center w-full mt-12 mb-8 relative">
             <div className="relative">
                 {showEditAppearanceText && (
-                    <p className="absolute right-[55px] top-[-30px]">{m['boostCMS.editAppearance']()}</p>
+                    <p className="absolute right-[55px] top-[-30px]">
+                        {m['boostCMS.editAppearance']()}
+                    </p>
                 )}
                 {showEditButton && (
                     <button

@@ -17,10 +17,7 @@ const LoggingOutModal: React.FC = () => {
                         }
                     `}
                 </style>
-                <IonSpinner
-                    name="crescent"
-                    className="w-28 h-28 text-sp-purple-base"
-                />
+                <IonSpinner name="crescent" className="w-28 h-28 text-sp-purple-base" />
                 <ScoutsLogo className="w-14 h-14 absolute" />
             </div>
             <div className="font-rubik text-grayscale-900 font-medium text-xl text-center">

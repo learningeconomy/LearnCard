@@ -20,8 +20,12 @@ const LearnCardPage: React.FC = () => {
     const activityHeader = (
         <IonRow className="w-full flex items-center justify-center">
             <IonCol className="flex items-center justify-between w-full z-10 max-w-[500px]">
-                <h2 className="text-grayscale-900 font-bold text-lg">{m['learnCard.recentActivity']()}</h2>
-                <button className="text-grayscale-900 font-bold text-lg">{m['common.viewAll']()}</button>
+                <h2 className="text-grayscale-900 font-bold text-lg">
+                    {m['learnCard.recentActivity']()}
+                </h2>
+                <button className="text-grayscale-900 font-bold text-lg">
+                    {m['common.viewAll']()}
+                </button>
             </IonCol>
         </IonRow>
     );

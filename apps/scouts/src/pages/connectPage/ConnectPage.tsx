@@ -118,7 +118,9 @@ const ConnectPage: React.FC = () => {
                             className="relative max-w-[250px] m-auto"
                             data-testid="connect-notFound-placeholder"
                         />
-                        <h1 className="text-center text-3xl font-bold text-grayscale-800">{m['connect.eek']()}</h1>
+                        <h1 className="text-center text-3xl font-bold text-grayscale-800">
+                            {m['connect.eek']()}
+                        </h1>
                         <strong className="text-center font-medium text-grayscale-600">
                             {m['connect.notFound']()}
                         </strong>

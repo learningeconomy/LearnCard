@@ -82,7 +82,10 @@ const TroopIDCard: React.FC<TroopIDCardProps> = ({ state, idState, rootViewMode,
 
     let name = state?.basicInfo?.name;
     if (!name) {
-        name = isInNetworkViewMode || isInGlobalViewMode ? m['troops.networkName']() : m['troops.troop']();
+        name =
+            isInNetworkViewMode || isInGlobalViewMode
+                ? m['troops.networkName']()
+                : m['troops.troop']();
     } else if (isInTroopViewMode) {
         name = `${m['troops.troop']()} ${name}`;
     }
@@ -107,7 +110,9 @@ const TroopIDCard: React.FC<TroopIDCardProps> = ({ state, idState, rootViewMode,
                     <span className="font-notoSans font-[600] text-[12px]">
                         {getMemberTypeText(rootViewMode, viewMode)} ID
                     </span>
-                    <span className="font-notoSans font-[600] text-[12px]">{m['scoutsId.issuedDate']()}</span>
+                    <span className="font-notoSans font-[600] text-[12px]">
+                        {m['scoutsId.issuedDate']()}
+                    </span>
                 </div>
             </div>
             <div className={`flex flex-col justify-center px-[10px] py-[4px] h-[45px] bg-white`}>

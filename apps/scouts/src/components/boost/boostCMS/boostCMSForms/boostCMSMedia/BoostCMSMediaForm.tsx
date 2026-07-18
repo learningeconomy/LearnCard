@@ -104,7 +104,8 @@ export const BoostCMSMediaForm: React.FC<{
                     disabled={disabled}
                 >
                     <h1 className="text-black text-xl p-0 m-0 flex items-center justify-center font-notoSans">
-                        <PaperClip className="h-[30px] w-[30px] mr-1" /> {m['boostCMS.mediaAttachments']()}
+                        <PaperClip className="h-[30px] w-[30px] mr-1" />{' '}
+                        {m['boostCMS.mediaAttachments']()}
                     </h1>
 
                     <div className="flex items-center justify-center text-grayscale-800 rounded-full bg-white w-12 h-12 shadow-3xl modal-btn-desktop">

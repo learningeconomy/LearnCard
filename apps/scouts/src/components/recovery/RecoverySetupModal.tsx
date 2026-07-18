@@ -290,15 +290,30 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     };
 
     const allTabs = [
-        { id: 'email' as const, label: m['recovery.setup.tabEmail'](), icon: mailOutline, iconClass: 'text-sm' },
-        { id: 'phrase' as const, label: m['recovery.setup.tabPhrase'](), icon: documentTextOutline, iconClass: 'text-sm' },
+        {
+            id: 'email' as const,
+            label: m['recovery.setup.tabEmail'](),
+            icon: mailOutline,
+            iconClass: 'text-sm',
+        },
+        {
+            id: 'phrase' as const,
+            label: m['recovery.setup.tabPhrase'](),
+            icon: documentTextOutline,
+            iconClass: 'text-sm',
+        },
         {
             id: 'backup' as const,
             label: m['recovery.setup.tabBackup'](),
             icon: cloudDownloadOutline,
             iconClass: 'text-sm',
         },
-        { id: 'passkey' as const, label: m['recovery.setup.tabPasskey'](), icon: fingerPrint, iconClass: 'text-sm' },
+        {
+            id: 'passkey' as const,
+            label: m['recovery.setup.tabPasskey'](),
+            icon: fingerPrint,
+            iconClass: 'text-sm',
+        },
     ];
 
     // Hide passkey tab entirely on native platforms (WebAuthn unavailable in WKWebView / Android WebView)
@@ -384,7 +399,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             {/* Dynamic Header */}
             <div className="text-center mb-5">
                 <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
-                    {anyConfigured ? m['recovery.setup.titleExisting']() : m['recovery.setup.titleNew']()}
+                    {anyConfigured
+                        ? m['recovery.setup.titleExisting']()
+                        : m['recovery.setup.titleNew']()}
                 </h2>
 
                 <p className="text-sm text-grayscale-600 leading-relaxed">
@@ -453,7 +470,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                             </p>
                         </div>
                     ) : isConfigured('passkey') && !showUpdateForm ? (
-                        configuredRow(m['recovery.setup.passkey.setUpRow'](), () => setShowUpdateForm(true))
+                        configuredRow(m['recovery.setup.passkey.setUpRow'](), () =>
+                            setShowUpdateForm(true)
+                        )
                     ) : (
                         <>
                             {isUpdate && updateWarning(m['recovery.setup.passkey.updateWarning']())}
@@ -475,9 +494,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                             icon={fingerPrint}
                                             className="text-emerald-600 text-lg mt-0.5 shrink-0"
                                         />
-                                        <span>
-                                            {m['recovery.setup.passkey.bulletBiometric']()}
-                                        </span>
+                                        <span>{m['recovery.setup.passkey.bulletBiometric']()}</span>
                                     </div>
 
                                     <div className="flex items-start gap-2.5">
@@ -485,16 +502,22 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                             icon={checkmarkCircleOutline}
                                             className="text-emerald-600 text-lg mt-0.5 shrink-0"
                                         />
-                                        <span>{m['recovery.setup.passkey.bulletNoPassword']()}</span>
+                                        <span>
+                                            {m['recovery.setup.passkey.bulletNoPassword']()}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
 
                             {primaryButton(
-                                isUpdate ? m['recovery.setup.passkey.replaceBtn']() : m['recovery.setup.passkey.setupBtn'](),
+                                isUpdate
+                                    ? m['recovery.setup.passkey.replaceBtn']()
+                                    : m['recovery.setup.passkey.setupBtn'](),
                                 handlePasskeySetup,
                                 loading,
-                                isUpdate ? m['recovery.setup.passkey.replacing']() : m['recovery.setup.passkey.settingUp']()
+                                isUpdate
+                                    ? m['recovery.setup.passkey.replacing']()
+                                    : m['recovery.setup.passkey.settingUp']()
                             )}
 
                             {isUpdate && cancelUpdateButton()}
@@ -507,11 +530,12 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             {activeTab === 'phrase' && (
                 <div className="space-y-4">
                     {isConfigured('phrase') && !showUpdateForm && !recoveryPhrase ? (
-                        configuredRow(m['recovery.setup.phrase.savedRow'](), () => setShowUpdateForm(true))
+                        configuredRow(m['recovery.setup.phrase.savedRow'](), () =>
+                            setShowUpdateForm(true)
+                        )
                     ) : !recoveryPhrase ? (
                         <>
-                            {isUpdate &&
-                                updateWarning(m['recovery.setup.phrase.updateWarning']())}
+                            {isUpdate && updateWarning(m['recovery.setup.phrase.updateWarning']())}
 
                             <p className="text-sm text-grayscale-600 leading-relaxed">
                                 {m['recovery.setup.phrase.desc']()}
@@ -525,7 +549,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                 <ul className="text-sm text-amber-700 space-y-1.5">
                                     <li className="flex items-start gap-2">
                                         <span className="text-amber-500 mt-0.5">•</span>
-                                        <span>{m['recovery.setup.phrase.warningWritePaper']()}</span>
+                                        <span>
+                                            {m['recovery.setup.phrase.warningWritePaper']()}
+                                        </span>
                                     </li>
 
                                     <li className="flex items-start gap-2">
@@ -538,7 +564,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                             </div>
 
                             {primaryButton(
-                                isUpdate ? m['recovery.setup.phrase.genNewBtn']() : m['recovery.setup.phrase.genBtn'](),
+                                isUpdate
+                                    ? m['recovery.setup.phrase.genNewBtn']()
+                                    : m['recovery.setup.phrase.genBtn'](),
                                 handleGeneratePhrase,
                                 loading,
                                 m['recovery.setup.phrase.generating']()
@@ -566,7 +594,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                     icon={phraseCopied ? checkmarkOutline : copyOutline}
                                     className="text-base"
                                 />
-                                {phraseCopied ? m['recovery.setup.phrase.copied']() : m['recovery.setup.phrase.copyBtn']()}
+                                {phraseCopied
+                                    ? m['recovery.setup.phrase.copied']()
+                                    : m['recovery.setup.phrase.copyBtn']()}
                             </button>
 
                             {!phraseConfirmed && (
@@ -586,11 +616,12 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             {activeTab === 'backup' && (
                 <div className="space-y-4">
                     {isConfigured('backup') && !showUpdateForm && !backupFileJson ? (
-                        configuredRow(m['recovery.setup.backup.createdRow'](), () => setShowUpdateForm(true))
+                        configuredRow(m['recovery.setup.backup.createdRow'](), () =>
+                            setShowUpdateForm(true)
+                        )
                     ) : !backupFileJson ? (
                         <>
-                            {isUpdate &&
-                                updateWarning(m['recovery.setup.backup.updateWarning']())}
+                            {isUpdate && updateWarning(m['recovery.setup.backup.updateWarning']())}
 
                             <p className="text-sm text-grayscale-600 leading-relaxed">
                                 {m['recovery.setup.backup.desc']()}
@@ -625,7 +656,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                             </div>
 
                             {primaryButton(
-                                isUpdate ? m['recovery.setup.backup.genNewBtn']() : m['recovery.setup.backup.genBtn'](),
+                                isUpdate
+                                    ? m['recovery.setup.backup.genNewBtn']()
+                                    : m['recovery.setup.backup.genBtn'](),
                                 handleBackupSetup,
                                 loading || !backupPassword || !confirmBackupPassword,
                                 m['recovery.setup.backup.generating']()
@@ -663,7 +696,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                 className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                             >
                                 <IonIcon icon={cloudDownloadOutline} className="text-base" />
-                                {backupDownloaded ? m['recovery.setup.backup.downloadAgain']() : m['recovery.setup.backup.downloadBtn']()}
+                                {backupDownloaded
+                                    ? m['recovery.setup.backup.downloadAgain']()
+                                    : m['recovery.setup.backup.downloadBtn']()}
                             </button>
 
                             {backupDownloaded && !backupConfirmed && (
@@ -701,8 +736,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                     ) : !emailVerified ? (
                         // Step 1 & 2: Verify email
                         <>
-                            {isUpdate &&
-                                updateWarning(m['recovery.setup.email.updateWarning']())}
+                            {isUpdate && updateWarning(m['recovery.setup.email.updateWarning']())}
 
                             {!anyConfigured && (
                                 <span className="inline-block text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full">
@@ -726,7 +760,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                             type="email"
                                             value={emailInput}
                                             onChange={e => setEmailInput(e.target.value)}
-                                            placeholder={m['recovery.setup.email.emailPlaceholder']()}
+                                            placeholder={m[
+                                                'recovery.setup.email.emailPlaceholder'
+                                            ]()}
                                             className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                                         />
                                     </div>
@@ -749,7 +785,11 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                 <>
                                     <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl">
                                         <p className="text-sm text-emerald-700 leading-relaxed">
-                                            <TransP m={m['recovery.setup.email.codeSent']} values={{ email: emailInput }} components={[<strong key="b" />]} />
+                                            <TransP
+                                                m={m['recovery.setup.email.codeSent']}
+                                                values={{ email: emailInput }}
+                                                components={[<strong key="b" />]}
+                                            />
                                         </p>
                                     </div>
 
@@ -768,7 +808,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                                     e.target.value.replace(/\D/g, '').slice(0, 6)
                                                 )
                                             }
-                                            placeholder={m['recovery.setup.email.codePlaceholder']()}
+                                            placeholder={m[
+                                                'recovery.setup.email.codePlaceholder'
+                                            ]()}
                                             className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white text-center tracking-[0.3em] font-mono"
                                         />
                                     </div>
@@ -838,7 +880,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                     </p>
 
                                     <p className="text-xs text-emerald-700 leading-relaxed">
-                                        {m['recovery.setup.email.keySentDesc']({ email: emailMasked })}
+                                        {m['recovery.setup.email.keySentDesc']({
+                                            email: emailMasked,
+                                        })}
                                     </p>
                                 </div>
                             </div>

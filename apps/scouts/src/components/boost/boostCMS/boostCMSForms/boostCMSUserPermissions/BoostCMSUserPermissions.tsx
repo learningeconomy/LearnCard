@@ -68,7 +68,9 @@ const BoostCMSUserPermissions: React.FC<{
                     </IonCol>
                     <IonCol size="12" className="w-full bg-white">
                         <div className="w-full flex items-center justify-between py-[8px]">
-                            <p className="text-grayscale-900 font-medium w-10/12">{m['boostCMS.createIDs']()}</p>
+                            <p className="text-grayscale-900 font-medium w-10/12">
+                                {m['boostCMS.createIDs']()}
+                            </p>
                             <IonToggle
                                 mode="ios"
                                 color="indigo-700"
