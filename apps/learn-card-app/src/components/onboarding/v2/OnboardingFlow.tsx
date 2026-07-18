@@ -22,7 +22,7 @@ import {
     ModalTypes,
     useDeviceTypeByWidth,
     UploadRes,
-    useFilestack,
+    useImageUpload,
     getLogger,
     Toggle,
 } from 'learn-card-base';
@@ -217,7 +217,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
         setPhoto(data?.url);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
     });
