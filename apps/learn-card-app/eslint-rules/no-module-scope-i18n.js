@@ -29,11 +29,7 @@ const isTranslationCall = node => {
     );
 };
 
-const DEFERRED = new Set([
-    'ArrowFunctionExpression',
-    'FunctionExpression',
-    'FunctionDeclaration',
-]);
+const DEFERRED = new Set(['ArrowFunctionExpression', 'FunctionExpression', 'FunctionDeclaration']);
 
 module.exports = {
     meta: {
@@ -44,8 +40,7 @@ module.exports = {
         },
         schema: [],
         messages: {
-            frozen:
-                'Paraglide message resolved at module scope — frozen at import time, never updates on a locale switch (often to the pre-locale default). Move it into a function resolved at render, or store the key and resolve where it renders.',
+            frozen: 'Paraglide message resolved at module scope — frozen at import time, never updates on a locale switch (often to the pre-locale default). Move it into a function resolved at render, or store the key and resolve where it renders.',
         },
     },
     create(context) {
