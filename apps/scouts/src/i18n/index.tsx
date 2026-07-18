@@ -15,7 +15,12 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { setLocale as paraglideSetLocale, getLocale } from '../paraglide/runtime.js';
 
-import { detectInitialLocale, detectInitialLocaleSync } from './detectLocale';
+import {
+    detectInitialLocale,
+    detectInitialLocaleSync,
+    getEffectiveSupportedLanguages,
+} from './detectLocale';
+import { applyLocaleChange } from './localeChange';
 
 // Mirror of Paraglide's runtime `MessagePart` (a JSDoc typedef in
 // ../paraglide/runtime.js, not a TS export). Field types match the generated
@@ -70,13 +75,14 @@ const LocaleContext = createContext<LocaleContextValue | null>(null);
  * after first render when running on iOS/Android.
  */
 function resolveInitialLocale(): SupportedLanguage {
-    const detected = detectInitialLocaleSync(SUPPORTED_LANGUAGES, 'en');
+    const supportedLanguages = getEffectiveSupportedLanguages(SUPPORTED_LANGUAGES);
+    const detected = detectInitialLocaleSync(supportedLanguages, 'en');
     // Paraglide's getLocale() is the runtime baseLocale (typically 'en'). If the
     // sync chain returned that and it's a no-op, prefer Paraglide's own value
     // so any future server-side strategy stays consistent.
     if (detected === 'en') {
         const gl = getLocale();
-        if ((SUPPORTED_LANGUAGES as readonly string[]).includes(gl)) {
+        if ((supportedLanguages as readonly string[]).includes(gl)) {
             return gl as SupportedLanguage;
         }
     }
@@ -101,14 +107,12 @@ export const LocaleProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         return initial;
     });
     const changeLocale = useCallback((lang: SupportedLanguage) => {
-        // 1. Persist to localStorage
-        if (typeof localStorage !== 'undefined') {
-            localStorage.setItem('i18n.language', lang);
-        }
-        // 2. Update Paraglide's internal _locale (no page reload)
-        paraglideSetLocale(lang, { reload: false });
-        // 3. Trigger React re-render
-        setLocaleState(lang);
+        applyLocaleChange(
+            lang,
+            nextLocale => paraglideSetLocale(nextLocale, { reload: false }),
+            setLocaleState,
+            typeof localStorage === 'undefined' ? undefined : localStorage
+        );
     }, []);
 
     // First-launch native-locale upgrade. Only runs if the user hasn't yet
@@ -118,10 +122,11 @@ export const LocaleProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const hasManualChoice =
             typeof localStorage !== 'undefined' && !!localStorage.getItem('i18n.language');
         if (hasManualChoice) return;
-        void detectInitialLocale(SUPPORTED_LANGUAGES, 'en').then(detected => {
+        const supportedLanguages = getEffectiveSupportedLanguages(SUPPORTED_LANGUAGES);
+        void detectInitialLocale(supportedLanguages, 'en').then(detected => {
             if (
                 detected !== locale &&
-                (SUPPORTED_LANGUAGES as readonly string[]).includes(detected)
+                (supportedLanguages as readonly string[]).includes(detected)
             ) {
                 // Don't persist (we don't want to record an auto choice as a
                 // manual one — that would block future re-detection if the user

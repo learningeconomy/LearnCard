@@ -6,7 +6,7 @@ import { asyncWithLDProvider } from 'launchdarkly-react-client-sdk';
 import { LAUNCH_DARKLY_CONFIG } from './constants/launchDarkly';
 import { TenantConfigProvider } from 'learn-card-base';
 import { LocaleProvider } from './i18n';
-import { setTenantDefaultLocaleCache } from './i18n/detectLocale';
+import { setTenantDefaultLocaleCache, setTenantSupportedLanguagesCache } from './i18n/detectLocale';
 
 import App from './App';
 import { bootstrapTenantConfig } from './config/bootstrapTenantConfig';
@@ -28,6 +28,7 @@ const log = getLogger('index');
     // navigator.language isn't a supported locale. Must run BEFORE React mounts
     // (resolveInitialLocale runs in the LocaleProvider useState initializer).
     setTenantDefaultLocaleCache((tenantConfig as any)?.i18n?.defaultLanguage);
+    setTenantSupportedLanguagesCache((tenantConfig as any)?.i18n?.supportedLanguages);
 
     // notifyAppReady
     const capGoApp = await CapacitorUpdater.notifyAppReady();

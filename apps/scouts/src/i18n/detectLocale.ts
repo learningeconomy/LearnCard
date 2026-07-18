@@ -74,6 +74,21 @@ function readTenantDefaultLocale(): string | undefined {
     return cachedTenantDefault;
 }
 
+let cachedTenantSupported: readonly string[] | undefined;
+
+export function setTenantSupportedLanguagesCache(langs: readonly string[] | undefined): void {
+    cachedTenantSupported = langs && langs.length > 0 ? langs : undefined;
+}
+
+export function getEffectiveSupportedLanguages<T extends string>(compiled: readonly T[]): T[] {
+    if (!cachedTenantSupported) return [...compiled];
+
+    const tenantLanguages = new Set(cachedTenantSupported);
+    const effectiveLanguages = compiled.filter(language => tenantLanguages.has(language));
+
+    return effectiveLanguages.length > 0 ? effectiveLanguages : [...compiled];
+}
+
 /**
  * Strips the regional suffix from a BCP-47 locale tag. `'ko-KR'` → `'ko'`,
  * `'pt-BR'` → `'pt'`, `'zh-Hans-CN'` → `'zh'`. Empty/undefined returns the
