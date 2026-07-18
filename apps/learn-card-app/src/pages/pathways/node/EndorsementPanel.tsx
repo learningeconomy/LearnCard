@@ -12,6 +12,7 @@
  */
 
 import React, { useState } from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 import { AnimatePresence, motion } from 'motion/react';
 import { v4 as uuid } from 'uuid';
@@ -19,14 +20,14 @@ import { v4 as uuid } from 'uuid';
 import { AnalyticsEvents, useAnalytics } from '../../../analytics';
 import type { EndorsementRef } from '../types';
 
-const RELATIONSHIP_OPTIONS: Array<{
+const getRelationshipOptions = (): Array<{
     value: EndorsementRef['endorserRelationship'];
     label: string;
-}> = [
+}> => [
     { value: 'mentor', label: 'Mentor' },
     { value: 'peer', label: 'Peer' },
     { value: 'guardian', label: 'Guardian' },
-    { value: 'institution', label: 'Institution' },
+    { value: 'institution', label: m['pathways.institution']() },
 ];
 
 const TRUST_TIER_BY_RELATIONSHIP: Record<
@@ -75,9 +76,8 @@ const EndorsementPanel: React.FC<EndorsementPanelProps> = ({
     const analytics = useAnalytics();
 
     const [open, setOpen] = useState(false);
-    const [relationship, setRelationship] = useState<
-        EndorsementRef['endorserRelationship']
-    >('mentor');
+    const [relationship, setRelationship] =
+        useState<EndorsementRef['endorserRelationship']>('mentor');
     const [contact, setContact] = useState('');
 
     const canSubmit = contact.trim().length > 0;
@@ -178,14 +178,14 @@ const EndorsementPanel: React.FC<EndorsementPanelProps> = ({
                                 value={relationship}
                                 onChange={e =>
                                     setRelationship(
-                                        e.target.value as EndorsementRef['endorserRelationship'],
+                                        e.target.value as EndorsementRef['endorserRelationship']
                                     )
                                 }
                                 className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm
                                            text-grayscale-900 bg-white focus:outline-none focus:ring-2
                                            focus:ring-emerald-500 focus:border-transparent font-poppins"
                             >
-                                {RELATIONSHIP_OPTIONS.map(o => (
+                                {getRelationshipOptions().map(o => (
                                     <option key={o.value} value={o.value}>
                                         {o.label}
                                     </option>

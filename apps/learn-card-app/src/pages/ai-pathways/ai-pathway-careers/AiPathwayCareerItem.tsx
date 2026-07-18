@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react';
 import numeral from 'numeral';
 
+import { m } from '../../../paraglide/messages.js';
+
 import SlimCaretRight from '../../../components/svgs/SlimCaretRight';
 import AiPathwayCareerDetails from './AiPathwaysCareerDetails';
 import useTheme from '../../../theme/hooks/useTheme';
@@ -86,7 +88,7 @@ export const AiPathwayCareerItem: React.FC<{
                 </div>
                 <div className="w-full flex flex-col items-start justify-start">
                     <p className="text-grayscale-600 text-[13px] text-left font-semibold">
-                        AVG. ANNUAL SALARY
+                        {m['aiPathways.avgAnnualSalary']()}
                     </p>
                     <p className="text-indigo-400 text-xl font-semibold text-left">
                         ${numeral(medianSalary).format('0,0')}
@@ -98,7 +100,9 @@ export const AiPathwayCareerItem: React.FC<{
                         {totalSkillsCount > 0 && (
                             <p className="text-grayscale-600 text-sm text-left font-semibold">
                                 {totalSkillsCount}{' '}
-                                {totalSkillsCount === 1 ? 'Matching Skill' : 'Matching Skills'}
+                                {totalSkillsCount === 1
+                                    ? m['aiPathways.matchingSkill']()
+                                    : m['aiPathways.matchingSkills']()}
                             </p>
                         )}
                         <div className="w-full flex items-center gap-2 flex-wrap">
@@ -113,7 +117,7 @@ export const AiPathwayCareerItem: React.FC<{
                             {remainingSkillsCount > 0 && (
                                 <div className="inline-flex items-center rounded-full bg-violet-50 px-3 py-2">
                                     <p className="text-grayscale-900 text-xs font-semibold">
-                                        + {remainingSkillsCount} more
+                                        {m['aiPathways.plusMore']({ count: remainingSkillsCount })}
                                     </p>
                                 </div>
                             )}

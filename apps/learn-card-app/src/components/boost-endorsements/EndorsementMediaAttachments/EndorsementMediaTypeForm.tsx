@@ -13,6 +13,7 @@ import {
 } from '../EndorsementForm/endorsement-state.helpers';
 import { useImageUpload, UploadRes, useModal, getAttachmentFileInfo } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
+import * as m from '../../../paraglide/messages.js';
 
 const EndorsementMediaTypeForm: React.FC<{
     media: EndorsementMediaAttachment;
@@ -26,8 +27,23 @@ const EndorsementMediaTypeForm: React.FC<{
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
-    const { Icon, color, title } =
-        endorsementMediaOptions.find(option => option.type === mediaType) || {};
+    const { Icon, color } = endorsementMediaOptions.find(option => option.type === mediaType) || {};
+
+    // Localized media-type label (Photo/Document/Video/Link). Resolved at render.
+    const mediaTypeLabel = () => {
+        switch (mediaType) {
+            case EndorsementMediaOptionsEnum.photo:
+                return m['endorsement.media.photo']();
+            case EndorsementMediaOptionsEnum.document:
+                return m['endorsement.media.document']();
+            case EndorsementMediaOptionsEnum.video:
+                return m['endorsement.media.video']();
+            case EndorsementMediaOptionsEnum.link:
+                return m['endorsement.media.link']();
+            default:
+                return '';
+        }
+    };
 
     const [uploadProgress, setUploadProgress] = useState<number | boolean>(false);
     const [mediaTitle, setMediaTitle] = useState<string>(media?.title ?? '');
@@ -73,7 +89,7 @@ const EndorsementMediaTypeForm: React.FC<{
                                 <CaretLeft className="h-auto w-3 text-grayscale-800" />
                             </button>
                         )}
-                        {title} Attachment
+                        {m['endorsement.media.attachmentTitle']({ type: mediaTypeLabel() })}
                     </h6>
                     {Icon && (
                         <Icon className={`text-${color} h-[40px] max-h-[40px] max-w-[40px]`} />
@@ -96,7 +112,7 @@ const EndorsementMediaTypeForm: React.FC<{
                 <IonInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
-                    placeholder="Title"
+                    placeholder={m['endorsement.media.titlePlaceholder']()}
                     type="text"
                     value={mediaTitle}
                     onIonInput={e => setMediaTitle(e.detail.value!)}
@@ -111,7 +127,7 @@ const EndorsementMediaTypeForm: React.FC<{
                     <IonInput
                         autocapitalize="on"
                         className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mt-4`}
-                        placeholder="Paste link..."
+                        placeholder={m['endorsement.media.pasteLink']()}
                         type="text"
                         value={mediaUrl}
                         onIonInput={e => setMediaUrl(e.detail.value!)}
@@ -143,7 +159,9 @@ const EndorsementMediaTypeForm: React.FC<{
 
                         {uploadProgress !== false && (
                             <p className="font-medium text-[#FF3636]">
-                                {uploadProgress?.toString?.()}% uploaded
+                                {m['endorsement.media.uploaded']({
+                                    count: uploadProgress as number,
+                                })}
                             </p>
                         )}
                     </div>
@@ -157,11 +175,13 @@ const EndorsementMediaTypeForm: React.FC<{
                     }}
                     className={`flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide`}
                 >
-                    Save
+                    {m['common.save']()}
                 </button>
             ) : (
                 <button className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide">
-                    {imageUploadLoading ? 'Uploading...' : 'Upload'}
+                    {imageUploadLoading
+                        ? m['endorsement.media.uploading']()
+                        : m['endorsement.media.upload']()}
                 </button>
             )}
 
@@ -170,7 +190,7 @@ const EndorsementMediaTypeForm: React.FC<{
                     onClick={handleImageSelect}
                     className="flex items-center mt-[20px] justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide"
                 >
-                    Change {title}
+                    {m['endorsement.media.change']({ type: mediaTypeLabel() })}
                 </button>
             )}
         </div>

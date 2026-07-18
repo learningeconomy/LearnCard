@@ -3,6 +3,7 @@ import React from 'react';
 import { IonPage } from '@ionic/react';
 import ModalLayout from '../../layout/ModalLayout';
 
+import * as m from '../../paraglide/messages.js';
 import CategoryDescriptor from '../../components/category-descriptor/CategoryDescriptor';
 import { CredentialCategoryEnum } from 'learn-card-base';
 import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
@@ -85,7 +86,10 @@ const CategoryDescriptorModal: React.FC<{
 
     return (
         <IonPage>
-            <ModalLayout handleOnClick={handleCloseModal} buttonText="Got It">
+            <ModalLayout
+                handleOnClick={handleCloseModal}
+                buttonText={m['wallet.categoryDescriptor.gotIt']()}
+            >
                 <div className="p-[30px]">
                     <img
                         src={imgSrc}
@@ -93,7 +97,7 @@ const CategoryDescriptorModal: React.FC<{
                         className="w-[100px] h-[100px] m-auto"
                     />
                     <p className="text-center text-[22px] font-poppins font-normal leading-[130%] text-grayscale-900">
-                        <strong>About {title}</strong>
+                        <strong>{m['wallet.categoryDescriptor.about']({ name: title })}</strong>
                     </p>
                     <CategoryDescriptor category={category} className="text-left mt-[10px]" />
                 </div>

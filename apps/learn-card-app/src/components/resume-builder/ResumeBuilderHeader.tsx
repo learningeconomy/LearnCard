@@ -10,6 +10,8 @@ import ResumeBuilderHistoryDropdownButton from './ResumeBuilderHistoryDropdownBu
 import type { ExistingResume } from '../../hooks/useExistingResumes';
 import Checkmark from '../svgs/Checkmark';
 
+import * as m from '../../paraglide/messages.js';
+
 export type ResumeBuilderHeaderAction = 'preview' | 'download' | 'publish' | null;
 
 export const ResumeBuilderHeader: React.FC<{
@@ -49,7 +51,7 @@ export const ResumeBuilderHeader: React.FC<{
                 <div className="flex items-center gap-1">
                     {isMobile && (
                         <button
-                            aria-label="Go back"
+                            aria-label={m['passport.resumeBuilder.goBack']()}
                             onClick={() => {
                                 history.goBack();
                             }}
@@ -75,7 +77,7 @@ export const ResumeBuilderHeader: React.FC<{
                             {loadingAction === 'preview' ? (
                                 <IonSpinner name="crescent" className="w-4 h-4" />
                             ) : (
-                                'Preview'
+                                m['common.preview']()
                             )}
                         </button>
                     </div>
@@ -98,7 +100,9 @@ export const ResumeBuilderHeader: React.FC<{
                         {loadingAction === 'download' ? (
                             <IonSpinner name="crescent" className="w-4 h-4" />
                         ) : (
-                            <span className={isMobile ? 'sr-only' : ''}>Download</span>
+                            <span className={isMobile ? 'sr-only' : ''}>
+                                {m['passport.resumeBuilder.download']()}
+                            </span>
                         )}
                     </button>
                     {isEditingExistingResume && onShareCurrentResume ? (
@@ -110,7 +114,7 @@ export const ResumeBuilderHeader: React.FC<{
                             }`}
                         >
                             <ShareIcon className="w-5 h-5" />
-                            <span className={isMobile ? 'sr-only' : ''}>Share</span>
+                            <span className={isMobile ? 'sr-only' : ''}>{m['common.share']()}</span>
                         </button>
                     ) : null}
                     <button
@@ -127,7 +131,9 @@ export const ResumeBuilderHeader: React.FC<{
                             <IonSpinner name="crescent" className="w-4 h-4" />
                         ) : (
                             <span className={isMobile ? 'sr-only' : ''}>
-                                {isEditingExistingResume ? 'Save' : 'Publish'}
+                                {isEditingExistingResume
+                                    ? m['common.save']()
+                                    : m['common.publish']()}
                             </span>
                         )}
                     </button>

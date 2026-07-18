@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
+import { m } from '../../paraglide/messages.js';
+
 import { Search, X } from 'lucide-react';
 
 import {
@@ -129,30 +131,32 @@ const ExploreRoles: React.FC<ExploreRolesProps> = ({ initialSearchQuery = '' }) 
                         <RolesIcon className="w-[50px] h-[50px] shrink-0" />
                         <div className="flex flex-col min-w-0">
                             <h2 className="text-grayscale-900 text-[21px] font-poppins font-semibold truncate">
-                                Explore Roles
+                                {m['aiPathways.exploreRoles']()}
                             </h2>
                             <div className="text-sm text-grayscale-600 font-poppins font-semibold flex items-center gap-1.5 flex-wrap">
                                 <span>
                                     {skillsLoading ? '--' : skillsCount}{' '}
-                                    {skillsCount === 1 ? 'Skill' : 'Skills'}
+                                    {skillsCount === 1
+                                        ? m['aiPathways.skill']()
+                                        : m['aiPathways.skills']()}
                                 </span>
                                 <button
                                     type="button"
                                     className="text-indigo-500 hover:text-indigo-500 transition-colors font-semibold bg-indigo-50 px-[4px] py-[1px] rounded-[5px]"
                                     onClick={openSelfAssignSkillsModal}
                                 >
-                                    Edit
+                                    {m['common.edit']()}
                                 </button>
                                 <span className="text-sm text-grayscale-600 font-semibold">•</span>
                                 <span className="text-sm text-grayscale-600 font-semibold">
-                                    {goalsLoading ? '--' : goalsCount} Goals
+                                    {goalsLoading ? '--' : goalsCount} {m['aiPathways.goals']()}
                                 </span>
                                 <button
                                     type="button"
                                     className="text-indigo-500 hover:text-indigo-500 transition-colors font-semibold bg-indigo-50 px-[4px] py-[1px] rounded-[5px]"
                                     onClick={openEditGoalsModal}
                                 >
-                                    Edit
+                                    {m['common.edit']()}
                                 </button>
                             </div>
                         </div>
@@ -167,7 +171,7 @@ const ExploreRoles: React.FC<ExploreRolesProps> = ({ initialSearchQuery = '' }) 
                 </div>
 
                 <PathwaySearchInput
-                    placeholder="Skill, goal or job..."
+                    placeholder={m['aiPathways.skillGoalJob']()}
                     value={searchQuery}
                     onValueChange={setSearchQuery}
                     onSearchSubmit={query => {
@@ -184,7 +188,7 @@ const ExploreRoles: React.FC<ExploreRolesProps> = ({ initialSearchQuery = '' }) 
                         type="text"
                         value={inlineFilter}
                         onChange={e => setInlineFilter(e.target.value)}
-                        placeholder="Filter results..."
+                        placeholder={m['aiPathways.filterResults']()}
                         className="w-full py-3 px-4 pl-10 border border-grayscale-200 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-600 focus:outline-none focus:border-transparent bg-white"
                     />
                 </div>
@@ -192,7 +196,7 @@ const ExploreRoles: React.FC<ExploreRolesProps> = ({ initialSearchQuery = '' }) 
                 <div className="w-full flex flex-col gap-3">
                     {!submittedSearchQuery.trim() && (
                         <div className="w-full rounded-[20px] border border-grayscale-200 bg-white p-4 text-sm text-grayscale-600 font-poppins">
-                            Search to explore matching roles.
+                            {m['aiPathways.searchToExplore']()}
                         </div>
                     )}
 
@@ -211,7 +215,7 @@ const ExploreRoles: React.FC<ExploreRolesProps> = ({ initialSearchQuery = '' }) 
                         !occupationsLoading &&
                         filteredOccupations.length === 0 && (
                             <div className="w-full rounded-[20px] border border-grayscale-200 bg-white p-4 text-sm text-grayscale-600 font-poppins">
-                                No roles matched your search. Try a broader keyword.
+                                {m['aiPathways.noRolesMatched']()}
                             </div>
                         )}
 

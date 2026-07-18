@@ -15,6 +15,7 @@ import {
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import { getTransactionDate, parseContractName } from './consentFlowGrouping';
 import ConsentActivityDetailModal from './ConsentActivityDetailModal';
+import * as m from '../../../paraglide/messages.js';
 
 type GroupedConsentFlowCardProps = {
     notifications: NotificationType[];
@@ -27,8 +28,9 @@ const GroupedConsentFlowCard: React.FC<GroupedConsentFlowCardProps> = ({ notific
     const primary = notifications[0];
     const { data: profile } = useGetProfile(primary?.from?.profileId);
 
-    const actorName = profile?.displayName || primary?.from?.displayName || 'Someone';
-    const contractName = parseContractName(primary?.message?.body) || 'your contract';
+    const actorName =
+        profile?.displayName || primary?.from?.displayName || m['dashboard.activity.someone']();
+    const contractName = parseContractName(primary?.message?.body) || m['notifications.contract']();
     const count = notifications.length;
     const hasUnread = notifications.some(notification => !notification?.read);
     const latestDate = moment(getTransactionDate(primary)).format('MMM D, YYYY');
@@ -75,7 +77,7 @@ const GroupedConsentFlowCard: React.FC<GroupedConsentFlowCardProps> = ({ notific
         <ErrorBoundary
             fallback={
                 <div className="flex w-full max-w-[600px] items-start p-4 my-2 bg-white">
-                    Unable to load notification
+                    {m['aiInsights.unableToLoad']()}
                 </div>
             }
         >
@@ -111,22 +113,24 @@ const GroupedConsentFlowCard: React.FC<GroupedConsentFlowCardProps> = ({ notific
                         </div>
                         <div className="flex items-center flex-wrap gap-2 mt-0.5">
                             <p className="text-sm text-grayscale-600 truncate">
-                                Shared credentials with {contractName}
+                                {m['notifications.sharedCred']({ name: contractName })}
                             </p>
                             {count > 1 && (
                                 <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-grayscale-100 text-xs font-medium text-grayscale-700">
-                                    {count} updates
+                                    {m['notifications.updateCnt']({ count })}
                                 </span>
                             )}
                         </div>
-                        <p className="text-xs text-grayscale-400 mt-0.5">Latest {latestDate}</p>
+                        <p className="text-xs text-grayscale-400 mt-0.5">
+                            {m['notifications.latest']({ date: latestDate })}
+                        </p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
                     <button
                         onClick={handleArchiveGroup}
-                        aria-label="Archive"
+                        aria-label={m['alerts.archive']()}
                         className="flex items-center justify-center h-8 w-8 rounded-full hover:bg-grayscale-100 transition-colors"
                     >
                         <X className="text-grayscale-500 w-4 h-4" />

@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../../../paraglide/messages.js';
 import WarningCircle from '../../../svgs/WarningCircle';
 import { ModalTypes, useModal } from 'learn-card-base';
 import ParentInviteModal from './ParentInviteModal';
@@ -29,11 +30,10 @@ const USConsentNoticeModalContent: React.FC<USConsentNoticeModalContentProps> = 
                     </div>
                 </div>
                 <h2 className="text-[22px] font-semibold text-grayscale-900 mb-2 font-noto">
-                    Consent Notice
+                    {m['onboarding.consent.us.heading']()}
                 </h2>
                 <p className="text-grayscale-700 text-[17px] leading-[24px] px-[10px]">
-                    We collect learning progress and credentials. These can be shared with you, your
-                    teachers, or verified organizations.
+                    {m['onboarding.consent.us.description']()}
                 </p>
                 <div>
                     {/* <button
@@ -52,14 +52,14 @@ const USConsentNoticeModalContent: React.FC<USConsentNoticeModalContentProps> = 
                         onClick={onBack}
                         className=" shadow-button-bottom flex-1 py-[10px] text-[17px] bg-white rounded-[40px] text-grayscale-900 shadow-box-bottom border border-grayscale-200"
                     >
-                        Back
+                        {m['onboarding.back']()}
                     </button>
                     <button
                         type="button"
                         onClick={onContinue}
                         className=" shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
                     >
-                        Continue
+                        {m['common.continue']()}
                     </button>
                 </div>
             </div>

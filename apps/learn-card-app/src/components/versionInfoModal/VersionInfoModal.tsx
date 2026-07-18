@@ -26,6 +26,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import * as m from '../../paraglide/messages.js';
 import { IonIcon } from '@ionic/react';
 import {
     chevronDownOutline,
@@ -886,7 +887,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
         return (
             <div className="font-poppins py-10 px-8 flex flex-col items-center gap-3">
                 <span className="w-6 h-6 border-2 border-grayscale-200 border-t-grayscale-700 rounded-full animate-spin" />
-                <span className="text-sm text-grayscale-500">Gathering version info…</span>
+                <span className="text-sm text-grayscale-500">{m['versionInfo.gathering']()}</span>
             </div>
         );
     }
@@ -913,7 +914,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
             <h2 className="mt-4 text-lg font-semibold text-grayscale-900 text-center">{appName}</h2>
 
             <p className="mt-1 text-sm text-grayscale-500 text-center">
-                Version{' '}
+                {m['versionInfo.version']()}{' '}
                 <span className="font-medium text-grayscale-700">{info.displayVersion}</span>
                 <span className="mx-1.5 text-grayscale-300">·</span>
                 {platformLabel}
@@ -926,22 +927,21 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                     className="text-emerald-500 text-base mt-0.5 shrink-0"
                 />
                 <p className="text-xs text-emerald-900 leading-relaxed">
-                    These details help support identify exactly which build you&rsquo;re running if
-                    you ever need to report an issue.
+                    {m['versionInfo.supportBlurb']()}
                 </p>
             </div>
 
             {/* ---- Core info list ------------------------------------------------ */}
             <div className="mt-4 w-full bg-white border border-grayscale-200 rounded-2xl px-4 py-1">
-                <VersionInfoRow label="Platform" value={platformLabel} />
+                <VersionInfoRow label={m['versionInfo.platform']()} value={platformLabel} />
                 <VersionInfoRow
-                    label="App version"
+                    label={m['versionInfo.appVersion']()}
                     value={info.displayVersion}
                     onCopy={copyString}
                 />
                 {info.nativeVersion ? (
                     <VersionInfoRow
-                        label="Native version"
+                        label={m['versionInfo.nativeVersion']()}
                         value={
                             info.nativeBuild
                                 ? `${info.nativeVersion} (${info.nativeBuild})`
@@ -957,21 +957,21 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                 ) : null}
                 {info.bundleVersion ? (
                     <VersionInfoRow
-                        label="Content version"
+                        label={m['versionInfo.contentVersion']()}
                         value={info.bundleVersion}
                         onCopy={copyString}
                     />
                 ) : null}
                 {info.channel ? (
                     <VersionInfoRow
-                        label="Update channel"
+                        label={m['versionInfo.updateChannel']()}
                         value={info.channel}
                         onCopy={copyString}
                     />
                 ) : null}
                 {info.lastUpdateApplied ? (
                     <VersionInfoRow
-                        label="Last updated"
+                        label={m['versionInfo.lastUpdated']()}
                         value={formatRelative(info.lastUpdateApplied)}
                         copyValue={info.lastUpdateApplied}
                         onCopy={copyString}
@@ -988,12 +988,12 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                 {copyState === 'copied' ? (
                     <>
                         <IonIcon icon={checkmarkCircleOutline} className="text-base" />
-                        Copied to clipboard
+                        {m['versionInfo.copiedToClipboard']()}
                     </>
                 ) : (
                     <>
                         <IonIcon icon={copyOutline} className="text-base" />
-                        Copy details
+                        {m['versionInfo.copyDetails']()}
                     </>
                 )}
             </button>
@@ -1009,7 +1009,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                     aria-expanded={advancedOpen}
                     className="w-full flex items-center justify-between py-2 px-1 text-xs font-medium text-grayscale-500 hover:text-grayscale-700 transition-colors"
                 >
-                    <span className="uppercase tracking-wide">Advanced</span>
+                    <span className="uppercase tracking-wide">{m['versionInfo.advanced']()}</span>
                     <IonIcon
                         icon={advancedOpen ? chevronUpOutline : chevronDownOutline}
                         className="text-base"
@@ -1129,7 +1129,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                                 {checkingForUpdate ? (
                                     <>
                                         <span className="w-4 h-4 border-2 border-grayscale-300 border-t-grayscale-700 rounded-full animate-spin" />
-                                        Checking…
+                                        {m['versionInfo.checking']()}
                                     </>
                                 ) : (
                                     <>
@@ -1137,7 +1137,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
                                             icon={cloudDownloadOutline}
                                             className="text-base"
                                         />
-                                        Check for updates
+                                        {m['versionInfo.checkForUpdates']()}
                                     </>
                                 )}
                             </button>

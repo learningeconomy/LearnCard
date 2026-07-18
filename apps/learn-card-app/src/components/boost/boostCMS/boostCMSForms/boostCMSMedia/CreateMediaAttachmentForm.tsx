@@ -25,6 +25,7 @@ import {
     BoostCMSMediaState,
     useBoostCMSMediaState,
 } from 'learn-card-base';
+import * as m from '../../../../../paraglide/messages.js';
 
 import { IMAGE_MIME_TYPES, VIEWER_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
@@ -347,7 +348,7 @@ export const CreateMediaAttachmentForm: React.FC<CreateMediaAttachmentFormProps>
                         value={(uploadProgress as number) / 100}
                     />
                     <p className="mt-2 text-sm font-medium text-grayscale-900">
-                        {uploadProgress}% uploaded
+                        {m['boost.cms.media.uploadedPercent']({ percent: uploadProgress })}
                     </p>
                 </div>
             )}

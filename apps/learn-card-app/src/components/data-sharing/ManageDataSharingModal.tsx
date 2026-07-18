@@ -30,6 +30,8 @@ import ConsentFlowPrivacyAndData from '../../pages/consentFlow/ConsentFlowPrivac
 import XApiDataFeedModal from './XApiDataFeedModal';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
+import * as m from '../../paraglide/messages.js';
+import TransP from '../../i18n/TransP';
 import { buildPermissionText } from './consentSummary';
 
 type ManageDataSharingModalProps = {
@@ -89,17 +91,20 @@ const RevokeAccessConfirmationModal: React.FC<RevokeAccessConfirmationModalProps
 
                 <div>
                     <h3 className="text-lg font-semibold text-grayscale-900">
-                        {isLearnCardAiContract ? 'Disable AI features?' : 'Revoke Access?'}
+                        {isLearnCardAiContract
+                            ? m['dataSharing.revokeConfirm.aiTitle']()
+                            : m['dataSharing.revokeConfirm.title']()}
                     </h3>
 
                     <p className="text-sm text-grayscale-600 mt-2 leading-relaxed">
                         {isLearnCardAiContract ? (
-                            <>This will revoke LearnCard AI access and turn off AI features.</>
+                            <>{m['dataSharing.revokeConfirm.aiBody']()}</>
                         ) : (
-                            <>
-                                <span className="font-medium">{name}</span> will no longer be able
-                                to access your {brandName} data.
-                            </>
+                            <TransP
+                                m={m['dataSharing.revokeConfirm.body']}
+                                values={{ name, brand: brandName }}
+                                components={[<span className="font-medium" />]}
+                            />
                         )}
                     </p>
                 </div>
@@ -111,10 +116,10 @@ const RevokeAccessConfirmationModal: React.FC<RevokeAccessConfirmationModalProps
                         className="w-full py-3 bg-red-500 text-white rounded-full font-medium disabled:opacity-60"
                     >
                         {isRevoking || isWorking
-                            ? 'Revoking...'
+                            ? m['dataSharing.revoking']()
                             : isLearnCardAiContract
-                            ? 'Disable AI & Revoke'
-                            : 'Yes, Revoke Access'}
+                            ? m['dataSharing.disableAiRevoke']()
+                            : m['dataSharing.confirmRevoke']()}
                     </button>
 
                     <button
@@ -145,7 +150,7 @@ const ManageDataSharingModal: React.FC<ManageDataSharingModalProps> = ({ onClose
             <div className="bg-white rounded-[20px] p-8 min-w-[350px] max-w-[450px]">
                 <div className="flex flex-col items-center justify-center min-h-[200px]">
                     <IonSpinner name="crescent" className="w-8 h-8 mb-4" />
-                    <p className="text-grayscale-600">Loading your data sharing...</p>
+                    <p className="text-grayscale-600">{m['dataSharing.loading']()}</p>
                 </div>
             </div>
         );
@@ -164,13 +169,19 @@ const ManageDataSharingModal: React.FC<ManageDataSharingModalProps> = ({ onClose
         <div className="bg-white rounded-[20px] min-w-[350px] max-w-[450px] w-full h-full overflow-hidden flex flex-col min-h-0">
             <div className="shrink-0 p-6 pb-4">
                 <div className="flex items-center gap-3 mb-3">
-                    <button onClick={handleClose} className="p-1 -ml-1" aria-label="Back">
+                    <button
+                        onClick={handleClose}
+                        className="p-1 -ml-1"
+                        aria-label={m['common.back']()}
+                    >
                         <ChevronLeft className="w-6 h-6 text-grayscale-700" />
                     </button>
 
                     <div className="flex items-center gap-2">
                         <Shield className="w-6 h-6 text-emerald-600" />
-                        <h2 className="text-xl font-semibold text-grayscale-900">Data Sharing</h2>
+                        <h2 className="text-xl font-semibold text-grayscale-900">
+                            {m['dataSharing.title']()}
+                        </h2>
                     </div>
                 </div>
 
@@ -184,10 +195,12 @@ const ManageDataSharingModal: React.FC<ManageDataSharingModalProps> = ({ onClose
                 <div className="flex flex-col items-center justify-center px-6 pt-4 pb-10 text-center">
                     <Shield className="w-12 h-12 text-grayscale-300 mb-4" />
 
-                    <p className="text-grayscale-600 font-medium">No data sharing yet</p>
+                    <p className="text-grayscale-600 font-medium">
+                        {m['dataSharing.empty.title']()}
+                    </p>
 
                     <p className="text-sm text-grayscale-500 mt-1">
-                        When you connect apps, they'll appear here.
+                        {m['dataSharing.empty.subtitle']()}
                     </p>
                 </div>
             ) : (
@@ -206,7 +219,7 @@ const ManageDataSharingModal: React.FC<ManageDataSharingModalProps> = ({ onClose
 
                     <div className="shrink-0 px-6 py-4 border-t border-grayscale-100">
                         <p className="text-xs text-grayscale-500 text-center">
-                            You can revoke access at any time by tapping on a service.
+                            {m['dataSharing.revokeHint']()}
                         </p>
                     </div>
                 </>
@@ -250,7 +263,7 @@ export const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({
         );
     };
 
-    const name = contractDetails?.name ?? 'Unknown App';
+    const name = contractDetails?.name ?? m['dataSharing.unknownApp']();
     const image = contractDetails?.image;
 
     const permissionText = buildPermissionText(contract);
@@ -308,7 +321,7 @@ export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract
     const [isOpening, setIsOpening] = useState(false);
     const isLearnCardAiContract = contractUri === LEARNCARD_AI_PASSPORT_CONTRACT_URI;
 
-    const name = contractDetails?.name ?? 'Unknown App';
+    const name = contractDetails?.name ?? m['dataSharing.unknownApp']();
     const image = contractDetails?.image;
     const redirectUrl = contractDetails?.redirectUrl?.trim();
 
@@ -394,14 +407,18 @@ export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract
     };
 
     const stepTitle =
-        step === 'edit' ? 'Edit access' : step === 'activity' ? 'Activity' : 'App details';
+        step === 'edit'
+            ? m['dataSharing.editAccess']()
+            : step === 'activity'
+            ? m['dataSharing.activityFeed']()
+            : m['dataSharing.appDetails']();
 
     return (
         <div className="bg-white rounded-[20px] min-w-[350px] max-w-[450px] w-full h-[80vh] overflow-hidden flex flex-col min-h-0">
             <div className="shrink-0 flex items-center gap-3 px-6 pt-6 pb-4">
                 <button
                     onClick={handleBack}
-                    aria-label="Back"
+                    aria-label={m['common.back']()}
                     className="p-1 -ml-1 rounded-full hover:bg-grayscale-10 transition-colors"
                 >
                     <ChevronLeft className="w-6 h-6 text-grayscale-700" />
@@ -433,7 +450,7 @@ export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract
                         )}
 
                         <h4 className="text-xs font-semibold tracking-wider text-grayscale-500 uppercase mb-2">
-                            Data access
+                            {m['dataSharing.dataAccess']()}
                         </h4>
 
                         <div className="bg-grayscale-50 rounded-xl p-4">
@@ -449,7 +466,9 @@ export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract
                                 className="w-full py-3 px-4 rounded-[20px] bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
                             >
                                 <ExternalLink className="w-4 h-4" />
-                                {isOpening ? 'Opening...' : 'Open App'}
+                                {isOpening
+                                    ? m['dataSharing.opening']()
+                                    : m['dataSharing.openApp']()}
                             </button>
                         )}
 
@@ -459,7 +478,7 @@ export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract
                                 className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
                             >
                                 <Settings className="w-4 h-4" />
-                                Edit access
+                                {m['dataSharing.editAccess']()}
                             </button>
 
                             <button
@@ -467,7 +486,7 @@ export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract
                                 className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
                             >
                                 <Activity className="w-4 h-4" />
-                                Activity
+                                {m['dataSharing.activityFeed']()}
                             </button>
                         </div>
 
@@ -476,7 +495,7 @@ export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract
                             className="w-full py-3 px-4 rounded-[20px] text-red-600 font-medium text-sm hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
                         >
                             <Trash2 className="w-4 h-4" />
-                            Revoke access
+                            {m['dataSharing.revokeAccess']()}
                         </button>
                     </div>
                 </>
@@ -535,7 +554,11 @@ const PermissionsList: React.FC<{ contract: ConsentedContract }> = ({ contract }
     const hasWriteCategories = acceptedWriteCategories.length > 0;
 
     if (!hasReadCategories && !hasWriteCategories) {
-        return <p className="text-sm text-grayscale-500 italic">No data permissions granted</p>;
+        return (
+            <p className="text-sm text-grayscale-500 italic">
+                {m['dataSharing.noDataPermissions']()}
+            </p>
+        );
     }
 
     return (
@@ -544,7 +567,9 @@ const PermissionsList: React.FC<{ contract: ConsentedContract }> = ({ contract }
             <div className="bg-cyan-50 border border-cyan-100 rounded-lg p-3">
                 <div className="flex items-center gap-2 mb-2">
                     <BookOpen className="w-4 h-4 text-cyan-600" />
-                    <span className="text-xs font-medium text-cyan-700">Read Access</span>
+                    <span className="text-xs font-medium text-cyan-700">
+                        {m['dataSharing.readAccess']()}
+                    </span>
                 </div>
 
                 {hasReadCategories ? (
@@ -565,7 +590,9 @@ const PermissionsList: React.FC<{ contract: ConsentedContract }> = ({ contract }
                         })}
                     </div>
                 ) : (
-                    <p className="text-xs text-cyan-600 italic">No read permissions granted</p>
+                    <p className="text-xs text-cyan-600 italic">
+                        {m['dataSharing.noReadPermissions']()}
+                    </p>
                 )}
             </div>
 
@@ -573,7 +600,9 @@ const PermissionsList: React.FC<{ contract: ConsentedContract }> = ({ contract }
             <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3">
                 <div className="flex items-center gap-2 mb-2">
                     <PenTool className="w-4 h-4 text-emerald-600" />
-                    <span className="text-xs font-medium text-emerald-700">Write Access</span>
+                    <span className="text-xs font-medium text-emerald-700">
+                        {m['dataSharing.writeAccess']()}
+                    </span>
                 </div>
 
                 {hasWriteCategories ? (
@@ -594,7 +623,9 @@ const PermissionsList: React.FC<{ contract: ConsentedContract }> = ({ contract }
                         })}
                     </div>
                 ) : (
-                    <p className="text-xs text-emerald-600 italic">No write permissions granted</p>
+                    <p className="text-xs text-emerald-600 italic">
+                        {m['dataSharing.noWritePermissions']()}
+                    </p>
                 )}
             </div>
         </div>

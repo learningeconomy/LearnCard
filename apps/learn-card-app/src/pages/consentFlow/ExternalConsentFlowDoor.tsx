@@ -29,6 +29,7 @@ import { SocialLoginTypes } from 'learn-card-base/hooks/useSocialLogins';
 import { auth } from '../../firebase/firebase';
 import { getLoginRedirectUrl } from '../../config/bootstrapTenantConfig';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
+import { m } from '../../paraglide/messages.js';
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
@@ -239,7 +240,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                         color="grayscale-900"
                         className="scale-[2] mb-8 mt-6"
                     />
-                    <p className="font-poppins text-grayscale-900">Loading...</p>
+                    <p className="font-poppins text-grayscale-900">{m['common.loading']()}</p>
                 </div>
             </IonPage>
         );
@@ -392,7 +393,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                                 onClick={openPP}
                                 className={`text-${primaryColor} font-[600] text-[12px]`}
                             >
-                                Privacy Policy
+                                {m['legal.privacyPolicy']()}
                             </button>
                             <span className="text-grayscale-600 font-bold text-[12px]">
                                 &nbsp;•&nbsp;
@@ -401,7 +402,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                                 onClick={openToS}
                                 className={`text-${primaryColor} font-[600] text-[12px]`}
                             >
-                                Terms of Service
+                                {m['legal.termsOfService']()}
                             </button>
                         </IonCol>
                     </IonRow>

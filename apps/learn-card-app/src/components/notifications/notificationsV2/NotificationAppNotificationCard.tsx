@@ -3,6 +3,7 @@ import moment from 'moment';
 import { useHistory } from 'react-router-dom';
 import { ErrorBoundary } from '@sentry/react';
 import { Bell, ExternalLink } from 'lucide-react';
+import * as m from '../../../paraglide/messages.js';
 
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import { useModal } from 'learn-card-base';
@@ -205,7 +206,7 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
                         }}
                         className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-grayscale-700 font-semibold text-[13px] border border-solid border-grayscale-200 transition duration-150 hover:bg-grayscale-50 active:scale-[0.98]"
                     >
-                        Open
+                        {m['common.open']()}
                         <ExternalLink className="w-3.5 h-3.5" />
                     </button>
                 )}

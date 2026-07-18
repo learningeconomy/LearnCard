@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { m } from '../../paraglide/messages.js';
+
 import { ThreeDotVertical } from '@learncard/react';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
@@ -77,7 +79,7 @@ export const AiInsightsUserCard: React.FC<{
         if (m === AiInsightsUserCardMode.Cancel) {
             if (
                 await confirm({
-                    text: `Are you sure you want to cancel this Insights request?`,
+                    text: m['aiInsights.confirmCancelRequest'](),
                     cancelButtonClassName:
                         'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-2 w-[100px] ',
                     confirmButtonClassName:
@@ -162,7 +164,9 @@ export const AiInsightsUserCard: React.FC<{
     let subText: string | React.ReactNode = '';
     if (mode === AiInsightsUserCardMode.View || mode === AiInsightsUserCardMode.Preview) {
         if (requestStatus === RequestInsightStatusEnum.pending) {
-            subText = <span className="font-semibold text-indigo-600">Pending</span>;
+            subText = (
+                <span className="font-semibold text-indigo-600">{m['aiInsights.pending']()}</span>
+            );
         }
 
         if (requestStatus === RequestInsightStatusEnum.accepted) {

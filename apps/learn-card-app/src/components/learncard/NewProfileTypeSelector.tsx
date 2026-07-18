@@ -1,6 +1,7 @@
 import React from 'react';
 
 import AddUser from '../svgs/AddUser';
+import { m } from '../../paraglide/messages.js';
 
 export const NewProfileTypeSelector: React.FC<{
     handleGoBack: () => void;
@@ -17,7 +18,7 @@ export const NewProfileTypeSelector: React.FC<{
                     className="text-left text-lg flex items-start justify-start gap-2 text-grayscale-800 w-full py-4 px-2"
                 >
                     <AddUser version="2" className="mr-1 text-grayscale-800" fill="#E2E3E9" />
-                    Child Profile
+                    {m['family.childProfile']()}
                 </button>
                 <button
                     onClick={handleCreateOrganizationAccount}

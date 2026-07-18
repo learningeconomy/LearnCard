@@ -5,6 +5,7 @@ import { IonFooter } from '@ionic/react';
 
 import { ModalTypes, useModal } from 'learn-card-base';
 import { useSafeArea } from 'learn-card-base/hooks/useSafeArea';
+import * as m from '../../../paraglide/messages.js';
 
 const EndorsementRequestFormFooter: React.FC<{
     className?: string;
@@ -44,14 +45,14 @@ const EndorsementRequestFormFooter: React.FC<{
                             showEndorsementPreview ? '' : 'w-full'
                         }`}
                     >
-                        Close
+                        {m['common.close']()}
                     </button>
                     {showEndorsementPreview && (
                         <button
                             onClick={handleEndorsementPreview}
                             className="flex-1 py-[9px] pl-[20px] pr-[15px] bg-grayscale-900 text-white rounded-[30px] font-poppins text-[17px] leading-[24px] tracking-[0.25px] text-white w-full shadow-button-bottom flex gap-[5px] justify-center mr-2"
                         >
-                            View Endorsement
+                            {m['endorsement.request.footer.viewEndorsement']()}
                         </button>
                     )}
                 </div>
