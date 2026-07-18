@@ -31,7 +31,7 @@ import { ProfilePicture } from 'learn-card-base/components/profilePicture/Profil
 import DeleteUserConfirmationPrompt from '../userOptions/DeleteUserConfirmationPrompt';
 import { JoinNetworkModalWrapper } from '../network-prompts/hooks/useJoinLCNetworkModal';
 
-import { useFilestack, UploadRes } from 'learn-card-base';
+import { useImageUpload, UploadRes } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
 
@@ -114,7 +114,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
         setUploadProgress(false);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },

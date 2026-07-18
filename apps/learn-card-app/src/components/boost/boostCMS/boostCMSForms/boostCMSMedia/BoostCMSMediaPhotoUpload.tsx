@@ -6,7 +6,7 @@ import { produce } from 'immer';
 
 import { IonCol, IonRow, IonInput } from '@ionic/react';
 
-import { useFilestack, UploadRes, BoostCMSMediaState, useModal } from 'learn-card-base';
+import { useImageUpload, UploadRes, BoostCMSMediaState, useModal } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
 import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
@@ -66,7 +66,7 @@ const BoostCMSMediaPhotoUpload: React.FC<BoostCMSMediaPhotoUploadProps> = ({
         );
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
     });
