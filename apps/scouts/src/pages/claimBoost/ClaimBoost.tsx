@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import moment from 'moment';
 import { useHistory } from 'react-router';
 
 import { IonContent, IonPage, IonSpinner, useIonAlert, IonRow } from '@ionic/react';
@@ -12,6 +11,7 @@ import ViewTroopIdModal from '../troop/ViewTroopIdModal';
 import ClaimBoostLoading from './ClaimBoostLoading';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import ClaimBoostLoggedOutPrompt from '../../components/boost/logged-out-claim-boost/ClaimBoostLoggedOutPrompt';
+import { formatLocaleDate } from '../../i18n/formatters';
 
 import useFirebaseAnalytics from '../../hooks/useFirebaseAnalytics';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
@@ -58,7 +58,11 @@ const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) =
     const profileId = getUserHandleFromDid(boostVC?.issuer as any);
     const { data } = useGetProfile(profileId);
 
-    const issueDate = moment(boostVC?.issuanceDate).format('MMM DD, YYYY');
+    const issueDate = formatLocaleDate(boostVC?.issuanceDate, {
+        month: 'short',
+        day: '2-digit',
+        year: 'numeric',
+    });
 
     if (isLoggedIn) {
         return (

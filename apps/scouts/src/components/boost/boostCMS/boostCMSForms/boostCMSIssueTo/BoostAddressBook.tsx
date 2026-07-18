@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import moment from 'moment';
+import { formatLocaleDate, formatLocaleTime } from '../../../../../i18n/formatters';
 
 import useTroopMembers from '../../../../../hooks/useTroopMembers';
 import useNetworkMembers from '../../../../../hooks/useNetworkMembers';
@@ -299,7 +299,9 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                 !scoutsLoading && scouts?.length === 0 && (search?.length ?? 0) > 0;
             noConnectionsString = m['boostCMS.noTroopMembers']();
             headerText = conditionalPluralize(scouts?.length ?? 0, m['boostCMS.scout']());
-            searchPlaceholder = m['boostCMS.searchTroop']({ name: contextCredential?.name ?? 'Troop' });
+            searchPlaceholder = m['boostCMS.searchTroop']({
+                name: contextCredential?.name ?? 'Troop',
+            });
             connectionsToShow = scouts ?? [];
         }
         if (isNetworkAdmin) {
@@ -311,8 +313,13 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
             showNoSearchResults =
                 !networkLoading && networkMembers?.length === 0 && (search?.length ?? 0) > 0;
             noConnectionsString = m['boostCMS.noNetworkMembers']();
-            headerText = conditionalPluralize(networkMembers?.length ?? 0, m['boostCMS.networkMember']());
-            searchPlaceholder = m['boostCMS.searchNetworkSpecific']({ name: contextCredential?.name ?? 'Network' });
+            headerText = conditionalPluralize(
+                networkMembers?.length ?? 0,
+                m['boostCMS.networkMember']()
+            );
+            searchPlaceholder = m['boostCMS.searchNetworkSpecific']({
+                name: contextCredential?.name ?? 'Network',
+            });
             connectionsToShow = networkMembers;
         }
         return (
@@ -531,13 +538,16 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                                             recipient?.to?.profileId}
                                                     </p>
                                                     <p className="text-grayscale-600 font-normal">
-                                                        {moment(recipient?.received).format(
-                                                            'DD MMMM YYYY'
-                                                        )}{' '}
+                                                        {formatLocaleDate(recipient?.received, {
+                                                            day: '2-digit',
+                                                            month: 'long',
+                                                            year: 'numeric',
+                                                        })}{' '}
                                                         &bull;{' '}
-                                                        {moment(recipient?.received).format(
-                                                            'h:mm A'
-                                                        )}
+                                                        {formatLocaleTime(recipient?.received, {
+                                                            hour: 'numeric',
+                                                            minute: '2-digit',
+                                                        })}
                                                     </p>
                                                 </div>
                                             </div>

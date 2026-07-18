@@ -55,8 +55,22 @@
         "tagline": "Universal Learning & Work Portfolio",
         "gotIt": "Got it.",
         "edit": "Edit",
-        "clear": "Clear"
+        "clear": "Clear",
+        "privacyPolicy": "Privacy Policy",
+        "termsOfService": "Terms of Service"
     },
+    "navigation": { "boosts": "Boosts", "badges": "Badges", "campfire": "Campfire" },
+    "uploadStatus": {
+        "success": "Your journey is now reflected in portable, trusted credentials.",
+        "successTitle": "{type} successfully parsed",
+        "allFailed": "All uploads failed. Please try again.",
+        "failedTitle": "Upload failed",
+        "partial": "{completed} of {total} uploaded. Some files failed.",
+        "partialTitle": "Partial upload",
+        "generic": "Something went wrong uploading your {type}.",
+        "errorTitle": "Error"
+    },
+    "errorDebug": { "detailsLabel": "Error:", "viewStackTrace": "View stack trace" },
     "error": {
         "back": "Go Back",
         "generic": "Something went wrong. Please try again.",
@@ -815,6 +829,17 @@
         "toggle": "toggle"
     },
     "claimBoost": {
+        "loadingBoost": "Loading boost...",
+        "thisBoost": "this boost",
+        "invitedAdmin": "You've been invited to be an admin of {name}",
+        "invitedLeader": "You've been invited to be a leader of {name}",
+        "invitedJoin": "You've been invited to join {name}",
+        "sentMeritBadge": "You've been sent a Merit Badge",
+        "sentSocialBoost": "You've been sent a Social Boost",
+        "sentCredential": "Someone sent you a credential",
+        "signInAccept": "Sign in to Accept",
+        "signInClaim": "Sign in to Claim",
+        "signInViewClaim": "Sign In to View and Claim",
         "issuedBy": "by <0>{name}</0>",
         "unableToFind": "Unable to find boost",
         "claiming": "Claiming...",

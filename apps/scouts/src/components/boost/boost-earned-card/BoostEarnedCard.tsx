@@ -1,9 +1,9 @@
 import React from 'react';
-import moment from 'moment';
 import { ErrorBoundary } from 'react-error-boundary';
 import { VC } from '@learncard/types';
 import { IonCol } from '@ionic/react';
 import * as m from '../../../paraglide/messages.js';
+import { formatLocaleDate } from '../../../i18n/formatters';
 import {
     BoostPageViewMode,
     BoostPageViewModeType,
@@ -89,9 +89,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
 
     // Below query is so we can get parent boost info...
     // Get boostId from resolved credential
-    const {
-        data: parentBoosts,
-    } = useGetBoostParents(resolvedCredential?.boostId, 1);
+    const { data: parentBoosts } = useGetBoostParents(resolvedCredential?.boostId, 1);
 
     const parentSourceTitle =
         parentBoosts?.records?.[0]?.meta?.edits?.name || parentBoosts?.records?.[0]?.name;
@@ -101,8 +99,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     const cred = credential && unwrapBoostCredential(credential);
 
     const boostIssuer = (credential as any)?.boostCredential?.issuer;
-    const boostIssuerDid =
-        typeof boostIssuer === 'string' ? boostIssuer : boostIssuer?.id;
+    const boostIssuerDid = typeof boostIssuer === 'string' ? boostIssuer : boostIssuer?.id;
 
     // Fallback to VC issuer if boostCredential.issuer is not available
     const issuerDid =
@@ -228,7 +225,11 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         handlePresentBoostMenuModal();
     };
 
-    const issueDate = moment(cred?.issuanceDate).format('MMMM DD YYYY');
+    const issueDate = formatLocaleDate(cred?.issuanceDate, {
+        month: 'long',
+        day: '2-digit',
+        year: 'numeric',
+    });
 
     const isCardView = boostPageViewMode === BoostPageViewMode.Card;
 

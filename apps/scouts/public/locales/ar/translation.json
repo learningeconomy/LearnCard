@@ -55,8 +55,22 @@
         "tagline": "محفظة التعلّم والعمل الشاملة",
         "gotIt": "حسنًا.",
         "edit": "تعديل",
-        "clear": "مسح"
+        "clear": "مسح",
+        "privacyPolicy": "سياسة الخصوصية",
+        "termsOfService": "شروط الخدمة"
     },
+    "navigation": { "boosts": "التعزيزات", "badges": "الشارات", "campfire": "المخيم" },
+    "uploadStatus": {
+        "success": "أصبحت رحلتك الآن ممثلة في اعتمادات موثوقة وقابلة للنقل.",
+        "successTitle": "تمت معالجة {type} بنجاح",
+        "allFailed": "فشل تحميل جميع الملفات. يرجى المحاولة مرة أخرى.",
+        "failedTitle": "فشل التحميل",
+        "partial": "تم تحميل {completed} من {total}. فشل تحميل بعض الملفات.",
+        "partialTitle": "تحميل جزئي",
+        "generic": "حدث خطأ أثناء تحميل {type}.",
+        "errorTitle": "خطأ"
+    },
+    "errorDebug": { "detailsLabel": "الخطأ:", "viewStackTrace": "عرض تتبع الخطأ" },
     "error": {
         "generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
         "network": "مشكلة في الاتصال. يرجى التحقق من الإنترنت والمحاولة مرة أخرى.",
@@ -815,6 +829,17 @@
         "toggle": "تبديل"
     },
     "claimBoost": {
+        "loadingBoost": "جارٍ تحميل التعزيز...",
+        "thisBoost": "هذا التعزيز",
+        "invitedAdmin": "تمت دعوتك لإدارة {name}",
+        "invitedLeader": "تمت دعوتك لقيادة {name}",
+        "invitedJoin": "تمت دعوتك للانضمام إلى {name}",
+        "sentMeritBadge": "تم إرسال شارة استحقاق إليك",
+        "sentSocialBoost": "تم إرسال تعزيز اجتماعي إليك",
+        "sentCredential": "أرسل إليك شخص ما اعتمادًا",
+        "signInAccept": "سجّل الدخول للقبول",
+        "signInClaim": "سجّل الدخول للمطالبة",
+        "signInViewClaim": "سجّل الدخول للعرض والمطالبة",
         "issuedBy": "بواسطة <0>{name}</0>",
         "unableToFind": "تعذر العثور على التعزيز",
         "claiming": "جاري الاستلام...",

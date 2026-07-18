@@ -1,8 +1,8 @@
 import React from 'react';
-import moment from 'moment';
 import { useGetBoostIssueHistory } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
 import CircleCheckmark from 'learn-card-base/svgs/CircleCheckmark';
+import { formatLocaleDate } from '../../../i18n/formatters';
 
 type IssueHistoryBoxProps = {
     boostUri: string;
@@ -13,7 +13,9 @@ const IssueHistoryBox: React.FC<IssueHistoryBoxProps> = ({ boostUri }) => {
 
     return (
         <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom p-[15px] w-full relative">
-            <h3 className="text-[17px] text-grayscale-900 font-notoSans">{m['troops.issueLog.title']()}</h3>
+            <h3 className="text-[17px] text-grayscale-900 font-notoSans">
+                {m['troops.issueLog.title']()}
+            </h3>
             {issueHistory?.map((historyItem, index) => {
                 const { date, name, thumb } = historyItem;
                 const hasBeenClaimed = !!date;
@@ -38,7 +40,12 @@ const IssueHistoryBox: React.FC<IssueHistoryBoxProps> = ({ boostUri }) => {
                         </div>
                         {date && (
                             <div className="font-notoSans text-[12px] font-[500] leading-[120%] text-emerald-700">
-                                {m['troops.issueLog.claimed']({ date: moment(date).format('MM/D/YY [at] hh:mm A z') })}
+                                {m['troops.issueLog.claimed']({
+                                    date: formatLocaleDate(date, {
+                                        dateStyle: 'short',
+                                        timeStyle: 'short',
+                                    }),
+                                })}
                             </div>
                         )}
                     </div>

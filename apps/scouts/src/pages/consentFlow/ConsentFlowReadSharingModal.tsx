@@ -33,6 +33,7 @@ import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarne
 import ConsentFlowSelectiveSharingWarning from './ConsentFlowSelectiveSharingWarning';
 import * as m from '../../paraglide/messages.js';
 import { CredentialMetadata } from 'learn-card-base/types/credential-records';
+import { formatLocaleDate } from '../../i18n/formatters';
 
 type ConsentFlowReadSharingModalProps = {
     term: ConsentFlowTerm;
@@ -66,7 +67,10 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
             <div className="w-full h-full transparent flex items-center justify-center">
                 <IonDatetime
                     onIonChange={e => {
-                        setTerm({ ...term, shareUntil: moment(e.detail.value as string).toISOString() });
+                        setTerm({
+                            ...term,
+                            shareUntil: moment(e.detail.value as string).toISOString(),
+                        });
                     }}
                     value={term?.shareUntil ? moment(term?.shareUntil).format('YYYY-MM-DD') : null}
                     id="datetime"
@@ -148,7 +152,9 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
             ...term,
             shareAll: false,
             shared: isSelected
-                ? term?.shared?.filter((uri: string) => uri !== credential.uri && uri !== alreadySharedUri)
+                ? term?.shared?.filter(
+                      (uri: string) => uri !== credential.uri && uri !== alreadySharedUri
+                  )
                 : [...(term.shared ?? []), alreadySharedUri || credential.uri],
         });
     };
@@ -288,7 +294,11 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                             openDatePicker();
                                         }}
                                     >
-                                        {moment(term.shareUntil).format('MMMM Do, YYYY')}
+                                        {formatLocaleDate(term.shareUntil, {
+                                            month: 'long',
+                                            day: 'numeric',
+                                            year: 'numeric',
+                                        })}
                                         <Calendar className="w-[30px] text-grayscale-700" />
                                     </button>
                                 )}
@@ -351,8 +361,10 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                                     <section className="flex justify-between w-full max-w-[800px]">
                                         <output className="text-lg font-semibold font-poppins">
                                             {m['consentFlow.sharingCount']({
-                                                count: term.shareAll ? totalCount : term.shared?.length ?? 0,
-                                                total: totalCount
+                                                count: term.shareAll
+                                                    ? totalCount
+                                                    : term.shared?.length ?? 0,
+                                                total: totalCount,
                                             })}
                                         </output>
 

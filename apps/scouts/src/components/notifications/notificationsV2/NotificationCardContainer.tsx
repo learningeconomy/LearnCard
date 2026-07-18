@@ -1,6 +1,6 @@
 import React from 'react';
-import moment from 'moment';
 import * as m from '../../../paraglide/messages.js';
+import { formatLocaleDate } from '../../../i18n/formatters';
 import {
     useUpdateNotification,
     useAcceptConnectionRequestMutation,
@@ -57,7 +57,11 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
 
     const { type, message, from, to, sent } = notification;
     const [presentAlert, dismissAlert] = useIonAlert();
-    const displayDate = moment(sent).format('MMMM Do, YYYY');
+    const displayDate = formatLocaleDate(sent, {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+    });
 
     const queryClient = useQueryClient();
     const {

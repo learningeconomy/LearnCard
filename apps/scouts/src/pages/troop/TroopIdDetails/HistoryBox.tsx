@@ -1,6 +1,6 @@
 import React from 'react';
-import moment from 'moment';
 import * as m from '../../../paraglide/messages.js';
+import { formatLocaleDate } from '../../../i18n/formatters';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('history-box');
 
@@ -33,16 +33,19 @@ const getLocalizedHistoryType = (type: HistoryTypeEnum): string => {
 
 const HistoryBox: React.FC<HistoryBoxProps> = ({ history }) => {
     const formatDate = (dateIso: string) => {
-        // might need something like this to properly recognize timezone
-        //   moment(dateIso).tz('America/Los_Angeles').format('MM/DD/YY [at] hh:mm A z')
-        return moment(dateIso).format('MM/D/YY [at] hh:mm A z');
+        return formatLocaleDate(dateIso, {
+            dateStyle: 'short',
+            timeStyle: 'short',
+        });
     };
 
     const historyExists = history.length > 0;
 
     return (
         <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom p-[15px] w-full relative">
-            <h3 className="text-[17px] text-grayscale-900 font-notoSans">{m['troops.history.title']()}</h3>
+            <h3 className="text-[17px] text-grayscale-900 font-notoSans">
+                {m['troops.history.title']()}
+            </h3>
             {historyExists && (
                 <div className="flex flex-col w-full">
                     {history?.map((historyItem, index) => {
@@ -53,7 +56,10 @@ const HistoryBox: React.FC<HistoryBoxProps> = ({ history }) => {
                                 key={index}
                             >
                                 <span className="text-grayscale-700 font-notoSans text-[14px]">
-                                    {m['troops.history.entry']({ type: getLocalizedHistoryType(type), date: formatDate(dateIsoString) })}
+                                    {m['troops.history.entry']({
+                                        type: getLocalizedHistoryType(type),
+                                        date: formatDate(dateIsoString),
+                                    })}
                                 </span>
                                 {idUri && (
                                     <button

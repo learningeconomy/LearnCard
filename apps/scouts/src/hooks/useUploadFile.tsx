@@ -18,6 +18,7 @@ import {
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { useUploadVcFromText } from './useUploadVcFromText';
 import { getLogger } from 'learn-card-base';
+import * as m from '../paraglide/messages.js';
 const log = getLogger('use-upload-file');
 
 export type RawArtifactType = {
@@ -218,19 +219,16 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
             setTimeout(() => {
                 if (failedUploads === 0) {
-                    presentToast(
-                        `Your journey is now reflected in portable, trusted credentials.`,
-                        {
-                            title: `${uploadType} Successfully Parsed`,
-                            hasDismissButton: true,
-                            type: ToastTypeEnum.Success,
-                            hasCheckmark: true,
-                            duration: 5000,
-                        }
-                    );
+                    presentToast(m['uploadStatus.success'](), {
+                        title: m['uploadStatus.successTitle']({ type: uploadType }),
+                        hasDismissButton: true,
+                        type: ToastTypeEnum.Success,
+                        hasCheckmark: true,
+                        duration: 5000,
+                    });
                 } else if (failedUploads === totalUploads) {
-                    presentToast(`All uploads failed. Please try again.`, {
-                        title: 'Upload Failed',
+                    presentToast(m['uploadStatus.allFailed'](), {
+                        title: m['uploadStatus.failedTitle'](),
                         hasDismissButton: true,
                         type: ToastTypeEnum.Error,
                         hasX: true,
@@ -238,11 +236,12 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                     });
                 } else {
                     presentToast(
-                        `${
-                            totalUploads - failedUploads
-                        } of ${totalUploads} uploaded. Some files failed.`,
+                        m['uploadStatus.partial']({
+                            completed: totalUploads - failedUploads,
+                            total: totalUploads,
+                        }),
                         {
-                            title: 'Partial Upload',
+                            title: m['uploadStatus.partialTitle'](),
                             hasDismissButton: true,
                             type: ToastTypeEnum.Error,
                             hasX: true,
@@ -261,14 +260,14 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             setIsUploading(false);
             checklistStore.set.updateIsParsing(uploadType, false);
 
-            let message = `Something went wrong uploading your ${uploadType}.`;
+            let message = m['uploadStatus.generic']({ type: uploadType });
             if (typeof error === 'object' && error !== null && 'message' in error) {
                 message = (error as any).message ?? message;
             }
 
             setTimeout(() => {
                 presentToast(message, {
-                    title: 'Error',
+                    title: m['uploadStatus.errorTitle'](),
                     hasDismissButton: true,
                     type: ToastTypeEnum.Error,
                     hasX: true,

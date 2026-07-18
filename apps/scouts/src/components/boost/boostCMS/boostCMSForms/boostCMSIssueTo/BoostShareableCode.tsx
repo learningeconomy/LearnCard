@@ -22,6 +22,7 @@ import {
 } from 'learn-card-base';
 import { BoostCMSState } from '../../../boost';
 import * as m from '../../../../../paraglide/messages.js';
+import { formatLocaleDate } from '../../../../../i18n/formatters';
 
 import CopyStack from '../../../../svgs/CopyStack';
 import Calendar from '../../../../svgs/Calendar';
@@ -248,7 +249,9 @@ export const BoostShareableCode: React.FC<{
         <IonGrid className={`w-full flex items-center justify-center flex-col ${customClassName}`}>
             <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] mt-4 rounded-[20px] ion-padding">
                 <div className="w-full flex items-center justify-between px-[8px] py-[8px]">
-                    <p className="text-grayscale-900 font-medium w-10/12">{m['boostCMS.generateClaimLink']()}</p>
+                    <p className="text-grayscale-900 font-medium w-10/12">
+                        {m['boostCMS.generateClaimLink']()}
+                    </p>
                     <IonToggle
                         mode="ios"
                         color="emerald-700"
@@ -269,7 +272,10 @@ export const BoostShareableCode: React.FC<{
                                 }}
                             >
                                 {expirationDate
-                                    ? moment(expirationDate).format('MMMM Do, YYYY - hh:mm A')
+                                    ? formatLocaleDate(expirationDate, {
+                                          dateStyle: 'long',
+                                          timeStyle: 'short',
+                                      })
                                     : m['boostCMS.expDate']()}
                                 <Calendar className="w-[30px] text-grayscale-700" />
                             </button>
@@ -338,7 +344,9 @@ export const BoostShareableCode: React.FC<{
                                 }}
                                 className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg font-medium font-notoSans"
                             >
-                                {isLinkLoading ? m['boostCMS.generatingLink']() : m['boostCMS.generateLink']()}
+                                {isLinkLoading
+                                    ? m['boostCMS.generatingLink']()
+                                    : m['boostCMS.generateLink']()}
                             </button>
                         </div>
 

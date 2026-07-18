@@ -2,25 +2,32 @@
 import * as m from '../../paraglide/messages.js';
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueries } from '@tanstack/react-query';
-import moment from 'moment';
+import { formatLocaleDate } from '../../i18n/formatters';
 import ExternalLink from 'learn-card-base/svgs/ExternalLink';
 import { openExternalLink } from '../../helpers/externalLinkHelpers';
 import Lottie from 'react-lottie-player';
 import HourGlass from '../../assets/lotties/hourglass.json';
 import ScoutNewsDefaultData from './scoutnewsdefault.json';
 
-const SCOUTS_NEWS_API_ENDPOINT = 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://www.scout.org/api/news');
+const SCOUTS_NEWS_API_ENDPOINT =
+    'https://api.allorigins.win/get?url=' + encodeURIComponent('https://www.scout.org/api/news');
 const BASE_URL = 'https://scout.org';
 
 const formatDate = (dateString: string) => {
     const match = dateString.match(/datetime="([^"]+)"/);
 
     if (match && match[1]) {
-        const date = moment(match[1]);
-
-        return date.format('MMMM DD YYYY');
+        return formatLocaleDate(match[1], {
+            month: 'long',
+            day: '2-digit',
+            year: 'numeric',
+        });
     } else {
-        return moment(dateString).format('MMMM DD YYYY');
+        return formatLocaleDate(dateString, {
+            month: 'long',
+            day: '2-digit',
+            year: 'numeric',
+        });
     }
 };
 

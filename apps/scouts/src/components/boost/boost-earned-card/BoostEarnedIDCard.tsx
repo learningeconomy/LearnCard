@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import moment from 'moment';
 import { ErrorBoundary } from 'react-error-boundary';
 import { VC } from '@learncard/types';
 import * as m from '../../../paraglide/messages.js';
+import { formatLocaleDate } from '../../../i18n/formatters';
 
 // @ts-ignore
 import EmptySocialBoostIcon from '../../assets/images/emptySocialBoost.svg';
@@ -314,7 +314,11 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
         closePreviewModal();
     };
 
-    const issueDate = moment(cred?.issuanceDate).format('MMMM DD YYYY');
+    const issueDate = formatLocaleDate(cred?.issuanceDate, {
+        month: 'long',
+        day: '2-digit',
+        year: 'numeric',
+    });
 
     if (!useWrapper) {
         return (

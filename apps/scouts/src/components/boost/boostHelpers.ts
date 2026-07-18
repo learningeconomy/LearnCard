@@ -1,4 +1,5 @@
 import moment from 'moment';
+import { formatLocaleDate } from '../../i18n/formatters';
 import { LCNBoostStatusEnum, VC, VerificationItem } from '@learncard/types';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { RouteComponentProps } from 'react-router-dom';
@@ -41,7 +42,11 @@ export const getBoostVerificationPreview = (input: BoostCMSState): VerificationI
     const isExpired = expirationDate && Number(new Date(expirationDate)) < Number(new Date());
 
     if (expirationDate) {
-        const formattedDate = moment(expirationDate).format('DD MMM yyyy').toUpperCase();
+        const formattedDate = formatLocaleDate(expirationDate, {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+        }).toUpperCase();
 
         result.push({
             status: isExpired ? 'Failed' : 'Success',

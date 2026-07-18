@@ -17,6 +17,7 @@ import { QrLoginRequester, getSSSConfig } from 'learn-card-base';
 import type { RecoveryReason } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
+import { DirectionalIcon } from '../i18n/DirectionalIcon';
 
 export type RecoveryFlowType = 'passkey' | 'phrase' | 'backup' | 'device' | 'email';
 
@@ -296,7 +297,9 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                 }}
                 className="flex items-center gap-1 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors mb-5"
             >
-                <IonIcon icon={chevronBackOutline} className="text-xs" />
+                <DirectionalIcon>
+                    <IonIcon icon={chevronBackOutline} className="text-xs" />
+                </DirectionalIcon>
                 {m['common.back']()}
             </button>
 

@@ -55,8 +55,22 @@
         "tagline": "Portfolio universel d'apprentissage et de travail",
         "gotIt": "Compris.",
         "edit": "Modifier",
-        "clear": "Effacer"
+        "clear": "Effacer",
+        "privacyPolicy": "Politique de confidentialité",
+        "termsOfService": "Conditions d’utilisation"
     },
+    "navigation": { "boosts": "Boosts", "badges": "Badges", "campfire": "Feu de camp" },
+    "uploadStatus": {
+        "success": "Votre parcours est désormais représenté par des justificatifs fiables et transférables.",
+        "successTitle": "{type} analysé avec succès",
+        "allFailed": "Tous les téléversements ont échoué. Veuillez réessayer.",
+        "failedTitle": "Échec du téléversement",
+        "partial": "{completed} fichiers sur {total} ont été téléversés. Certains fichiers ont échoué.",
+        "partialTitle": "Téléversement partiel",
+        "generic": "Une erreur est survenue lors du téléversement de {type}.",
+        "errorTitle": "Erreur"
+    },
+    "errorDebug": { "detailsLabel": "Erreur :", "viewStackTrace": "Afficher la trace d’exécution" },
     "error": {
         "generic": "Une erreur est survenue. Veuillez réessayer.",
         "network": "Problème de connexion. Veuillez vérifier votre connexion internet et réessayer.",
@@ -815,6 +829,17 @@
         "toggle": "basculer"
     },
     "claimBoost": {
+        "loadingBoost": "Chargement du boost...",
+        "thisBoost": "ce boost",
+        "invitedAdmin": "Vous êtes invité à administrer {name}",
+        "invitedLeader": "Vous êtes invité à diriger {name}",
+        "invitedJoin": "Vous êtes invité à rejoindre {name}",
+        "sentMeritBadge": "Vous avez reçu un badge de mérite",
+        "sentSocialBoost": "Vous avez reçu un boost social",
+        "sentCredential": "Quelqu’un vous a envoyé un justificatif",
+        "signInAccept": "Connectez-vous pour accepter",
+        "signInClaim": "Connectez-vous pour réclamer",
+        "signInViewClaim": "Connectez-vous pour voir et réclamer",
         "issuedBy": "par <0>{name}</0>",
         "unableToFind": "Impossible de trouver le Boost",
         "claiming": "Réclamation en cours...",

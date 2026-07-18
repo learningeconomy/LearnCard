@@ -55,8 +55,22 @@
         "tagline": "Portafolio universal de aprendizaje y trabajo",
         "gotIt": "Entendido.",
         "edit": "Editar",
-        "clear": "Borrar"
+        "clear": "Borrar",
+        "privacyPolicy": "Política de privacidad",
+        "termsOfService": "Términos del servicio"
     },
+    "navigation": { "boosts": "Impulsos", "badges": "Insignias", "campfire": "Fogata" },
+    "uploadStatus": {
+        "success": "Tu recorrido ahora se refleja en credenciales portátiles y confiables.",
+        "successTitle": "{type} procesado correctamente",
+        "allFailed": "Todas las cargas fallaron. Inténtalo de nuevo.",
+        "failedTitle": "Error de carga",
+        "partial": "Se cargaron {completed} de {total}. Algunos archivos fallaron.",
+        "partialTitle": "Carga parcial",
+        "generic": "Algo salió mal al cargar {type}.",
+        "errorTitle": "Error"
+    },
+    "errorDebug": { "detailsLabel": "Error:", "viewStackTrace": "Ver seguimiento de pila" },
     "error": {
         "generic": "Algo salió mal. Inténtalo de nuevo.",
         "network": "Problema de conexión. Verifica tu internet e inténtalo de nuevo.",
@@ -332,14 +346,14 @@
             "phraseDesc": "Ingresa tu frase de 25 palabras",
             "backupLabel": "Archivo de Respaldo",
             "backupDesc": "Sube tu archivo de respaldo",
-            "passkeyLabel": "Passkey",
+            "passkeyLabel": "Clave de acceso",
             "passkeyDesc": "Usa Face ID, Touch ID o similar",
             "deviceLabel": "Otro Dispositivo",
             "deviceDesc": "Escanea un código desde un dispositivo con sesión iniciada",
             "notSetUp": "No configurado"
         },
         "passkey": {
-            "title": "Passkey",
+            "title": "Clave de acceso",
             "desc": "Usa la autenticación biométrica de tu dispositivo para recuperar.",
             "tapDesc": "Toca abajo para verificar con Face ID, Touch ID o tu passkey del dispositivo.",
             "verifyBtn": "Verificar con Passkey"
@@ -395,7 +409,7 @@
             "tabEmail": "Correo",
             "tabPhrase": "Frase",
             "tabBackup": "Respaldo",
-            "tabPasskey": "Passkey",
+            "tabPasskey": "Clave de acceso",
             "passkey": {
                 "notSupported": "Las passkeys no son compatibles con este dispositivo o navegador. Intenta usar una frase de recuperación o archivo de respaldo.",
                 "setUpRow": "Passkey configurada",
@@ -600,7 +614,7 @@
         "titlePack": "Pack de {{title}}",
         "issueA": "Emitir un",
         "network": "Red",
-        "troop": "Troop",
+        "troop": "Tropa",
         "badge": "Insignia",
         "copyLink": "Copiar Enlace",
         "issuedToName": "Emitido a {{name}}",
@@ -815,6 +829,17 @@
         "toggle": "alternar"
     },
     "claimBoost": {
+        "loadingBoost": "Cargando impulso...",
+        "thisBoost": "este impulso",
+        "invitedAdmin": "Te han invitado a administrar {name}",
+        "invitedLeader": "Te han invitado a liderar {name}",
+        "invitedJoin": "Te han invitado a unirte a {name}",
+        "sentMeritBadge": "Te han enviado una insignia de mérito",
+        "sentSocialBoost": "Te han enviado un impulso social",
+        "sentCredential": "Alguien te envió una credencial",
+        "signInAccept": "Inicia sesión para aceptar",
+        "signInClaim": "Inicia sesión para reclamar",
+        "signInViewClaim": "Inicia sesión para ver y reclamar",
         "issuedBy": "por <0>{name}</0>",
         "unableToFind": "No se pudo encontrar el boost",
         "claiming": "Reclamando...",
@@ -869,12 +894,12 @@
         "leaderOther": "Líderes",
         "memberOne": "Miembro",
         "memberOther": "Miembros",
-        "adminOne": "Admin",
-        "adminOther": "Admins",
+        "adminOne": "Administrador",
+        "adminOther": "Administradores",
         "nameRequired": "¡El nombre es obligatorio!",
         "descriptionRequired": "¡La descripción es obligatoria!",
         "loading": "Cargando...",
-        "troop": "Troop",
+        "troop": "Tropa",
         "toasts": {
             "errorIssuingBoost": "Error al emitir boost",
             "errorEditingBoost": "Error al editar boost",
@@ -1258,7 +1283,7 @@
         "explore": "Explorar",
         "comingSoon": "Próximamente...",
         "count": "Habilidades",
-        "listTitle": "Boosts",
+        "listTitle": "Impulsos",
         "emptyBoosts": "Aún no tienes Boosts."
     },
     "adminTools": {
@@ -1272,7 +1297,7 @@
         "adminToolsHeading": "Herramientas de Admin",
         "viewAllManagedBoosts": "Ver Todos los Boosts e Insignias Gestionados",
         "bulkImportBadges": "Importación Masiva de Insignias + Boosts",
-        "troops": "Troops",
+        "troops": "Tropas",
         "whatWouldYouLike": "¿Qué te gustaría hacer, Oh Admin?",
         "allManagedBoostsTitle": "Todos los Boosts e Insignias Gestionados",
         "importCredentialsLabel": "Importar Credenciales",
@@ -1337,7 +1362,7 @@
     },
     "membership": {
         "joinWait": "Unirse a Lista de Espera",
-        "troops": "Troops",
+        "troops": "Tropas",
         "empty": "Aún no tienes Troops."
     },
     "achievements": {
@@ -1423,7 +1448,7 @@
     },
     "launchPad": {
         "contacts": "Contactos",
-        "troops": "Troops",
+        "troops": "Tropas",
         "alerts": "Alertas",
         "schools": "Escuelas",
         "latestNews": "Últimas Noticias",
@@ -1435,7 +1460,7 @@
         "recentActivity": "Actividad Reciente"
     },
     "wallet": {
-        "title": "Wallet"
+        "title": "Cartera"
     },
     "learningHistory": {
         "noHistory": "Aún no hay historial de aprendizaje"
