@@ -26,36 +26,16 @@ import {
     emitConfigDebugEvent,
     emitConfigSuccess,
 } from '../components/debug/configDebugEvents';
+import {
+    getTenantBootstrapState,
+    setResolvedTenantConfig,
+    getResolvedTenantConfig,
+    getTenantHeaders,
+} from './tenantConfigState';
 
-type TenantBootstrapState = {
-    resolvedConfig: TenantConfig | null;
-    bootstrapPromise: Promise<TenantConfig> | null;
-};
-
-const TENANT_BOOTSTRAP_STATE_KEY = '__learncardTenantBootstrapState__';
-
-const getTenantBootstrapState = (): TenantBootstrapState => {
-    const globalScope = globalThis as typeof globalThis & {
-        [TENANT_BOOTSTRAP_STATE_KEY]?: TenantBootstrapState;
-    };
-
-    if (!globalScope[TENANT_BOOTSTRAP_STATE_KEY]) {
-        globalScope[TENANT_BOOTSTRAP_STATE_KEY] = {
-            resolvedConfig: null,
-            bootstrapPromise: null,
-        };
-    }
-
-    return globalScope[TENANT_BOOTSTRAP_STATE_KEY];
-};
-
-// Module-level cache backed by global state so HMR does not clear the resolved config.
-let _resolvedConfig: TenantConfig | null = getTenantBootstrapState().resolvedConfig;
-
-const setResolvedTenantConfig = (config: TenantConfig): void => {
-    _resolvedConfig = config;
-    getTenantBootstrapState().resolvedConfig = config;
-};
+// Re-exported from the dependency-free state module so modules that only read
+// the resolved config can import them without pulling in this heavy graph.
+export { getResolvedTenantConfig, getTenantHeaders };
 
 const initializeTenantSubsystems = (config: TenantConfig): void => {
     // 1. Initialize Firebase with tenant-specific project config
@@ -116,34 +96,6 @@ const initializeTenantSubsystems = (config: TenantConfig): void => {
             },
         }
     );
-};
-
-/**
- * Get the resolved TenantConfig synchronously.
- * Only available after `bootstrapTenantConfig()` has been called.
- */
-export const getResolvedTenantConfig = (): TenantConfig => {
-    const config = _resolvedConfig ?? getTenantBootstrapState().resolvedConfig;
-
-    if (!config) {
-        throw new Error('TenantConfig not yet resolved. Call bootstrapTenantConfig() first.');
-    }
-
-    _resolvedConfig = config;
-
-    return config;
-};
-
-/**
- * Get headers that identify the current tenant to backend services.
- * Merges with any existing headers object so callers can spread or pass directly.
- */
-export const getTenantHeaders = (): Record<string, string> => {
-    const tenantId = _resolvedConfig?.tenantId;
-
-    if (!tenantId) return {};
-
-    return { 'X-Tenant-Id': tenantId };
 };
 
 /**
