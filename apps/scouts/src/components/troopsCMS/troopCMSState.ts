@@ -317,7 +317,7 @@ export const scoutPermissions: {
         { id: 2, title: 'Social Boosts', roles: ['Issue', 'Create'] },
         { id: 3, title: 'Merit Badges', roles: ['Issue', 'Create', 'Revoke'] },
         { id: 4, title: 'Troops', roles: ['Create', 'Edit', 'Revoke'] },
-        { id: 5, title: 'Leader IDs', roles: ['Issue', 'Edit', 'Revoke'] },
+        { id: 5, title: 'Troop Leader IDs', roles: ['Issue', 'Edit', 'Revoke'] },
         { id: 6, title: 'National Networks', roles: ['Create', 'Edit', 'Revoke'] },
         { id: 7, title: 'National Admin IDs', roles: ['Issue', 'Edit', 'Revoke'] },
         { id: 8, title: 'Global Admin IDs', roles: ['Issue', 'Edit', 'Revoke'] },
@@ -328,7 +328,7 @@ export const scoutPermissions: {
         { id: 2, title: 'Social Boosts', roles: ['Create'] },
         { id: 3, title: 'Merit Badges', roles: ['Create'] },
         { id: 4, title: 'Troops', roles: ['Create', 'Edit', 'Revoke'] },
-        { id: 5, title: 'Leader IDs', roles: ['Issue', 'Edit', 'Revoke'] },
+        { id: 5, title: 'Troop Leader IDs', roles: ['Issue', 'Edit', 'Revoke'] },
         { id: 6, title: 'National Admin IDs', roles: ['Issue', 'Edit', 'Revoke'] },
     ],
     // troop leaders
@@ -337,7 +337,7 @@ export const scoutPermissions: {
         { id: 2, title: 'Social Boosts', roles: ['Issue', 'Create', 'Revoke'] },
         { id: 3, title: 'Merit Badges', roles: ['Issue', 'Create', 'Revoke'] },
         { id: 4, title: 'Scout IDs', roles: ['Issue', 'Edit', 'Revoke'] },
-        { id: 5, title: 'Leader Permissions', roles: ['Issue', 'Edit', 'Revoke'] },
+        { id: 5, title: 'Troop Leader Permissions', roles: ['Issue', 'Edit', 'Revoke'] },
     ],
     // scouts
     [TroopsCMSViewModeEnum.member]: [
@@ -345,7 +345,7 @@ export const scoutPermissions: {
         { id: 2, title: 'Social Boosts', roles: ['Issue', 'Create'] },
         { id: 3, title: 'Merit Badges', roles: ['Issue', 'Create', 'Revoke'] },
         { id: 4, title: 'Troops', roles: ['Create', 'Edit', 'Revoke'] },
-        { id: 5, title: 'Leader IDs', roles: ['Issue', 'Edit', 'Revoke'] },
+        { id: 5, title: 'Troop Leader IDs', roles: ['Issue', 'Edit', 'Revoke'] },
         { id: 6, title: 'National Networks', roles: ['Create', 'Edit', 'Revoke'] },
         { id: 7, title: 'National Admin IDs', roles: ['Issue', 'Edit', 'Revoke'] },
         { id: 8, title: 'Global Admin IDs', roles: ['Issue', 'Edit', 'Revoke'] },
@@ -806,7 +806,7 @@ export const getMemberTypeText = (
     if (isInNetworkViewMode) return 'National Admin';
     if (isInTroopViewMode) {
         if (isInMemberViewMode) return 'Scout';
-        if (isInLeaderViewMode) return 'Leader';
+        if (isInLeaderViewMode) return 'Troop Leader';
     }
 };
 

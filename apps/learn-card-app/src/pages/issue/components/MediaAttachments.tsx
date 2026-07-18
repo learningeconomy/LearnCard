@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { Camera, FileText, Video, Link2, Loader2, X, Plus, ImageIcon } from 'lucide-react';
 
-import { useFilestack } from 'learn-card-base';
+import { useImageUpload } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
 
 export type SimpleMediaType = 'photo' | 'document' | 'video' | 'link';
@@ -46,7 +46,7 @@ const UploadButton: React.FC<{
     onUploaded: (attachment: SimpleMediaAttachment) => void;
 }> = ({ type, onUploaded }) => {
     const meta = TYPE_META[type];
-    const { handleFileSelect, isLoading } = useFilestack({
+    const { handleFileSelect, isLoading } = useImageUpload({
         fileType: meta.fileType,
         resizeBeforeUploading: type === 'photo',
         onUpload: (url, file) =>
@@ -63,7 +63,7 @@ const UploadButton: React.FC<{
     return (
         <button
             type="button"
-            onClick={e => handleFileSelect(e as unknown as MouseEvent)}
+            onClick={handleFileSelect}
             disabled={isLoading}
             className="flex items-center gap-2 py-2.5 px-3 rounded-full border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors disabled:opacity-40"
         >

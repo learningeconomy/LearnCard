@@ -3,6 +3,7 @@ import {
     initNetworkStoreFromTenant,
     resolveTenantConfig,
     setAuthConfigFromTenant,
+    setImageUploadConfigFromTenant,
     getTenantBaseUrl,
     type TenantConfig,
     SCOUTPASS_NETWORK_URL,
@@ -143,6 +144,7 @@ const setResolvedTenantConfig = (config: TenantConfig): void => {
 const initializeTenantSubsystems = (config: TenantConfig): void => {
     initializeFirebaseFromTenant(config.auth.firebase);
     setAuthConfigFromTenant(config);
+    setImageUploadConfigFromTenant(config);
     initNetworkStoreFromTenant(config.apis, config.tenantId);
 };
 

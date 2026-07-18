@@ -87,7 +87,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum }> = ({ branding = BrandingEnu
                 : currentLCNUser;
 
         if (!isCurrentLCNUser) {
-            handlePresentJoinNetworkModal();
+            void handlePresentJoinNetworkModal({ forceOpen: true });
             return;
         }
 

@@ -13,7 +13,7 @@ import {
     CreditCard,
 } from 'lucide-react';
 
-import { useFilestack, useWallet, useGetCurrentLCNUser } from 'learn-card-base';
+import { useImageUpload, useWallet, useGetCurrentLCNUser } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
@@ -147,7 +147,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
     }, [currentLCNUser, branding]);
 
     const { handleFileSelect: handleProfileImageUpload, isLoading: profileImageUploading } =
-        useFilestack({
+        useImageUpload({
             fileType: IMAGE_MIME_TYPES,
             onUpload: (_url, _file, data) => {
                 setImage(data?.url || '');
@@ -156,7 +156,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
         });
 
     const { handleFileSelect: handleIdBackgroundUpload, isLoading: idBackgroundUploading } =
-        useFilestack({
+        useImageUpload({
             fileType: IMAGE_MIME_TYPES,
             onUpload: (_url, _file, data) => {
                 setDisplay(prev => ({ ...prev, idBackgroundImage: data?.url || '' }));
