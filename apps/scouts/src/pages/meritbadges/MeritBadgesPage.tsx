@@ -36,8 +36,10 @@ import { SubheaderContentType } from '../../components/main-subheader/MainSubHea
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
 import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
 import * as m from '../../paraglide/messages.js';
+import { useLocale } from '../../i18n';
 
 const MeritBadgesPage: React.FC = () => {
+    const locale = useLocale();
     const { newModal, closeModal } = useModal({
         mobile: ModalTypes.FullScreen,
         desktop: ModalTypes.FullScreen,
@@ -115,7 +117,7 @@ const MeritBadgesPage: React.FC = () => {
                 <Plus className={`h-5 w-5 ${iconColor}`} />
             </button>
         ),
-        [handleCreateMeritBadge, iconColor, textColor]
+        [handleCreateMeritBadge, iconColor, textColor, locale]
     );
 
     const earnedAndManagedTabs = useMemo(
@@ -153,7 +155,7 @@ const MeritBadgesPage: React.FC = () => {
             emptyMessage: m['meritBadges.emptyMsg'](),
             emptyMessageStyle: 'text-[#4D006E]',
         }),
-        [viewMode, imgSrc]
+        [viewMode, imgSrc, locale]
     );
 
     useEffect(() => {

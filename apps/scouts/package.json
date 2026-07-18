@@ -111,6 +111,7 @@
         "check:i18n-imports": "node scripts/check-i18n-imports.mjs",
         "i18n:check-parity": "node scripts/check-i18n-parity.mjs",
         "i18n:check-ast": "eslint --no-eslintrc -c .eslintrc-i18n.cjs --resolve-plugins-relative-to ../.. --ext .tsx,.ts src",
+        "i18n:check-memos": "eslint --no-eslintrc --no-inline-config -c .eslintrc-i18n-memo.cjs --rulesdir eslint-rules --resolve-plugins-relative-to ../.. --ext .tsx,.ts src",
         "build": "NODE_OPTIONS=\"--max-old-space-size=4608\" vite build",
         "docker-build": "VITE_DOCKER_SOURCE=true LCN_URL=http://localhost:4000/trpc CLOUD_URL=http://localhost:4100/trpc API_URL=http://localhost:5100/trpc NODE_OPTIONS=\"--max-old-space-size=8192\" vite build -d",
         "test-playwright": "playwright test",

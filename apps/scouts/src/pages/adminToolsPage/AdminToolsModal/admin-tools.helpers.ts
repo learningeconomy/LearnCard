@@ -22,7 +22,7 @@ export type AdminToolOption = {
 };
 
 // TODO: Bulk upload credentials + consent flow
-export const adminToolOptions: AdminToolOption[] = [
+export const getAdminToolOptions = (): AdminToolOption[] => [
     {
         id: 1,
         label: m['adminTools.importCredentialsLabel'](),
@@ -51,7 +51,7 @@ export const adminToolOptions: AdminToolOption[] = [
     },
 ];
 
-export const developerToolOptions: AdminToolOption[] = [
+export const getDeveloperToolOptions = (): AdminToolOption[] => [
     // {
     //     id: 1,
     //     label: 'API Tokens',

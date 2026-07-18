@@ -43,7 +43,7 @@ interface ReAuthOverlayProps {
     onCancel: () => void;
 }
 
-const UID_MISMATCH_ERROR = m['auth.uidMismatch']();
+const getUidMismatchError = (): string => m['auth.uidMismatch']();
 
 const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) => {
     const { refreshAuthSession } = useAppAuth();
@@ -127,7 +127,7 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
             if (expectedUidRef.current && newUid && newUid !== expectedUidRef.current) {
                 log.warn('ReAuth: UID mismatch', { expected: expectedUidRef.current, got: newUid });
                 await firebaseSignOut(firebaseAuth);
-                setError(UID_MISMATCH_ERROR);
+                setError(getUidMismatchError());
                 setState('error');
                 return;
             }
@@ -197,7 +197,7 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
             if (expectedUidRef.current && newUid && newUid !== expectedUidRef.current) {
                 log.warn('ReAuth: UID mismatch', { expected: expectedUidRef.current, got: newUid });
                 await firebaseSignOut(firebaseAuth);
-                setError(UID_MISMATCH_ERROR);
+                setError(getUidMismatchError());
                 setState('error');
                 return;
             }
@@ -241,7 +241,9 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
                     <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-4xl" />
                 </div>
 
-                <h2 className="text-xl font-semibold text-grayscale-900">{m['auth.sessionRestored']()}</h2>
+                <h2 className="text-xl font-semibold text-grayscale-900">
+                    {m['auth.sessionRestored']()}
+                </h2>
 
                 <p className="text-sm text-grayscale-600">{m['auth.youreAllSet']()}</p>
             </div>
@@ -259,7 +261,9 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({ onSuccess, onCancel }) =>
                 <IonIcon icon={alertCircleOutline} className="text-amber-500 text-4xl" />
             </div>
 
-            <h2 className="text-xl font-semibold text-grayscale-900">{m['auth.sessionExpiredTitle']()}</h2>
+            <h2 className="text-xl font-semibold text-grayscale-900">
+                {m['auth.sessionExpiredTitle']()}
+            </h2>
 
             <p className="text-sm text-grayscale-600 leading-relaxed">
                 {hasSocialReAuth

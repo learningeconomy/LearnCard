@@ -19,9 +19,9 @@ export type NetworkSettingOptions = {
     title: string;
     description: string;
     type: NetworkSettingsEnum;
-}
+};
 
-export const networkSettingOptions: NetworkSettingOptions[] = [
+export const getNetworkSettingOptions = (): NetworkSettingOptions[] => [
     {
         id: 1,
         title: m['networkPrompts.settings.sendReq'](),

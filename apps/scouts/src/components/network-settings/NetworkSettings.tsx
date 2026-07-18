@@ -4,7 +4,7 @@ import { IonRow, IonCol, IonToggle } from '@ionic/react';
 import CaretLeft from '../svgs/CaretLeft';
 
 import {
-    networkSettingOptions,
+    getNetworkSettingOptions,
     NetworkSettingsState,
     NetworkSettingsEnum,
 } from './networkSettings.helpers';
@@ -16,7 +16,7 @@ const NetworkSettings: React.FC<{
     settings: NetworkSettingsState;
     handleStateChange: (settingsType: NetworkSettingsEnum, settingState: boolean) => void;
 }> = ({ handleCloseModal, settings, handleStateChange }) => {
-    const settingsList = networkSettingOptions.map(setting => {
+    const settingsList = getNetworkSettingOptions().map(setting => {
         return (
             <IonRow key={setting.id} className="w-full flex items-center justify-center px-2">
                 <IonCol className="w-full max-w-[600px] flex-col ion-padding">
