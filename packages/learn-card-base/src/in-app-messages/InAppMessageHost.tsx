@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 
 import { useInAppMessages } from './useInAppMessages';
-import { markMessageSeen } from './dismissalStore';
+import { markMessageSeen, onDismissalsReset } from './dismissalStore';
 import { iamDebug } from './debug';
 import { installInAppMessagesDebugGlobals } from './debugGlobals';
 import { useInAppMessageOverride, setInAppMessageOverride } from './debugOverrideStore';
@@ -27,6 +27,16 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
 
     useEffect(() => {
         installInAppMessagesDebugGlobals();
+    }, []);
+
+    // Without this, "Reset seen state" (debug panel / __inAppMessages.reset())
+    // clears the persisted store but a message closed this session would still
+    // be blocked by the in-memory closedIds gate, making the reset look broken.
+    useEffect(() => {
+        return onDismissalsReset(() => {
+            setClosedIds(new Set());
+            shownRef.current = null;
+        });
     }, []);
 
     useEffect(() => {

@@ -71,7 +71,16 @@ export const filterSuppressed = (
     now: number = Date.now()
 ): InAppMessage[] => messages.filter(m => !shouldSuppressMessage(m.id, m.frequency, now));
 
+const resetListeners = new Set<() => void>();
+
+export const onDismissalsReset = (listener: () => void): (() => void) => {
+    resetListeners.add(listener);
+
+    return () => resetListeners.delete(listener);
+};
+
 export const resetInAppMessageDismissals = (): void => {
     sessionSeen.clear();
     writeSeenMap({});
+    resetListeners.forEach(listener => listener());
 };

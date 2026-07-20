@@ -55,6 +55,9 @@ export const MessageMedia: React.FC<MessageMediaProps> = ({ media }) => {
                     title="YouTube video player"
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    // Defense-in-depth: keeps the embed from navigating the top
+                    // frame even though the URL host is already validated above.
+                    sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
                     allowFullScreen
                 />
             </div>

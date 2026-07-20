@@ -394,8 +394,9 @@ export const InAppMessagesDebugTab: React.FC = () => {
     const [jsonError, setJsonError] = useState<string | null>(null);
     const [draft, setDraft] = useState<InAppMessage | null>(null);
 
+    const [resetCount, setResetCount] = useState(0);
     const flagMessages = getLastInAppMessages();
-    const seenMap = useMemo(() => readSeenMap(), [report]);
+    const seenMap = useMemo(() => readSeenMap(), [report, resetCount]);
 
     const handleToggleTracing = useCallback(() => {
         setTracing(prev => {
@@ -407,6 +408,7 @@ export const InAppMessagesDebugTab: React.FC = () => {
 
     const handleReset = useCallback(() => {
         resetInAppMessageDismissals();
+        setResetCount(c => c + 1);
         setResetFeedback(true);
         setTimeout(() => setResetFeedback(false), 1500);
     }, []);
