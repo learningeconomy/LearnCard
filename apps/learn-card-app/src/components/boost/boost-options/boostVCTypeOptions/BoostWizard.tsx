@@ -25,6 +25,8 @@ import AiSessionLoader from '../../../new-ai-session/AiSessionLoader';
 
 import { useTheme } from '../../../../theme/hooks/useTheme';
 
+import * as m from '../../../../paraglide/messages.js';
+
 import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-wizard');
 
@@ -44,17 +46,17 @@ type BoostWizardProps = {
     boostUserType: BoostUserTypeEnum;
 };
 
-export const aiGeneratedCredentialText: string[] = [
-    'Analyzing your inputs...',
-    'Spinning up your smart credential...',
-    'Generating your credential...',
-    'Sealing your achievement...',
-    'Building your verifiable record...',
-    'Packing it all up...',
-    'Creating your digital badge...',
-    'Finalizing everything now...',
-    'AI is crafting your proof...',
-    'Almost there...',
+export const getAiGeneratedCredentialText = (): string[] => [
+    m['boost.wizard.loaderText.0'](),
+    m['boost.wizard.loaderText.1'](),
+    m['boost.wizard.loaderText.2'](),
+    m['boost.wizard.loaderText.3'](),
+    m['boost.wizard.loaderText.4'](),
+    m['boost.wizard.loaderText.5'](),
+    m['boost.wizard.loaderText.6'](),
+    m['boost.wizard.loaderText.7'](),
+    m['boost.wizard.loaderText.8'](),
+    m['boost.wizard.loaderText.9'](),
 ];
 
 const BoostWizard: React.FC<BoostWizardProps> = ({ boostUserType }) => {
@@ -85,13 +87,13 @@ const BoostWizard: React.FC<BoostWizardProps> = ({ boostUserType }) => {
         initializeWallet();
     }, [initWallet]);
 
-    const title = 'AI Badge Wizard';
+    const title = m['boost.wizard.title']();
     const boostOptions = boostVCTypeOptions[boostUserType];
 
     const subtext =
         boostUserType === BoostUserTypeEnum.self
-            ? 'You can issue yourself boosts to tell your story. Your skills are currencies for your future.'
-            : 'Issue boosts to people you know.';
+            ? m['boost.wizard.subtextSelf']()
+            : m['boost.wizard.subtextSomeone']();
 
     const handleInputChange = (event: CustomEvent) => {
         const newText = event.detail.value!;
@@ -100,7 +102,7 @@ const BoostWizard: React.FC<BoostWizardProps> = ({ boostUserType }) => {
         if (newText.length <= 500) {
             setErrorMessage('');
         } else {
-            setErrorMessage('You have exceeded the 500-character limit.');
+            setErrorMessage(m['boost.wizard.charLimitError']());
         }
     };
 
@@ -214,7 +216,7 @@ const BoostWizard: React.FC<BoostWizardProps> = ({ boostUserType }) => {
             }
         } catch (error) {
             log.error('Error generating boost details:', error);
-            setErrorMessage('An unexpected error occurred. Please try again.');
+            setErrorMessage(m['boost.wizard.unexpectedError']());
         } finally {
             setLoader(false);
         }
@@ -310,7 +312,7 @@ const BoostWizard: React.FC<BoostWizardProps> = ({ boostUserType }) => {
                                 <div className="relative w-full text-center flex flex-col items-center justify-center">
                                     <div className="max-w-[250px]">
                                         <AiSessionLoader
-                                            overrideText={aiGeneratedCredentialText}
+                                            overrideText={getAiGeneratedCredentialText()}
                                             isInline
                                         />
                                     </div>
@@ -319,8 +321,7 @@ const BoostWizard: React.FC<BoostWizardProps> = ({ boostUserType }) => {
                                 <>
                                     <div className="w-full relative text-grayscale-900">
                                         <p className="text-[14px] font-poppins font-normal">
-                                            Use simple words to describe why you admire someone,
-                                            what they accomplished, why they are great, etc.
+                                            {m['boost.wizard.promptDescription']()}
                                         </p>
                                         <IonTextarea
                                             className="bg-grayscale-100 text-grayscale-900 font-poppins w-full !pb-[20px]"
@@ -332,7 +333,7 @@ const BoostWizard: React.FC<BoostWizardProps> = ({ boostUserType }) => {
                                                 padding: '15px',
                                                 margin: '10px 0',
                                             }}
-                                            placeholder="Write prompt..."
+                                            placeholder={m['boost.wizard.promptPlaceholder']()}
                                             id="textInput"
                                             value={textInput}
                                             onIonInput={handleInputChange}
@@ -341,7 +342,9 @@ const BoostWizard: React.FC<BoostWizardProps> = ({ boostUserType }) => {
                                             className="absolute right-[10px] bottom-[15px] text-xs z-50"
                                             slot="end"
                                         >
-                                            {countWords(textInput)} / 500
+                                            {m['boost.wizard.charCount']({
+                                                count: countWords(textInput),
+                                            })}
                                         </p>
                                     </div>
                                 </>
@@ -359,7 +362,7 @@ const BoostWizard: React.FC<BoostWizardProps> = ({ boostUserType }) => {
                     onClick={() => handleDescriptionSubmit(textInput)}
                     disabled={textInput.length > 500}
                 >
-                    Generate Magic
+                    {m['boost.wizard.generateMagic']()}
                     <Wand className="ml-[10px]" color="#FFFFFF" opacity="full" />
                 </button>
             </div>

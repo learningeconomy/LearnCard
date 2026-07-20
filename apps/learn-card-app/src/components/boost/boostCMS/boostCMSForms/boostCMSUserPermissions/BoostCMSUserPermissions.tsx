@@ -6,6 +6,7 @@ import { IonRow, IonCol, IonToggle, IonCheckbox } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 
 import { BoostCMSState } from '../../../boost';
+import * as m from '../../../../../paraglide/messages.js';
 
 const BoostCMSUserPermissions: React.FC<{
     state: BoostCMSState;
@@ -33,7 +34,9 @@ const BoostCMSUserPermissions: React.FC<{
     return (
         <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
             <IonCol size="12" className="w-full bg-white flex items-center justify-between">
-                <h1 className="text-black text-2xl p-0 m-0">User Permissions</h1>
+                <h1 className="text-black text-2xl p-0 m-0">
+                    {m['boost.cms.userPermissions.title']()}
+                </h1>
                 <button onClick={() => setShowAbout(!showAbout)}>
                     <CaretLeft
                         className={`h-auto w-3 text-grayscale-800 ${
@@ -47,7 +50,7 @@ const BoostCMSUserPermissions: React.FC<{
                     <IonCol size="12" className="w-full bg-white">
                         <div className="w-full flex items-center justify-between py-[8px]">
                             <p className="text-grayscale-900 font-medium w-10/12">
-                                Create Custom Boosts
+                                {m['boost.cms.userPermissions.createCustomBoosts']()}
                             </p>
                             <IonToggle
                                 mode="ios"
@@ -67,7 +70,9 @@ const BoostCMSUserPermissions: React.FC<{
                     </IonCol>
                     <IonCol size="12" className="w-full bg-white">
                         <div className="w-full flex items-center justify-between py-[8px]">
-                            <p className="text-grayscale-900 font-medium w-10/12">Create IDs</p>
+                            <p className="text-grayscale-900 font-medium w-10/12">
+                                {m['boost.cms.userPermissions.createIDs']()}
+                            </p>
                             <IonToggle
                                 mode="ios"
                                 color="indigo-700"
@@ -87,7 +92,7 @@ const BoostCMSUserPermissions: React.FC<{
                     <IonCol size="12" className="w-full bg-white">
                         <div className="w-full flex items-center justify-between py-[8px]">
                             <p className="text-grayscale-900 font-medium w-10/12">
-                                Create Memberships
+                                {m['boost.cms.userPermissions.createMemberships']()}
                             </p>
                             <IonToggle
                                 mode="ios"

@@ -1,5 +1,7 @@
 import React from 'react';
 
+import * as m from '../../../paraglide/messages.js';
+
 type ResumePreviewCurrentJobSelectorProps = {
     isSelected: boolean;
     onClick: () => void;
@@ -21,7 +23,7 @@ const ResumePreviewCurrentJobSelector: React.FC<ResumePreviewCurrentJobSelectorP
                     <span className="h-2 w-2 rounded-full bg-white" />
                 </span>
                 <span className="text-xs leading-none font-semibold text-grayscale-800">
-                    Current Job
+                    {m['passport.resumeBuilder.currentJob']()}
                 </span>
             </button>
         );
@@ -36,7 +38,7 @@ const ResumePreviewCurrentJobSelector: React.FC<ResumePreviewCurrentJobSelectorP
         >
             <span className="h-4 w-4 rounded-full bg-grayscale-300" />
             <span className="text-xs leading-none font-semibold text-grayscale-500">
-                Current Job
+                {m['passport.resumeBuilder.currentJob']()}
             </span>
         </button>
     );

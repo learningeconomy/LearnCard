@@ -10,6 +10,7 @@ import { useWallet, usePathQuery, useIsLoggedIn } from 'learn-card-base';
 import { generatePK } from '../../helpers/privateKeyHelpers';
 
 import { AddressBookContact } from '../addressBook/addressBookHelpers';
+import * as m from '../../paraglide/messages.js';
 import AddContactView, { AddContactViewMode } from '../addressBook/addContactView/AddContactView';
 
 const InvitePage: React.FC = () => {
@@ -73,7 +74,7 @@ const InvitePage: React.FC = () => {
                 {loading && (
                     <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
                         <IonSpinner color="black" />
-                        <p className="mt-2 font-bold text-lg">Loading...</p>
+                        <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                     </section>
                 )}
                 {!loading && !lcNetworkProfile && (

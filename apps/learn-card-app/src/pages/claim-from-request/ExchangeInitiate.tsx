@@ -1,6 +1,7 @@
 import React from 'react';
 import { IonContent, IonPage } from '@ionic/react';
 import { Gift } from 'lucide-react';
+import * as m from '../../paraglide/messages.js';
 
 interface ExchangeInitiateProps {
     onStart: () => void;
@@ -19,11 +20,11 @@ const ExchangeInitiate: React.FC<ExchangeInitiateProps> = ({ onStart }) => {
                             </div>
 
                             <h1 className="text-xl font-semibold text-white mb-2">
-                                You've been sent a request
+                                {m['claim.initiate.heading']()}
                             </h1>
 
                             <p className="text-emerald-50 text-sm">
-                                A credential exchange is ready
+                                {m['claim.initiate.subtitle']()}
                             </p>
                         </div>
 
@@ -31,8 +32,7 @@ const ExchangeInitiate: React.FC<ExchangeInitiateProps> = ({ onStart }) => {
                         <div className="p-6">
                             <div className="space-y-5 mb-6">
                                 <p className="text-grayscale-600 text-center text-sm leading-relaxed">
-                                    Click the button below to begin the exchange process and see
-                                    what was sent to you.
+                                    {m['claim.initiate.description']()}
                                 </p>
                             </div>
 
@@ -42,7 +42,7 @@ const ExchangeInitiate: React.FC<ExchangeInitiateProps> = ({ onStart }) => {
                                     onClick={onStart}
                                     className="w-full py-3 px-4 bg-emerald-600 text-white font-medium text-sm rounded-[20px] hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
                                 >
-                                    Begin
+                                    {m['claim.initiate.begin']()}
                                 </button>
                             </div>
                         </div>

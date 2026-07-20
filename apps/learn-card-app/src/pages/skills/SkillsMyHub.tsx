@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 import SkillDisplay from './SkillDisplay';
 import SkillsHubSearch from './SkillsHubSearch';
 import LegacySkillDisplay from './LegacySkillDisplay';
@@ -65,7 +67,11 @@ const SkillsMyHub: React.FC<SkillsMyHubProps> = ({}) => {
 
                     {noSkills && searchInput && (
                         <p className="font-poppins text-[14px] text-grayscale-800 font-[700] text-left">
-                            No results found for <span className="italic">{searchInput}</span>
+                            <TransP
+                                m={m['skills.myHub.noResultsFoundFor']}
+                                values={{ query: searchInput }}
+                                components={[<span className="italic" />]}
+                            />
                         </p>
                     )}
                 </>

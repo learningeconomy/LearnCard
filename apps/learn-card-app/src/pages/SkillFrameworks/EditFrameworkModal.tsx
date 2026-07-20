@@ -7,6 +7,7 @@ const log = getLogger('edit-framework-modal');
 // oxlint-disable-next-line no-unused-vars
 import { SkillFrameworkType } from '@learncard/types';
 import UploadIcon from 'learn-card-base/svgs/UploadIcon';
+import * as m from '../../paraglide/messages.js';
 
 type EditFrameworkModalProps = {
     frameworkId: string;
@@ -92,7 +93,9 @@ const EditFrameworkModal: React.FC<EditFrameworkModalProps> = ({ frameworkId }) 
                 </div>
 
                 {isLoading ? (
-                    <div className="py-[20px] text-center text-grayscale-600">Loading...</div>
+                    <div className="py-[20px] text-center text-grayscale-600">
+                        {m['common.loading']()}
+                    </div>
                 ) : (
                     <>
                         <IonInput

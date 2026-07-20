@@ -9,6 +9,7 @@ import {
 import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEarnedCard';
 import { AllCredentialsModal } from './AllCredentialsModal';
 import { resolveActivityCategory, isHiddenActivity } from './activityFeed.helpers';
+import * as m from '../../../paraglide/messages.js';
 
 const MAX_ITEMS = 5;
 
@@ -48,14 +49,14 @@ export const RecentlyAdded: React.FC = () => {
         <div className="mb-[24px]">
             <div className="flex items-center justify-between mb-[10px]">
                 <h3 className="font-poppins text-[13px] tracking-[1px] text-grayscale-500">
-                    RECENTLY ADDED
+                    {m['passport.activity.recent']()}
                 </h3>
                 <button
                     type="button"
                     onClick={openSeeAll}
                     className="font-poppins text-[13px] font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
                 >
-                    See all
+                    {m['passport.activity.seeAll']()}
                 </button>
             </div>
             <div className="-mx-6 flex gap-3 overflow-x-auto px-6 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:gap-2 md:overflow-visible md:px-0 md:flex-wrap">

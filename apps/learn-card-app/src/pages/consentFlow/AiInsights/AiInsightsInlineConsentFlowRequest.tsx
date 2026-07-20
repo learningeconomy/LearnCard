@@ -12,6 +12,7 @@ import {
     useAllContractRequestsForProfile,
 } from 'learn-card-base';
 import { ConsentFlowContract, LCNProfile } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
 
 export const AiInsightsInlineConsentFlowRequest: React.FC<{
     contractDetails: ConsentFlowContract;
@@ -98,9 +99,7 @@ export const AiInsightsInlineConsentFlowRequest: React.FC<{
                                 {insightsProfile?.displayName} {insightsProfile?.shortBio}
                             </p>
                             <p className="text-grayscale-900 text-sm text-left">
-                                If you approve, your teacher will be able to to see your Top Skills,
-                                Learning Snapshots, Suggested Pathways. They will also be able to
-                                send learning pathway suggestions to you.
+                                {m['aiInsights.approveDescription']()}
                             </p>
                         </div>
                         <button
@@ -112,7 +111,7 @@ export const AiInsightsInlineConsentFlowRequest: React.FC<{
                             className={`mt-2 flex gap-[5px] items-center w-full text-grayscale-900 font-notoSans text-[20px] py-[10px] px-2 border-[1px] border-solid rounded-[15px] ${borderColor}`}
                         >
                             <LockBroken />
-                            Privacy & Data
+                            {m['consentFlow.privacyAndData']()}
                             <SlimCaretRight className="h-[20px] w-[20px] ml-auto text-grayscale-500" />
                         </button>
                     </div>
@@ -128,7 +127,7 @@ export const AiInsightsInlineConsentFlowRequest: React.FC<{
                             useDarkText ? 'text-grayscale-900 underline' : 'text-indigo-500'
                         }`}
                     >
-                        {isExpanded ? 'Got it.' : 'Learn more'}
+                        {isExpanded ? m['common.gotIt']() : m['common.learnMore']()}
                     </button>
                 </div>
             </div>

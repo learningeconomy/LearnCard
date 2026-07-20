@@ -12,6 +12,8 @@ import AppStoreDetailModal from './AppStoreDetailModal';
 import { EmbedIframeModal } from './EmbedIframeModal';
 import GuardianConsentLaunchModal from './GuardianConsentLaunchModal';
 import AiTutorConnectedView from './AiTutorConnectedView';
+import * as m from '../../paraglide/messages.js';
+import { renderParts } from '../../i18n';
 
 const FALLBACK_ICON = 'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb';
 
@@ -96,7 +98,7 @@ const useAppLaunch = ({ listing, isInstalled = false, onInstallSuccess }: UseApp
                     style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
                 >
                     <h2 className="text-2xl font-bold text-grayscale-900 text-center">
-                        Age Restricted
+                        {m['launchpad.ageRestriction.title']()}
                     </h2>
                 </div>
 
@@ -123,14 +125,18 @@ const useAppLaunch = ({ listing, isInstalled = false, onInstallSuccess }: UseApp
                             </p>
 
                             <p className="text-sm text-grayscale-600">
-                                This app requires users to be <strong>{minAge}+</strong> years old.
+                                {renderParts(
+                                    m['launchpad.ageRestriction.requiresAge'].parts({
+                                        age: minAge,
+                                    }),
+                                    { strong: <strong /> }
+                                )}
                             </p>
                         </div>
 
                         <div className="bg-red-50 border border-red-100 rounded-lg p-4 w-full text-left">
                             <p className="text-sm text-red-800">
-                                Based on your profile's date of birth, you do not meet the minimum
-                                age requirement for this app.
+                                {m['launchpad.ageRestriction.notMeetRequirement']()}
                             </p>
                         </div>
                     </div>
@@ -146,7 +152,7 @@ const useAppLaunch = ({ listing, isInstalled = false, onInstallSuccess }: UseApp
                         onClick={closeModal}
                         className="px-8 py-3 text-lg font-semibold text-white bg-grayscale-600 rounded-full hover:bg-grayscale-700 transition-colors"
                     >
-                        OK
+                        {m['launchpad.ageRestriction.ok']()}
                     </button>
                 </div>
             </div>,

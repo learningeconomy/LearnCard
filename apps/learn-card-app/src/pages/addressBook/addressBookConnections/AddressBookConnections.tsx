@@ -23,6 +23,7 @@ import {
 
 import useTheme from '../../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../../theme/icons';
+import * as m from '../../../paraglide/messages.js';
 
 const AddressBookConnections: React.FC<{
     activeTab: AddressBookTabsEnum;
@@ -115,7 +116,7 @@ const AddressBookConnections: React.FC<{
                         refetch();
                         presentToast(
                             // @ts-ignore
-                            error?.message || 'An error occurred, unable to remove contact',
+                            error?.message || m['contacts.removeContactError'](),
                             {
                                 type: ToastTypeEnum.Error,
                                 hasDismissButton: true,
@@ -127,7 +128,7 @@ const AddressBookConnections: React.FC<{
         } catch (err) {
             presentToast(
                 // @ts-ignore
-                err?.message || 'An error occurred, unable to remove contact',
+                err?.message || m['contacts.removeContactError'](),
                 {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
@@ -216,7 +217,7 @@ const AddressBookConnections: React.FC<{
                         refetch();
                         presentToast(
                             // @ts-ignore
-                            error?.message || 'An error occurred, unable to block user',
+                            error?.message || m['contacts.blockUserError'](),
                             {
                                 type: ToastTypeEnum.Error,
                                 hasDismissButton: true,
@@ -229,7 +230,7 @@ const AddressBookConnections: React.FC<{
             log.info('blockProfile::error', err);
             presentToast(
                 // @ts-ignore
-                err?.message || 'An error occurred, unable to block user',
+                err?.message || m['contacts.blockUserError'](),
                 {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
@@ -247,7 +248,7 @@ const AddressBookConnections: React.FC<{
             {isLoading && (
                 <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full my-4">
                     <IonSpinner color="black" />
-                    <p className="mt-2 font-bold text-lg">Loading...</p>
+                    <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                 </section>
             )}
             {contactsExist && (
@@ -273,7 +274,7 @@ const AddressBookConnections: React.FC<{
                 <section className="flex flex-col items-center justify-center my-[30px]">
                     <FloatingBottleIcon />
                     <p className="font-poppins text-[17px] font-normal text-grayscale-900 mt-[10px]">
-                        No connections yet.
+                        {m['contacts.noConnections']()}
                     </p>
                 </section>
             )}

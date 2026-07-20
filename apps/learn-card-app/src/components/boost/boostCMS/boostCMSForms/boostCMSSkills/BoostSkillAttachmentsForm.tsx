@@ -17,6 +17,7 @@ import {
     SKILLS_TO_SUBSKILLS,
 } from './boostSkills';
 import { toSkillAlignment, toSubskillAlignment } from '../../../alignmentHelpers';
+import * as m from '../../../../../paraglide/messages.js';
 
 export enum BoostCMSSkillsAttachmentFormModeEnum {
     view = 'view',
@@ -230,7 +231,11 @@ export const BoostCMSSkillsAttachmentForm: React.FC<BoostCMSSkillsAttachmentForm
     const [presentCenterModal, dismissCenterModal] = useIonModal(BoostCMSSkillOptions, {
         state: _state,
         setState: _setState,
-        title: <p className="font-poppins text-center text-xl text-grayscale-900">Add Skills</p>,
+        title: (
+            <p className="font-poppins text-center text-xl text-grayscale-900">
+                {m['boost.cms.skills.addSkills']()}
+            </p>
+        ),
         showCloseButton: true,
         handleAddSkill: (
             skill: {
@@ -265,7 +270,11 @@ export const BoostCMSSkillsAttachmentForm: React.FC<BoostCMSSkillsAttachmentForm
     const [presentSheetModal, dismissSheetModal] = useIonModal(BoostCMSSkillOptions, {
         state: _state,
         setState: _setState,
-        title: <p className="font-poppins text-center text-xl text-grayscale-900">Add Skills</p>,
+        title: (
+            <p className="font-poppins text-center text-xl text-grayscale-900">
+                {m['boost.cms.skills.addSkills']()}
+            </p>
+        ),
         showCloseButton: false,
         handleAddSkill: (
             skill: {

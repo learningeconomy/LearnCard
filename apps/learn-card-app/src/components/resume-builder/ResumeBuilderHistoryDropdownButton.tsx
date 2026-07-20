@@ -8,6 +8,8 @@ import ResumeHistoryIconPublished from '../../assets/images/resume-builder-icon-
 import useExistingResumes, { ExistingResume } from '../../hooks/useExistingResumes';
 import { getResumeDisplaySummary } from './resume-builder-history.helpers';
 
+import * as m from '../../paraglide/messages.js';
+
 export const ResumeBuilderHistoryDropdownButton: React.FC<{
     activeResumeRecordId?: string | null;
     disabled?: boolean;
@@ -51,7 +53,11 @@ export const ResumeBuilderHistoryDropdownButton: React.FC<{
                     isOpen ? 'bg-indigo-50' : 'bg-white'
                 }`}
             >
-                <img src={ResumeHistoryIcon} alt="Resume history" className="w-6 h-6" />
+                <img
+                    src={ResumeHistoryIcon}
+                    alt={m['passport.resumeBuilder.history.iconAlt']()}
+                    className="w-6 h-6"
+                />
                 <span className="text-[18px] font-semibold text-grayscale-800">
                     {sortedResumes.length}
                 </span>
@@ -74,7 +80,7 @@ export const ResumeBuilderHistoryDropdownButton: React.FC<{
                     <div className="px-3 py-2 flex items-start justify-between gap-3">
                         <div>
                             <p className="text-[18px] font-semibold text-grayscale-900">
-                                Resume History
+                                {m['passport.resumeBuilder.history.title']()}
                             </p>
                         </div>
                         <button
@@ -93,7 +99,9 @@ export const ResumeBuilderHistoryDropdownButton: React.FC<{
                                 }
                             }}
                         >
-                            {isCreatingNewResume ? 'Creating...' : '+ New Resume'}
+                            {isCreatingNewResume
+                                ? m['passport.resumeBuilder.history.creating']()
+                                : m['passport.resumeBuilder.history.newResume']()}
                         </button>
                     </div>
 
@@ -103,7 +111,7 @@ export const ResumeBuilderHistoryDropdownButton: React.FC<{
                         </div>
                     ) : sortedResumes.length === 0 ? (
                         <div className="px-3 py-8 text-center text-sm text-grayscale-600">
-                            No existing resumes yet.
+                            {m['passport.resumeBuilder.history.empty']()}
                         </div>
                     ) : (
                         <div className="max-h-[360px] overflow-y-auto pr-1">
@@ -114,10 +122,12 @@ export const ResumeBuilderHistoryDropdownButton: React.FC<{
                                     const isSelecting = selectedResumeId === resume.record.id;
 
                                     const generatedAt = summary.generatedAt
-                                        ? `Edited on ${moment(summary.generatedAt).format(
-                                              'MMM D, YYYY '
-                                          )}`
-                                        : 'No edit date ';
+                                        ? m['passport.resumeBuilder.history.editedOn']({
+                                              date: moment(summary.generatedAt).format(
+                                                  'MMM D, YYYY'
+                                              ),
+                                          })
+                                        : m['passport.resumeBuilder.history.noEditDate']();
 
                                     return (
                                         <IonItem
@@ -160,11 +170,15 @@ export const ResumeBuilderHistoryDropdownButton: React.FC<{
                                                     </div>
                                                 </div>
                                                 <p className="text-xs text-grayscale-600 font-semibold">
-                                                    {summary.credentialCount} Credentials
+                                                    {m[
+                                                        'passport.resumeBuilder.history.credentialCount'
+                                                    ]({ count: summary.credentialCount })}
                                                     {' • '}
                                                     {isActive ? (
                                                         <span className="text-indigo-600 font-semibold mr-1">
-                                                            Active
+                                                            {m[
+                                                                'passport.resumeBuilder.status.active'
+                                                            ]()}
                                                         </span>
                                                     ) : (
                                                         generatedAt
@@ -177,7 +191,13 @@ export const ResumeBuilderHistoryDropdownButton: React.FC<{
                                                                 : 'text-grayscale-500 font-semibold'
                                                         }
                                                     >
-                                                        {summary.status}
+                                                        {summary.status === 'Published'
+                                                            ? m[
+                                                                  'passport.resumeBuilder.status.published'
+                                                              ]()
+                                                            : m[
+                                                                  'passport.resumeBuilder.status.draft'
+                                                              ]()}
                                                     </span>
                                                 </p>
                                             </div>

@@ -8,6 +8,7 @@ import AiPassportPersonalizationContainerFooter from './AiPassportPersonalizatio
 import { AiFeatureGate } from '../ai-feature-gate/AiFeatureGate';
 
 import { usePersonalizationQA } from './usePersonalizationQA';
+import * as m from '../../paraglide/messages.js';
 
 export const AiPassportPersonalizationContainer: React.FC = () => {
     const { personalizedAnswers, setPersonalizedAnswers, uri, isLoading } = usePersonalizationQA();
@@ -16,7 +17,7 @@ export const AiPassportPersonalizationContainer: React.FC = () => {
         <AiFeatureGate>
             <div className="h-full">
                 {isLoading && (
-                    <AiSessionLoader overrideText="Loading Personalization..." showUserImg />
+                    <AiSessionLoader overrideText={m['aiPersonalization.loading']()} showUserImg />
                 )}
 
                 <section className="h-full bg-[rgba(53,62,100,0.3)] backdrop-blur-[2px] ion-padding overflow-y-scroll pb-[130px] safe-area-top-margin">

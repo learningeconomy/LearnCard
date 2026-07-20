@@ -31,6 +31,8 @@ import { RecipientPicker } from '../components/RecipientPicker';
 import { RecipientMode, Recipient, LinkOptions } from '../components/recipientTypes';
 import { getTypeByObv3 } from '../components/credentialTypeCatalog';
 import type { NormalizedImport } from './normalizeToObv3';
+import * as m from '../../../paraglide/messages.js';
+import { getLocale } from '../../../paraglide/runtime.js';
 
 const log = getLogger('reuse-existing');
 
@@ -69,28 +71,28 @@ const startOfDay = (date: Date): number =>
 // Newest-first records produce these labels in strictly descending order, so a
 // newly fetched page only ever extends the bottom (older) edge of the list.
 const relativeTimeBucket = (iso?: string): string => {
-    if (!iso) return 'Earlier';
+    if (!iso) return m['passport.activity.when.earlier']();
     const date = new Date(iso);
-    if (Number.isNaN(date.getTime())) return 'Earlier';
+    if (Number.isNaN(date.getTime())) return m['passport.activity.when.earlier']();
 
     const now = new Date();
     const todayStart = startOfDay(now);
     const dayStart = startOfDay(date);
     const daysAgo = Math.round((todayStart - dayStart) / MS_PER_DAY);
 
-    if (daysAgo <= 0) return 'Today';
-    if (daysAgo === 1) return 'Yesterday';
+    if (daysAgo <= 0) return m['passport.activity.when.today']();
+    if (daysAgo === 1) return m['passport.activity.when.yesterday']();
 
     // Day-of-week index where Sunday = 0; treat the week as starting Sunday.
-    if (daysAgo <= now.getDay()) return 'Earlier This Week';
-    if (daysAgo <= now.getDay() + 7) return 'Last Week';
+    if (daysAgo <= now.getDay()) return m['passport.activity.when.thisWeek']();
+    if (daysAgo <= now.getDay() + 7) return m['passport.activity.when.lastWeek']();
 
     if (date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth()) {
-        return 'Earlier This Month';
+        return m['passport.activity.when.thisMonth']();
     }
 
     if (date.getFullYear() === now.getFullYear()) {
-        return date.toLocaleDateString(undefined, { month: 'long' });
+        return date.toLocaleDateString(getLocale(), { month: 'long' });
     }
 
     return String(date.getFullYear());
@@ -169,7 +171,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
             setStep('preview');
         } catch (e) {
             log.warn('reuse-existing.resolve_failed', e, { uri: record.uri });
-            setError("We couldn't open that one. Please try another.");
+            setError(m['issueFlow.openFailed']());
         } finally {
             setLoadingUri(null);
         }
@@ -220,7 +222,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
 
             setClaimLink(result.claimLink ?? null);
             setStep('success');
-            presentToast('Credential sent.', {
+            presentToast(m['issueFlow.credSentToast'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
@@ -229,8 +231,8 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
             const message = (e as Error)?.message ?? '';
             setError(
                 /network|fetch|connection/i.test(message)
-                    ? 'Connection issue. Please check your internet and try again.'
-                    : message || 'Something went wrong sending this credential. Please try again.'
+                    ? m['error.network']()
+                    : message || m['issueFlow.sendFailed']()
             );
         } finally {
             setIsSending(false);
@@ -254,7 +256,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
     const selectedName =
         selected?.record.name?.trim() ||
         ((selected?.vc?.name as string) ?? '').trim() ||
-        'Untitled credential';
+        m['issueFlow.untitled']();
 
     const renderRow = (record: BoostRecord, category: BoostCategoryOptionsEnum) => {
         const Icon = boostCategoryMetadata[category]?.IconComponent ?? Sparkles;
@@ -271,7 +273,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                     <Icon className="w-5 h-5" />
                 </span>
                 <span className="min-w-0 flex-1 text-sm font-medium text-grayscale-900 truncate">
-                    {record.name?.trim() || 'Untitled credential'}
+                    {record.name?.trim() || m['issueFlow.untitled']()}
                 </span>
                 {isLoadingThis && (
                     <Loader2 className="w-4 h-4 animate-spin text-grayscale-400 shrink-0" />
@@ -282,12 +284,12 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
 
     const headerTitle =
         step === 'preview'
-            ? 'Send this credential'
+            ? m['issueFlow.sendThisCred']()
             : step === 'recipient'
-            ? "Who's it for?"
+            ? m['issueFlow.whosItFor']()
             : step === 'success'
-            ? 'Sent'
-            : "Reuse one you've made";
+            ? m['passport.activity.status.sent']()
+            : m['issueFlow.reuseTitle']();
 
     const onBack =
         step === 'preview' ? resetToList : step === 'recipient' ? () => setStep('preview') : null;
@@ -308,7 +310,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                                 type="button"
                                 onClick={onBack}
                                 className="w-8 h-8 -ml-2 rounded-full flex items-center justify-center text-grayscale-500 hover:text-grayscale-900 hover:bg-grayscale-100 transition-colors shrink-0"
-                                aria-label="Back"
+                                aria-label={m['common.back']()}
                             >
                                 <ArrowLeft className="w-5 h-5" />
                             </button>
@@ -321,7 +323,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                         type="button"
                         onClick={handleCloseModal}
                         className="w-8 h-8 rounded-full flex items-center justify-center text-grayscale-400 hover:text-grayscale-900 hover:bg-grayscale-100 transition-colors shrink-0"
-                        aria-label="Close"
+                        aria-label={m['common.close']()}
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -330,7 +332,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                 {step === 'list' && (
                     <>
                         <p className="text-sm text-grayscale-600 mb-4">
-                            Send a credential you manage — pick one to get started.
+                            {m['issueFlow.reuseSubtitle']()}
                         </p>
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-grayscale-400" />
@@ -338,7 +340,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                                 type="text"
                                 value={query}
                                 onChange={e => setQuery(e.target.value)}
-                                placeholder="Search your credentials…"
+                                placeholder={m['issueFlow.searchCreds']()}
                                 className="w-full py-3 pl-10 pr-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                             />
                         </div>
@@ -369,8 +371,8 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                                 <RotateCcw className="w-8 h-8 text-grayscale-300 mx-auto mb-3" />
                                 <p className="text-sm text-grayscale-500">
                                     {query
-                                        ? `Nothing matches “${query}”.`
-                                        : "You haven't issued any credentials yet."}
+                                        ? m['issueFlow.nothingMatches']({ query })
+                                        : m['issueFlow.noneIssued']()}
                                 </p>
                             </div>
                         ) : (
@@ -408,7 +410,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                                         {isFetchingNextPage && (
                                             <Loader2 className="w-4 h-4 animate-spin" />
                                         )}
-                                        Show more
+                                        {m['issueFlow.showMore']()}
                                     </button>
                                 )}
                             </>
@@ -419,7 +421,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                 {step === 'preview' && selected && (
                     <div className="space-y-5 animate-fade-in-up">
                         <p className="text-sm text-grayscale-600 -mt-1">
-                            This is exactly what your recipient will receive.
+                            {m['issueFlow.previewDesc']()}
                         </p>
                         <HeroCanvas
                             credential={selected.vc}
@@ -433,7 +435,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                                 onClick={() => setStep('recipient')}
                                 className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                             >
-                                Choose recipient
+                                {m['issueFlow.chooseRecip']()}
                             </button>
                             <button
                                 type="button"
@@ -441,7 +443,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                                 className="w-full py-2.5 px-4 rounded-[20px] text-grayscale-600 hover:text-grayscale-900 font-medium text-sm transition-colors flex items-center justify-center gap-1.5"
                             >
                                 <Pencil className="w-4 h-4" />
-                                Edit a copy instead
+                                {m['issueFlow.editCopy']()}
                             </button>
                         </div>
                     </div>
@@ -469,12 +471,12 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                         </div>
                         <div className="space-y-1">
                             <h3 className="text-lg font-semibold text-grayscale-900">
-                                {claimLink ? 'Your link is ready' : 'Credential sent'}
+                                {claimLink ? m['issueFlow.linkReady']() : m['issueFlow.credSent']()}
                             </h3>
                             <p className="text-sm text-grayscale-600">
                                 {claimLink
-                                    ? 'Anyone with this link can claim it.'
-                                    : `“${selectedName}” is on its way.`}
+                                    ? m['issueFlow.linkClaimDesc']()
+                                    : m['issueFlow.onItsWay']({ name: selectedName })}
                             </p>
                         </div>
 
@@ -493,7 +495,9 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                                     ) : (
                                         <Copy className="w-3.5 h-3.5" />
                                     )}
-                                    {copied ? 'Copied' : 'Copy'}
+                                    {copied
+                                        ? m['boostAFriend.page.copied']()
+                                        : m['issueFlow.copy']()}
                                 </button>
                             </div>
                         )}
@@ -504,7 +508,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                                 onClick={resetToList}
                                 className="flex-1 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                             >
-                                Send another
+                                {m['issueFlow.sendAnother']()}
                             </button>
                             <button
                                 type="button"
@@ -514,7 +518,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                                 }}
                                 className="flex-1 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                             >
-                                Done
+                                {m['common.done']()}
                             </button>
                         </div>
                     </div>
@@ -532,16 +536,16 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                         {isSending ? (
                             <>
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                Sending…
+                                {m['issueFlow.sending']()}
                             </>
                         ) : (
                             <>
                                 <Send className="w-4 h-4" />
                                 {recipientMode === 'link'
-                                    ? 'Create shareable link'
+                                    ? m['issueFlow.createLink']()
                                     : recipientMode === 'self'
-                                    ? 'Send to myself'
-                                    : 'Send credential'}
+                                    ? m['issueFlow.sendToSelf']()
+                                    : m['issueFlow.sendCred']()}
                             </>
                         )}
                     </button>

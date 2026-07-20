@@ -31,10 +31,11 @@ import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader
 import AiFeatureLinks from '../../components/ai-feature-links/AiFeatureLinks';
 
 import { LearnCardRolesEnum } from '../../components/onboarding/onboarding.helpers';
+import { m } from '../../paraglide/messages.js';
 
 enum TabEnum {
-    MY_HUB = 'My Hub',
-    ADMIN_PANEL = 'Admin Panel',
+    MY_HUB = 'my-hub',
+    ADMIN_PANEL = 'admin-panel',
 }
 
 const SkillsPage: React.FC = () => {
@@ -54,8 +55,8 @@ const SkillsPage: React.FC = () => {
         const params = new URLSearchParams(location.search);
         const tab = params.get('tab');
 
-        if (tab === 'admin-panel') setSelectedTab(TabEnum.ADMIN_PANEL);
-        if (tab === 'my-hub') setSelectedTab(TabEnum.MY_HUB);
+        if (tab === TabEnum.ADMIN_PANEL) setSelectedTab(TabEnum.ADMIN_PANEL);
+        if (tab === TabEnum.MY_HUB) setSelectedTab(TabEnum.MY_HUB);
     }, [location.search]);
 
     const colors = getThemedCategoryColors(CredentialCategoryEnum.skill);
@@ -165,7 +166,7 @@ const SkillsPage: React.FC = () => {
                                                     {conditionalPluralize(total, 'Skill')}
                                                 </div>
                                             ) : (
-                                                tab
+                                                m['membership.adminPanel']()
                                             )}
                                         </button>
                                     ))}

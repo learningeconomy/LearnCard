@@ -13,6 +13,7 @@ import ConsentFlowFooter from './ConsentFlowFooter';
 import ConsentFlowHeader from './ConsentFlowHeader';
 
 import { ConsentFlowContractDetails } from '@learncard/types';
+import * as m from '../../paraglide/messages.js';
 
 type ConsentFlowGetAnAdultPromptProps = {
     contractDetails?: ConsentFlowContractDetails;
@@ -37,7 +38,7 @@ export const ConsentFlowGetAnAdultPrompt: React.FC<ConsentFlowGetAnAdultPromptPr
         return (
             <div className="w-full flex flex-col items-center justify-center min-h-[300px]">
                 <IonSpinner name="crescent" color="grayscale-900" className="scale-[2] mb-8 mt-6" />
-                <p className="font-poppins text-grayscale-900">Loading...</p>
+                <p className="font-poppins text-grayscale-900">{m['common.loading']()}</p>
             </div>
         );
     }
@@ -75,9 +76,9 @@ export const ConsentFlowGetAnAdultPrompt: React.FC<ConsentFlowGetAnAdultPromptPr
             </div>
 
             <ConsentFlowFooter
-                actionButtonText="That's me!"
+                actionButtonText={m['common.continue']()}
                 onActionButtonClick={handleNextStep}
-                secondaryButtonText="Cancel"
+                secondaryButtonText={m['common.cancel']()}
                 onSecondaryButtonClick={closeModal}
             />
         </>

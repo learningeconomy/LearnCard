@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { m } from '../../../paraglide/messages.js';
+
 import NewAiSessionContainer from '../NewAiSessionContainer';
 import NewAiSessionSideMenuButton from './NewAiSessionSideMenuButton';
 import NewAiSessionIcon from 'learn-card-base/svgs/NewAiSessionIcon';
@@ -114,7 +116,7 @@ export const NewAiSessionButton: React.FC<{
                 }
                 className={`bg-${primaryColor} text-xl text-white flex items-center justify-center font-semibold py-[12px] rounded-full w-full shadow-soft-bottom max-w-[375px] mr-2`}
             >
-                Start
+                {m['ai.start']()}
                 <NewAiSessionIcon className="ml-1" />
             </button>
         );
@@ -137,7 +139,7 @@ export const NewAiSessionButton: React.FC<{
                         : ''
                 }`}
             >
-                Revisit Topic
+                {m['ai.revisitTopic']()}
                 <RevisitIcon version="2" className={`ml-1 h-auto w-[31px] text-${primaryColor}`} />
             </button>
         );
@@ -198,7 +200,7 @@ export const NewAiSessionButton: React.FC<{
                 className={`text-[17px] font-semibold font-notoSans text-blue-950 leading-6 rounded-[15px] border-[1px] border-solid !bg-grayscale-200 border-grayscale-200 p-[10px] w-full flex items-center justify-start mt-[10px] gap-1 ${className}`}
             >
                 {iconType && <NewAiSessionIcon version={iconType} />}
-                {text ?? 'New Session'}
+                {text ?? m['ai.newSession']()}
             </button>
         );
     }
@@ -208,7 +210,7 @@ export const NewAiSessionButton: React.FC<{
             onClick={() => handleNewSession()}
             className={`bg-${primaryColor} py-[9px] pl-[20px] pr-[15px] rounded-[30px] font-notoSans text-[17px] leading-[24px] max-h-[42px] tracking-[0.25px] text-white w-full shadow-button-bottom flex gap-[5px] items-center justify-center`}
         >
-            New <NewAiSessionIcon />
+            {m['ai.new']()} <NewAiSessionIcon />
         </button>
     );
 };
