@@ -1,7 +1,26 @@
 import type { AnalyticsProvider, PostHogConfig } from '../types';
 import type { AnalyticsEventName, EventPayload } from '../events';
+import { getSharedEventContext, shouldDropEvents } from '../sharedContext';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('posthog');
+
+type CaptureLike = { properties?: Record<string, unknown> } | null;
+
+/**
+ * SDK-level hygiene applied to EVERY PostHog event — including
+ * SDK-generated ones (`$exception`, `$rageclick`, `$pageleave`) that
+ * never pass through our `track()` wrapper. Drops automation traffic
+ * and stamps the enforced context LAST so it wins property collisions.
+ * Exported for unit testing.
+ */
+export const applyPostHogHygiene = <T extends CaptureLike>(event: T): T | null => {
+    if (!event) return null;
+    if (shouldDropEvents()) return null;
+
+    event.properties = { ...event.properties, ...getSharedEventContext() };
+
+    return event;
+};
 
 /**
  * PostHog analytics provider implementation.
@@ -33,7 +52,10 @@ export class PostHogProvider implements AnalyticsProvider {
                 capture_pageview: false,
                 capture_pageleave: true,
                 persistence: 'localStorage',
+                before_send: applyPostHogHygiene,
             });
+
+            this.posthog.register(getSharedEventContext());
 
             log.debug('[Analytics:PostHog] Initialized');
         } catch (error) {

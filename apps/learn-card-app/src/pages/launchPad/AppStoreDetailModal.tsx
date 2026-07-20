@@ -508,7 +508,11 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                 appName: listing.display_name,
                 appId: listing.listing_id,
                 result: 'failure',
-                error_code: (error as Error)?.message || 'unknown',
+                error_code:
+                    (error as { code?: string })?.code ??
+                    (error instanceof Error && (error as Error).name !== 'Error'
+                        ? (error as Error).name
+                        : 'unknown'),
             });
         } finally {
             setIsProcessing(false);

@@ -43,7 +43,8 @@ import {
     useProfileSnapshotCapture,
     ACCOUNT_CREATED_AT_KEY,
     SESSION_START_KEY,
-    newFlowId,
+    createFlowLifecycle,
+    type FlowLifecycle,
 } from '@analytics';
 
 import {
@@ -158,7 +159,8 @@ const ClaimFromDashboard: React.FC = () => {
     const { track } = useAnalytics();
     const { capture, snapshotRef } = useProfileSnapshotCapture();
     const flowStartedAt = useRef(Date.now());
-    const claimAttemptRef = useRef<{ flowId: string; startedAt: number } | null>(null);
+    const claimAttemptRef = useRef<FlowLifecycle | null>(null);
+    const presentedCredentialIdRef = useRef<string | null>(null);
 
     const resolvePartnerId = (issuerId?: string) => {
         const profileId = getUserHandleFromDid(issuerId ?? '');
@@ -171,22 +173,27 @@ const ClaimFromDashboard: React.FC = () => {
         }
     };
 
+    const getClaimErrorCode = (e: unknown): string =>
+        (e as { code?: string })?.code ??
+        (e instanceof Error && e.name !== 'Error' ? e.name : 'unknown');
+
     const beginClaimAttempt = (claimCredential?: VC) => {
-        if (claimAttemptRef.current || !claimCredential) return claimAttemptRef.current;
+        if (!claimCredential) return null;
 
         const issuerId =
             typeof claimCredential.issuer === 'string'
                 ? claimCredential.issuer
                 : claimCredential.issuer?.id;
-        const attempt = { flowId: newFlowId(), startedAt: Date.now() };
+        const attempt = createFlowLifecycle();
 
         claimAttemptRef.current = attempt;
         track(AnalyticsEvents.CREDENTIAL_CLAIM_STARTED, {
-            flow_id: attempt.flowId,
+            flow_id: attempt.id,
             entry_point: 'dashboard',
             credential_type: getAchievementType(claimCredential),
             category: getDefaultCategoryForCredential(claimCredential),
             partner_id: resolvePartnerId(issuerId),
+            credential_count: 1,
         });
 
         return attempt;
@@ -201,7 +208,7 @@ const ClaimFromDashboard: React.FC = () => {
         errorCode?: string
     ) => {
         const attempt = claimAttemptRef.current;
-        if (!attempt || !claimCredential) return;
+        if (!attempt || !claimCredential || !attempt.terminate()) return;
 
         const issuerId =
             typeof claimCredential.issuer === 'string'
@@ -209,12 +216,13 @@ const ClaimFromDashboard: React.FC = () => {
                 : claimCredential.issuer?.id;
 
         track(eventName, {
-            flow_id: attempt.flowId,
+            flow_id: attempt.id,
             entry_point: 'dashboard',
             credential_type: getAchievementType(claimCredential),
             category: getDefaultCategoryForCredential(claimCredential),
             partner_id: resolvePartnerId(issuerId),
-            duration_ms: Date.now() - attempt.startedAt,
+            credential_count: 1,
+            duration_ms: attempt.durationMs(),
             error_code: errorCode,
         });
 
@@ -222,10 +230,23 @@ const ClaimFromDashboard: React.FC = () => {
     };
 
     useEffect(() => {
-        if (credential) {
-            beginClaimAttempt(credential);
-        }
-    }, [credential]);
+        const credentialId = credential?.id;
+        if (!credential || !credentialId || presentedCredentialIdRef.current === credentialId)
+            return;
+
+        const issuerId =
+            typeof credential.issuer === 'string' ? credential.issuer : credential.issuer?.id;
+
+        presentedCredentialIdRef.current = credentialId;
+        track(AnalyticsEvents.CREDENTIAL_CLAIM_PRESENTED, {
+            flow_id: createFlowLifecycle().id,
+            entry_point: 'dashboard',
+            credential_type: getAchievementType(credential),
+            category: getDefaultCategoryForCredential(credential),
+            partner_id: resolvePartnerId(issuerId),
+            credential_count: 1,
+        });
+    }, [credential, track]);
 
     const queryClient = useQueryClient();
     const registry = useRegistry();
@@ -399,7 +420,7 @@ const ClaimFromDashboard: React.FC = () => {
             completeClaimAttempt(
                 credential,
                 AnalyticsEvents.CREDENTIAL_CLAIM_FAILED,
-                e instanceof Error ? (e as Error & { code?: string }).code ?? e.name : undefined
+                getClaimErrorCode(e)
             );
             setClaimingCredential(false);
             log.error('Error claiming credential', e);

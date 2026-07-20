@@ -43,7 +43,8 @@ import {
     useProfileSnapshotCapture,
     ACCOUNT_CREATED_AT_KEY,
     SESSION_START_KEY,
-    newFlowId,
+    createFlowLifecycle,
+    type FlowLifecycle,
 } from '@analytics';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
@@ -148,7 +149,8 @@ const ClaimBoost: React.FC<{
     const { track } = useAnalytics();
     const { capture, snapshotRef } = useProfileSnapshotCapture();
     const flowStartedAt = useRef(Date.now());
-    const claimAttemptRef = useRef<{ flowId: string; startedAt: number } | null>(null);
+    const claimAttemptRef = useRef<FlowLifecycle | null>(null);
+    const presentedClaimKeyRef = useRef<string | null>(null);
     const { newModal, closeModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
 
@@ -166,6 +168,10 @@ const ClaimBoost: React.FC<{
             return undefined;
         }
     };
+
+    const getClaimErrorCode = (e: unknown): string =>
+        (e as { code?: string })?.code ??
+        (e instanceof Error && e.name !== 'Error' ? e.name : 'unknown');
 
     const rawBoostUri = query.get('boostUri') || uri;
     const boostUri = rawBoostUri ? decodeURIComponent(rawBoostUri) : rawBoostUri;
@@ -230,7 +236,8 @@ const ClaimBoost: React.FC<{
     };
 
     const handleCancel = () => {
-        if (claimAttemptRef.current) {
+        const flow = claimAttemptRef.current;
+        if (flow) {
             const claimCredential = boost ?? vc;
             const claimCategory = claimCredential
                 ? getDefaultCategoryForCredential(claimCredential)
@@ -241,14 +248,17 @@ const ClaimBoost: React.FC<{
                     ? claimCredential.issuer
                     : claimCredential?.issuer?.id;
 
-            track(AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED, {
-                flow_id: claimAttemptRef.current.flowId,
-                entry_point: 'claim_link',
-                credential_type: claimType,
-                category: claimCategory,
-                partner_id: resolvePartnerId(issuerId),
-                duration_ms: Date.now() - claimAttemptRef.current.startedAt,
-            });
+            if (flow.terminate()) {
+                track(AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED, {
+                    flow_id: flow.id,
+                    entry_point: 'claim_link',
+                    credential_type: claimType,
+                    category: claimCategory,
+                    partner_id: resolvePartnerId(issuerId),
+                    credential_count: 1,
+                    duration_ms: flow.durationMs(),
+                });
+            }
 
             claimAttemptRef.current = null;
         }
@@ -258,9 +268,9 @@ const ClaimBoost: React.FC<{
     };
 
     const beginClaimAttempt = (claimCredential?: VC) => {
-        if (claimAttemptRef.current || !claimCredential) return claimAttemptRef.current;
+        if (!claimCredential) return null;
 
-        const attempt = { flowId: newFlowId(), startedAt: Date.now() };
+        const attempt = createFlowLifecycle();
         const issuerId =
             typeof claimCredential.issuer === 'string'
                 ? claimCredential.issuer
@@ -268,11 +278,12 @@ const ClaimBoost: React.FC<{
 
         claimAttemptRef.current = attempt;
         track(AnalyticsEvents.CREDENTIAL_CLAIM_STARTED, {
-            flow_id: attempt.flowId,
+            flow_id: attempt.id,
             entry_point: 'claim_link',
             credential_type: getAchievementType(claimCredential),
             category: getDefaultCategoryForCredential(claimCredential),
             partner_id: resolvePartnerId(issuerId),
+            credential_count: 1,
         });
 
         return attempt;
@@ -286,7 +297,7 @@ const ClaimBoost: React.FC<{
         errorCode?: string
     ) => {
         const attempt = claimAttemptRef.current;
-        if (!attempt || !claimCredential) return;
+        if (!attempt || !claimCredential || !attempt.terminate()) return;
 
         const issuerId =
             typeof claimCredential.issuer === 'string'
@@ -294,12 +305,13 @@ const ClaimBoost: React.FC<{
                 : claimCredential.issuer?.id;
 
         track(eventName, {
-            flow_id: attempt.flowId,
+            flow_id: attempt.id,
             entry_point: 'claim_link',
             credential_type: getAchievementType(claimCredential),
             category: getDefaultCategoryForCredential(claimCredential),
             partner_id: resolvePartnerId(issuerId),
-            duration_ms: Date.now() - attempt.startedAt,
+            credential_count: 1,
+            duration_ms: attempt.durationMs(),
             error_code: errorCode,
         });
 
@@ -308,21 +320,42 @@ const ClaimBoost: React.FC<{
 
     useEffect(() => {
         const claimCredential = boost ?? vc;
+        const presentedKey = claimCredential?.id ?? boostUri ?? null;
 
-        if (claimCredential && !isClaimed) {
-            beginClaimAttempt(claimCredential);
+        if (
+            !claimCredential ||
+            isClaimed ||
+            !presentedKey ||
+            presentedClaimKeyRef.current === presentedKey
+        ) {
+            return;
         }
-    }, [boost, vc, isClaimed]);
+
+        const issuerId =
+            typeof claimCredential.issuer === 'string'
+                ? claimCredential.issuer
+                : claimCredential.issuer?.id;
+
+        presentedClaimKeyRef.current = presentedKey;
+        track(AnalyticsEvents.CREDENTIAL_CLAIM_PRESENTED, {
+            flow_id: createFlowLifecycle().id,
+            entry_point: 'claim_link',
+            credential_type: getAchievementType(claimCredential),
+            category: getDefaultCategoryForCredential(claimCredential),
+            partner_id: resolvePartnerId(issuerId),
+            credential_count: 1,
+        });
+    }, [boost, vc, isClaimed, boostUri, track]);
 
     const handleClaimBoost = async () => {
         if (isClaimed) return;
         const wallet = await initWallet();
-        beginClaimAttempt(boost);
 
         const { prompted } = await gate();
         if (prompted) return;
 
         try {
+            beginClaimAttempt(boost);
             setIsClaimLoading(true);
             // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
             capture();
@@ -399,19 +432,19 @@ const ClaimBoost: React.FC<{
             completeClaimAttempt(
                 boost,
                 AnalyticsEvents.CREDENTIAL_CLAIM_FAILED,
-                e?.code ?? e?.name
+                getClaimErrorCode(e)
             );
         }
     };
 
     const handleClaimRawCredential = async () => {
         if (isClaimed || !vc) return;
-        beginClaimAttempt(vc);
 
         const { prompted } = await gate();
         if (prompted) return;
 
         try {
+            beginClaimAttempt(vc);
             setIsClaimLoading(true);
             await uploadVcFromTextAndAddToWallet(vc);
             completeClaimAttempt(vc, AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED);
@@ -427,7 +460,7 @@ const ClaimBoost: React.FC<{
                 hasDismissButton: true,
             });
         } catch (e) {
-            completeClaimAttempt(vc, AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, e?.code ?? e?.name);
+            completeClaimAttempt(vc, AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, getClaimErrorCode(e));
             setIsClaimLoading(false);
 
             presentToast(m['toasts.credentialClaimFailed'](), {

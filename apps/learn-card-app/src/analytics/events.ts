@@ -210,8 +210,11 @@ export const AnalyticsEvents = {
     ONBOARDING_ABANDONED: 'onboarding_abandoned',
 
     // Credential claim lifecycle: CLAIM_BOOST records success only.
-    // These four give claim funnels a denominator, a failure rate, and
-    // a technical-failure vs user-abandonment split.
+    // `presented` = the claim screen rendered (exposure); `started` =
+    // the user actively triggered the claim. Funnel denominators MUST
+    // use `started` — `presented` includes dwell/bounce traffic.
+    // Exactly one terminal event fires per started flow_id.
+    CREDENTIAL_CLAIM_PRESENTED: 'credential_claim_presented',
     CREDENTIAL_CLAIM_STARTED: 'credential_claim_started',
     CREDENTIAL_CLAIM_SUCCEEDED: 'credential_claim_succeeded',
     CREDENTIAL_CLAIM_FAILED: 'credential_claim_failed',
@@ -228,15 +231,21 @@ export const AnalyticsEvents = {
 
     // OID4VC/VP exchange lifecycle. `exchange_id` equals the resilience
     // orchestrator's `exchange_run_id` where one exists so these join
-    // against OPENID_RESILIENCE_* events.
+    // against OPENID_RESILIENCE_* events. `offer_presented` = the offer
+    // screen rendered; `started` = the network exchange actually began.
+    OPENID_OFFER_PRESENTED: 'openid_offer_presented',
     OPENID_EXCHANGE_STARTED: 'openid_exchange_started',
     OPENID_EXCHANGE_SUCCEEDED: 'openid_exchange_succeeded',
     OPENID_EXCHANGE_FAILED: 'openid_exchange_failed',
     OPENID_EXCHANGE_CANCELLED: 'openid_exchange_cancelled',
 
-    // Post-claim value — activation/retention signals.
+    // Post-claim value — activation/retention signals. CREDENTIAL_SHARED
+    // means the user completed a share action (clipboard copy, native
+    // share sheet, LinkedIn). Rendering a QR is only exposure — that is
+    // CREDENTIAL_QR_PRESENTED, since a scan can't be confirmed client-side.
     CREDENTIAL_VIEWED: 'credential_viewed',
     CREDENTIAL_SHARED: 'credential_shared',
+    CREDENTIAL_QR_PRESENTED: 'credential_qr_presented',
     PRESENTATION_COMPLETED: 'presentation_completed',
 
     // ── Feature outcomes (P1) ────────────────────────────────────────────────
@@ -862,6 +871,15 @@ export interface AnalyticsEventPayloads {
         duration_ms?: number;
     };
 
+    [AnalyticsEvents.CREDENTIAL_CLAIM_PRESENTED]: {
+        flow_id: string;
+        entry_point: ClaimEntryPoint;
+        credential_type?: string;
+        category?: string;
+        partner_id?: string;
+        credential_count?: number;
+    };
+
     [AnalyticsEvents.CREDENTIAL_CLAIM_STARTED]: {
         flow_id: string;
         entry_point: ClaimEntryPoint;
@@ -869,6 +887,8 @@ export interface AnalyticsEventPayloads {
         category?: string;
         /** Sanitized issuer identifier (profileId or URL host — never PII). */
         partner_id?: string;
+        /** Batch size for multi-credential claims (default 1). */
+        credential_count?: number;
     };
 
     [AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED]: {
@@ -877,6 +897,7 @@ export interface AnalyticsEventPayloads {
         credential_type?: string;
         category?: string;
         partner_id?: string;
+        credential_count?: number;
         duration_ms?: number;
     };
 
@@ -886,6 +907,7 @@ export interface AnalyticsEventPayloads {
         credential_type?: string;
         category?: string;
         partner_id?: string;
+        credential_count?: number;
         error_code?: string;
         duration_ms?: number;
     };
@@ -896,6 +918,7 @@ export interface AnalyticsEventPayloads {
         credential_type?: string;
         category?: string;
         partner_id?: string;
+        credential_count?: number;
         duration_ms?: number;
     };
 
@@ -929,6 +952,13 @@ export interface AnalyticsEventPayloads {
         credential_type?: string;
         category?: string;
         duration_ms?: number;
+    };
+
+    [AnalyticsEvents.OPENID_OFFER_PRESENTED]: {
+        exchange_id: string;
+        surface: 'vci' | 'vp';
+        counterparty?: string;
+        entry_point?: string;
     };
 
     [AnalyticsEvents.OPENID_EXCHANGE_STARTED]: {
@@ -981,8 +1011,14 @@ export interface AnalyticsEventPayloads {
     [AnalyticsEvents.CREDENTIAL_SHARED]: {
         credential_type?: string;
         category?: string;
-        /** Delivery mechanism — share_link, qr, send_boost, presentation, etc. */
-        method: string;
+        /** Completed delivery action — never fired on UI open or link generation. */
+        method: 'clipboard_copy' | 'native_share' | 'linkedin' | string;
+        surface?: string;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_QR_PRESENTED]: {
+        credential_type?: string;
+        category?: string;
         surface?: string;
     };
 

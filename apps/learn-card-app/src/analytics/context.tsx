@@ -69,7 +69,10 @@ async function loadProvider(): Promise<AnalyticsProvider> {
  * Wrap a provider so every `track`/`page` call carries the enforced
  * shared context (`environment`, `app_version`, `tenant_id`,
  * `platform`) and automation/e2e traffic is dropped client-side.
- * Event-specific properties win on key conflicts.
+ * Enforced context wins key conflicts — call sites cannot override
+ * `environment`. PostHog additionally applies this at the SDK level
+ * (see `applyPostHogHygiene`) so `$exception`/`$rageclick`/`$pageleave`
+ * are covered too.
  */
 function withSharedContext(provider: AnalyticsProvider): AnalyticsProvider {
     return {
@@ -80,11 +83,11 @@ function withSharedContext(provider: AnalyticsProvider): AnalyticsProvider {
         setEnabled: enabled => provider.setEnabled(enabled),
         track: async (event, properties) => {
             if (shouldDropEvents()) return;
-            await provider.track(event, { ...getSharedEventContext(), ...properties });
+            await provider.track(event, { ...properties, ...getSharedEventContext() });
         },
         page: async (name, properties) => {
             if (shouldDropEvents()) return;
-            await provider.page(name, { ...getSharedEventContext(), ...properties });
+            await provider.page(name, { ...properties, ...getSharedEventContext() });
         },
     };
 }

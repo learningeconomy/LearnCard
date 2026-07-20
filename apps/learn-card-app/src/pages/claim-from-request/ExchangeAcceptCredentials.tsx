@@ -32,7 +32,8 @@ import {
     useProfileSnapshotCapture,
     ACCOUNT_CREATED_AT_KEY,
     SESSION_START_KEY,
-    newFlowId,
+    createFlowLifecycle,
+    type FlowLifecycle,
 } from '@analytics';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -96,7 +97,8 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     const { newModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
     const flowStartedAt = useRef(Date.now());
-    const claimAttemptRef = useRef<{ flowId: string; startedAt: number } | null>(null);
+    const claimAttemptRef = useRef<FlowLifecycle | null>(null);
+    const presentedBatchKeyRef = useRef<string | null>(null);
 
     const resolvePartnerId = (issuerId?: string) => {
         const profileId = getUserHandleFromDid(issuerId ?? '');
@@ -108,6 +110,10 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
             return undefined;
         }
     };
+
+    const getClaimErrorCode = (e: unknown): string =>
+        (e as { code?: string })?.code ??
+        (e instanceof Error && e.name !== 'Error' ? e.name : 'unknown');
 
     // Verify the (single) credential so the Details panel/sidebar shows real
     // Proof / Status / Expiration rows. Always run — the verification block is
@@ -138,23 +144,23 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     }, []);
 
     const beginClaimAttempt = () => {
-        if (claimAttemptRef.current || selectedCredentials.length === 0)
-            return claimAttemptRef.current;
+        if (selectedCredentials.length === 0) return null;
 
         const primaryCredential = selectedCredentials[0];
         const issuerId =
             typeof primaryCredential?.issuer === 'string'
                 ? primaryCredential.issuer
                 : primaryCredential?.issuer?.id;
-        const attempt = { flowId: newFlowId(), startedAt: Date.now() };
+        const attempt = createFlowLifecycle();
 
         claimAttemptRef.current = attempt;
         track(AnalyticsEvents.CREDENTIAL_CLAIM_STARTED, {
-            flow_id: attempt.flowId,
+            flow_id: attempt.id,
             entry_point: 'vc_api_request',
             credential_type: getAchievementType(primaryCredential),
             category: getDefaultCategoryForCredential(primaryCredential),
             partner_id: resolvePartnerId(issuerId),
+            credential_count: selectedCredentials.length,
         });
 
         return attempt;
@@ -169,7 +175,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     ) => {
         const attempt = claimAttemptRef.current;
         const primaryCredential = selectedCredentials[0] ?? credentials[0];
-        if (!attempt || !primaryCredential) return;
+        if (!attempt || !primaryCredential || !attempt.terminate()) return;
 
         const issuerId =
             typeof primaryCredential.issuer === 'string'
@@ -177,12 +183,13 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                 : primaryCredential.issuer?.id;
 
         track(eventName, {
-            flow_id: attempt.flowId,
+            flow_id: attempt.id,
             entry_point: 'vc_api_request',
             credential_type: getAchievementType(primaryCredential),
             category: getDefaultCategoryForCredential(primaryCredential),
             partner_id: resolvePartnerId(issuerId),
-            duration_ms: Date.now() - attempt.startedAt,
+            credential_count: selectedCredentials.length,
+            duration_ms: attempt.durationMs(),
             error_code: errorCode,
         });
 
@@ -190,10 +197,27 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     };
 
     useEffect(() => {
-        if (credentials.length > 0 && !isClaimed) {
-            beginClaimAttempt();
-        }
-    }, [credentials, isClaimed, selectedCredentials.length]);
+        if (credentials.length === 0 || isClaimed) return;
+
+        const batchKey = credentials.map(credential => credential?.id ?? 'unknown').join('|');
+        if (!batchKey || presentedBatchKeyRef.current === batchKey) return;
+
+        const primaryCredential = credentials[0];
+        const issuerId =
+            typeof primaryCredential?.issuer === 'string'
+                ? primaryCredential.issuer
+                : primaryCredential?.issuer?.id;
+
+        presentedBatchKeyRef.current = batchKey;
+        track(AnalyticsEvents.CREDENTIAL_CLAIM_PRESENTED, {
+            flow_id: createFlowLifecycle().id,
+            entry_point: 'vc_api_request',
+            credential_type: getAchievementType(primaryCredential),
+            category: getDefaultCategoryForCredential(primaryCredential),
+            partner_id: resolvePartnerId(issuerId),
+            credential_count: credentials.length,
+        });
+    }, [credentials, isClaimed, track]);
 
     const handleClaim = async () => {
         if (selectedCredentials.length === 0) {
@@ -285,10 +309,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
             onAccept({}, selectedCredentials.length);
         } catch (e) {
-            completeClaimAttempt(
-                AnalyticsEvents.CREDENTIAL_CLAIM_FAILED,
-                e instanceof Error ? (e as Error & { code?: string }).code ?? e.name : undefined
-            );
+            completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, getClaimErrorCode(e));
             log.error('Error claiming credential(s)', e);
             if (e instanceof Error && e?.message?.includes('exists')) {
                 presentToast(m['claim.accept.exists'](), {

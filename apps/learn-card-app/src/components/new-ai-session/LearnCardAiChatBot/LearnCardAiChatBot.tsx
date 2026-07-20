@@ -121,6 +121,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     const aiMessageIndexRef = useRef(0);
     const aiSendTimestampRef = useRef<number | null>(null);
     const aiPrevUserCountRef = useRef(0);
+    const aiBaselineInitializedRef = useRef(false);
     const aiPrevStreamingRef = useRef(false);
 
     // Viewport height for min-height pin calculation
@@ -275,6 +276,11 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
 
     useEffect(() => {
         const userCount = messagesToShow.filter(m => m.role === 'user').length;
+        if (!aiBaselineInitializedRef.current) {
+            aiBaselineInitializedRef.current = true;
+            aiPrevUserCountRef.current = userCount;
+            return;
+        }
         if (userCount > aiPrevUserCountRef.current) {
             aiPrevUserCountRef.current = userCount;
             aiMessageIndexRef.current += 1;

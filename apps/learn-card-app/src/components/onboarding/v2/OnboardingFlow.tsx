@@ -59,6 +59,7 @@ import {
     NEW_SIGNUP_FLAG_KEY,
     ONBOARDING_STARTED_AT_KEY,
     newFlowId,
+    createFlowLifecycle,
 } from '@analytics';
 
 import countries from '../../../constants/countries.json';
@@ -434,6 +435,13 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
         setError(null);
         setIsCreating(true);
 
+        const signupFlowId = localStorage.getItem(SIGNUP_FLOW_ID_KEY) ?? newFlowId();
+        const signupStartedAtMs = Number(
+            localStorage.getItem(SIGNUP_STARTED_AT_MS_KEY) ?? Date.now()
+        );
+        const signupMethod = localStorage.getItem(LAST_LOGIN_METHOD_KEY) ?? undefined;
+        const signupLifecycle = createFlowLifecycle(signupFlowId);
+
         try {
             const wallet = await initWallet();
 
@@ -467,17 +475,13 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
             if (didWeb) {
                 localStorage.setItem(NEW_SIGNUP_FLAG_KEY, '1');
 
-                const signupFlowId = localStorage.getItem(SIGNUP_FLOW_ID_KEY) ?? newFlowId();
-                const signupStartedAtMs = Number(
-                    localStorage.getItem(SIGNUP_STARTED_AT_MS_KEY) ?? Date.now()
-                );
-                const signupMethod = localStorage.getItem(LAST_LOGIN_METHOD_KEY) ?? undefined;
-
-                track(AnalyticsEvents.SIGNUP_COMPLETED, {
-                    flow_id: signupFlowId,
-                    method: signupMethod,
-                    duration_ms: Date.now() - signupStartedAtMs,
-                });
+                if (signupLifecycle.terminate()) {
+                    track(AnalyticsEvents.SIGNUP_COMPLETED, {
+                        flow_id: signupFlowId,
+                        method: signupMethod,
+                        duration_ms: Date.now() - signupStartedAtMs,
+                    });
+                }
 
                 localStorage.removeItem(SIGNUP_FLOW_ID_KEY);
                 localStorage.removeItem(SIGNUP_STARTED_AT_MS_KEY);
@@ -579,20 +583,16 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                 setStep('celebrate');
             }
         } catch (err: any) {
-            const signupFlowId = localStorage.getItem(SIGNUP_FLOW_ID_KEY) ?? newFlowId();
-            const signupStartedAtMs = Number(
-                localStorage.getItem(SIGNUP_STARTED_AT_MS_KEY) ?? Date.now()
-            );
-            const signupMethod = localStorage.getItem(LAST_LOGIN_METHOD_KEY) ?? undefined;
-            const errorCode = err?.code || err?.name;
-
-            track(AnalyticsEvents.SIGNUP_FAILED, {
-                flow_id: signupFlowId,
-                method: signupMethod,
-                step_id: 'profile_creation',
-                error_code: typeof errorCode === 'string' ? errorCode : undefined,
-                duration_ms: Date.now() - signupStartedAtMs,
-            });
+            if (signupLifecycle.terminate()) {
+                const errorCode = err?.code || err?.name;
+                track(AnalyticsEvents.SIGNUP_FAILED, {
+                    flow_id: signupFlowId,
+                    method: signupMethod,
+                    step_id: 'profile_creation',
+                    error_code: typeof errorCode === 'string' ? errorCode : undefined,
+                    duration_ms: Date.now() - signupStartedAtMs,
+                });
+            }
 
             log.error('createProfile::error', err);
             setError(err?.message || m['onboarding.profile.error.createFailed']());

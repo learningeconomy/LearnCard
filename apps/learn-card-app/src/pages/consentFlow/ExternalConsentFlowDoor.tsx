@@ -194,7 +194,9 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
         handleNavigation().catch((error: unknown) => {
             track(AnalyticsEvents.CONSENT_FLOW_FAILED, {
                 contractName: contractDetails?.name,
-                error_code: (error as Error)?.message || 'navigation_failed',
+                error_code:
+                    (error as { code?: string })?.code ??
+                    (error instanceof Error && error.name !== 'Error' ? error.name : 'unknown'),
             });
         });
     }, [

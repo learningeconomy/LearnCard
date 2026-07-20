@@ -15,6 +15,8 @@ export {
     shouldDropEvents,
 } from './sharedContext';
 export type { AnalyticsEnvironment, SharedEventContext } from './sharedContext';
+export { createFlowLifecycle } from './flowLifecycle';
+export type { FlowLifecycle } from './flowLifecycle';
 export {
     useProfileSnapshot,
     useProfileSnapshotCapture,
