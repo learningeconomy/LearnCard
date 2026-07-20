@@ -14,13 +14,9 @@ import {
 
 import { initializeFirebaseFromTenant } from '../firebase/firebase';
 
-const resolveScoutsSentryEnv = (): string => {
-    if (typeof SENTRY_ENV !== 'undefined') return SENTRY_ENV;
-    if (IS_PRODUCTION) return 'scouts-production';
-    return 'scouts-development';
-};
-
-const SCOUTS_SENTRY_ENV = resolveScoutsSentryEnv();
+// SENTRY_ENV is always defined in vite builds (vite.config.ts defaults it to
+// 'scouts-development'); the typeof guard only matters in non-vite contexts like tests.
+const SCOUTS_SENTRY_ENV = typeof SENTRY_ENV !== 'undefined' ? SENTRY_ENV : 'scouts-development';
 
 const IS_SCOUTS_PRODUCTION_ENV = SCOUTS_SENTRY_ENV === 'scouts-production';
 
@@ -39,6 +35,9 @@ export const SCOUTS_TENANT_CONFIG: TenantConfig = {
         brainServiceApi: SCOUTPASS_NETWORK_API_URL,
         cloudService: SCOUTCLOUD_URL,
         lcaApi: SCOUTPASS_API_ENDPOINT,
+        // Must be set explicitly. If omitted, the `...DEFAULT_LEARNCARD_TENANT_CONFIG.apis`
+        // spread supplies the LearnCard notifications endpoint, which would win over the
+        // lcaApi-based derivation in initNetworkStoreFromTenant.
         notificationsEndpoint: SCOUTPASS_API_ENDPOINT.replace(
             /\/trpc\/?$/,
             '/api/notifications/send'
@@ -59,7 +58,16 @@ export const SCOUTS_TENANT_CONFIG: TenantConfig = {
             redirectDomain: 'pass.scout.org',
             dynamicLinkDomain: 'pass.scout.org',
         },
-        sss: DEFAULT_LEARNCARD_TENANT_CONFIG.auth.sss,
+        // keyDerivation is 'web3auth', so SSS is dormant — but keep serverUrl pointed at the
+        // ScoutPass LCA API (which tracks the API_URL build define, so staging builds hit
+        // staging.api.scoutnetwork.org). Inheriting the LearnCard default would silently send
+        // key-share traffic to api.learncard.app if SSS is ever enabled.
+        sss: {
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth.sss,
+            serverUrl: SCOUTPASS_API_ENDPOINT,
+            enableEmailBackupShare: true,
+            requireEmailForPhoneUsers: true,
+        },
     },
     branding: {
         ...DEFAULT_LEARNCARD_TENANT_CONFIG.branding,
