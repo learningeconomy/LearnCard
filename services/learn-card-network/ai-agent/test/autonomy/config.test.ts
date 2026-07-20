@@ -12,6 +12,7 @@ const validConfig: ServiceConfig = {
     model: 'test-model',
     openAIApiKey: 'test-key',
     port: 0,
+    trustProxyHops: 1,
     walletSeed: 'test-seed',
     maxToolRounds: 5,
     consentFlowAppUrl: 'https://learncard.app',
@@ -92,6 +93,12 @@ describe('autonomy development configuration gate', () => {
                 autonomyDevLeaseMs: validConfig.autonomyDevPollIntervalMs,
             })
         ).toThrow('AI_AGENT_AUTONOMY_DEV_LEASE_MS');
+    });
+
+    it.each([-1, 1.5, 11])('rejects unsafe trusted proxy hop count %s', trustProxyHops => {
+        expect(() => assertSecurityConfig({ ...validConfig, trustProxyHops })).toThrow(
+            'AI_AGENT_TRUST_PROXY_HOPS'
+        );
     });
 });
 

@@ -28,6 +28,10 @@ import {
     createLearnCardAssistantProfileRuntime,
     createLearnCardAssistantProfileService,
 } from '../src/assistantProfile';
+import {
+    createInMemoryDidAuthChallengeStore,
+    type AgentDidAuthVerifierLearnCard,
+} from '../src/security/didAuth';
 interface TestRouteHandler {
     handle: (req: unknown, res: unknown, next?: (error?: unknown) => void) => Promise<void> | void;
 }
@@ -75,6 +79,12 @@ const testConfig: ServiceConfig = {
     authChallengeTtlMs: 300_000,
     encryptionKeyId: 'test-key',
     debugEnabled: true,
+};
+
+const createDidAuthJwt = (nonce: string, holder = 'did:key:user'): string => {
+    const payload = Buffer.from(JSON.stringify({ nonce, vp: { holder } })).toString('base64url');
+
+    return `header.${payload}.signature`;
 };
 
 describe('runChatRequest', () => {
@@ -1279,6 +1289,114 @@ describe('createServer', () => {
                 error: 'OPENAI_API_KEY must be set to run the AI agent.',
             },
         });
+    });
+
+    it('applies proxy-aware IP limits and authenticated DID limits', async () => {
+        const challengeStore = createInMemoryDidAuthChallengeStore();
+        const verifier: AgentDidAuthVerifierLearnCard = {
+            invoke: {
+                verifyPresentation: async () => ({
+                    warnings: [],
+                    errors: [],
+                    checks: ['JWS'],
+                }),
+            },
+        };
+        const app = createAgentServer({
+            config: {
+                ...testConfig,
+                selfImprovementEnabled: false,
+                authDomain: 'http://test.local',
+                trustProxyHops: 1,
+            },
+            provider: {
+                complete: async () => ({
+                    message: { role: 'assistant', content: 'ok' },
+                }),
+            },
+            tools: [],
+            consentFlowRuntime: {
+                getContractInfo: async () => {
+                    throw new Error('ConsentFlow contract should not be resolved.');
+                },
+                loadConsentedUserData: async () => {
+                    throw new Error('Consented user data should not be loaded.');
+                },
+            },
+            didAuthChallengeStore: challengeStore,
+            getVerifierLearnCard: async () => verifier,
+        });
+        const listening = Promise.withResolvers<void>();
+        const server = app.listen(0, '127.0.0.1', listening.resolve);
+
+        server.on('error', listening.reject);
+        await listening.promise;
+
+        const address = server.address();
+
+        if (!address || typeof address === 'string') throw new Error('Test server did not start.');
+
+        const requestChallenge = (ip: string): Promise<Response> =>
+            fetch(`http://127.0.0.1:${address.port}/api/auth/challenge`, {
+                method: 'POST',
+                headers: { 'X-Forwarded-For': ip },
+            });
+
+        const sendRequest = async (index: number): Promise<Response> => {
+            const challenge = `rate-limit-${index}`;
+
+            await challengeStore.insert(challenge, 'http://test.local', 300_000);
+
+            return fetch(`http://127.0.0.1:${address.port}/api/agent/run`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${createDidAuthJwt(challenge)}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    did: 'did:key:user',
+                    messages: [{ role: 'user', content: 'Hi' }],
+                }),
+            });
+        };
+
+        try {
+            for (let index = 0; index < 60; index += 1) {
+                const response = await requestChallenge('198.51.100.1');
+
+                expect(response.status).toBe(200);
+                await response.arrayBuffer();
+            }
+
+            const limitedIpResponse = await requestChallenge('198.51.100.1');
+
+            expect(limitedIpResponse.status).toBe(429);
+            await limitedIpResponse.arrayBuffer();
+
+            const otherIpResponse = await requestChallenge('198.51.100.2');
+
+            expect(otherIpResponse.status).toBe(200);
+            await otherIpResponse.arrayBuffer();
+
+            for (let index = 0; index < 30; index += 1) {
+                const response = await sendRequest(index);
+
+                expect(response.status).toBe(200);
+                await response.arrayBuffer();
+            }
+
+            const response = await sendRequest(30);
+
+            await expect(response.json()).resolves.toEqual({
+                ok: false,
+                error: 'Too many requests. Please try again shortly.',
+            });
+            expect(response.status).toBe(429);
+        } finally {
+            await new Promise<void>((resolve, reject) => {
+                server.close(error => (error ? reject(error) : resolve()));
+            });
+        }
     });
 
     it('skips self-improvement when Mongo is unavailable', async () => {

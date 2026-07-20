@@ -171,11 +171,19 @@ Unified send with a Boost URI:
 Useful readbacks:
 
 ```json
-{ "operation": "call", "path": "invoke.getBoost", "args": ["lc:network:localhost%3A4000/trpc:boost:example"] }
+{
+    "operation": "call",
+    "path": "invoke.getBoost",
+    "args": ["lc:network:localhost%3A4000/trpc:boost:example"]
+}
 ```
 
 ```json
-{ "operation": "call", "path": "invoke.countBoostRecipients", "args": ["lc:network:localhost%3A4000/trpc:boost:example"] }
+{
+    "operation": "call",
+    "path": "invoke.countBoostRecipients",
+    "args": ["lc:network:localhost%3A4000/trpc:boost:example"]
+}
 ```
 
 ## Connections
@@ -308,7 +316,9 @@ Example shape:
         }
     },
     "knownUsage": "sendBoost(profileId, boostUri, options?)",
-    "failureHints": ["Usage: sendBoost(profileId, boostUri, options?). Put the profile ID first and the Boost URI second."]
+    "failureHints": [
+        "Usage: sendBoost(profileId, boostUri, options?). Put the profile ID first and the Boost URI second."
+    ]
 }
 ```
 

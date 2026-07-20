@@ -1,5 +1,6 @@
 import cors from 'cors';
 import express, { type RequestHandler } from 'express';
+import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 
 import { runAgent } from './agent/runAgent';
@@ -349,6 +350,8 @@ export const createServer = ({
         assistantProfileRuntime: assistantProfile,
         assistantSchedulesRuntime: assistantSchedules,
     } = runtime;
+
+    app.set('trust proxy', config.trustProxyHops ?? 0);
     let challengeStorePromise: Promise<AgentDidAuthChallengeStore> | undefined;
 
     const getChallengeStore = async (): Promise<AgentDidAuthChallengeStore> => {
@@ -387,6 +390,48 @@ export const createServer = ({
             res.status(503).json({ ok: false, error: 'DID Auth is unavailable.' });
         }
     };
+
+    const authenticatedRateLimitKey = (req: express.Request, res: express.Response): string =>
+        getAuthContext(res)?.did ?? ipKeyGenerator(req.ip ?? 'unknown');
+
+    const rateLimitMessage = {
+        ok: false,
+        error: 'Too many requests. Please try again shortly.',
+    };
+
+    const baselineRateLimit = rateLimit({
+        windowMs: 60_000,
+        limit: 1_000,
+        standardHeaders: 'draft-8',
+        legacyHeaders: false,
+        message: rateLimitMessage,
+    });
+
+    const publicRateLimit = rateLimit({
+        windowMs: 60_000,
+        limit: 60,
+        standardHeaders: 'draft-8',
+        legacyHeaders: false,
+        message: rateLimitMessage,
+    });
+
+    const authenticatedRateLimit = rateLimit({
+        windowMs: 60_000,
+        limit: 120,
+        standardHeaders: 'draft-8',
+        legacyHeaders: false,
+        keyGenerator: authenticatedRateLimitKey,
+        message: rateLimitMessage,
+    });
+
+    const agentRateLimit = rateLimit({
+        windowMs: 60_000,
+        limit: 30,
+        standardHeaders: 'draft-8',
+        legacyHeaders: false,
+        keyGenerator: authenticatedRateLimitKey,
+        message: rateLimitMessage,
+    });
 
     const requireMatchingDidParam: RequestHandler = (req, res, next) => {
         const auth = getAuthContext(res);
@@ -451,6 +496,7 @@ export const createServer = ({
 
     app.use(cors());
     app.use(express.json({ limit: '1mb' }));
+    app.use('/api', baselineRateLimit);
 
     app.get('/api/health', async (_req, res) => {
         const assistantFeedStatus = await assistantFeed.getStatus();
@@ -487,7 +533,7 @@ export const createServer = ({
         });
     });
 
-    app.post('/api/auth/challenge', async (req, res) => {
+    app.post('/api/auth/challenge', publicRateLimit, async (req, res) => {
         const domain =
             config.authDomain ??
             (config.nodeEnv !== 'production' ? `${req.protocol}://${req.get('host')}` : undefined);
@@ -514,7 +560,7 @@ export const createServer = ({
         }
     });
 
-    app.get('/api/consent-flow/contract', async (_req, res) => {
+    app.get('/api/consent-flow/contract', publicRateLimit, async (_req, res) => {
         if (!providerConfigured) {
             res.status(503).json({
                 ok: false,
@@ -536,7 +582,7 @@ export const createServer = ({
         }
     });
 
-    app.post('/api/agent/run', requireDidAuth, async (req, res) => {
+    app.post('/api/agent/run', requireDidAuth, agentRateLimit, async (req, res) => {
         if (!providerConfigured) {
             res.status(503).json({ error: OPENAI_API_KEY_REQUIRED_ERROR });
             return;
@@ -571,7 +617,7 @@ export const createServer = ({
         void result.afterResponse?.().catch(() => undefined);
     });
 
-    app.post('/api/agent/heartbeat', requireDidAuth, async (req, res) => {
+    app.post('/api/agent/heartbeat', requireDidAuth, agentRateLimit, async (req, res) => {
         if (!providerConfigured) {
             res.status(503).json({ error: OPENAI_API_KEY_REQUIRED_ERROR });
             return;
@@ -637,6 +683,7 @@ export const createServer = ({
         '/api/users/:did/assistant-feed',
         requireDidAuth,
         requireMatchingDidParam,
+        authenticatedRateLimit,
         asyncHandler(async (_req, res) => {
             const ownerDid = getAuthContext(res)?.did ?? '';
             const limit = getLimitedQueryValue(_req.query?.limit, 10, 50);
@@ -655,6 +702,7 @@ export const createServer = ({
         requireDebugAccess,
         requireDidAuth,
         requireMatchingDidParam,
+        authenticatedRateLimit,
         async (req, res) => {
             const parsed = LearnCardAssistantCardToolInputValidator.safeParse(req.body);
 
@@ -684,6 +732,7 @@ export const createServer = ({
         '/api/users/:did/assistant-feed/:id/read',
         requireDidAuth,
         requireMatchingDidParam,
+        authenticatedRateLimit,
         async (req, res) => {
             try {
                 const item = await assistantFeed.markItemRead(
@@ -705,6 +754,7 @@ export const createServer = ({
         '/api/users/:did/assistant-feed/:id/feedback',
         requireDidAuth,
         requireMatchingDidParam,
+        authenticatedRateLimit,
         async (req, res) => {
             const parsed = AssistantCardFeedbackRequestValidator.safeParse(req.body);
 
@@ -734,6 +784,7 @@ export const createServer = ({
         '/api/users/:did/assistant-profile',
         requireDidAuth,
         requireMatchingDidParam,
+        authenticatedRateLimit,
         asyncHandler(async (_req, res) => {
             res.json({
                 ok: true,
@@ -748,6 +799,7 @@ export const createServer = ({
         '/api/users/:did/assistant-profile',
         requireDidAuth,
         requireMatchingDidParam,
+        authenticatedRateLimit,
         async (req, res) => {
             const body = typeof req.body === 'object' && req.body ? req.body : {};
             const parsed = UpdateLearnCardAssistantProfileValidator.safeParse({
@@ -777,6 +829,7 @@ export const createServer = ({
         '/api/users/:did/assistant-schedules',
         requireDidAuth,
         requireMatchingDidParam,
+        authenticatedRateLimit,
         asyncHandler(async (_req, res) => {
             const schedules = await assistantSchedules.list(getAuthContext(res)?.did ?? '');
 
@@ -791,6 +844,7 @@ export const createServer = ({
         '/api/users/:did/assistant-schedules',
         requireDidAuth,
         requireMatchingDidParam,
+        authenticatedRateLimit,
         async (req, res) => {
             const parsed = CreateAgentAutonomyScheduleBodyValidator.safeParse(req.body);
 
@@ -822,6 +876,7 @@ export const createServer = ({
         '/api/users/:did/assistant-schedules/:id',
         requireDidAuth,
         requireMatchingDidParam,
+        authenticatedRateLimit,
         async (req, res) => {
             const parsed = UpdateAgentAutonomyScheduleBodyValidator.safeParse(req.body);
 
@@ -858,6 +913,7 @@ export const createServer = ({
         '/api/users/:did/assistant-schedules/:id',
         requireDidAuth,
         requireMatchingDidParam,
+        authenticatedRateLimit,
         async (req, res) => {
             try {
                 const removed = await assistantSchedules.remove(
@@ -884,6 +940,7 @@ export const createServer = ({
         '/api/users/:did/assistant-memories',
         requireDidAuth,
         requireMatchingDidParam,
+        authenticatedRateLimit,
         asyncHandler(async (_req, res) => {
             const ownerDid = getAuthContext(res)?.did ?? '';
 
@@ -903,6 +960,7 @@ export const createServer = ({
         '/api/users/:did/assistant-memories/:name/approve',
         requireDidAuth,
         requireMatchingDidParam,
+        authenticatedRateLimit,
         async (req, res) => {
             try {
                 const ownerDid = getAuthContext(res)?.did ?? '';
@@ -931,6 +989,7 @@ export const createServer = ({
         '/api/users/:did/assistant-memories/:name/archive',
         requireDidAuth,
         requireMatchingDidParam,
+        authenticatedRateLimit,
         async (req, res) => {
             const parsed = AssistantMemoryArchiveRequestValidator.safeParse(req.body ?? {});
 
@@ -967,6 +1026,7 @@ export const createServer = ({
         requireDebugAccess,
         requireDidAuth,
         requireMatchingDidParam,
+        authenticatedRateLimit,
         asyncHandler(async (_req, res) => {
             res.json({
                 ok: true,
@@ -980,6 +1040,7 @@ export const createServer = ({
         requireDebugAccess,
         requireDidAuth,
         requireMatchingDidParam,
+        authenticatedRateLimit,
         asyncHandler(async (_req, res) => {
             const ownerDid = getAuthContext(res)?.did ?? '';
             const manifest = await selfImprovement.getMemoryManifestForDebug(ownerDid);
@@ -997,6 +1058,7 @@ export const createServer = ({
         requireDebugAccess,
         requireDidAuth,
         requireMatchingDidParam,
+        authenticatedRateLimit,
         async (req, res) => {
             const parsed = DebugMemoryRequestValidator.safeParse(req.body);
 
@@ -1070,6 +1132,7 @@ export const createServer = ({
         '/api/debug/runs/:runId',
         requireDebugAccess,
         requireDidAuth,
+        authenticatedRateLimit,
         asyncHandler(async (req, res) => {
             const auth = getAuthContext(res);
             const run = await selfImprovement.getRunForDebug(req.params.runId ?? '');

@@ -41,7 +41,8 @@ const methodMetadata: Record<string, MethodMetadataInput> = {
                 name: 'profileId',
                 type: 'string | undefined',
                 required: false,
-                description: 'Profile ID such as "taylor". Omit to get the configured wallet profile.',
+                description:
+                    'Profile ID such as "taylor". Omit to get the configured wallet profile.',
             },
         ],
         returns: 'Promise<LCNVisibleProfile | undefined>',
@@ -376,7 +377,9 @@ const methodMetadata: Record<string, MethodMetadataInput> = {
             },
         ],
         returns: 'Promise<{ endpoint: string; name: string; did?: string } | false>',
-        notes: ['This method is only present when the wallet has the signing service plugin loaded.'],
+        notes: [
+            'This method is only present when the wallet has the signing service plugin loaded.',
+        ],
     },
     'invoke.registerSigningAuthority': {
         signature: 'registerSigningAuthority(endpoint, name, did)',
@@ -387,7 +390,8 @@ const methodMetadata: Record<string, MethodMetadataInput> = {
                 name: 'endpoint',
                 type: 'string',
                 required: true,
-                description: 'VC-API issuer endpoint returned by createSigningAuthority or external signer.',
+                description:
+                    'VC-API issuer endpoint returned by createSigningAuthority or external signer.',
             },
             {
                 name: 'name',
@@ -455,10 +459,12 @@ const methodMetadata: Record<string, MethodMetadataInput> = {
                 name: 'issueInboxCredential',
                 type: '{ recipient: { type: "email" | "phone"; value: string }; credential?: VC | VP | UnsignedVC; templateUri?: string; configuration?: { signingAuthority?: { endpoint: string; name: string }; webhookUrl?: string; expiresInDays?: number; templateData?: Record<string, unknown>; delivery?: { suppress?: boolean } } }',
                 required: true,
-                description: 'Inbox issuance request. Either credential or templateUri is required.',
+                description:
+                    'Inbox issuance request. Either credential or templateUri is required.',
             },
         ],
-        returns: 'Promise<{ issuanceId: string; status: string; recipient: { type: "email" | "phone"; value: string }; claimUrl?: string; recipientDid?: string }>',
+        returns:
+            'Promise<{ issuanceId: string; status: string; recipient: { type: "email" | "phone"; value: string }; claimUrl?: string; recipientDid?: string }>',
         preconditions: [
             'recipient.type must be "email" or "phone"; profileId and DID recipients are not valid for this method.',
             'Unsigned credentials require either a primary registered signing authority or configuration.signingAuthority.',
@@ -469,7 +475,8 @@ const methodMetadata: Record<string, MethodMetadataInput> = {
         ],
         examples: [
             {
-                description: 'Send unsigned credential with explicit signing authority and suppressed delivery',
+                description:
+                    'Send unsigned credential with explicit signing authority and suppressed delivery',
                 args: [
                     {
                         recipient: { type: 'email', value: 'student@example.edu' },

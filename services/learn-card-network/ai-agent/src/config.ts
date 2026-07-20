@@ -5,6 +5,7 @@ export interface ServiceConfig {
     model: string;
     openAIApiKey?: string;
     port: number;
+    trustProxyHops?: number;
     walletSeed?: string;
     cloudUrl?: string;
     networkUrl?: string;
@@ -168,6 +169,12 @@ export const assertTriggerConfig = (config: ServiceConfig): void => {
 };
 
 export const assertSecurityConfig = (config: ServiceConfig): void => {
+    const trustProxyHops = config.trustProxyHops ?? 0;
+
+    if (!Number.isInteger(trustProxyHops) || trustProxyHops < 0 || trustProxyHops > 10) {
+        throw new Error('AI_AGENT_TRUST_PROXY_HOPS must be an integer from 0 to 10.');
+    }
+
     if (config.nodeEnv === 'production' && !config.authDomain) {
         throw new Error('AI_AGENT_AUTH_DOMAIN must be set in production.');
     }
@@ -223,6 +230,7 @@ export const getConfig = (): ServiceConfig => {
         model,
         openAIApiKey: readString(process.env.OPENAI_API_KEY),
         port: readNumber(process.env.AI_AGENT_PORT ?? process.env.PORT, 3000),
+        trustProxyHops: readNumber(process.env.AI_AGENT_TRUST_PROXY_HOPS, 0),
         walletSeed,
         cloudUrl:
             readString(process.env.AI_AGENT_CLOUD_URL) ?? readString(process.env.LEARN_CLOUD_URL),
