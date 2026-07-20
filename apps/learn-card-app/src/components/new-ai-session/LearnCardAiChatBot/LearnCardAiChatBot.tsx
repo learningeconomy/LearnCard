@@ -5,6 +5,8 @@ import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('learn-card-ai-chat-bot');
 
+import { useAnalytics, AnalyticsEvents, newFlowId } from '@analytics';
+
 import ChatHeader from './ChatHeader';
 import ChatInput from './ChatInput';
 import CaretDown from '../../svgs/CaretDown';
@@ -113,6 +115,13 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     // Pin-user-message refs
     const lastUserMessageRef = useRef<HTMLDivElement | null>(null);
     const prevUserCountRef = useRef(0);
+
+    const { track } = useAnalytics();
+    const aiFlowIdRef = useRef(newFlowId());
+    const aiMessageIndexRef = useRef(0);
+    const aiSendTimestampRef = useRef<number | null>(null);
+    const aiPrevUserCountRef = useRef(0);
+    const aiPrevStreamingRef = useRef(false);
 
     // Viewport height for min-height pin calculation
     const [viewportAllowance, setViewportAllowance] = useState(0);
@@ -264,9 +273,36 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
         return -1;
     }, [messagesToShow]);
 
-    // Pin user message to top of viewport when a new user message is sent.
-    // The min-height style on the user bubble reserves viewport space so the
-    // assistant reply can grow beneath it without the view moving.
+    useEffect(() => {
+        const userCount = messagesToShow.filter(m => m.role === 'user').length;
+        if (userCount > aiPrevUserCountRef.current) {
+            aiPrevUserCountRef.current = userCount;
+            aiMessageIndexRef.current += 1;
+            aiSendTimestampRef.current = Date.now();
+            track(AnalyticsEvents.AI_MESSAGE_SENT, {
+                flow_id: aiFlowIdRef.current,
+                surface: 'ai_chat',
+                message_index: aiMessageIndexRef.current,
+            });
+        }
+    }, [messagesToShow]);
+
+    useEffect(() => {
+        const isNowStreaming = Boolean(streaming);
+        if (aiPrevStreamingRef.current && !isNowStreaming) {
+            track(AnalyticsEvents.AI_RESPONSE_COMPLETED, {
+                flow_id: aiFlowIdRef.current,
+                surface: 'ai_chat',
+                duration_ms:
+                    aiSendTimestampRef.current != null
+                        ? Date.now() - aiSendTimestampRef.current
+                        : undefined,
+            });
+            aiSendTimestampRef.current = null;
+        }
+        aiPrevStreamingRef.current = isNowStreaming;
+    }, [streaming]);
+
     useEffect(() => {
         const userCount = messagesToShow.filter(m => m.role === 'user').length;
         if (userCount > prevUserCountRef.current) {

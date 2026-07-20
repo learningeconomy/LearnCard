@@ -82,6 +82,14 @@ export const useResilientExchange = ({
     const [pendingPrompt, setPendingPrompt] = useState<UserPrompt | null>(null);
     const promptResolverRef = useRef<((accepted: boolean) => void) | null>(null);
 
+    useEffect(() => {
+        void track(AnalyticsEvents.OPENID_EXCHANGE_STARTED, {
+            exchange_id: runId,
+            surface,
+            counterparty,
+        });
+    }, [counterparty, runId, surface, track]);
+
     const resetRun = useCallback(() => {
         const newId = cryptoRandomId();
         runIdRef.current = newId;
@@ -135,6 +143,8 @@ export const useResilientExchange = ({
                 if (!outcomeReportedRef.current) {
                     outcomeReportedRef.current = true;
                     const isFirstAttempt = event.attemptNumber === 1;
+                    const totalDurationMs = Date.now() - startedAtRef.current;
+
                     void track(AnalyticsEvents.OPENID_RESILIENCE_OUTCOME, {
                         surface,
                         exchange_run_id: runIdRef.current,
@@ -146,8 +156,25 @@ export const useResilientExchange = ({
                         transport_retries: event.attemptLog.transportRetries,
                         trust_gaps_accepted: event.attemptLog.trustGapsAccepted,
                         counterparty,
-                        total_duration_ms: Date.now() - startedAtRef.current,
+                        total_duration_ms: totalDurationMs,
                     });
+
+                    void track(AnalyticsEvents.OPENID_EXCHANGE_SUCCEEDED, {
+                        exchange_id: runIdRef.current,
+                        surface,
+                        counterparty,
+                        total_attempts: event.attemptNumber,
+                        duration_ms: totalDurationMs,
+                    });
+
+                    if (surface === 'vp') {
+                        void track(AnalyticsEvents.PRESENTATION_COMPLETED, {
+                            exchange_id: runIdRef.current,
+                            surface,
+                            verifier: counterparty,
+                            duration_ms: totalDurationMs,
+                        });
+                    }
                 }
                 return;
             }
@@ -196,17 +223,29 @@ export const useResilientExchange = ({
             if (event.type === 'orchestrator_exhausted') {
                 if (!outcomeReportedRef.current) {
                     outcomeReportedRef.current = true;
+                    const totalDurationMs = Date.now() - startedAtRef.current;
+                    const totalAttempts = event.attemptLog.signersTried.length;
+
                     void track(AnalyticsEvents.OPENID_RESILIENCE_OUTCOME, {
                         surface,
                         exchange_run_id: runIdRef.current,
                         outcome: 'failure_exhausted',
-                        total_attempts: event.attemptLog.signersTried.length,
+                        total_attempts: totalAttempts,
                         signers_tried: event.attemptLog.signersTried,
                         transport_retries: event.attemptLog.transportRetries,
                         trust_gaps_accepted: event.attemptLog.trustGapsAccepted,
                         final_error_kind: event.friendly.kind,
                         counterparty,
-                        total_duration_ms: Date.now() - startedAtRef.current,
+                        total_duration_ms: totalDurationMs,
+                    });
+
+                    void track(AnalyticsEvents.OPENID_EXCHANGE_FAILED, {
+                        exchange_id: runIdRef.current,
+                        surface,
+                        counterparty,
+                        error_kind: event.friendly.kind,
+                        total_attempts: totalAttempts,
+                        duration_ms: totalDurationMs,
                     });
                 }
                 return;
@@ -232,16 +271,27 @@ export const useResilientExchange = ({
             if (event.type === 'prompt_resolved' && !event.accepted) {
                 if (!outcomeReportedRef.current) {
                     outcomeReportedRef.current = true;
+                    const totalDurationMs = Date.now() - startedAtRef.current;
+                    const totalAttempts = event.attemptLog.signersTried.length;
+
                     void track(AnalyticsEvents.OPENID_RESILIENCE_OUTCOME, {
                         surface,
                         exchange_run_id: runIdRef.current,
                         outcome: 'failure_user_cancelled',
-                        total_attempts: event.attemptLog.signersTried.length,
+                        total_attempts: totalAttempts,
                         signers_tried: event.attemptLog.signersTried,
                         transport_retries: event.attemptLog.transportRetries,
                         trust_gaps_accepted: event.attemptLog.trustGapsAccepted,
                         counterparty,
-                        total_duration_ms: Date.now() - startedAtRef.current,
+                        total_duration_ms: totalDurationMs,
+                    });
+
+                    void track(AnalyticsEvents.OPENID_EXCHANGE_CANCELLED, {
+                        exchange_id: runIdRef.current,
+                        surface,
+                        counterparty,
+                        total_attempts: totalAttempts,
+                        duration_ms: totalDurationMs,
                     });
                 }
             }

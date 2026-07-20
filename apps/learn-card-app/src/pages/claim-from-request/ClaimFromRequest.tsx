@@ -24,7 +24,7 @@ import {
 } from 'learn-card-base';
 import { useQueryClient } from '@tanstack/react-query';
 import useRegistry from 'learn-card-base/hooks/useRegistry';
-import { useAnalytics, AnalyticsEvents } from '@analytics';
+import { useAnalytics, AnalyticsEvents, newFlowId } from '@analytics';
 
 import {
     getAchievementType,
@@ -447,6 +447,67 @@ const ClaimFromRequest: React.FC = () => {
     const claimedCredentialRef = useRef<VC | undefined>(undefined);
 
     const { track } = useAnalytics();
+    const claimAttemptRef = useRef<{ flowId: string; startedAt: number } | null>(null);
+
+    const resolvePartnerId = (issuerId?: string) => {
+        const profileId = getUserHandleFromDid(issuerId ?? '');
+        if (profileId) return profileId;
+
+        try {
+            return issuerId ? new URL(issuerId).host || undefined : undefined;
+        } catch {
+            return undefined;
+        }
+    };
+
+    const beginClaimAttempt = (claimCredential?: VC) => {
+        if (claimAttemptRef.current || !claimCredential) return claimAttemptRef.current;
+
+        const issuerId =
+            typeof claimCredential.issuer === 'string'
+                ? claimCredential.issuer
+                : claimCredential.issuer?.id;
+        const attempt = { flowId: newFlowId(), startedAt: Date.now() };
+
+        claimAttemptRef.current = attempt;
+        track(AnalyticsEvents.CREDENTIAL_CLAIM_STARTED, {
+            flow_id: attempt.flowId,
+            entry_point: 'vc_api_request',
+            credential_type: getAchievementType(claimCredential),
+            category: getDefaultCategoryForCredential(claimCredential),
+            partner_id: resolvePartnerId(issuerId),
+        });
+
+        return attempt;
+    };
+
+    const completeClaimAttempt = (
+        claimCredential: VC | undefined,
+        eventName:
+            | typeof AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED
+            | typeof AnalyticsEvents.CREDENTIAL_CLAIM_FAILED,
+        errorCode?: string
+    ) => {
+        const attempt = claimAttemptRef.current;
+        if (!attempt || !claimCredential) return;
+
+        const issuerId =
+            typeof claimCredential.issuer === 'string'
+                ? claimCredential.issuer
+                : claimCredential.issuer?.id;
+
+        track(eventName, {
+            flow_id: attempt.flowId,
+            entry_point: 'vc_api_request',
+            credential_type: getAchievementType(claimCredential),
+            category: getDefaultCategoryForCredential(claimCredential),
+            partner_id: resolvePartnerId(issuerId),
+            duration_ms: Date.now() - attempt.startedAt,
+            error_code: errorCode,
+        });
+
+        claimAttemptRef.current = null;
+    };
 
     const queryClient = useQueryClient();
     const registry = useRegistry();
@@ -626,6 +687,7 @@ const ClaimFromRequest: React.FC = () => {
     const handleClaimCredential = async () => {
         try {
             if (!credential) return;
+            beginClaimAttempt(credential);
             setClaimingCredential(true);
 
             // Store credential in LearnCloud Storage and index using LearnCard SDK.
@@ -643,6 +705,7 @@ const ClaimFromRequest: React.FC = () => {
             const achievementType = getAchievementType(credential);
 
             if (credential) {
+                completeClaimAttempt(credential, AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED);
                 track(AnalyticsEvents.CLAIM_BOOST, {
                     category: category,
                     boostType: achievementType,
@@ -677,6 +740,11 @@ const ClaimFromRequest: React.FC = () => {
                 hasDismissButton: true,
             });
         } catch (e) {
+            completeClaimAttempt(
+                credential,
+                AnalyticsEvents.CREDENTIAL_CLAIM_FAILED,
+                e instanceof Error ? (e as Error & { code?: string }).code ?? e.name : undefined
+            );
             setClaimingCredential(false);
             log.error('Error claiming credential', e);
 

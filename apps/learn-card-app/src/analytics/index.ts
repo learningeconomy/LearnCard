@@ -5,7 +5,15 @@ export { useAnalyticsAgeGate } from './useAnalyticsAgeGate';
 export { AnalyticsEvents } from './events';
 export type { AnalyticsEventName, AnalyticsEventPayloads, EventPayload } from './events';
 export { ProfileBuildMethod } from './events';
-export type { ProfileSnapshot } from './events';
+export type { ProfileSnapshot, ClaimEntryPoint } from './events';
+
+export {
+    detectAnalyticsEnvironment,
+    getSharedEventContext,
+    newFlowId,
+    shouldDropEvents,
+} from './sharedContext';
+export type { AnalyticsEnvironment, SharedEventContext } from './sharedContext';
 export {
     useProfileSnapshot,
     useProfileSnapshotCapture,

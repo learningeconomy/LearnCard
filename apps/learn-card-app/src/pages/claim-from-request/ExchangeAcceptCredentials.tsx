@@ -32,6 +32,7 @@ import {
     useProfileSnapshotCapture,
     ACCOUNT_CREATED_AT_KEY,
     SESSION_START_KEY,
+    newFlowId,
 } from '@analytics';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -39,6 +40,7 @@ import {
     getAchievementType,
     getDefaultCategoryForCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
+import { getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 
 import { BoostEarnedCard } from '../../components/boost/boost-earned-card/BoostEarnedCard';
 import { publishWalletEvent } from '../pathways/events/walletEventBus';
@@ -94,6 +96,18 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     const { newModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
     const flowStartedAt = useRef(Date.now());
+    const claimAttemptRef = useRef<{ flowId: string; startedAt: number } | null>(null);
+
+    const resolvePartnerId = (issuerId?: string) => {
+        const profileId = getUserHandleFromDid(issuerId ?? '');
+        if (profileId) return profileId;
+
+        try {
+            return issuerId ? new URL(issuerId).host || undefined : undefined;
+        } catch {
+            return undefined;
+        }
+    };
 
     // Verify the (single) credential so the Details panel/sidebar shows real
     // Proof / Status / Expiration rows. Always run — the verification block is
@@ -123,6 +137,64 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const beginClaimAttempt = () => {
+        if (claimAttemptRef.current || selectedCredentials.length === 0)
+            return claimAttemptRef.current;
+
+        const primaryCredential = selectedCredentials[0];
+        const issuerId =
+            typeof primaryCredential?.issuer === 'string'
+                ? primaryCredential.issuer
+                : primaryCredential?.issuer?.id;
+        const attempt = { flowId: newFlowId(), startedAt: Date.now() };
+
+        claimAttemptRef.current = attempt;
+        track(AnalyticsEvents.CREDENTIAL_CLAIM_STARTED, {
+            flow_id: attempt.flowId,
+            entry_point: 'vc_api_request',
+            credential_type: getAchievementType(primaryCredential),
+            category: getDefaultCategoryForCredential(primaryCredential),
+            partner_id: resolvePartnerId(issuerId),
+        });
+
+        return attempt;
+    };
+
+    const completeClaimAttempt = (
+        eventName:
+            | typeof AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED
+            | typeof AnalyticsEvents.CREDENTIAL_CLAIM_FAILED
+            | typeof AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED,
+        errorCode?: string
+    ) => {
+        const attempt = claimAttemptRef.current;
+        const primaryCredential = selectedCredentials[0] ?? credentials[0];
+        if (!attempt || !primaryCredential) return;
+
+        const issuerId =
+            typeof primaryCredential.issuer === 'string'
+                ? primaryCredential.issuer
+                : primaryCredential.issuer?.id;
+
+        track(eventName, {
+            flow_id: attempt.flowId,
+            entry_point: 'vc_api_request',
+            credential_type: getAchievementType(primaryCredential),
+            category: getDefaultCategoryForCredential(primaryCredential),
+            partner_id: resolvePartnerId(issuerId),
+            duration_ms: Date.now() - attempt.startedAt,
+            error_code: errorCode,
+        });
+
+        claimAttemptRef.current = null;
+    };
+
+    useEffect(() => {
+        if (credentials.length > 0 && !isClaimed) {
+            beginClaimAttempt();
+        }
+    }, [credentials, isClaimed, selectedCredentials.length]);
+
     const handleClaim = async () => {
         if (selectedCredentials.length === 0) {
             presentToast(m['toasts.selectCredential'](), {
@@ -131,6 +203,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
             });
             return;
         }
+        beginClaimAttempt();
         setClaiming(true);
         // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
         capture();
@@ -203,6 +276,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
             });
 
             setIsClaimed(true);
+            completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED);
 
             presentToast(m['claim.accept.success']({ count: selectedCredentials.length }), {
                 type: ToastTypeEnum.Success,
@@ -211,6 +285,10 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
             onAccept({}, selectedCredentials.length);
         } catch (e) {
+            completeClaimAttempt(
+                AnalyticsEvents.CREDENTIAL_CLAIM_FAILED,
+                e instanceof Error ? (e as Error & { code?: string }).code ?? e.name : undefined
+            );
             log.error('Error claiming credential(s)', e);
             if (e instanceof Error && e?.message?.includes('exists')) {
                 presentToast(m['claim.accept.exists'](), {
@@ -497,7 +575,10 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
                     <footer className="w-full flex justify-center items-center ion-no-border absolute bottom-0 z-10">
                         <BoostFooter
-                            handleClose={() => history.push('/')}
+                            handleClose={() => {
+                                completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED);
+                                history.push('/');
+                            }}
                             handleDetails={
                                 isMobile ? () => openSingleCredentialDetails(credential) : undefined
                             }
@@ -536,7 +617,10 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                 className="w-full flex justify-center items-center ion-no-border absolute bottom-0"
             >
                 <BoostFooter
-                    handleClose={() => history.push('/')}
+                    handleClose={() => {
+                        completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED);
+                        history.push('/');
+                    }}
                     handleClaim={handleClaim}
                     claimBtnText={claimBtnText}
                     disableClaimButton={claiming || isClaimed}

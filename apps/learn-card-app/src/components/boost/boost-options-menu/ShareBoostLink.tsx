@@ -65,6 +65,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     const [shareLink, setShareLink] = useState<string | undefined>('');
 
     const { track } = useAnalytics();
+    const qrTrackedRef = React.useRef(false);
 
     const { mutate: shareEarnedBoost, isPending: isLinkLoading } = useShareBoostMutation();
 
@@ -171,6 +172,13 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                         boostType: achievementType,
                         method: 'Earned Boost',
                     });
+
+                    track(AnalyticsEvents.CREDENTIAL_SHARED, {
+                        category: categoryType,
+                        credential_type: achievementType,
+                        method: 'share_link',
+                        surface: 'wallet',
+                    });
                 },
             }
         );
@@ -179,6 +187,18 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     useEffect(() => {
         generateShareLink();
     }, []);
+
+    useEffect(() => {
+        if (!shareLink || qrTrackedRef.current) return;
+
+        qrTrackedRef.current = true;
+        track(AnalyticsEvents.CREDENTIAL_SHARED, {
+            category: categoryType,
+            credential_type: achievementType,
+            method: 'qr',
+            surface: 'wallet',
+        });
+    }, [achievementType, categoryType, shareLink, track]);
 
     const copyBoostLinkToClipBoard = async () => {
         try {

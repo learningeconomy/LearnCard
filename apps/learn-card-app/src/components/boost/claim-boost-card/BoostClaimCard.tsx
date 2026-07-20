@@ -20,6 +20,7 @@ import {
     useProfileSnapshotCapture,
     ACCOUNT_CREATED_AT_KEY,
     SESSION_START_KEY,
+    newFlowId,
 } from '@analytics';
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
 import { useGetResolvedCredential, useToast, ToastTypeEnum } from 'learn-card-base';
@@ -44,6 +45,7 @@ import {
     getClrLinkedCredentialCounts,
     unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
+import { getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 import ClrAchievementsSummaryBox from '../boostLinkedCredentials/ClrAchievementsSummaryBox';
 import BoostLinkedCredentialsBox from '../boostLinkedCredentials/BoostLinkedCredentialsBox';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
@@ -112,6 +114,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     const { track } = useAnalytics();
     const { capture, snapshotRef } = useProfileSnapshotCapture();
     const flowStartedAt = useRef(Date.now());
+    const claimAttemptRef = useRef<{ flowId: string; startedAt: number } | null>(null);
 
     const [isFront, setIsFront] = useState(true);
     const [isClaimLoading, setIsClaimLoading] = useState(false);
@@ -130,6 +133,18 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
 
     const category = getDefaultCategoryForCredential(credential);
     const achievementType = getAchievementType(credential);
+    const issuerId =
+        typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
+    const partnerId = (() => {
+        const profileId = getUserHandleFromDid(issuerId ?? '');
+        if (profileId) return profileId;
+
+        try {
+            return issuerId ? new URL(issuerId).host || undefined : undefined;
+        } catch {
+            return undefined;
+        }
+    })();
     const renderMethod = enableRenderMethod ? getSvgMustacheRenderMethod(credential as VC) : null;
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
     const displayCredential = unwrapBoostCredential(credential as VC) as VC;
@@ -172,6 +187,52 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
             /revoked/i.test(`${v?.message ?? ''} ${v?.details ?? ''} ${v?.check ?? ''}`)
     );
 
+    const beginClaimAttempt = () => {
+        if (claimAttemptRef.current) return claimAttemptRef.current;
+
+        const attempt = { flowId: newFlowId(), startedAt: Date.now() };
+        claimAttemptRef.current = attempt;
+
+        track(AnalyticsEvents.CREDENTIAL_CLAIM_STARTED, {
+            flow_id: attempt.flowId,
+            entry_point: 'claim_modal',
+            credential_type: achievementType,
+            category,
+            partner_id: partnerId,
+        });
+
+        return attempt;
+    };
+
+    const completeClaimAttempt = (
+        eventName:
+            | typeof AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED
+            | typeof AnalyticsEvents.CREDENTIAL_CLAIM_FAILED
+            | typeof AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED,
+        extraProps?: { error_code?: string }
+    ) => {
+        const attempt = claimAttemptRef.current;
+        if (!attempt) return;
+
+        track(eventName, {
+            flow_id: attempt.flowId,
+            entry_point: 'claim_modal',
+            credential_type: achievementType,
+            category,
+            partner_id: partnerId,
+            duration_ms: Date.now() - attempt.startedAt,
+            ...extraProps,
+        });
+
+        claimAttemptRef.current = null;
+    };
+
+    useEffect(() => {
+        if (credential && !isClaimed) {
+            beginClaimAttempt();
+        }
+    }, [credential, isClaimed]);
+
     const handleBoostCredential = async (visibility?: boolean) => {
         const wallet = await initWallet();
 
@@ -184,6 +245,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
         }
 
         if (!acceptCredentialLoading && !isClaimLoading && !isClaimed) {
+            beginClaimAttempt();
             setIsClaimLoading(true);
             // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
             capture();
@@ -210,6 +272,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                     method: 'Notification',
                                     msSinceMethodStarted: Date.now() - flowStartedAt.current,
                                 });
+                                completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED);
 
                                 const now = Date.now();
                                 const sessionStart = Number(
@@ -246,6 +309,9 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                             closeModal();
                         },
                         onError(err: any) {
+                            completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, {
+                                error_code: err?.code ?? err?.name,
+                            });
                             setIsClaimLoading(false);
                             presentToast(
                                 m['claim.failedToClaim']({
@@ -257,6 +323,9 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                     }
                 );
             } catch (err) {
+                completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, {
+                    error_code: err?.code ?? err?.name,
+                });
                 log.info('acceptCredential::error', err?.message);
                 presentAlert({
                     backdropDismiss: false,
@@ -454,6 +523,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                 <footer className="w-full flex justify-center items-center ion-no-border absolute bottom-0 z-10">
                     <BoostFooter
                         handleClose={() => {
+                            completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED);
                             onDismiss?.();
                             closeModal();
                         }}
