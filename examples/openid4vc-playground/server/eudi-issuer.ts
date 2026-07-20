@@ -61,6 +61,13 @@ export interface MintHostedEudiOfferOptions {
      */
     issuerBaseUrl?: string;
     /**
+     * The playground's own public base URL (e.g. `http://localhost:5174`),
+     * from the request host. Used to build the proxy `credential_issuer` so
+     * the offer tracks whatever port Vite bound to. Falls back to the
+     * hard-coded default only when absent.
+     */
+    publicBaseUrl?: string;
+    /**
      * One or more `credential_configuration_id`s the wallet should
      * request. Must match an entry advertised on the issuer's
      * `.well-known/openid-credential-issuer`. See README.md or
@@ -95,8 +102,7 @@ export interface MintHostedEudiOfferOptions {
  * proxy (useful when running the wallet in a non-browser context
  * where CORS doesn't apply, or when EUDI eventually adds CORS).
  */
-const DEFAULT_EUDI_ISSUER =
-    process.env.EUDI_HOSTED_ISSUER_BASE_URL ?? EUDI_PROXY_PUBLIC_BASE_URL;
+const DEFAULT_EUDI_ISSUER = process.env.EUDI_HOSTED_ISSUER_BASE_URL ?? EUDI_PROXY_PUBLIC_BASE_URL;
 
 /**
  * Build a wallet-ready `openid-credential-offer://?credential_offer=<json>`
@@ -108,31 +114,26 @@ const DEFAULT_EUDI_ISSUER =
  * scenarios resolve to-by-value: it sidesteps any wallet-side
  * `https`-only / fetch-validation guards on offer URIs.
  */
-export const mintHostedEudiOffer = (
-    opts: MintHostedEudiOfferOptions
-): { rawOfferUri: string } => {
-    if (
-        !opts.credentialConfigurationIds ||
-        opts.credentialConfigurationIds.length === 0
-    ) {
-        throw new Error(
-            'mintHostedEudiOffer requires at least one credentialConfigurationId'
-        );
+export const mintHostedEudiOffer = (opts: MintHostedEudiOfferOptions): { rawOfferUri: string } => {
+    if (!opts.credentialConfigurationIds || opts.credentialConfigurationIds.length === 0) {
+        throw new Error('mintHostedEudiOffer requires at least one credentialConfigurationId');
     }
 
+    const issuerBaseUrl =
+        opts.issuerBaseUrl ??
+        process.env.EUDI_HOSTED_ISSUER_BASE_URL ??
+        (opts.publicBaseUrl ? `${opts.publicBaseUrl}/api/eudi-proxy` : DEFAULT_EUDI_ISSUER);
+
     const offer: Record<string, unknown> = {
-        credential_issuer: opts.issuerBaseUrl ?? DEFAULT_EUDI_ISSUER,
+        credential_issuer: issuerBaseUrl,
         credential_configuration_ids: opts.credentialConfigurationIds,
         grants: {
-            authorization_code: opts.issuerState
-                ? { issuer_state: opts.issuerState }
-                : {},
+            authorization_code: opts.issuerState ? { issuer_state: opts.issuerState } : {},
         },
     };
 
     const rawOfferUri =
-        'openid-credential-offer://?credential_offer=' +
-        encodeURIComponent(JSON.stringify(offer));
+        'openid-credential-offer://?credential_offer=' + encodeURIComponent(JSON.stringify(offer));
 
     return { rawOfferUri };
 };

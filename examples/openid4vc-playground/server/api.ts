@@ -325,8 +325,9 @@ const IMPLS: Record<string, VciImpl | VpImpl> = {
     'eudi:vci-eudi-diploma-sdjwt': {
         kind: 'vci',
         label: 'Academic diploma (SD-JWT VC) \u2014 EUDI hosted',
-        run: async () => {
+        run: async (publicBaseUrl: string) => {
             const { rawOfferUri } = mintHostedEudiOffer({
+                publicBaseUrl,
                 credentialConfigurationIds: ['eu.europa.ec.eudi.diploma_vc_sd_jwt'],
             });
             return { rawOfferUri };
@@ -336,8 +337,9 @@ const IMPLS: Record<string, VciImpl | VpImpl> = {
     'eudi:vci-eudi-pid-sdjwt': {
         kind: 'vci',
         label: 'Personal ID (SD-JWT VC) \u2014 EUDI hosted',
-        run: async () => {
+        run: async (publicBaseUrl: string) => {
             const { rawOfferUri } = mintHostedEudiOffer({
+                publicBaseUrl,
                 credentialConfigurationIds: ['eu.europa.ec.eudi.pid_vc_sd_jwt'],
             });
             return { rawOfferUri };
@@ -347,8 +349,9 @@ const IMPLS: Record<string, VciImpl | VpImpl> = {
     'eudi:vci-eudi-mdl-mdoc': {
         kind: 'vci',
         label: 'Mobile Driving Licence (mDoc) \u2014 EUDI hosted',
-        run: async () => {
+        run: async (publicBaseUrl: string) => {
             const { rawOfferUri } = mintHostedEudiOffer({
+                publicBaseUrl,
                 credentialConfigurationIds: ['eu.europa.ec.eudi.mdl_mdoc'],
             });
             return { rawOfferUri };
