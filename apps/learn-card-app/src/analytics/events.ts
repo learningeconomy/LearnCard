@@ -253,6 +253,12 @@ export const AnalyticsEvents = {
     PROFILE_ITEM_REMOVED: 'profile_item_removed',
     PROFILE_SHARED: 'profile_shared',
 
+    // Dashboard "Get Started" checklist — the activation-loop UI.
+    // `item_clicked` is declared intent entering a funnel; `dismissed`
+    // is an explicit opt-out of activation guidance. Checklist
+    // completion needs no event (derivable from the funnel events).
+    DASHBOARD_GET_STARTED_INTERACTED: 'dashboard_get_started_interacted',
+
     // ConsentFlow terminal states — distinguish deliberate exits and
     // technical failures from silent abandonment.
     CONSENT_FLOW_DECLINED: 'consent_flow_declined',
@@ -901,6 +907,8 @@ export interface AnalyticsEventPayloads {
         recipient_count?: number;
         has_skills?: boolean;
         used_dynamic_variables?: boolean;
+        /** Surface that launched the issue flow (router state), e.g. 'dashboard'. */
+        entry_point?: string;
     };
 
     [AnalyticsEvents.CREDENTIAL_ISSUE_SUCCEEDED]: {
@@ -1051,6 +1059,12 @@ export interface AnalyticsEventPayloads {
     [AnalyticsEvents.PROFILE_SHARED]: {
         method: string;
         surface?: string;
+    };
+
+    [AnalyticsEvents.DASHBOARD_GET_STARTED_INTERACTED]: {
+        action: 'item_clicked' | 'dismissed';
+        item_key?: string;
+        hero_action_id?: string;
     };
 
     [AnalyticsEvents.CONSENT_FLOW_DECLINED]: {

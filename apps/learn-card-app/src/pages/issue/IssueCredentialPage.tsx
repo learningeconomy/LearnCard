@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { UnsignedVC } from '@learncard/types';
-import { useHistory } from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 import { useIonAlert } from '@ionic/react';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -136,6 +136,8 @@ const IssueCredentialPage: React.FC = () => {
     const { track } = useAnalytics();
     const { capture: captureProfileSnapshot, snapshotRef: profileSnapshotRef } =
         useProfileSnapshotCapture();
+    const location = useLocation<{ entryPoint?: string } | undefined>();
+    const issueEntryPoint = location.state?.entryPoint;
 
     const initialSnapshot = useMemo(() => readSuccessSnapshot(), []);
 
@@ -513,6 +515,7 @@ const IssueCredentialPage: React.FC = () => {
             recipient_count: analyticsRecipientCount,
             has_skills: resolvedSkills.length > 0,
             used_dynamic_variables: dynamicVars.length > 0,
+            entry_point: issueEntryPoint,
         });
 
         try {
@@ -694,6 +697,7 @@ const IssueCredentialPage: React.FC = () => {
         dynamicVars,
         captureProfileSnapshot,
         profileSnapshotRef,
+        issueEntryPoint,
     ]);
 
     useEffect(() => {
