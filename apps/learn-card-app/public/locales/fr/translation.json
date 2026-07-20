@@ -135,9 +135,17 @@
                 "scanTitle": "Scanner un code QR",
                 "scanDescription": "Ouvrez votre appareil photo pour scanner le code QR d’un justificatif.",
                 "uploadTitle": "Importer un code QR",
-                "uploadDescription": "Importez depuis votre ordinateur une image du code QR d’un justificatif.",
+                "uploadDescription": "Importez depuis votre appareil une image du code QR d’un justificatif.",
                 "linkTitle": "Utiliser un lien de réclamation",
                 "linkDescription": "Collez un lien de réclamation LearnCard ou d’un portefeuille externe pour continuer."
+            },
+            "uploadError": {
+                "title": "Échec de l’importation",
+                "partialTitle": "Échec de certains fichiers",
+                "singleMessage": "Nous n’avons pas pu importer ce fichier. Vérifiez votre connexion et réessayez.",
+                "multipleMessage": "Nous n’avons pas pu importer ces fichiers. Vérifiez votre connexion et réessayez.",
+                "partialSingleMessage": "1 fichier n’a pas pu être importé. Vous pouvez continuer avec les fichiers restants.",
+                "partialMultipleMessage": "{{count}} fichiers n’ont pas pu être importés. Vous pouvez continuer avec les fichiers restants."
             },
             "steps": {
                 "addResume": "Ajouter un CV",

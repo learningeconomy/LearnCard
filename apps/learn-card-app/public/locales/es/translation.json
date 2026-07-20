@@ -135,9 +135,17 @@
                 "scanTitle": "Escanear código QR",
                 "scanDescription": "Abre la cámara para escanear el código QR de una credencial.",
                 "uploadTitle": "Subir código QR",
-                "uploadDescription": "Sube desde tu computadora una imagen del código QR de una credencial.",
+                "uploadDescription": "Sube desde tu dispositivo una imagen del código QR de una credencial.",
                 "linkTitle": "Usar un enlace de reclamación",
                 "linkDescription": "Pega un enlace de reclamación de LearnCard o de una billetera externa para continuar."
+            },
+            "uploadError": {
+                "title": "Error de carga",
+                "partialTitle": "Algunos archivos fallaron",
+                "singleMessage": "No pudimos subir este archivo. Comprueba tu conexión e inténtalo de nuevo.",
+                "multipleMessage": "No pudimos subir estos archivos. Comprueba tu conexión e inténtalo de nuevo.",
+                "partialSingleMessage": "No se pudo subir 1 archivo. Puedes continuar con los archivos restantes.",
+                "partialMultipleMessage": "No se pudieron subir {{count}} archivos. Puedes continuar con los archivos restantes."
             },
             "steps": {
                 "addResume": "Agregar currículum",

@@ -135,9 +135,17 @@
                 "scanTitle": "Scan QR Code",
                 "scanDescription": "Open your camera to scan a credential QR code.",
                 "uploadTitle": "Upload QR Code",
-                "uploadDescription": "Upload an image of a credential QR code from your computer.",
+                "uploadDescription": "Upload an image of a credential QR code from your device.",
                 "linkTitle": "Use a Claim Link",
                 "linkDescription": "Paste a LearnCard or external wallet claim link to continue."
+            },
+            "uploadError": {
+                "title": "Upload Failed",
+                "partialTitle": "Some Files Failed",
+                "singleMessage": "We could not upload this file. Please check your connection and try again.",
+                "multipleMessage": "We could not upload these files. Please check your connection and try again.",
+                "partialSingleMessage": "1 file could not be uploaded. You can continue with the remaining files.",
+                "partialMultipleMessage": "{{count}} files could not be uploaded. You can continue with the remaining files."
             },
             "steps": {
                 "addResume": "Add Resume",
