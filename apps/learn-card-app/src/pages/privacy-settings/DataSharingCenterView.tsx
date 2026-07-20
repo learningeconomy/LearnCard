@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../paraglide/messages.js';
 
 import { IonSpinner } from '@ionic/react';
 
@@ -29,7 +30,7 @@ const DataSharingCenterView: React.FC<DataSharingCenterViewProps> = ({ vm }) => 
             {isLoading ? (
                 <div className="relative z-10 flex flex-col items-center justify-center min-h-[60vh] gap-3">
                     <IonSpinner name="crescent" className="w-8 h-8" />
-                    <p className="text-grayscale-600 text-sm">Loading your privacy center...</p>
+                    <p className="text-grayscale-600 text-sm">{m['dataSharing.loadingCenter']()}</p>
                 </div>
             ) : (
                 <div className="relative z-10 mx-auto w-full max-w-[820px] px-5 desktop:px-6 pt-[max(24px,calc(env(safe-area-inset-top)+12px))] pb-14">
@@ -55,8 +56,7 @@ const DataSharingCenterView: React.FC<DataSharingCenterViewProps> = ({ vm }) => 
                         <AppDiagnosticsCard {...diagnostics} delay={240} />
 
                         <p className="text-xs text-grayscale-500 text-center px-6 mt-1">
-                            You can change any of this anytime. Turning something off takes effect
-                            right away.
+                            {m['dataSharing.centerFooter']()}
                         </p>
                     </div>
                 </div>

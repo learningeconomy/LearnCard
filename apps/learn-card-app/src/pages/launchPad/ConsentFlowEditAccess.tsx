@@ -19,6 +19,7 @@ import {
     ToastTypeEnum,
 } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import * as m from '../../paraglide/messages.js';
 
 export enum ConsentFlowEditAccessViewModes {
     editAccess = 'edit-access',
@@ -257,7 +258,8 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                         )}
                         {!contractReadDataExists && (
                             <p className="text-grayscale-100 text-base font-normal font-poppins">
-                                This contract is not reading any data from your {brandingConfig?.name}
+                                This contract is not reading any data from your{' '}
+                                {brandingConfig?.name}
                             </p>
                         )}
                     </IonCol>

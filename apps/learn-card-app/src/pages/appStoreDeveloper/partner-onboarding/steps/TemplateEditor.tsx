@@ -3,6 +3,8 @@
  * Extracted from TemplateBuilderStep for better code splitting
  */
 
+import * as m from '../../../../paraglide/messages.js';
+
 import React, { useState, useCallback, useMemo } from 'react';
 import {
     Award,
@@ -25,7 +27,12 @@ import {
     validateTemplate,
     type ValidationStatus as BuilderValidationStatus,
 } from '../components/CredentialBuilder';
-import { ExtendedTemplate, ValidationStatus, legacyToOBv3, obv3ToLegacy } from './templateBuilderUtils';
+import {
+    ExtendedTemplate,
+    ValidationStatus,
+    legacyToOBv3,
+    obv3ToLegacy,
+} from './templateBuilderUtils';
 
 interface TemplateEditorProps {
     template: ExtendedTemplate;
@@ -34,7 +41,9 @@ interface TemplateEditorProps {
     onDelete: () => void;
     isExpanded: boolean;
     onToggle: () => void;
-    onTestIssue?: (credential: Record<string, unknown>) => Promise<{ success: boolean; error?: string; result?: unknown }>;
+    onTestIssue?: (
+        credential: Record<string, unknown>
+    ) => Promise<{ success: boolean; error?: string; result?: unknown }>;
     onValidationChange?: (templateId: string, status: ValidationStatus, error?: string) => void;
     validationStatus?: ValidationStatus;
     /** Called when user explicitly saves this template */
@@ -79,7 +88,8 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
     const dynamicVars = useMemo(() => extractDynamicVariables(obv3Template), [obv3Template]);
 
     // Track builder validation status locally
-    const [builderValidationStatus, setBuilderValidationStatus] = useState<BuilderValidationStatus>('unknown');
+    const [builderValidationStatus, setBuilderValidationStatus] =
+        useState<BuilderValidationStatus>('unknown');
 
     // Structural validation errors
     const structuralErrors = useMemo(
@@ -89,20 +99,26 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
 
     const canSave = structuralErrors.length === 0 && builderValidationStatus !== 'invalid';
 
-    const handleTemplateChange = useCallback((newObv3: OBv3CredentialTemplate) => {
-        setObv3Template(newObv3);
+    const handleTemplateChange = useCallback(
+        (newObv3: OBv3CredentialTemplate) => {
+            setObv3Template(newObv3);
 
-        // Convert back to legacy format and notify parent
-        const legacyTemplate = obv3ToLegacy(newObv3, template) as ExtendedTemplate;
-        legacyTemplate.obv3Template = newObv3;
-        onChange(legacyTemplate);
-    }, [template, onChange]);
+            // Convert back to legacy format and notify parent
+            const legacyTemplate = obv3ToLegacy(newObv3, template) as ExtendedTemplate;
+            legacyTemplate.obv3Template = newObv3;
+            onChange(legacyTemplate);
+        },
+        [template, onChange]
+    );
 
     // Handle validation status changes from CredentialBuilder
-    const handleValidationChange = useCallback((status: BuilderValidationStatus, error?: string) => {
-        setBuilderValidationStatus(status);
-        onValidationChange?.(template.id, status as unknown as ValidationStatus, error);
-    }, [template.id, onValidationChange]);
+    const handleValidationChange = useCallback(
+        (status: BuilderValidationStatus, error?: string) => {
+            setBuilderValidationStatus(status);
+            onValidationChange?.(template.id, status as unknown as ValidationStatus, error);
+        },
+        [template.id, onValidationChange]
+    );
 
     return (
         <div className="border border-gray-200 rounded-xl overflow-hidden">
@@ -118,14 +134,17 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
 
                 <div className="flex-1 text-left min-w-0">
                     <h4 className="font-medium text-gray-800">
-                        {obv3Template.name.value || 'Untitled Template'}
+                        {obv3Template.name.value ||
+                            m['developerPortal.onboarding.templateBuilder.untitledTemplate']()}
                     </h4>
 
                     <div className="flex items-center gap-2 text-sm text-gray-500">
                         {dynamicVars.length > 0 && (
                             <span className="flex items-center gap-1">
                                 <Zap className="w-3 h-3 text-violet-500" />
-                                {dynamicVars.length} dynamic fields
+                                {m['developerPortal.onboarding.templateBuilder.dynamicFields']({
+                                    count: dynamicVars.length,
+                                })}
                             </span>
                         )}
                     </div>
@@ -133,23 +152,27 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
                     {boostUri && (
                         <div
                             className="flex items-center gap-1.5 mt-1 cursor-default"
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={e => e.stopPropagation()}
                         >
                             <code className="text-xs text-gray-400 font-mono truncate">
                                 {boostUri}
                             </code>
                             <button
                                 type="button"
-                                onClick={async (e) => {
+                                onClick={async e => {
                                     e.stopPropagation();
                                     try {
                                         await navigator.clipboard.writeText(boostUri);
                                         setCopiedUri(true);
                                         setTimeout(() => setCopiedUri(false), 1500);
-                                    } catch { /* fallback: no-op */ }
+                                    } catch {
+                                        /* fallback: no-op */
+                                    }
                                 }}
                                 className="flex-shrink-0 p-1 text-gray-400 hover:text-cyan-600 rounded transition-colors"
-                                title="Copy template URI"
+                                title={m[
+                                    'developerPortal.onboarding.templateBuilder.copyUriTitle'
+                                ]()}
                             >
                                 {copiedUri ? (
                                     <Check className="w-3 h-3 text-emerald-500" />
@@ -163,7 +186,10 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
 
                 <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                    onClick={e => {
+                        e.stopPropagation();
+                        onDelete();
+                    }}
                     className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                 >
                     <Trash2 className="w-4 h-4" />
@@ -203,14 +229,17 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
                                 </div>
                             )}
 
-                            {builderValidationStatus === 'invalid' && structuralErrors.length === 0 && (
-                                <div className="flex items-start gap-2 p-2 bg-red-50 border border-red-200 rounded-lg">
-                                    <X className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
-                                    <p className="text-xs text-red-700">
-                                        Template has validation errors. Fix the issues shown above before saving.
-                                    </p>
-                                </div>
-                            )}
+                            {builderValidationStatus === 'invalid' &&
+                                structuralErrors.length === 0 && (
+                                    <div className="flex items-start gap-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                                        <X className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                                        <p className="text-xs text-red-700">
+                                            {m[
+                                                'developerPortal.onboarding.templateBuilder.validationErrors'
+                                            ]()}
+                                        </p>
+                                    </div>
+                                )}
 
                             <div className="flex justify-end gap-2">
                                 {onCancel && (
@@ -218,7 +247,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
                                         onClick={onCancel}
                                         className="px-4 py-2 text-gray-600 hover:text-gray-800 rounded-lg text-sm font-medium"
                                     >
-                                        Cancel
+                                        {m['developerPortal.onboarding.templateBuilder.cancel']()}
                                     </button>
                                 )}
 
@@ -230,17 +259,27 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
                                     {isSaving ? (
                                         <>
                                             <Loader2 className="w-4 h-4 animate-spin" />
-                                            {isNew ? 'Creating...' : 'Saving...'}
+                                            {isNew
+                                                ? m[
+                                                      'developerPortal.onboarding.templateBuilder.creating'
+                                                  ]()
+                                                : m[
+                                                      'developerPortal.onboarding.templateBuilder.saving'
+                                                  ]()}
                                         </>
                                     ) : isNew ? (
                                         <>
                                             <Plus className="w-4 h-4" />
-                                            Create Template
+                                            {m[
+                                                'developerPortal.onboarding.templateBuilder.createTemplate'
+                                            ]()}
                                         </>
                                     ) : (
                                         <>
                                             <Check className="w-4 h-4" />
-                                            Save Changes
+                                            {m[
+                                                'developerPortal.onboarding.templateBuilder.saveChanges'
+                                            ]()}
                                         </>
                                     )}
                                 </button>

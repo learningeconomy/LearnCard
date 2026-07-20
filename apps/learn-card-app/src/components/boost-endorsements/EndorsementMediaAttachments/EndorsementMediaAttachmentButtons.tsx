@@ -6,6 +6,7 @@ import {
     EndorsementMediaOptionsEnum,
     endorsementMediaOptions,
 } from '../EndorsementForm/endorsement-state.helpers';
+import * as m from '../../../paraglide/messages.js';
 
 export const EndorsementMediaAttachmentButtons: React.FC<{
     handleImageSelect: () => void;
@@ -13,10 +14,27 @@ export const EndorsementMediaAttachmentButtons: React.FC<{
     loadingProgress?: number | boolean;
     handleMediaTypeSelect?: (type: EndorsementMediaOptionsEnum) => void;
 }> = ({ handleImageSelect, handleDocumentSelect, loadingProgress, handleMediaTypeSelect }) => {
+    // Map media type -> localized display label. Resolved at render (locale-freeze safe).
+    const mediaTypeLabel = (type: EndorsementMediaOptionsEnum) => {
+        switch (type) {
+            case EndorsementMediaOptionsEnum.photo:
+                return m['endorsement.media.photo']();
+            case EndorsementMediaOptionsEnum.document:
+                return m['endorsement.media.document']();
+            case EndorsementMediaOptionsEnum.video:
+                return m['endorsement.media.video']();
+            case EndorsementMediaOptionsEnum.link:
+                return m['endorsement.media.link']();
+            default:
+                return '';
+        }
+    };
     return (
         <div className="w-full flex flex-col items-start gap-2 justify-start py-4 px-4 cursor-pointer bg-white rounded-[20px] shadow-bottom-2-4">
             <div className="w-full flex items-center justify-center text-grayscale-900">
-                <h4 className="text-[22px] text-gray-900 font-poppins">Select Media Type</h4>
+                <h4 className="text-[22px] text-gray-900 font-poppins">
+                    {m['endorsement.media.selectType']()}
+                </h4>
             </div>
 
             {loadingProgress && (
@@ -26,13 +44,15 @@ export const EndorsementMediaAttachmentButtons: React.FC<{
                         value={(loadingProgress as number) / 100}
                     />
                     <p className="mt-2 text-sm font-medium text-grayscale-900">
-                        {loadingProgress}% uploaded
+                        {m['endorsement.media.uploaded']({
+                            count: loadingProgress as number,
+                        })}
                     </p>
                 </div>
             )}
 
             <div className="w-full flex flex-wrap items-center justify-center">
-                {endorsementMediaOptions.map(({ id, type, title, color, Icon }) => {
+                {endorsementMediaOptions.map(({ id, type, color, Icon }) => {
                     let styles = '';
 
                     const handleMediaSelect = () => {
@@ -61,7 +81,7 @@ export const EndorsementMediaAttachmentButtons: React.FC<{
                                 className="h-[40px] text-grayscale-800 max-h-[40px] max-w-[40px]"
                             />
                             <p className="font-poppins text-grayscale-800 text-xl tracking-wider">
-                                {title}
+                                {mediaTypeLabel(type)}
                             </p>
                         </button>
                     );

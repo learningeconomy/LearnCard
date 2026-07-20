@@ -9,6 +9,7 @@ import {
     isHiddenActivity,
     groupByRelativeTime,
 } from './activityFeed.helpers';
+import * as m from '../../../paraglide/messages.js';
 
 type IndexRecord = {
     id?: string;
@@ -42,11 +43,13 @@ export const AllCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose
     return (
         <section className="h-full w-full bg-white flex flex-col font-poppins">
             <div className="flex items-center justify-between px-5 py-4 border-b border-grayscale-100 shrink-0">
-                <h2 className="text-xl font-semibold text-grayscale-900">All credentials</h2>
+                <h2 className="text-xl font-semibold text-grayscale-900">
+                    {m['passport.activity.allCreds']()}
+                </h2>
                 <button
                     type="button"
                     onClick={onClose}
-                    aria-label="Close"
+                    aria-label={m['common.close']()}
                     className="w-8 h-8 flex items-center justify-center bg-grayscale-100 hover:bg-grayscale-200 rounded-full text-grayscale-700 transition-colors"
                 >
                     <IonIcon icon={closeOutline} className="text-xl" />
@@ -61,7 +64,9 @@ export const AllCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose
                 )}
                 {isEmpty && (
                     <div className="h-full flex items-center justify-center">
-                        <p className="text-sm text-grayscale-500">Nothing in your passport yet.</p>
+                        <p className="text-sm text-grayscale-500">
+                            {m['passport.activity.emptyAll']()}
+                        </p>
                     </div>
                 )}
                 {groups.map(group => (

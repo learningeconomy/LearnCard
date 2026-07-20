@@ -27,6 +27,7 @@ import FrameworkCreatedSuccessModal from './FrameworkCreatedSuccessModal';
 import SkillsFrameworkAdminSelector from './SkillsFrameworkAdminSelector';
 import SkillsFrameworkNetworkSelector from './SkillsFrameworkNetworkSelector';
 import { IonFooter, IonInput, IonSpinner, IonTextarea } from '@ionic/react';
+import * as m from '../../paraglide/messages.js';
 
 import { SkillFramework } from '../../components/boost/boost';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
@@ -133,7 +134,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
         },
         onError: error => {
             log.error('Failed to create framework:', error);
-            alert('Failed to create framework. Please try again.');
+            alert(m['skills.frameworks.createFailed']());
         },
     });
 
@@ -260,7 +261,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
         },
         onError: error => {
             log.error('Failed to update framework:', error);
-            alert('Failed to update framework. Please try again.');
+            alert(m['skills.frameworks.updateFailed']());
         },
     });
 
@@ -295,7 +296,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                 <div className="flex items-center gap-[10px] text-grayscale-900">
                     <SkillsFrameworkIcon className="w-[40px] h-[40px]" color="currentColor" />
                     <h5 className="text-[22px] font-poppins font-[600] leading-[24px]">
-                        {isEdit ? 'Edit Framework' : 'Create Framework'}
+                        {isEdit ? m['skills.frameworks.edit']() : m['skills.frameworks.create']()}
                     </h5>
                 </div>
             </div>
@@ -304,8 +305,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                 <div className="flex flex-col gap-[20px] bg-white p-[20px] rounded-[20px] shadow-bottom-0-4">
                     {!isEdit && (
                         <p className="font-poppins text-[14px] text-grayscale-90 w-full text-center">
-                            Start a new framework. You can add skills manually or import a file
-                            after creating it.
+                            {m['skills.frameworks.startNew']()}
                         </p>
                     )}
 
@@ -334,7 +334,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                         >
                             <Pencil className="w-[24px] h-[24px]" />
                             <span className="font-poppins text-[14px] font-[600]">
-                                Edit thumbnail
+                                {m['skills.frameworks.editThumbnail']()}
                             </span>
                         </button>
                     </div>
@@ -342,14 +342,14 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                     <IonInput
                         onIonInput={e => setName(e.detail.value ?? '')}
                         className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] !px-[15px] !h-[40px] text-[17px] font-poppins"
-                        placeholder="Framework Name *"
+                        placeholder={m['skills.frameworks.namePlaceholder']()}
                         value={name}
                     />
 
                     <IonTextarea
                         onIonInput={e => setDescription(e.detail.value ?? '')}
                         className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] !px-[15px]"
-                        placeholder="Framework Description"
+                        placeholder={m['skills.frameworks.descriptionPlaceholder']()}
                         value={description}
                         rows={4}
                     />
@@ -357,7 +357,9 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
 
                 <div className="flex flex-col gap-[20px] bg-white p-[20px] rounded-[20px] shadow-bottom-0-4">
                     <div className="font-poppins text-[20px] text-grayscale-900 flex items-center">
-                        {conditionalPluralize(selectedAdmins.issueTo.length, 'Admin')}
+                        {m['skills.frameworks.adminCount']({
+                            count: selectedAdmins.issueTo.length,
+                        })}
                         <button
                             onClick={handleSelectAdmin}
                             className="ml-auto bg-emerald-700 p-[10px] rounded-full"
@@ -388,7 +390,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                         onClick={closeModal}
                         className="p-[11px] bg-white rounded-full text-grayscale-900 shadow-button-bottom flex-1 font-poppins text-[17px]"
                     >
-                        Close
+                        {m['common.close']()}
                     </button>
 
                     <button
@@ -402,9 +404,17 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
                         }
                     >
                         {isEdit ? (
-                            <>{updateFrameworkMutation.isPending ? 'Updating...' : 'Update'}</>
+                            <>
+                                {updateFrameworkMutation.isPending
+                                    ? m['common.updating']()
+                                    : m['common.update']()}
+                            </>
                         ) : (
-                            <>{createFrameworkMutation.isPending ? 'Creating...' : 'Create'}</>
+                            <>
+                                {createFrameworkMutation.isPending
+                                    ? m['common.creating']()
+                                    : m['common.create']()}
+                            </>
                         )}
                     </button>
                 </div>

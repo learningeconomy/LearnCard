@@ -1,6 +1,7 @@
 import React from 'react';
 import { IonContent, IonPage } from '@ionic/react';
 import { Home } from 'lucide-react';
+import * as m from '../../paraglide/messages.js';
 
 interface ExchangeRedirectProps {
     redirectUrl: string; // Contains the redirectUrl from the server
@@ -25,17 +26,19 @@ const ExchangeRedirect: React.FC<ExchangeRedirectProps> = ({ redirectUrl }) => {
                             </div>
 
                             <h1 className="text-xl font-semibold text-white mb-2">
-                                Redirect required
+                                {m['claim.redirect.heading']()}
                             </h1>
 
-                            <p className="text-emerald-50 text-sm">Complete the next step</p>
+                            <p className="text-emerald-50 text-sm">
+                                {m['claim.redirect.subtitle']()}
+                            </p>
                         </div>
 
                         {/* Content */}
                         <div className="p-6">
                             <div className="space-y-5 mb-6">
                                 <p className="text-grayscale-600 text-center text-sm leading-relaxed">
-                                    To continue, you need to complete a step on an external website.
+                                    {m['claim.redirect.description']()}
                                 </p>
                             </div>
 
@@ -46,7 +49,7 @@ const ExchangeRedirect: React.FC<ExchangeRedirectProps> = ({ redirectUrl }) => {
                                     disabled={!redirectUrl}
                                     className="w-full py-3 px-4 bg-emerald-600 text-white font-medium text-sm rounded-[20px] hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
-                                    Continue
+                                    {m['common.continue']()}
                                 </button>
                             </div>
                         </div>

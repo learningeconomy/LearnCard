@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { m } from '../../../paraglide/messages.js';
+
 import RevisitIcon from 'learn-card-base/svgs/RevisitIcon';
 import NewAiSessionIcon from 'learn-card-base/svgs/NewAiSessionIcon';
 import { NewAiSessionStepEnum } from '../newAiSession.helpers';
@@ -53,7 +55,7 @@ export const AiSessionTypeSelector: React.FC<{
                     setActiveStep(NewAiSessionStepEnum.newTopic);
                 }}
             >
-                New Topic
+                {m['ai.newSession']()}
                 <NewAiSessionIcon className="ml-1" />
             </button>
             <button
@@ -72,7 +74,7 @@ export const AiSessionTypeSelector: React.FC<{
                     setActiveStep(NewAiSessionStepEnum.revisitTopic);
                 }}
             >
-                Revisit Topic
+                {m['ai.revisitTopic']()}
                 <RevisitIcon version="2" className="ml-1 h-auto w-[31px] text-white" />
             </button>
         </div>

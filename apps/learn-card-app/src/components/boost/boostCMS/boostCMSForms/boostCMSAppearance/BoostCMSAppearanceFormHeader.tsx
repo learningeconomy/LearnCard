@@ -23,6 +23,7 @@ import { BoostUserTypeEnum } from '../../../boost-options/boostOptions';
 import { BoostCMSState } from '../../../boost';
 
 import 'swiper/css/navigation';
+import * as m from '../../../../../paraglide/messages.js';
 
 export enum BoostCMSActiveAppearanceForm {
     appearanceForm = 'appearanceForm',
@@ -74,7 +75,7 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
     showStylePackCategoryList,
     setShowStylePackCategoryList,
 
-    handleSaveAppearance = () => { },
+    handleSaveAppearance = () => {},
 }) => {
     const { closeModal } = useModal();
     let formTitle: string = '';
@@ -146,19 +147,19 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
     let titleStyles = 'flex-1';
 
     if (activeForm === BoostCMSActiveAppearanceForm.achievementTypeForm) {
-        formTitle = 'Boost Type';
+        formTitle = m['boost.cms.appearance.boostType']();
         headerContainerStyles = 'items-center justify-between px-2 mt-2';
         headerBackButtonStyles = 'w-[86px] h-[44px]';
     } else if (activeForm === BoostCMSActiveAppearanceForm.badgeForm) {
         if (showStylePackCategoryList) {
-            formTitle = 'Select Style Pack';
+            formTitle = m['boost.cms.appearance.selectStylePack']();
             headerContainerStyles = 'items-center justify-center px-2';
         } else {
-            formTitle = 'Select Image';
+            formTitle = m['boost.cms.appearance.selectImage']();
             headerContainerStyles = 'items-center justify-center px-2';
         }
     } else {
-        formTitle = 'Appearance';
+        formTitle = m['boost.cms.appearance.title']();
         titleStyles = 'flex-none';
         headerContainerStyles = 'items-center justify-between px-4 pb-2';
     }
@@ -189,13 +190,13 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
                     <div className={`w-full flex  ${headerContainerStyles}`}>
                         {(activeForm === BoostCMSActiveAppearanceForm.badgeForm ||
                             activeForm === BoostCMSActiveAppearanceForm.achievementTypeForm) && (
-                                <button
-                                    className={`ion-no-padding p-0 text-grayscale-800 ${headerBackButtonStyles}`}
-                                    onClick={handleGoBack}
-                                >
-                                    <CaretLeft className="h-auto w-3 text-black" />
-                                </button>
-                            )}
+                            <button
+                                className={`ion-no-padding p-0 text-grayscale-800 ${headerBackButtonStyles}`}
+                                onClick={handleGoBack}
+                            >
+                                <CaretLeft className="h-auto w-3 text-black" />
+                            </button>
+                        )}
                         <p
                             className={`text-grayscale-800 font-poppins font-medium text-xl text-center relative ${titleStyles}`}
                         >
@@ -210,7 +211,7 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
                                 className={`rounded-full ion-no-padding p-0 shadow-3xl font-poppins text-xl  text-white w-[86px] h-[44px] bg-emerald-700`}
                                 disabled={disabled}
                             >
-                                Save
+                                {m['common.save']()}
                             </button>
                         )}
                         {activeForm === BoostCMSActiveAppearanceForm.achievementTypeForm && (
@@ -219,11 +220,12 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
                                     handleCategoryAndTypeChange(activeCategoryType, activeType);
                                     closeModal();
                                 }}
-                                className={`rounded-full ion-no-padding p-0 shadow-3xl font-poppins text-xl  text-grayscale-800 w-[86px] h-[44px] ${saveDisabled ? 'bg-grayscale-100' : 'bg-white'
-                                    }`}
+                                className={`rounded-full ion-no-padding p-0 shadow-3xl font-poppins text-xl  text-grayscale-800 w-[86px] h-[44px] ${
+                                    saveDisabled ? 'bg-grayscale-100' : 'bg-white'
+                                }`}
                                 disabled={saveDisabled}
                             >
-                                Save
+                                {m['common.save']()}
                             </button>
                         )}
                     </div>

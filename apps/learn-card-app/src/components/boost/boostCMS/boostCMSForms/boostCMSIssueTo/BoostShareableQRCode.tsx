@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../../../../paraglide/messages.js';
 import { QRCodeSVG } from 'qrcode.react';
 
 import { IonRow, IonSpinner } from '@ionic/react';
@@ -41,7 +42,7 @@ const BoostShareableQRCode: React.FC<BoostShareableQRCodeProps> = ({
                 {showCloseButton && handleCloseModal && (
                     <button
                         type="button"
-                        aria-label="Close"
+                        aria-label={m['common.close']()}
                         onClick={handleCloseModal}
                         className="absolute top-4 right-4 z-10 text-grayscale-700 hover:text-grayscale-900 transition-colors"
                     >

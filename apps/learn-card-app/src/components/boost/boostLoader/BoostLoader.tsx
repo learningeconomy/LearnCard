@@ -1,6 +1,8 @@
 import React from 'react';
 import Lottie from 'react-lottie-player';
 
+import * as m from '../../../paraglide/messages.js';
+
 const FactoryMachine = '/lotties/factory.json';
 
 export const BoostLoader: React.FC<{
@@ -10,14 +12,16 @@ export const BoostLoader: React.FC<{
 }> = ({ text, darkBackground = false, className = '' }) => {
     return (
         <div
-            className={`absolute w-full h-full top-0 left-0 z-50 flex items-center justify-center flex-col ${darkBackground ? 'bg-grayscale-800' : 'bg-grayscale-50 '
-                } ${className}`}
+            className={`absolute w-full h-full top-0 left-0 z-50 flex items-center justify-center flex-col ${
+                darkBackground ? 'bg-grayscale-800' : 'bg-grayscale-50 '
+            } ${className}`}
         >
             <div className="max-w-[450px] m-auto h-full flex flex-col items-center justify-center">
                 <Lottie loop path={FactoryMachine} play style={{ width: '100%' }} />
                 <p
-                    className={`text-center mt-[-25px] text-lg font-semibold ${darkBackground ? 'text-grayscale-50' : 'text-grayscale-900'
-                        }`}
+                    className={`text-center mt-[-25px] text-lg font-semibold ${
+                        darkBackground ? 'text-grayscale-50' : 'text-grayscale-900'
+                    }`}
                 >
                     {text}
                 </p>
@@ -28,7 +32,11 @@ export const BoostLoader: React.FC<{
 
 export default BoostLoader;
 
-export const BoostIssuanceLoading: React.FC<{ text?: string }> = ({ text = 'Issuing Boost' }) => {
+export const BoostIssuanceLoading: React.FC<{ text?: string }> = ({
+    // Default evaluated per render (function-param defaults are), so the active
+    // locale is respected rather than frozen at module load.
+    text = m['boost.issuing'](),
+}) => {
     return (
         <section className="boost-issue-loading-modal flex flex-col items-center justify-center h-full w-full boost-loading-wrapper">
             <div className=" flex flex-col items-center justify-center rounded-[20px] max-w-[350px] max-h-[350px] w-full h-full bg-transparent">

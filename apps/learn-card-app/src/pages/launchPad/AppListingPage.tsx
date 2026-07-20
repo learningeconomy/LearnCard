@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import * as m from '../../paraglide/messages.js';
 import { useParams, useHistory } from 'react-router-dom';
 import type { AppStoreListing } from '@learncard/types';
 import numeral from 'numeral';
@@ -599,7 +600,7 @@ const AppListingPage: React.FC = () => {
                             className="flex items-center gap-1 hover:bg-amber-600 rounded-lg px-2 py-1 transition-colors"
                         >
                             <ArrowLeft className="w-4 h-4" />
-                            <span className="text-sm font-medium">Back</span>
+                            <span className="text-sm font-medium">{m['common.back']()}</span>
                         </button>
                         <div className="flex items-center gap-2">
                             <Eye className="w-4 h-4" />

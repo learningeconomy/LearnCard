@@ -25,6 +25,8 @@ import { endorsementsRequestStore } from '../../../stores/endorsementsRequestSto
 import { EndorsementState } from '../EndorsementForm/endorsement-state.helpers';
 import { BoostEndorsement, BoostEndorsementStatusEnum } from '../boost-endorsement.helpers';
 import { VC } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
 
 export const EndorsementRequestModal: React.FC<{
     credential: VC;
@@ -184,11 +186,17 @@ export const EndorsementRequestModal: React.FC<{
                         </div>
                         <div className="w-full flex flex-col items-center justify-center border-b-[2px] border-grayscale-100 pb-4 px-[16px]">
                             <p className="text-center w-full text-grayscale-900 text-base">
-                                <span className="font-semibold">
-                                    {issueeProfile?.displayName || issueeName}
-                                </span>{' '}
-                                has requested your endorsement for{' '}
-                                <span className="font-semibold">{title}</span>
+                                <TransP
+                                    m={m['endorsement.modal.requestedEndorsement']}
+                                    values={{
+                                        name: issueeProfile?.displayName || issueeName,
+                                        title,
+                                    }}
+                                    components={[
+                                        <span className="font-semibold" />,
+                                        <span className="font-semibold" />,
+                                    ]}
+                                />
                             </p>
                         </div>
                     </div>
@@ -217,7 +225,7 @@ export const EndorsementRequestModal: React.FC<{
                         className={`w-8 h-8 text-grayscale-700`}
                         fill="#E2E3E9"
                     />
-                    Endorse{' '}
+                    {m['endorsement.modal.footer.endorse']()}{' '}
                 </button>
             )}
 
