@@ -94,7 +94,7 @@ const tryReadClipboardForClaim = async (): Promise<string | null> => {
 export type PasteOrUploadClaimMode = 'claim-link' | 'qr-code';
 
 export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }> = ({ mode }) => {
-    const { closeModal, replaceModal, newModal } = useModal();
+    const { closeModal, replaceModal } = useModal();
     const { presentToast } = useToast();
     const safeArea = useSafeArea();
 
@@ -141,8 +141,7 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
                 }
 
                 if (result.kind === 'open_claim_boost') {
-                    closeModal();
-                    newModal(
+                    replaceModal(
                         <ClaimBoost
                             uri={result.boost.uri}
                             claimChallenge={result.boost.challenge}
@@ -156,8 +155,7 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
                         }
                     );
                 } else if (result.kind === 'open_claim_vc') {
-                    closeModal();
-                    newModal(
+                    replaceModal(
                         <ClaimBoost dismissClaimModal={closeModal} vc={result.vc} />,
                         { hideButton: true },
                         {
@@ -197,7 +195,7 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
                 if (mountedRef.current) setIsProcessing(false);
             }
         },
-        [route, closeModal, newModal, replaceModal, presentToast]
+        [route, closeModal, replaceModal, presentToast]
     );
 
     const handleContinueWithPaste = useCallback(async () => {
