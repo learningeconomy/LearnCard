@@ -40,6 +40,8 @@ import { useStylePackRegistry } from '../../registries/useStylePackRegistry';
 import { useBadgeGroups } from '../../registries/useBadgeGroups';
 import BoostEarnedCard from '../../components/boost/boost-earned-card/BoostEarnedCard';
 import { BoostCategoryOptionsEnum, BoostPageViewMode } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
+import { useLocale } from '../../i18n';
 
 type Step = 'pick' | 'personalize' | 'send' | 'celebrate';
 
@@ -153,7 +155,8 @@ const BoostAFriendPage: React.FC = () => {
             const template = buildBoostFriendTemplate({
                 title: title.trim(),
                 subtype: subtype.trim(),
-                description: description.trim() || `A social badge for being a ${title.trim()}`,
+                description:
+                    description.trim() || m['boostAFriend.page.descDflt']({ title: title.trim() }),
                 note: note.trim() || criteria,
                 vibeColor,
                 imageUrl: badgeImageUrl || categoryFallback,
@@ -171,9 +174,7 @@ const BoostAFriendPage: React.FC = () => {
 
             if (recipientMode === 'self') {
                 if (!result.credentialUri) {
-                    throw new Error(
-                        'Badge was issued, but it could not be saved to your Passport.'
-                    );
+                    throw new Error(m['boostAFriend.page.saveErr']());
                 }
                 await addVCtoWallet({ uri: result.credentialUri });
             }
@@ -196,7 +197,7 @@ const BoostAFriendPage: React.FC = () => {
         const hasRecipients = recipients.length > 0;
 
         if (recipientMode === 'people' && !hasRecipients) {
-            setError('Please add at least one recipient.');
+            setError(m['boostAFriend.page.noRecip']());
             return;
         }
 
@@ -223,12 +224,12 @@ const BoostAFriendPage: React.FC = () => {
             await navigator.clipboard.writeText(claimLink);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
-            presentToast('Link copied to clipboard', {
+            presentToast(m['toasts.linkCopied'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Failed to copy link', {
+            presentToast(m['boostAFriend.page.copyFail'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -239,8 +240,8 @@ const BoostAFriendPage: React.FC = () => {
         if (!claimLink) return;
         try {
             await navigator.share({
-                title: 'Claim your badge!',
-                text: `I sent you a ${selectedBadge?.title} badge!`,
+                title: m['boostAFriend.page.shareTtl'](),
+                text: m['boostAFriend.page.shareTxt']({ badge: selectedBadge?.title }),
                 url: claimLink,
             });
         } catch {
@@ -280,13 +281,13 @@ const BoostAFriendPage: React.FC = () => {
                 ...(albumIdentifier ? { albumIdentifier } : {}),
             });
 
-            presentToast('QR code saved to Photos.', {
+            presentToast(m['boostAFriend.page.qrSaved'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
             log.error('boost-a-friend.qr_download_failed', err);
-            presentToast('Failed to download QR code.', {
+            presentToast(m['boostAFriend.page.qrFail'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -310,11 +311,13 @@ const BoostAFriendPage: React.FC = () => {
         setStep('pick');
     };
 
+    const locale = useLocale();
+
     const celebrateCredential = useMemo(() => {
         if (!selectedBadge) return null;
         return buildPreviewCredential({
-            title: title.trim() || 'Your Badge',
-            subtype: subtype.trim() || title.trim() || 'Your Badge',
+            title: title.trim() || m['boostAFriend.yourBadge'](),
+            subtype: subtype.trim() || title.trim() || m['boostAFriend.yourBadge'](),
             description,
             note: note.trim() || criteria,
             vibeColor,
@@ -336,6 +339,8 @@ const BoostAFriendPage: React.FC = () => {
         stylePacks,
         categoryFallback,
         currentLCNUser,
+        ,
+        locale,
     ]);
 
     const celebrateCard = celebrateCredential && (
@@ -410,16 +415,16 @@ const BoostAFriendPage: React.FC = () => {
                                         type="button"
                                         onClick={() => setStep('personalize')}
                                         className="p-2 -ml-2 rounded-full hover:bg-white/50 text-grayscale-600 transition-colors"
-                                        aria-label="Go back"
+                                        aria-label={m['settings.goBack']()}
                                     >
                                         <ArrowLeft className="w-5 h-5" />
                                     </button>
                                     <div>
                                         <h1 className="text-2xl font-semibold text-grayscale-900">
-                                            Send to
+                                            {m['boostAFriend.page.sendTo']()}
                                         </h1>
                                         <p className="text-sm text-grayscale-600 mt-1">
-                                            Who gets this badge?
+                                            {m['boostAFriend.page.whoGets']()}
                                         </p>
                                     </div>
                                 </div>
@@ -459,15 +464,15 @@ const BoostAFriendPage: React.FC = () => {
                                             <>
                                                 <Loader2 className="w-5 h-5 animate-spin" />
                                                 {recipientMode === 'link'
-                                                    ? 'Creating link...'
-                                                    : 'Sending...'}
+                                                    ? m['boostAFriend.page.creating']()
+                                                    : m['profile.email.sending']()}
                                             </>
                                         ) : recipientMode === 'link' ? (
-                                            'Create Link'
+                                            m['boostAFriend.page.createLnk']()
                                         ) : recipientMode === 'self' ? (
-                                            'Boost Myself'
+                                            m['boost.cms.issueTo.boostMyself']()
                                         ) : (
-                                            'Send Badge'
+                                            m['boostAFriend.page.sendBadge']()
                                         )}
                                     </button>
                                 </div>
@@ -489,10 +494,10 @@ const BoostAFriendPage: React.FC = () => {
                                         )}
                                         <div className="animate-fade-in-up">
                                             <h1 className="text-xl font-semibold text-grayscale-900 mb-1">
-                                                Link ready!
+                                                {m['boostAFriend.page.linkReady']()}
                                             </h1>
                                             <p className="text-sm text-grayscale-600 leading-relaxed">
-                                                Anyone with this link or QR code can claim it.
+                                                {m['boostAFriend.page.claimAny']()}
                                             </p>
                                         </div>
                                     </div>
@@ -539,7 +544,9 @@ const BoostAFriendPage: React.FC = () => {
                                                 ) : (
                                                     <Copy className="w-4 h-4" />
                                                 )}
-                                                {copied ? 'Copied' : 'Copy link'}
+                                                {copied
+                                                    ? m['boostAFriend.page.copied']()
+                                                    : m['boostAFriend.page.copyLink']()}
                                             </button>
                                             <div className="flex gap-3">
                                                 {typeof navigator !== 'undefined' &&
@@ -550,7 +557,7 @@ const BoostAFriendPage: React.FC = () => {
                                                             className="flex-1 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
                                                         >
                                                             <Share className="w-4 h-4" />
-                                                            Share
+                                                            {m['common.share']()}
                                                         </button>
                                                     )}
                                                 <button
@@ -559,7 +566,7 @@ const BoostAFriendPage: React.FC = () => {
                                                     className="flex-1 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
                                                 >
                                                     <Download className="w-4 h-4" />
-                                                    Download QR
+                                                    {m['boostAFriend.page.dlQr']()}
                                                 </button>
                                             </div>
                                         </div>
@@ -570,14 +577,14 @@ const BoostAFriendPage: React.FC = () => {
                                                 onClick={() => history.push('/wallet')}
                                                 className="w-full py-3.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-base hover:opacity-90 transition-opacity shadow-sm"
                                             >
-                                                Done
+                                                {m['common.done']()}
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={handleBoostAnother}
                                                 className="w-full py-3.5 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-base hover:bg-grayscale-10 transition-colors"
                                             >
-                                                Boost Another
+                                                {m['boostAFriend.page.another']()}
                                             </button>
                                         </div>
                                     </div>
@@ -601,13 +608,15 @@ const BoostAFriendPage: React.FC = () => {
                                     <div className="animate-fade-in-up">
                                         <h1 className="text-3xl font-semibold text-grayscale-900 mb-2">
                                             {recipientMode === 'self'
-                                                ? 'Added to your Passport!'
-                                                : 'Badge sent!'}
+                                                ? m['boostAFriend.page.added']()
+                                                : m['boostAFriend.page.sent']()}
                                         </h1>
                                         <p className="text-base text-grayscale-600">
                                             {recipientMode === 'self'
-                                                ? "You'll find it in your badges."
-                                                : `Sent to ${summarizeRecipients(recipients)}`}
+                                                ? m['boostAFriend.page.findBadge']()
+                                                : m['boostAFriend.page.sentTo']({
+                                                      recipients: summarizeRecipients(recipients),
+                                                  })}
                                         </p>
                                     </div>
 
@@ -617,7 +626,7 @@ const BoostAFriendPage: React.FC = () => {
                                             onClick={handleBoostAnother}
                                             className="w-full py-3.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-base hover:opacity-90 transition-opacity shadow-sm"
                                         >
-                                            Boost Another
+                                            {m['boostAFriend.page.another']()}
                                         </button>
                                         <button
                                             type="button"
@@ -630,7 +639,7 @@ const BoostAFriendPage: React.FC = () => {
                                             }
                                             className="w-full py-3.5 px-4 rounded-[20px] border border-grayscale-300 bg-white/50 backdrop-blur-sm text-grayscale-700 font-medium text-base hover:bg-white transition-colors"
                                         >
-                                            Done
+                                            {m['common.done']()}
                                         </button>
                                     </div>
                                 </div>

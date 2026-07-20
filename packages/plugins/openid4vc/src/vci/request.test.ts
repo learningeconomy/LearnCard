@@ -8,7 +8,7 @@ const mockResponse = (body: unknown, init: { ok?: boolean; status?: number } = {
     } as unknown as Response);
 
 describe('requestCredential', () => {
-    it('sends the proof JWT + format + Authorization header (format-based path)', async () => {
+    it('sends proofs array + credential_configuration_id + Authorization header (config-id path)', async () => {
         const fetchMock = jest
             .fn()
             .mockResolvedValue(mockResponse({ credential: 'eyJ.vc.jwt', c_nonce: 'new-nonce' }));
@@ -16,7 +16,7 @@ describe('requestCredential', () => {
         const result = await requestCredential({
             credentialEndpoint: 'https://issuer.example.com/credential',
             accessToken: 'token-abc',
-            format: 'jwt_vc_json',
+            credentialConfigurationId: 'UniversityDegree_jwt_vc_json',
             proofJwt: 'eyJ.proof.sig',
             fetchImpl: fetchMock as unknown as typeof fetch,
         });
@@ -31,37 +31,83 @@ describe('requestCredential', () => {
         expect(init.headers['Content-Type']).toBe('application/json');
 
         const body = JSON.parse(init.body);
-        expect(body.format).toBe('jwt_vc_json');
-        expect(body.proof).toEqual({ proof_type: 'jwt', jwt: 'eyJ.proof.sig' });
-        // Regression: Draft 13 §7.2 forbids pairing `credential_identifier`
-        // with `format`, and we never had a real identifier here anyway.
+        expect(body.credential_configuration_id).toBe('UniversityDegree_jwt_vc_json');
+        expect(body.proofs).toEqual({ jwt: ['eyJ.proof.sig'] });
         expect(body.credential_identifier).toBeUndefined();
+        expect(body.format).toBeUndefined();
+        expect(body.proof).toBeUndefined();
     });
 
-    it('sends credential_identifier (and NOT format) when caller supplies one from authorization_details', async () => {
+    it('[draft-13-compat] sends the Draft 13 body (format + credential_definition + singular proof) when specVersion is draft-13', async () => {
+        const fetchMock = jest.fn().mockResolvedValue(mockResponse({ credential: 'eyJ.vc.jwt' }));
+
+        await requestCredential({
+            credentialEndpoint: 'https://issuer.example.com/credential',
+            accessToken: 'token-abc',
+            credentialConfigurationId: 'UniversityDegree_jwt_vc_json',
+            proofJwt: 'eyJ.proof.sig',
+            specVersion: 'draft-13',
+            format: 'jwt_vc_json',
+            configDef: {
+                format: 'jwt_vc_json',
+                credential_definition: { type: ['VerifiableCredential', 'UniversityDegree'] },
+            },
+            fetchImpl: fetchMock as unknown as typeof fetch,
+        });
+
+        const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+        expect(body.format).toBe('jwt_vc_json');
+        expect(body.credential_definition).toEqual({
+            type: ['VerifiableCredential', 'UniversityDegree'],
+        });
+        expect(body.proof).toEqual({ proof_type: 'jwt', jwt: 'eyJ.proof.sig' });
+        // Draft 13 body must NOT carry the 1.0 fields.
+        expect(body.proofs).toBeUndefined();
+        expect(body.credential_configuration_id).toBeUndefined();
+    });
+
+    it('[draft-13-compat] echoes `vct` (not credential_definition) for an SD-JWT VC config', async () => {
         const fetchMock = jest
             .fn()
-            .mockResolvedValue(mockResponse({ credential: 'eyJ.vc.jwt' }));
+            .mockResolvedValue(mockResponse({ credential: 'eyJ.sdjwt~disc~' }));
+
+        await requestCredential({
+            credentialEndpoint: 'https://issuer.example.com/credential',
+            accessToken: 'token-abc',
+            credentialConfigurationId: 'BankId_vc+sd-jwt',
+            proofJwt: 'eyJ.proof.sig',
+            specVersion: 'draft-13',
+            format: 'vc+sd-jwt',
+            configDef: { format: 'vc+sd-jwt', vct: 'https://issuer.example.com/BankId' },
+            fetchImpl: fetchMock as unknown as typeof fetch,
+        });
+
+        const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+        expect(body.format).toBe('vc+sd-jwt');
+        expect(body.vct).toBe('https://issuer.example.com/BankId');
+        expect(body.credential_definition).toBeUndefined();
+        expect(body.proof).toEqual({ proof_type: 'jwt', jwt: 'eyJ.proof.sig' });
+    });
+
+    it('sends credential_identifier (and NOT credential_configuration_id) when caller supplies one from authorization_details', async () => {
+        const fetchMock = jest.fn().mockResolvedValue(mockResponse({ credential: 'eyJ.vc.jwt' }));
 
         await requestCredential({
             credentialEndpoint: 'https://issuer.example.com/credential',
             accessToken: 'token-abc',
             credentialIdentifier: 'auth-details-id-abc',
-            // Even if the caller accidentally supplies these, the spec
-            // (§7.2) says they MUST NOT be sent alongside credential_identifier.
-            format: 'jwt_vc_json',
-            extra: { credential_definition: { type: ['X'] } },
+            credentialConfigurationId: 'UniversityDegree_jwt_vc_json',
             proofJwt: 'eyJ.proof.sig',
             fetchImpl: fetchMock as unknown as typeof fetch,
         });
 
         const body = JSON.parse(fetchMock.mock.calls[0][1].body);
         expect(body.credential_identifier).toBe('auth-details-id-abc');
-        expect(body.format).toBeUndefined();
-        expect(body.credential_definition).toBeUndefined();
+        expect(body.credential_configuration_id).toBeUndefined();
+        expect(body.proofs).toEqual({ jwt: ['eyJ.proof.sig'] });
     });
 
-    it('throws when neither credentialIdentifier nor format is supplied', async () => {
+    it('throws when neither credentialIdentifier nor credentialConfigurationId is supplied', async () => {
         await expect(
             requestCredential({
                 credentialEndpoint: 'https://issuer.example.com/credential',
@@ -71,20 +117,18 @@ describe('requestCredential', () => {
             })
         ).rejects.toMatchObject({
             code: 'credential_request_failed',
-            message: expect.stringContaining('credentialIdentifier'),
+            message: expect.stringContaining('credentialConfigurationId'),
         });
     });
 
     it('uses the supplied token_type verbatim in the Authorization header', async () => {
-        const fetchMock = jest
-            .fn()
-            .mockResolvedValue(mockResponse({ credential: 'eyJ.vc.jwt' }));
+        const fetchMock = jest.fn().mockResolvedValue(mockResponse({ credential: 'eyJ.vc.jwt' }));
 
         await requestCredential({
             credentialEndpoint: 'https://issuer.example.com/credential',
             accessToken: 'token-abc',
             tokenType: 'DPoP',
-            format: 'jwt_vc_json',
+            credentialConfigurationId: 'UniversityDegree_jwt_vc_json',
             proofJwt: 'eyJ.proof.sig',
             fetchImpl: fetchMock as unknown as typeof fetch,
         });
@@ -92,39 +136,21 @@ describe('requestCredential', () => {
         expect(fetchMock.mock.calls[0][1].headers['Authorization']).toBe('DPoP token-abc');
     });
 
-    it('merges caller-supplied extra body fields', async () => {
+    it('surfaces OAuth error body as credential_request_failed', async () => {
         const fetchMock = jest
             .fn()
-            .mockResolvedValue(mockResponse({ credential: 'eyJ.vc.jwt' }));
-
-        await requestCredential({
-            credentialEndpoint: 'https://issuer.example.com/credential',
-            accessToken: 'token',
-            format: 'jwt_vc_json',
-            proofJwt: 'eyJ.proof.sig',
-            extra: { credential_definition: { type: ['VerifiableCredential', 'UniversityDegree'] } },
-            fetchImpl: fetchMock as unknown as typeof fetch,
-        });
-
-        const body = JSON.parse(fetchMock.mock.calls[0][1].body);
-        expect(body.credential_definition).toEqual({
-            type: ['VerifiableCredential', 'UniversityDegree'],
-        });
-    });
-
-    it('surfaces OAuth error body as credential_request_failed', async () => {
-        const fetchMock = jest.fn().mockResolvedValue(
-            mockResponse(
-                { error: 'invalid_proof', error_description: 'nonce mismatch' },
-                { ok: false, status: 400 }
-            )
-        );
+            .mockResolvedValue(
+                mockResponse(
+                    { error: 'invalid_proof', error_description: 'nonce mismatch' },
+                    { ok: false, status: 400 }
+                )
+            );
 
         await expect(
             requestCredential({
                 credentialEndpoint: 'https://issuer.example.com/credential',
                 accessToken: 'token',
-                format: 'jwt_vc_json',
+                credentialConfigurationId: 'UniversityDegree_jwt_vc_json',
                 proofJwt: 'eyJ.proof.sig',
                 fetchImpl: fetchMock as unknown as typeof fetch,
             })
@@ -142,7 +168,7 @@ describe('requestCredential', () => {
             requestCredential({
                 credentialEndpoint: 'https://issuer.example.com/credential',
                 accessToken: 'token',
-                format: 'jwt_vc_json',
+                credentialConfigurationId: 'UniversityDegree_jwt_vc_json',
                 proofJwt: 'eyJ.proof.sig',
                 fetchImpl: fetchMock as unknown as typeof fetch,
             })
@@ -162,10 +188,73 @@ describe('requestCredential', () => {
             requestCredential({
                 credentialEndpoint: 'https://issuer.example.com/credential',
                 accessToken: 'token',
-                format: 'jwt_vc_json',
+                credentialConfigurationId: 'UniversityDegree_jwt_vc_json',
                 proofJwt: 'eyJ.proof.sig',
                 fetchImpl: fetchMock as unknown as typeof fetch,
             })
         ).rejects.toMatchObject({ code: 'credential_response_invalid' });
+    });
+});
+
+describe('requestCredential di_vp proofs', () => {
+    const mockOk = () =>
+        ({
+            ok: true,
+            status: 200,
+            json: async () => ({ credential: 'vc' }),
+        } as unknown as Response);
+
+    it('sends proofs.di_vp when a di_vp proof is supplied', async () => {
+        const fetchMock = jest.fn().mockResolvedValue(mockOk());
+        const diVp = { type: ['VerifiablePresentation'], proof: { type: 'DataIntegrityProof' } };
+
+        await requestCredential({
+            credentialEndpoint: 'https://issuer.example.com/credential',
+            accessToken: 'token-abc',
+            credentialConfigurationId: 'OpenBadgeCredential',
+            proofDiVp: diVp,
+            fetchImpl: fetchMock as unknown as typeof fetch,
+        });
+
+        const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+        expect(body.proofs).toEqual({ di_vp: [diVp] });
+        expect(body.credential_configuration_id).toBe('OpenBadgeCredential');
+    });
+
+    it('rejects when both proofJwt and proofDiVp are supplied', async () => {
+        await expect(
+            requestCredential({
+                credentialEndpoint: 'https://issuer.example.com/credential',
+                accessToken: 'token-abc',
+                credentialConfigurationId: 'OpenBadgeCredential',
+                proofJwt: 'eyJ.proof.sig',
+                proofDiVp: {},
+                fetchImpl: jest.fn() as unknown as typeof fetch,
+            })
+        ).rejects.toThrow(/exactly one of/);
+    });
+
+    it('rejects when neither proof is supplied', async () => {
+        await expect(
+            requestCredential({
+                credentialEndpoint: 'https://issuer.example.com/credential',
+                accessToken: 'token-abc',
+                credentialConfigurationId: 'OpenBadgeCredential',
+                fetchImpl: jest.fn() as unknown as typeof fetch,
+            })
+        ).rejects.toThrow(/exactly one of/);
+    });
+
+    it('[draft-13-compat] rejects di_vp proofs on draft-13 issuers', async () => {
+        await expect(
+            requestCredential({
+                credentialEndpoint: 'https://issuer.example.com/credential',
+                accessToken: 'token-abc',
+                credentialConfigurationId: 'OpenBadgeCredential',
+                proofDiVp: {},
+                specVersion: 'draft-13',
+                fetchImpl: jest.fn() as unknown as typeof fetch,
+            })
+        ).rejects.toThrow(/only support the `jwt` proof type/);
     });
 });

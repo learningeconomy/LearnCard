@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { m } from '../../../../paraglide/messages.js';
+
 import { useModal } from 'learn-card-base';
 
 import X from '../../../svgs/X';
@@ -26,7 +28,7 @@ export const OnboardingHeader: React.FC<OnboardingHeaderProps> = ({ title, onClo
                 type="button"
                 onClick={handleClose}
                 className="flex-shrink-0 flex items-center justify-center w-[28px] h-[28px] rounded-full text-grayscale-700 hover:bg-grayscale-100"
-                aria-label="Close"
+                aria-label={m['common.close']()}
             >
                 <X className="text-grayscale-800 w-[16px] h-[16px]" strokeWidth="3" />
             </button>

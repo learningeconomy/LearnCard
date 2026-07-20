@@ -7,10 +7,18 @@
  */
 
 /**
+ * Which OID4VCI revision an issuer speaks, detected during metadata
+ * discovery. `final` is the ratified 1.0 spec (the plugin's target);
+ * `draft-13` is the earlier draft some issuers still serve. Used to pick
+ * the Credential Request wire shape. [draft-13-compat]
+ */
+export type SpecVersion = 'final' | 'draft-13';
+
+/**
  * Minimal Credential Issuer Metadata shape.
  *
- * Per Draft 13 §11.2, issuers publish this at
- * `${credential_issuer}/.well-known/openid-credential-issuer`.
+ * Per OID4VCI 1.0 §12.2, issuers publish this at the well-known endpoint
+ * derived from the Credential Issuer Identifier.
  */
 export interface CredentialIssuerMetadata {
     /** MUST match the `credential_issuer` from the offer. */
@@ -135,6 +143,60 @@ export interface ProofJwtSigner {
      */
     sign: (header: Record<string, unknown>, payload: Record<string, unknown>) => Promise<string>;
 }
+
+/**
+ * Key proof types the wallet can present in a Credential Request
+ * (OID4VCI 1.0 §8.2.1). `jwt` is the historical default; `di_vp` is a
+ * W3C Verifiable Presentation secured with a Data Integrity proof,
+ * required by issuers implementing the VC Data Model profile
+ * (e.g. the `data-integrity-cryptosuites` additive profile).
+ */
+export type KeyProofType = 'jwt' | 'di_vp';
+
+/**
+ * Result of matching a credential configuration's
+ * `proof_types_supported` against the wallet's capabilities.
+ */
+export interface KeyProofSelection {
+    proofType: KeyProofType;
+    /**
+     * For `di_vp`: cryptosuite to sign the VP with, chosen from the
+     * issuer's `proof_signing_alg_values_supported`. Undefined means
+     * "use the signer's default".
+     */
+    cryptosuite?: string;
+}
+
+/**
+ * Signer capable of producing a `di_vp` key proof: a W3C Verifiable
+ * Presentation carrying a Data Integrity proof with
+ * `proofPurpose: authentication`, `domain` bound to the Credential
+ * Issuer Identifier, and `challenge` bound to the issuer `c_nonce`.
+ *
+ * The plugin wires this to `learnCard.invoke.issuePresentation`; hosts
+ * with external key backends can supply their own implementation.
+ */
+export interface DiVpProofSigner {
+    /** Holder DID placed on the unsigned VP. */
+    holder: string;
+    /**
+     * Sign the unsigned VP with a Data Integrity proof. Implementations
+     * MUST set `proofPurpose: 'authentication'` and bind the supplied
+     * `domain` / `challenge`.
+     */
+    signPresentation: (
+        unsignedVp: Record<string, unknown>,
+        options: { domain: string; challenge?: string; cryptosuite?: string }
+    ) => Promise<Record<string, unknown>>;
+}
+
+/**
+ * A single key proof ready to be embedded in a Credential Request's
+ * `proofs` object — exactly one variant per request.
+ */
+export type CredentialRequestKeyProof =
+    | { proofType: 'jwt'; jwt: string }
+    | { proofType: 'di_vp'; diVp: Record<string, unknown> };
 
 /** Options for accepting a credential offer via the pre-authorized code grant. */
 export interface AcceptCredentialOfferOptions {

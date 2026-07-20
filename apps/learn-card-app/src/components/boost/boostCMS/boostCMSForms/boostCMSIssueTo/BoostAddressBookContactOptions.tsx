@@ -41,6 +41,7 @@ import { useGetCurrentLCNUser } from 'learn-card-base';
 import { BoostUserTypeEnum } from 'learn-card-base';
 import { LCNProfile } from '@learncard/types';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
+import * as m from '../../../../../paraglide/messages.js';
 
 type BoostAddressBookContactOptionsProps = {
     state: BoostCMSState;
@@ -196,12 +197,12 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
             await Clipboard.write({
                 string: `${getAppBaseUrl()}/connect?did=${walletDid}`,
             });
-            presentToast('Contact link copied to clipboard', {
+            presentToast(m['toasts.boost.contactLinkCopied'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Success,
             });
         } catch (err) {
-            presentToast('Unable to copy Contact link to clipboard', {
+            presentToast(m['toasts.boost.contactLinkCopyFailed'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -211,7 +212,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
     const handleShare = async () => {
         if (Capacitor.isNativePlatform()) {
             await Share.share({
-                title: 'Add contact',
+                title: m['boost.cms.issueTo.addContact'](),
                 text: '',
                 url: `${getAppBaseUrl()}/connect?did=${walletDid}`,
                 dialogTitle: '',
@@ -321,7 +322,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                                 primaryColor ? `bg-${primaryColor}` : 'bg-grayscale-900'
                             } text-xl text-white flex items-center justify-center font-semibold py-[5px] rounded-full w-full border-solid border-white border-[2px] px-[18px] shadow-soft-bottom`}
                         >
-                            Boost Myself
+                            {m['boost.cms.issueTo.boostMyself']()}
                             <GearPlusIcon className="ml-1 text-grayscale-800" />
                         </button>
                     </IonRow>
@@ -336,7 +337,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                                 primaryColor ? `bg-${primaryColor}` : 'bg-grayscale-900'
                             } text-xl text-white flex items-center justify-center font-semibold py-[5px] rounded-full w-full border-solid border-white border-[2px] px-[18px] shadow-soft-bottom`}
                         >
-                            Boost Others
+                            {m['boost.cms.issueTo.boostOthers']()}
                             <GearPlusIcon className="ml-1 text-grayscale-800" />
                         </button>
                     </IonRow>
@@ -377,7 +378,8 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                                 }}
                                 className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg modal-btn-mobile normal tracking-wide"
                             >
-                                <Camera className="ml-[5px] h-[30px] w-[30px] mr-2" /> Scan Code
+                                <Camera className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                                {m['contacts.scanCode']()}
                             </button>
                         </IonCol>
                     )}
@@ -394,7 +396,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                             onClick={() => handleCloseModal()}
                             className="text-grayscale-900 text-center text-sm"
                         >
-                            Cancel
+                            {m['common.cancel']()}
                         </button>
                     </div>
                 </IonGrid>
@@ -429,7 +431,8 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                         onClick={() => handleAddYoself()}
                         className="flex items-center justify-center bg-indigo-500 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal"
                     >
-                        <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" /> Boost Myself
+                        <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                        {m['boost.cms.issueTo.boostMyself']()}
                     </button>
                 </IonRow>
                 <IonRow className="w-full flex items-center justify-center mt-4">
@@ -438,7 +441,8 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                         onClick={() => handleAddSomeoneElse()}
                         className="flex items-center justify-center bg-indigo-500 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal"
                     >
-                        <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" /> Boost Others
+                        <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                        {m['boost.cms.issueTo.boostOthers']()}
                     </button>
                 </IonRow>
                 {/* <IonCol className="w-full flex items-center justify-center">
@@ -474,7 +478,8 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                             onClick={handleScan}
                             className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg modal-btn-mobile normal tracking-wide"
                         >
-                            <Camera className="ml-[5px] h-[30px] w-[30px] mr-2" /> Scan Code
+                            <Camera className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                            {m['contacts.scanCode']()}
                         </button>
                     </IonCol>
                 )}
@@ -491,7 +496,7 @@ const BoostAddressBookContactOptions: React.FC<BoostAddressBookContactOptionsPro
                         onClick={() => closeModal()}
                         className="text-grayscale-900 text-center text-sm"
                     >
-                        Cancel
+                        {m['common.cancel']()}
                     </button>
                 </div>
             </IonGrid>

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
+import { m } from '../../../paraglide/messages.js';
+
 import { ChatBotBubbleAnswer, ChatBotBubbleQuestion } from './helpers/ChatBotBubble';
 import LearnCardAiChatBot from '../LearnCardAiChatBot/LearnCardAiChatBot';
 import StartAiSessionButton from './helpers/StartAiSessionButton';
@@ -228,10 +230,15 @@ export const NewAiSessionChatBotContainer: React.FC<{
 
     return (
         <div
-            className={`relative w-full flex flex-col pt-[80px] ${isDesktop ? 'max-w-[800px]' : ''}`}
+            className={`relative w-full flex flex-col pt-[80px] ${
+                isDesktop ? 'max-w-[800px]' : ''
+            }`}
             style={{ paddingTop: 'calc(80px + env(safe-area-inset-top))' }}
         >
-            <OnboardingHeader title="New Topic" onClose={isDesktop ? handleStartOver : undefined} />
+            <OnboardingHeader
+                title={m['aiSession.newTopic']()}
+                onClose={isDesktop ? handleStartOver : undefined}
+            />
             {showLoader && (
                 <AiSessionLoader chatBotQA={chatBotQA} overrideText={sessionLoadingText} />
             )}

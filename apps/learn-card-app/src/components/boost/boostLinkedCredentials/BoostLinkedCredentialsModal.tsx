@@ -26,6 +26,8 @@ import { BoostCategoryOptionsEnum, boostCategoryMetadata } from 'learn-card-base
 import { VC, VerificationItem } from '@learncard/types';
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import { Capacitor } from '@capacitor/core';
+import * as m from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
 
 export const BoostLinkedCredentialsModal: React.FC<{
     credential: VC;
@@ -223,8 +225,11 @@ export const BoostLinkedCredentialsModal: React.FC<{
                     <div className="w-full flex items-center justify-center z-10 mt-4">
                         <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t-[1px] border-solid border-grayscale-200 pt-2">
                             <p className="text-grayscale-800 text-base font-normal font-notoSans">
-                                No results found for{' '}
-                                <span className="text-black italic">{search}</span>
+                                <TransP
+                                    m={m['common.searchResults.noResultsFor']}
+                                    values={{ query: search }}
+                                    components={[<span className="text-black italic" />]}
+                                />
                             </p>
                         </div>
                     </div>

@@ -6,6 +6,8 @@
 import React from 'react';
 import { Trophy } from 'lucide-react';
 
+import * as m from '../../../../../../paraglide/messages.js';
+
 import { OBv3CredentialTemplate, AchievementTemplate } from '../types';
 import { CollapsibleSection } from '../FieldEditor';
 import { FieldValidationError } from '../utils';
@@ -42,7 +44,7 @@ export const AchievementSection: React.FC<AchievementSectionProps> = ({
 
     return (
         <CollapsibleSection
-            title="Achievement"
+            title={m['developerPortal.credentialBuilder.sectionTitles.achievement']()}
             icon={<Trophy className="w-4 h-4 text-amber-600" />}
             isExpanded={isExpanded}
             onToggle={onToggle}

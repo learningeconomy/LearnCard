@@ -46,6 +46,7 @@ import {
 } from 'learn-card-base/helpers/credentialHelpers';
 
 import { useTheme } from '../../../theme/hooks/useTheme';
+import * as m from '../../../paraglide/messages.js';
 
 type BoostManagedIDCardProps = {
     boost: Boost;
@@ -309,7 +310,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
             customBody = (
                 <div className="w-full text-center">
                     <p className="text-grayscale-600 font-semibold text-center text-[14px] leading-none">
-                        No Boosts Yet
+                        {m['skills.boostsBySkill.noBoosts']()}
                     </p>
                     <button
                         className={`text-${primaryColor}-600 font-semibold text-base leading-snug`}

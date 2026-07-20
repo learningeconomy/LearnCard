@@ -5,6 +5,7 @@ import { useModal } from 'learn-card-base';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import SkillDetails from './SkillDetails';
 import { IonFooter } from '@ionic/react';
+import * as m from '../../paraglide/messages.js';
 
 import { VC } from '@learncard/types';
 
@@ -46,7 +47,7 @@ const LegacySkillInfoModal: React.FC<LegacySkillInfoModalProps> = ({
                                     version="filled"
                                 />
                                 <p className="text-[12px] text-grayscale-800 font-poppins font-[600] uppercase">
-                                    Skill
+                                    {m['skills.skill']()}
                                 </p>
                             </div>
                         </div>
@@ -71,7 +72,7 @@ const LegacySkillInfoModal: React.FC<LegacySkillInfoModalProps> = ({
                             onClick={closeModal}
                             className="p-[11px] bg-white rounded-full text-grayscale-900 shadow-button-bottom flex-1 font-poppins text-[17px]"
                         >
-                            Close
+                            {m['common.close']()}
                         </button>
                     </div>
                 </IonFooter>

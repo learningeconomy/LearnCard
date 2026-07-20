@@ -243,7 +243,7 @@ const adaptLdpVc = (credential: unknown): DcqlW3cVcCredential | undefined => {
 
     return {
         credential_format: 'ldp_vc',
-        type: types,
+        type: withExpandedTypeIris(types),
         claims: vcObj as DcqlW3cVcCredential['claims'],
         cryptographic_holder_binding: true,
     };
@@ -255,6 +255,31 @@ const extractTypes = (value: unknown): string[] => {
     }
     if (typeof value === 'string') return [value];
     return [];
+};
+
+/**
+ * OID4VP 1.0 Appendix B.1 requires `dcql_query` `meta.type_values` for
+ * `ldp_vc` to carry *fully expanded* JSON-LD type IRIs (e.g.
+ * `https://www.w3.org/2018/credentials#VerifiableCredential`), while
+ * held credentials store the compact terms from their `@context`. The
+ * dcql library matches by exact string, so we augment the credential's
+ * type list with the expanded IRIs of well-known vocabularies. Compact
+ * terms are kept so verifiers sending unexpanded values keep matching.
+ */
+const WELL_KNOWN_TYPE_IRIS: Record<string, string> = {
+    VerifiableCredential: 'https://www.w3.org/2018/credentials#VerifiableCredential',
+    VerifiablePresentation: 'https://www.w3.org/2018/credentials#VerifiablePresentation',
+    OpenBadgeCredential: 'https://purl.imsglobal.org/spec/vc/ob/vocab.html#OpenBadgeCredential',
+    AchievementCredential: 'https://purl.imsglobal.org/spec/vc/ob/vocab.html#AchievementCredential',
+    ClrCredential: 'https://purl.imsglobal.org/spec/vc/clr/vocab.html#ClrCredential',
+};
+
+const withExpandedTypeIris = (types: string[]): string[] => {
+    const expanded = types
+        .map(t => WELL_KNOWN_TYPE_IRIS[t])
+        .filter((iri): iri is string => Boolean(iri) && !types.includes(iri));
+
+    return expanded.length > 0 ? [...types, ...expanded] : types;
 };
 
 /**

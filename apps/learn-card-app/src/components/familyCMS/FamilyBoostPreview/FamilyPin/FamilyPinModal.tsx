@@ -5,6 +5,7 @@ import Backspace from '../../../svgs/Backspace';
 import { IonCol, IonRow } from '@ionic/react';
 import { FamilyPinViewModeEnum } from './FamilyPinWrapper';
 import ForgotPinConfirmation from './ForgotPinConfirmation';
+import { m } from '../../../../paraglide/messages.js';
 
 import { useModal } from 'learn-card-base';
 
@@ -80,25 +81,29 @@ export const FamilyPinModal: React.FC<FamilyPinModalProps> = ({
         );
     };
 
-    let title = 'Create Your Pin';
-    let subText = `for ${currentUser?.name}`;
-    let actionButtonText = 'Set PIN';
+    let title = m['family.pinModal.createYourPin']();
+    let subText = m['family.pinModal.forUser']({ name: currentUser?.name ?? '' });
+    let actionButtonText = m['family.pinModal.setPinAction']();
     let showForgotPin = false;
 
     if (viewMode === FamilyPinViewModeEnum.verify) {
-        title = 'Verify PIN';
-        subText = 'Please re-enter your PIN to confirm.';
-        actionButtonText = isVerifying ? 'Verifying...' : 'Verify PIN';
+        title = m['family.pinModal.verifyTitle']();
+        subText = m['family.pinModal.verifySubtext']();
+        actionButtonText = isVerifying
+            ? m['family.pinModal.verifying']()
+            : m['family.pinModal.verifyTitle']();
     } else if (viewMode === FamilyPinViewModeEnum.edit && !skipVerification) {
-        title = 'Enter PIN';
-        subText = 'Please enter your current PIN to proceed';
-        actionButtonText = isVerifying ? 'Verifying...' : 'Verify PIN';
+        title = m['family.pinModal.enterTitle']();
+        subText = m['family.pinModal.enterSubtext']();
+        actionButtonText = isVerifying
+            ? m['family.pinModal.verifying']()
+            : m['family.pinModal.verifyTitle']();
         showForgotPin = true;
     } else if (
         (viewMode === FamilyPinViewModeEnum.create && !skipVerification) ||
         (viewMode === FamilyPinViewModeEnum.create && skipVerification)
     ) {
-        title = 'Update Your Pin';
+        title = m['family.pinModal.updateYourPin']();
 
         if (titleOverride) title = titleOverride;
     }
@@ -131,7 +136,7 @@ export const FamilyPinModal: React.FC<FamilyPinModalProps> = ({
                         onClick={handleCloseModal}
                         className="text-grayscale-900 bg-white w-full flex flex-1 items-center justify-center py-2 text-lg font-notoSans h-full rounded-[20px] mb-[40px]"
                     >
-                        {closeButtonText || 'Close'}
+                        {closeButtonText || m['common.close']()}
                     </button>
                 </IonCol>
             </IonRow>
@@ -232,7 +237,7 @@ export const FamilyPinModal: React.FC<FamilyPinModalProps> = ({
                                 onClick={handleForgotPin}
                                 className="text-lightBlue-500 font-poppins text-[17px] font-semibold forgot-pin-btn mb-[-5px]"
                             >
-                                Forgot Pin
+                                {m['family.pinModal.forgotShort']()}
                             </button>
                         </div>
                     )}

@@ -1,5 +1,7 @@
 import React from 'react';
 
+import * as m from '../../../paraglide/messages.js';
+
 const ResumePreviewEmptyPlaceholder: React.FC = () => {
     return (
         <div className="flex flex-col items-center justify-center h-full gap-3 text-grayscale-400 select-none">
@@ -13,9 +15,11 @@ const ResumePreviewEmptyPlaceholder: React.FC = () => {
                     />
                 </svg>
             </div>
-            <p className="text-sm font-medium">Your resume will appear here</p>
+            <p className="text-sm font-medium">
+                {m['passport.resumeBuilder.emptyPreview.title']()}
+            </p>
             <p className="text-xs text-center max-w-[200px]">
-                Fill in your details and select credentials from the panel
+                {m['passport.resumeBuilder.emptyPreview.subtitle']()}
             </p>
         </div>
     );

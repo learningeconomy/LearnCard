@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { formatLocaleDate } from '../../i18n/formatters';
 
 import { Sparkles, Check, Hourglass, BookOpen, Target, ChevronRight, X } from 'lucide-react';
 
-import {
-    ModalTypes,
-    useModal,
-    useDeviceTypeByWidth,
-} from 'learn-card-base';
+import { ModalTypes, useModal, useDeviceTypeByWidth } from 'learn-card-base';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 
 import AiSessionAssessmentPreviewContainer from '../../components/ai-assessment/AiSessionAssessmentPreviewContainer';
@@ -94,16 +91,13 @@ const AiSessionCard: React.FC<AiSessionCardProps> = ({ record, isNew, index }) =
     const summaryInfo = (unwrapped as { summaryInfo?: SummaryInfo } | undefined)?.summaryInfo;
 
     const title =
-        summaryInfo?.title ||
-        record.credential?.name ||
-        record.boostName ||
-        'AI Session Summary';
+        summaryInfo?.title || record.credential?.name || record.boostName || 'AI Session Summary';
 
     const summaryText = summaryInfo?.summary;
     const learnedCount = summaryInfo?.learned?.length ?? 0;
     const skillsCount = summaryInfo?.skills?.length ?? 0;
 
-    const formattedDate = record.dateEarned.toLocaleDateString('en-US', {
+    const formattedDate = formatLocaleDate(record.dateEarned, {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
@@ -131,7 +125,11 @@ const AiSessionCard: React.FC<AiSessionCardProps> = ({ record, isNew, index }) =
                 hover:border-indigo-300 hover:shadow-md
                 transition-all duration-300 ease-out
                 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-1
-                ${isAnimating ? 'animate-slide-in-right ring-2 ring-indigo-400 ring-opacity-50' : ''}
+                ${
+                    isAnimating
+                        ? 'animate-slide-in-right ring-2 ring-indigo-400 ring-opacity-50'
+                        : ''
+                }
             `}
             style={{
                 animationDelay: isNew ? '0ms' : `${index * 50}ms`,

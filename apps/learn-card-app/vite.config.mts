@@ -3,13 +3,37 @@ import { execSync } from 'child_process';
 import { createRequire } from 'module';
 import { readdirSync, readFileSync, existsSync } from 'fs';
 
-import GlobalPolyfill from '@esbuild-plugins/node-globals-polyfill';
+import { NodeGlobalsPolyfillPlugin as GlobalPolyfill } from '@esbuild-plugins/node-globals-polyfill';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import svgr from 'vite-plugin-svgr';
 import stdlibbrowser from 'node-stdlib-browser';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { visualizer } from 'rollup-plugin-visualizer';
+import { paraglideVitePlugin } from '@inlang/paraglide-js';
+
+import { findDuplicateMessageImports } from './scripts/check-i18n-imports.mjs';
+import { paraglideMissingKeyOnWarn } from './paraglideOnWarn';
+
+/**
+ * Fail the build/dev start if any file imports paraglide/messages.js twice
+ * (declares `m` twice → runtime SyntaxError). See scripts/check-i18n-imports.mjs.
+ */
+const i18nImportGuard = () => ({
+    name: 'i18n-duplicate-import-guard',
+    buildStart() {
+        const offenders = findDuplicateMessageImports();
+        if (offenders.length) {
+            const detail = offenders
+                .map(o => `  ${o.file}\n${o.lines.map(l => `      ${l}`).join('\n')}`)
+                .join('\n');
+            this.error(
+                `Duplicate paraglide/messages.js import(s) — causes "Identifier 'm' has ` +
+                    `already been declared" at runtime:\n${detail}\n  Fix: keep ONE import per file.`
+            );
+        }
+    },
+});
 
 // CommonJS interop: readDefaultChannel.cjs is the shared SSOT for the Capgo
 // channel. It is intentionally reused by Vite config and CI helpers so we do
@@ -123,9 +147,14 @@ export default defineConfig(async ({ mode, command }) => {
 
     return {
         plugins: [
+            i18nImportGuard(),
             react(),
             svgr(),
             tsconfigPaths({ root: '../../' }),
+            paraglideVitePlugin({
+                project: './project.inlang',
+                outdir: './src/paraglide',
+            }),
             ...(process.env.ANALYZE
                 ? [
                       visualizer({
@@ -141,6 +170,7 @@ export default defineConfig(async ({ mode, command }) => {
             target: 'esnext',
             outDir: path.join(__dirname, 'build'),
             rollupOptions: {
+                onwarn: paraglideMissingKeyOnWarn,
                 output: {
                     manualChunks: {
                         // Core framework

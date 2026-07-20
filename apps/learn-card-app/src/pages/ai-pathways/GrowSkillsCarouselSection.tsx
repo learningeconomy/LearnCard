@@ -8,6 +8,8 @@ import SlimCaretRight from '../../components/svgs/SlimCaretRight';
 
 import 'swiper/css';
 
+import * as m from '../../paraglide/messages.js';
+
 type GrowSkillsCarouselSectionProps<T> = {
     title: ReactNode;
     items?: T[];
@@ -25,7 +27,7 @@ const GrowSkillsCarouselSection = <T,>({
     renderItem,
     getItemKey,
     onViewAll,
-    viewAllLabel = 'View All',
+    viewAllLabel = m['skills.search.viewAll'](),
     className = '',
     slideClassName = 'flex !h-auto overflow-visible',
 }: GrowSkillsCarouselSectionProps<T>) => {
@@ -81,7 +83,7 @@ const GrowSkillsCarouselSection = <T,>({
                             <div className="flex items-center gap-[6px]">
                                 <button
                                     type="button"
-                                    aria-label="Previous"
+                                    aria-label={m['skills.search.prev']()}
                                     disabled={atBeginning}
                                     className="flex h-[30px] w-[30px] items-center justify-center text-grayscale-900 transition-colors hover:text-grayscale-700 disabled:text-grayscale-400 disabled:cursor-not-allowed"
                                     onClick={() => swiperRef.current?.slidePrev()}
@@ -91,7 +93,7 @@ const GrowSkillsCarouselSection = <T,>({
 
                                 <button
                                     type="button"
-                                    aria-label="Next"
+                                    aria-label={m['skills.search.next']()}
                                     disabled={atEnd}
                                     className="flex h-[30px] w-[30px] items-center justify-center text-grayscale-900 transition-colors hover:text-grayscale-700 disabled:text-grayscale-400 disabled:cursor-not-allowed"
                                     onClick={() => swiperRef.current?.slideNext()}

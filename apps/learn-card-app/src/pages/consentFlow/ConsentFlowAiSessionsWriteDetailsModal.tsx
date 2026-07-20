@@ -15,6 +15,7 @@ import ConsentFlowWriteSharingItem from './ConsentFlowWriteSharingItem';
 
 import { getPrivacyAndDataInfo } from '../../helpers/contract.helpers';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
+import * as m from '../../paraglide/messages.js';
 
 type ConsentFlowAiSessionsWriteDetailsModalProps = {
     aiSessionCategories: {
@@ -62,7 +63,7 @@ const ConsentFlowAiSessionsWriteDetailsModal: React.FC<
                         >
                             <BlueMagicWand className={`h-[30px] w-[30px]`} />
                         </div>
-                        AI Sessions
+                        {m['consentFlow.aiSessions']()}
                     </h4>
                     <div className="flex flex-col gap-[5px]">
                         <p className="text-grayscale-600 text-[14px] font-notoSans">
@@ -105,7 +106,10 @@ const ConsentFlowAiSessionsWriteDetailsModal: React.FC<
                     </ul>
                 </div>
             </div>
-            <ConsentFlowFooter secondaryButtonText="Back" onSecondaryButtonClick={closeModal} />
+            <ConsentFlowFooter
+                secondaryButtonText={m['common.back']()}
+                onSecondaryButtonClick={closeModal}
+            />
         </div>
     );
 };

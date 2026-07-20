@@ -59,6 +59,11 @@
             "location": "Cambridge, MA, USA",
             "url": "https://digitalcredentials.mit.edu"
         },
+        "did:key:z6MkpTTKmRmcQfYRqjZs4uA1LactrSNB1vTCjBYMhG8E7u9Y": {
+            "name": "LER Interoperability Test Suite",
+            "location": "Cambridge, MA, USA",
+            "url": "https://ler-tests.prettygoodskills.com/"
+        },
         "did:key:z6MkpLDL3RoAoMRTwTgo3rs39ZwssfaPKtGdZw7AGRN7CK4W": {
             "name": "(Example) My University",
             "location": "Cambridge, MA, USA",

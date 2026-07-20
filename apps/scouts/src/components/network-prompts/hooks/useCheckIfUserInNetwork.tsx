@@ -6,8 +6,12 @@ export const useCheckIfUserInNetwork = () => {
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
 
     const checkIfUserInNetwork = () => {
-        if (!isNetworkUser && !isNetworkUserLoading) {
-            handlePresentJoinNetworkModal();
+        if (isNetworkUserLoading) {
+            return false;
+        }
+
+        if (!isNetworkUser) {
+            void handlePresentJoinNetworkModal({ forceOpen: true });
             return false;
         }
         return true;
