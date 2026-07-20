@@ -72,6 +72,41 @@ const ATTACHMENTS_CONTEXT = {
     },
 };
 
+type AttachmentTerm = keyof (typeof ATTACHMENTS_CONTEXT.attachments)['@context'];
+
+const ATTACHMENT_TERMS = Object.keys(
+    ATTACHMENTS_CONTEXT.attachments['@context']
+) as AttachmentTerm[];
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null;
+
+const hasAttachmentsContext = (context: unknown): boolean => {
+    if (!isRecord(context) || !isRecord(context.attachments)) return false;
+
+    const attachments = context.attachments;
+    const terms = attachments['@context'];
+
+    if (!isRecord(terms)) return false;
+
+    return (
+        context.lcn === ATTACHMENTS_CONTEXT.lcn &&
+        context.xsd === ATTACHMENTS_CONTEXT.xsd &&
+        attachments['@id'] === ATTACHMENTS_CONTEXT.attachments['@id'] &&
+        attachments['@container'] === ATTACHMENTS_CONTEXT.attachments['@container'] &&
+        ATTACHMENT_TERMS.every(term => {
+            const mapping = terms[term];
+            const canonicalMapping = ATTACHMENTS_CONTEXT.attachments['@context'][term];
+
+            return (
+                isRecord(mapping) &&
+                mapping['@id'] === canonicalMapping['@id'] &&
+                mapping['@type'] === canonicalMapping['@type']
+            );
+        })
+    );
+};
+
 export const addCertificateAttachment = (vc: any, rawArtifactVc: any): any => {
     const artifact = rawArtifactVc?.rawArtifact;
     if (!artifact?.url || artifact?.type !== UploadTypesEnum.Certificate) return vc;
@@ -92,10 +127,13 @@ export const addCertificateAttachment = (vc: any, rawArtifactVc: any): any => {
         : vc?.['@context']
         ? [vc['@context']]
         : [];
+    const attachmentContexts = contexts.some(hasAttachmentsContext)
+        ? contexts
+        : [...contexts, ATTACHMENTS_CONTEXT];
 
     return {
         ...vc,
-        '@context': [...contexts, ATTACHMENTS_CONTEXT],
+        '@context': attachmentContexts,
         attachments: [
             attachment,
             ...existingAttachments.filter(

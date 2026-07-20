@@ -150,4 +150,71 @@ describe('addCertificateAttachment', () => {
         expect(serializedContext).toContain('https://docs.learncard.com/definitions#');
         expect(serializedContext).not.toContain('example.org');
     });
+
+    it('does not duplicate the attachment context when enriching a credential twice', () => {
+        const rawArtifactCredential = {
+            rawArtifact: {
+                type: UploadTypesEnum.Certificate,
+                fileName: 'certificate.pdf',
+                fileSize: '1 KB',
+                fileType: 'PDF',
+                url: 'https://cdn.example.com/certificate',
+            },
+        };
+        const credential = addCertificateAttachment(
+            { '@context': ['https://www.w3.org/2018/credentials/v1'] },
+            rawArtifactCredential
+        );
+        const enrichedAgain = addCertificateAttachment(credential, rawArtifactCredential);
+        const attachmentContexts = enrichedAgain['@context'].filter(
+            (context: unknown) =>
+                typeof context === 'object' &&
+                context !== null &&
+                'attachments' in context &&
+                typeof context.attachments === 'object' &&
+                context.attachments !== null &&
+                '@id' in context.attachments &&
+                context.attachments['@id'] === 'lcn:boostAttachments'
+        );
+
+        expect(attachmentContexts).toHaveLength(1);
+        expect(enrichedAgain.attachments).toHaveLength(1);
+    });
+
+    it('appends the canonical context when a matching attachment term is incomplete', () => {
+        const partialContext = {
+            lcn: 'https://docs.learncard.com/definitions#',
+            xsd: 'https://www.w3.org/2001/XMLSchema#',
+            attachments: {
+                '@id': 'lcn:boostAttachments',
+                '@container': '@set',
+                '@context': {},
+            },
+        };
+        const credential = addCertificateAttachment(
+            {
+                '@context': ['https://www.w3.org/2018/credentials/v1', partialContext],
+            },
+            {
+                rawArtifact: {
+                    type: UploadTypesEnum.Certificate,
+                    fileName: 'certificate.pdf',
+                    fileSize: '1 KB',
+                    fileType: 'PDF',
+                    url: 'https://cdn.example.com/certificate',
+                },
+            }
+        );
+        const canonicalContext = credential['@context'].at(-1);
+
+        expect(credential['@context']).toHaveLength(3);
+        expect(canonicalContext.attachments['@context'].title).toEqual({
+            '@id': 'lcn:attachmentTitle',
+            '@type': 'xsd:string',
+        });
+        expect(canonicalContext.attachments['@context'].fileType).toEqual({
+            '@id': 'lcn:attachmentFileType',
+            '@type': 'xsd:string',
+        });
+    });
 });
