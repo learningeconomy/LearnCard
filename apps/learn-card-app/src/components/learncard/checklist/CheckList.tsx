@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 
 import * as m from '../../../paraglide/messages.js';
 
@@ -9,7 +9,7 @@ import {
     ChecklistItem,
     UploadTypesEnum,
     checklistItems,
-    useGetCheckListStatus,
+    useGetChecklistCredentialCounts,
 } from 'learn-card-base';
 
 import CheckListItem from './CheckListItem';
@@ -19,15 +19,18 @@ export const CheckList: React.FC<{ activeChecklistStep?: ChecklistEnum }> = ({
     activeChecklistStep,
 }) => {
     const { newModal } = useModal();
-    const { checklistItemCounts } = useGetCheckListStatus();
+    const { data: checklistItemCounts } = useGetChecklistCredentialCounts();
 
-    const handleOpenChecklistManager = (checkListItem: ChecklistItem) => {
-        newModal(
-            <CheckListManagerContainer checkListItem={checkListItem} />,
-            { className: '!bg-transparent' },
-            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
-        );
-    };
+    const handleOpenChecklistManager = useCallback(
+        (checkListItem: ChecklistItem) => {
+            newModal(
+                <CheckListManagerContainer checkListItem={checkListItem} />,
+                { className: '!bg-transparent' },
+                { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+            );
+        },
+        [newModal]
+    );
 
     useEffect(() => {
         if (!activeChecklistStep) return;
@@ -36,7 +39,7 @@ export const CheckList: React.FC<{ activeChecklistStep?: ChecklistEnum }> = ({
         if (autoOpenItem) {
             handleOpenChecklistManager(autoOpenItem);
         }
-    }, [activeChecklistStep]);
+    }, [activeChecklistStep, handleOpenChecklistManager]);
 
     return (
         <div className="w-full bg-white items-center justify-center flex flex-col shadow-2xl p-5 mt-4 rounded-[20px]">
