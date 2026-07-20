@@ -666,13 +666,24 @@ describe('verifyAndDecodeRequestObject — unsigned JSON Request Objects', () =>
         );
     });
 
-    it('rejects unsigned request objects missing a nonce', async () => {
+    it('rejects unsigned request objects missing a nonce with missing_nonce', async () => {
         const { nonce: _omitted, ...withoutNonce } = unsignedRequest;
         const fetchImpl = mockFetch({ [requestUri]: { body: withoutNonce } });
 
         await expect(verifyAndDecodeRequestObject({ requestUri, fetchImpl })).rejects.toMatchObject(
-            { code: 'invalid_request_object' }
+            { code: 'missing_nonce', name: 'VpError' }
         );
+    });
+
+    it('rejects signed request objects missing a nonce with missing_nonce', async () => {
+        const key = await makeVerifierKey();
+        const { nonce: _omitted, ...withoutNonce } = baseClaims(key);
+        const jws = await signRequestObject(key, withoutNonce);
+
+        await expect(verifyAndDecodeRequestObject({ inlineJwt: jws })).rejects.toMatchObject({
+            code: 'missing_nonce',
+            name: 'VpError',
+        });
     });
 });
 

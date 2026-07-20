@@ -80,7 +80,8 @@ const OAUTH_AS_WELL_KNOWN = '/.well-known/oauth-authorization-server';
 const resolveProxyPublicBaseUrl = (req: IncomingMessage): string => {
     if (process.env.EUDI_PROXY_PUBLIC_BASE_URL) return process.env.EUDI_PROXY_PUBLIC_BASE_URL;
     const host = (req.headers.host ?? 'localhost:5173').toString();
-    const proto = (req.headers['x-forwarded-proto'] ?? 'http').toString();
+    const rawProto = (req.headers['x-forwarded-proto'] ?? 'http').toString();
+    const proto = rawProto === 'https' ? 'https' : 'http';
     return `${proto}://${host}${PROXY_PATH_PREFIX}`;
 };
 

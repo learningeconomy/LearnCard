@@ -877,7 +877,15 @@ const matchesDnsName = (pattern: string, host: string): boolean => {
 
 /** base64url(SHA-256(bytes)) — the x509_hash thumbprint form (§5.9.3). */
 const base64UrlSha256 = async (bytes: Uint8Array): Promise<string> => {
-    const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+    const c = (globalThis as { crypto?: { subtle?: SubtleCrypto } }).crypto;
+    if (!c?.subtle) {
+        throw new RequestObjectError(
+            'invalid_request_object',
+            'Web Crypto API not available to hash the x509 certificate for x509_hash verification'
+        );
+    }
+
+    const digest = new Uint8Array(await c.subtle.digest('SHA-256', bytes));
     let binary = '';
     for (let i = 0; i < digest.length; i++) binary += String.fromCharCode(digest[i]!);
     const b64 =
@@ -1158,11 +1166,15 @@ const buildRequestFromClaims = (
     // OID4VP 1.0 §5.2: `nonce` is REQUIRED. A signed Request Object without it
     // is rejected rather than accepted with an empty nonce (which would defeat
     // the replay binding of §14.1).
+    // VpError('missing_nonce') rather than RequestObjectError: this function
+    // serves both the signed-JWS and unsigned-JSON paths, and a missing nonce
+    // is a request-parameter violation (same as the URL-param parser), not a
+    // transport/signature failure.
     const nonce = asString(claims.nonce);
     if (!nonce) {
-        throw new RequestObjectError(
-            'invalid_request_object',
-            'Signed Request Object is missing the required `nonce` claim (OID4VP 1.0 §5.2)'
+        throw new VpError(
+            'missing_nonce',
+            'Request Object is missing the required `nonce` claim (OID4VP 1.0 §5.2)'
         );
     }
 
