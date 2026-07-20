@@ -4,7 +4,7 @@ import { IonSpinner } from '@ionic/react';
 
 import * as m from '../../../paraglide/messages.js';
 
-import { ModalTypes, QRCodeScannerStore, useDeviceTypeByWidth, useModal } from 'learn-card-base';
+import { ModalTypes, QRCodeScannerStore, useModal } from 'learn-card-base';
 
 import SlimCaretRight from '../../svgs/SlimCaretRight';
 
@@ -35,7 +35,6 @@ const IntakeOption: React.FC<IntakeOptionProps> = ({ title, description, onClick
 );
 
 export const CredentialIntakeOptions: React.FC = () => {
-    const { isDesktop } = useDeviceTypeByWidth();
     const { closeModal, newModal } = useModal();
     const canScanWithCamera = Capacitor.isNativePlatform();
 
@@ -78,7 +77,7 @@ export const CredentialIntakeOptions: React.FC = () => {
                         onClick={openCameraScanner}
                     />
                 )}
-                {isDesktop && (
+                {!canScanWithCamera && (
                     <IntakeOption
                         title={m['passport.buildMyLearnCard.intake.uploadTitle']()}
                         description={m['passport.buildMyLearnCard.intake.uploadDescription']()}
