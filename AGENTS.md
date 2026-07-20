@@ -581,10 +581,11 @@ A local-only "lens" that lets users explore a fully populated wallet without wri
 ### Invariants (do not break)
 
 -   **New features are demo-safe by default** — every wallet from `getBespokeLearnCard()` is wrapped; do NOT construct wallets that bypass it
+-   **Demo never alters the user's own identity** — name, avatar, profileId stay real; persona identity lives in the header pill. The demo is first-person ("your wallet, enriched"): subject DIDs are patched to the real user, and only record-derived attributes (professional title, goals, insight) are staged
 -   Demo data never touches LearnCloud/Neo4j; exit = clear one store namespace
 -   Demo session clears on logout (`handleAppLogout`) and profile switch (`switchProfile`)
 -   Credential list/count queryKeys include the active persona id for cache separation
--   A blocked write is a **conversion moment**, not an error: `MutationCache.onError` in `FullApp.tsx` + an `unhandledrejection` listener map `DemoModeError` to the `SampleWalletGateSheet` ("Switch to My Wallet" / "Keep Exploring"). Prefer pre-empting with `useDemoGate().guardDemoAction()` at high-traffic write actions
+-   A blocked write is a **conversion moment** only when user-initiated: `MutationCache.onError` in `FullApp.tsx` maps `DemoModeError` mutations to the `SampleWalletGateSheet` ("Switch to My Wallet" / "Keep Exploring"); the `unhandledrejection` listener **silences** background `DemoModeError`s (un-awaited rejections are background by definition). Background sync flows (`useSyncConsentFlow`, `usePendingContractSync`, backfills, AI insight refresh) skip explicitly in demo. Prefer pre-empting with `useDemoGate().guardDemoAction()` at high-traffic write actions
 -   `queueAiInsightCredentialRefresh` skips in demo mode — never derive real writes from demo data
 
 ## Self-Issued Credentials Pattern

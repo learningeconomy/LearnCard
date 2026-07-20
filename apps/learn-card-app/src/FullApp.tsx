@@ -51,6 +51,7 @@ import AuthCoordinatorProvider from './providers/AuthCoordinatorProvider';
 import localforage from 'localforage';
 import { useInitializeTheme } from './theme/hooks/useTheme';
 import SampleWalletGateSheet from './components/learncard/sample-wallet/SampleWalletGateSheet';
+import SampleWalletPill from './components/learncard/sample-wallet/SampleWalletPill';
 
 const log = getLogger('cache');
 
@@ -219,6 +220,7 @@ const FullApp: React.FC = () => {
                                         <div id="modal-mid-root"></div>
                                         <Toast />
                                         <SampleWalletGateSheet />
+                                        <SampleWalletPill />
                                         <SdkActivityIndicator />
                                         <NetworkListener />
                                         <AppUrlListener />

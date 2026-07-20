@@ -9,11 +9,17 @@ import { LCR } from 'learn-card-base/types/credential-records';
  */
 export const DEMO_URI_PREFIX = 'lc:demo:';
 
+export type DemoBoostEntry = {
+    boost: Record<string, unknown>;
+    childUris: string[];
+};
+
 export type DemoSessionPayload = {
     personaId: string;
     personaName: string;
     records: LCR[];
     vcs: Record<string, VC>;
+    boosts?: Record<string, DemoBoostEntry>;
 };
 
 /**
@@ -28,6 +34,7 @@ export const demoSessionStore = createStore('demoSessionStore')<{
     personaName: string | null;
     demoRecords: LCR[];
     demoVCs: Record<string, VC>;
+    demoBoosts: Record<string, DemoBoostEntry>;
     enteredAt: string | null;
 }>(
     {
@@ -35,16 +42,18 @@ export const demoSessionStore = createStore('demoSessionStore')<{
         personaName: null,
         demoRecords: [],
         demoVCs: {},
+        demoBoosts: {},
         enteredAt: null,
     },
     { persist: { name: 'demoSessionStore', enabled: true } }
 ).extendActions(set => ({
-    enterDemo: ({ personaId, personaName, records, vcs }: DemoSessionPayload) => {
+    enterDemo: ({ personaId, personaName, records, vcs, boosts }: DemoSessionPayload) => {
         set.state(state => {
             state.activePersonaId = personaId;
             state.personaName = personaName;
             state.demoRecords = records;
             state.demoVCs = vcs;
+            state.demoBoosts = boosts ?? {};
             state.enteredAt = new Date().toISOString();
         });
     },
@@ -55,6 +64,7 @@ export const demoSessionStore = createStore('demoSessionStore')<{
             state.personaName = null;
             state.demoRecords = [];
             state.demoVCs = {};
+            state.demoBoosts = {};
             state.enteredAt = null;
         });
     },
@@ -85,6 +95,22 @@ export const getDemoVCsForCategory = (category?: string): VC[] => {
     return getDemoRecordsForCategory(category)
         .map(record => vcs[record.uri])
         .filter(Boolean) as VC[];
+};
+
+/** Resolve a demo boost by uri (non-reactive). Returns undefined for non-demo uris. */
+export const getDemoBoost = (uri?: string): Record<string, unknown> | undefined => {
+    if (!uri || !uri.startsWith(DEMO_URI_PREFIX)) return undefined;
+
+    return demoSessionStore.get.demoBoosts()[uri]?.boost;
+};
+
+/** Child boosts of a demo boost uri (non-reactive). */
+export const getDemoBoostChildren = (uri: string): Record<string, unknown>[] => {
+    const boosts = demoSessionStore.get.demoBoosts();
+
+    return (boosts[uri]?.childUris ?? [])
+        .map(childUri => boosts[childUri]?.boost)
+        .filter(Boolean) as Record<string, unknown>[];
 };
 
 export default demoSessionStore;

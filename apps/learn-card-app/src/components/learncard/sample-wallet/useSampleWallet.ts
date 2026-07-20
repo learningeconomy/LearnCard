@@ -25,6 +25,8 @@ export const useSampleWallet = () => {
             queryClient.invalidateQueries({ queryKey: ['useAiInsightCredential'] }),
             queryClient.invalidateQueries({ queryKey: ['useExistingAiInsightCredential'] }),
             queryClient.invalidateQueries({ queryKey: ['useAiPathways'] }),
+            queryClient.invalidateQueries({ queryKey: ['useSyncConsentFlow'] }),
+            queryClient.invalidateQueries({ queryKey: ['useGetEnrichedTopicsList'] }),
         ]);
     };
 
@@ -42,13 +44,14 @@ export const useSampleWallet = () => {
             log.debug('sample-wallet.subject-did-fallback', error);
         }
 
-        const { records, vcs } = compileSamplePersona(persona, subjectDid);
+        const { records, vcs, boosts } = compileSamplePersona(persona, subjectDid);
 
         demoSessionStore.set.enterDemo({
             personaId: persona.id,
             personaName: persona.name,
             records,
             vcs,
+            boosts,
         });
 
         await refreshQueries();

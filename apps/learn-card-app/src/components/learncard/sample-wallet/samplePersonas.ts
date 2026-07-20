@@ -2,6 +2,7 @@ import type { VC } from '@learncard/types';
 
 import { CredentialCategoryEnum } from 'learn-card-base/types/boostAndCredentialMetadata';
 import { DEMO_URI_PREFIX } from 'learn-card-base/stores/demoSessionStore';
+import type { DemoBoostEntry } from 'learn-card-base/stores/demoSessionStore';
 import type { LCR } from 'learn-card-base/types/credential-records';
 
 const issuerLogo = (seed: string, backgroundColor: string) =>
@@ -27,9 +28,27 @@ export type SampleCredentialSeed = {
     description?: string;
 };
 
+export type SampleSkill = {
+    category: string;
+    skill: string;
+    subskills: string[];
+};
+
 export type SampleInsightArea = {
     title: string;
     summary: string;
+};
+
+export type SampleAiSessionSeed = {
+    id: string;
+    title: string;
+    completed: boolean;
+    daysAgo: number;
+};
+
+export type SampleAiTopicSeed = {
+    title: string;
+    sessions: SampleAiSessionSeed[];
 };
 
 export type SamplePathwaySeed = {
@@ -42,12 +61,17 @@ export type SamplePathwaySeed = {
 export type SampleStagedContent = {
     professionalTitle: string;
     goals: string[];
+    roleExperience: { years: number; months: number };
+    salary: { salary: string; salaryType: 'per_year' | 'per_hour' };
+    workLifeBalance: string;
+    jobStability: string;
     insight: {
         strongestArea: SampleInsightArea;
         weakestArea: SampleInsightArea;
         roomForGrowth: SampleInsightArea;
     };
     pathways: SamplePathwaySeed[];
+    aiTopic: SampleAiTopicSeed;
 };
 
 export type SamplePersona = {
@@ -58,6 +82,77 @@ export type SamplePersona = {
     recommendedForRoles: string[];
     credentials: SampleCredentialSeed[];
     staged: SampleStagedContent;
+};
+
+// Categories must be BoostCMSSKillsCategoryEnum values (durable, stem, digital,
+// business, social, creative, trade, athletic, medical) or Skills Hub grouping
+// renders them under unknown headers.
+const SEED_SKILLS: Record<string, SampleSkill[]> = {
+    'rising-graduate:bs-degree': [
+        {
+            category: 'stem',
+            skill: 'Computer Science',
+            subskills: ['Algorithms', 'Data Structures'],
+        },
+        { category: 'durable', skill: 'Problem Solving', subskills: ['Analytical Thinking'] },
+    ],
+    'rising-graduate:ml-course': [
+        { category: 'stem', skill: 'Machine Learning', subskills: ['Supervised Learning'] },
+        { category: 'digital', skill: 'Python', subskills: ['Pandas'] },
+    ],
+    'rising-graduate:hackathon-badge': [
+        { category: 'digital', skill: 'Web Development', subskills: ['React'] },
+        { category: 'durable', skill: 'Collaboration', subskills: ['Teamwork'] },
+    ],
+    'rising-graduate:teamwork-badge': [
+        { category: 'social', skill: 'Teamwork', subskills: ['Peer Support'] },
+    ],
+    'rising-graduate:summer-internship': [
+        { category: 'digital', skill: 'Software Engineering', subskills: ['Code Review', 'Git'] },
+    ],
+    'career-changer:pmp-cert': [
+        {
+            category: 'business',
+            skill: 'Project Management',
+            subskills: ['Risk Management', 'Scheduling'],
+        },
+    ],
+    'career-changer:aws-cert': [
+        { category: 'digital', skill: 'Cloud Computing', subskills: ['AWS', 'Cloud Architecture'] },
+    ],
+    'career-changer:ux-bootcamp': [
+        { category: 'creative', skill: 'UX Design', subskills: ['Wireframing', 'User Research'] },
+    ],
+    'career-changer:ops-manager': [
+        {
+            category: 'business',
+            skill: 'Operations Management',
+            subskills: ['Process Improvement'],
+        },
+        { category: 'durable', skill: 'Leadership', subskills: ['Decision Making'] },
+    ],
+    'career-changer:mentor-badge': [
+        { category: 'social', skill: 'Mentorship', subskills: ['Coaching'] },
+    ],
+    'educator:teaching-license': [
+        { category: 'durable', skill: 'Instruction', subskills: ['Lesson Planning'] },
+    ],
+    'educator:pd-literacy': [
+        { category: 'durable', skill: 'Literacy Instruction', subskills: ['Phonics'] },
+    ],
+    'educator:pd-sel': [
+        {
+            category: 'social',
+            skill: 'Social-Emotional Learning',
+            subskills: ['Empathy', 'Classroom Culture'],
+        },
+    ],
+    'educator:innovation-award': [
+        { category: 'creative', skill: 'Instructional Innovation', subskills: ['EdTech'] },
+    ],
+    'educator:mentor-teacher-badge': [
+        { category: 'social', skill: 'Mentorship', subskills: ['Peer Coaching'] },
+    ],
 };
 
 export const SAMPLE_PERSONAS: SamplePersona[] = [
@@ -142,6 +237,27 @@ export const SAMPLE_PERSONAS: SamplePersona[] = [
         staged: {
             professionalTitle: 'Computer Science Graduate',
             goals: ['Land a software engineering role', 'Build a standout project portfolio'],
+            roleExperience: { years: 1, months: 3 },
+            salary: { salary: '65000', salaryType: 'per_year' },
+            workLifeBalance: 'balanced',
+            jobStability: 'growth',
+            aiTopic: {
+                title: 'Ace the Technical Interview',
+                sessions: [
+                    {
+                        id: 'big-o-review',
+                        title: 'Big-O & Data Structures Review',
+                        completed: true,
+                        daysAgo: 5,
+                    },
+                    {
+                        id: 'mock-interview',
+                        title: 'Mock Interview: Arrays & Strings',
+                        completed: false,
+                        daysAgo: 2,
+                    },
+                ],
+            },
             insight: {
                 strongestArea: {
                     title: 'Software Engineering Foundations',
@@ -238,6 +354,22 @@ export const SAMPLE_PERSONAS: SamplePersona[] = [
         staged: {
             professionalTitle: 'Operations Manager',
             goals: ['Transition into technical project management', 'Earn a cloud certification'],
+            roleExperience: { years: 12, months: 0 },
+            salary: { salary: '95000', salaryType: 'per_year' },
+            workLifeBalance: 'balanced',
+            jobStability: 'stable',
+            aiTopic: {
+                title: 'Agile Foundations',
+                sessions: [
+                    { id: 'scrum-basics', title: 'Scrum Basics', completed: true, daysAgo: 6 },
+                    {
+                        id: 'sprint-planning',
+                        title: 'Sprint Planning Deep Dive',
+                        completed: false,
+                        daysAgo: 3,
+                    },
+                ],
+            },
             insight: {
                 strongestArea: {
                     title: 'Project Leadership',
@@ -334,6 +466,27 @@ export const SAMPLE_PERSONAS: SamplePersona[] = [
         staged: {
             professionalTitle: 'Middle School Teacher',
             goals: ['Become an instructional coach', 'Deepen social-emotional learning expertise'],
+            roleExperience: { years: 8, months: 0 },
+            salary: { salary: '62000', salaryType: 'per_year' },
+            workLifeBalance: 'important',
+            jobStability: 'stable',
+            aiTopic: {
+                title: 'Data-Driven Instruction',
+                sessions: [
+                    {
+                        id: 'assessment-data',
+                        title: 'Reading Assessment Data',
+                        completed: true,
+                        daysAgo: 7,
+                    },
+                    {
+                        id: 'exit-tickets',
+                        title: 'Designing Exit Tickets',
+                        completed: false,
+                        daysAgo: 2,
+                    },
+                ],
+            },
             insight: {
                 strongestArea: {
                     title: 'Instructional Design',
@@ -395,8 +548,10 @@ const sampleProof = (created: string) => ({
 const seedToVC = (persona: SamplePersona, seed: SampleCredentialSeed, subjectDid: string): VC => {
     const uri = `${DEMO_URI_PREFIX}${persona.id}:${seed.id}`;
     const issuedAt = daysAgoIso(seed.daysAgo);
+    const skills = SEED_SKILLS[`${persona.id}:${seed.id}`];
 
     return {
+        ...(skills && { skills }),
         '@context': [
             'https://www.w3.org/2018/credentials/v1',
             'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
@@ -431,6 +586,7 @@ const seedToVC = (persona: SamplePersona, seed: SampleCredentialSeed, subjectDid
 export type CompiledSamplePersona = {
     records: LCR[];
     vcs: Record<string, VC>;
+    boosts: Record<string, DemoBoostEntry>;
 };
 
 const verifiableDataVC = (uri: string, key: string, data: unknown, subjectDid: string): VC => {
@@ -469,7 +625,96 @@ const compileVerifiableData = (
             title: `VerifiableData: ${key}`,
             verifiableData: data,
             issuanceDate: daysAgoIso(1),
+            __v: 1,
         } as unknown as LCR,
+    };
+};
+
+const compileAiTopic = (
+    persona: SamplePersona,
+    subjectDid: string,
+    records: LCR[],
+    vcs: Record<string, VC>,
+    boosts: Record<string, DemoBoostEntry>
+): void => {
+    const { aiTopic } = persona.staged;
+    const topicBoostUri = `${DEMO_URI_PREFIX}${persona.id}:boost:ai-topic`;
+    const topicUri = `${DEMO_URI_PREFIX}${persona.id}:ai-topic`;
+    const topicIssuedAt = daysAgoIso(8);
+
+    vcs[topicUri] = {
+        '@context': ['https://www.w3.org/2018/credentials/v1'],
+        id: topicUri,
+        type: ['VerifiableCredential'],
+        issuer: SAMPLE_ISSUER_DID,
+        issuanceDate: topicIssuedAt,
+        proof: sampleProof(topicIssuedAt),
+        name: aiTopic.title,
+        credentialSubject: { id: subjectDid },
+        boostId: topicBoostUri,
+        boostCredential: { topicInfo: { title: aiTopic.title } },
+    } as unknown as VC;
+
+    records.push({
+        id: topicUri,
+        uri: topicUri,
+        category: CredentialCategoryEnum.aiTopic,
+        title: aiTopic.title,
+        boostUri: topicBoostUri,
+        date: topicIssuedAt,
+        __v: 1,
+    } as unknown as LCR);
+
+    const sessionBoostUris = aiTopic.sessions.map(session => {
+        const sessionBoostUri = `${DEMO_URI_PREFIX}${persona.id}:boost:ai-session:${session.id}`;
+        const sessionUri = `${DEMO_URI_PREFIX}${persona.id}:ai-session:${session.id}`;
+        const sessionIssuedAt = daysAgoIso(session.daysAgo);
+
+        vcs[sessionUri] = {
+            '@context': ['https://www.w3.org/2018/credentials/v1'],
+            id: sessionUri,
+            type: ['VerifiableCredential'],
+            issuer: SAMPLE_ISSUER_DID,
+            issuanceDate: sessionIssuedAt,
+            proof: sampleProof(sessionIssuedAt),
+            name: session.title,
+            credentialSubject: { id: subjectDid },
+            boostId: sessionBoostUri,
+            completed: session.completed,
+            boostCredential: { summaryInfo: { title: session.title } },
+        } as unknown as VC;
+
+        records.push({
+            id: sessionUri,
+            uri: sessionUri,
+            category: CredentialCategoryEnum.aiSummary,
+            title: session.title,
+            boostUri: sessionBoostUri,
+            date: sessionIssuedAt,
+            __v: 1,
+        } as unknown as LCR);
+
+        boosts[sessionBoostUri] = {
+            boost: {
+                uri: sessionBoostUri,
+                name: session.title,
+                category: CredentialCategoryEnum.aiSummary,
+                status: 'LIVE',
+            },
+            childUris: [],
+        };
+
+        return sessionBoostUri;
+    });
+
+    boosts[topicBoostUri] = {
+        boost: {
+            uri: topicBoostUri,
+            name: aiTopic.title,
+            category: CredentialCategoryEnum.aiTopic,
+            status: 'LIVE',
+        },
+        childUris: sessionBoostUris,
     };
 };
 
@@ -477,7 +722,8 @@ const compileStagedContent = (
     persona: SamplePersona,
     subjectDid: string,
     records: LCR[],
-    vcs: Record<string, VC>
+    vcs: Record<string, VC>,
+    boosts: Record<string, DemoBoostEntry>
 ): void => {
     const { staged } = persona;
 
@@ -550,6 +796,26 @@ const compileStagedContent = (
     );
     records.push(title.record);
     vcs[title.uri] = title.vc;
+
+    const workHistoryUris = persona.credentials
+        .filter(seed => seed.category === CredentialCategoryEnum.workHistory)
+        .map(seed => `${DEMO_URI_PREFIX}${persona.id}:${seed.id}`);
+
+    const extraProfileData: [string, unknown][] = [
+        ['skill-profile-role-experience', { lifetimeExperience: staged.roleExperience }],
+        ['skill-profile-work-history', { selectedCredentialUris: workHistoryUris }],
+        ['skill-profile-salary', staged.salary],
+        ['skill-profile-work-life-balance', { workLifeBalance: staged.workLifeBalance }],
+        ['skill-profile-job-stability', { jobStability: staged.jobStability }],
+    ];
+
+    extraProfileData.forEach(([key, data]) => {
+        const entry = compileVerifiableData(persona, key, data, subjectDid);
+        records.push(entry.record);
+        vcs[entry.uri] = entry.vc;
+    });
+
+    compileAiTopic(persona, subjectDid, records, vcs, boosts);
 };
 
 export const compileSamplePersona = (
@@ -558,6 +824,7 @@ export const compileSamplePersona = (
 ): CompiledSamplePersona => {
     const records: LCR[] = [];
     const vcs: Record<string, VC> = {};
+    const boosts: Record<string, DemoBoostEntry> = {};
 
     persona.credentials.forEach(seed => {
         const uri = `${DEMO_URI_PREFIX}${persona.id}:${seed.id}`;
@@ -572,10 +839,13 @@ export const compileSamplePersona = (
             imgUrl: seed.achievementImage,
             from: seed.issuerName,
             date: daysAgoIso(seed.daysAgo),
+            // Marks the record as already-migrated so useBackfillBoostUris
+            // never tries to index.update demo records (a blocked write).
+            __v: 1,
         } as LCR);
     });
 
-    compileStagedContent(persona, subjectDid, records, vcs);
+    compileStagedContent(persona, subjectDid, records, vcs, boosts);
 
-    return { records, vcs };
+    return { records, vcs, boosts };
 };

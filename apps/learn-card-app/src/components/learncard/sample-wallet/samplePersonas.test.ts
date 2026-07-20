@@ -17,7 +17,7 @@ describe('samplePersonas', () => {
     describe.each(SAMPLE_PERSONAS.map(persona => [persona.id, persona] as const))(
         'compileSamplePersona(%s)',
         (_id, persona) => {
-            const { records, vcs } = compileSamplePersona(persona, SUBJECT_DID);
+            const { records, vcs, boosts } = compileSamplePersona(persona, SUBJECT_DID);
 
             it('uses lc:demo: uris everywhere and resolves every record uri', () => {
                 records.forEach(record => {
@@ -62,6 +62,77 @@ describe('samplePersonas', () => {
                         learningPathway?: { step?: { title?: string } };
                     };
                     expect(pathwayVC?.learningPathway?.step?.title).toBeTruthy();
+                });
+            });
+
+            it('attaches Skills Hub-compatible skills to at least one credential', () => {
+                const skillCarriers = Object.values(vcs).filter(vc => {
+                    const skills = (vc as { skills?: { category: string }[] }).skills;
+                    return Boolean(skills && skills.length > 0);
+                });
+
+                expect(skillCarriers.length).toBeGreaterThan(0);
+                skillCarriers.forEach(vc => {
+                    (vc as { skills: { category: string; skill: string }[] }).skills.forEach(
+                        entry => {
+                            expect(entry.category).toBeTruthy();
+                            expect(entry.skill).toBeTruthy();
+                        }
+                    );
+                });
+            });
+
+            it('stages an AI topic with linked session boosts', () => {
+                const topicRecord = records.find(
+                    record => record.category === 'AI Topic'
+                ) as (typeof records)[number] & { boostUri?: string };
+
+                expect(topicRecord?.boostUri).toBeTruthy();
+
+                const topicVC = vcs[topicRecord!.uri] as {
+                    boostId?: string;
+                    boostCredential?: { topicInfo?: { title?: string } };
+                };
+                expect(topicVC.boostCredential?.topicInfo?.title).toBe(
+                    persona.staged.aiTopic.title
+                );
+
+                const topicBoost = boosts[topicVC.boostId!];
+                expect(topicBoost?.childUris).toHaveLength(persona.staged.aiTopic.sessions.length);
+
+                topicBoost.childUris.forEach(sessionBoostUri => {
+                    expect(boosts[sessionBoostUri]).toBeDefined();
+
+                    const sessionRecord = records.find(
+                        record => (record as { boostUri?: string }).boostUri === sessionBoostUri
+                    );
+                    expect(sessionRecord?.category).toBe('AI Summary');
+
+                    const sessionVC = vcs[sessionRecord!.uri] as {
+                        boostCredential?: { summaryInfo?: { title?: string } };
+                    };
+                    expect(sessionVC.boostCredential?.summaryInfo?.title).toBeTruthy();
+                });
+            });
+
+            it('stages all skill-profile keys for profile completion', () => {
+                const expectedKeys = [
+                    'skill-profile-goals',
+                    'skill-profile-professional-title',
+                    'skill-profile-role-experience',
+                    'skill-profile-work-history',
+                    'skill-profile-salary',
+                    'skill-profile-work-life-balance',
+                    'skill-profile-job-stability',
+                ];
+
+                expectedKeys.forEach(key => {
+                    const record = records.find(
+                        r => r.id === `__verifiable_data_${key}__`
+                    ) as (typeof records)[number] & { verifiableData?: unknown };
+
+                    expect(record, key).toBeDefined();
+                    expect(record?.verifiableData, key).toBeDefined();
                 });
             });
 

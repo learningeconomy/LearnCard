@@ -14,6 +14,7 @@ import {
     isJobReadyToProcess,
     MAX_JOB_RETRIES,
 } from '../stores/pendingContractSyncStore';
+import { demoSessionStore } from '../stores/demoSessionStore';
 import { getLogger } from '../logging/logger';
 
 const log = getLogger('pending-contract-sync');
@@ -66,6 +67,11 @@ export const usePendingContractSync = (enabled = true): void => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
 
+    // Pause the worker in Sample Wallet mode: contract-sync jobs write real
+    // credentials, and firing them would open the demo gate sheet without user
+    // intent. Jobs stay queued and resume when demo mode exits.
+    const demoPersonaId = demoSessionStore.use.activePersonaId();
+
     const jobs = usePendingContractSyncJobs(); // get all jobs
 
     const processingJobIdRef = useRef<string | null>(null); // track currently processing job
@@ -87,7 +93,7 @@ export const usePendingContractSync = (enabled = true): void => {
     }, [enabled]);
 
     useEffect(() => {
-        if (!enabled || processingJobIdRef.current) return;
+        if (!enabled || demoPersonaId || processingJobIdRef.current) return;
 
         const pendingJobs = Object.values(jobs)
             .filter(job => job.status !== 'done' && job.retryCount < MAX_JOB_RETRIES)
@@ -346,5 +352,5 @@ export const usePendingContractSync = (enabled = true): void => {
             processingJobIdRef.current = null;
             setWorkerTick(tick => tick + 1);
         });
-    }, [enabled, initWallet, jobs, queryClient, workerTick]);
+    }, [enabled, demoPersonaId, initWallet, jobs, queryClient, workerTick]);
 };

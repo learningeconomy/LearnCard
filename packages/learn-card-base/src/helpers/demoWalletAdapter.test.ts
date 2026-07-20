@@ -31,6 +31,20 @@ const demoVCs = {
     [DEMO_URI_B]: { id: DEMO_URI_B, name: 'Course' } as unknown as VC,
 };
 
+const TOPIC_BOOST_URI = 'lc:demo:test-persona:boost:topic';
+const SESSION_BOOST_URI = 'lc:demo:test-persona:boost:session';
+
+const demoBoosts = {
+    [TOPIC_BOOST_URI]: {
+        boost: { uri: TOPIC_BOOST_URI, name: 'Topic' },
+        childUris: [SESSION_BOOST_URI],
+    },
+    [SESSION_BOOST_URI]: {
+        boost: { uri: SESSION_BOOST_URI, name: 'Session' },
+        childUris: [],
+    },
+};
+
 const makeFakeWallet = () => {
     const fns = {
         indexGet: vi.fn(async () => [
@@ -45,6 +59,8 @@ const makeFakeWallet = () => {
         readGet: vi.fn(async () => ({ id: 'lc:cloud:real' })),
         issueCredential: vi.fn(async () => ({ proof: {} })),
         countBoosts: vi.fn(async () => 7),
+        getBoost: vi.fn(async () => ({ uri: 'lc:network:real-boost' })),
+        getBoostChildren: vi.fn(async () => ({ records: [], hasMore: false })),
     };
 
     const wallet = {
@@ -67,6 +83,8 @@ const makeFakeWallet = () => {
         invoke: {
             issueCredential: fns.issueCredential,
             countBoosts: fns.countBoosts,
+            getBoost: fns.getBoost,
+            getBoostChildren: fns.getBoostChildren,
         },
         id: { did: () => 'did:key:test' },
     } as unknown as BespokeLearnCard;
@@ -105,7 +123,25 @@ describe('wrapWalletForDemo', () => {
                 personaName: 'Test Persona',
                 records: demoRecords,
                 vcs: demoVCs,
+                boosts: demoBoosts,
             });
+        });
+
+        it('serves demo boosts and children for lc:demo: uris, passes real uris through', async () => {
+            const { wallet, fns } = makeFakeWallet();
+            const wrapped = wrapWalletForDemo(wallet);
+
+            const topicBoost = await wrapped.invoke.getBoost(TOPIC_BOOST_URI);
+            expect((topicBoost as { name?: string })?.name).toBe('Topic');
+
+            const children = await wrapped.invoke.getBoostChildren(TOPIC_BOOST_URI, {});
+            expect(children.records).toHaveLength(1);
+            expect((children.records[0] as { name?: string })?.name).toBe('Session');
+            expect(fns.getBoost).not.toHaveBeenCalled();
+            expect(fns.getBoostChildren).not.toHaveBeenCalled();
+
+            await wrapped.invoke.getBoost('lc:network:real-boost');
+            expect(fns.getBoost).toHaveBeenCalled();
         });
 
         it('serves index reads from the demo store without hitting the wallet', async () => {

@@ -14,7 +14,10 @@ const SampleWalletPill: React.FC = () => {
     };
 
     return (
-        <div className="flex items-center gap-2 py-1.5 px-3 rounded-full bg-white/80 backdrop-blur-md border border-grayscale-200 shadow-sm">
+        <div
+            className="fixed left-1/2 -translate-x-1/2 z-[9990] flex items-center gap-2 py-1.5 px-3 rounded-full bg-white/85 backdrop-blur-md border border-grayscale-200 shadow-md"
+            style={{ top: 'calc(env(safe-area-inset-top, 0px) + 8px)' }}
+        >
             <svg
                 className="w-3 h-3 text-emerald-500 shrink-0"
                 viewBox="0 0 24 24"

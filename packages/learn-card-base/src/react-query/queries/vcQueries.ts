@@ -28,7 +28,11 @@ import {
 import { getOrFetchConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import { getOrFetchCredentialRecordForBoost } from 'learn-card-base/hooks/useGetCredentialRecordForBoost';
 import { useBackfillBoostUris } from 'learn-card-base/helpers/backfills';
-import { demoSessionStore, getDemoVC } from 'learn-card-base/stores/demoSessionStore';
+import {
+    demoSessionStore,
+    getDemoVC,
+    isDemoSessionActive,
+} from 'learn-card-base/stores/demoSessionStore';
 import { getLogger } from '../../logging/logger';
 const log = getLogger('vc-queries');
 
@@ -130,7 +134,11 @@ export const useGetCredentialList = (category?: CredentialCategory, enabled: boo
                     { cursor: pageParam, limit: 12 }
                 );
 
-                if (!demoPersonaId) backfillBoostUris(data?.records ?? []);
+                // Call-time check (not the render closure): during demo entry,
+                // invalidation refetches old-key queries whose closures predate
+                // the mode switch, but the adapter already serves demo records —
+                // backfilling those would fire blocked index writes.
+                if (!isDemoSessionActive()) backfillBoostUris(data?.records ?? []);
 
                 return {
                     ...data,
@@ -852,6 +860,13 @@ export const useSyncConsentFlow = (enabled = true) => {
     }>({
         queryKey: ['useSyncConsentFlow', switchedDid ?? ''],
         queryFn: async () => {
+            // Sample Wallet mode: this background flow accepts/stores/syncs real
+            // credentials — skip entirely so blocked writes never fire without
+            // user intent (they would surface the demo gate sheet unprompted).
+            if (isDemoSessionActive()) {
+                return { allRecords: [], recordsByCategory: {}, allContracts: [] };
+            }
+
             const learnCard = await initWallet();
 
             // Fetch and accumulate credential records

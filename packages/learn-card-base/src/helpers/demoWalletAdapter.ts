@@ -1,6 +1,9 @@
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import type { LCR } from 'learn-card-base/types/credential-records';
 import {
+    DEMO_URI_PREFIX,
+    getDemoBoost,
+    getDemoBoostChildren,
     getDemoRecordsForCategory,
     getDemoVC,
     isDemoSessionActive,
@@ -43,7 +46,9 @@ const BLOCKED_INVOKE_METHODS = new Set([
     'deleteBoost',
 ]);
 
-type DemoIndexQuery = { category?: unknown; uri?: unknown; id?: unknown } | undefined;
+type DemoIndexQuery =
+    | { category?: unknown; uri?: unknown; id?: unknown; boostUri?: unknown }
+    | undefined;
 
 const matchesField = (recordValue: string | undefined, queryValue: unknown): boolean => {
     if (queryValue === undefined) return true;
@@ -62,7 +67,8 @@ const filterDemoRecords = (query: DemoIndexQuery): LCR[] =>
         record =>
             matchesField(record.category, query?.category) &&
             matchesField(record.uri, query?.uri) &&
-            matchesField(record.id, query?.id)
+            matchesField(record.id, query?.id) &&
+            matchesField((record as { boostUri?: string }).boostUri, query?.boostUri)
     );
 
 const blockWhenDemoActive = (
@@ -164,20 +170,37 @@ const wrapReadPlane = <T extends object>(read: T): T =>
         },
     });
 
+const isDemoUri = (uri: unknown): uri is string =>
+    typeof uri === 'string' && uri.startsWith(DEMO_URI_PREFIX);
+
 const wrapInvoke = <T extends object>(invoke: T): T =>
     new Proxy(invoke, {
         get(target, prop, receiver) {
             const original = Reflect.get(target, prop, receiver);
 
-            if (
-                typeof original === 'function' &&
-                typeof prop === 'string' &&
-                BLOCKED_INVOKE_METHODS.has(prop)
-            ) {
+            if (typeof original !== 'function') return original;
+
+            if (typeof prop === 'string' && BLOCKED_INVOKE_METHODS.has(prop)) {
                 return blockWhenDemoActive(original, target, `invoke.${prop}`);
             }
 
-            return typeof original === 'function' ? original.bind(target) : original;
+            if (prop === 'getBoost') {
+                return async (uri?: unknown, ...rest: unknown[]) =>
+                    isDemoUri(uri) ? getDemoBoost(uri) : original.apply(target, [uri, ...rest]);
+            }
+
+            if (prop === 'getBoostChildren') {
+                return async (uri?: unknown, ...rest: unknown[]) =>
+                    isDemoUri(uri)
+                        ? {
+                              records: getDemoBoostChildren(uri),
+                              hasMore: false,
+                              cursor: undefined as undefined | string,
+                          }
+                        : original.apply(target, [uri, ...rest]);
+            }
+
+            return original.bind(target);
         },
     });
 

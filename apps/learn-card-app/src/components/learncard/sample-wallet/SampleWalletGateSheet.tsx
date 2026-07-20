@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { demoGateStore, isDemoModeError, useToast, ToastTypeEnum } from 'learn-card-base';
+import {
+    demoGateStore,
+    getLogger,
+    isDemoModeError,
+    useToast,
+    ToastTypeEnum,
+} from 'learn-card-base';
 import { useSampleWallet } from './useSampleWallet';
+
+const log = getLogger('sample-wallet-gate');
 
 const SampleWalletGateSheet: React.FC = () => {
     const isGateOpen = demoGateStore.use.isGateOpen();
@@ -10,10 +18,14 @@ const SampleWalletGateSheet: React.FC = () => {
     const [isSwitching, setIsSwitching] = useState(false);
 
     useEffect(() => {
+        // Un-awaited rejections are background work by definition (user actions
+        // are awaited in handlers or run as react-query mutations, which the
+        // MutationCache maps to this sheet). Silence them instead of opening
+        // the sheet, so background flows never interrupt the user unprompted.
         const onRejection = (event: PromiseRejectionEvent) => {
             if (isDemoModeError(event.reason)) {
                 event.preventDefault();
-                demoGateStore.set.openGate();
+                log.debug('Suppressed background DemoModeError', event.reason);
             }
         };
         window.addEventListener('unhandledrejection', onRejection);
