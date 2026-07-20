@@ -4,7 +4,7 @@ import { IonSpinner } from '@ionic/react';
 
 import * as m from '../../../paraglide/messages.js';
 
-import { ModalTypes, QRCodeScannerStore, useModal } from 'learn-card-base';
+import { QRCodeScannerStore, useModal } from 'learn-card-base';
 
 import SlimCaretRight from '../../svgs/SlimCaretRight';
 
@@ -35,12 +35,11 @@ const IntakeOption: React.FC<IntakeOptionProps> = ({ title, description, onClick
 );
 
 export const CredentialIntakeOptions: React.FC = () => {
-    const { closeModal, newModal } = useModal();
+    const { closeModal, replaceModal } = useModal();
     const canScanWithCamera = Capacitor.isNativePlatform();
 
     const openClaimInput = (mode: 'claim-link' | 'qr-code') => {
-        closeModal();
-        newModal(
+        replaceModal(
             <Suspense
                 fallback={
                     <div className="font-poppins flex items-center justify-center min-h-[360px] p-8">
@@ -50,8 +49,7 @@ export const CredentialIntakeOptions: React.FC = () => {
             >
                 <LazyPasteOrUploadClaimModal mode={mode} />
             </Suspense>,
-            { hideButton: true, sectionClassName: '!max-w-[500px]' },
-            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+            { hideButton: true, sectionClassName: '!max-w-[500px]' }
         );
     };
 
