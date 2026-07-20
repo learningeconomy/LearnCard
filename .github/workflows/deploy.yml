@@ -83,9 +83,7 @@ jobs:
             native_plugin_changed: ${{ steps.check_versions.outputs.native_plugin_changed }}
             # Dynamic environment names
             target_frontend_env: ${{ steps.set-env.outputs.frontend_env }}
-            target_brain_service_env: ${{ steps.set-env.outputs.brain_env }}
-            target_learn_cloud_env: ${{ steps.set-env.outputs.cloud_env }}
-            target_lca_api_env: ${{ steps.set-env.outputs.lca_api_env }}
+            service_deployment_matrix: ${{ steps.set-env.outputs.service_deployment_matrix }}
         steps:
             # Check these first - no dependencies needed
             - name: Check if this is a manual dispatch
@@ -116,29 +114,23 @@ jobs:
               run: |
                   if [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'scouts' ]]; then
                     echo "frontend_env=scout-app-production" >> "$GITHUB_OUTPUT"
-                    echo "brain_env=scout-network-api-production" >> "$GITHUB_OUTPUT"
-                    echo "cloud_env=scout-storage-api-production" >> "$GITHUB_OUTPUT"
-                    echo "lca_api_env=scout-app-api-production" >> "$GITHUB_OUTPUT"
+                    echo 'service_deployment_matrix={"include":[{"name":"ScoutPass Production","brain_env":"scout-network-api-production","cloud_env":"scout-storage-api-production","lca_api_env":"scout-app-api-production"}]}' >> "$GITHUB_OUTPUT"
                   elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'scouts-staging' ]]; then
                     echo "frontend_env=scout-app-staging" >> "$GITHUB_OUTPUT"
-                    echo "brain_env=scout-network-api-staging" >> "$GITHUB_OUTPUT"
-                    echo "cloud_env=scout-storage-api-staging" >> "$GITHUB_OUTPUT"
-                    echo "lca_api_env=scout-app-api-staging" >> "$GITHUB_OUTPUT"
+                    echo 'service_deployment_matrix={"include":[{"name":"ScoutPass Staging","brain_env":"scout-network-api-staging","cloud_env":"scout-storage-api-staging","lca_api_env":"scout-app-api-staging"}]}' >> "$GITHUB_OUTPUT"
                   elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'production' ]]; then
                     echo "frontend_env=learn-card-app-production" >> "$GITHUB_OUTPUT"
-                    echo "brain_env=learn-cloud-network-api-production" >> "$GITHUB_OUTPUT"
-                    echo "cloud_env=learn-cloud-storage-api-production" >> "$GITHUB_OUTPUT"
-                    echo "lca_api_env=learn-card-app-api-production" >> "$GITHUB_OUTPUT"
+                    echo 'service_deployment_matrix={"include":[{"name":"LearnCard Production","brain_env":"learn-cloud-network-api-production","cloud_env":"learn-cloud-storage-api-production","lca_api_env":"learn-card-app-api-production"}]}' >> "$GITHUB_OUTPUT"
                   elif [[ "${{ steps.check_release.outputs.is_release }}" == 'true' ]]; then
                     echo "frontend_env=learn-card-app-production" >> "$GITHUB_OUTPUT"
-                    echo "brain_env=learn-cloud-network-api-production" >> "$GITHUB_OUTPUT"
-                    echo "cloud_env=learn-cloud-storage-api-production" >> "$GITHUB_OUTPUT"
-                    echo "lca_api_env=learn-card-app-api-production" >> "$GITHUB_OUTPUT"
+                    echo 'service_deployment_matrix={"include":[{"name":"LearnCard Production","brain_env":"learn-cloud-network-api-production","cloud_env":"learn-cloud-storage-api-production","lca_api_env":"learn-card-app-api-production"},{"name":"ScoutPass Production","brain_env":"scout-network-api-production","cloud_env":"scout-storage-api-production","lca_api_env":"scout-app-api-production"}]}' >> "$GITHUB_OUTPUT"
                   else
                     echo "frontend_env=learn-card-app-staging" >> "$GITHUB_OUTPUT"
-                    echo "brain_env=learn-cloud-network-api-staging" >> "$GITHUB_OUTPUT"
-                    echo "cloud_env=learn-cloud-storage-api-staging" >> "$GITHUB_OUTPUT"
-                    echo "lca_api_env=learn-card-app-api-staging" >> "$GITHUB_OUTPUT"
+                    if [[ "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
+                      echo 'service_deployment_matrix={"include":[{"name":"LearnCard Staging","brain_env":"learn-cloud-network-api-staging","cloud_env":"learn-cloud-storage-api-staging","lca_api_env":"learn-card-app-api-staging"}]}' >> "$GITHUB_OUTPUT"
+                    else
+                      echo 'service_deployment_matrix={"include":[{"name":"LearnCard Staging","brain_env":"learn-cloud-network-api-staging","cloud_env":"learn-cloud-storage-api-staging","lca_api_env":"learn-card-app-api-staging"},{"name":"ScoutPass Staging","brain_env":"scout-network-api-staging","cloud_env":"scout-storage-api-staging","lca_api_env":"scout-app-api-staging"}]}' >> "$GITHUB_OUTPUT"
+                    fi
                   fi
 
             # Skip heavy steps for manual dispatch - we already know what to deploy
@@ -312,7 +304,7 @@ jobs:
     #   - Manual: Deploy to selected environment if selected
     # ============================================================================
     deploy-brain-service:
-        name: Deploy Brain Service (Network API)
+        name: Deploy Brain Service (${{ matrix.name }})
         needs: [determine-affected, test-affected, build-native-plugin]
         if: |
             always() &&
@@ -323,7 +315,10 @@ jobs:
               (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'network-brain-service'))
             )
         runs-on: ubuntu-latest
-        environment: ${{ needs.determine-affected.outputs.target_brain_service_env }}
+        strategy:
+            fail-fast: false
+            matrix: ${{ fromJSON(needs.determine-affected.outputs.service_deployment_matrix) }}
+        environment: ${{ matrix.brain_env }}
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v7
@@ -345,7 +340,7 @@ jobs:
                   echo "========================================"
                   echo "DEPLOYMENT TARGET VALIDATION"
                   echo "========================================"
-                  echo "GitHub Environment: ${{ needs.determine-affected.outputs.target_brain_service_env }}"
+                  echo "GitHub Environment: ${{ matrix.brain_env }}"
                   echo "Service Name:       ${{ vars.SERVERLESS_SERVICE_NAME }}"
                   echo "Domain:             ${{ vars.SERVERLESS_DOMAIN_NAME }}"
                   echo "Hosted Zone:        ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}"
@@ -356,23 +351,23 @@ jobs:
                   FAILED=false
 
                   if [[ -z "${{ vars.SERVERLESS_SERVICE_NAME }}" ]]; then
-                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
+                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment '${{ matrix.brain_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_DOMAIN_NAME }}" ]]; then
-                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
+                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ matrix.brain_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}" ]]; then
-                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
+                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment '${{ matrix.brain_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_STAGE }}" ]]; then
-                    echo "::error::SERVERLESS_STAGE is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
+                    echo "::error::SERVERLESS_STAGE is not set in environment '${{ matrix.brain_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_REGION }}" ]]; then
-                    echo "::error::SERVERLESS_REGION is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
+                    echo "::error::SERVERLESS_REGION is not set in environment '${{ matrix.brain_env }}'!"
                     FAILED=true
                   fi
 
@@ -427,7 +422,7 @@ jobs:
                   GIT_SHA: ${{ github.sha }}
 
     deploy-learn-cloud:
-        name: Deploy LearnCloud (Storage API)
+        name: Deploy LearnCloud (${{ matrix.name }})
         needs: [determine-affected, test-affected, build-native-plugin]
         if: |
             always() &&
@@ -438,7 +433,10 @@ jobs:
                 (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'learn-cloud-service'))
             )
         runs-on: ubuntu-latest
-        environment: ${{ needs.determine-affected.outputs.target_learn_cloud_env }}
+        strategy:
+            fail-fast: false
+            matrix: ${{ fromJSON(needs.determine-affected.outputs.service_deployment_matrix) }}
+        environment: ${{ matrix.cloud_env }}
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v7
@@ -460,7 +458,7 @@ jobs:
                   echo "========================================"
                   echo "DEPLOYMENT TARGET VALIDATION"
                   echo "========================================"
-                  echo "GitHub Environment: ${{ needs.determine-affected.outputs.target_learn_cloud_env }}"
+                  echo "GitHub Environment: ${{ matrix.cloud_env }}"
                   echo "Service Name:       ${{ vars.SERVERLESS_SERVICE_NAME }}"
                   echo "Domain:             ${{ vars.SERVERLESS_DOMAIN_NAME }}"
                   echo "Hosted Zone:        ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}"
@@ -471,23 +469,23 @@ jobs:
                   FAILED=false
 
                   if [[ -z "${{ vars.SERVERLESS_SERVICE_NAME }}" ]]; then
-                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
+                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment '${{ matrix.cloud_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_DOMAIN_NAME }}" ]]; then
-                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
+                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ matrix.cloud_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}" ]]; then
-                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
+                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment '${{ matrix.cloud_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_STAGE }}" ]]; then
-                    echo "::error::SERVERLESS_STAGE is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
+                    echo "::error::SERVERLESS_STAGE is not set in environment '${{ matrix.cloud_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_REGION }}" ]]; then
-                    echo "::error::SERVERLESS_REGION is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
+                    echo "::error::SERVERLESS_REGION is not set in environment '${{ matrix.cloud_env }}'!"
                     FAILED=true
                   fi
 
@@ -522,7 +520,7 @@ jobs:
                   SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
 
     deploy-lca-api:
-        name: Deploy LCA API Service
+        name: Deploy LCA API (${{ matrix.name }})
         needs: [determine-affected, test-affected, build-native-plugin]
         if: |
             always() &&
@@ -533,7 +531,10 @@ jobs:
                 (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'lca-api-service'))
             )
         runs-on: ubuntu-latest
-        environment: ${{ needs.determine-affected.outputs.target_lca_api_env }}
+        strategy:
+            fail-fast: false
+            matrix: ${{ fromJSON(needs.determine-affected.outputs.service_deployment_matrix) }}
+        environment: ${{ matrix.lca_api_env }}
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v7
@@ -555,7 +556,7 @@ jobs:
                   echo "========================================"
                   echo "DEPLOYMENT TARGET VALIDATION"
                   echo "========================================"
-                  echo "GitHub Environment: ${{ needs.determine-affected.outputs.target_lca_api_env }}"
+                  echo "GitHub Environment: ${{ matrix.lca_api_env }}"
                   echo "Service Name:       ${{ vars.SERVERLESS_SERVICE_NAME }}"
                   echo "Domain:             ${{ vars.SERVERLESS_DOMAIN_NAME }}"
                   echo "Hosted Zone:        ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}"
@@ -566,23 +567,23 @@ jobs:
                   FAILED=false
 
                   if [[ -z "${{ vars.SERVERLESS_SERVICE_NAME }}" ]]; then
-                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
+                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment '${{ matrix.lca_api_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_DOMAIN_NAME }}" ]]; then
-                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
+                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ matrix.lca_api_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}" ]]; then
-                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
+                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment '${{ matrix.lca_api_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_STAGE }}" ]]; then
-                    echo "::error::SERVERLESS_STAGE is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
+                    echo "::error::SERVERLESS_STAGE is not set in environment '${{ matrix.lca_api_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_REGION }}" ]]; then
-                    echo "::error::SERVERLESS_REGION is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
+                    echo "::error::SERVERLESS_REGION is not set in environment '${{ matrix.lca_api_env }}'!"
                     FAILED=true
                   fi
 
@@ -623,314 +624,6 @@ jobs:
                   SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
                   GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
 
-    deploy-scout-brain-service-staging:
-        name: Deploy ScoutPass Staging Brain Service
-        needs: [determine-affected, test-affected, build-native-plugin]
-        if: |
-            always() &&
-            !cancelled() &&
-            needs.determine-affected.outputs.is_manual != 'true' &&
-            needs.determine-affected.outputs.is_release != 'true' &&
-            needs.test-affected.result == 'success' &&
-            contains(needs.determine-affected.outputs.affected, 'network-brain-service')
-        runs-on: ubuntu-latest
-        environment: scout-network-api-staging
-        steps:
-            - name: Checkout Repo
-              uses: actions/checkout@v7
-
-            - name: Download native plugin binary
-              uses: actions/download-artifact@v4
-              with:
-                  name: didkit-native-linux-x64
-                  path: packages/plugins/didkit-plugin-node
-
-            - name: Use Composite Setup Action
-              uses: ./.github/actions/setup
-
-            - name: Install Serverless packager
-              run: npm install -g pnpm@9.12.3
-
-            - name: Validate deployment target
-              run: |
-                  echo "========================================"
-                  echo "SCOUTPASS STAGING DEPLOYMENT TARGET VALIDATION"
-                  echo "========================================"
-                  echo "GitHub Environment: scout-network-api-staging"
-                  echo "Service Name:       ${{ vars.SERVERLESS_SERVICE_NAME }}"
-                  echo "Domain:             ${{ vars.SERVERLESS_DOMAIN_NAME }}"
-                  echo "Hosted Zone:        ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}"
-                  echo "Stage:              ${{ vars.SERVERLESS_STAGE }}"
-                  echo "Region:             ${{ vars.SERVERLESS_REGION }}"
-                  echo "========================================"
-
-                  FAILED=false
-
-                  if [[ -z "${{ vars.SERVERLESS_SERVICE_NAME }}" ]]; then
-                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment 'scout-network-api-staging'!"
-                    FAILED=true
-                  fi
-                  if [[ -z "${{ vars.SERVERLESS_DOMAIN_NAME }}" ]]; then
-                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment 'scout-network-api-staging'!"
-                    FAILED=true
-                  fi
-                  if [[ -z "${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}" ]]; then
-                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment 'scout-network-api-staging'!"
-                    FAILED=true
-                  fi
-                  if [[ -z "${{ vars.SERVERLESS_STAGE }}" ]]; then
-                    echo "::error::SERVERLESS_STAGE is not set in environment 'scout-network-api-staging'!"
-                    FAILED=true
-                  fi
-                  if [[ -z "${{ vars.SERVERLESS_REGION }}" ]]; then
-                    echo "::error::SERVERLESS_REGION is not set in environment 'scout-network-api-staging'!"
-                    FAILED=true
-                  fi
-
-                  if [[ "$FAILED" == "true" ]]; then
-                    echo "::error::Aborting deploy — required variables are missing. Configure them in the GitHub environment settings."
-                    exit 1
-                  fi
-
-            - name: Deploy ScoutPass Staging Brain Service Lambda
-              run: bunx nx serverless-deploy network-brain-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
-              env:
-                  PNPM_CONFIG_PACKAGE_MANAGER_STRICT: 'false'
-                  CLIENT_APP_DOMAIN_NAME: ${{ vars.CLIENT_APP_DOMAIN_NAME }}
-                  POSTMARK_FROM_EMAIL: ${{ vars.POSTMARK_FROM_EMAIL }}
-                  SERVERLESS_CACHE_INSTANCE_SIZE: ${{ vars.SERVERLESS_CACHE_INSTANCE_SIZE }}
-                  SERVERLESS_HOSTED_ZONE_NAMES: ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}
-                  SERVERLESS_DOMAIN_NAME: ${{ vars.SERVERLESS_DOMAIN_NAME }}
-                  SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
-                  SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
-                  APP_STORE_ADMIN_PROFILE_IDS: ${{ vars.APP_STORE_ADMIN_PROFILE_IDS }}
-                  SEED: ${{ secrets.SEED }}
-                  DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
-                  NOTIFICATIONS_SERVICE_WEBHOOK_URL: ${{ secrets.NOTIFICATIONS_SERVICE_WEBHOOK_URL }}
-                  NEO4J_URI: ${{ secrets.NEO4J_URI }}
-                  NEO4J_USERNAME: ${{ secrets.NEO4J_USERNAME }}
-                  NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
-                  POSTMARK_API_KEY: ${{ secrets.POSTMARK_API_KEY }}
-                  MESSAGEBIRD_AUTH_TOKEN: ${{ secrets.MESSAGEBIRD_AUTH_TOKEN }}
-                  MESSAGEBIRD_ORIGINATOR: ${{ secrets.MESSAGEBIRD_ORIGINATOR }}
-                  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-                  SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
-                  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-                  SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-                  SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-                  SMART_RESUME_CLIENT_ID: ${{ secrets.SMART_RESUME_CLIENT_ID }}
-                  SMART_RESUME_ACCESS_KEY: ${{ secrets.SMART_RESUME_ACCESS_KEY }}
-                  SMART_RESUME_CONTRACT_URI: ${{ secrets.SMART_RESUME_CONTRACT_URI }}
-                  LOGIN_PROVIDER_DID: ${{ secrets.LOGIN_PROVIDER_DID }}
-                  SKILL_EMBEDDING_GOOGLE_API_KEY: ${{ secrets.SKILL_EMBEDDING_GOOGLE_API_KEY }}
-                  SKILL_EMBEDDING_GOOGLE_MODEL: ${{ secrets.SKILL_EMBEDDING_GOOGLE_MODEL }}
-                  SKILL_EMBEDDING_BATCH_SIZE: ${{ secrets.SKILL_EMBEDDING_BATCH_SIZE }}
-                  SKILL_EMBEDDING_BACKFILL_ON_STARTUP: ${{ secrets.SKILL_EMBEDDING_BACKFILL_ON_STARTUP }}
-                  SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS: ${{ secrets.SKILL_EMBEDDING_BACKFILL_LOCK_TTL_SECONDS }}
-                  SKILL_EMBEDDING_BACKFILL_PAGE_SIZE: ${{ secrets.SKILL_EMBEDDING_BACKFILL_PAGE_SIZE }}
-                  SKILL_EMBEDDING_BACKFILL_BATCH_SIZE: ${{ secrets.SKILL_EMBEDDING_BACKFILL_BATCH_SIZE }}
-                  OIDC_TRUSTED_ISSUERS: ${{ vars.OIDC_TRUSTED_ISSUERS }}
-                  OIDC_EXPECTED_AUDIENCE: ${{ vars.OIDC_EXPECTED_AUDIENCE }}
-                  POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
-                  POSTHOG_HOST: ${{ vars.POSTHOG_HOST }}
-                  GIT_SHA: ${{ github.sha }}
-
-    deploy-scout-learn-cloud-staging:
-        name: Deploy ScoutPass Staging LearnCloud
-        needs: [determine-affected, test-affected, build-native-plugin]
-        if: |
-            always() &&
-            !cancelled() &&
-            needs.determine-affected.outputs.is_manual != 'true' &&
-            needs.determine-affected.outputs.is_release != 'true' &&
-            needs.test-affected.result == 'success' &&
-            contains(needs.determine-affected.outputs.affected, 'learn-cloud-service')
-        runs-on: ubuntu-latest
-        environment: scout-storage-api-staging
-        steps:
-            - name: Checkout Repo
-              uses: actions/checkout@v7
-
-            - name: Download native plugin binary
-              uses: actions/download-artifact@v4
-              with:
-                  name: didkit-native-linux-x64
-                  path: packages/plugins/didkit-plugin-node
-
-            - name: Use Composite Setup Action
-              uses: ./.github/actions/setup
-
-            - name: Install Serverless packager
-              run: npm install -g pnpm@9.12.3
-
-            - name: Validate deployment target
-              run: |
-                  echo "========================================"
-                  echo "SCOUTPASS STAGING DEPLOYMENT TARGET VALIDATION"
-                  echo "========================================"
-                  echo "GitHub Environment: scout-storage-api-staging"
-                  echo "Service Name:       ${{ vars.SERVERLESS_SERVICE_NAME }}"
-                  echo "Domain:             ${{ vars.SERVERLESS_DOMAIN_NAME }}"
-                  echo "Hosted Zone:        ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}"
-                  echo "Stage:              ${{ vars.SERVERLESS_STAGE }}"
-                  echo "Region:             ${{ vars.SERVERLESS_REGION }}"
-                  echo "========================================"
-
-                  FAILED=false
-
-                  if [[ -z "${{ vars.SERVERLESS_SERVICE_NAME }}" ]]; then
-                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment 'scout-storage-api-staging'!"
-                    FAILED=true
-                  fi
-                  if [[ -z "${{ vars.SERVERLESS_DOMAIN_NAME }}" ]]; then
-                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment 'scout-storage-api-staging'!"
-                    FAILED=true
-                  fi
-                  if [[ -z "${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}" ]]; then
-                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment 'scout-storage-api-staging'!"
-                    FAILED=true
-                  fi
-                  if [[ -z "${{ vars.SERVERLESS_STAGE }}" ]]; then
-                    echo "::error::SERVERLESS_STAGE is not set in environment 'scout-storage-api-staging'!"
-                    FAILED=true
-                  fi
-                  if [[ -z "${{ vars.SERVERLESS_REGION }}" ]]; then
-                    echo "::error::SERVERLESS_REGION is not set in environment 'scout-storage-api-staging'!"
-                    FAILED=true
-                  fi
-
-                  if [[ "$FAILED" == "true" ]]; then
-                    echo "::error::Aborting deploy — required variables are missing. Configure them in the GitHub environment settings."
-                    exit 1
-                  fi
-
-            - name: Deploy ScoutPass Staging LearnCloud Lambda
-              run: bunx nx serverless-deploy learn-cloud-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
-              env:
-                  PNPM_CONFIG_PACKAGE_MANAGER_STRICT: 'false'
-                  SERVER_URL: ${{ vars.SERVER_URL }}
-                  SERVERLESS_CACHE_INSTANCE_SIZE: ${{ vars.SERVERLESS_CACHE_INSTANCE_SIZE }}
-                  SERVERLESS_HOSTED_ZONE_NAMES: ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}
-                  SERVERLESS_DOMAIN_NAME: ${{ vars.SERVERLESS_DOMAIN_NAME }}
-                  SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
-                  SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
-                  LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
-                  LEARN_CLOUD_MONGO_URI: ${{ secrets.LEARN_CLOUD_MONGO_URI }}
-                  LEARN_CLOUD_MONGO_DB_NAME: ${{ secrets.LEARN_CLOUD_MONGO_DB_NAME }}
-                  XAPI_ENDPOINT: ${{ secrets.XAPI_ENDPOINT }}
-                  XAPI_USERNAME: ${{ secrets.XAPI_USERNAME }}
-                  XAPI_PASSWORD: ${{ secrets.XAPI_PASSWORD }}
-                  RSA_PRIVATE_KEY: ${{ secrets.RSA_PRIVATE_KEY }}
-                  RSA_PUBLIC_KEY: ${{ secrets.RSA_PUBLIC_KEY }}
-                  JWT_SIGNING_KEY: ${{ secrets.JWT_SIGNING_KEY }}
-                  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-                  SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
-                  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-                  SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-                  SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-
-    deploy-scout-lca-api-staging:
-        name: Deploy ScoutPass Staging LCA API
-        needs: [determine-affected, test-affected, build-native-plugin]
-        if: |
-            always() &&
-            !cancelled() &&
-            needs.determine-affected.outputs.is_manual != 'true' &&
-            needs.determine-affected.outputs.is_release != 'true' &&
-            needs.test-affected.result == 'success' &&
-            contains(needs.determine-affected.outputs.affected, 'lca-api-service')
-        runs-on: ubuntu-latest
-        environment: scout-app-api-staging
-        steps:
-            - name: Checkout Repo
-              uses: actions/checkout@v7
-
-            - name: Download native plugin binary
-              uses: actions/download-artifact@v4
-              with:
-                  name: didkit-native-linux-x64
-                  path: packages/plugins/didkit-plugin-node
-
-            - name: Use Composite Setup Action
-              uses: ./.github/actions/setup
-
-            - name: Install Serverless packager
-              run: npm install -g pnpm@9.12.3
-
-            - name: Validate deployment target
-              run: |
-                  echo "========================================"
-                  echo "SCOUTPASS STAGING DEPLOYMENT TARGET VALIDATION"
-                  echo "========================================"
-                  echo "GitHub Environment: scout-app-api-staging"
-                  echo "Service Name:       ${{ vars.SERVERLESS_SERVICE_NAME }}"
-                  echo "Domain:             ${{ vars.SERVERLESS_DOMAIN_NAME }}"
-                  echo "Hosted Zone:        ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}"
-                  echo "Stage:              ${{ vars.SERVERLESS_STAGE }}"
-                  echo "Region:             ${{ vars.SERVERLESS_REGION }}"
-                  echo "========================================"
-
-                  FAILED=false
-
-                  if [[ -z "${{ vars.SERVERLESS_SERVICE_NAME }}" ]]; then
-                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment 'scout-app-api-staging'!"
-                    FAILED=true
-                  fi
-                  if [[ -z "${{ vars.SERVERLESS_DOMAIN_NAME }}" ]]; then
-                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment 'scout-app-api-staging'!"
-                    FAILED=true
-                  fi
-                  if [[ -z "${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}" ]]; then
-                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment 'scout-app-api-staging'!"
-                    FAILED=true
-                  fi
-                  if [[ -z "${{ vars.SERVERLESS_STAGE }}" ]]; then
-                    echo "::error::SERVERLESS_STAGE is not set in environment 'scout-app-api-staging'!"
-                    FAILED=true
-                  fi
-                  if [[ -z "${{ vars.SERVERLESS_REGION }}" ]]; then
-                    echo "::error::SERVERLESS_REGION is not set in environment 'scout-app-api-staging'!"
-                    FAILED=true
-                  fi
-
-                  if [[ "$FAILED" == "true" ]]; then
-                    echo "::error::Aborting deploy — required variables are missing. Configure them in the GitHub environment settings."
-                    exit 1
-                  fi
-
-            - name: Deploy ScoutPass Staging LCA API Lambda
-              run: bunx nx serverless-deploy lca-api-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
-              env:
-                  PNPM_CONFIG_PACKAGE_MANAGER_STRICT: 'false'
-                  SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
-                  SERVERLESS_HOSTED_ZONE_NAMES: ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}
-                  SERVERLESS_DOMAIN_NAME: ${{ vars.SERVERLESS_DOMAIN_NAME }}
-                  SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
-                  DOMAIN_NAME: ${{ vars.DOMAIN_NAME }}
-                  SEED: ${{ secrets.SEED }}
-                  METABASE_SECRET_KEY: ${{ secrets.METABASE_SECRET_KEY }}
-                  POSTMARK_SERVER_TOKEN: ${{ secrets.POSTMARK_SERVER_TOKEN }}
-                  POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS: ${{ vars.POSTMARK_LOGIN_CODE_TEMPLATE_ALIAS }}
-                  POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS: ${{ vars.POSTMARK_ENDORSEMENT_REQUEST_TEMPLATE_ALIAS }}
-                  POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS: ${{ vars.POSTMARK_RECOVERY_EMAIL_CODE_TEMPLATE_ALIAS }}
-                  POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS: ${{ vars.POSTMARK_RECOVERY_KEY_TEMPLATE_ALIAS }}
-                  POSTMARK_FROM_EMAIL: ${{ secrets.POSTMARK_FROM_EMAIL }}
-                  POSTMARK_BRAND_NAME: ${{ secrets.POSTMARK_BRAND_NAME }}
-                  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-                  AUTHORIZED_DIDS: ${{ secrets.AUTHORIZED_DIDS }}
-                  GOOGLE_APPLICATION_CREDENTIAL: ${{ secrets.GOOGLE_APPLICATION_CREDENTIAL }}
-                  MONGO_URI: ${{ secrets.MONGO_URI }}
-                  MONGO_DB_NAME: ${{ secrets.MONGO_DB_NAME }}
-                  SCOUTS_SSO_CLIENT_SECRET: ${{ secrets.SCOUTS_SSO_CLIENT_SECRET }}
-                  LEARN_CLOUD_URL: ${{ secrets.LEARN_CLOUD_URL }}
-                  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-                  SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
-                  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-                  SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-                  SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-                  GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
-
-    # ============================================================================
     # SDK GENERATION (after brain-service deploy, only on staging)
     # ============================================================================
     generate-sdk:
