@@ -1,5 +1,20 @@
 # learn-card-base
 
+## 0.3.5
+
+### Patch Changes
+
+-   [#1420](https://github.com/learningeconomy/LearnCard/pull/1420) [`f19ca34c0ad6425f669304981b720619abdf0559`](https://github.com/learningeconomy/LearnCard/commit/f19ca34c0ad6425f669304981b720619abdf0559) Thanks [@Custard7](https://github.com/Custard7)! - feat: Live Notifications
+
+-   [#1419](https://github.com/learningeconomy/LearnCard/pull/1419) [`2e5f5dba1b8b95a0fbdc24cd431d8826dc180852`](https://github.com/learningeconomy/LearnCard/commit/2e5f5dba1b8b95a0fbdc24cd431d8826dc180852) Thanks [@smurflo2](https://github.com/smurflo2)! - Implement logged out claim flow for Scouts, fix network join prompt, and various Scouts bugs
+
+-   [#1411](https://github.com/learningeconomy/LearnCard/pull/1411) [`b52a22224f41c61c180668893fc7055c5fdbd976`](https://github.com/learningeconomy/LearnCard/commit/b52a22224f41c61c180668893fc7055c5fdbd976) Thanks [@gerardopar](https://github.com/gerardopar)! - [LC-1956][LC-1957] - Setup Scouts Staging
+
+-   [#1315](https://github.com/learningeconomy/LearnCard/pull/1315) [`9b853ae7aace370a527ac11ba2ae46ae025f22dd`](https://github.com/learningeconomy/LearnCard/commit/9b853ae7aace370a527ac11ba2ae46ae025f22dd) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add tenant-configured image upload providers and replace Filestack-specific upload hook usage with `useImageUpload`.
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.2.21
+
 ## 0.3.4
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # learn-card-core
 
+## 2.4.8
+
+### Patch Changes
+
+-   Updated dependencies [[`4d08fc205de61058235707cfd6d2db4465f8ec9e`](https://github.com/learningeconomy/LearnCard/commit/4d08fc205de61058235707cfd6d2db4465f8ec9e), [`4d08fc205de61058235707cfd6d2db4465f8ec9e`](https://github.com/learningeconomy/LearnCard/commit/4d08fc205de61058235707cfd6d2db4465f8ec9e)]:
+    -   @learncard/openid4vc-plugin@0.3.0
+
 ## 2.4.7
 
 ### Patch Changes
