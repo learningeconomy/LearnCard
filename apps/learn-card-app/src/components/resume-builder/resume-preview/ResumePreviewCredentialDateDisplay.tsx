@@ -2,6 +2,8 @@ import React from 'react';
 
 import Calendar from '../../svgs/Calendar';
 
+import * as m from '../../../paraglide/messages.js';
+
 type ResumePreviewCredentialDateDisplayProps = {
     isEditing: boolean;
     startLabel?: string;
@@ -38,7 +40,9 @@ const ResumePreviewCredentialDateDisplay: React.FC<ResumePreviewCredentialDateDi
                         className="sm:mt-0 inline-flex items-center gap-2 rounded-[10px] bg-indigo-50 px-3 py-1.5"
                     >
                         <span className="font-medium text-sm text-grayscale-900">
-                            {formattedStartDate || startLabel || 'Start date'}
+                            {formattedStartDate ||
+                                startLabel ||
+                                m['passport.resumeBuilder.dates.start']()}
                         </span>
                         <Calendar className="w-5 h-5 text-grayscale-900" />
                     </button>
@@ -49,7 +53,7 @@ const ResumePreviewCredentialDateDisplay: React.FC<ResumePreviewCredentialDateDi
                         className="sm:mt-0 inline-flex items-center gap-2 rounded-[10px] bg-indigo-50 px-3 py-1.5"
                     >
                         <span className="font-medium text-sm text-grayscale-900">
-                            {formattedEndDate || 'End date'}
+                            {formattedEndDate || m['passport.resumeBuilder.dates.end']()}
                         </span>
                         <Calendar className="w-5 h-5 text-grayscale-900" />
                     </button>

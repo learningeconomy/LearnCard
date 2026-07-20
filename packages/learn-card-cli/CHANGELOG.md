@@ -1,5 +1,13 @@
 # @learncard/cli
 
+## 3.4.10
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.4.8
+    -   @learncard/holder-continuity@0.2.10
+
 ## 3.4.9
 
 ### Patch Changes

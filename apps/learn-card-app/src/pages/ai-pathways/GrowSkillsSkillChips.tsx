@@ -3,6 +3,8 @@ import { IonSkeletonText } from '@ionic/react';
 
 import { conditionalPluralize } from 'learn-card-base';
 
+import * as m from '../../paraglide/messages.js';
+
 import CompetencyIcon from '../SkillFrameworks/CompetencyIcon';
 import {
     useGlobalSemanticSearchSkills,
@@ -187,7 +189,7 @@ const GrowSkillsSkillChips: React.FC<GrowSkillsSkillChipsProps> = props => {
         return (
             <div className={rootClassName}>
                 <p className="text-[14px] text-grayscale-600 font-bold leading-[14px] tracking-[0.32px]">
-                    Skills
+                    {m['wallet.categories.skills']()}
                 </p>
 
                 <div className={skillRowClassName}>

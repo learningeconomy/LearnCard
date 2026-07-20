@@ -6,6 +6,7 @@ import CreateFrameworkModal from '../SkillFrameworks/CreateFrameworkModal';
 import SelfAssignSkillsModal from './SelfAssignSkillsModal';
 
 import { ModalTypes, useModal } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 type SkillsHubPlusOptionsModalProps = {};
 
@@ -43,14 +44,14 @@ const SkillsHubPlusOptionsModal: React.FC<SkillsHubPlusOptionsModalProps> = ({})
                     version="outlined"
                     className="w-[35px] h-[35px] text-grayscale-900"
                 />
-                Create Framework
+                {m['skills.adminPanel.createFramework']()}
             </button>
             <button
                 onClick={openSelfAssignSkillsModal}
                 className="flex items-center gap-[10px] py-[10px] font-notoSans text-[18px] text-grayscale-800"
             >
                 <Plus className="w-[35px] h-[35px] p-[5px]" strokeWidth="2" />
-                Self Assign Skills
+                {m['skills.plusOptions.selfAssign']()}
             </button>
         </div>
     );

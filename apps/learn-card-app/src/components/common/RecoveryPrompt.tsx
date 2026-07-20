@@ -1,5 +1,6 @@
 import React from 'react';
 import progressBarIcon from '../../../src/assets/images/progress-bar.svg';
+import * as m from '../../paraglide/messages.js';
 
 type RecoveryPromptProps = {
     title?: string;
@@ -13,13 +14,13 @@ type RecoveryPromptProps = {
 };
 
 export const RecoveryPrompt: React.FC<RecoveryPromptProps> = ({
-    title = 'Recover Your Progress',
+    title = m['recoveryPrompt.title'](),
     itemName,
-    itemType = 'item',
+    itemType = m['recoveryPrompt.defaultItemType'](),
     onRecover,
     onDiscard,
-    recoverButtonText = 'Continue Editing',
-    discardButtonText = 'Start Fresh',
+    recoverButtonText = m['recoveryPrompt.continueEditing'](),
+    discardButtonText = m['recoveryPrompt.startFresh'](),
     icon,
 }) => {
     return (
@@ -47,8 +48,7 @@ export const RecoveryPrompt: React.FC<RecoveryPromptProps> = ({
                         {title}
                     </h6>
                     <p className="text-center text-grayscale-900 font-poppins text-[20px] mb-4">
-                        We found a {itemType} with unsaved changes. Would you like to continue where
-                        you left off?
+                        {m['recoveryPrompt.body']({ itemType })}
                     </p>
 
                     <button

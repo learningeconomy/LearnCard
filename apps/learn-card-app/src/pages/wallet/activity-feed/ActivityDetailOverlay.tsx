@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { formatLocaleDate } from '../../../i18n/formatters';
 import { useHistory } from 'react-router-dom';
 import { IonIcon } from '@ionic/react';
 import { closeOutline, arrowForwardOutline, calendarOutline } from 'ionicons/icons';
@@ -6,6 +7,7 @@ import { UserProfilePicture } from 'learn-card-base';
 import { CATEGORY_TO_ROUTE } from '../../../helpers/categoryRoutes';
 import { ActivityCredentialIcon } from './ActivityCredentialIcon';
 import type { ActivityFeedItemVM } from './activityFeed.helpers';
+import * as m from '../../../paraglide/messages.js';
 
 export const ActivityDetailOverlay: React.FC<{
     item: ActivityFeedItemVM;
@@ -37,7 +39,7 @@ export const ActivityDetailOverlay: React.FC<{
         };
     }, []);
 
-    const formattedDate = new Date(item.timestamp).toLocaleDateString('en-US', {
+    const formattedDate = formatLocaleDate(new Date(item.timestamp), {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -45,10 +47,12 @@ export const ActivityDetailOverlay: React.FC<{
     });
 
     const subText = item.isSelf
-        ? 'You added this to your passport.'
+        ? m['passport.activity.selfAdded']()
         : item.direction === 'sent'
-        ? `You shared this with ${item.counterpartyName}.`
-        : `${item.actorName || 'Someone'} shared this with you.`;
+        ? m['passport.activity.sentShare']({ name: item.counterpartyName })
+        : m['passport.activity.rcvdShare']({
+              name: item.actorName || m['passport.activity.someone'](),
+          });
 
     const personNode = (
         <UserProfilePicture
@@ -94,7 +98,7 @@ export const ActivityDetailOverlay: React.FC<{
             >
                 <button
                     onClick={onClose}
-                    aria-label="Close"
+                    aria-label={m['common.close']()}
                     className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-grayscale-100 hover:bg-grayscale-200 rounded-full text-grayscale-700 transition-colors"
                 >
                     <IonIcon icon={closeOutline} className="text-xl" />
@@ -131,7 +135,7 @@ export const ActivityDetailOverlay: React.FC<{
                     {item.credentialType && (
                         <div className="flex items-center justify-between border-b border-grayscale-100 pb-3">
                             <span className="text-xs font-medium text-grayscale-500 uppercase tracking-[0.5px]">
-                                What
+                                {m['passport.activity.what']()}
                             </span>
                             <span className="text-sm text-grayscale-900 font-medium text-right">
                                 {item.credentialType}
@@ -140,7 +144,7 @@ export const ActivityDetailOverlay: React.FC<{
                     )}
                     <div className="flex items-center justify-between border-b border-grayscale-100 pb-3">
                         <span className="text-xs font-medium text-grayscale-500 uppercase tracking-[0.5px]">
-                            Type
+                            {m['passport.activity.type']()}
                         </span>
                         <span className="text-sm text-grayscale-900 font-medium text-right">
                             {item.categoryLabel}
@@ -148,7 +152,7 @@ export const ActivityDetailOverlay: React.FC<{
                     </div>
                     <div className="flex items-center justify-between border-b border-grayscale-100 pb-3">
                         <span className="text-xs font-medium text-grayscale-500 uppercase tracking-[0.5px]">
-                            Date
+                            {m['passport.activity.date']()}
                         </span>
                         <span className="text-sm text-grayscale-900 font-medium text-right flex items-center gap-1.5 justify-end">
                             <IonIcon
@@ -160,7 +164,7 @@ export const ActivityDetailOverlay: React.FC<{
                     </div>
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-grayscale-500 uppercase tracking-[0.5px]">
-                            Status
+                            {m['common.status']()}
                         </span>
                         <span
                             className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
@@ -178,7 +182,7 @@ export const ActivityDetailOverlay: React.FC<{
                             onClick={viewInPassport}
                             className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                         >
-                            View in your passport
+                            {m['passport.activity.viewInPass']()}
                         </button>
                     )}
                     <button
@@ -189,7 +193,7 @@ export const ActivityDetailOverlay: React.FC<{
                                 : 'bg-grayscale-900 text-white hover:opacity-90 transition-opacity'
                         }`}
                     >
-                        Done
+                        {m['common.done']()}
                     </button>
                 </div>
             </div>

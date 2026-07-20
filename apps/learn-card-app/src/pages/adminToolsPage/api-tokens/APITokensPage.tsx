@@ -4,6 +4,7 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('api-tokens-page');
 
 import { IonGrid, IonRow, IonCol, IonSpinner } from '@ionic/react';
+import * as m from '../../../paraglide/messages.js';
 import AdminPageStructure from '../AdminPageStructure';
 import CreateAPITokenModal from './CreateAPITokenModal';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
@@ -141,7 +142,7 @@ const APITokensPage: React.FC = () => {
             {loading && (
                 <div className="w-[500px] h-[200px] flex flex-col gap-[5px] items-center justify-center">
                     <IonSpinner color="dark" />
-                    <span>Loading...</span>
+                    <span>{m['common.loading']()}</span>
                 </div>
             )}
             {!loading && (

@@ -22,8 +22,7 @@ const FALLBACK_ENV_PATH = resolve(LCA_API_ROOT, '.env');
  * ScoutPass is single-tenant, so unlike learn-card-app's lc there is no tenant
  * picker — just stages. Stages are discovered from environments/scoutpass:
  * every config.<stage>.json overlay is a stage, plus the implicit 'production'
- * stage which is the base config.json with no overlay. ScoutPass has no staging
- * environment, so this normally yields ['local', 'production'].
+ * stage which is the base config.json with no overlay.
  */
 const PROJECT_ID = 'scoutpass';
 
@@ -213,6 +212,7 @@ const configToEnv = (config: Record<string, any>): Record<string, string> => {
     if (apis.cloudService) env.CLOUD_URL = apis.cloudService;
     if (apis.xapi) env.LEARN_CLOUD_XAPI_URL = apis.xapi;
     if (apis.lcaApi) env.API_URL = apis.lcaApi;
+    if (config.auth?.sss?.serverUrl) env.VITE_SSS_SERVER_URL = config.auth.sss.serverUrl;
     if (config.observability?.sentryEnv) env.SENTRY_ENV = config.observability.sentryEnv;
 
     return env;

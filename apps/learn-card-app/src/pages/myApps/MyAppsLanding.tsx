@@ -4,6 +4,8 @@ import { IonPage, IonContent } from '@ionic/react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useDeviceTypeByWidth } from 'learn-card-base';
 
+import * as m from '../../paraglide/messages.js';
+
 import Search from 'learn-card-base/svgs/Search';
 
 import MainHeader from '../../components/main-header/MainHeader';
@@ -21,6 +23,25 @@ import useMoreApps from './useMoreApps';
 import { usePathwaysEnabled } from '../pathways/hooks/usePathwaysEnabled';
 
 const DEEP_LINK_PARAMS = ['connectTo', 'uri', 'embedUrl'];
+
+// Localized display titles for the first-party LearnCard app tiles, keyed by the
+// shortcut's stable `key`. Reuses each feature's existing translated label where
+// one exists; only Skill Insights and Boost a Friend needed new keys. The source
+// `title` in learnCardAppShortcuts stays English (a stable id used by tests).
+const SHORTCUT_TITLE: Record<string, () => string> = {
+    journeys: m['sidemenu.links.pathways'],
+    'skill-insights': m['myAppsPage.shortcuts.skillInsights'],
+    pathways: m['pathways.title'],
+    'ai-sessions': m['launchpad.header.aiSessions'],
+    'resume-builder': m['passport.resumeBuilder.title'],
+    'skills-hub': m['aiFeatureLinks.skillsHub'],
+    'data-sharing': m['dataSharing.title'],
+    families: m['family.title'],
+    'boost-a-friend': m['myAppsPage.shortcuts.boostAFriend'],
+};
+
+const shortcutTitle = (shortcut: LearnCardAppShortcut): string =>
+    (SHORTCUT_TITLE[shortcut.key] ?? (() => shortcut.title))();
 
 // Mobile: the header is a frosted-glass bar (white gradient + backdrop blur),
 // matching the bottom nav. Desktop: the header bar is transparent so it doesn't
@@ -98,7 +119,7 @@ const MyAppsLanding: React.FC = () => {
     const renderShortcutTile = (shortcut: LearnCardAppShortcut) => (
         <AppGridTile
             key={shortcut.key}
-            title={shortcut.title}
+            title={shortcutTitle(shortcut)}
             icon={<shortcut.Icon className="h-full w-full" />}
             gradientFrom={shortcut.gradientFrom}
             gradientTo={shortcut.gradientTo}
@@ -147,14 +168,15 @@ const MyAppsLanding: React.FC = () => {
                     <div className="flex w-full max-w-[820px] flex-col gap-3 md:flex-row md:items-center md:gap-4">
                         <div className="flex items-center justify-between gap-3 md:contents">
                             <h1 className="font-poppins text-[30px] font-normal text-[#18224E] md:order-1">
-                                My Apps
+                                {m['launchpad.tabs.myApps']()}
                             </h1>
                             <button
                                 type="button"
                                 onClick={() => history.push('/launchpad/browse?tab=All')}
                                 className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[10px] border border-[#E2E3E9] bg-[#FBFBFC] px-4 py-2.5 font-poppins text-[15px] font-medium text-[#6366F1] md:order-3 md:text-[17px]"
                             >
-                                Browse More <span className="text-[18px] leading-none">+</span>
+                                {m['myAppsPage.browseMore']()}{' '}
+                                <span className="text-[18px] leading-none">+</span>
                             </button>
                         </div>
                         <div className="relative w-full md:order-2 md:max-w-[320px] md:flex-1">
@@ -162,8 +184,8 @@ const MyAppsLanding: React.FC = () => {
                             <input
                                 value={searchInput}
                                 onChange={e => setSearchInput(e.target.value)}
-                                placeholder="Search..."
-                                aria-label="Search apps"
+                                placeholder={m['myAppsPage.searchPlaceholder']()}
+                                aria-label={m['myAppsPage.searchAria']()}
                                 className="w-full rounded-[10px] bg-[#E2E3E9] py-2.5 pl-11 pr-4 font-notoSans text-[16px] text-[#18224E] placeholder:text-[#6F7590] focus:outline-none"
                             />
                         </div>
@@ -173,10 +195,13 @@ const MyAppsLanding: React.FC = () => {
                         <div className="w-full max-w-[820px]">
                             <p className="mb-4 font-poppins text-[15px] text-[#6F7590] md:mb-6">
                                 {resultsCount === 0
-                                    ? `No results for "${searchInput.trim()}"`
-                                    : `${resultsCount} result${
-                                          resultsCount === 1 ? '' : 's'
-                                      } for "${searchInput.trim()}"`}
+                                    ? m['myAppsPage.noResultsFor']({ query: searchInput.trim() })
+                                    : resultsCount === 1
+                                    ? m['myAppsPage.oneResult']({ query: searchInput.trim() })
+                                    : m['myAppsPage.manyResults']({
+                                          count: resultsCount,
+                                          query: searchInput.trim(),
+                                      })}
                             </p>
                             {resultsCount > 0 && (
                                 <AppGrid>{matchedApps.map(renderAppTile)}</AppGrid>
@@ -184,14 +209,14 @@ const MyAppsLanding: React.FC = () => {
                         </div>
                     ) : (
                         <>
-                            <AppGrid heading="LearnCard Apps">
+                            <AppGrid heading={m['myAppsPage.learnCardApps']()}>
                                 {shortcuts.map(renderShortcutTile)}
                             </AppGrid>
 
-                            <AppGrid heading="More Apps">
+                            <AppGrid heading={m['myAppsPage.moreApps']()}>
                                 {hasNoMoreApps ? (
                                     <p className="col-span-full py-8 text-center font-poppins text-[15px] text-[#6F7590]">
-                                        No apps to show yet.
+                                        {m['myAppsPage.noResults']()}
                                     </p>
                                 ) : (
                                     moreAppsTiles

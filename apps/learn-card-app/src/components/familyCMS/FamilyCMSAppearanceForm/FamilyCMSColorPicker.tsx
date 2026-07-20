@@ -6,6 +6,7 @@ import X from 'learn-card-base/svgs/X';
 
 import { FamilyCMSState } from '../familyCMSState';
 import { ModalTypes, useModal } from 'learn-card-base';
+import { m } from '../../../paraglide/messages.js';
 
 const FamilyColorPickerWrapper: React.FC<{
     closeModal: () => void;
@@ -104,7 +105,7 @@ export const FamilyCMSColorPicker: React.FC<{
                         value={color}
                         onChange={e => handleColorInputOnChange(e.target.value)}
                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] p-4 font-medium tracking-widest text-base w-full"
-                        placeholder="Color Hex Code"
+                        placeholder={m['family.colorHexCode']()}
                         type="text"
                     />
 

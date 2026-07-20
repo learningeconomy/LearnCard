@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 import { useHistory } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import {
@@ -44,6 +46,7 @@ import { IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
 import EmailForm from './forms/EmailForm';
 import PhoneForm from './forms/PhoneForm';
 import LoginFooter from './LoginFooter';
+import { LanguagePickerCompact } from '../../components/sidemenu/LanguagePicker';
 import OnboardingFlow from '../../components/onboarding/v2/OnboardingFlow';
 import EUParentalConsentModalContent from '../../components/onboarding/onboardingNetworkForm/components/EUParentalConsentModalContent';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
@@ -369,20 +372,20 @@ export const LoginContent: React.FC = () => {
                         </div>
 
                         <h2 className="text-xl font-semibold text-grayscale-900 mb-2">
-                            You're all set!
+                            {m['login.qrApproved.heading']()}
                         </h2>
 
                         <p className="text-sm text-grayscale-600 leading-relaxed mb-6">
                             {accountHint ? (
-                                <>
-                                    Sign in with{' '}
-                                    <span className="font-medium text-grayscale-900">
-                                        {accountHint}
-                                    </span>{' '}
-                                    to access your account.
-                                </>
+                                <TransP
+                                    m={m['login.qrApproved.withHint']}
+                                    values={{ hint: accountHint }}
+                                    components={[
+                                        <span className="font-medium text-grayscale-900" key="h" />,
+                                    ]}
+                                />
                             ) : (
-                                'Now just sign in below to access your account.'
+                                m['login.qrApproved.noHint']()
                             )}
                         </p>
 
@@ -394,7 +397,7 @@ export const LoginContent: React.FC = () => {
                             }}
                             className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                         >
-                            Continue to Sign In
+                            {m['login.qrApproved.continueButton']()}
                         </button>
                     </div>
                 </IonRow>
@@ -414,10 +417,10 @@ export const LoginContent: React.FC = () => {
                                 }`}
                             >
                                 {isNewUserSetup
-                                    ? 'Create your account in a few quick steps.'
+                                    ? m['login.prompt.newUser']()
                                     : isReturningUser
-                                    ? 'Welcome back — sign in to continue.'
-                                    : 'Sign in or create your account.'}
+                                    ? m['login.prompt.returning']()
+                                    : m['login.prompt.default']()}
                             </p>
                         </div>
                     </IonRow>
@@ -441,13 +444,15 @@ export const LoginContent: React.FC = () => {
 
                                 <span className="text-sm text-white font-medium">
                                     {accountHint ? (
-                                        <>
-                                            Sign in with{' '}
-                                            <span className="font-semibold">{accountHint}</span> to
-                                            finish
-                                        </>
+                                        <TransP
+                                            m={m['login.linkedBanner.withHint']}
+                                            values={{ hint: accountHint }}
+                                            components={[
+                                                <span className="font-semibold" key="h" />,
+                                            ]}
+                                        />
                                     ) : (
-                                        'Device linked — sign in to finish'
+                                        m['login.linkedBanner.noHint']()
                                     )}
                                 </span>
                             </div>
@@ -465,11 +470,15 @@ export const LoginContent: React.FC = () => {
                                     />
                                 )}
                                 <span className="text-sm text-white font-medium">
-                                    You'll be taken back to{' '}
-                                    <span className="font-semibold">
-                                        {installIntent.appName ?? 'the app'}
-                                    </span>{' '}
-                                    after sign in
+                                    <TransP
+                                        m={m['login.installIntent.banner']}
+                                        values={{
+                                            appName:
+                                                installIntent.appName ??
+                                                m['login.installIntent.defaultAppName'](),
+                                        }}
+                                        components={[<span className="font-semibold" key="a" />]}
+                                    />
                                 </span>
                             </div>
                         </IonRow>
@@ -589,7 +598,7 @@ export const LoginContent: React.FC = () => {
                                     ${isPublicMode ? 'text-white font-medium' : 'text-white/60'}
                                 `}
                                 >
-                                    Shared or public computer
+                                    {m['login.sharedComputer']()}
                                 </span>
                             </button>
                         </IonRow>
@@ -601,7 +610,7 @@ export const LoginContent: React.FC = () => {
                                 onClick={() => setShowQrLogin(true)}
                                 className="text-sm text-white/80 hover:text-white underline transition-colors"
                             >
-                                Sign in from another device
+                                {m['login.signInFromAnotherDevice']()}
                             </button>
                         </IonRow>
                     )}
@@ -654,6 +663,12 @@ const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
                 className="flex flex-col flex-grow"
                 style={{ '--background': loginBgColor } as React.CSSProperties}
             >
+                {/* Pre-auth language switcher. Positioned over the login background
+                    in the safe-area top-right; the side-menu LanguagePicker isn't
+                    reachable until after sign-in. */}
+                <div className="absolute top-0 end-0 z-10 pe-4 pt-[max(env(safe-area-inset-top),12px)]">
+                    <LanguagePickerCompact />
+                </div>
                 <IonGrid
                     className="h-full w-full flex items-center justify-center"
                     style={{ backgroundColor: loginBgColor }}

@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useLayoutEffect, useMemo, useCallback } from 'react';
+import * as m from '../../../paraglide/messages.js';
+import { getLocale } from '../../../paraglide/runtime.js';
 
 type BirthdayPickerProps = {
     value: string;
@@ -9,21 +11,6 @@ type BirthdayPickerProps = {
 const ITEM_HEIGHT = 40;
 const VISIBLE_ITEMS = 5;
 const SPACER_COUNT = Math.floor(VISIBLE_ITEMS / 2);
-
-const MONTHS = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-];
 
 const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, className = '' }) => {
     const now = new Date();
@@ -46,6 +33,11 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
     const [selectedYear, setSelectedYear] = useState(initialDate.year);
     const [selectedMonth, setSelectedMonth] = useState(initialDate.month);
     const [selectedDay, setSelectedDay] = useState(initialDate.day);
+
+    const monthLabels = useMemo(() => {
+        const formatter = new Intl.DateTimeFormat(getLocale(), { month: 'long' });
+        return Array.from({ length: 12 }, (_, i) => formatter.format(new Date(2000, i, 1)));
+    }, []);
 
     const years = useMemo(() => {
         const arr = [];
@@ -256,11 +248,17 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
         setter: (val: number) => void,
         format: (val: number) => string
     ) => {
+        const columnLabel =
+            type === 'month'
+                ? m['onboarding.dobMonth']()
+                : type === 'day'
+                ? m['onboarding.dobDay']()
+                : m['onboarding.dobYear']();
         return (
             <div
                 ref={ref}
                 role="listbox"
-                aria-label={type.charAt(0).toUpperCase() + type.slice(1)}
+                aria-label={columnLabel}
                 tabIndex={0}
                 className="flex-1 h-[200px] overflow-y-auto snap-y snap-mandatory relative z-10 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 [&::-webkit-scrollbar]:hidden"
                 style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}
@@ -302,12 +300,12 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
     return (
         <div
             role="group"
-            aria-label="Date of birth"
+            aria-label={m['onboarding.profile.dateOfBirth']()}
             className={`flex flex-col items-center w-full font-poppins ${className}`}
         >
             {!hasInteracted && (
                 <p className="text-xs text-grayscale-500 mb-2 animate-fade-in-up">
-                    Scroll to choose
+                    {m['onboarding.scrollToChoose']()}
                 </p>
             )}
             <div className="relative w-full bg-white/80 backdrop-blur-sm border border-grayscale-200/60 rounded-2xl shadow-sm p-2 overflow-hidden">
@@ -328,7 +326,7 @@ const BirthdayPicker: React.FC<BirthdayPickerProps> = ({ value, onChange, classN
                         months,
                         selectedMonth,
                         setSelectedMonth,
-                        m => MONTHS[m - 1] || ''
+                        monthNum => monthLabels[monthNum - 1] || ''
                     )}
                     {renderColumn('day', dayRef, days, selectedDay, setSelectedDay, d =>
                         d.toString()

@@ -20,6 +20,7 @@
  */
 
 import React, { useState } from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 import { IonIcon } from '@ionic/react';
 import { closeOutline, mapOutline, openOutline } from 'ionicons/icons';
@@ -266,7 +267,7 @@ const OverlayFrame: React.FC<{
                 <button
                     type="button"
                     onClick={onClose}
-                    aria-label="Close"
+                    aria-label={m['common.close']()}
                     className="absolute right-3 w-10 h-10 rounded-full
                            bg-white/80 hover:bg-white hover:shadow-md
                            border border-grayscale-200
