@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { v4 as uuid } from 'uuid';
+
+import * as m from '../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('use-upload-file');
 
@@ -20,7 +22,7 @@ import {
     getCategoryForCredential,
     useSyncAllCredentialsToContractsMutation,
     categoryMetadata,
-    filestack,
+    getImageUploadProvider,
     BoostMediaOptionsEnum,
 } from 'learn-card-base';
 import { useAiInsightCredentialMutation } from 'learn-card-base/hooks/useAiInsightCredential';
@@ -36,33 +38,34 @@ export type RawArtifactType = {
 };
 
 const ATTACHMENTS_CONTEXT = {
+    lcn: 'https://docs.learncard.com/definitions#',
     xsd: 'https://www.w3.org/2001/XMLSchema#',
     attachments: {
-        '@id': 'https://www.example.org/boost-attachments',
+        '@id': 'lcn:boostAttachments',
         '@container': '@set',
         '@context': {
             title: {
-                '@id': 'https://www.example.org/attachmentTitle',
+                '@id': 'lcn:attachmentTitle',
                 '@type': 'xsd:string',
             },
             type: {
-                '@id': 'https://www.example.org/attachmentType',
+                '@id': 'lcn:attachmentType',
                 '@type': 'xsd:string',
             },
             url: {
-                '@id': 'https://www.example.org/attachmentUrl',
+                '@id': 'lcn:attachmentUrl',
                 '@type': 'xsd:string',
             },
             fileName: {
-                '@id': 'https://www.example.org/attachmentFileName',
+                '@id': 'lcn:attachmentFileName',
                 '@type': 'xsd:string',
             },
             fileSize: {
-                '@id': 'https://www.example.org/attachmentFileSize',
+                '@id': 'lcn:attachmentFileSize',
                 '@type': 'xsd:string',
             },
             fileType: {
-                '@id': 'https://www.example.org/attachmentFileType',
+                '@id': 'lcn:attachmentFileType',
                 '@type': 'xsd:string',
             },
         },
@@ -147,12 +150,29 @@ const SUCCESS_TOAST_OPTIONS = {
     autoDismiss: false,
 } as const;
 
+const FILE_UPLOAD_ERROR_TOAST_OPTIONS = {
+    hasDismissButton: true,
+    type: ToastTypeEnum.Error,
+    hasX: true,
+    duration: 5000,
+} as const;
+
 const TOAST_PAUSE_MS = 100;
 
 // Stable, user-facing copy for inline file errors. Raw parser / validation / storage
 // details are logged, never rendered.
 const FRIENDLY_FILE_ERROR =
     'We could not add that credential. Please check the file and try again.';
+
+const uploadCertificateFile = async (file: File): Promise<string> => {
+    const uploadResult = await getImageUploadProvider().upload(file);
+
+    if (!uploadResult.url) {
+        throw new Error('Certificate upload did not return a URL');
+    }
+
+    return uploadResult.url;
+};
 
 export const getFileInfo = (file: File) => {
     const match = file.name.match(/\.([0-9a-z]+)(?=[?#])?|(\.)(?:[\w]+)$/i);
@@ -224,10 +244,12 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
         });
 
     const getFile = async (event: React.ChangeEvent<HTMLInputElement>, uploadType: string) => {
+        setIsUploading(true);
+        setBase64Data('');
+        setRawArtifactCredential(null);
+        setFile(null);
+
         try {
-            setIsUploading(true);
-            setBase64Data('');
-            setRawArtifactCredential(null);
             const wallet = await initWallet();
             const walletDid = wallet?.id?.did();
             const file = event.target.files?.[0];
@@ -235,14 +257,10 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             if (!file || !walletDid) return;
 
             const fileInfo = getFileInfo(file);
-            setFile(fileInfo);
-
-            const base64Data = await toBase64(file);
-            if (base64Data) setBase64Data(base64Data);
 
             const artifactUrl =
                 uploadType === UploadTypesEnum.Certificate
-                    ? ((await filestack.upload(file)) as { url: string }).url
+                    ? await uploadCertificateFile(file)
                     : undefined;
             const rawArtifactCredential = await createRawArtifactVC(
                 file,
@@ -250,13 +268,19 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                 uploadType,
                 artifactUrl
             );
+            setFile(fileInfo);
+            setBase64Data(rawArtifactCredential.rawArtifact.data);
             setRawArtifactCredential(rawArtifactCredential);
-            setIsUploading(false);
 
             return { fileInfo, rawArtifactCredential };
         } catch (error) {
+            log.error('getFile::error', error);
+            presentToast(m['passport.buildMyLearnCard.uploadError.singleMessage'](), {
+                ...FILE_UPLOAD_ERROR_TOAST_OPTIONS,
+                title: m['passport.buildMyLearnCard.uploadError.title'](),
+            });
+        } finally {
             setIsUploading(false);
-            log.info('getFile::error', error);
         }
     };
 
@@ -265,42 +289,83 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
         e: React.ChangeEvent<HTMLInputElement>,
         uploadType: UploadTypesEnum
     ) => {
+        setIsUploading(true);
+        setBase64Datas([]);
+        setRawArtifactCredentials([]);
+        setFiles([]);
+
         try {
-            setIsUploading(true);
-            setBase64Datas([]);
-            setRawArtifactCredentials([]);
             const wallet = await initWallet();
             const walletDid = wallet?.id?.did();
-            const files = e.target.files;
+            const selectedFiles = e.target.files;
 
-            if (!files || !walletDid) return;
+            if (!selectedFiles || !walletDid) return;
 
-            const fileInfos = Array.from(files).map(file => getFileInfo(file));
+            const fileArray = Array.from(selectedFiles);
+            const uploadResults = await Promise.all(
+                fileArray.map(async file => {
+                    try {
+                        const artifactUrl =
+                            uploadType === UploadTypesEnum.Certificate
+                                ? await uploadCertificateFile(file)
+                                : undefined;
+                        const rawArtifactCredential = await createRawArtifactVC(
+                            file,
+                            walletDid,
+                            uploadType,
+                            artifactUrl
+                        );
+
+                        return {
+                            fileInfo: getFileInfo(file),
+                            base64Data: rawArtifactCredential.rawArtifact.data,
+                            rawArtifactCredential,
+                        };
+                    } catch (error) {
+                        log.error('getFiles::file-error', error);
+                        return null;
+                    }
+                })
+            );
+            const successfulUploads = uploadResults.filter(result => result !== null);
+            const failedCount = fileArray.length - successfulUploads.length;
+            const fileInfos = successfulUploads.map(result => result.fileInfo);
+            const rawArtifactCredentials = successfulUploads.map(
+                result => result.rawArtifactCredential
+            );
+
             setFiles(fileInfos);
-
-            const _base64Datas = await Promise.all(Array.from(files).map(toBase64));
-            if (_base64Datas) setBase64Datas(_base64Datas);
-
-            const fileArray = Array.from(files);
-            const artifactUrls = await Promise.all(
-                fileArray.map(async file =>
-                    uploadType === UploadTypesEnum.Certificate
-                        ? ((await filestack.upload(file)) as { url: string }).url
-                        : undefined
-                )
-            );
-            const rawArtifactCredentials = await Promise.all(
-                fileArray.map((file, index) =>
-                    createRawArtifactVC(file, walletDid, uploadType, artifactUrls[index])
-                )
-            );
+            setBase64Datas(successfulUploads.map(result => result.base64Data));
             setRawArtifactCredentials(rawArtifactCredentials);
-            setIsUploading(false);
+
+            if (failedCount > 0) {
+                const hadPartialSuccess = successfulUploads.length > 0;
+                presentToast(
+                    hadPartialSuccess
+                        ? failedCount === 1
+                            ? m['passport.buildMyLearnCard.uploadError.partialSingleMessage']()
+                            : m['passport.buildMyLearnCard.uploadError.partialMultipleMessage']({
+                                  count: failedCount,
+                              })
+                        : m['passport.buildMyLearnCard.uploadError.multipleMessage'](),
+                    {
+                        ...FILE_UPLOAD_ERROR_TOAST_OPTIONS,
+                        title: hadPartialSuccess
+                            ? m['passport.buildMyLearnCard.uploadError.partialTitle']()
+                            : m['passport.buildMyLearnCard.uploadError.title'](),
+                    }
+                );
+            }
 
             return { fileInfos, rawArtifactCredentials };
         } catch (error) {
+            log.error('getFiles::error', error);
+            presentToast(m['passport.buildMyLearnCard.uploadError.multipleMessage'](), {
+                ...FILE_UPLOAD_ERROR_TOAST_OPTIONS,
+                title: m['passport.buildMyLearnCard.uploadError.title'](),
+            });
+        } finally {
             setIsUploading(false);
-            log.info('getFiles::error', error);
         }
     };
 
