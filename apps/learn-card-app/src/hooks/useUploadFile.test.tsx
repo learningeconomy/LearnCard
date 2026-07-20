@@ -69,11 +69,21 @@ vi.mock('./useUploadVcFromText', () => ({
     useUploadVcFromText: () => ({ uploadVcFromText: vi.fn() }),
 }));
 
-import { addCertificateAttachment, useUploadFile } from './useUploadFile';
+import { addCertificateAttachment, getFileInfo, useUploadFile } from './useUploadFile';
 import { UploadTypesEnum } from 'learn-card-base';
 
 const createChangeEvent = (files: File[]): React.ChangeEvent<HTMLInputElement> =>
     ({ target: { files } } as unknown as React.ChangeEvent<HTMLInputElement>);
+
+describe('getFileInfo', () => {
+    it('uses the final extension segment for multi-dot filenames', () => {
+        expect(getFileInfo(new File(['image'], 'scan.final.png'))).toEqual({
+            name: 'scan.final.png',
+            size: '5 B',
+            type: 'PNG',
+        });
+    });
+});
 
 describe('useUploadFile certificate uploads', () => {
     beforeEach(() => {

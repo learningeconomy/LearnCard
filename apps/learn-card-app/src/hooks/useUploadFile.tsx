@@ -213,7 +213,7 @@ const uploadCertificateFile = async (file: File): Promise<string> => {
 };
 
 export const getFileInfo = (file: File) => {
-    const match = file.name.match(/\.([0-9a-z]+)(?=[?#])?|(\.)(?:[\w]+)$/i);
+    const match = file.name.match(/\.([0-9a-z]+)(?:[?#].*)?$/i);
     const extension = match?.[1]?.toLowerCase() ?? 'unknown';
 
     const typeMap: Record<string, string> = {
