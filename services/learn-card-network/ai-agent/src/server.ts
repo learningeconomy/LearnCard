@@ -495,8 +495,8 @@ export const createServer = ({
         };
 
     app.use(cors());
-    app.use(express.json({ limit: '1mb' }));
     app.use('/api', baselineRateLimit);
+    app.use(express.json({ limit: '1mb' }));
 
     app.get('/api/health', async (_req, res) => {
         const assistantFeedStatus = await assistantFeed.getStatus();
