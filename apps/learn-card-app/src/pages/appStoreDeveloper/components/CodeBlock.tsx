@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Check, Copy } from 'lucide-react';
 
+import * as m from '../../../paraglide/messages.js';
+
 /**
  * Simple syntax highlighter for TypeScript/JavaScript code
  */
@@ -11,7 +13,10 @@ export const highlightCode = (code: string): React.ReactNode[] => {
     const patterns: { type: string; regex: RegExp }[] = [
         { type: 'comment', regex: /^(\/\/[^\n]*|\/\*[\s\S]*?\*\/)/ },
         { type: 'string', regex: /^(`[\s\S]*?`|'[^']*'|"[^"]*")/ },
-        { type: 'keyword', regex: /^(const|let|var|function|async|await|return|import|export|from|if|else|for|while|class|new|typeof|instanceof|try|catch|throw|finally)\b/ },
+        {
+            type: 'keyword',
+            regex: /^(const|let|var|function|async|await|return|import|export|from|if|else|for|while|class|new|typeof|instanceof|try|catch|throw|finally)\b/,
+        },
         { type: 'boolean', regex: /^(true|false|null|undefined)\b/ },
         { type: 'function', regex: /^([a-zA-Z_$][a-zA-Z0-9_$]*)\s*(?=\()/ },
         { type: 'property', regex: /^(\.[a-zA-Z_$][a-zA-Z0-9_$]*)/ },
@@ -73,8 +78,8 @@ interface CodeBlockProps {
 /**
  * Reusable code block component with syntax highlighting and copy button
  */
-export const CodeBlock: React.FC<CodeBlockProps> = ({ 
-    code, 
+export const CodeBlock: React.FC<CodeBlockProps> = ({
+    code,
     language = 'typescript',
     className = '',
     maxHeight = '',
@@ -96,7 +101,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
             <button
                 onClick={handleCopy}
                 className="absolute top-2 right-2 p-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                title="Copy code"
+                title={m['developerPortal.components.codeBlock.copyCode']()}
             >
                 {copied ? (
                     <Check className="w-4 h-4 text-green-400" />

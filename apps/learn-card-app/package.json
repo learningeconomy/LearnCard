@@ -140,9 +140,13 @@
         "dev-no-build": "docker compose -f compose-local.yaml up",
         "dev-build-brain": "docker compose -f compose-local.yaml up --build brain",
         "start": "vite --host",
+        "i18n:check-ast": "eslint --no-eslintrc -c .eslintrc-i18n.cjs --resolve-plugins-relative-to ../.. --ext .tsx,.ts src/pages/appStoreDeveloper src/pages/appStoreAdmin",
+        "i18n:check-guides": "node scripts/check-i18n-guides.mjs",
+        "i18n:check-untranslated": "node scripts/check-i18n-untranslated.mjs",
         "start-p-4000": "vite --port=4000",
         "storybook": "storybook dev -p 6007",
         "build-storybook": "storybook build",
+        "i18n:check-keys": "node scripts/check-i18n-keys.mjs",
         "test-storybook": "test-storybook --url http://localhost:6007",
         "test-storybook:ci": "concurrently -k -s first -n \"SB,TEST\" -c \"magenta,blue\" \"http-server storybook-static --port 6099 --silent\" \"wait-on tcp:127.0.0.1:6099 && test-storybook --url http://127.0.0.1:6099\"",
         "test:e2e:mock": "playwright test --config=playwright.mock.config.ts",
@@ -151,6 +155,7 @@
         "generate-assets": "bun scripts/generate-tenant-assets.ts",
         "validate-configs": "bun scripts/validate-tenant-configs.ts",
         "validate-themes": "bun scripts/validate-theme-schemas.ts",
+        "check:i18n-imports": "node scripts/check-i18n-imports.mjs",
         "create-tenant": "bun scripts/create-tenant.ts",
         "skill-frameworks": "bun run --cwd ../../services/learn-card-network/brain-service skill-frameworks",
         "lc": "bun scripts/lc.ts",
@@ -176,7 +181,9 @@
         "appflow:install": "bun install --ignore-scripts --frozen-lockfile && bunx nx build learn-card-app",
         "preview": "vite preview --host --port=3000",
         "neo4j-browser": "open-cli http://localhost:7474/browser?preselectAuthMethod=NO_AUTH",
-        "bench:learner-context": "playwright test tests/learner-context-perf.spec.ts --config=playwright.learner-context.config.ts --reporter=line"
+        "bench:learner-context": "playwright test tests/learner-context-perf.spec.ts --config=playwright.learner-context.config.ts --reporter=line",
+        "i18n:check-markers": "node scripts/check-i18n-markers.mjs",
+        "i18n:check-memos": "eslint --no-eslintrc --no-inline-config -c .eslintrc-i18n-memo.cjs --rulesdir eslint-rules --resolve-plugins-relative-to ../.. --ext .tsx,.ts src"
     },
     "browserslist": {
         "production": [
@@ -195,6 +202,7 @@
         "@capacitor/cli": "^8.3.1",
         "@capgo/cli": "^7.2.10",
         "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
+        "@inlang/paraglide-js": "^2.18.1",
         "@ionic/cli": "^7.2.1",
         "@learncard/learn-cloud-service": "workspace:^",
         "@learncard/network-brain-service": "workspace:^",
@@ -217,6 +225,7 @@
         "autoprefixer": "^10.4.20",
         "chromatic": "^17.4.1",
         "concurrently": "7.6.0",
+        "eslint-plugin-i18next": "^6.1.4",
         "http-server": "14.1.1",
         "jeep-sqlite": "2.5.8",
         "neo4j-driver": "5.18.0",

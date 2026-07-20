@@ -4,6 +4,8 @@ import type { StorybookConfig } from '@storybook/react-vite';
 import svgr from 'vite-plugin-svgr';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { mergeConfig, type PluginOption } from 'vite';
+import { paraglideVitePlugin } from '@inlang/paraglide-js';
+import { paraglideMissingKeyOnWarn } from '../paraglideOnWarn';
 import GlobalPolyfill from '@esbuild-plugins/node-globals-polyfill';
 import stdlibbrowser from 'node-stdlib-browser';
 import fs from 'fs';
@@ -53,11 +55,24 @@ const config: StorybookConfig = {
             plugins: [
                 stripPrebuiltSvgDuplicateExports(),
                 svgr(),
+                // Generate Paraglide messages during the Storybook build, mirroring
+                // vite.config.ts. Without this, components importing the gitignored,
+                // build-generated `src/paraglide/messages.js` fail to resolve.
+                paraglideVitePlugin({
+                    project: path.resolve(__dirname, '../project.inlang'),
+                    outdir: path.resolve(__dirname, '../src/paraglide'),
+                }),
                 tsconfigPaths({
                     projects: [path.resolve(__dirname, '../tsconfig.json')],
                     ignoreConfigErrors: true,
                 }),
             ],
+            build: {
+                rollupOptions: {
+                    // Fail the Storybook (Chromatic) build on missing Paraglide keys.
+                    onwarn: paraglideMissingKeyOnWarn,
+                },
+            },
             define: {
                 __PACKAGE_VERSION__: JSON.stringify('storybook'),
                 __BUILD_SHA__: JSON.stringify('storybook'),

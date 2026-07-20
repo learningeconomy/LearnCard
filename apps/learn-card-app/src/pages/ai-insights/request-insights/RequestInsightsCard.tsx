@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { m } from '../../../paraglide/messages.js';
+
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import RequestInsightsModal from './RequestInsightsModal';
@@ -29,10 +31,10 @@ export const RequestInsightsCard: React.FC<{ contractUri: string }> = ({ contrac
 
                 <div className="w-full flex items-start justify-center flex-col ml-[12px] px-2 text-left">
                     <p className="text-[17px] text-grayscale-900 font-semibold line-clamp-1">
-                        Request Insights
+                        {m['aiInsights.requestAccess']()}
                     </p>
                     <p className="text-sm font-poppins text-grayscale-700">
-                        Request access to view your students learning insights.
+                        {m['aiInsights.requestAccessDescription']()}
                     </p>
                 </div>
 

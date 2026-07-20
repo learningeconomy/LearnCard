@@ -15,6 +15,7 @@ import { LCR } from 'learn-card-base/types/credential-records';
 import BoostOptionsMenu from '../boost-options-menu/BoostOptionsMenu';
 
 import { UnsignedVC, VC } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
 
 export enum BoostMenuType {
     managed = 'MANAGED',
@@ -89,7 +90,7 @@ const useBoostMenu = ({
                 },
             });
         } else {
-            presentToast('Error deleting credential: unable to locate record ID.', {
+            presentToast(m['toasts.boost.deleteCredentialError'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });

@@ -58,6 +58,7 @@ import { Bell } from 'lucide-react';
 import GlassCard from '../../pages/privacy-settings/components/GlassCard';
 import TextInput from 'learn-card-base/components/form-inputs/TextInput';
 import { useTheme } from '../../theme/hooks/useTheme';
+import * as m from '../../paraglide/messages.js';
 
 const StateValidator = z.object({
     name: z
@@ -277,11 +278,10 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         </div>
                     </div>
                     <h2 className="text-[22px] font-bold text-grayscale-900 mb-2 font-poppins">
-                        Get an Adult
+                        {m['profile.getAnAdult']()}
                     </h2>
                     <p className="text-grayscale-700 text-[17px] leading-[24px] px-[10px]">
-                        You'll need a parent or guardian to set up a Family Account before you can
-                        join.
+                        {m['profile.needParentGuardian']()}
                     </p>
                 </div>
                 <div className="flex gap-3 w-full">
@@ -290,14 +290,14 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         onClick={closeModal}
                         className="flex-1 py-[10px] text-[20px] bg-white rounded-[40px] text-grayscale-900 shadow-box-bottom border border-grayscale-200"
                     >
-                        Back
+                        {m['profile.back']()}
                     </button>
                     <button
                         type="button"
                         onClick={closeModal}
                         className="flex-1 py-[10px] text-[20px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
                     >
-                        I'm an Adult
+                        {m['profile.imAnAdult']()}
                     </button>
                 </div>
             </div>,
@@ -346,7 +346,10 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
             await handleLCNetworkProfileUpdate();
 
             setIsLoading(false);
-            presentToast('Profile saved', { type: ToastTypeEnum.Success, hasDismissButton: true });
+            presentToast(m['profile.saved'](), {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
             handleCloseModal();
             // ! APPLE HOT FIX
         } else {
@@ -375,7 +378,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         await handleLCNetworkProfileUpdate();
 
                         setIsLoading(false);
-                        presentToast('Profile saved', {
+                        presentToast(m['profile.saved'](), {
                             type: ToastTypeEnum.Success,
                             hasDismissButton: true,
                         });
@@ -400,7 +403,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         handleStorageUpdate();
 
                         setIsLoading(false);
-                        presentToast('Profile saved', {
+                        presentToast(m['profile.saved'](), {
                             type: ToastTypeEnum.Success,
                             hasDismissButton: true,
                         });
@@ -412,7 +415,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                 } catch (error) {
                     setIsLoading(false);
                     log.info('updateProfile::error', error);
-                    presentToast('Could not save your profile. Please try again.', {
+                    presentToast(m['profile.saveFail'](), {
                         type: ToastTypeEnum.Error,
                         hasDismissButton: true,
                     });
@@ -426,11 +429,11 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
             await Clipboard.write({
                 string: walletDid,
             });
-            presentToast('DID copied to clipboard', {
+            presentToast(m['profile.didCopied'](), {
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy DID to clipboard', {
+            presentToast(m['profile.didCopyFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -440,16 +443,16 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     const handleConnectChapi = async () => {
         try {
             await installChapi();
-            presentToast('Credential handler connected', {
+            presentToast(m['chapi.connected'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (e) {
             log.info('installChapi::error', e);
-            presentToast(
-                'Couldn’t connect the credential handler. Your browser may have blocked it — check permissions and try again.',
-                { type: ToastTypeEnum.Error, hasDismissButton: true }
-            );
+            presentToast(m['chapi.connFail'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         }
     };
 
@@ -495,7 +498,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                     </div>
 
                     <h2 className="text-2xl font-bold text-grayscale-900 font-poppins text-center mb-1">
-                        {name || 'Your Name'}
+                        {name || m['profile.yourName']()}
                     </h2>
                     {lcNetworkProfile?.profileId && !hasParentSwitchedProfile && (
                         <p className="text-grayscale-500 font-medium text-[15px]">
@@ -508,17 +511,17 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                     {/* PROFILE SECTION */}
                     <div className="flex flex-col gap-2">
                         <h3 className="text-[13px] font-semibold uppercase tracking-wide text-grayscale-500 px-2">
-                            Profile
+                            {m['profile.profile']()}
                         </h3>
                         <GlassCard className="p-4 flex flex-col gap-4">
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-[14px] font-medium text-grayscale-700 px-1">
-                                    Full Name
+                                    {m['profile.fullName']()}
                                 </label>
                                 <TextInput
                                     value={name}
                                     onChange={setName}
-                                    placeholder="Enter your full name"
+                                    placeholder={m['profile.namePlace']()}
                                     className={errors.name ? 'ring-1 ring-red-500' : ''}
                                 />
                                 {errors.name && (
@@ -531,8 +534,10 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                     <div className="border-t border-grayscale-200/60" />
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-[14px] font-medium text-grayscale-700 px-1">
-                                            Date of Birth{' '}
-                                            {hasParentSwitchedProfile ? '(disabled)' : ''}
+                                            {m['profile.dateOfBirth']()}{' '}
+                                            {hasParentSwitchedProfile
+                                                ? m['profile.disabled']()
+                                                : ''}
                                         </label>
                                         <DatePickerInput
                                             value={dob || ''}
@@ -546,7 +551,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                         />
                                         {dob && !Number.isNaN(calculateAge(dob)) && (
                                             <p className="text-grayscale-500 text-xs px-1">
-                                                Age: {calculateAge(dob)}
+                                                {m['profile.age']()} {calculateAge(dob)}
                                             </p>
                                         )}
                                         {errors?.dob && (
@@ -559,7 +564,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                     <div className="border-t border-grayscale-200/60" />
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-[14px] font-medium text-grayscale-700 px-1">
-                                            Country
+                                            {m['profile.countryLbl']()}
                                         </label>
                                         <button
                                             type="button"
@@ -600,7 +605,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                                 </span>
                                             ) : (
                                                 <span className="text-grayscale-500 text-[14px]">
-                                                    Select Country
+                                                    {m['profile.country']()}
                                                 </span>
                                             )}
                                         </button>
@@ -609,7 +614,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                     <div className="border-t border-grayscale-200/60" />
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-[14px] font-medium text-grayscale-700 px-1">
-                                            Role
+                                            {m['profile.role']()}
                                         </label>
                                         <div className="bg-grayscale-100/80 rounded-[10px] p-1">
                                             <OnboardingRoleItem
@@ -648,7 +653,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                     {showNotificationsRow && Capacitor.isNativePlatform() && (
                         <div className="flex flex-col gap-2">
                             <h3 className="text-[13px] font-semibold uppercase tracking-wide text-grayscale-500 px-2">
-                                Preferences
+                                {m['profile.prefs']()}
                             </h3>
                             <GlassCard className="flex flex-col">
                                 <button
@@ -660,10 +665,10 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                         <Bell className="w-5 h-5 text-grayscale-500" />
                                         <div className="flex flex-col items-start">
                                             <span className="text-[15px] font-medium text-grayscale-900">
-                                                Notifications
+                                                {m['profile.notifs']()}
                                             </span>
                                             <span className="text-sm text-grayscale-500">
-                                                Manage push notifications
+                                                {m['profile.notifsSub']()}
                                             </span>
                                         </div>
                                     </div>
@@ -689,13 +694,13 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                     {/* NETWORK & IDENTITY SECTION */}
                     <div className="flex flex-col gap-2">
                         <h3 className="text-[13px] font-semibold uppercase tracking-wide text-grayscale-500 px-2">
-                            Network & Identity
+                            {m['profile.netId']()}
                         </h3>
                         <GlassCard className="p-4 flex flex-col gap-4">
                             {email && !hasParentSwitchedProfile && (
                                 <div className="flex flex-col gap-1.5">
                                     <label className="text-[14px] font-medium text-grayscale-700 px-1">
-                                        Email Address
+                                        {m['profile.emailAddress']()}
                                     </label>
                                     <TextInput
                                         value={email}
@@ -714,7 +719,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                     )}
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-[14px] font-medium text-grayscale-700 px-1">
-                                            Phone Number
+                                            {m['profile.phoneNumber']()}
                                         </label>
                                         <TextInput
                                             value={phone}
@@ -734,7 +739,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                     )}
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-[14px] font-medium text-grayscale-700 px-1">
-                                            {brandingConfig.name} Number (DID)
+                                            {m['profile.didLabel']({ brand: brandingConfig.name })}
                                         </label>
                                         <div className="flex items-center justify-between bg-grayscale-100/80 rounded-[10px] px-4 py-3">
                                             <p className="text-grayscale-900 text-[14px] truncate mr-4 font-mono text-sm">
@@ -758,7 +763,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                     {/* SECURITY SECTION */}
                     <div className="flex flex-col gap-2">
                         <h3 className="text-[13px] font-semibold uppercase tracking-wide text-grayscale-500 px-2">
-                            Security
+                            {m['profile.security']()}
                         </h3>
                         <GlassCard className="flex flex-col">
                             <button
@@ -772,10 +777,10 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                             >
                                 <div className="flex flex-col items-start">
                                     <span className="text-[15px] font-medium text-grayscale-900">
-                                        Export Seed Phrase
+                                        {m['profile.exportSeedPhrase']()}
                                     </span>
                                     <span className="text-sm text-grayscale-500">
-                                        Backup your wallet recovery phrase
+                                        {m['profile.exportSub']()}
                                     </span>
                                 </div>
                                 <div className="text-grayscale-400">
@@ -800,10 +805,10 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                     <div className="flex items-center justify-between px-5 py-4 hover:bg-grayscale-50/50 transition-colors rounded-b-[20px]">
                                         <div className="flex flex-col items-start flex-1 mr-4">
                                             <span className="text-[15px] font-medium text-grayscale-900">
-                                                Connect Handler
+                                                {m['profile.connectingHandler']()}
                                             </span>
                                             <span className="text-sm text-grayscale-500">
-                                                Enable web-based credential handling
+                                                {m['profile.connectSub']()}
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-3">
@@ -819,7 +824,8 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                                 onClick={handleConnectChapi}
                                                 className="flex items-center justify-center text-grayscale-700 bg-grayscale-100 hover:bg-grayscale-200 rounded-full px-4 py-2 text-sm font-medium transition-colors"
                                             >
-                                                <HandshakeIcon className="mr-2 w-4 h-4" /> Connect
+                                                <HandshakeIcon className="mr-2 w-4 h-4" />{' '}
+                                                {m['profile.connect']()}
                                             </button>
                                         </div>
                                     </div>
@@ -832,7 +838,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                     {showDeleteAccountButton && !hasParentSwitchedProfile && (
                         <div className="flex flex-col gap-2">
                             <h3 className="text-[13px] font-semibold uppercase tracking-wide text-rose-500 px-2">
-                                Danger Zone
+                                {m['profile.danger']()}
                             </h3>
                             <GlassCard className="flex flex-col border-rose-100 ring-rose-500/10">
                                 <button
@@ -858,10 +864,10 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                 >
                                     <div className="flex flex-col items-start">
                                         <span className="text-[15px] font-medium text-rose-600 group-hover:text-rose-700">
-                                            Delete Account
+                                            {m['profile.deleteAccount']()}
                                         </span>
                                         <span className="text-sm text-rose-400/80">
-                                            Permanently remove your data
+                                            {m['profile.deleteSub']()}
                                         </span>
                                     </div>
                                     <div className="text-rose-400 group-hover:text-rose-500">
@@ -885,7 +891,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         onClick={closeModal}
                         className="flex-1 bg-white text-grayscale-800 text-[17px] font-poppins font-medium py-3 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-grayscale-100 hover:bg-grayscale-50 transition-colors"
                     >
-                        Back
+                        {m['common.back']()}
                     </button>
                     <button
                         type="button"
@@ -894,7 +900,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         className="flex-1 text-white text-[17px] font-poppins font-semibold py-3 rounded-full shadow-[0_4px_12px_rgba(79,70,229,0.25)] hover:opacity-90 transition-opacity disabled:opacity-70 disabled:cursor-not-allowed"
                         style={{ backgroundColor: primaryColor }}
                     >
-                        {isLoading ? 'Saving...' : 'Save'}
+                        {isLoading ? m['profile.saving']() : m['profile.save']()}
                     </button>
                 </div>
             </div>

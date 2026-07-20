@@ -13,6 +13,7 @@ import { ToastTypeEnum, useToast } from 'learn-card-base/hooks/useToast';
 import { openToS, openPP } from '../../helpers/externalLinkHelpers';
 
 import useTheme from '../../theme/hooks/useTheme';
+import * as m from '../../paraglide/messages.js';
 
 export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }> = ({
     handleCloseModal,
@@ -38,13 +39,13 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
             await pushUtilities.registerForNotifications(async success => {
                 if (success) {
                     await pushUtilities.syncPushToken();
-                    presentToast('Notifications enabled', {
+                    presentToast(m['settings.notifications.prompt.enabled'](), {
                         type: ToastTypeEnum.Success,
                         hasDismissButton: true,
                     });
                     setPermState('GRANTED');
                 } else {
-                    presentToast('You can turn on notifications anytime in Settings.', {
+                    presentToast(m['settings.notifications.prompt.anytime'](), {
                         type: ToastTypeEnum.Error,
                         hasDismissButton: true,
                     });
@@ -54,7 +55,7 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
             });
         } catch (err) {
             log.error('Failed to enable notifications', err);
-            presentToast('Couldn’t enable notifications. Please try again.', {
+            presentToast(m['settings.notifications.prompt.enableFail'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -86,20 +87,20 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
         if (permState === 'GRANTED') {
             return (
                 <div className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide">
-                    On
+                    {m['settings.notifications.prompt.on']()}
                 </div>
             );
         }
         if (permState === 'DENIED') {
             return (
                 <div className="bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide">
-                    Blocked
+                    {m['settings.notifications.prompt.blocked']()}
                 </div>
             );
         }
         return (
             <div className="bg-grayscale-100 text-grayscale-600 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide">
-                Off
+                {m['settings.notifications.prompt.off']()}
             </div>
         );
     };
@@ -116,7 +117,7 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                     className="flex items-center text-grayscale-600 hover:text-grayscale-900 transition-colors font-poppins font-medium"
                 >
                     <ChevronLeft className="w-6 h-6 mr-1" />
-                    Back
+                    {m['settings.notifications.prompt.back']()}
                 </button>
             </div>
 
@@ -132,30 +133,30 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                     </div>
 
                     <h2 className="text-2xl font-bold text-grayscale-900 font-poppins mb-3 text-center">
-                        Notifications
+                        {m['settings.notifications.prompt.title']()}
                     </h2>
 
                     <div className="mb-4">{renderStatusPill()}</div>
 
                     <p className="text-center text-[15px] text-grayscale-600 leading-relaxed mb-8">
-                        Get notified so you never miss what matters.
+                        {m['settings.notifications.prompt.description']()}
                     </p>
 
                     <div className="w-full bg-grayscale-50 rounded-[20px] p-5">
                         <h3 className="text-sm font-semibold text-grayscale-900 mb-4">
-                            You'll be notified about:
+                            {m['settings.notifications.prompt.about']()}
                         </h3>
                         <ul className="space-y-3">
                             <li className="flex items-start gap-3">
                                 <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
                                 <span className="text-[15px] text-grayscale-700 leading-relaxed">
-                                    New connection requests
+                                    {m['settings.notifications.prompt.benefit1']()}
                                 </span>
                             </li>
                             <li className="flex items-start gap-3">
                                 <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
                                 <span className="text-[15px] text-grayscale-700 leading-relaxed">
-                                    New boosts — achievements, credentials, and badges.
+                                    {m['settings.notifications.prompt.benefit2']()}
                                 </span>
                             </li>
                         </ul>
@@ -183,10 +184,10 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                                         color="light"
                                         className="w-5 h-5 mr-2"
                                     />
-                                    Working...
+                                    {m['settings.notifications.prompt.working']()}
                                 </>
                             ) : (
-                                'Enable Notifications'
+                                m['settings.notifications.prompt.continue']()
                             )}
                         </button>
                     ) : permState === 'DENIED' ? (
@@ -195,14 +196,14 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                             className="flex items-center justify-center text-white rounded-full px-6 py-3.5 font-poppins font-semibold text-[17px] w-full shadow-[0_4px_12px_rgba(79,70,229,0.25)] hover:opacity-90 transition-opacity"
                             style={{ backgroundColor: primaryColor }}
                         >
-                            Open Settings
+                            {m['settings.notifications.prompt.openSet']()}
                         </button>
                     ) : (
                         <button
                             onClick={handleOpenSettings}
                             className="flex items-center justify-center text-grayscale-700 bg-grayscale-100 hover:bg-grayscale-200 rounded-full px-6 py-3.5 font-poppins font-semibold text-[17px] w-full transition-colors"
                         >
-                            Open System Settings
+                            {m['settings.notifications.prompt.openSys']()}
                         </button>
                     )}
 
@@ -211,7 +212,7 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                             onClick={handleCloseModal}
                             className="text-[15px] font-medium text-grayscale-500 hover:text-grayscale-900 transition-colors"
                         >
-                            Not now
+                            {m['settings.notifications.prompt.notYet']()}
                         </button>
                     )}
 
@@ -221,7 +222,7 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                             className="text-xs font-medium hover:opacity-80 transition-opacity"
                             style={{ color: primaryColor }}
                         >
-                            Privacy Policy
+                            {m['settings.notifications.prompt.privacyPolicy']()}
                         </button>
                         <span className="text-xs font-medium" style={{ color: primaryColor }}>
                             •
@@ -231,7 +232,7 @@ export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }>
                             className="text-xs font-medium hover:opacity-80 transition-opacity"
                             style={{ color: primaryColor }}
                         >
-                            Terms of Service
+                            {m['settings.notifications.prompt.termsOfService']()}
                         </button>
                     </div>
                 </div>

@@ -1,4 +1,4 @@
-import { getTypeByObv3 } from '../components/credentialTypeCatalog';
+import { getTypeByObv3, typeLabel as resolveTypeLabel } from '../components/credentialTypeCatalog';
 
 export interface ImportSummary {
     name: string;
@@ -22,7 +22,8 @@ export const summarizeObv3 = (json: Record<string, unknown>): ImportSummary => {
     const description = str(achievement.description) ?? str(json.description);
     const image = str(achievement.image) ?? str(json.image);
     const achievementType = str(achievement.achievementType);
-    const typeLabel = achievementType ? getTypeByObv3(achievementType)?.label : undefined;
+    const typeEntry = achievementType ? getTypeByObv3(achievementType) : undefined;
+    const typeLabel = typeEntry ? resolveTypeLabel(typeEntry) : undefined;
 
     return { name, description, image, achievementType, typeLabel };
 };

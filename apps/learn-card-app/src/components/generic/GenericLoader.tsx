@@ -8,6 +8,7 @@ import Sparkles from '../../assets/images/purple-sparkles.gif';
 import { useTenantBrandingAssets } from '../../config/brandingAssets';
 
 import useTheme from '../../theme/hooks/useTheme';
+import * as m from '../../paraglide/messages.js';
 
 // Import styles
 import 'swiper/css';
@@ -40,7 +41,7 @@ const GenericLoader: React.FC<{
 }) => {
     const { appIcon } = useTenantBrandingAssets();
 
-    let text: string | string[] = 'Loading...';
+    let text: string | string[] = m['common.loading']();
     if (overrideText) text = overrideText;
 
     const containerStyles = isInline

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import * as m from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
 import Countdown from 'react-countdown';
 import ReactCodeInput from 'react-code-input';
 import PhoneInput from 'react-phone-number-input';
@@ -161,7 +163,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
     };
 
     const showSuccessToast = () => {
-        presentToast('A verification code has been sent', {
+        presentToast(m['login.phone.smsSent'](), {
             type: ToastTypeEnum.Success,
             hasDismissButton: true,
         });
@@ -260,7 +262,9 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
     let activeStep: React.ReactNode | null = null;
     let formTitle: React.ReactNode | null = null;
     let buttonTitle: string | null = null;
-    const resendCodeButtonText: string = isResendCodeLoading ? 'Sending Code...' : 'Resend Code';
+    const resendCodeButtonText: string = isResendCodeLoading
+        ? m['common.sendingCode']()
+        : m['common.resendCode']();
 
     let disabled = isLoading;
     if (currentStep === PhoneFormStepsEnum.phone) {
@@ -269,7 +273,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
         activeStep = (
             <IonCol size="12" className="ion-no-padding">
                 <PhoneInput
-                    placeholder="Phone Number"
+                    placeholder={m['login.phone.placeholder']()}
                     countryOptionsOrder={['US', 'CA', 'AU', '|', '...']}
                     defaultCountry="US"
                     value={phone}
@@ -288,23 +292,20 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 )}
             </IonCol>
         );
-        buttonTitle = isLoading ? 'Loading...' : 'Sign in with SMS';
+        buttonTitle = isLoading ? m['common.loading']() : m['login.phone.button']();
         disabled = !phone || isLoading;
     } else if (currentStep === PhoneFormStepsEnum.verification) {
         formTitle = (
-            <p
-                className={`w-full ${
-                    formTitleClassNameOverride ?? 'text-white text-lg'
-                } text-center`}
-            >
-                Enter verification code or{' '}
-                <span
-                    className={startOverClassNameOverride ?? 'text-white underline font-bold'}
-                    onClick={resetForm}
-                >
-                    start over
-                </span>
-            </p>
+            <TransP
+                m={m['common.enterVerificationCode']}
+                components={[
+                    <span
+                        key="0"
+                        className={startOverClassNameOverride ?? 'text-white underline font-bold'}
+                        onClick={resetForm}
+                    />,
+                ]}
+            />
         );
         activeStep = (
             <IonCol
@@ -331,7 +332,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                 )}
             </IonCol>
         );
-        buttonTitle = isLoading ? 'Verifying...' : 'Verify';
+        buttonTitle = isLoading ? m['common.verifying']() : m['common.verify']();
     }
 
     return (
@@ -385,26 +386,12 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                                         'text-white font-bold mt-4 border-b-white border-solid border-b-[1px]'
                                     }
                                 >
-                                    Resend in {seconds}s
+                                    {m['common.resendIn']({ seconds })}
                                 </button>
                             )
                         }
                     />
                 </div>
-            )}
-            {currentStep === PhoneFormStepsEnum.passwordNewUser && (
-                <IonCol
-                    size="12"
-                    className="text-center mt-4 text-gray-700 font-medium text-lg login-existing-account"
-                >
-                    <p>Already have an account?</p>
-                    <button
-                        onClick={resetForm}
-                        className="w-full text-center font-bold text-lg login-reset-btn"
-                    >
-                        Use a different email address
-                    </button>
-                </IonCol>
             )}
         </form>
     );

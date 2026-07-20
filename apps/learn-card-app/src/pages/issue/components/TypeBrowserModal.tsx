@@ -1,10 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { Search, X, Check } from 'lucide-react';
 
+import * as m from '../../../paraglide/messages.js';
 import {
     CREDENTIAL_FAMILIES,
     CREDENTIAL_TYPES,
     getTypesForFamily,
+    typeLabel,
+    typePickWhen,
+    familyLabel,
+    familyBlurb,
     type CredentialTypeEntry,
 } from './credentialTypeCatalog';
 
@@ -27,8 +32,8 @@ export const TypeBrowserModal: React.FC<TypeBrowserModalProps> = ({
         if (!trimmed) return null;
         return CREDENTIAL_TYPES.filter(
             t =>
-                t.label.toLowerCase().includes(trimmed) ||
-                t.pickWhen.toLowerCase().includes(trimmed) ||
+                typeLabel(t).toLowerCase().includes(trimmed) ||
+                typePickWhen(t).toLowerCase().includes(trimmed) ||
                 t.obv3Type.toLowerCase().includes(trimmed)
         );
     }, [trimmed]);
@@ -65,14 +70,14 @@ export const TypeBrowserModal: React.FC<TypeBrowserModalProps> = ({
                             active ? 'text-white' : 'text-grayscale-900'
                         }`}
                     >
-                        {entry.label}
+                        {typeLabel(entry)}
                     </span>
                     <span
                         className={`block text-xs leading-relaxed ${
                             active ? 'text-white/80' : 'text-grayscale-500'
                         }`}
                     >
-                        {entry.pickWhen}
+                        {typePickWhen(entry)}
                     </span>
                 </span>
                 {active && <Check className="w-4 h-4 text-white shrink-0 mt-0.5" />}
@@ -91,19 +96,19 @@ export const TypeBrowserModal: React.FC<TypeBrowserModalProps> = ({
             <div className="sticky top-0 bg-white px-6 pt-6 pb-4 border-b border-grayscale-100">
                 <div className="flex items-center justify-between mb-1">
                     <h2 className="text-xl font-semibold text-grayscale-900">
-                        Choose a credential type
+                        {m['issueFlow.browser.title']()}
                     </h2>
                     <button
                         type="button"
                         onClick={handleCloseModal}
                         className="w-8 h-8 rounded-full flex items-center justify-center text-grayscale-400 hover:text-grayscale-900 hover:bg-grayscale-100 transition-colors"
-                        aria-label="Close"
+                        aria-label={m['common.close']()}
                     >
                         <X className="w-5 h-5" />
                     </button>
                 </div>
                 <p className="text-sm text-grayscale-600 mb-4">
-                    Pick the type that best fits what you’re recognizing.
+                    {m['issueFlow.browser.subtitle']()}
                 </p>
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-grayscale-400" />
@@ -111,7 +116,7 @@ export const TypeBrowserModal: React.FC<TypeBrowserModalProps> = ({
                         type="text"
                         value={query}
                         onChange={e => setQuery(e.target.value)}
-                        placeholder="Search types…"
+                        placeholder={m['issueFlow.browser.searchPlaceholder']()}
                         className="w-full py-3 pl-10 pr-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                     />
                 </div>
@@ -125,7 +130,7 @@ export const TypeBrowserModal: React.FC<TypeBrowserModalProps> = ({
                         </div>
                     ) : (
                         <p className="text-sm text-grayscale-400 text-center py-8">
-                            No types match “{query}”.
+                            {m['issueFlow.browser.noMatch']({ query })}
                         </p>
                     )
                 ) : (
@@ -133,9 +138,9 @@ export const TypeBrowserModal: React.FC<TypeBrowserModalProps> = ({
                         <div key={family.id}>
                             <div className="mb-2">
                                 <h3 className="text-xs font-semibold text-grayscale-700 uppercase tracking-wide">
-                                    {family.label}
+                                    {familyLabel(family)}
                                 </h3>
-                                <p className="text-xs text-grayscale-400">{family.blurb}</p>
+                                <p className="text-xs text-grayscale-400">{familyBlurb(family)}</p>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 {getTypesForFamily(family.id).map(renderRow)}

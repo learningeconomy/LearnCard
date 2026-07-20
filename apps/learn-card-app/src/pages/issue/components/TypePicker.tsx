@@ -3,7 +3,15 @@ import { Layers } from 'lucide-react';
 
 import { useModal, ModalTypes } from 'learn-card-base';
 
-import { COMMON_TYPES, getTypeByObv3, type CredentialTypeEntry } from './credentialTypeCatalog';
+import * as m from '../../../paraglide/messages.js';
+
+import {
+    COMMON_TYPES,
+    getTypeByObv3,
+    typeLabel,
+    typePickWhen,
+    type CredentialTypeEntry,
+} from './credentialTypeCatalog';
 import { TypeBrowserModal } from './TypeBrowserModal';
 
 interface TypePickerProps {
@@ -21,7 +29,7 @@ const TypePill: React.FC<{
         <button
             type="button"
             onClick={onClick}
-            title={entry.pickWhen}
+            title={typePickWhen(entry)}
             className={`min-w-0 flex items-center gap-2 py-2.5 px-3 rounded-full border text-sm font-medium transition-all duration-200 ${
                 active
                     ? 'bg-grayscale-900 border-grayscale-900 text-white'
@@ -29,7 +37,7 @@ const TypePill: React.FC<{
             }`}
         >
             <Icon className="w-4 h-4 shrink-0" />
-            <span className="truncate">{entry.label}</span>
+            <span className="truncate">{typeLabel(entry)}</span>
         </button>
     );
 };
@@ -41,8 +49,11 @@ export const TypePicker: React.FC<TypePickerProps> = ({ selectedObv3Type, onSele
         selectedObv3Type && !COMMON_TYPES.some(t => t.obv3Type === selectedObv3Type)
     );
 
+    const selectedEntry = selectedObv3Type ? getTypeByObv3(selectedObv3Type) : undefined;
     const selectedLabel = selectedObv3Type
-        ? getTypeByObv3(selectedObv3Type)?.label ?? selectedObv3Type
+        ? selectedEntry
+            ? typeLabel(selectedEntry)
+            : selectedObv3Type
         : null;
 
     const openBrowser = () => {
@@ -80,7 +91,9 @@ export const TypePicker: React.FC<TypePickerProps> = ({ selectedObv3Type, onSele
                 }`}
             >
                 <Layers className="w-4 h-4" />
-                {selectedIsUncommon ? `Type: ${selectedLabel}` : 'Browse all types'}
+                {selectedIsUncommon
+                    ? m['issueFlow.type.selected']({ label: selectedLabel ?? '' })
+                    : m['issueFlow.type.browseAll']()}
             </button>
         </div>
     );

@@ -7,6 +7,7 @@ import CaretDown from 'learn-card-base/svgs/CaretDown';
 import { VC } from '@learncard/types';
 import { CredentialCategoryEnum, useGetVCInfo, useModal, ModalTypes } from 'learn-card-base';
 import { EndorsementState } from './endorsement-state.helpers';
+import * as m from '../../../paraglide/messages.js';
 
 export const EndorsementRelationshipForm: React.FC<{
     credential: VC;
@@ -38,7 +39,9 @@ export const EndorsementRelationshipForm: React.FC<{
     return (
         <div className="w-full flex flex-col items-start gap-4 justify-start py-4 px-4 cursor-pointer bg-white rounded-[20px] mt-2 shadow-bottom-2-4">
             <p className="text-[17px] text-grayscale-900 text-left">
-                How do you know {issueeProfile?.displayName || issueeName}?
+                {m['endorsement.form.relationship.prompt']({
+                    name: issueeProfile?.displayName || issueeName,
+                })}
             </p>
 
             <button
@@ -51,7 +54,7 @@ export const EndorsementRelationshipForm: React.FC<{
                     </div>
                     <div className="flex flex-col items-start justify-center">
                         <h4 className="text-grayscale-600 text-left font-[500]  text-xs uppercase">
-                            Relationship
+                            {m['endorsement.form.relationship.label']()}
                         </h4>
 
                         <p className="text-grayscale-900 text-left text-[17px]">
