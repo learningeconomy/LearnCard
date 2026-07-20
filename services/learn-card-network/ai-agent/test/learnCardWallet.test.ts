@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { createLearnCardWalletTool } from '../src/tools/learnCardWallet';
+import type { AgentNetworkWallet } from '../src/helpers/learnCard.helpers';
 
 describe('createLearnCardWalletTool', () => {
     it('inspects available wallet paths', async () => {
@@ -96,9 +97,9 @@ describe('createLearnCardWalletTool', () => {
     });
 
     it('adds known SDK metadata for native-bound LearnCard methods', async () => {
-        const sendBoost = (async function sendBoost(_profileId: string, _boostUri: string) {
+        const sendBoost = async function sendBoost(_profileId: string, _boostUri: string) {
             return 'lc:credential:sent';
-        }).bind(undefined);
+        }.bind(undefined);
         const tool = createLearnCardWalletTool({
             getWallet: async () =>
                 ({
@@ -109,10 +110,7 @@ describe('createLearnCardWalletTool', () => {
         });
 
         await expect(
-            tool.execute(
-                { operation: 'inspect', path: 'invoke.sendBoost' },
-                { runId: 'test-run' }
-            )
+            tool.execute({ operation: 'inspect', path: 'invoke.sendBoost' }, { runId: 'test-run' })
         ).resolves.toMatchObject({
             path: 'invoke.sendBoost',
             kind: 'function',
@@ -145,7 +143,7 @@ describe('createLearnCardWalletTool', () => {
     });
 
     it('adds structured diagnostics and usage hints to known SDK call failures', async () => {
-        const sendBoost = (function sendBoost(_profileId: string, _boostUri: string) {
+        const sendBoost = function sendBoost(_profileId: string, _boostUri: string) {
             throw Object.assign(new Error('Wallet method call failed.'), {
                 code: 'FORBIDDEN',
                 seed: 'top-secret-seed',
@@ -156,7 +154,7 @@ describe('createLearnCardWalletTool', () => {
                     },
                 }),
             });
-        }).bind(undefined);
+        }.bind(undefined);
         const tool = createLearnCardWalletTool({
             getWallet: async () =>
                 ({
@@ -289,6 +287,34 @@ describe('createLearnCardWalletTool', () => {
             resultType: 'undefined',
             hasResult: false,
         });
+    });
+
+    it('does not invoke wallet methods after an autonomous run is aborted', async () => {
+        const abortController = new AbortController();
+        let invoked = false;
+        // The fixture implements only the wallet path exercised by this boundary test.
+        const wallet = {
+            invoke: {
+                send: async () => {
+                    invoked = true;
+                },
+            },
+        } as unknown as AgentNetworkWallet;
+        const tool = createLearnCardWalletTool({
+            getWallet: async () => {
+                abortController.abort(new Error('Autonomous lease lost.'));
+
+                return wallet;
+            },
+        });
+
+        await expect(
+            tool.execute(
+                { operation: 'call', path: 'invoke.send', args: [] },
+                { runId: 'test-run', signal: abortController.signal }
+            )
+        ).rejects.toThrow('Autonomous lease lost.');
+        expect(invoked).toBe(false);
     });
 
     it('rejects unsafe wallet paths', async () => {

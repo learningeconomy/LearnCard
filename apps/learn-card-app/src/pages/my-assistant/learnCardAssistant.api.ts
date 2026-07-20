@@ -21,6 +21,7 @@ export interface LearnCardAssistantCardFeedback {
 export interface LearnCardAssistantCard {
     id: string;
     ownerDid: string;
+    origin: 'interactive' | 'autonomous';
     dedupeKey?: string;
     type: LearnCardAssistantCardType;
     title: string;
@@ -42,6 +43,41 @@ export interface LearnCardAssistantProfile {
     avatarVariant: 'robot';
     createdAt: string;
     updatedAt: string;
+}
+
+export type LearnCardAssistantDayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+export interface LearnCardAssistantSchedule {
+    id: string;
+    ownerDid: string;
+    name: string;
+    prompt: string;
+    enabled: boolean;
+    timeOfDay: string;
+    daysOfWeek: LearnCardAssistantDayOfWeek[];
+    timezone: string;
+    cron: string;
+    nextRunAt: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface CreateLearnCardAssistantScheduleInput {
+    name: string;
+    prompt: string;
+    enabled?: boolean;
+    timeOfDay: string;
+    daysOfWeek: LearnCardAssistantDayOfWeek[];
+    timezone: string;
+}
+
+export interface UpdateLearnCardAssistantScheduleInput {
+    name?: string;
+    prompt?: string;
+    enabled?: boolean;
+    timeOfDay?: string;
+    daysOfWeek?: LearnCardAssistantDayOfWeek[];
+    timezone?: string;
 }
 
 export interface LearnCardAssistantMemoryManifest {
@@ -155,6 +191,23 @@ interface AssistantCardResponse {
 interface AssistantProfileResponse {
     ok: boolean;
     profile?: LearnCardAssistantProfile;
+    error?: string;
+}
+
+interface AssistantSchedulesResponse {
+    ok: boolean;
+    schedules?: LearnCardAssistantSchedule[];
+    error?: string;
+}
+
+interface AssistantScheduleResponse {
+    ok: boolean;
+    schedule?: LearnCardAssistantSchedule;
+    error?: string;
+}
+
+interface AssistantScheduleDeleteResponse {
+    ok: boolean;
     error?: string;
 }
 
@@ -365,6 +418,95 @@ export const updateLearnCardAssistantProfile = async (
     }
 
     return payload.profile;
+};
+
+export const fetchLearnCardAssistantSchedules = async (
+    agentUrl: string,
+    auth: LearnCardAssistantAuth
+): Promise<LearnCardAssistantSchedule[]> => {
+    const response = await fetch(
+        `${normalizeAgentUrl(agentUrl)}/api/users/${encodeURIComponent(
+            auth.did
+        )}/assistant-schedules`,
+        { headers: await auth.getHeaders() }
+    );
+    const payload = await parseJson<AssistantSchedulesResponse>(response);
+
+    if (!response.ok || !payload.ok) {
+        throw new Error(payload.error || 'Could not load assistant schedules.');
+    }
+
+    return payload.schedules ?? [];
+};
+
+export const createLearnCardAssistantSchedule = async (
+    agentUrl: string,
+    auth: LearnCardAssistantAuth,
+    input: CreateLearnCardAssistantScheduleInput
+): Promise<LearnCardAssistantSchedule> => {
+    const response = await fetch(
+        `${normalizeAgentUrl(agentUrl)}/api/users/${encodeURIComponent(
+            auth.did
+        )}/assistant-schedules`,
+        {
+            method: 'POST',
+            headers: { ...(await auth.getHeaders()), 'Content-Type': 'application/json' },
+            body: JSON.stringify(input),
+        }
+    );
+    const payload = await parseJson<AssistantScheduleResponse>(response);
+
+    if (!response.ok || !payload.ok || !payload.schedule) {
+        throw new Error(payload.error || 'Could not create assistant schedule.');
+    }
+
+    return payload.schedule;
+};
+
+export const updateLearnCardAssistantSchedule = async (
+    agentUrl: string,
+    auth: LearnCardAssistantAuth,
+    id: string,
+    input: UpdateLearnCardAssistantScheduleInput
+): Promise<LearnCardAssistantSchedule> => {
+    const response = await fetch(
+        `${normalizeAgentUrl(agentUrl)}/api/users/${encodeURIComponent(
+            auth.did
+        )}/assistant-schedules/${encodeURIComponent(id)}`,
+        {
+            method: 'PATCH',
+            headers: { ...(await auth.getHeaders()), 'Content-Type': 'application/json' },
+            body: JSON.stringify(input),
+        }
+    );
+    const payload = await parseJson<AssistantScheduleResponse>(response);
+
+    if (!response.ok || !payload.ok || !payload.schedule) {
+        throw new Error(payload.error || 'Could not update assistant schedule.');
+    }
+
+    return payload.schedule;
+};
+
+export const deleteLearnCardAssistantSchedule = async (
+    agentUrl: string,
+    auth: LearnCardAssistantAuth,
+    id: string
+): Promise<void> => {
+    const response = await fetch(
+        `${normalizeAgentUrl(agentUrl)}/api/users/${encodeURIComponent(
+            auth.did
+        )}/assistant-schedules/${encodeURIComponent(id)}`,
+        {
+            method: 'DELETE',
+            headers: await auth.getHeaders(),
+        }
+    );
+    const payload = await parseJson<AssistantScheduleDeleteResponse>(response);
+
+    if (!response.ok || !payload.ok) {
+        throw new Error(payload.error || 'Could not delete assistant schedule.');
+    }
 };
 
 export const createLearnCardAssistantDebugCard = async (

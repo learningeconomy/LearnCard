@@ -15,6 +15,7 @@ export interface AgentMessage {
 
 export interface AgentToolContext {
     runId: string;
+    signal?: AbortSignal;
 }
 
 export interface AgentSkillDefinition {
@@ -40,6 +41,7 @@ export interface AgentProviderRequest {
     model: string;
     messages: AgentMessage[];
     tools: AgentToolDefinition[];
+    signal?: AbortSignal;
 }
 
 export interface AgentProviderResponse {
@@ -67,6 +69,7 @@ export interface AgentRunRequest {
     maxToolRounds?: number;
     systemPrompt?: string;
     contextPrompt?: string;
+    signal?: AbortSignal;
 }
 
 export interface AgentRunResult {

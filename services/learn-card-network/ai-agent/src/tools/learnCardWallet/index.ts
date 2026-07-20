@@ -281,7 +281,7 @@ const getFunctionInspection = (
     const parameters = useMetadata && metadata ? metadata.parameters : sourceParameters;
     const name =
         useMetadata && metadata
-            ? (parseWalletPath(walletPath).at(-1) ?? fallbackName)
+            ? parseWalletPath(walletPath).at(-1) ?? fallbackName
             : value.name || fallbackName || '(anonymous)';
     const asyncFunction = source.trim().startsWith('async ');
 
@@ -623,12 +623,13 @@ export const createLearnCardWalletTool = (
         filePath: skillFilePath,
         fallbackContent: DEFAULT_SKILL_CONTENT,
     }),
-    execute: async args => {
+    execute: async (args, context) => {
         const operation = getOperation(args);
         const walletPath = getPath(args);
         const wallet = config.getWallet
             ? await config.getWallet()
             : await getAgentLearnCard(config);
+        context.signal?.throwIfAborted();
 
         if (operation === 'inspect') {
             return inspectWalletPath(wallet, walletPath, getInspectOptions(args));
@@ -648,8 +649,11 @@ export const createLearnCardWalletTool = (
         let result: unknown;
 
         try {
+            context.signal?.throwIfAborted();
             result = await value.apply(parent, callArgs);
+            context.signal?.throwIfAborted();
         } catch (error) {
+            context.signal?.throwIfAborted();
             throw new Error(createWalletCallFailureMessage(walletPath, callArgs, error));
         }
 

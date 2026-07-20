@@ -41,6 +41,7 @@ export interface SelfImprovementRuntime {
         model: string;
         inputMessages: StoredAgentMessage[];
         result: AgentRunResult;
+        signal?: AbortSignal;
     }) => Promise<void>;
     getDocsForDebug: (ownerDid: string) => Promise<AgentUserDoc[]>;
     getMemoryManifestForDebug: (ownerDid: string) => Promise<UserMemoryManifest | undefined>;
@@ -203,7 +204,8 @@ export const createSelfImprovementRuntime = ({
 
             return getManifestPrompt(await services.userDocs.getMemoryManifest(ownerDid));
         },
-        runAfterResponse: async ({ ownerDid, model, inputMessages, result }) => {
+        runAfterResponse: async ({ ownerDid, model, inputMessages, result, signal }) => {
+            signal?.throwIfAborted();
             if (!ownerDid) return;
 
             const services = await getServices();
@@ -216,6 +218,7 @@ export const createSelfImprovementRuntime = ({
                 result,
                 maxTraceChars: config.retroMaxTraceChars,
             });
+            signal?.throwIfAborted();
             const provider = getRetroProvider();
 
             if (!provider || !config.retroModel) return;
@@ -223,6 +226,7 @@ export const createSelfImprovementRuntime = ({
             const activeDocs = (await services.userDocs.getDocsForDebug(ownerDid)).filter(
                 doc => doc.status !== 'archived'
             );
+            signal?.throwIfAborted();
 
             await runRetroImprovement({
                 ownerDid,
@@ -230,6 +234,7 @@ export const createSelfImprovementRuntime = ({
                 provider,
                 trace,
                 activeDocs,
+                ...(signal ? { signal } : {}),
                 userDocs: services.userDocs,
                 results: services.retroResults,
             });

@@ -2,30 +2,28 @@ import cors from 'cors';
 import express, { type RequestHandler } from 'express';
 import { z } from 'zod';
 
-import { createOpenAIProvider } from './agent/openAIProvider';
 import { runAgent } from './agent/runAgent';
-import type { AgentProvider, AgentToolDefinition } from './agent/types';
+import type { AgentProvider, AgentToolDefinition, AgentToolRun } from './agent/types';
 import {
     LearnCardAssistantCardToolInputValidator,
-    createLearnCardAssistantFeedRuntime,
     toLearnCardAssistantCardResponse,
     type LearnCardAssistantFeedRuntime,
 } from './assistantFeed';
 import {
     UpdateLearnCardAssistantProfileValidator,
-    createLearnCardAssistantProfileRuntime,
     toLearnCardAssistantProfileResponse,
     type LearnCardAssistantProfileRuntime,
 } from './assistantProfile';
+import {
+    AgentAutonomyScheduleNotFoundError,
+    CreateAgentAutonomyScheduleBodyValidator,
+    UpdateAgentAutonomyScheduleBodyValidator,
+    toAgentAutonomyScheduleResponse,
+} from './autonomy/schedules';
 import { createConsentFlowRuntime, isProdNetworkUrl, type ConsentFlowRuntime } from './consentFlow';
 import type { ServiceConfig } from './config';
-import { getAgentLearnCard, getEmptyAgentLearnCard } from './helpers/learnCard.helpers';
-import { createMongoRuntime, type MongoRuntime } from './mongo';
-import {
-    createSelfImprovementRuntime,
-    toStoredInputMessages,
-    type SelfImprovementRuntime,
-} from './selfImprovement';
+import { getEmptyAgentLearnCard } from './helpers/learnCard.helpers';
+import { toStoredInputMessages, type SelfImprovementRuntime } from './selfImprovement';
 import {
     USER_DOC_KINDS,
     USER_DOC_SENSITIVITIES,
@@ -34,7 +32,6 @@ import {
     type UserMemoryManifest,
 } from './selfImprovement/userDocs';
 import { createConsentedUserDataTool } from './tools/consentedUserData';
-import { createTools } from './tools';
 import {
     AgentDidAuthError,
     createMongoDidAuthChallengeStore,
@@ -44,10 +41,7 @@ import {
     type AgentDidAuthContext,
     type AgentDidAuthVerifierLearnCard,
 } from './security/didAuth';
-import {
-    createLearnCardDagJweEncryptionService,
-    type EncryptionService,
-} from './security/encryption';
+import { createAgentServiceRuntime, type CreateAgentServiceRuntimeOptions } from './runtime';
 
 const MessageValidator = z.object({
     role: z.enum(['user', 'assistant']),
@@ -128,18 +122,9 @@ const AssistantMemoryArchiveRequestValidator = z
     .object({ reason: z.string().trim().min(1).optional() })
     .strict();
 
-export interface CreateServerOptions {
-    config: ServiceConfig;
-    provider?: AgentProvider;
-    tools?: AgentToolDefinition[];
-    consentFlowRuntime?: ConsentFlowRuntime;
-    mongoRuntime?: MongoRuntime;
-    selfImprovementRuntime?: SelfImprovementRuntime;
-    assistantFeedRuntime?: LearnCardAssistantFeedRuntime;
-    assistantProfileRuntime?: LearnCardAssistantProfileRuntime;
+export interface CreateServerOptions extends CreateAgentServiceRuntimeOptions {
     didAuthChallengeStore?: AgentDidAuthChallengeStore;
     getVerifierLearnCard?: () => Promise<AgentDidAuthVerifierLearnCard>;
-    encryptionService?: EncryptionService;
 }
 
 export interface RunChatOptions {
@@ -152,6 +137,8 @@ export interface RunChatOptions {
     selfImprovementRuntime?: SelfImprovementRuntime;
     assistantFeedRuntime?: LearnCardAssistantFeedRuntime;
     assistantProfileRuntime?: LearnCardAssistantProfileRuntime;
+    runOrigin?: 'interactive' | 'autonomous';
+    signal?: AbortSignal;
 }
 
 export interface RunChatResult {
@@ -161,25 +148,13 @@ export interface RunChatResult {
               message: string;
               runId: string;
               messages: Array<{ role: 'user' | 'assistant'; content: string }>;
-              toolRuns: unknown[];
+              toolRuns: AgentToolRun[];
           }
         | { error: string };
-    afterResponse?: () => Promise<void>;
+    afterResponse?: (signal?: AbortSignal) => Promise<void>;
 }
 
 const OPENAI_API_KEY_REQUIRED_ERROR = 'OPENAI_API_KEY must be set to run the AI agent.';
-
-const createProvider = (config: ServiceConfig): AgentProvider => {
-    if (!config.openAIApiKey) {
-        return {
-            complete: async () => {
-                throw new Error(OPENAI_API_KEY_REQUIRED_ERROR);
-            },
-        };
-    }
-
-    return createOpenAIProvider(config.openAIApiKey);
-};
 
 const getRunContextPrompt = (
     did: string,
@@ -243,6 +218,8 @@ export const runChatRequest = async ({
     selfImprovementRuntime,
     assistantFeedRuntime,
     assistantProfileRuntime,
+    runOrigin = 'interactive',
+    signal,
 }: RunChatOptions): Promise<RunChatResult> => {
     const parsed = RunRequestValidator.safeParse(body);
 
@@ -283,7 +260,7 @@ export const runChatRequest = async ({
         })();
         const assistantFeedTools = await (async () => {
             try {
-                return (await assistantFeedRuntime?.loadRequestTools(did)) ?? [];
+                return (await assistantFeedRuntime?.loadRequestTools(did, runOrigin)) ?? [];
             } catch {
                 return [];
             }
@@ -322,6 +299,7 @@ export const runChatRequest = async ({
             skills: requestSkills,
             maxToolRounds: config.maxToolRounds,
             contextPrompt,
+            ...(signal ? { signal } : {}),
         });
 
         return {
@@ -332,12 +310,13 @@ export const runChatRequest = async ({
                 messages: [...parsed.data.messages, { role: 'assistant', content: result.message }],
                 toolRuns: result.toolRuns,
             },
-            afterResponse: async () => {
+            afterResponse: async afterResponseSignal => {
                 await selfImprovementRuntime?.runAfterResponse({
                     ownerDid: did,
                     model: config.model,
                     inputMessages: toStoredInputMessages(parsed.data.messages),
                     result,
+                    ...(afterResponseSignal ? { signal: afterResponseSignal } : {}),
                 });
             },
         };
@@ -352,71 +331,24 @@ export const runChatRequest = async ({
 };
 
 export const createServer = ({
-    config,
-    provider,
-    tools,
-    consentFlowRuntime,
-    mongoRuntime,
-    selfImprovementRuntime,
-    assistantFeedRuntime,
-    assistantProfileRuntime,
     didAuthChallengeStore,
     getVerifierLearnCard,
-    encryptionService: injectedEncryptionService,
+    ...runtimeOptions
 }: CreateServerOptions): express.Express => {
     const app = express();
-    const agentProvider = provider ?? createProvider(config);
-    const providerConfigured = Boolean(provider || config.openAIApiKey);
-    const consentRuntime = consentFlowRuntime ?? createConsentFlowRuntime(config);
-    const mongo = mongoRuntime ?? createMongoRuntime(config);
-    let encryptionService = injectedEncryptionService;
-
-    const getEncryption = (): EncryptionService => {
-        encryptionService ??= createLearnCardDagJweEncryptionService({
-            keyId: config.encryptionKeyId,
-            getWallet: () =>
-                getAgentLearnCard({
-                    seed: config.walletSeed,
-                    cloudUrl: config.cloudUrl,
-                    networkUrl: config.networkUrl,
-                }),
-        });
-
-        return encryptionService;
-    };
-    const selfImprovement =
-        selfImprovementRuntime ??
-        createSelfImprovementRuntime({
-            config,
-            mongoRuntime: mongo,
-            getEncryption,
-        });
-    const assistantFeed =
-        assistantFeedRuntime ??
-        createLearnCardAssistantFeedRuntime({
-            mongoRuntime: mongo,
-            getEncryption,
-        });
-    const assistantProfile =
-        assistantProfileRuntime ??
-        createLearnCardAssistantProfileRuntime({
-            mongoRuntime: mongo,
-            getEncryption,
-        });
-    const agentTools =
-        tools ??
-        createTools({
-            walletSeed: config.walletSeed,
-            cloudUrl: config.cloudUrl,
-            networkUrl: config.networkUrl,
-            webSearchProvider: config.webSearchProvider,
-            braveSearchApiKey: config.braveSearchApiKey,
-            webSearchDefaultLimit: config.webSearchDefaultLimit,
-            webSearchMaxLimit: config.webSearchMaxLimit,
-            webSearchCountry: config.webSearchCountry,
-            webSearchSearchLang: config.webSearchSearchLang,
-            webSearchSafeSearch: config.webSearchSafeSearch,
-        });
+    const runtime = createAgentServiceRuntime(runtimeOptions);
+    const {
+        config,
+        provider: agentProvider,
+        providerConfigured,
+        tools: agentTools,
+        mongoRuntime: mongo,
+        consentFlowRuntime: consentRuntime,
+        selfImprovementRuntime: selfImprovement,
+        assistantFeedRuntime: assistantFeed,
+        assistantProfileRuntime: assistantProfile,
+        assistantSchedulesRuntime: assistantSchedules,
+    } = runtime;
     let challengeStorePromise: Promise<AgentDidAuthChallengeStore> | undefined;
 
     const getChallengeStore = async (): Promise<AgentDidAuthChallengeStore> => {
@@ -835,6 +767,113 @@ export const createServer = ({
             } catch (error) {
                 const message =
                     error instanceof Error ? error.message : 'Could not update assistant profile.';
+
+                res.status(getStorageAwareStatus(message)).json({ ok: false, error: message });
+            }
+        }
+    );
+
+    app.get(
+        '/api/users/:did/assistant-schedules',
+        requireDidAuth,
+        requireMatchingDidParam,
+        asyncHandler(async (_req, res) => {
+            const schedules = await assistantSchedules.list(getAuthContext(res)?.did ?? '');
+
+            res.json({
+                ok: true,
+                schedules: schedules.map(toAgentAutonomyScheduleResponse),
+            });
+        })
+    );
+
+    app.post(
+        '/api/users/:did/assistant-schedules',
+        requireDidAuth,
+        requireMatchingDidParam,
+        async (req, res) => {
+            const parsed = CreateAgentAutonomyScheduleBodyValidator.safeParse(req.body);
+
+            if (!parsed.success) {
+                res.status(400).json({ ok: false, error: 'Invalid assistant schedule.' });
+                return;
+            }
+
+            try {
+                const schedule = await assistantSchedules.create({
+                    ...parsed.data,
+                    ownerDid: getAuthContext(res)?.did ?? '',
+                });
+
+                res.status(201).json({
+                    ok: true,
+                    schedule: toAgentAutonomyScheduleResponse(schedule),
+                });
+            } catch (error) {
+                const message =
+                    error instanceof Error ? error.message : 'Could not create assistant schedule.';
+
+                res.status(getStorageAwareStatus(message)).json({ ok: false, error: message });
+            }
+        }
+    );
+
+    app.patch(
+        '/api/users/:did/assistant-schedules/:id',
+        requireDidAuth,
+        requireMatchingDidParam,
+        async (req, res) => {
+            const parsed = UpdateAgentAutonomyScheduleBodyValidator.safeParse(req.body);
+
+            if (!parsed.success) {
+                res.status(400).json({ ok: false, error: 'Invalid assistant schedule.' });
+                return;
+            }
+
+            try {
+                const schedule = await assistantSchedules.update({
+                    ...parsed.data,
+                    ownerDid: getAuthContext(res)?.did ?? '',
+                    id: req.params.id ?? '',
+                });
+
+                res.json({
+                    ok: true,
+                    schedule: toAgentAutonomyScheduleResponse(schedule),
+                });
+            } catch (error) {
+                const message =
+                    error instanceof Error ? error.message : 'Could not update assistant schedule.';
+                const status =
+                    error instanceof AgentAutonomyScheduleNotFoundError
+                        ? 404
+                        : getStorageAwareStatus(message);
+
+                res.status(status).json({ ok: false, error: message });
+            }
+        }
+    );
+
+    app.delete(
+        '/api/users/:did/assistant-schedules/:id',
+        requireDidAuth,
+        requireMatchingDidParam,
+        async (req, res) => {
+            try {
+                const removed = await assistantSchedules.remove(
+                    getAuthContext(res)?.did ?? '',
+                    req.params.id ?? ''
+                );
+
+                if (!removed) {
+                    res.status(404).json({ ok: false, error: 'Assistant schedule not found.' });
+                    return;
+                }
+
+                res.json({ ok: true });
+            } catch (error) {
+                const message =
+                    error instanceof Error ? error.message : 'Could not delete assistant schedule.';
 
                 res.status(getStorageAwareStatus(message)).json({ ok: false, error: message });
             }

@@ -4,5 +4,6 @@
         "resolveJsonModule": false,
         "rootDir": "src"
     },
+    "include": ["src"],
     "exclude": ["./test/**/*"]
 }

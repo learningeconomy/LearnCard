@@ -34,7 +34,7 @@ export interface WebSearchResponse {
 
 export interface WebSearchProvider {
     name: WebSearchProviderName;
-    search: (request: WebSearchRequest) => Promise<WebSearchResponse>;
+    search: (request: WebSearchRequest, signal?: AbortSignal) => Promise<WebSearchResponse>;
 }
 
 export interface CreateWebSearchToolOptions {
@@ -209,12 +209,13 @@ export const createWebSearchTool = ({
             },
         },
     },
-    execute: async args => {
+    execute: async (args, context) => {
         const request = normalizeWebSearchToolRequest(args, { defaultLimit, maxLimit, defaults });
 
         try {
-            return await provider.search(request);
+            return await provider.search(request, context.signal);
         } catch (error) {
+            context.signal?.throwIfAborted();
             if (error instanceof WebSearchInputError) throw error;
 
             throw new Error(`webSearch failed for provider ${provider.name}.`);
@@ -265,7 +266,8 @@ export const createMockWebSearchProvider = ({
     results = [],
 }: MockWebSearchProviderOptions = {}): WebSearchProvider => ({
     name: 'mock',
-    search: async request => {
+    search: async (request, signal) => {
+        signal?.throwIfAborted();
         const retrievedAt = new Date().toISOString();
 
         return {
@@ -292,7 +294,8 @@ export const createBraveWebSearchProvider = ({
 
     return {
         name: 'brave',
-        search: async request => {
+        search: async (request, signal) => {
+            signal?.throwIfAborted();
             const retrievedAt = new Date().toISOString();
             const url = new URL(endpoint);
 
@@ -313,12 +316,14 @@ export const createBraveWebSearchProvider = ({
                     Accept: 'application/json',
                     'X-Subscription-Token': trimmedKey,
                 },
+                ...(signal ? { signal } : {}),
             });
 
             if (!response.ok) {
                 throw new Error(`Brave Search request failed with status ${response.status}.`);
             }
 
+            signal?.throwIfAborted();
             const payload = (await response.json()) as unknown;
             const results = getBraveWebResults(payload)
                 .map((result, index) => toBraveResult(result, index, retrievedAt))

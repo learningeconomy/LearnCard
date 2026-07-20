@@ -3,16 +3,21 @@ import { describe, expect, it } from 'vitest';
 import type { LearnCardAssistantCard } from './learnCardAssistant.api';
 import {
     getActivityCards,
+    formatLearnCardAssistantNextRun,
     getInboxCards,
     getLearnCardAssistantCardTypeClasses,
     getLearnCardAssistantCardTypeLabel,
     getLearnCardAssistantCtaAction,
+    getLearnCardAssistantDaysSummary,
+    getLearnCardAssistantTimezoneOptions,
+    LEARNCARD_ASSISTANT_DAY_LABELS,
     isLearnCardAssistantCardNew,
 } from './learnCardAssistant.helpers';
 
 const createCard = (overrides: Partial<LearnCardAssistantCard>): LearnCardAssistantCard => ({
     id: overrides.id ?? 'card-1',
     ownerDid: 'did:key:user',
+    origin: 'interactive',
     type: overrides.type ?? 'message',
     title: 'Title',
     description: 'Description',
@@ -82,5 +87,31 @@ describe('learnCardAssistant helpers', () => {
         expect(
             isLearnCardAssistantCardNew(createCard({ readAt: '2026-06-18T12:05:00.000Z' }))
         ).toBe(false);
+    });
+    it('labels and summarizes schedule days', () => {
+        expect(LEARNCARD_ASSISTANT_DAY_LABELS[0]).toEqual({
+            short: 'Sun',
+            long: 'Sunday',
+        });
+        expect(getLearnCardAssistantDaysSummary([6, 0, 1, 2, 3, 4, 5])).toBe('Every day');
+        expect(getLearnCardAssistantDaysSummary([5, 1, 4, 2, 3])).toBe('Weekdays');
+        expect(getLearnCardAssistantDaysSummary([6, 0])).toBe('Weekends');
+        expect(getLearnCardAssistantDaysSummary([1, 3, 5])).toBe('Mon, Wed, Fri');
+    });
+
+    it('falls back to only the resolved browser timezone', () => {
+        expect(getLearnCardAssistantTimezoneOptions('America/Los_Angeles', null)).toEqual([
+            'America/Los_Angeles',
+        ]);
+        expect(
+            getLearnCardAssistantTimezoneOptions('America/Los_Angeles', () => ['America/New_York'])
+        ).toEqual(['America/Los_Angeles', 'America/New_York']);
+    });
+
+    it('formats the next run in the schedule timezone', () => {
+        expect(formatLearnCardAssistantNextRun('2026-07-16T14:30:00.000Z', 'UTC')).toBe(
+            'Next run Thu, Jul 16, 2:30 PM'
+        );
+        expect(formatLearnCardAssistantNextRun('not-a-date', 'UTC')).toBe('Next run unavailable');
     });
 });

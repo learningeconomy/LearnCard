@@ -31,6 +31,14 @@ export interface ServiceConfig {
     encryptionKeyId: string;
     debugEnabled: boolean;
     debugToken?: string;
+    autonomyDevEnabled: boolean;
+    autonomyDevDids: string[];
+    autonomyDevPollIntervalMs: number;
+    autonomyDevMaxRunsPerCycle: number;
+    autonomyDevLeaseMs: number;
+    triggerEnabled?: boolean;
+    triggerEnvironment?: string;
+    triggerSecretKey?: string;
 }
 
 const DEFAULT_MONGO_DB_NAME = 'learn-card-ai-agent';
@@ -80,6 +88,85 @@ const readSafeSearch = (value: string | undefined): WebSearchSafeSearch | undefi
     return undefined;
 };
 
+const readList = (value: string | undefined): string[] => [
+    ...new Set(
+        (value ?? '')
+            .split(',')
+            .map(item => item.trim())
+            .filter(Boolean)
+    ),
+];
+export const assertAutonomousExecutionConfig = (config: ServiceConfig): void => {
+    if (!config.mongoUri) {
+        throw new Error('AI_AGENT_MONGO_URI or MONGO_URI must be set for autonomous execution.');
+    }
+    if (!config.walletSeed) {
+        throw new Error('AI_AGENT_WALLET_SEED must be set for autonomous execution.');
+    }
+    if (!config.openAIApiKey) {
+        throw new Error('OPENAI_API_KEY must be set for autonomous execution.');
+    }
+    if (!config.selfImprovementEnabled) {
+        throw new Error(
+            'AI_AGENT_SELF_IMPROVEMENT_ENABLED=true is required for autonomous execution.'
+        );
+    }
+    if (!Number.isFinite(config.autonomyDevLeaseMs) || config.autonomyDevLeaseMs < 10_000) {
+        throw new Error('AI_AGENT_AUTONOMY_DEV_LEASE_MS must be at least 10000.');
+    }
+};
+
+export const assertAutonomyDevConfig = (config: ServiceConfig): void => {
+    if (!config.autonomyDevEnabled) {
+        throw new Error('AI_AGENT_AUTONOMY_DEV_ENABLED=true is required for the autonomy worker.');
+    }
+    if (config.nodeEnv !== 'development') {
+        throw new Error('AI Agent autonomy worker can only run in development.');
+    }
+    if (config.autonomyDevDids.length === 0) {
+        throw new Error('AI_AGENT_AUTONOMY_DEV_DIDS must include at least one fixture DID.');
+    }
+    assertAutonomousExecutionConfig(config);
+    if (
+        !Number.isFinite(config.autonomyDevPollIntervalMs) ||
+        config.autonomyDevPollIntervalMs < 1_000
+    ) {
+        throw new Error('AI_AGENT_AUTONOMY_DEV_POLL_INTERVAL_MS must be at least 1000.');
+    }
+    if (
+        !Number.isInteger(config.autonomyDevMaxRunsPerCycle) ||
+        config.autonomyDevMaxRunsPerCycle < 1 ||
+        config.autonomyDevMaxRunsPerCycle > 10
+    ) {
+        throw new Error(
+            'AI_AGENT_AUTONOMY_DEV_MAX_RUNS_PER_CYCLE must be an integer from 1 to 10.'
+        );
+    }
+    if (
+        !Number.isFinite(config.autonomyDevLeaseMs) ||
+        config.autonomyDevLeaseMs <= config.autonomyDevPollIntervalMs
+    ) {
+        throw new Error('AI_AGENT_AUTONOMY_DEV_LEASE_MS must exceed the poll interval.');
+    }
+};
+
+export const assertTriggerConfig = (config: ServiceConfig): void => {
+    if (!config.triggerEnabled) {
+        throw new Error('AI_AGENT_TRIGGER_ENABLED=true is required for Trigger.dev schedules.');
+    }
+    if (config.nodeEnv !== 'development') {
+        throw new Error('Trigger.dev autonomous execution is restricted to development.');
+    }
+    if (!config.triggerSecretKey) {
+        throw new Error('TRIGGER_SECRET_KEY must be set for Trigger.dev schedules.');
+    }
+    if (!config.triggerEnvironment?.trim()) {
+        throw new Error('AI_AGENT_TRIGGER_ENVIRONMENT must identify the Trigger.dev environment.');
+    }
+
+    assertAutonomousExecutionConfig(config);
+};
+
 export const assertSecurityConfig = (config: ServiceConfig): void => {
     if (config.nodeEnv === 'production' && !config.authDomain) {
         throw new Error('AI_AGENT_AUTH_DOMAIN must be set in production.');
@@ -100,6 +187,15 @@ export const assertSecurityConfig = (config: ServiceConfig): void => {
             'AI_AGENT_WALLET_SEED, LEARNCARD_AGENT_SEED, or SEED must be set when Mongo persistence is configured because AI Agent Mongo data is encrypted with the agent LearnCard DID.'
         );
     }
+
+    if (config.autonomyDevEnabled && config.triggerEnabled) {
+        throw new Error(
+            'AI_AGENT_AUTONOMY_DEV_ENABLED and AI_AGENT_TRIGGER_ENABLED cannot both be true.'
+        );
+    }
+
+    if (config.autonomyDevEnabled) assertAutonomyDevConfig(config);
+    if (config.triggerEnabled) assertTriggerConfig(config);
 };
 
 export const getConfig = (): ServiceConfig => {
@@ -109,10 +205,14 @@ export const getConfig = (): ServiceConfig => {
         readString(process.env.AI_AGENT_WALLET_SEED) ??
         readString(process.env.LEARNCARD_AGENT_SEED) ??
         readString(process.env.SEED);
+    const autonomyDevEnabled = readBoolean(process.env.AI_AGENT_AUTONOMY_DEV_ENABLED, false);
+    const explicitMongoUri =
+        readString(process.env.AI_AGENT_MONGO_URI) ?? readString(process.env.MONGO_URI);
     const mongoUri =
-        readString(process.env.AI_AGENT_MONGO_URI) ??
-        readString(process.env.MONGO_URI) ??
-        (nodeEnv !== 'production' && walletSeed ? DEFAULT_LOCAL_MONGO_URI : undefined);
+        explicitMongoUri ??
+        (!autonomyDevEnabled && nodeEnv !== 'production' && walletSeed
+            ? DEFAULT_LOCAL_MONGO_URI
+            : undefined);
     const selfImprovementEnabled = readBoolean(
         process.env.AI_AGENT_SELF_IMPROVEMENT_ENABLED,
         nodeEnv !== 'production'
@@ -163,6 +263,22 @@ export const getConfig = (): ServiceConfig => {
             readString(process.env.AI_AGENT_ENCRYPTION_KEY_ID) ?? 'agent-learncard-dag-jwe-v1',
         debugEnabled: readBoolean(process.env.AI_AGENT_DEBUG_ENABLED, nodeEnv !== 'production'),
         debugToken: readString(process.env.AI_AGENT_DEBUG_TOKEN),
+        autonomyDevEnabled,
+        autonomyDevDids: readList(process.env.AI_AGENT_AUTONOMY_DEV_DIDS),
+        autonomyDevPollIntervalMs: readNumber(
+            process.env.AI_AGENT_AUTONOMY_DEV_POLL_INTERVAL_MS,
+            30_000
+        ),
+        autonomyDevMaxRunsPerCycle: readNumber(
+            process.env.AI_AGENT_AUTONOMY_DEV_MAX_RUNS_PER_CYCLE,
+            3
+        ),
+        autonomyDevLeaseMs: readNumber(process.env.AI_AGENT_AUTONOMY_DEV_LEASE_MS, 900_000),
+        triggerEnabled: readBoolean(process.env.AI_AGENT_TRIGGER_ENABLED, false),
+        triggerEnvironment:
+            readString(process.env.AI_AGENT_TRIGGER_ENVIRONMENT) ??
+            (nodeEnv === 'development' ? 'dev' : nodeEnv),
+        triggerSecretKey: readString(process.env.TRIGGER_SECRET_KEY),
     };
 
     assertSecurityConfig(config);

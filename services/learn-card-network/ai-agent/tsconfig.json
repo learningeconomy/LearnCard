@@ -30,6 +30,6 @@
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true
     },
-    "include": ["src", "test"],
+    "include": ["src", "test", "trigger.config.ts"],
     "exclude": ["./dist/**/*", "./node_modules/**/*"]
 }

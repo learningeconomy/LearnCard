@@ -14,6 +14,7 @@ import AssistantCardDetailsModal from './AssistantCardDetailsModal';
 import AssistantInboxCard from './AssistantInboxCard';
 import AssistantMemoriesModal from './AssistantMemoriesModal';
 import AssistantProfileCard from './AssistantProfileCard';
+import AssistantSchedulesCard from './AssistantSchedulesCard';
 import { useConsentFlowByUri } from '../consentFlow/useConsentFlow';
 import {
     createLearnCardAssistantDebugCard,
@@ -352,6 +353,8 @@ const MyAssistantPageContent: React.FC = () => {
                     onOpenMemories={() => setMemoriesOpen(true)}
                     onOpenConsent={openConsent}
                 />
+
+                <AssistantSchedulesCard agentUrl={normalizedAgentUrl} auth={assistantAuth} />
 
                 <section className="space-y-5">
                     <div className="flex items-end justify-between gap-4">

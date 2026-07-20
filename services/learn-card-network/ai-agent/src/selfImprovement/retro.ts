@@ -98,6 +98,7 @@ export interface RetroRunInput {
     activeDocs: AgentUserDoc[];
     userDocs: UserDocService;
     results: RetroResultRepository;
+    signal?: AbortSignal;
 }
 
 const OptionalExpiresAtValidator = z.preprocess(
@@ -262,7 +263,9 @@ export const runRetroImprovement = async (input: RetroRunInput): Promise<RetroRe
             model: input.model,
             messages: getRetroMessages(input.trace, input.activeDocs),
             tools: [],
+            ...(input.signal ? { signal: input.signal } : {}),
         });
+        input.signal?.throwIfAborted();
         decision = parseDecision(response.message.content);
 
         if (decision.action === 'noop') {
@@ -320,6 +323,7 @@ export const runRetroImprovement = async (input: RetroRunInput): Promise<RetroRe
 
         return result;
     } catch (error) {
+        input.signal?.throwIfAborted();
         const message = error instanceof Error ? error.message : 'Retro failed.';
         const result = getResultForDecision(input, decision, 'error', undefined, message);
         await input.results.insert(result);

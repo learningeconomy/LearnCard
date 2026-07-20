@@ -256,4 +256,70 @@ describe('runAgent', () => {
             readCount: 1,
         });
     });
+    it('aborts a non-settling tool run and passes the signal into tool context', async () => {
+        const abortController = new AbortController();
+        const started = Promise.withResolvers<void>();
+        const provider: AgentProvider = {
+            complete: async () => ({
+                message: {
+                    role: 'assistant',
+                    content: '',
+                    toolCalls: [
+                        {
+                            id: 'call-abort',
+                            name: 'slowTool',
+                            arguments: {},
+                        },
+                    ],
+                },
+            }),
+        };
+        const tool: AgentToolDefinition = {
+            name: 'slowTool',
+            description: 'Never settles.',
+            parameters: { type: 'object', properties: {} },
+            execute: async (_args, context) => {
+                expect(context.signal).toBe(abortController.signal);
+                started.resolve();
+
+                return new Promise<never>(() => undefined);
+            },
+        };
+        const resultPromise = runAgent({
+            model: 'test-model',
+            messages: [{ role: 'user', content: 'Wait forever.' }],
+            provider,
+            tools: [tool],
+            signal: abortController.signal,
+        });
+
+        await started.promise;
+        abortController.abort(new Error('Autonomous lease lost.'));
+
+        await expect(resultPromise).rejects.toThrow('Autonomous lease lost.');
+    });
+
+    it('does not start the provider when the signal is already aborted', async () => {
+        const abortController = new AbortController();
+        abortController.abort(new Error('Already lost.'));
+        let providerCalled = false;
+        const provider: AgentProvider = {
+            complete: async () => {
+                providerCalled = true;
+
+                return { message: { role: 'assistant', content: 'Unexpected.' } };
+            },
+        };
+
+        await expect(
+            runAgent({
+                model: 'test-model',
+                messages: [{ role: 'user', content: 'Do not start.' }],
+                provider,
+                tools: [],
+                signal: abortController.signal,
+            })
+        ).rejects.toThrow('Already lost.');
+        expect(providerCalled).toBe(false);
+    });
 });

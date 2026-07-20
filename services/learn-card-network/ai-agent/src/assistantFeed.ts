@@ -22,6 +22,7 @@ export const LEARNCARD_ASSISTANT_CARD_TYPES = [
 ] as const;
 
 export const LEARNCARD_ASSISTANT_CARD_PRIORITIES = ['normal', 'high'] as const;
+export type LearnCardAssistantCardOrigin = 'interactive' | 'autonomous';
 
 export interface LearnCardAssistantCardCta {
     label: string;
@@ -37,6 +38,7 @@ export interface LearnCardAssistantCard {
     _id?: ObjectId;
     id: string;
     ownerDid: string;
+    origin: LearnCardAssistantCardOrigin;
     dedupeKey?: string;
     type: (typeof LEARNCARD_ASSISTANT_CARD_TYPES)[number];
     title: string;
@@ -53,6 +55,7 @@ export interface LearnCardAssistantCard {
 
 export interface RecordLearnCardAssistantCardInput {
     ownerDid: string;
+    origin?: LearnCardAssistantCardOrigin;
     dedupeKey?: string;
     type: LearnCardAssistantCard['type'];
     title: string;
@@ -108,7 +111,10 @@ export interface LearnCardAssistantFeedRuntime {
         id: string,
         input: { type: 'thumbs-down' }
     ): Promise<LearnCardAssistantCard>;
-    loadRequestTools(ownerDid?: string): Promise<AgentToolDefinition[]>;
+    loadRequestTools(
+        ownerDid?: string,
+        origin?: LearnCardAssistantCardOrigin
+    ): Promise<AgentToolDefinition[]>;
     getStatus(): Promise<{ configured: boolean; connected: boolean }>;
 }
 
@@ -120,8 +126,9 @@ export interface LearnCardAssistantFeedRuntimeOptions {
 
 type StoredLearnCardAssistantCard = Omit<
     LearnCardAssistantCard,
-    'dedupeKey' | 'title' | 'description' | 'detail' | 'cta' | 'feedback'
+    'origin' | 'dedupeKey' | 'title' | 'description' | 'detail' | 'cta' | 'feedback'
 > & {
+    origin?: LearnCardAssistantCardOrigin;
     dedupeKey?: string | EncryptedJsonEnvelopeV1;
     dedupeKeyHash?: string;
     title: string | EncryptedJsonEnvelopeV1;
@@ -145,6 +152,7 @@ export const RecordLearnCardAssistantCardValidator = z
     .object({
         ownerDid: z.string().trim().min(1),
         dedupeKey: z.string().trim().min(1).max(120).optional(),
+        origin: z.enum(['interactive', 'autonomous']).optional().default('interactive'),
         type: z.enum(LEARNCARD_ASSISTANT_CARD_TYPES),
         title: z.string().trim().min(1).max(90),
         description: z.string().trim().min(1).max(220),
@@ -157,6 +165,7 @@ export const RecordLearnCardAssistantCardValidator = z
 
 export const LearnCardAssistantCardToolInputValidator = RecordLearnCardAssistantCardValidator.omit({
     ownerDid: true,
+    origin: true,
     sourceRunId: true,
 });
 
@@ -173,6 +182,7 @@ const sortLatest = (items: LearnCardAssistantCard[]): LearnCardAssistantCard[] =
 
 const cloneItem = (item: LearnCardAssistantCard): LearnCardAssistantCard => ({
     ...item,
+    origin: item.origin ?? 'interactive',
     ...(item.cta ? { cta: { ...item.cta } } : {}),
     ...(item.readAt ? { readAt: new Date(item.readAt) } : {}),
     ...(item.feedback
@@ -187,6 +197,7 @@ export const toLearnCardAssistantCardResponse = (
 ): LearnCardAssistantCardResponse => ({
     id: item.id,
     ownerDid: item.ownerDid,
+    origin: item.origin,
     ...(item.dedupeKey ? { dedupeKey: item.dedupeKey } : {}),
     type: item.type,
     title: item.title,
@@ -285,6 +296,7 @@ export const createMongoLearnCardAssistantFeedRepository = (
                 ...(item._id ? { _id: item._id } : {}),
                 id: item.id,
                 ownerDid: item.ownerDid,
+                origin: item.origin ?? 'interactive',
                 type: item.type,
                 priority: item.priority,
                 ...(item.sourceRunId ? { sourceRunId: item.sourceRunId } : {}),
@@ -310,6 +322,7 @@ export const createMongoLearnCardAssistantFeedRepository = (
     };
 
     const needsMigration = (item: StoredLearnCardAssistantCard): boolean =>
+        !item.origin ||
         !isEncryptedEnvelope(item.title) ||
         !isEncryptedEnvelope(item.description) ||
         Boolean(item.dedupeKey && !isEncryptedEnvelope(item.dedupeKey)) ||
@@ -466,6 +479,7 @@ export const createLearnCardAssistantFeedService = (
             ? {
                   ...existing,
                   type: parsed.type,
+                  origin: parsed.origin,
                   title: parsed.title,
                   description: parsed.description,
                   detail: parsed.detail,
@@ -477,6 +491,7 @@ export const createLearnCardAssistantFeedService = (
             : {
                   id: randomUUID(),
                   ownerDid: parsed.ownerDid,
+                  origin: parsed.origin,
                   dedupeKey: parsed.dedupeKey,
                   type: parsed.type,
                   title: parsed.title,
@@ -577,9 +592,11 @@ const toolParameters = {
 export const createLearnCardAssistantFeedTools = ({
     ownerDid,
     feedService,
+    origin = 'interactive',
 }: {
     ownerDid: string;
     feedService: LearnCardAssistantFeedService;
+    origin?: LearnCardAssistantCardOrigin;
 }): AgentToolDefinition[] => [
     {
         name: 'recordLearnCardAssistantCard',
@@ -591,6 +608,7 @@ export const createLearnCardAssistantFeedTools = ({
             const item = await feedService.recordItem({
                 ...parsed,
                 ownerDid,
+                origin,
                 sourceRunId: context.runId,
             });
 
@@ -646,7 +664,7 @@ export const createLearnCardAssistantFeedRuntime = ({
         markItemRead: async (ownerDid, id) => (await requireService()).markItemRead(ownerDid, id),
         recordFeedback: async (ownerDid, id, input) =>
             (await requireService()).recordFeedback(ownerDid, id, input),
-        loadRequestTools: async ownerDid => {
+        loadRequestTools: async (ownerDid, origin = 'interactive') => {
             const trimmedDid = ownerDid?.trim();
             if (!trimmedDid) return [];
 
@@ -656,6 +674,7 @@ export const createLearnCardAssistantFeedRuntime = ({
             return createLearnCardAssistantFeedTools({
                 ownerDid: trimmedDid,
                 feedService: service,
+                origin,
             });
         },
         getStatus: async () => {

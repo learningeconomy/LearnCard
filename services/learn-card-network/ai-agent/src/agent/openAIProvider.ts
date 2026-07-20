@@ -90,7 +90,7 @@ export const createOpenAIProvider = (apiKey: string): AgentProvider => {
     const client = new OpenAI({ apiKey });
 
     return {
-        complete: async ({ model, messages, tools }: AgentProviderRequest) => {
+        complete: async ({ model, messages, tools, signal }: AgentProviderRequest) => {
             const request: Record<string, unknown> = {
                 model,
                 messages: messages.map(toOpenAIMessage) as never,
@@ -101,7 +101,9 @@ export const createOpenAIProvider = (apiKey: string): AgentProvider => {
                 request.tool_choice = 'auto';
             }
 
-            const completion = await client.chat.completions.create(request as never);
+            const completion = signal
+                ? await client.chat.completions.create(request as never, { signal })
+                : await client.chat.completions.create(request as never);
 
             const message = completion.choices[0]?.message;
 
@@ -111,7 +113,9 @@ export const createOpenAIProvider = (apiKey: string): AgentProvider => {
                 message: {
                     role: 'assistant',
                     content: message.content ?? '',
-                    toolCalls: message.tool_calls ? toAgentToolCalls(message.tool_calls) : undefined,
+                    toolCalls: message.tool_calls
+                        ? toAgentToolCalls(message.tool_calls)
+                        : undefined,
                 },
             };
         },

@@ -180,11 +180,14 @@ describe('Brave web search provider', () => {
     it('maps Brave web results and sends bounded query parameters', async () => {
         let capturedUrl: URL | undefined;
         let capturedToken: string | undefined;
+        let capturedSignal: AbortSignal | null | undefined;
+        const abortController = new AbortController();
         const provider = createBraveWebSearchProvider({
             apiKey: 'brave-secret',
             fetchImpl: async (input, init) => {
                 capturedUrl = new URL(String(input));
                 capturedToken = new Headers(init?.headers).get('X-Subscription-Token') ?? undefined;
+                capturedSignal = init?.signal;
 
                 return new Response(
                     JSON.stringify({
@@ -207,16 +210,20 @@ describe('Brave web search provider', () => {
                 );
             },
         });
-        const result = await provider.search({
-            query: 'learncard ai',
-            limit: 2,
-            freshness: 'pw',
-            country: 'US',
-            searchLang: 'en',
-            safeSearch: 'moderate',
-        });
+        const result = await provider.search(
+            {
+                query: 'learncard ai',
+                limit: 2,
+                freshness: 'pw',
+                country: 'US',
+                searchLang: 'en',
+                safeSearch: 'moderate',
+            },
+            abortController.signal
+        );
 
         expect(capturedUrl?.origin).toBe('https://api.search.brave.com');
+        expect(capturedSignal).toBe(abortController.signal);
         expect(capturedUrl?.searchParams.get('q')).toBe('learncard ai');
         expect(capturedUrl?.searchParams.get('count')).toBe('2');
         expect(capturedUrl?.searchParams.get('freshness')).toBe('pw');
