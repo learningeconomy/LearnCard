@@ -2,6 +2,8 @@
 
 The Consent Flow system allows organizations to create contracts that users can consent to, enabling controlled data sharing and credential issuance.
 
+ConsentFlow contracts can also read and share My Skill Profile verifiable data fields such as Goals, Professional Title, Role Experience, Work Experience, Pay Rate, Work Life Balance, Job Stability, and Self-Assigned Skills. See [Verifiable Data in ConsentFlow](verifiable-data-in-consentflow.md) for details.
+
 ## Architecture
 
 The Consent Flow Contract system manages permissions and data sharing between profiles using a graph-based data model. It tracks what data can be shared, who has consented to share it, and maintains a transaction history of all consent-related activities.

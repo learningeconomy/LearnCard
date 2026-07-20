@@ -1,0 +1,13 @@
+{
+    "_comment": "Base (production) environment for ScoutPass. Stage overlays (config.<stage>.json) are merged on top via deepMerge — see scripts/lc.ts.",
+    "branding": {
+        "name": "ScoutPass"
+    },
+    "apis": {
+        "brainService": "https://scoutnetwork.org/trpc",
+        "brainServiceApi": "https://scoutnetwork.org/api",
+        "cloudService": "https://cloud.scoutnetwork.org/trpc",
+        "lcaApi": "https://api.scoutnetwork.org/trpc",
+        "xapi": "https://cloud.scoutnetwork.org/xapi"
+    }
+}

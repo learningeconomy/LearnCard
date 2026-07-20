@@ -85,6 +85,9 @@ const {
     AssistanceTwoTonedIcon,
     FamiliesTwoTonedIcon,
     CompassTwoTonedIcon,
+    DashboardTwoTonedIcon,
+    DashboardColorfulIcon,
+    DashboardFormalIcon,
 } = ColorfulSideNavIcons;
 
 const {
@@ -267,9 +270,11 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
             // `Compass` is still used as a hero mark on the onboard
             // sub-header and AI session plan.
             pathways: CompassTwoTonedIcon,
+            dashboard: DashboardColorfulIcon,
         },
 
         navbar: {
+            dashboard: DashboardColorfulIcon,
             wallet: NavBarPassportIcon,
             plus: ColorFulPlus,
             launchPad: NavBarLaunchPadIcon,
@@ -326,9 +331,11 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
             // variant when the feature graduates out of flag-only
             // rollout.
             pathways: CompassTwoTonedIcon,
+            dashboard: DashboardFormalIcon,
         },
 
         navbar: {
+            dashboard: DashboardFormalIcon,
             wallet: NavBarPassportIconFormal,
             plus: FormalPlus,
             launchPad: NavBarLaunchPadIconFormal,
@@ -426,6 +433,7 @@ export const PARTIAL_ICON_SETS: Record<string, PartialIconSetDef> = {
             },
 
             navbar: {
+                dashboard: DashboardColorfulIcon,
                 wallet: VetpassPassportNavbar,
                 launchPad: VetpassAppsNavbar,
                 notification: VetpassAlertsNavbar,

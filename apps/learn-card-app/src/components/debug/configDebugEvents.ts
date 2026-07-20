@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('config-debug-events');
 /**
  * Config & Theme Debug Event Logger
  *
@@ -33,6 +35,7 @@ export type ConfigDebugEventType =
     | 'bootstrap:start'
     | 'bootstrap:firebase_init'
     | 'bootstrap:auth_config_set'
+    | 'bootstrap:image_upload_config_set'
     | 'bootstrap:network_store_init'
     | 'bootstrap:sentry_init'
     | 'bootstrap:userflow_init'
@@ -76,10 +79,7 @@ const isDebugEnabled = (): boolean => {
     if (typeof window === 'undefined') return false;
 
     try {
-        return (
-            import.meta.env.VITE_ENABLE_AUTH_DEBUG_WIDGET === 'true' ||
-            import.meta.env.DEV
-        );
+        return import.meta.env.VITE_ENABLE_AUTH_DEBUG_WIDGET === 'true' || import.meta.env.DEV;
     } catch {
         return false;
     }
@@ -117,7 +117,7 @@ export const emitConfigDebugEvent = (
         try {
             listener(event);
         } catch (e) {
-            console.error('[ConfigDebug] Listener error:', e);
+            log.error('Listener error', e);
         }
     });
 };
@@ -165,11 +165,19 @@ export const clearConfigDebugEvents = (): void => {
 // Convenience helpers
 // ---------------------------------------------------------------------------
 
-export const emitConfigSuccess = (type: ConfigDebugEventType, message: string, data?: Record<string, unknown>): void => {
+export const emitConfigSuccess = (
+    type: ConfigDebugEventType,
+    message: string,
+    data?: Record<string, unknown>
+): void => {
     emitConfigDebugEvent(type, message, { level: 'success', data });
 };
 
-export const emitConfigError = (type: ConfigDebugEventType, message: string, error?: unknown): void => {
+export const emitConfigError = (
+    type: ConfigDebugEventType,
+    message: string,
+    error?: unknown
+): void => {
     const errorData: Record<string, unknown> = {};
 
     if (error instanceof Error) {
@@ -182,7 +190,11 @@ export const emitConfigError = (type: ConfigDebugEventType, message: string, err
     emitConfigDebugEvent(type, message, { level: 'error', data: errorData });
 };
 
-export const emitConfigWarning = (type: ConfigDebugEventType, message: string, data?: Record<string, unknown>): void => {
+export const emitConfigWarning = (
+    type: ConfigDebugEventType,
+    message: string,
+    data?: Record<string, unknown>
+): void => {
     emitConfigDebugEvent(type, message, { level: 'warning', data });
 };
 
@@ -216,7 +228,11 @@ const STEP_LEVELS: Record<string, 'info' | 'success' | 'warning' | 'error'> = {
 /**
  * Create an `onEvent` callback suitable for passing to resolveTenantConfig().
  */
-export const createConfigResolutionListener = (): ((step: string, message: string, data?: Record<string, unknown>) => void) => {
+export const createConfigResolutionListener = (): ((
+    step: string,
+    message: string,
+    data?: Record<string, unknown>
+) => void) => {
     return (step: string, message: string, data?: Record<string, unknown>) => {
         const eventType = step as ConfigDebugEventType;
         const level = STEP_LEVELS[step] ?? 'info';

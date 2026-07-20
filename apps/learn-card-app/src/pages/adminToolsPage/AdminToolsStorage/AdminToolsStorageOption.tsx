@@ -2,9 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { IonRadio, IonRadioGroup, IonInput } from '@ionic/react';
 import { useQueryClient } from '@tanstack/react-query';
 import _ from 'lodash-es';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('admin-tools-storage-option');
 
 import GenericLoader from '../../../components/generic/GenericLoader';
 import AdminToolsModalFooter from '../AdminToolsModal/AdminToolsModalFooter';
+import * as m from '../../../paraglide/messages.js';
 import AdminToolsOptionItemHeader from '../AdminToolsModal/helpers/AdminToolsOptionItemHeader';
 
 import { useFetchCounts } from '../../../hooks/useFetchCounts';
@@ -37,17 +40,17 @@ export const storageOptionsList: StorageOption[] = [
     { label: 'Custom', endpoint: '', type: StorageOptionsEnum.custom },
 ];
 
-export const storageSwitchMessages = [
-    'Packing up the data boxes…',
-    'Rolling the storage cart over…',
-    'Loading the data truck…',
-    'Checking the storage map…',
-    'Dusting off the new shelves…',
-    'Labeling the storage bins…',
-    'Polishing the data cabinets…',
-    'Making sure nothing’s left behind…',
-    'Putting the new key in the lock…',
-    'Closing the old storage door…',
+export const getStorageSwitchMessages = () => [
+    m['adminTools.storageSwitch.packing'](),
+    m['adminTools.storageSwitch.rolling'](),
+    m['common.loadingDataTruck'](),
+    m['adminTools.storageSwitch.checkingMap'](),
+    m['adminTools.storageSwitch.dusting'](),
+    m['adminTools.storageSwitch.labeling'](),
+    m['adminTools.storageSwitch.polishing'](),
+    m['adminTools.storageSwitch.nothingLeft'](),
+    m['adminTools.storageSwitch.newKey'](),
+    m['adminTools.storageSwitch.closingDoor'](),
 ];
 
 const AdminToolsStorageOption: React.FC<{ option: AdminToolOption; showFooter?: boolean }> = ({
@@ -89,7 +92,7 @@ const AdminToolsStorageOption: React.FC<{ option: AdminToolOption; showFooter?: 
     const handleSwitchStorage = async (switchNetwork: boolean) => {
         try {
             newModal(
-                <GenericLoader overrideText={_.shuffle(storageSwitchMessages)} />,
+                <GenericLoader overrideText={_.shuffle(getStorageSwitchMessages())} />,
                 {
                     disableCloseHandlers: true,
                 },
@@ -129,7 +132,7 @@ const AdminToolsStorageOption: React.FC<{ option: AdminToolOption; showFooter?: 
             closeAllModals();
         } catch (error) {
             closeModal();
-            console.error(error);
+            log.error(error);
         }
     };
 

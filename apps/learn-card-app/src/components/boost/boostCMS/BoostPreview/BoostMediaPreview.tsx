@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation } from 'swiper';
+import { Navigation } from 'swiper/modules';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-media-preview');
 
 import MediaLoader from './helpers/MediaLoader';
 import SpilledCup from 'learn-card-base/svgs/SpilledCup';
@@ -24,20 +26,7 @@ import {
     convertEvidenceToAttachments,
     getExistingAttachmentsOrEvidence,
 } from 'learn-card-base/helpers/credentialHelpers';
-
-export function getFilestackPreviewUrl(fileUrl: string): string {
-    try {
-        const url = new URL(fileUrl);
-        const handle = url.pathname.split('/').filter(Boolean).pop();
-
-        if (!handle) throw new Error('Invalid Filestack URL: No file handle found');
-
-        return `https://cdn.filestackcontent.com/preview/${handle}`;
-    } catch (e) {
-        console.error('Failed to generate Filestack preview URL:', e);
-        return '';
-    }
-}
+import { getFilestackPreviewUrl } from 'learn-card-base/filestack/images/images.helpers';
 
 export const BoostMediaPreview: React.FC<{
     credential: VC;
@@ -87,7 +76,7 @@ export const BoostMediaPreview: React.FC<{
             const metadata = await getVideoMetadata(attachment?.url || '');
             setVideoMetaData(metadata);
         } catch (error) {
-            console.error('Failed to get video metadata:', error);
+            log.error('Failed to get video metadata:', error);
         } finally {
             setIsMediaLoading(false);
         }
@@ -99,7 +88,7 @@ export const BoostMediaPreview: React.FC<{
             const url = getFilestackPreviewUrl(attachment?.url || '');
             setDocumentUrl(url);
         } catch (error) {
-            console.error('Failed to get document metadata:', error);
+            log.error('Failed to get document metadata:', error);
         } finally {
             setIsMediaLoading(false);
         }
@@ -268,15 +257,15 @@ export const BoostMediaPreview: React.FC<{
                 <>
                     <section className="grayscale-800 h-full flex flex-row overflow-hidden">
                         <div className="flex-1 h-full overflow-hidden relative">{mediaContent}</div>
-	                        {!isMobile && !isFullScreen && (
-	                            <BoostDetailsSideBar
-	                                credential={credential}
-	                                categoryType={BoostCategoryOptionsEnum.accomplishment}
-	                                verificationItems={verifications}
-	                                renderMethodCredential={credential}
-	                                displayType={DisplayTypeEnum.Media}
-	                            />
-	                        )}
+                        {!isMobile && !isFullScreen && (
+                            <BoostDetailsSideBar
+                                credential={credential}
+                                categoryType={BoostCategoryOptionsEnum.accomplishment}
+                                verificationItems={verifications}
+                                renderMethodCredential={credential}
+                                displayType={DisplayTypeEnum.Media}
+                            />
+                        )}
                         {isFullScreen && (
                             <MediaCollapseButton onClick={() => setIsFullScreen(false)} />
                         )}

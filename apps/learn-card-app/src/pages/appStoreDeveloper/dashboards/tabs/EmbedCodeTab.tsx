@@ -1,7 +1,12 @@
+import * as m from '../../../../paraglide/messages.js';
+import { useLocale } from '../../../../i18n';
+import { TransP } from '../../../../i18n/TransP';
 import React, { useState, useMemo, useEffect } from 'react';
 import { Copy, Check, Award, ChevronDown } from 'lucide-react';
 import { Clipboard } from '@capacitor/clipboard';
 import type { LCNIntegration } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('embed-code-tab');
 
 import { useToast } from 'learn-card-base/hooks/useToast';
 import type { CredentialTemplate } from '../types';
@@ -62,7 +67,7 @@ function buildHtmlSnippet(
 ${brandingBlock}
       requestBackgroundIssuance: ${requestBackgroundIssuance},
       onSuccess: function(details) {
-        console.log('Claimed!', details.credentialId);
+        log.info('Claimed!', details.credentialId);
       },
     });
   });
@@ -94,7 +99,7 @@ function ClaimButton() {
 ${brandingBlock}
       requestBackgroundIssuance: ${requestBackgroundIssuance},
       onSuccess: (details) => {
-        console.log('Claimed!', details.credentialId);
+        log.info('Claimed!', details.credentialId);
       },
     });
   }, []);
@@ -121,21 +126,49 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
     const requestBackgroundIssuance = config?.requestBackgroundIssuance ?? false;
 
     // Build snippets per template, or a generic one if no templates exist
+    const locale = useLocale();
+
     const snippets = useMemo(() => {
         if (templates.length > 0) {
             return templates.map(t => ({
                 name: t.name,
-                htmlCode: buildHtmlSnippet(t.name, publishableKey, partnerName, branding, requestBackgroundIssuance),
-                reactCode: buildReactSnippet(t.name, publishableKey, partnerName, branding, requestBackgroundIssuance),
+                htmlCode: buildHtmlSnippet(
+                    t.name,
+                    publishableKey,
+                    partnerName,
+                    branding,
+                    requestBackgroundIssuance
+                ),
+                reactCode: buildReactSnippet(
+                    t.name,
+                    publishableKey,
+                    partnerName,
+                    branding,
+                    requestBackgroundIssuance
+                ),
             }));
         }
 
-        return [{
-            name: 'My Credential',
-            htmlCode: buildHtmlSnippet('My Credential', publishableKey, partnerName, branding, requestBackgroundIssuance),
-            reactCode: buildReactSnippet('My Credential', publishableKey, partnerName, branding, requestBackgroundIssuance),
-        }];
-    }, [templates, publishableKey, partnerName, branding, requestBackgroundIssuance]);
+        return [
+            {
+                name: m['developerPortal.dashboards.tabs.embedCode.myCredential'](),
+                htmlCode: buildHtmlSnippet(
+                    m['developerPortal.dashboards.tabs.embedCode.myCredential'](),
+                    publishableKey,
+                    partnerName,
+                    branding,
+                    requestBackgroundIssuance
+                ),
+                reactCode: buildReactSnippet(
+                    m['developerPortal.dashboards.tabs.embedCode.myCredential'](),
+                    publishableKey,
+                    partnerName,
+                    branding,
+                    requestBackgroundIssuance
+                ),
+            },
+        ];
+    }, [templates, publishableKey, partnerName, branding, requestBackgroundIssuance, locale]);
 
     // Reset index when templates array shrinks below current selection
     useEffect(() => {
@@ -151,26 +184,40 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
         await Clipboard.write({ string: code });
         setCopied(id);
         setTimeout(() => setCopied(null), 2000);
-        presentToast('Code copied!', { hasDismissButton: true });
+        presentToast(m['developerPortal.dashboards.tabs.embedCode.copied'](), {
+            hasDismissButton: true,
+        });
     };
 
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-semibold text-gray-800">Embed Code</h2>
-                <p className="text-sm text-gray-500">Copy and paste into your website to add a claim button</p>
+                <h2 className="text-lg font-semibold text-gray-800">
+                    {m['developerPortal.dashboards.tabs.embedCode.title']()}
+                </h2>
+                <p className="text-sm text-gray-500">
+                    {m['developerPortal.dashboards.tabs.embedCode.description']()}
+                </p>
             </div>
 
             {/* Publishable Key */}
             <div className="p-4 bg-pink-50 border border-pink-200 rounded-xl">
                 <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm font-medium text-pink-800">Your Publishable Key</label>
+                    <label className="text-sm font-medium text-pink-800">
+                        {m['developerPortal.dashboards.tabs.embedCode.publishableKey']()}
+                    </label>
                     <button
                         onClick={() => copyCode(publishableKey, 'key')}
                         className="text-xs text-pink-700 hover:text-pink-800 flex items-center gap-1"
                     >
-                        {copied === 'key' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                        {copied === 'key' ? 'Copied!' : 'Copy'}
+                        {copied === 'key' ? (
+                            <Check className="w-3 h-3" />
+                        ) : (
+                            <Copy className="w-3 h-3" />
+                        )}
+                        {copied === 'key'
+                            ? m['developerPortal.dashboards.tabs.embedCode.copied']()
+                            : m['developerPortal.dashboards.tabs.embedCode.copy']()}
                     </button>
                 </div>
                 <div className="px-3 py-2 bg-white border border-pink-200 rounded-lg font-mono text-sm text-gray-700 break-all">
@@ -182,7 +229,7 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
             {snippets.length > 1 && (
                 <div>
                     <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        Select Template
+                        {m['developerPortal.dashboards.tabs.embedCode.selectTemplate']()}
                     </label>
                     <div className="flex flex-wrap gap-2">
                         {snippets.map((snippet, idx) => (
@@ -207,7 +254,7 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
             <div>
                 <div className="flex items-center justify-between mb-2">
                     <h3 className="font-medium text-gray-800">
-                        HTML Snippet
+                        {m['developerPortal.dashboards.tabs.embedCode.htmlSnippet']()}
                         {snippets.length > 1 && (
                             <span className="text-sm font-normal text-gray-500 ml-2">
                                 ({currentSnippet.name})
@@ -218,8 +265,14 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                         onClick={() => copyCode(currentSnippet.htmlCode, 'html')}
                         className="text-xs text-gray-600 hover:text-gray-800 flex items-center gap-1"
                     >
-                        {copied === 'html' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                        {copied === 'html' ? 'Copied!' : 'Copy'}
+                        {copied === 'html' ? (
+                            <Check className="w-3 h-3" />
+                        ) : (
+                            <Copy className="w-3 h-3" />
+                        )}
+                        {copied === 'html'
+                            ? m['developerPortal.dashboards.tabs.embedCode.copied']()
+                            : m['developerPortal.dashboards.tabs.embedCode.copy']()}
                     </button>
                 </div>
                 <pre className="p-4 bg-gray-900 text-gray-100 rounded-xl text-sm overflow-x-auto">
@@ -231,7 +284,7 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
             <div>
                 <div className="flex items-center justify-between mb-2">
                     <h3 className="font-medium text-gray-800">
-                        React / npm
+                        {m['developerPortal.dashboards.tabs.embedCode.reactSnippet']()}
                         {snippets.length > 1 && (
                             <span className="text-sm font-normal text-gray-500 ml-2">
                                 ({currentSnippet.name})
@@ -242,8 +295,14 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                         onClick={() => copyCode(currentSnippet.reactCode, 'react')}
                         className="text-xs text-gray-600 hover:text-gray-800 flex items-center gap-1"
                     >
-                        {copied === 'react' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                        {copied === 'react' ? 'Copied!' : 'Copy'}
+                        {copied === 'react' ? (
+                            <Check className="w-3 h-3" />
+                        ) : (
+                            <Copy className="w-3 h-3" />
+                        )}
+                        {copied === 'react'
+                            ? m['developerPortal.dashboards.tabs.embedCode.copied']()
+                            : m['developerPortal.dashboards.tabs.embedCode.copy']()}
                     </button>
                 </div>
                 <div className="mb-2">
@@ -257,67 +316,134 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
             {/* SDK Reference */}
             <details className="group rounded-xl border border-gray-200 bg-gray-50">
                 <summary className="flex cursor-pointer items-center justify-between p-4 text-sm font-medium text-gray-700 select-none [&::-webkit-details-marker]:hidden list-none">
-                    <span>SDK Reference &mdash; <code className="text-xs font-normal text-gray-500">InitOptions</code></span>
+                    <span>{m['developerPortal.dashboards.tabs.embedCode.sdkReference']()}</span>
                     <ChevronDown className="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180" />
                 </summary>
                 <div className="px-4 pb-4">
                     <table className="w-full text-xs border-collapse">
                         <thead>
                             <tr className="border-b border-gray-200 text-left text-gray-500">
-                                <th className="py-1.5 pr-2 font-medium">Prop</th>
-                                <th className="py-1.5 pr-2 font-medium">Type</th>
-                                <th className="py-1.5 font-medium">Description</th>
+                                <th className="py-1.5 pr-2 font-medium">
+                                    {m['developerPortal.dashboards.tabs.embedCode.propHeader']()}
+                                </th>
+                                <th className="py-1.5 pr-2 font-medium">
+                                    {m['developerPortal.dashboards.tabs.embedCode.typeHeader']()}
+                                </th>
+                                <th className="py-1.5 font-medium">
+                                    {m['developerPortal.dashboards.tabs.embedCode.descHeader']()}
+                                </th>
                             </tr>
                         </thead>
                         <tbody className="text-gray-700">
                             <tr className="border-b border-gray-100">
-                                <td className="py-1.5 pr-2 font-mono">target<span className="text-red-500">*</span></td>
-                                <td className="py-1.5 pr-2 font-mono text-gray-500">string | HTMLElement</td>
-                                <td className="py-1.5">CSS selector or DOM element to render the claim button into.</td>
+                                <td className="py-1.5 pr-2 font-mono">
+                                    target<span className="text-red-500">*</span>
+                                </td>
+                                <td className="py-1.5 pr-2 font-mono text-gray-500">
+                                    string | HTMLElement
+                                </td>
+                                <td className="py-1.5">
+                                    {m['developerPortal.dashboards.tabs.embedCode.sdkTargetDesc']()}
+                                </td>
                             </tr>
                             <tr className="border-b border-gray-100">
-                                <td className="py-1.5 pr-2 font-mono">credential<span className="text-red-500">*</span></td>
+                                <td className="py-1.5 pr-2 font-mono">
+                                    credential<span className="text-red-500">*</span>
+                                </td>
                                 <td className="py-1.5 pr-2 font-mono text-gray-500">{`{ name: string }`}</td>
-                                <td className="py-1.5">Credential template to issue. Use the template name — the server resolves it.</td>
+                                <td className="py-1.5">
+                                    {m[
+                                        'developerPortal.dashboards.tabs.embedCode.sdkCredentialDesc'
+                                    ]()}
+                                </td>
                             </tr>
                             <tr className="border-b border-gray-100">
                                 <td className="py-1.5 pr-2 font-mono">publishableKey</td>
                                 <td className="py-1.5 pr-2 font-mono text-gray-500">string</td>
-                                <td className="py-1.5">Your integration&apos;s publishable key.</td>
+                                <td className="py-1.5">
+                                    {m[
+                                        'developerPortal.dashboards.tabs.embedCode.sdkPublishableKeyDesc'
+                                    ]()}
+                                </td>
                             </tr>
                             <tr className="border-b border-gray-100">
                                 <td className="py-1.5 pr-2 font-mono">partnerName</td>
                                 <td className="py-1.5 pr-2 font-mono text-gray-500">string</td>
-                                <td className="py-1.5">Displayed in the claim modal header.</td>
-                            </tr>
-                            <tr className="border-b border-gray-100">
-                                <td className="py-1.5 pr-2 font-mono">branding</td>
-                                <td className="py-1.5 pr-2 font-mono text-gray-500">BrandingTokens</td>
                                 <td className="py-1.5">
-                                    <code>primaryColor</code>, <code>accentColor</code>, <code>partnerLogoUrl</code>, <code>logoUrl</code>, <code>walletUrl</code>.
+                                    {m[
+                                        'developerPortal.dashboards.tabs.embedCode.sdkPartnerNameDesc'
+                                    ]()}
                                 </td>
                             </tr>
                             <tr className="border-b border-gray-100">
-                                <td className="py-1.5 pr-2 font-mono text-nowrap">requestBackgroundIssuance</td>
+                                <td className="py-1.5 pr-2 font-mono">branding</td>
+                                <td className="py-1.5 pr-2 font-mono text-gray-500">
+                                    BrandingTokens
+                                </td>
+                                <td className="py-1.5">
+                                    <TransP
+                                        m={
+                                            m[
+                                                'developerPortal.dashboards.tabs.embedCode.sdkBrandingDesc'
+                                            ]
+                                        }
+                                        components={[
+                                            <code />,
+                                            <code />,
+                                            <code />,
+                                            <code />,
+                                            <code />,
+                                        ]}
+                                    />
+                                </td>
+                            </tr>
+                            <tr className="border-b border-gray-100">
+                                <td className="py-1.5 pr-2 font-mono text-nowrap">
+                                    requestBackgroundIssuance
+                                </td>
                                 <td className="py-1.5 pr-2 font-mono text-gray-500">boolean</td>
-                                <td className="py-1.5">If true, asks user for consent to issue future credentials without email verification.</td>
+                                <td className="py-1.5">
+                                    {m[
+                                        'developerPortal.dashboards.tabs.embedCode.sdkBackgroundIssuanceDesc'
+                                    ]()}
+                                </td>
                             </tr>
                             <tr className="border-b border-gray-100">
                                 <td className="py-1.5 pr-2 font-mono">onSuccess</td>
                                 <td className="py-1.5 pr-2 font-mono text-gray-500">{`(details) => void`}</td>
                                 <td className="py-1.5">
-                                    Called after a successful claim. Receives <code>credentialId</code>, <code>consentGiven</code>, and <code>handoffUrl</code>.
+                                    <TransP
+                                        m={
+                                            m[
+                                                'developerPortal.dashboards.tabs.embedCode.sdkOnSuccessDesc'
+                                            ]
+                                        }
+                                        components={[<code />, <code />, <code />]}
+                                    />
                                 </td>
                             </tr>
                             <tr>
                                 <td className="py-1.5 pr-2 font-mono">apiBaseUrl</td>
                                 <td className="py-1.5 pr-2 font-mono text-gray-500">string</td>
-                                <td className="py-1.5">Override the API endpoint. Defaults to <code>{getResolvedTenantConfig().apis.brainServiceApi}</code>.</td>
+                                <td className="py-1.5">
+                                    <TransP
+                                        m={
+                                            m[
+                                                'developerPortal.dashboards.tabs.embedCode.sdkApiBaseUrlDesc'
+                                            ]
+                                        }
+                                        values={{
+                                            url: getResolvedTenantConfig().apis.brainServiceApi,
+                                        }}
+                                        components={[<code />]}
+                                    />
+                                </td>
                             </tr>
                         </tbody>
                     </table>
                     <p className="mt-2 text-xs text-gray-400">
-                        <span className="text-red-500">*</span> Required. All other props are optional.
+                        <span className="text-red-500">*</span>{' '}
+                        {m['developerPortal.dashboards.tabs.embedCode.requiredNote']()}
                     </p>
                 </div>
             </details>

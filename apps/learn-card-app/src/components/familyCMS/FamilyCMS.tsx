@@ -60,6 +60,7 @@ import { LCNBoostStatusEnum } from '../boost/boost';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { VC } from '@learncard/types';
 import { LearnCardRolesEnum } from '../onboarding/onboarding.helpers';
+import * as m from '../../paraglide/messages.js';
 
 const StateValidator = z.object({
     name: z.string().min(1, 'Name is required!'),
@@ -73,6 +74,9 @@ type FamilyCMSProps = {
     onFamilyCreationSuccess?: () => void;
     editBoostUri?: string;
 };
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('family-cms');
 
 export const FamilyCMS: React.FC<FamilyCMSProps> = ({
     credential,
@@ -238,7 +242,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
             return uris;
         } catch (e) {
             setIsLoading(false);
-            console.error('handleIssueBoost::error', e);
+            log.error('handleIssueBoost::error', e);
         }
     };
 
@@ -261,7 +265,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
                 );
             }
         } catch (e) {
-            console.error('handleAddAdmins::error', e);
+            log.error('handleAddAdmins::error', e);
         }
     };
 
@@ -370,7 +374,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
                 );
             }
         } catch (e) {
-            console.error('handleCreateChildrenProfiles', e);
+            log.error('handleCreateChildrenProfiles', e);
         }
     };
 
@@ -424,7 +428,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
                     },
                 });
             } catch (e) {
-                console.error('Family claim hook::error', e);
+                log.error('Family claim hook::error', e);
             }
 
             if (editorMode === FamilyCMSEditorModeEnum.create && !hasPin) {
@@ -474,8 +478,8 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
             return;
         } catch (e) {
             setIsPublishLoading(false);
-            console.error('handlePublishBoost::error', e);
-            presentToast(`Error issuing boost`, {
+            log.error('handlePublishBoost::error', e);
+            presentToast(m['toasts.family.boostIssuedError'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -501,8 +505,8 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
             return;
         } catch (e) {
             setIsPublishLoading(false);
-            console.error('handlePublishBoost::error', e);
-            presentToast(`Error updating boost`, {
+            log.error('handlePublishBoost::error', e);
+            presentToast(m['toasts.family.boostUpdateError'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -517,7 +521,7 @@ export const FamilyCMS: React.FC<FamilyCMSProps> = ({
     return (
         <IonPage>
             {(isLoading || isSaveLoading || isPublishLoading) && (
-                <BoostLoader text={'Loading...'} darkBackground />
+                <BoostLoader text={m['common.loading']()} darkBackground />
             )}
             <FamilyCMSHeader editorMode={editorMode} />
             <FamilyCMSLayout state={state}>

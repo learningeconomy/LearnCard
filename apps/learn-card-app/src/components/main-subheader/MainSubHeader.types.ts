@@ -79,7 +79,7 @@ export const SubheaderContentType: Record<
         helperTextClickable: 'learning journey',
     },
     [SubheaderTypeEnum.SocialBadge]: {
-        title: 'Boosts',
+        title: 'Badges',
         IconComponent: BoostsIcon,
         iconColor: 'text-blue-700',
         iconPadding: 'pt-[3.75px] pr-[6.75px] pb-[4.622px] pl-[5.75px]',
@@ -128,7 +128,7 @@ export const SubheaderContentType: Record<
         showBetaLabel: true,
     },
     [SubheaderTypeEnum.AiInsights]: {
-        title: 'AI Insights',
+        title: 'Insights',
         IconComponent: AiInsightsIcon,
         iconColor: 'text-lime-700',
         textColor: 'text-white',

@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('trusted-origins');
 /**
  * Utility for managing trusted origins for identity sharing
  * Stores origins that the user has consented to share their identity with
@@ -20,7 +22,7 @@ export function getTrustedOrigins(): TrustedOriginData[] {
         if (!stored) return [];
         return JSON.parse(stored);
     } catch (error) {
-        console.error('[TrustedOrigins] Failed to parse trusted origins:', error);
+        log.error('Failed to parse trusted origins', error);
         return [];
     }
 }
@@ -39,16 +41,16 @@ export function isOriginTrusted(origin: string): boolean {
 export function addTrustedOrigin(origin: string, appName?: string): void {
     try {
         const trusted = getTrustedOrigins();
-        
+
         // Check if already exists
         const existingIndex = trusted.findIndex(item => item.origin === origin);
-        
+
         const newEntry: TrustedOriginData = {
             origin,
             consentedAt: Date.now(),
             appName,
         };
-        
+
         if (existingIndex >= 0) {
             // Update existing entry
             trusted[existingIndex] = newEntry;
@@ -56,11 +58,11 @@ export function addTrustedOrigin(origin: string, appName?: string): void {
             // Add new entry
             trusted.push(newEntry);
         }
-        
+
         localStorage.setItem(STORAGE_KEY, JSON.stringify(trusted));
-        console.log('[TrustedOrigins] Added trusted origin:', origin);
+        log.info('Added trusted origin', origin);
     } catch (error) {
-        console.error('[TrustedOrigins] Failed to add trusted origin:', error);
+        log.error('Failed to add trusted origin', error);
     }
 }
 
@@ -72,9 +74,9 @@ export function removeTrustedOrigin(origin: string): void {
         const trusted = getTrustedOrigins();
         const filtered = trusted.filter(item => item.origin !== origin);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-        console.log('[TrustedOrigins] Removed trusted origin:', origin);
+        log.info('Removed trusted origin', origin);
     } catch (error) {
-        console.error('[TrustedOrigins] Failed to remove trusted origin:', error);
+        log.error('Failed to remove trusted origin', error);
     }
 }
 
@@ -84,8 +86,8 @@ export function removeTrustedOrigin(origin: string): void {
 export function clearTrustedOrigins(): void {
     try {
         localStorage.removeItem(STORAGE_KEY);
-        console.log('[TrustedOrigins] Cleared all trusted origins');
+        log.info('Cleared all trusted origins');
     } catch (error) {
-        console.error('[TrustedOrigins] Failed to clear trusted origins:', error);
+        log.error('Failed to clear trusted origins', error);
     }
 }

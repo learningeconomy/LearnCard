@@ -32,13 +32,12 @@
  * Submission to `response_uri` happens in the next slice via an
  * extension to `vp/submit.ts` that takes an object-form `vp_token`.
  */
-import {
-    signPresentation,
-    type LdpVpSigner,
-} from '../vp/sign';
+import { signPresentation, type LdpVpSigner, type SdJwtPresenter } from '../vp/sign';
 import type { ProofJwtSigner } from '../vci/types';
 
 import type { BuiltDcqlPresentation } from './build';
+
+export type { SdJwtPresenter };
 
 /* -------------------------------------------------------------------------- */
 /*                                public types                                */
@@ -62,6 +61,8 @@ export interface SignDcqlPresentationsHelpers {
     jwtSigner?: ProofJwtSigner;
     /** Required when any `built[].vpFormat === 'ldp_vp'`. */
     ldpVpSigner?: LdpVpSigner;
+    /** Required when any `built[].kind === 'sd-jwt-vc'`. */
+    sdJwtPresenter?: SdJwtPresenter;
 }
 
 /**
@@ -80,12 +81,13 @@ export interface DcqlSignedPresentation {
 
 export interface DcqlResponse {
     /**
-     * The OID4VP §6.4 `vp_token` object — keys are `credential_query_id`
-     * strings, values are signed presentations. Submission code POSTs
-     * this verbatim. Compatible with {@link VpToken}'s
-     * `Record<string, string | VP>` arm.
+     * The OID4VP 1.0 §8.1 `vp_token` object — keys are
+     * `credential_query_id` strings, values are ARRAYS of signed
+     * presentations ("the value is an array of one or more
+     * Presentations"; a single match is a one-element array).
+     * Submission code POSTs this verbatim.
      */
-    vpToken: Record<string, DcqlInnerVpToken>;
+    vpToken: Record<string, DcqlInnerVpToken[]>;
 
     /**
      * Per-query signed-presentation breakdown. Same data as `vpToken`
@@ -99,15 +101,32 @@ export interface DcqlResponse {
 /*                              public surface                                */
 /* -------------------------------------------------------------------------- */
 
+export class DcqlSignError extends Error {
+    readonly code: 'missing_sd_jwt_presenter' | 'sd_jwt_present_failed';
+
+    constructor(code: DcqlSignError['code'], message: string, options?: { cause?: unknown }) {
+        super(message);
+        this.name = 'DcqlSignError';
+        this.code = code;
+        if (options?.cause !== undefined) {
+            (this as { cause?: unknown }).cause = options.cause;
+        }
+    }
+}
+
 /**
  * Sign each unsigned VP from {@link buildDcqlPresentations} using the
  * appropriate signer (jwt for jwt_vp_json, ldp for ldp_vp), preserving
- * the per-query `credentialQueryId` association.
+ * the per-query `credentialQueryId` association. SD-JWT-VC entries
+ * (`kind: 'sd-jwt-vc'`) are routed through `helpers.sdJwtPresenter`
+ * instead of the VP signing path — the compact form they produce IS
+ * the vp_token value for that query id.
  *
- * Throws `VpSignError` (the same code path as PEX signing) on signer
- * misconfiguration; the per-query signing is sequential rather than
- * parallel both because Ed25519 signing is fast (sub-ms per VP) and
- * because some host signers maintain ordered nonce state.
+ * Throws `VpSignError` for VP signing failures and `DcqlSignError`
+ * for SD-JWT presenter failures. Per-query signing is sequential
+ * rather than parallel both because Ed25519 signing is fast (sub-ms
+ * per VP) and because some host signers maintain ordered nonce
+ * state.
  */
 export const signDcqlPresentations = async (
     input: SignDcqlPresentationsInput,
@@ -116,6 +135,11 @@ export const signDcqlPresentations = async (
     const out: DcqlSignedPresentation[] = [];
 
     for (const entry of input.built) {
+        if (entry.kind === 'sd-jwt-vc') {
+            out.push(await presentSdJwtEntry(entry, input, helpers));
+            continue;
+        }
+
         const result = await signPresentation(
             {
                 unsignedVp: entry.unsignedVp,
@@ -128,12 +152,6 @@ export const signDcqlPresentations = async (
             helpers
         );
 
-        // `result.vpToken` is the broad `VpToken` union. For DCQL
-        // inner VPs we know the runtime shape can only be `string`
-        // (jwt_vp_json compact JWS) or `VP` (signed ldp_vp object) —
-        // a per-query DCQL inner can't itself be a DCQL Record. The
-        // signPresentation contract enforces this; the cast is a
-        // narrowing hint TypeScript can't infer from the union.
         out.push({
             credentialQueryId: entry.credentialQueryId,
             vpToken: result.vpToken as DcqlInnerVpToken,
@@ -142,6 +160,42 @@ export const signDcqlPresentations = async (
     }
 
     return out;
+};
+
+const presentSdJwtEntry = async (
+    entry: Extract<BuiltDcqlPresentation, { kind: 'sd-jwt-vc' }>,
+    input: SignDcqlPresentationsInput,
+    helpers: SignDcqlPresentationsHelpers
+): Promise<DcqlSignedPresentation> => {
+    if (!helpers.sdJwtPresenter) {
+        throw new DcqlSignError(
+            'missing_sd_jwt_presenter',
+            `BuiltDcqlPresentation for query "${entry.credentialQueryId}" is kind=sd-jwt-vc but helpers.sdJwtPresenter was not provided`
+        );
+    }
+
+    let presented: { compact: string };
+    try {
+        presented = await helpers.sdJwtPresenter(entry.compact, {
+            audience: input.audience,
+            nonce: input.nonce,
+            disclose: entry.disclose,
+        });
+    } catch (e) {
+        throw new DcqlSignError(
+            'sd_jwt_present_failed',
+            `SD-JWT-VC presenter failed for query "${entry.credentialQueryId}": ${
+                e instanceof Error ? e.message : String(e)
+            }`,
+            { cause: e }
+        );
+    }
+
+    return {
+        credentialQueryId: entry.credentialQueryId,
+        vpToken: presented.compact,
+        vpFormat: entry.vpFormat,
+    };
 };
 
 /**
@@ -170,16 +224,17 @@ export const buildDcqlResponse = async (
  * declaration order. Some verifiers iterate query entries in declared
  * order during validation, so this preserves that locality.
  *
- * `multiple: true` queries are not supported in this slice — each
- * query id maps to a single VP. When we add support, the value type
- * widens to `VpToken | VpToken[]`.
+ * Values are arrays per OID4VP 1.0 §8.1 — "an array of one or more
+ * Presentations"; without `multiple: true` each array holds exactly
+ * one. Multiple signed presentations for the same query id aggregate
+ * into that query's array.
  */
 export const assembleDcqlVpToken = (
     presentations: readonly DcqlSignedPresentation[]
-): Record<string, DcqlInnerVpToken> => {
-    const out: Record<string, DcqlInnerVpToken> = {};
+): Record<string, DcqlInnerVpToken[]> => {
+    const out: Record<string, DcqlInnerVpToken[]> = {};
     for (const p of presentations) {
-        out[p.credentialQueryId] = p.vpToken;
+        (out[p.credentialQueryId] ??= []).push(p.vpToken);
     }
     return out;
 };

@@ -1,8 +1,13 @@
 import React from 'react';
+
+import { m } from '../../../paraglide/messages.js';
+
 import { useHistory } from 'react-router-dom';
 import { useStore } from '@nanostores/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('chat-header');
 
 import {
     LaunchPadAppListItem,
@@ -40,12 +45,7 @@ interface ChatHeaderProps {
     onClose?: () => void;
 }
 
-export const ChatHeader: React.FC<ChatHeaderProps> = ({
-    mode,
-    aiApp,
-    initialTopic,
-    onClose,
-}) => {
+export const ChatHeader: React.FC<ChatHeaderProps> = ({ mode, aiApp, initialTopic, onClose }) => {
     const history = useHistory();
     const { closeAllModals } = useModal();
     const $currentThreadId = useStore(currentThreadId);
@@ -97,9 +97,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         const durationSec = startedAt
             ? Math.max(
                   0,
-                  Math.round(
-                      (new Date(endedAt).getTime() - new Date(startedAt).getTime()) / 1000,
-                  ),
+                  Math.round((new Date(endedAt).getTime() - new Date(startedAt).getTime()) / 1000)
               )
             : undefined;
 
@@ -109,19 +107,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 eventId: uuidv4(),
                 threadId,
                 topicUri,
-                ...(currentAiPathwayUri.get()
-                    ? { aiPathwayUri: currentAiPathwayUri.get()! }
-                    : {}),
+                ...(currentAiPathwayUri.get() ? { aiPathwayUri: currentAiPathwayUri.get()! } : {}),
                 endedAt,
                 ...(durationSec !== undefined ? { durationSec } : {}),
                 source,
             });
         } catch (err) {
             // eslint-disable-next-line no-console
-            console.error(
-                '[ChatHeader] failed to publish ai-session-completed:',
-                err,
-            );
+            log.error('[ChatHeader] failed to publish ai-session-completed:', err);
         }
     };
 
@@ -144,8 +137,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         // exit cleanly to topics. Without this, X retriggers finishSession
         // which just rebuilds the same end state.
         const hasEndedAlready =
-            $sessionEnded ||
-            (currentThread?.summaries && currentThread.summaries.length > 0);
+            $sessionEnded || (currentThread?.summaries && currentThread.summaries.length > 0);
         if (hasEndedAlready) {
             disconnectWebSocket();
             resetChatStores();
@@ -212,7 +204,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                     {isTitleLoading ? (
                         <div
                             className="h-[20px] w-[60%] max-w-[280px] rounded-[6px] bg-grayscale-100 animate-pulse"
-                            aria-label="Loading title"
+                            aria-label={m['aiSession.loadingTitle']()}
                             role="status"
                         />
                     ) : (
@@ -222,7 +214,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                     )}
                     {showEndSessionHint && !isTitleLoading && (
                         <p className="text-[13px] font-poppins text-grayscale-600 mt-[2px] leading-tight">
-                            Close to End Session
+                            {m['ai.closeToEndSession']()}
                         </p>
                     )}
                 </div>
@@ -230,7 +222,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                     type="button"
                     onClick={handleFinishSession}
                     className="flex-shrink-0 p-1 -mr-1 text-grayscale-600"
-                    aria-label="Close"
+                    aria-label={m['common.close']()}
                 >
                     <X className="text-grayscale-800 w-[24px] h-[24px]" strokeWidth="3" />
                 </button>

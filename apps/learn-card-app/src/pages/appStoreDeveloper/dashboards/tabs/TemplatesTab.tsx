@@ -1,12 +1,14 @@
 /**
  * TemplatesTab - Dashboard version of credential template management
- * 
+ *
  * Re-exports TemplateBuilderStep for full functionality including:
  * - Master templates with child boosts
  * - CSV catalog import
  * - Full CredentialBuilder editing
  */
 
+import * as m from '../../../../paraglide/messages.js';
+import { useLocale } from '../../../../i18n';
 import React, { useMemo } from 'react';
 import { useGetCurrentLCNUser } from 'learn-card-base';
 
@@ -36,16 +38,21 @@ export const TemplatesTab: React.FC<TemplatesTabProps> = ({
                 image: currentLCNUser.image || '',
                 shortBio: currentLCNUser.shortBio || '',
                 bio: currentLCNUser.bio || '',
-                display: currentLCNUser.display as Record<string, unknown> || {},
+                display: (currentLCNUser.display as Record<string, unknown>) || {},
             };
         }
         return null;
     }, [propBranding, currentLCNUser]);
 
-    const project = useMemo(() => ({
-        id: integrationId,
-        name: 'Integration',
-    }), [integrationId]);
+    const locale = useLocale();
+
+    const project = useMemo(
+        () => ({
+            id: integrationId,
+            name: m['developerPortal.dashboards.tabs.templates.projectName'](),
+        }),
+        [integrationId, locale]
+    );
 
     const handleComplete = () => {
         onRefresh?.();
@@ -68,7 +75,7 @@ export const TemplatesTab: React.FC<TemplatesTabProps> = ({
             />
 
             <p className="text-xs text-gray-400 mt-4 text-center">
-                See the <strong className="text-gray-500">Code</strong> tab for send examples using your template URIs.
+                {m['developerPortal.dashboards.tabs.templates.footnote']()}
             </p>
         </div>
     );

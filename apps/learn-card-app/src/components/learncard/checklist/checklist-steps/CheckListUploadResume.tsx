@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('check-list-upload-resume');
 
 import TrashBin from '../../../svgs/TrashBin';
 import DocIcon from 'learn-card-base/svgs/DocIcon';
@@ -13,6 +15,7 @@ import { getWalletCategory } from './AchievementTypeSelectorModal';
 import { useUploadFile } from '../../../../hooks/useUploadFile';
 import {
     useWallet,
+    useDeleteCredentialRecord,
     useConfirmation,
     useToast,
     ToastTypeEnum,
@@ -22,6 +25,8 @@ import {
 } from 'learn-card-base';
 
 import { useTheme } from '../../../../theme/hooks/useTheme';
+import * as m from '../../../../paraglide/messages.js';
+import type { LCR } from 'learn-card-base/types/credential-records';
 
 export type ResumeType = {
     id: string;
@@ -35,11 +40,21 @@ export const CheckListUploadResume: React.FC = () => {
     const { initWallet } = useWallet();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const { getFile, isUploading, isSaving, fetchParsedCredentials, storeSelectedCredentials, parsedCredentials, setParsedCredentials, base64Data, rawArtifactCredential } =
-        useUploadFile(UploadTypesEnum.Resume);
+    const {
+        getFile,
+        isUploading,
+        isSaving,
+        fetchParsedCredentials,
+        storeSelectedCredentials,
+        parsedCredentials,
+        setParsedCredentials,
+        base64Data,
+        rawArtifactCredential,
+    } = useUploadFile(UploadTypesEnum.Resume);
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const confirm = useConfirmation();
     const { presentToast } = useToast();
+    const { mutateAsync: deleteCredentialRecord } = useDeleteCredentialRecord();
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [showReview, setShowReview] = useState<boolean>(false);
@@ -74,26 +89,32 @@ export const CheckListUploadResume: React.FC = () => {
                         });
                         setShowReview(true);
                     } else {
-                        storeSelectedCredentials([], rawArtifactCredential, UploadTypesEnum.Resume).finally(
-                            () => handleSetResume()
-                        );
+                        storeSelectedCredentials(
+                            [],
+                            rawArtifactCredential,
+                            UploadTypesEnum.Resume
+                        ).finally(() => handleSetResume());
                     }
                 })
                 .catch(error => {
-                    const msg = error?.message || 'Something went wrong';
+                    const msg =
+                        error?.message ||
+                        m['passport.buildMyLearnCard.managers.toastGenericError']();
                     // Strip nested "Error: Error:" prefixes from the AI service
                     const cleanMsg = msg.replace(/^(Error:\s*)+/i, '');
                     presentToast(cleanMsg, {
-                        title: 'Could not extract credentials',
+                        title: m['passport.buildMyLearnCard.managers.toastExtractFailed'](),
                         hasDismissButton: true,
                         type: ToastTypeEnum.Error,
                         hasX: true,
                         duration: 7000,
                     });
                     // Still store the raw artifact so the file isn't lost
-                    storeSelectedCredentials([], rawArtifactCredential, UploadTypesEnum.Resume).finally(
-                        () => handleSetResume()
-                    );
+                    storeSelectedCredentials(
+                        [],
+                        rawArtifactCredential,
+                        UploadTypesEnum.Resume
+                    ).finally(() => handleSetResume());
                 });
         }
     }, [base64Data, rawArtifactCredential]);
@@ -125,7 +146,7 @@ export const CheckListUploadResume: React.FC = () => {
             setIsLoading(false);
         } catch (error) {
             setIsLoading(false);
-            console.error('handleSetResume::error', error);
+            log.error('handleSetResume::error', error);
         }
     };
 
@@ -138,16 +159,20 @@ export const CheckListUploadResume: React.FC = () => {
         void (async () => {
             try {
                 const wallet = await initWallet();
-                const record = await wallet.index.LearnCloud.get({ category: UploadTypesEnum.Resume });
-                const recordUri = record?.[0]?.uri as string;
-                if (!recordUri) return;
-                await wallet.index.LearnCloud.remove(previous.id || (record?.[0]?.id as string));
+                const record = await wallet.index.LearnCloud.get({
+                    category: UploadTypesEnum.Resume,
+                });
+                const targetRecord = record?.[0] as unknown as LCR | undefined;
+
+                if (!targetRecord) return;
+
+                await deleteCredentialRecord(targetRecord);
                 refetchCheckListStatus();
             } catch (error) {
-                console.error('handleDeleteResume::error', error);
+                log.error('handleDeleteResume::error', error);
                 setResume(previous);
-                presentToast('Failed to delete. Please try again.', {
-                    title: 'Delete failed',
+                presentToast(m['passport.buildMyLearnCard.managers.toastDeleteFailed'](), {
+                    title: m['passport.buildMyLearnCard.managers.toastDeleteFailedShort'](),
                     hasDismissButton: true,
                     type: ToastTypeEnum.Error,
                     hasX: true,
@@ -160,7 +185,7 @@ export const CheckListUploadResume: React.FC = () => {
     const confirmDelete = async () => {
         if (
             await confirm({
-                text: `Are you sure you want remove your uploaded resume?`,
+                text: m['passport.buildMyLearnCard.managers.confirmRemove.resume'](),
                 cancelButtonClassName:
                     'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-2 w-[100px] ',
                 confirmButtonClassName:
@@ -217,8 +242,10 @@ export const CheckListUploadResume: React.FC = () => {
         });
     };
 
-    let buttonText = resume ? 'Update' : 'Add';
-    buttonText = isUploading ? 'Uploading...' : buttonText;
+    let buttonText = resume
+        ? m['passport.buildMyLearnCard.managers.update']()
+        : m['passport.buildMyLearnCard.managers.addButton']();
+    buttonText = isUploading ? m['passport.buildMyLearnCard.managers.uploading']() : buttonText;
     const buttonIcon = resume ? (
         <RefreshIcon className={`w-[25px] h-[26px] text-${primaryColor} mr-2`} />
     ) : (
@@ -247,10 +274,10 @@ export const CheckListUploadResume: React.FC = () => {
                     <div className="w-full bg-white items-center justify-center flex flex-col shadow-button-bottom px-6 pt-2 pb-4 mt-4 rounded-[15px]">
                         <div className="flex flex-col items-start justify-center py-2 w-full">
                             <h4 className="text-lg text-grayscale-900 font-notoSans text-left mb-2">
-                                Resume
+                                {m['passport.buildMyLearnCard.managers.resume.title']()}
                             </h4>
                             <p className="text-sm text-grayscale-600 font-notoSans text-left mb-4">
-                                Upload your most recent resume.
+                                {m['passport.buildMyLearnCard.managers.resume.description']()}
                             </p>
 
                             {savedCredentialCount > 0 && (
@@ -269,7 +296,9 @@ export const CheckListUploadResume: React.FC = () => {
                                         />
                                     </svg>
                                     <p className="text-xs text-emerald-700 font-medium">
-                                        {savedCredentialCount} credential{savedCredentialCount !== 1 ? 's' : ''} saved to your wallet.
+                                        {m['passport.buildMyLearnCard.managers.credentialsSaved']({
+                                            count: savedCredentialCount,
+                                        })}
                                     </p>
                                 </div>
                             )}
@@ -281,18 +310,31 @@ export const CheckListUploadResume: React.FC = () => {
                                         fill="none"
                                         viewBox="0 0 24 24"
                                     >
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                        <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                        />
+                                        <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                                        />
                                     </svg>
                                     <p className="text-xs text-indigo-700 font-medium">
-                                        Processing your resume in the background...
+                                        {m[
+                                            'passport.buildMyLearnCard.managers.resume.processingBg'
+                                        ]()}
                                     </p>
                                 </div>
                             )}
 
                             <input
                                 type="file"
-                                accept=".pdf,.txt,.docx"
+                                accept=".pdf,.txt,.docx,.png,.jpg,.jpeg,.webp,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg,image/webp"
                                 onChange={async e => {
                                     setLoaderDismissed(false);
                                     await getFile(e, UploadTypesEnum.Resume);

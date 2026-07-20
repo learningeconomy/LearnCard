@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { IonSpinner } from '@ionic/react';
 import type { LCNIntegration } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('integration-selector');
+
+import * as m from '../../../paraglide/messages.js';
 
 import { useDeveloperPortal } from '../useDeveloperPortal';
 
@@ -32,7 +36,7 @@ export const IntegrationSelector: React.FC<IntegrationSelectorProps> = ({
             setNewName('');
             setIsCreating(false);
         } catch (error) {
-            console.error('Failed to create integration:', error);
+            log.error('Failed to create integration:', error);
         }
     };
 
@@ -47,7 +51,7 @@ export const IntegrationSelector: React.FC<IntegrationSelectorProps> = ({
     return (
         <div className="bg-white rounded-xl border border-grayscale-200 p-4">
             <label className="block text-sm font-medium text-grayscale-700 mb-3">
-                Select Integration
+                {m['developerPortal.components.integrationSelector.selectIntegration']()}
             </label>
 
             {integrations.length > 0 ? (
@@ -65,8 +69,16 @@ export const IntegrationSelector: React.FC<IntegrationSelectorProps> = ({
                             <span className="font-medium">{integration.name}</span>
 
                             {selectedId === integration.id && (
-                                <svg className="w-5 h-5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                <svg
+                                    className="w-5 h-5 text-emerald-500"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                >
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                        clipRule="evenodd"
+                                    />
                                 </svg>
                             )}
                         </button>
@@ -74,7 +86,7 @@ export const IntegrationSelector: React.FC<IntegrationSelectorProps> = ({
                 </div>
             ) : (
                 <p className="text-grayscale-500 text-sm mb-4">
-                    No projects yet. Create one to get started.
+                    {m['developerPortal.components.integrationSelector.noProjectsYet']()}
                 </p>
             )}
 
@@ -85,7 +97,9 @@ export const IntegrationSelector: React.FC<IntegrationSelectorProps> = ({
                         type="text"
                         value={newName}
                         onChange={e => setNewName(e.target.value)}
-                        placeholder="Integration name..."
+                        placeholder={m[
+                            'developerPortal.components.integrationSelector.integrationNamePlaceholder'
+                        ]()}
                         className="flex-1 px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                         autoFocus
                         onKeyDown={e => {
@@ -105,7 +119,7 @@ export const IntegrationSelector: React.FC<IntegrationSelectorProps> = ({
                         {createMutation.isPending ? (
                             <IonSpinner name="crescent" className="w-5 h-5" />
                         ) : (
-                            'Create'
+                            m['developerPortal.components.integrationSelector.create']()
                         )}
                     </button>
 
@@ -116,7 +130,7 @@ export const IntegrationSelector: React.FC<IntegrationSelectorProps> = ({
                         }}
                         className="px-4 py-2 bg-grayscale-200 text-grayscale-700 rounded-lg font-medium hover:bg-grayscale-300 transition-colors"
                     >
-                        Cancel
+                        {m['developerPortal.components.integrationSelector.cancel']()}
                     </button>
                 </div>
             ) : (
@@ -125,9 +139,14 @@ export const IntegrationSelector: React.FC<IntegrationSelectorProps> = ({
                     className="w-full px-4 py-3 border-2 border-dashed border-grayscale-300 rounded-lg text-grayscale-600 hover:border-emerald-400 hover:text-emerald-600 transition-colors flex items-center justify-center gap-2"
                 >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 4v16m8-8H4"
+                        />
                     </svg>
-                    Create New Integration
+                    {m['developerPortal.components.integrationSelector.createNewIntegration']()}
                 </button>
             )}
         </div>

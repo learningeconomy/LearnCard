@@ -1,14 +1,29 @@
 {
     "name": "@learncard/sd-jwt-vc-plugin",
-    "version": "0.1.0",
+    "version": "0.2.5",
     "description": "SD-JWT-VC holder + verifier support for LearnCard. Implements RFC 9901 (SD-JWT) and draft-ietf-oauth-sd-jwt-vc.",
-    "main": "./dist/index.js",
+    "type": "module",
+    "main": "./dist/index.cjs",
     "module": "./dist/sd-jwt-vc-plugin.esm.js",
+    "exports": {
+        ".": {
+            "development": "./src/index.ts",
+            "import": {
+                "types": "./dist/index.d.ts",
+                "default": "./dist/sd-jwt-vc-plugin.esm.js"
+            },
+            "require": {
+                "types": "./dist/index.d.cts",
+                "default": "./dist/index.cjs"
+            }
+        }
+    },
     "files": [
-        "dist"
+        "dist",
+        "src"
     ],
     "scripts": {
-        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.json",
+        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.json && shx cp ./dist/index.d.ts ./dist/index.d.cts",
         "test": "jest --passWithNoTests",
         "test:watch": "jest --watch",
         "test:coverage": "jest --silent --ci --coverage --coverageReporters=\"text\" --coverageReporters=\"text-summary\""
@@ -39,6 +54,8 @@
     "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
+        "@learncard/vc-plugin": "workspace:^",
+        "@sd-jwt/core": "^0.19.0",
         "@sd-jwt/decode": "^0.19.0",
         "@sd-jwt/sd-jwt-vc": "^0.19.0",
         "jose": "^5.9.6"

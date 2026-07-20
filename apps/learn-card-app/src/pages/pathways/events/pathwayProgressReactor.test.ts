@@ -1,15 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { pathwayStore, proposalStore } from '../../../stores/pathways';
-import type {
-    CredentialIngestedEvent,
-    Pathway,
-    PathwayNode,
-    Termination,
-} from '../types';
+import type { CredentialIngestedEvent, Pathway, PathwayNode, Termination } from '../types';
 
 import { createPathwayProgressReactor } from './pathwayProgressReactor';
 import { createWalletEventBus } from './walletEventBus';
+
+vi.mock('learn-card-base', () => ({
+    getLogger: () =>
+        (
+            globalThis as typeof globalThis & { mockLearnCardBaseLogger: () => unknown }
+        ).mockLearnCardBaseLogger(),
+}));
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -30,7 +32,7 @@ const uid = (): string => {
 const nodeWithTermination = (
     id: string,
     termination: Termination,
-    overrides: Partial<PathwayNode> = {},
+    overrides: Partial<PathwayNode> = {}
 ): PathwayNode => ({
     id,
     pathwayId: PATHWAY_ID,
@@ -81,7 +83,7 @@ const seedPathway = (nodes: PathwayNode[]): Pathway => {
 };
 
 const credentialEvent = (
-    overrides: Partial<CredentialIngestedEvent> = {},
+    overrides: Partial<CredentialIngestedEvent> = {}
 ): CredentialIngestedEvent => ({
     kind: 'credential-ingested',
     eventId: uid(),

@@ -1,9 +1,12 @@
+import * as m from '../../../../paraglide/messages.js';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('app-listings-tab');
 /**
  * AppListingsTab - Manage App Store Listings
- * 
+ *
  * For embed-app integrations: create, edit, and manage app listings
  * that appear in the LearnCard app store.
- * 
+ *
  * Mirrors functionality from EmbedAppGuide's GettingStartedStep.
  */
 
@@ -46,13 +49,16 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
 }) => {
     const { presentToast } = useToast();
 
-    const { useListingsForIntegration, useCreateListing, useUpdateListing, useDeleteListing } = useDeveloperPortal();
+    const { useListingsForIntegration, useCreateListing, useUpdateListing, useDeleteListing } =
+        useDeveloperPortal();
     const { data: listings, isLoading, refetch } = useListingsForIntegration(integration.id);
     const createListingMutation = useCreateListing();
     const updateListingMutation = useUpdateListing();
     const deleteListingMutation = useDeleteListing();
 
-    const [selectedListing, setSelectedListing] = useState<AppStoreListing | null>(externalSelectedListing || null);
+    const [selectedListing, setSelectedListing] = useState<AppStoreListing | null>(
+        externalSelectedListing || null
+    );
     const [isCreating, setIsCreating] = useState(false);
     const [newListingName, setNewListingName] = useState('');
     const [editingListing, setEditingListing] = useState<AppStoreListing | null>(null);
@@ -101,10 +107,16 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
             await refetch();
             setNewListingName('');
             setIsCreating(false);
-            presentToast('App listing created!', { type: ToastTypeEnum.Success, hasDismissButton: true });
+            presentToast('App listing created!', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
         } catch (err) {
-            console.error('Failed to create listing:', err);
-            presentToast('Failed to create app listing', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            log.error('Failed to create listing:', err);
+            presentToast('Failed to create app listing', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         }
     };
 
@@ -150,10 +162,16 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
 
             await refetch();
             setEditingListing(null);
-            presentToast('App listing updated!', { type: ToastTypeEnum.Success, hasDismissButton: true });
+            presentToast('App listing updated!', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
         } catch (err) {
-            console.error('Failed to update listing:', err);
-            presentToast('Failed to update app listing', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            log.error('Failed to update listing:', err);
+            presentToast('Failed to update app listing', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         }
     };
 
@@ -169,10 +187,16 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                 onListingSelect?.(null);
             }
 
-            presentToast('App listing deleted', { type: ToastTypeEnum.Success, hasDismissButton: true });
+            presentToast('App listing deleted', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
         } catch (err) {
-            console.error('Failed to delete listing:', err);
-            presentToast('Failed to delete app listing', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            log.error('Failed to delete listing:', err);
+            presentToast('Failed to delete app listing', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         }
     };
 
@@ -190,11 +214,23 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'LISTED':
-                return <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">Live</span>;
+                return (
+                    <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">
+                        {m['developerPortal.dashboards.tabs.appListings.live']()}
+                    </span>
+                );
             case 'PENDING_REVIEW':
-                return <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">In Review</span>;
+                return (
+                    <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
+                        {m['developerPortal.dashboards.tabs.appListings.inReview']()}
+                    </span>
+                );
             default:
-                return <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">Draft</span>;
+                return (
+                    <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
+                        {m['developerPortal.dashboards.tabs.appListings.draft']()}
+                    </span>
+                );
         }
     };
 
@@ -202,8 +238,12 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-lg font-semibold text-gray-800">App Listings</h2>
-                    <p className="text-sm text-gray-500">Manage your apps in the LearnCard app store</p>
+                    <h2 className="text-lg font-semibold text-gray-800">
+                        {m['developerPortal.dashboards.tabs.appListings.title']()}
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                        {m['developerPortal.dashboards.tabs.appListings.description']()}
+                    </p>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -220,7 +260,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                         className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg font-medium hover:bg-cyan-600 transition-colors"
                     >
                         <Plus className="w-4 h-4" />
-                        New App
+                        {m['developerPortal.dashboards.tabs.appListings.newApp']()}
                     </button>
                 </div>
             </div>
@@ -229,15 +269,19 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
             {isCreating && (
                 <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-xl space-y-3">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">App Name</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            {m['developerPortal.dashboards.tabs.appListings.appName']()}
+                        </label>
                         <input
                             type="text"
                             value={newListingName}
-                            onChange={(e) => setNewListingName(e.target.value)}
-                            placeholder="My Awesome App"
+                            onChange={e => setNewListingName(e.target.value)}
+                            placeholder={m[
+                                'developerPortal.dashboards.tabs.appListings.appNamePlaceholder'
+                            ]()}
                             className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
                             autoFocus
-                            onKeyDown={(e) => {
+                            onKeyDown={e => {
                                 if (e.key === 'Enter') handleCreateListing();
                                 if (e.key === 'Escape') setIsCreating(false);
                             }}
@@ -255,16 +299,19 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                             ) : (
                                 <>
                                     <Plus className="w-4 h-4" />
-                                    Create App
+                                    {m['developerPortal.dashboards.tabs.appListings.createApp']()}
                                 </>
                             )}
                         </button>
 
                         <button
-                            onClick={() => { setIsCreating(false); setNewListingName(''); }}
+                            onClick={() => {
+                                setIsCreating(false);
+                                setNewListingName('');
+                            }}
                             className="px-4 py-2.5 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition-colors"
                         >
-                            Cancel
+                            {m['developerPortal.dashboards.tabs.appListings.cancel']()}
                         </button>
                     </div>
                 </div>
@@ -281,15 +328,19 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
             {!isLoading && (!listings || listings.length === 0) && !isCreating && (
                 <div className="p-8 bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl text-center">
                     <Layout className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-600 font-medium mb-1">No apps yet</p>
-                    <p className="text-sm text-gray-500 mb-4">Create your first app to get started</p>
+                    <p className="text-gray-600 font-medium mb-1">
+                        {m['developerPortal.dashboards.tabs.appListings.noAppsYet']()}
+                    </p>
+                    <p className="text-sm text-gray-500 mb-4">
+                        {m['developerPortal.dashboards.tabs.appListings.noAppsYetDesc']()}
+                    </p>
 
                     <button
                         onClick={() => setIsCreating(true)}
                         className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg font-medium hover:bg-cyan-600 transition-colors"
                     >
                         <Plus className="w-4 h-4" />
-                        Create App
+                        {m['developerPortal.dashboards.tabs.appListings.createApp']()}
                     </button>
                 </div>
             )}
@@ -297,7 +348,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
             {/* App Listings */}
             {!isLoading && listings && listings.length > 0 && (
                 <div className="space-y-3">
-                    {listings.map((listing) => {
+                    {listings.map(listing => {
                         const isSelected = selectedListing?.listing_id === listing.listing_id;
                         const isExpanded = expandedListing === listing.listing_id;
                         const isEditing = editingListing?.listing_id === listing.listing_id;
@@ -314,7 +365,9 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                             <div
                                 key={listing.listing_id}
                                 className={`border rounded-xl overflow-hidden transition-all ${
-                                    isSelected ? 'border-cyan-500 bg-cyan-50/50' : 'border-gray-200 bg-white'
+                                    isSelected
+                                        ? 'border-cyan-500 bg-cyan-50/50'
+                                        : 'border-gray-200 bg-white'
                                 }`}
                             >
                                 {/* Header */}
@@ -323,9 +376,11 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                     onClick={() => handleSelectListing(listing)}
                                 >
                                     {/* Icon */}
-                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden ${
-                                        isSelected ? 'bg-cyan-100' : 'bg-gray-100'
-                                    }`}>
+                                    <div
+                                        className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden ${
+                                            isSelected ? 'bg-cyan-100' : 'bg-gray-100'
+                                        }`}
+                                    >
                                         {listing.icon_url ? (
                                             <img
                                                 src={listing.icon_url}
@@ -333,14 +388,22 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                                 className="w-full h-full object-cover"
                                             />
                                         ) : (
-                                            <Layout className={`w-6 h-6 ${isSelected ? 'text-cyan-600' : 'text-gray-400'}`} />
+                                            <Layout
+                                                className={`w-6 h-6 ${
+                                                    isSelected ? 'text-cyan-600' : 'text-gray-400'
+                                                }`}
+                                            />
                                         )}
                                     </div>
 
                                     {/* Info */}
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
-                                            <p className={`font-semibold truncate ${isSelected ? 'text-cyan-700' : 'text-gray-800'}`}>
+                                            <p
+                                                className={`font-semibold truncate ${
+                                                    isSelected ? 'text-cyan-700' : 'text-gray-800'
+                                                }`}
+                                            >
                                                 {listing.display_name}
                                             </p>
                                             {getStatusBadge(listing.app_listing_status)}
@@ -352,12 +415,23 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                     </div>
 
                                     {/* Actions */}
-                                    <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                                    <div
+                                        className="flex items-center gap-1 flex-shrink-0"
+                                        onClick={e => e.stopPropagation()}
+                                    >
                                         <button
-                                            onClick={() => setExpandedListing(isExpanded ? null : listing.listing_id)}
+                                            onClick={() =>
+                                                setExpandedListing(
+                                                    isExpanded ? null : listing.listing_id
+                                                )
+                                            }
                                             className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                                         >
-                                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                            {isExpanded ? (
+                                                <ChevronUp className="w-4 h-4" />
+                                            ) : (
+                                                <ChevronDown className="w-4 h-4" />
+                                            )}
                                         </button>
 
                                         <button
@@ -377,9 +451,13 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                     </div>
 
                                     {/* Selection Indicator */}
-                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                                        isSelected ? 'border-cyan-500 bg-cyan-500' : 'border-gray-300'
-                                    }`}>
+                                    <div
+                                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                                            isSelected
+                                                ? 'border-cyan-500 bg-cyan-500'
+                                                : 'border-gray-300'
+                                        }`}
+                                    >
                                         {isSelected && <Check className="w-4 h-4 text-white" />}
                                     </div>
                                 </div>
@@ -389,24 +467,45 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                     <div className="px-4 pb-4 pt-2 border-t border-gray-100 space-y-3">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                             <div>
-                                                <label className="text-xs font-medium text-gray-500">Listing ID</label>
+                                                <label className="text-xs font-medium text-gray-500">
+                                                    {m[
+                                                        'developerPortal.dashboards.tabs.appListings.listingId'
+                                                    ]()}
+                                                </label>
                                                 <div className="flex items-center gap-2 mt-1">
-                                                    <code className="text-sm text-gray-700 font-mono truncate">{listing.listing_id}</code>
+                                                    <code className="text-sm text-gray-700 font-mono truncate">
+                                                        {listing.listing_id}
+                                                    </code>
                                                     <button
-                                                        onClick={() => handleCopy(listing.listing_id, 'listing-id')}
+                                                        onClick={() =>
+                                                            handleCopy(
+                                                                listing.listing_id,
+                                                                'listing-id'
+                                                            )
+                                                        }
                                                         className="p-1 text-gray-400 hover:text-gray-600"
                                                     >
-                                                        {copied === 'listing-id' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                                                        {copied === 'listing-id' ? (
+                                                            <Check className="w-3 h-3 text-emerald-500" />
+                                                        ) : (
+                                                            <Copy className="w-3 h-3" />
+                                                        )}
                                                     </button>
                                                 </div>
                                             </div>
 
                                             <div>
-                                                <label className="text-xs font-medium text-gray-500">Launch URL</label>
+                                                <label className="text-xs font-medium text-gray-500">
+                                                    {m[
+                                                        'developerPortal.dashboards.tabs.appListings.launchUrl'
+                                                    ]()}
+                                                </label>
                                                 <div className="flex items-center gap-2 mt-1">
                                                     {launchUrl ? (
                                                         <>
-                                                            <code className="text-sm text-gray-700 font-mono truncate">{launchUrl}</code>
+                                                            <code className="text-sm text-gray-700 font-mono truncate">
+                                                                {launchUrl}
+                                                            </code>
                                                             <a
                                                                 href={launchUrl}
                                                                 target="_blank"
@@ -417,7 +516,11 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                                             </a>
                                                         </>
                                                     ) : (
-                                                        <span className="text-sm text-amber-600">Not configured</span>
+                                                        <span className="text-sm text-amber-600">
+                                                            {m[
+                                                                'developerPortal.dashboards.tabs.appListings.notConfigured'
+                                                            ]()}
+                                                        </span>
                                                     )}
                                                 </div>
                                             </div>
@@ -425,8 +528,14 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
 
                                         {listing.full_description && (
                                             <div>
-                                                <label className="text-xs font-medium text-gray-500">Description</label>
-                                                <p className="text-sm text-gray-600 mt-1">{listing.full_description}</p>
+                                                <label className="text-xs font-medium text-gray-500">
+                                                    {m[
+                                                        'developerPortal.dashboards.tabs.appListings.descriptionLabel'
+                                                    ]()}
+                                                </label>
+                                                <p className="text-sm text-gray-600 mt-1">
+                                                    {listing.full_description}
+                                                </p>
                                             </div>
                                         )}
                                     </div>
@@ -437,59 +546,113 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                     <div className="px-4 pb-4 pt-2 border-t border-gray-100 space-y-4">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">App Name</label>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    {m[
+                                                        'developerPortal.dashboards.tabs.appListings.appName'
+                                                    ]()}
+                                                </label>
                                                 <input
                                                     type="text"
                                                     value={editForm.display_name}
-                                                    onChange={(e) => setEditForm(prev => ({ ...prev, display_name: e.target.value }))}
+                                                    onChange={e =>
+                                                        setEditForm(prev => ({
+                                                            ...prev,
+                                                            display_name: e.target.value,
+                                                        }))
+                                                    }
                                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                                 />
                                             </div>
 
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">Tagline</label>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    {m[
+                                                        'developerPortal.dashboards.tabs.appListings.tagline'
+                                                    ]()}
+                                                </label>
                                                 <input
                                                     type="text"
                                                     value={editForm.tagline}
-                                                    onChange={(e) => setEditForm(prev => ({ ...prev, tagline: e.target.value }))}
-                                                    placeholder="A short description..."
+                                                    onChange={e =>
+                                                        setEditForm(prev => ({
+                                                            ...prev,
+                                                            tagline: e.target.value,
+                                                        }))
+                                                    }
+                                                    placeholder={m[
+                                                        'developerPortal.dashboards.tabs.appListings.taglinePlaceholder'
+                                                    ]()}
                                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                                 />
                                             </div>
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Launch URL</label>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                {m[
+                                                    'developerPortal.dashboards.tabs.appListings.launchUrl'
+                                                ]()}
+                                            </label>
                                             <div className="flex items-center gap-2">
                                                 <Globe className="w-4 h-4 text-gray-400" />
                                                 <input
                                                     type="url"
                                                     value={editForm.launch_url}
-                                                    onChange={(e) => setEditForm(prev => ({ ...prev, launch_url: e.target.value }))}
+                                                    onChange={e =>
+                                                        setEditForm(prev => ({
+                                                            ...prev,
+                                                            launch_url: e.target.value,
+                                                        }))
+                                                    }
                                                     placeholder="https://your-app.com"
                                                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                                 />
                                             </div>
-                                            <p className="text-xs text-gray-500 mt-1">The URL of your app that will be embedded in LearnCard</p>
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                {m[
+                                                    'developerPortal.dashboards.tabs.appListings.launchUrlHint'
+                                                ]()}
+                                            </p>
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                {m[
+                                                    'developerPortal.dashboards.tabs.appListings.descriptionLabel'
+                                                ]()}
+                                            </label>
                                             <textarea
                                                 value={editForm.full_description}
-                                                onChange={(e) => setEditForm(prev => ({ ...prev, full_description: e.target.value }))}
+                                                onChange={e =>
+                                                    setEditForm(prev => ({
+                                                        ...prev,
+                                                        full_description: e.target.value,
+                                                    }))
+                                                }
                                                 rows={3}
-                                                placeholder="Tell users what your app does..."
+                                                placeholder={m[
+                                                    'developerPortal.dashboards.tabs.appListings.descriptionPlaceholder'
+                                                ]()}
                                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                             />
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">App Icon URL</label>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                {m[
+                                                    'developerPortal.dashboards.tabs.appListings.appIconUrl'
+                                                ]()}
+                                            </label>
                                             <div className="flex items-center gap-3">
                                                 <div className="w-16 h-16 rounded-xl bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                                                     {editForm.icon_url ? (
-                                                        <img src={editForm.icon_url} alt="Icon" className="w-full h-full object-cover" />
+                                                        <img
+                                                            src={editForm.icon_url}
+                                                            alt={m[
+                                                                'developerPortal.dashboards.tabs.appListings.iconAlt'
+                                                            ]()}
+                                                            className="w-full h-full object-cover"
+                                                        />
                                                     ) : (
                                                         <ImageIcon className="w-6 h-6 text-gray-400" />
                                                     )}
@@ -510,7 +673,9 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                                 onClick={() => setEditingListing(null)}
                                                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
                                             >
-                                                Cancel
+                                                {m[
+                                                    'developerPortal.dashboards.tabs.appListings.cancel'
+                                                ]()}
                                             </button>
 
                                             <button
@@ -523,7 +688,9 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                                 ) : (
                                                     <Check className="w-4 h-4" />
                                                 )}
-                                                Save Changes
+                                                {m[
+                                                    'developerPortal.dashboards.tabs.appListings.saveChanges'
+                                                ]()}
                                             </button>
                                         </div>
                                     </div>
@@ -540,9 +707,13 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                     <div className="flex items-start gap-3">
                         <Layout className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
                         <div>
-                            <p className="font-medium text-violet-800">Selected: {selectedListing.display_name}</p>
+                            <p className="font-medium text-violet-800">
+                                {m['developerPortal.dashboards.tabs.appListings.selectedApp']({
+                                    name: selectedListing.display_name,
+                                })}
+                            </p>
                             <p className="text-sm text-violet-700 mt-0.5">
-                                Use the Partner Connect tab to get integration code for this app.
+                                {m['developerPortal.dashboards.tabs.appListings.selectedAppHint']()}
                             </p>
                         </div>
                     </div>

@@ -29,18 +29,18 @@ import {
     fetchCredentialIssuerMetadata,
     resolveAuthorizationServer,
 } from './metadata';
-import {
-    generatePkcePair,
-    PkcePair,
-} from './pkce';
-import { buildProofJwt } from './proof';
+import { generatePkcePair, PkcePair } from './pkce';
+import { fetchNonceFromEndpoint } from './nonce';
+import { buildDiVpProof, buildProofJwt, selectKeyProofType } from './proof';
 import { requestCredential } from './request';
 import {
     AcceptedCredentialResult,
     AuthorizationServerMetadata,
     CredentialIssuerMetadata,
+    DiVpProofSigner,
     OAuthErrorBody,
     ProofJwtSigner,
+    SpecVersion,
     TokenResponse,
 } from './types';
 import { VciError } from './errors';
@@ -109,12 +109,15 @@ export interface AuthCodeFlowHandle {
     issuer: string;
     tokenEndpoint: string;
     credentialEndpoint: string;
+    nonceEndpoint?: string;
     configurationIds: string[];
     redirectUri: string;
     clientId: string;
     state: string;
     pkceVerifier: string;
     pkceMethod: 'S256';
+    /** Issuer spec revision detected at begin-time. [draft-13-compat] */
+    specVersion: SpecVersion;
     // Minimal issuer-metadata echo so `complete` can pick the right
     // credential_definition without a second metadata fetch.
     credentialConfigurations: Record<string, unknown>;
@@ -135,6 +138,35 @@ export interface CompleteAuthCodeFlowOptions {
      */
     signer: ProofJwtSigner;
 
+    diVpSigner?: DiVpProofSigner;
+
+    fetchImpl?: typeof fetch;
+}
+
+export interface ExchangeAuthCodeForTokenOptions {
+    flowHandle: AuthCodeFlowHandle;
+    code: string;
+    state?: string;
+    fetchImpl?: typeof fetch;
+}
+
+export interface FetchCredentialsForTokenOptions {
+    flowHandle: AuthCodeFlowHandle;
+    tokenResponse: TokenResponse;
+    signer: ProofJwtSigner;
+    diVpSigner?: DiVpProofSigner;
+    initialNonce: {
+        c_nonce: string | undefined;
+        c_nonce_expires_in: number | undefined;
+    };
+    fetchImpl?: typeof fetch;
+}
+
+export interface RequestCredentialsFromAuthCodeTokenOptions {
+    flowHandle: AuthCodeFlowHandle;
+    tokenResponse: TokenResponse;
+    signer: ProofJwtSigner;
+    diVpSigner?: DiVpProofSigner;
     fetchImpl?: typeof fetch;
 }
 
@@ -175,7 +207,7 @@ export const beginAuthCodeFlow = async (
 
     const requestedIds = filterConfigurationIds(options.offer, options.configurationIds);
 
-    const issuerMetadata = await fetchCredentialIssuerMetadata(
+    const { metadata: issuerMetadata, specVersion } = await fetchCredentialIssuerMetadata(
         options.offer.credential_issuer,
         fetchImpl
     );
@@ -215,12 +247,17 @@ export const beginAuthCodeFlow = async (
         issuer: options.offer.credential_issuer,
         tokenEndpoint: asMetadata.token_endpoint,
         credentialEndpoint: issuerMetadata.credential_endpoint,
+        nonceEndpoint:
+            typeof issuerMetadata.nonce_endpoint === 'string'
+                ? issuerMetadata.nonce_endpoint
+                : undefined,
         configurationIds: requestedIds,
         redirectUri: options.redirectUri,
         clientId: options.clientId,
         state,
         pkceVerifier: pkce.verifier,
         pkceMethod: pkce.method,
+        specVersion,
         credentialConfigurations:
             (issuerMetadata.credential_configurations_supported as Record<string, unknown>) ?? {},
     };
@@ -242,7 +279,21 @@ export const beginAuthCodeFlow = async (
 export const completeAuthCodeFlow = async (
     options: CompleteAuthCodeFlowOptions
 ): Promise<AcceptedCredentialResult> => {
-    const { flowHandle, code, signer } = options;
+    const tokenResponse = await exchangeAuthCodeForToken(options);
+
+    return requestCredentialsFromAuthCodeToken({
+        flowHandle: options.flowHandle,
+        tokenResponse,
+        signer: options.signer,
+        diVpSigner: options.diVpSigner,
+        fetchImpl: options.fetchImpl,
+    });
+};
+
+export const exchangeAuthCodeForToken = async (
+    options: ExchangeAuthCodeForTokenOptions
+): Promise<TokenResponse> => {
+    const { flowHandle, code } = options;
     const fetchImpl = options.fetchImpl ?? globalThis.fetch;
 
     if (options.state && options.state !== flowHandle.state) {
@@ -252,7 +303,7 @@ export const completeAuthCodeFlow = async (
         );
     }
 
-    const tokenResponse = await exchangeAuthorizationCode({
+    return exchangeAuthorizationCode({
         tokenEndpoint: flowHandle.tokenEndpoint,
         code,
         codeVerifier: flowHandle.pkceVerifier,
@@ -260,18 +311,24 @@ export const completeAuthCodeFlow = async (
         redirectUri: flowHandle.redirectUri,
         fetchImpl,
     });
+};
 
-    const proofJwt = await buildProofJwt({
-        signer,
-        audience: flowHandle.issuer,
-        nonce: tokenResponse.c_nonce,
-        clientId: flowHandle.clientId,
-    });
+export const requestCredentialsFromAuthCodeToken = async (
+    options: RequestCredentialsFromAuthCodeTokenOptions
+): Promise<AcceptedCredentialResult> => {
+    const fetchImpl = options.fetchImpl ?? globalThis.fetch;
+    const initialNonce = await resolveInitialNonce(
+        options.flowHandle,
+        options.tokenResponse,
+        fetchImpl
+    );
 
     return fetchCredentialsForToken({
-        flowHandle,
-        tokenResponse,
-        proofJwt,
+        flowHandle: options.flowHandle,
+        tokenResponse: options.tokenResponse,
+        signer: options.signer,
+        diVpSigner: options.diVpSigner,
+        initialNonce,
         fetchImpl,
     });
 };
@@ -311,10 +368,7 @@ export const buildAuthorizationUrl = (args: {
         type: 'openid_credential',
         credential_configuration_id: id,
     }));
-    url.searchParams.set(
-        'authorization_details',
-        JSON.stringify(authorizationDetails)
-    );
+    url.searchParams.set('authorization_details', JSON.stringify(authorizationDetails));
 
     if (args.scope) url.searchParams.set('scope', args.scope);
     if (args.issuerState) url.searchParams.set('issuer_state', args.issuerState);
@@ -367,7 +421,9 @@ export const exchangeAuthorizationCode = async (args: {
     } catch (e) {
         throw new VciError(
             'token_request_failed',
-            `Token endpoint ${tokenEndpoint} unreachable: ${e instanceof Error ? e.message : String(e)}`,
+            `Token endpoint ${tokenEndpoint} unreachable: ${
+                e instanceof Error ? e.message : String(e)
+            }`,
             { cause: e }
         );
     }
@@ -386,8 +442,7 @@ export const exchangeAuthorizationCode = async (args: {
     if (!response.ok) {
         const err = payload as OAuthErrorBody;
         const errCode = typeof err?.error === 'string' ? err.error : 'unknown';
-        const desc =
-            typeof err?.error_description === 'string' ? `: ${err.error_description}` : '';
+        const desc = typeof err?.error_description === 'string' ? `: ${err.error_description}` : '';
         throw new VciError(
             'token_request_failed',
             `Token endpoint returned ${response.status} (${errCode})${desc}`,
@@ -412,16 +467,13 @@ export const exchangeAuthorizationCode = async (args: {
  * exchange; we keep a focused copy here to avoid tangling the two
  * entry points.
  */
-const fetchCredentialsForToken = async (args: {
-    flowHandle: AuthCodeFlowHandle;
-    tokenResponse: TokenResponse;
-    proofJwt: string;
-    fetchImpl: typeof fetch | undefined;
-}): Promise<AcceptedCredentialResult> => {
+export const fetchCredentialsForToken = async (
+    args: FetchCredentialsForTokenOptions
+): Promise<AcceptedCredentialResult> => {
     const credentials: AcceptedCredentialResult['credentials'] = [];
     let aggregateNotificationId: string | undefined;
-    let latestCNonce: string | undefined = args.tokenResponse.c_nonce;
-    let latestCNonceExpiresIn: number | undefined = args.tokenResponse.c_nonce_expires_in;
+    let latestCNonce: string | undefined = args.initialNonce.c_nonce;
+    let latestCNonceExpiresIn: number | undefined = args.initialNonce.c_nonce_expires_in;
 
     const identifiersByConfigId = indexAuthorizationDetails(
         args.tokenResponse.authorization_details
@@ -430,6 +482,21 @@ const fetchCredentialsForToken = async (args: {
     for (const configurationId of args.flowHandle.configurationIds) {
         const configDef = args.flowHandle.credentialConfigurations[configurationId];
         const format = inferFormat(configDef);
+        const proofSelection =
+            args.flowHandle.specVersion === 'draft-13' // [draft-13-compat] draft 13 only defines the jwt proof type
+                ? ({ proofType: 'jwt' } as const)
+                : selectKeyProofType(
+                      configDef as Record<string, unknown> | undefined,
+                      args.signer.alg
+                  );
+
+        if (proofSelection.proofType === 'di_vp' && !args.diVpSigner) {
+            throw new VciError(
+                'proof_signing_failed',
+                `Configuration "${configurationId}" requires a di_vp key proof but no di_vp signer is available`
+            );
+        }
+
         const issuedIdentifiers = identifiersByConfigId.get(configurationId) ?? [];
 
         const descriptors =
@@ -438,18 +505,91 @@ const fetchCredentialsForToken = async (args: {
                 : [{ credentialIdentifier: undefined }];
 
         for (const descriptor of descriptors) {
-            const response = await requestCredential({
+            const requestArgs = {
                 credentialEndpoint: args.flowHandle.credentialEndpoint,
                 accessToken: args.tokenResponse.access_token,
                 tokenType: args.tokenResponse.token_type,
                 credentialIdentifier: descriptor.credentialIdentifier,
-                format: descriptor.credentialIdentifier ? undefined : format,
-                extra: descriptor.credentialIdentifier
+                credentialConfigurationId: descriptor.credentialIdentifier
                     ? undefined
-                    : formatSpecificBody(configDef, format),
-                proofJwt: args.proofJwt,
+                    : configurationId,
+                specVersion: args.flowHandle.specVersion,
+                // [draft-13-compat] consumed by requestCredential only when specVersion === 'draft-13'
+                format: descriptor.credentialIdentifier ? undefined : format,
+                configDef: descriptor.credentialIdentifier
+                    ? undefined
+                    : (configDef as Record<string, unknown> | undefined),
                 fetchImpl: args.fetchImpl,
-            });
+            };
+
+            const buildCurrentProof = async (): Promise<
+                { proofJwt: string } | { proofDiVp: Record<string, unknown> }
+            > => {
+                if (proofSelection.proofType === 'di_vp') {
+                    return {
+                        proofDiVp: await buildDiVpProof({
+                            signer: args.diVpSigner!,
+                            audience: args.flowHandle.issuer,
+                            nonce: latestCNonce,
+                            cryptosuite: proofSelection.cryptosuite,
+                        }),
+                    };
+                }
+
+                return {
+                    proofJwt: await buildProofJwt({
+                        signer: args.signer,
+                        audience: args.flowHandle.issuer,
+                        nonce: latestCNonce,
+                        clientId: args.flowHandle.clientId,
+                    }),
+                };
+            };
+
+            let response;
+
+            try {
+                response = await requestCredential({
+                    ...requestArgs,
+                    ...(await buildCurrentProof()),
+                });
+            } catch (error) {
+                const body = error instanceof VciError ? error.body : undefined;
+                const invalidProof =
+                    error instanceof VciError &&
+                    error.code === 'credential_request_failed' &&
+                    typeof body === 'object' &&
+                    body !== null &&
+                    (body as { error?: unknown }).error === 'invalid_proof';
+
+                if (!invalidProof) throw error;
+
+                if (
+                    typeof args.flowHandle.nonceEndpoint === 'string' &&
+                    args.flowHandle.nonceEndpoint.length > 0
+                ) {
+                    const refreshed = await fetchNonceFromEndpoint(
+                        args.flowHandle.nonceEndpoint,
+                        args.fetchImpl
+                    );
+                    latestCNonce = refreshed.c_nonce;
+                    latestCNonceExpiresIn = refreshed.c_nonce_expires_in;
+                } else if (typeof (body as { c_nonce?: unknown }).c_nonce === 'string') {
+                    latestCNonce = (body as { c_nonce: string }).c_nonce;
+                    latestCNonceExpiresIn =
+                        typeof (body as { c_nonce_expires_in?: unknown }).c_nonce_expires_in ===
+                        'number'
+                            ? (body as { c_nonce_expires_in: number }).c_nonce_expires_in
+                            : undefined;
+                } else {
+                    throw error;
+                }
+
+                response = await requestCredential({
+                    ...requestArgs,
+                    ...(await buildCurrentProof()),
+                });
+            }
 
             if (!response.credential && !Array.isArray(response.credentials)) {
                 throw new VciError(
@@ -501,6 +641,28 @@ const fetchCredentialsForToken = async (args: {
     };
 };
 
+const resolveInitialNonce = async (
+    flowHandle: AuthCodeFlowHandle,
+    tokenResponse: TokenResponse,
+    fetchImpl: typeof fetch
+): Promise<{
+    c_nonce: string | undefined;
+    c_nonce_expires_in: number | undefined;
+}> => {
+    if (typeof flowHandle.nonceEndpoint === 'string' && flowHandle.nonceEndpoint.length > 0) {
+        const fresh = await fetchNonceFromEndpoint(flowHandle.nonceEndpoint, fetchImpl);
+        return {
+            c_nonce: fresh.c_nonce,
+            c_nonce_expires_in: fresh.c_nonce_expires_in,
+        };
+    }
+
+    return {
+        c_nonce: tokenResponse.c_nonce,
+        c_nonce_expires_in: tokenResponse.c_nonce_expires_in,
+    };
+};
+
 const filterConfigurationIds = (
     offer: CredentialOffer,
     requested: string[] | undefined
@@ -529,24 +691,6 @@ const inferFormat = (configDef: unknown): string => {
         return (configDef as { format: string }).format;
     }
     return 'jwt_vc_json';
-};
-
-const formatSpecificBody = (
-    configDef: unknown,
-    format: string
-): Record<string, unknown> | undefined => {
-    if (!configDef || typeof configDef !== 'object') return undefined;
-    if (
-        format === 'jwt_vc_json' ||
-        format === 'jwt_vc_json-ld' ||
-        format === 'ldp_vc'
-    ) {
-        const def = (configDef as { credential_definition?: unknown }).credential_definition;
-        if (def && typeof def === 'object') {
-            return { credential_definition: def };
-        }
-    }
-    return undefined;
 };
 
 const indexAuthorizationDetails = (raw: unknown): Map<string, string[]> => {

@@ -23,7 +23,10 @@ import InviteSelectionModal from './InviteSelectionModal';
 import { Boost, VC } from '@learncard/types';
 import { pluralize } from 'learn-card-base';
 import { useCanInviteTroop } from './useCanInviteTroop';
-import { getDefaultBadgeThumbForCredential, getScoutsRole, getScoutsNounForRole } from '../../helpers/troop.helpers';
+import {
+    getDefaultBadgeThumbForCredential,
+    getScoutsRoleLabelForCred,
+} from '../../helpers/troop.helpers';
 import { insertParamsToFilestackUrl, useGetCurrentUserTroopIds } from 'learn-card-base';
 
 type TroopListItemProps = {
@@ -87,6 +90,8 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
         troopBoostUri,
         boostPermissionsData,
         troopPermissionsData,
+        scoutId,
+        troopId,
     } = useCanInviteTroop({ credential: _resolvedBoost, boostUri });
 
     const handleDelete = () => {};
@@ -159,9 +164,9 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
         const canInviteScout = myTroopIds?.isTroopLeader || scoutPermissionsData?.canIssue;
         const canInviteLeader = boostPermissionsData?.canIssue;
 
-        // Determine the correct label for the current credential type
-        const credentialRole = getScoutsRole(_resolvedBoost);
-        const credentialLabel = getScoutsNounForRole(credentialRole);
+        const credentialLabel = getScoutsRoleLabelForCred(_resolvedBoost);
+        const leaderImage = troopId?.boostID?.idThumbnail;
+        const scoutImage = scoutId?.boostID?.idThumbnail;
 
         if (canInviteScout && canInviteLeader) {
             newModal(
@@ -170,6 +175,8 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
                     onInviteScout={() => openScoutConnectModal(scoutBoostUri, 'Scout')}
                     handleCloseModal={closeModal}
                     scoutNoun={scoutNoun}
+                    leaderImage={leaderImage}
+                    scoutImage={scoutImage}
                 />,
                 { sectionClassName: '!max-w-[450px]' },
                 { desktop: ModalTypes.Center, mobile: ModalTypes.Center }

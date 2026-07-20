@@ -7,7 +7,10 @@ import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url
 import { switchedProfileStore, walletStore } from 'learn-card-base/stores/walletStore';
 
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
-import { requireCurrentUserPrivateKey } from 'learn-card-base/helpers/privateKeyHelpers';
+import {
+    getCurrentUserPrivateKey,
+    requireCurrentUserPrivateKey,
+} from 'learn-card-base/helpers/privateKeyHelpers';
 import { waitForSQLiteReady } from 'learn-card-base/SQL/sqliteReady';
 import {
     getDefaultCategoryForCredential,
@@ -26,6 +29,8 @@ import { getOrCreateSharedUriForWallet } from './useSharedUrisInTerms';
 import { getOrFetchConsentedContracts } from './useConsentedContracts';
 import { queueAiInsightCredentialRefresh } from 'learn-card-base/react-query/mutations/ai-passport';
 import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base/constants/aiPassport';
+import { getLogger } from '../logging/logger';
+const log = getLogger('use-wallet');
 
 let generating = false; // Mutex flag to allow first init call to acquire a lock
 
@@ -54,7 +59,7 @@ export const getCategoryForCredential = async (
                     boost.category) as CredentialCategory;
             }
         } catch (error) {
-            console.warn('Failed to resolve boost for categorization:', error);
+            log.warn('Failed to resolve boost for categorization:', error);
             // Fall back to default categorization if boost resolution fails
         }
     }
@@ -75,13 +80,15 @@ Hook that servers as a simple wrapper exposing aspects of core wallet functional
 
 // These modify the storage prototype to allow for storing an object in local storage
 // It is temporary solution that will be removed in the near future
-Storage.prototype.setObject = function (key: string, value: unknown) {
-    this.setItem(key, JSON.stringify(value));
-};
+if (typeof Storage !== 'undefined') {
+    Storage.prototype.setObject = function (key: string, value: unknown) {
+        this.setItem(key, JSON.stringify(value));
+    };
 
-Storage.prototype.getObject = function (key: string) {
-    return JSON.parse(this.getItem(key) ?? '');
-};
+    Storage.prototype.getObject = function (key: string) {
+        return JSON.parse(this.getItem(key) ?? '');
+    };
+}
 
 export const useWallet = () => {
     const isLoggedIn = useIsLoggedIn();
@@ -90,9 +97,9 @@ export const useWallet = () => {
     const logWalletSync = (message: string, data?: Record<string, unknown>) => {
         try {
             if (data) {
-                console.log(`[WalletSync] ${message}`, data);
+                log.debug(`[WalletSync] ${message}`, data);
             } else {
-                console.log(`[WalletSync] ${message}`);
+                log.debug(`[WalletSync] ${message}`);
             }
         } catch {
             // logging should never break wallet sync
@@ -101,7 +108,7 @@ export const useWallet = () => {
 
     const logWalletSyncError = (message: string, err: unknown, data?: Record<string, unknown>) => {
         try {
-            console.error(`[WalletSync] ${message}`, data ?? {}, err);
+            log.error(`[WalletSync] ${message}`, data ?? {}, err);
         } catch {
             // logging should never break wallet sync
         }
@@ -137,10 +144,7 @@ export const useWallet = () => {
                 try {
                     await waitForSQLiteReady();
                 } catch (readyErr) {
-                    console.warn(
-                        'Waiting for SQLite readiness failed; continuing anyway',
-                        readyErr
-                    );
+                    log.warn('Waiting for SQLite readiness failed; continuing anyway', readyErr);
                 }
             }
 
@@ -181,9 +185,9 @@ export const useWallet = () => {
             generating = false;
 
             if (e instanceof Error && e.message.includes('Error, no valid private key found')) {
-                console.debug('No private key — expected before login.');
+                log.debug('No private key — expected before login.');
             } else {
-                console.warn('Could not initialize wallet', e);
+                log.warn('Could not initialize wallet', e);
             }
 
             throw e instanceof Error ? e : new Error(String(e));
@@ -263,10 +267,17 @@ export const useWallet = () => {
                                 termsUri,
                                 category,
                             });
-                            await queueAiInsightCredentialRefresh({
+                            void queueAiInsightCredentialRefresh({
                                 wallet: learnCard,
                                 queryClient,
-                            });
+                            }).catch(error =>
+                                logWalletSyncError('Failed to queue AI Passport refresh', error, {
+                                    ownerDid: contract.owner.did,
+                                    contractUri: contract.uri,
+                                    termsUri,
+                                    category,
+                                })
+                            );
                         }
 
                         queryClient.invalidateQueries({
@@ -473,7 +484,7 @@ export const useWallet = () => {
                 category,
             };
         } catch (e) {
-            console.error(vc, e);
+            log.error(vc, e);
             throw e instanceof Error ? e : new Error(String(e));
         }
     };
@@ -624,7 +635,7 @@ export const useWallet = () => {
             const res = await wallet.index[location].addMany?.(mappedInput);
             return res;
         } catch (e) {
-            console.log('//Adding to wallet error', e);
+            log.debug('//Adding to wallet error', e);
             throw e;
         }
     };
@@ -728,7 +739,7 @@ export const useWallet = () => {
 
             return true;
         } catch (e) {
-            console.log('removeAllVCsFromWallet::error', e);
+            log.debug('removeAllVCsFromWallet::error', e);
             return false;
         }
     };
@@ -780,19 +791,26 @@ export const useWallet = () => {
         try {
             return wallet.id.did();
         } catch (e) {
-            console.log('getDID::error', e);
+            log.debug('getDID::error', e);
             return false;
         }
     };
 
     const getWalletOrFallback = async () => {
-        if (isLoggedIn) {
+        // Don't trust `isLoggedIn` alone: during early boot it can still be
+        // false while the private key is already available from secure storage.
+        // Keep this read outside the fallback catch so storage failures are not
+        // mistaken for an absent key.
+        const hasPrivateKey = isLoggedIn || Boolean(await getCurrentUserPrivateKey());
+
+        if (hasPrivateKey) {
             try {
                 return await getWallet();
             } catch (e) {
-                console.log('getWalletOrFallback::error', e);
+                log.debug('getWalletOrFallback::error', e);
             }
         }
+
         return getBespokeLearnCard('a');
     };
 

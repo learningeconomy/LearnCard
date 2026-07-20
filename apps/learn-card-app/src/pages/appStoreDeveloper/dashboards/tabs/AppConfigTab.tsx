@@ -1,9 +1,13 @@
+import * as m from '../../../../paraglide/messages.js';
+import { mDynamic } from '../../../../i18n/mDynamic';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('app-config-tab');
 /**
  * AppConfigTab - App Configuration for Embedded Apps
- * 
+ *
  * For embed-app integrations: URL checker, permission configuration,
  * consent contract selection, and header configuration examples.
- * 
+ *
  * Mirrors functionality from EmbedAppGuide's YourAppStep.
  */
 
@@ -46,6 +50,7 @@ interface UrlCheckResult {
     label: string;
     status: 'pending' | 'checking' | 'pass' | 'fail' | 'warn';
     message?: string;
+    messageKey?: string;
 }
 
 interface Permission {
@@ -59,54 +64,69 @@ interface Permission {
 const PERMISSIONS: Permission[] = [
     {
         id: 'identity',
-        name: 'User Identity',
-        description: 'Access user DID and profile information',
+        name: '',
+        description: '',
         icon: <User className="w-4 h-4" />,
         required: true,
     },
     {
         id: 'issue-credentials',
-        name: 'Issue Credentials',
-        description: 'Send credentials to the user\'s wallet',
+        name: '',
+        description: '',
         icon: <Award className="w-4 h-4" />,
     },
     {
         id: 'request-credentials',
-        name: 'Request Credentials',
-        description: 'Search and request user credentials',
+        name: '',
+        description: '',
         icon: <FileSearch className="w-4 h-4" />,
     },
     {
         id: 'consent',
-        name: 'Data Consent',
-        description: 'Request ongoing data access via consent contracts',
+        name: '',
+        description: '',
         icon: <ClipboardCheck className="w-4 h-4" />,
     },
     {
         id: 'navigation',
-        name: 'Wallet Navigation',
-        description: 'Navigate to wallet features from your app',
+        name: '',
+        description: '',
         icon: <Play className="w-4 h-4" />,
     },
 ];
 
 /**
  * Check if a URL can be embedded in an iframe
- * 
+ *
  * IMPORTANT: CORS headers are NOT required for iframe embedding!
  * What matters for iframe embedding:
  * - X-Frame-Options header (must NOT be DENY or SAMEORIGIN unless same origin)
  * - Content-Security-Policy frame-ancestors directive
- * 
+ *
  * We can't directly check these headers from the browser due to CORS,
  * but we CAN check if the URL is valid and uses HTTPS.
  * The actual iframe embedding test is done in the Preview.
  */
 const checkUrl = async (url: string): Promise<UrlCheckResult[]> => {
     const results: UrlCheckResult[] = [
-        { id: 'https', label: 'HTTPS Protocol', status: 'pending' },
-        { id: 'valid', label: 'Valid URL Format', status: 'pending' },
-        { id: 'iframe', label: 'Iframe Embedding', status: 'pending' },
+        {
+            id: 'https',
+            label: '',
+            status: 'pending',
+            messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.https',
+        },
+        {
+            id: 'valid',
+            label: '',
+            status: 'pending',
+            messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.valid',
+        },
+        {
+            id: 'iframe',
+            label: '',
+            status: 'pending',
+            messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.iframe',
+        },
     ];
 
     // Check URL format
@@ -114,36 +134,68 @@ const checkUrl = async (url: string): Promise<UrlCheckResult[]> => {
 
     try {
         parsed = new URL(url);
-        results[1] = { ...results[1], status: 'pass', message: 'URL is valid' };
+        results[1] = {
+            ...results[1],
+            status: 'pass',
+            messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.urlValid',
+        };
     } catch {
-        results[0] = { ...results[0], status: 'fail', message: 'Invalid URL' };
-        results[1] = { ...results[1], status: 'fail', message: 'Invalid URL format' };
-        results[2] = { ...results[2], status: 'fail', message: 'Cannot check' };
+        results[0] = {
+            ...results[0],
+            status: 'fail',
+            messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.invalidUrl',
+        };
+        results[1] = {
+            ...results[1],
+            status: 'fail',
+            messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.invalidFormat',
+        };
+        results[2] = {
+            ...results[2],
+            status: 'fail',
+            messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.cannotCheck',
+        };
         return results;
     }
 
     // Check HTTPS
     if (parsed.protocol === 'https:') {
-        results[0] = { ...results[0], status: 'pass', message: 'Using secure HTTPS' };
+        results[0] = {
+            ...results[0],
+            status: 'pass',
+            messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.httpsPass',
+        };
     } else if (parsed.protocol === 'http:') {
         if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
-            results[0] = { ...results[0], status: 'warn', message: 'HTTP okay for localhost' };
+            results[0] = {
+                ...results[0],
+                status: 'warn',
+                messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.httpLocalhost',
+            };
         } else {
-            results[0] = { ...results[0], status: 'fail', message: 'HTTPS required for production' };
+            results[0] = {
+                ...results[0],
+                status: 'fail',
+                messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.httpsRequired',
+            };
         }
     } else {
-        results[0] = { ...results[0], status: 'fail', message: 'Must be HTTP or HTTPS' };
+        results[0] = {
+            ...results[0],
+            status: 'fail',
+            messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.mustBeHttps',
+        };
     }
 
     // For iframe embedding, we can't reliably check X-Frame-Options from the browser
     // because the browser won't expose those headers due to CORS restrictions.
     // The best test is to actually try embedding in an iframe (Preview button).
-    // 
+    //
     // We'll mark this as "info" status and explain the user should use Preview.
     results[2] = {
         ...results[2],
         status: 'warn',
-        message: 'Use Preview to test embedding'
+        messageKey: 'developerPortal.dashboards.tabs.appConfig.checkResults.usePreview',
     };
 
     return results;
@@ -165,13 +217,35 @@ export const AppConfigTab: React.FC<AppConfigTabProps> = ({
     const { data: listings } = useListingsForIntegration(integration.id);
     const updateListingMutation = useUpdateListing();
 
-    const [selectedListing, setSelectedListing] = useState<AppStoreListing | null>(externalListing || null);
+    const [selectedListing, setSelectedListing] = useState<AppStoreListing | null>(
+        externalListing || null
+    );
     const [appUrl, setAppUrl] = useState('');
     const [selectedPermissions, setSelectedPermissions] = useState<string[]>(['identity']);
     const [isChecking, setIsChecking] = useState(false);
     const [checkResults, setCheckResults] = useState<UrlCheckResult[] | null>(null);
     const [showHeaderExamples, setShowHeaderExamples] = useState(false);
     const [copied, setCopied] = useState<string | null>(null);
+
+    // Helper: localize permission name by ID
+    const getPermissionName = (id: string): string => {
+        const key = `developerPortal.dashboards.tabs.appConfig.permissions.items.${id}.name`;
+        try {
+            return mDynamic(key);
+        } catch {
+            return id;
+        }
+    };
+
+    // Helper: localize permission description by ID
+    const getPermissionDesc = (id: string): string => {
+        const key = `developerPortal.dashboards.tabs.appConfig.permissions.items.${id}.desc`;
+        try {
+            return mDynamic(key);
+        } catch {
+            return id;
+        }
+    };
 
     // ============================================================
     // EXTRACT GUIDE SELECTIONS FOR REFERENCE
@@ -328,10 +402,16 @@ export const AppConfigTab: React.FC<AppConfigTabProps> = ({
                 },
             });
 
-            presentToast('Configuration saved!', { type: ToastTypeEnum.Success, hasDismissButton: true });
+            presentToast(m['developerPortal.dashboards.tabs.appConfig.saveSuccess'](), {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
         } catch (err) {
-            console.error('Failed to save config:', err);
-            presentToast('Failed to save configuration', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            log.error('Failed to save config:', err);
+            presentToast(m['developerPortal.dashboards.tabs.appConfig.saveError'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         }
     };
 
@@ -339,7 +419,9 @@ export const AppConfigTab: React.FC<AppConfigTabProps> = ({
         await Clipboard.write({ string: code });
         setCopied(id);
         setTimeout(() => setCopied(null), 2000);
-        presentToast('Copied!', { hasDismissButton: true });
+        presentToast(m['developerPortal.dashboards.tabs.appConfig.copied'](), {
+            hasDismissButton: true,
+        });
     };
 
     const handlePreview = () => {
@@ -433,19 +515,23 @@ module.exports = nextConfig;`;
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-semibold text-gray-800">App Configuration</h2>
+                <h2 className="text-lg font-semibold text-gray-800">
+                    {m['developerPortal.dashboards.tabs.appConfig.title']()}
+                </h2>
                 <p className="text-sm text-gray-500">
-                    Configure your embedded app's URL and permissions
+                    {m['developerPortal.dashboards.tabs.appConfig.description']()}
                 </p>
             </div>
 
             {/* App Selector */}
             {listings && listings.length > 0 && (
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Select App</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {m['developerPortal.dashboards.tabs.appConfig.selectApp']()}
+                    </label>
                     <select
                         value={selectedListing?.listing_id || ''}
-                        onChange={(e) => {
+                        onChange={e => {
                             const listing = listings.find(l => l.listing_id === e.target.value);
                             setSelectedListing(listing || null);
 
@@ -453,7 +539,8 @@ module.exports = nextConfig;`;
                                 try {
                                     const config = JSON.parse(listing.launch_config_json || '{}');
                                     if (config.url) setAppUrl(config.url);
-                                    if (config.permissions) setSelectedPermissions(config.permissions);
+                                    if (config.permissions)
+                                        setSelectedPermissions(config.permissions);
                                 } catch (err) {
                                     // ignore
                                 }
@@ -473,9 +560,11 @@ module.exports = nextConfig;`;
             {/* No Listings Warning */}
             {(!listings || listings.length === 0) && (
                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                    <p className="text-amber-800 font-medium">No app listings found</p>
+                    <p className="text-amber-800 font-medium">
+                        {m['developerPortal.dashboards.tabs.appConfig.noListingsTitle']()}
+                    </p>
                     <p className="text-sm text-amber-700 mt-1">
-                        Create an app listing in the App Listings tab first.
+                        {m['developerPortal.dashboards.tabs.appConfig.noListingsDesc']()}
                     </p>
                 </div>
             )}
@@ -484,7 +573,9 @@ module.exports = nextConfig;`;
                 <>
                     {/* URL Configuration */}
                     <div className="space-y-3">
-                        <label className="block text-sm font-medium text-gray-700">App URL</label>
+                        <label className="block text-sm font-medium text-gray-700">
+                            {m['developerPortal.dashboards.tabs.appConfig.appUrl']()}
+                        </label>
 
                         <div className="flex gap-2">
                             <div className="flex-1 flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus-within:ring-2 focus-within:ring-cyan-500 focus-within:border-cyan-500">
@@ -495,7 +586,7 @@ module.exports = nextConfig;`;
                                     onChange={handleUrlChange}
                                     placeholder="https://your-app.com"
                                     className="flex-1 outline-none bg-transparent text-gray-800 placeholder-gray-400"
-                                    onKeyDown={(e) => {
+                                    onKeyDown={e => {
                                         if (e.key === 'Enter' && appUrl.trim()) {
                                             handleCheckUrl();
                                         }
@@ -513,23 +604,28 @@ module.exports = nextConfig;`;
                                 ) : (
                                     <Search className="w-4 h-4" />
                                 )}
-                                Check
+                                {m['developerPortal.dashboards.tabs.appConfig.checkButton']()}
                             </button>
                         </div>
 
                         <p className="text-xs text-gray-500">
-                            The URL of your app that will be embedded in LearnCard
+                            {m['developerPortal.dashboards.tabs.appConfig.appUrlDesc']()}
                         </p>
                     </div>
 
                     {/* URL Check Results */}
                     {checkResults && (
-                        <div className={`p-4 rounded-xl border ${
-                            isChecking ? 'bg-gray-50 border-gray-200' :
-                            allPassed ? 'bg-emerald-50 border-emerald-200' :
-                            hasFailed ? 'bg-red-50 border-red-200' :
-                            'bg-gray-50 border-gray-200'
-                        }`}>
+                        <div
+                            className={`p-4 rounded-xl border ${
+                                isChecking
+                                    ? 'bg-gray-50 border-gray-200'
+                                    : allPassed
+                                    ? 'bg-emerald-50 border-emerald-200'
+                                    : hasFailed
+                                    ? 'bg-red-50 border-red-200'
+                                    : 'bg-gray-50 border-gray-200'
+                            }`}
+                        >
                             <div className="flex items-center gap-2 mb-3">
                                 {isChecking ? (
                                     <Loader2 className="w-5 h-5 text-cyan-500 animate-spin" />
@@ -541,16 +637,32 @@ module.exports = nextConfig;`;
                                     <Search className="w-5 h-5 text-gray-400" />
                                 )}
 
-                                <h4 className={`font-medium ${
-                                    isChecking ? 'text-gray-700' :
-                                    allPassed ? 'text-emerald-800' :
-                                    hasFailed ? 'text-red-800' :
-                                    'text-gray-700'
-                                }`}>
-                                    {isChecking ? 'Checking your URL...' :
-                                     allPassed ? 'Looking good!' :
-                                     hasFailed ? 'Some issues found' :
-                                     'URL Check Results'}
+                                <h4
+                                    className={`font-medium ${
+                                        isChecking
+                                            ? 'text-gray-700'
+                                            : allPassed
+                                            ? 'text-emerald-800'
+                                            : hasFailed
+                                            ? 'text-red-800'
+                                            : 'text-gray-700'
+                                    }`}
+                                >
+                                    {isChecking
+                                        ? m[
+                                              'developerPortal.dashboards.tabs.appConfig.checkResults.checking'
+                                          ]()
+                                        : allPassed
+                                        ? m[
+                                              'developerPortal.dashboards.tabs.appConfig.checkResults.allPassed'
+                                          ]()
+                                        : hasFailed
+                                        ? m[
+                                              'developerPortal.dashboards.tabs.appConfig.checkResults.issuesFound'
+                                          ]()
+                                        : m[
+                                              'developerPortal.dashboards.tabs.appConfig.checkResults.resultsTitle'
+                                          ]()}
                                 </h4>
                             </div>
 
@@ -560,22 +672,37 @@ module.exports = nextConfig;`;
                                         {getCheckIcon(result.id)}
 
                                         <div className="flex-1">
-                                            <span className="text-sm font-medium text-gray-700">{result.label}</span>
+                                            <span className="text-sm font-medium text-gray-700">
+                                                {result.messageKey
+                                                    ? mDynamic(result.messageKey)
+                                                    : result.label}
+                                            </span>
                                         </div>
 
                                         <div className="flex items-center gap-2">
-                                            {result.message && (
-                                                <span className={`text-xs ${
-                                                    result.status === 'pass' ? 'text-emerald-600' :
-                                                    result.status === 'fail' ? 'text-red-600' :
-                                                    result.status === 'warn' ? 'text-amber-600' :
-                                                    'text-gray-500'
-                                                }`}>
-                                                    {result.message}
+                                            {(result.message || result.messageKey) && (
+                                                <span
+                                                    className={`text-xs ${
+                                                        result.status === 'pass'
+                                                            ? 'text-emerald-600'
+                                                            : result.status === 'fail'
+                                                            ? 'text-red-600'
+                                                            : result.status === 'warn'
+                                                            ? 'text-amber-600'
+                                                            : 'text-gray-500'
+                                                    }`}
+                                                >
+                                                    {result.messageKey
+                                                        ? mDynamic(result.messageKey)
+                                                        : result.message}
                                                 </span>
                                             )}
 
-                                            {getStatusIcon(isChecking && result.status === 'pending' ? 'checking' : result.status)}
+                                            {getStatusIcon(
+                                                isChecking && result.status === 'pending'
+                                                    ? 'checking'
+                                                    : result.status
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -583,13 +710,17 @@ module.exports = nextConfig;`;
 
                             {!isChecking && hasFailed && (
                                 <p className="mt-3 text-xs text-red-600">
-                                    Fix the issues above before going live. See header examples below.
+                                    {m[
+                                        'developerPortal.dashboards.tabs.appConfig.checkResults.fixIssues'
+                                    ]()}
                                 </p>
                             )}
 
                             {!isChecking && allPassed && (
                                 <p className="mt-3 text-xs text-emerald-600">
-                                    Your URL passed basic checks. You may still need to configure iframe headers (X-Frame-Options).
+                                    {m[
+                                        'developerPortal.dashboards.tabs.appConfig.checkResults.passedChecks'
+                                    ]()}
                                 </p>
                             )}
                         </div>
@@ -604,8 +735,16 @@ module.exports = nextConfig;`;
                             <div className="flex items-center gap-3">
                                 <Shield className="w-5 h-5 text-amber-600" />
                                 <div className="text-left">
-                                    <h3 className="font-medium text-gray-800">Required Response Headers</h3>
-                                    <p className="text-xs text-gray-500">Configure your server to allow iframe embedding</p>
+                                    <h3 className="font-medium text-gray-800">
+                                        {m[
+                                            'developerPortal.dashboards.tabs.appConfig.requiredHeaders.title'
+                                        ]()}
+                                    </h3>
+                                    <p className="text-xs text-gray-500">
+                                        {m[
+                                            'developerPortal.dashboards.tabs.appConfig.requiredHeaders.desc'
+                                        ]()}
+                                    </p>
                                 </div>
                             </div>
 
@@ -620,12 +759,18 @@ module.exports = nextConfig;`;
                             <div className="p-4 border-t border-gray-200 space-y-4">
                                 <div>
                                     <div className="flex items-center justify-between mb-2">
-                                        <span className="text-sm font-medium text-gray-700">Express.js</span>
+                                        <span className="text-sm font-medium text-gray-700">
+                                            Express.js
+                                        </span>
                                         <button
                                             onClick={() => handleCopy(expressCode, 'express')}
                                             className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
                                         >
-                                            {copied === 'express' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                                            {copied === 'express' ? (
+                                                <Check className="w-3 h-3 text-emerald-500" />
+                                            ) : (
+                                                <Copy className="w-3 h-3" />
+                                            )}
                                         </button>
                                     </div>
                                     <CodeBlock code={expressCode} maxHeight="max-h-40" />
@@ -633,12 +778,18 @@ module.exports = nextConfig;`;
 
                                 <div>
                                     <div className="flex items-center justify-between mb-2">
-                                        <span className="text-sm font-medium text-gray-700">Next.js</span>
+                                        <span className="text-sm font-medium text-gray-700">
+                                            Next.js
+                                        </span>
                                         <button
                                             onClick={() => handleCopy(nextCode, 'next')}
                                             className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
                                         >
-                                            {copied === 'next' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                                            {copied === 'next' ? (
+                                                <Check className="w-3 h-3 text-emerald-500" />
+                                            ) : (
+                                                <Copy className="w-3 h-3" />
+                                            )}
                                         </button>
                                     </div>
                                     <CodeBlock code={nextCode} maxHeight="max-h-40" />
@@ -646,12 +797,18 @@ module.exports = nextConfig;`;
 
                                 <div>
                                     <div className="flex items-center justify-between mb-2">
-                                        <span className="text-sm font-medium text-gray-700">Nginx</span>
+                                        <span className="text-sm font-medium text-gray-700">
+                                            Nginx
+                                        </span>
                                         <button
                                             onClick={() => handleCopy(nginxCode, 'nginx')}
                                             className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
                                         >
-                                            {copied === 'nginx' ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                                            {copied === 'nginx' ? (
+                                                <Check className="w-3 h-3 text-emerald-500" />
+                                            ) : (
+                                                <Copy className="w-3 h-3" />
+                                            )}
                                         </button>
                                     </div>
                                     <CodeBlock code={nginxCode} maxHeight="max-h-32" />
@@ -664,15 +821,23 @@ module.exports = nextConfig;`;
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">Permissions</label>
+                                <label className="block text-sm font-medium text-gray-700">
+                                    {m[
+                                        'developerPortal.dashboards.tabs.appConfig.permissions.title'
+                                    ]()}
+                                </label>
                                 <p className="text-xs text-gray-500">
-                                    Select what your app can access from the wallet
+                                    {m[
+                                        'developerPortal.dashboards.tabs.appConfig.permissions.desc'
+                                    ]()}
                                 </p>
                             </div>
 
                             {guideSelections.selectedFeatures.length > 0 && (
                                 <div className="text-xs text-cyan-600 bg-cyan-50 px-2 py-1 rounded-lg">
-                                    {guidePermissions.length} from guide setup
+                                    {m[
+                                        'developerPortal.dashboards.tabs.appConfig.permissions.fromGuideCount'
+                                    ]({ count: guidePermissions.length })}
                                 </div>
                             )}
                         </div>
@@ -693,32 +858,54 @@ module.exports = nextConfig;`;
                                                 : 'border-gray-200 hover:border-gray-300'
                                         } ${perm.required ? 'cursor-default' : ''}`}
                                     >
-                                        <div className={`p-2 rounded-lg ${isSelected ? 'bg-cyan-100 text-cyan-600' : 'bg-gray-100 text-gray-500'}`}>
+                                        <div
+                                            className={`p-2 rounded-lg ${
+                                                isSelected
+                                                    ? 'bg-cyan-100 text-cyan-600'
+                                                    : 'bg-gray-100 text-gray-500'
+                                            }`}
+                                        >
                                             {perm.icon}
                                         </div>
 
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 flex-wrap">
-                                                <span className={`font-medium text-sm ${isSelected ? 'text-cyan-700' : 'text-gray-700'}`}>
-                                                    {perm.name}
+                                                <span
+                                                    className={`font-medium text-sm ${
+                                                        isSelected
+                                                            ? 'text-cyan-700'
+                                                            : 'text-gray-700'
+                                                    }`}
+                                                >
+                                                    {getPermissionName(perm.id)}
                                                 </span>
                                                 {perm.required && (
                                                     <span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 text-xs rounded">
-                                                        Required
+                                                        {m[
+                                                            'developerPortal.dashboards.tabs.appConfig.permissions.required'
+                                                        ]()}
                                                     </span>
                                                 )}
                                                 {isFromGuide && !perm.required && (
                                                     <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-600 text-xs rounded">
-                                                        From Guide
+                                                        {m[
+                                                            'developerPortal.dashboards.tabs.appConfig.permissions.fromGuide'
+                                                        ]()}
                                                     </span>
                                                 )}
                                             </div>
-                                            <p className="text-xs text-gray-500 mt-0.5">{perm.description}</p>
+                                            <p className="text-xs text-gray-500 mt-0.5">
+                                                {getPermissionDesc(perm.id)}
+                                            </p>
                                         </div>
 
-                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                                            isSelected ? 'border-cyan-500 bg-cyan-500' : 'border-gray-300'
-                                        }`}>
+                                        <div
+                                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                                                isSelected
+                                                    ? 'border-cyan-500 bg-cyan-500'
+                                                    : 'border-gray-300'
+                                            }`}
+                                        >
                                             {isSelected && <Check className="w-3 h-3 text-white" />}
                                         </div>
                                     </button>
@@ -735,7 +922,7 @@ module.exports = nextConfig;`;
                             className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 disabled:opacity-50 transition-colors"
                         >
                             <Play className="w-4 h-4" />
-                            Preview App
+                            {m['developerPortal.dashboards.tabs.appConfig.previewApp']()}
                         </button>
 
                         <button
@@ -748,7 +935,7 @@ module.exports = nextConfig;`;
                             ) : (
                                 <Check className="w-4 h-4" />
                             )}
-                            Save Configuration
+                            {m['developerPortal.dashboards.tabs.appConfig.saveConfiguration']()}
                         </button>
                     </div>
                 </>
@@ -758,31 +945,49 @@ module.exports = nextConfig;`;
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
                 <h4 className="font-medium text-gray-800 mb-2 flex items-center gap-2">
                     <Info className="w-4 h-4" />
-                    Common Issues
+                    {m['developerPortal.dashboards.tabs.appConfig.commonIssues.title']()}
                 </h4>
 
                 <div className="space-y-2 text-sm">
                     <div className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">!</span>
                         <div>
-                            <strong className="text-gray-700">Blank iframe?</strong>
-                            <span className="text-gray-600"> — Check your X-Frame-Options header isn't set to DENY or SAMEORIGIN</span>
+                            <strong className="text-gray-700">
+                                {m['developerPortal.dashboards.tabs.appConfig.blankIframe']()}
+                            </strong>
+                            <span className="text-gray-600">
+                                {m[
+                                    'developerPortal.dashboards.tabs.appConfig.commonIssues.blankIframeDesc'
+                                ]()}
+                            </span>
                         </div>
                     </div>
 
                     <div className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">!</span>
                         <div>
-                            <strong className="text-gray-700">Mixed content error?</strong>
-                            <span className="text-gray-600"> — Make sure your app uses HTTPS</span>
+                            <strong className="text-gray-700">
+                                {m['developerPortal.dashboards.tabs.appConfig.mixedContentError']()}
+                            </strong>
+                            <span className="text-gray-600">
+                                {m[
+                                    'developerPortal.dashboards.tabs.appConfig.commonIssues.mixedContentDesc'
+                                ]()}
+                            </span>
                         </div>
                     </div>
 
                     <div className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">!</span>
                         <div>
-                            <strong className="text-gray-700">CORS errors?</strong>
-                            <span className="text-gray-600"> — Add Access-Control-Allow-Origin header</span>
+                            <strong className="text-gray-700">
+                                {m['developerPortal.dashboards.tabs.appConfig.corsErrors']()}
+                            </strong>
+                            <span className="text-gray-600">
+                                {m[
+                                    'developerPortal.dashboards.tabs.appConfig.commonIssues.corsErrorsDesc'
+                                ]()}
+                            </span>
                         </div>
                     </div>
                 </div>

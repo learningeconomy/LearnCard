@@ -1,5 +1,8 @@
 import React from 'react';
 
+import { m } from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
+
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import AiPathwaysEmptyPlaceholder from './AiPathwaysEmptyPlaceholder';
 import GrowSkillsCarouselSection from './GrowSkillsCarouselSection';
@@ -35,20 +38,24 @@ const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
 
     return (
         <>
-            <div className="bg-grayscale-50 px-[15px] py-[20px] rounded-[15px] flex flex-col gap-[30px] w-full shadow-bottom-4-4 max-w-[568px] overflow-hidden">
+            <div className="bg-grayscale-50 px-[15px] py-[20px] rounded-[15px] flex flex-col gap-[30px] w-full shadow-bottom-4-4 max-w-full overflow-hidden">
                 <div className="flex flex-col gap-[5px]">
                     <div className="flex items-center gap-[10px] text-grayscale-900">
                         <SkillsIconWithShape className="w-[50px] h-[50px]" />
-                        <h5 className="text-[20px] font-poppins font-[600]">Grow Skills</h5>
+                        <h5 className="text-[20px] font-poppins font-[600]">
+                            {m['growSkills.title']()}
+                        </h5>
                     </div>
                     <p className="text-[14px] font-poppins text-grayscale-700">
-                        Explore <strong>courses</strong>, <strong>AI learning sessions</strong>, and{' '}
-                        <strong>media</strong> to strengthen & diversify your skills
+                        <TransP
+                            m={m['growSkills.description']}
+                            components={[<strong />, <strong />, <strong />]}
+                        />
                     </p>
                 </div>
 
                 <GrowSkillsCarouselSection
-                    title="AI Learning Sessions"
+                    title={m['aiPathways.aiLearningSessions']()}
                     items={learningPathwaysData || []}
                     onViewAll={() => openGrowSkillsModal('AI Sessions')}
                     renderItem={item => <GrowSkillsAiSessionItem data={item} />}
@@ -56,7 +63,7 @@ const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
                 />
 
                 <GrowSkillsCarouselSection
-                    title="Courses"
+                    title={m['aiPathways.courses']()}
                     items={schoolPrograms}
                     onViewAll={() => openGrowSkillsModal('Courses')}
                     renderItem={program => <GrowSkillsCourseItem program={program} />}
@@ -64,14 +71,14 @@ const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
                 />
 
                 <GrowSkillsCarouselSection
-                    title="Media"
+                    title={m['aiPathways.media']()}
                     items={mediaCards}
                     onViewAll={() => openGrowSkillsModal('Media')}
                     renderItem={card =>
                         card.type === 'youtube-media' ? (
-                            <GrowSkillsYouTubeMediaItem video={card.video} className="h-full" />
+                            <GrowSkillsYouTubeMediaItem video={card.video} />
                         ) : (
-                            <GrowSkillsMediaItem occupation={card.occupation} className="h-full" />
+                            <GrowSkillsMediaItem occupation={card.occupation} />
                         )
                     }
                     getItemKey={card =>
@@ -86,12 +93,12 @@ const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
                     className="w-full bg-violet-500 text-white font-bold flex items-center justify-center gap-[5px] py-[7px] px-[15px] rounded-[30px] shadow-bottom-3-4 font-poppins text-[17px] leading-[24px] tracking-[0.25px]"
                 >
                     <PuzzlePiece className="w-[30px] h-[30px]" version="filled" />
-                    Grow Skills
+                    {m['growSkills.title']()}
                 </button>
             </div>
 
             {emptyPathways && (
-                <div className="flex items-center justify-center w-full rounded-[10px] px-4 max-w-[600px]">
+                <div className="flex items-center justify-center w-full rounded-[10px] max-w-full mt-4">
                     <AiPathwaysEmptyPlaceholder />
                 </div>
             )}

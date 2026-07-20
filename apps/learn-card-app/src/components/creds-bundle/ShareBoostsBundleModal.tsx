@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('share-boosts-bundle-modal');
 
 import { Clipboard } from '@capacitor/clipboard';
 import { initLearnCard } from '@learncard/init';
@@ -21,6 +23,7 @@ import { useWallet, SelectedCredsStoreState, useToast, ToastTypeEnum } from 'lea
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import ShareBoostsBundle from './ShareBoostsBundle';
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
+import * as m from '../../paraglide/messages.js';
 
 export const baseUrl = getAppBaseUrl().replace(/^https?:\/\//, '');
 
@@ -78,13 +81,13 @@ const ShareBoostsBundleModal = ({
                 return selected;
             });
 
-            console.debug('///selectedCredentials', selectedCredentials);
+            log.debug('///selectedCredentials', selectedCredentials);
             setLoading(true);
 
             // Generate random seed
             const pinNum = Math.floor(Math.random() * 9000 + 1000)?.toString();
 
-            console.debug('///pinNum', pinNum);
+            log.debug('///pinNum', pinNum);
 
             setPinNum(pinNum);
             const pin = pinNum?.toString();
@@ -99,14 +102,14 @@ const ShareBoostsBundleModal = ({
             //init throwaway wallet
             const wallet = await initLearnCard({ seed: walletSeed });
 
-            console.debug('///wallet', wallet);
+            log.debug('///wallet', wallet);
 
             // currentUser's wallet
             const myWallet = await initWallet();
 
             const myWalletDid = await myWallet.id.did();
 
-            console.debug('///mywalletDid', myWalletDid);
+            log.debug('///mywalletDid', myWalletDid);
 
             // create a VP
             const vp: UnsignedVP = {
@@ -116,7 +119,7 @@ const ShareBoostsBundleModal = ({
                 //verifiableCredential: selectedCredentials,
             };
 
-            console.debug('//vp', vp);
+            log.debug('//vp', vp);
 
             let bundleWalletIndex = (
                 await myWallet.invoke.learnCloudRead<{
@@ -139,7 +142,7 @@ const ShareBoostsBundleModal = ({
             // Add selected Credentials to VP
             vp.verifiableCredential = selectedCredentials;
 
-            console.debug('///vp payload  ', vp);
+            log.debug('///vp payload  ', vp);
 
             // issue presentation
             const issuedVp = await myWallet.invoke.issuePresentation(vp);
@@ -148,13 +151,13 @@ const ShareBoostsBundleModal = ({
 
             // Publish VP to Ceramic (encrypted)
 
-            console.debug('///issuedVp', issuedVp);
+            log.debug('///issuedVp', issuedVp);
 
             const publishedVpUri = await myWallet.store.LearnCloud.uploadEncrypted!(issuedVp, {
                 recipients: [wallet.id.did(), myWallet.id.did()],
             });
 
-            console.debug('///publishedVpUri', publishedVpUri);
+            log.debug('///publishedVpUri', publishedVpUri);
 
             setVpUri(publishedVpUri);
 
@@ -192,12 +195,12 @@ const ShareBoostsBundleModal = ({
                 currentIndex
             );
 
-            console.debug('//updatedIndex', updatedIndex, currentIndex);
+            log.debug('//updatedIndex', updatedIndex, currentIndex);
 
             setLoading(false);
             setPage('success');
         } catch (e) {
-            console.debug('///handleSubmit create credential bundle Error', e);
+            log.debug('///handleSubmit create credential bundle Error', e);
             presentAlert({
                 header: 'Error',
                 subHeader: 'Create Credential Bundle error',
@@ -216,11 +219,11 @@ const ShareBoostsBundleModal = ({
             await Clipboard.write({
                 string: link,
             });
-            presentToast('Verified resume link copied to clipboard', {
+            presentToast(m['toasts.resume.verifiedResumeLinkCopied'](), {
                 type: ToastTypeEnum.Success,
             });
         } catch (err) {
-            presentToast('Unable to copy verified resume link to clipboard', {
+            presentToast(m['toasts.resume.verifiedResumeLinkCopyFailed'](), {
                 type: ToastTypeEnum.Error,
             });
         }

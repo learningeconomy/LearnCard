@@ -28,6 +28,8 @@ import {
 import { getOrFetchConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import { getOrFetchCredentialRecordForBoost } from 'learn-card-base/hooks/useGetCredentialRecordForBoost';
 import { useBackfillBoostUris } from 'learn-card-base/helpers/backfills';
+import { getLogger } from '../../logging/logger';
+const log = getLogger('vc-queries');
 
 // Global set to track processed credentials across all hook instances
 const globalProcessedCredentials = new Set<string>();
@@ -128,7 +130,7 @@ export const useGetCredentialList = (category?: CredentialCategory, enabled: boo
                     })),
                 };
             } catch (error: any) {
-                console.error(error);
+                log.error(error);
                 return Promise.reject(error);
             }
         },
@@ -176,6 +178,7 @@ export const useGetPaginatedManagedBoosts = (
 ) => {
     const { initWallet } = useWallet();
     const didWeb = switchedProfileStore.use.switchedDid();
+    const { limit, ...restOptions } = options ?? {};
 
     return useInfiniteQuery({
         queryKey: ['useGetPaginatedManagedBoosts', didWeb ?? '', category ?? ''],
@@ -186,7 +189,8 @@ export const useGetPaginatedManagedBoosts = (
                 query: {
                     category: Array.isArray(category) ? { $in: category } : category,
                 },
-                ...options,
+                ...restOptions,
+                limit: limit ?? 10,
                 cursor: pageParam,
             });
 
@@ -258,7 +262,7 @@ export const useGetCredentialCount = (category?: CredentialCategory, enabled: bo
 
                 return credentialsCount;
             } catch (error) {
-                console.error(error);
+                log.error(error);
                 return Promise.reject(new Error(error));
             }
         },
@@ -439,6 +443,7 @@ export const useGetCredentialsForSkills = (enabled: boolean = true) => {
                     accommodations,
                     ids,
                     skills,
+                    selfAssignedSkills,
                 ] = await Promise.all([
                     await wallet.index.LearnCloud.get({
                         category: CredentialCategoryEnum.learningHistory,
@@ -464,6 +469,9 @@ export const useGetCredentialsForSkills = (enabled: boolean = true) => {
                     await wallet.index.LearnCloud.get({
                         category: CredentialCategoryEnum.skill,
                     }),
+                    await wallet.index.LearnCloud.get({
+                        category: CredentialCategoryEnum.selfAssignedSkills,
+                    }),
                 ]);
 
                 // combine all creds
@@ -476,6 +484,7 @@ export const useGetCredentialsForSkills = (enabled: boolean = true) => {
                     ...accommodations,
                     ...ids,
                     ...skills,
+                    ...selfAssignedSkills,
                 ];
 
                 // resolve all creds
@@ -705,7 +714,7 @@ async function fetchCredentials(
                 const vc = credentialWithEditsHelper(_vc, boost);
                 return vc ? (returnUri ? { vc, uri: record.uri } : vc) : null;
             } catch (error) {
-                console.error(`Error resolving credential ${record.uri}:`, error);
+                log.error(`Error resolving credential ${record.uri}:`, error);
                 return null;
             }
         })
@@ -818,7 +827,7 @@ export const useSyncConsentFlow = (enabled = true) => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
     const queryClient = useQueryClient();
-    const processingRef = useRef(false);
+    const processingPromiseRef = useRef<Promise<void> | null>(null);
 
     const syncContracts = useSyncConsentContractsMutation();
     const acceptAndStore = useAcceptAndStoreCredentialsMutation();
@@ -869,7 +878,7 @@ export const useSyncConsentFlow = (enabled = true) => {
                             category = await getCategoryForCredential(vc, learnCard, false);
                         }
                     } catch (e) {
-                        console.warn('Failed to resolve category for credential', credentialUri, e);
+                        log.warn('Failed to resolve category for credential', credentialUri, e);
                         // keep default fallback
                     }
 
@@ -891,79 +900,85 @@ export const useSyncConsentFlow = (enabled = true) => {
 
             const allContracts = await getOrFetchConsentedContracts(queryClient, learnCard);
 
+            if (!processingPromiseRef.current && allRecords.length > 0) {
+                processingPromiseRef.current = (async () => {
+                    try {
+                        // Invariant: this queryFn can refetch on mount/focus, but the
+                        // credential claim below makes the accept/store + sync chain
+                        // single-flight across hook instances. Keep the global claim and
+                        // this in-flight promise guard together if this flow is refactored.
+                        // First, atomically claim any unclaimed credentials
+                        const claimedRecords: ConsentRecord[] = [];
+                        for (const record of allRecords) {
+                            if (!globalProcessedCredentials.has(record.credentialUri)) {
+                                globalProcessedCredentials.add(record.credentialUri);
+                                claimedRecords.push(record);
+                            }
+                        }
+
+                        if (claimedRecords.length === 0) {
+                            return;
+                        }
+
+                        const filteredRecords = await async.filter<ConsentRecord>(
+                            claimedRecords,
+                            async record => {
+                                const existingRecord = await learnCard.index.LearnCloud.get({
+                                    uri: record.credentialUri,
+                                });
+                                return existingRecord.length === 0;
+                            }
+                        );
+
+                        if (filteredRecords.length === 0) {
+                            // Release claimed credentials that don't need processing
+                            claimedRecords.forEach(record => {
+                                globalProcessedCredentials.delete(record.credentialUri);
+                            });
+                            return;
+                        }
+
+                        try {
+                            await acceptAndStore.mutateAsync({
+                                allRecords: filteredRecords,
+                            });
+
+                            await syncContracts.mutateAsync({
+                                recordsByCategory,
+                                allContracts: allContracts.map(c => ({
+                                    contract: c.contract,
+                                    terms: c.terms,
+                                    uri: c.uri,
+                                    expiresAt: c.expiresAt,
+                                    oneTime: c.oneTime,
+                                })),
+                            });
+                        } catch (error) {
+                            filteredRecords.forEach(record => {
+                                globalProcessedCredentials.delete(record.credentialUri);
+                            });
+
+                            throw error;
+                        }
+                    } finally {
+                        // The query refetches can overlap, so the promise guard is the
+                        // only local completion signal we keep around here.
+                    }
+                })().finally(() => {
+                    processingPromiseRef.current = null;
+                });
+            }
+
+            if (processingPromiseRef.current) {
+                await processingPromiseRef.current;
+            }
+
             return { recordsByCategory, allContracts, allRecords };
         },
         staleTime: 0,
         refetchOnWindowFocus: true,
         enabled: enabled && syncContracts.isIdle && acceptAndStore.isIdle,
     });
-
-    useEffect(() => {
-        if (!query.data || query.data.allRecords.length === 0) return;
-
-        if (processingRef.current) return;
-
-        processingRef.current = true;
-
-        (async () => {
-            try {
-                const wallet = await initWallet();
-
-                // First, atomically claim any unclaimed credentials
-                const claimedRecords: ConsentRecord[] = [];
-                for (const record of query.data.allRecords) {
-                    if (!globalProcessedCredentials.has(record.credentialUri)) {
-                        globalProcessedCredentials.add(record.credentialUri);
-                        claimedRecords.push(record);
-                    }
-                }
-
-                if (claimedRecords.length === 0) {
-                    return;
-                }
-
-                const filteredRecords = await async.filter<ConsentRecord>(
-                    claimedRecords,
-                    async record => {
-                        const existingRecord = await wallet.index.LearnCloud.get({
-                            uri: record.credentialUri,
-                        });
-                        return existingRecord.length === 0;
-                    }
-                );
-
-                if (filteredRecords.length === 0) {
-                    // Release claimed credentials that don't need processing
-                    claimedRecords.forEach(record => {
-                        globalProcessedCredentials.delete(record.credentialUri);
-                    });
-                    return;
-                }
-
-                acceptAndStore.mutateAsync(
-                    {
-                        allRecords: filteredRecords,
-                    },
-                    {
-                        onSuccess: () => {
-                            syncContracts.mutate({
-                                recordsByCategory: query.data.recordsByCategory,
-                                allContracts: query.data.allContracts,
-                            });
-                        },
-                        onError: () => {
-                            // Remove from processed set if storage failed
-                            filteredRecords.forEach(record => {
-                                globalProcessedCredentials.delete(record.credentialUri);
-                            });
-                        },
-                    }
-                );
-            } finally {
-                processingRef.current = false;
-            }
-        })();
-    }, [query.data?.allRecords?.map(record => record.credentialUri).join(',') || '']);
 
     return query;
 };
@@ -1086,10 +1101,13 @@ export const useSyncRevokedCredentials = (enabled = true) => {
                         if (records && records.length > 0) {
                             // Remove the record from the index
                             await wallet.index.LearnCloud.remove?.(records[0]!.id);
-                            console.log('[useSyncRevokedCredentials] Removed revoked credential from index:', uri);
+                            log.debug(
+                                '[useSyncRevokedCredentials] Removed revoked credential from index:',
+                                uri
+                            );
                         }
                     } catch (e) {
-                        console.error('[useSyncRevokedCredentials] Error removing credential:', uri, e);
+                        log.error('[useSyncRevokedCredentials] Error removing credential:', uri, e);
                     }
                 }
 

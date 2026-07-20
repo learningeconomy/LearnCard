@@ -1,7 +1,10 @@
 import React, { useEffect } from 'react';
 import { useRouteMatch, useHistory } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('address-book-connection-requests');
 
+import * as m from '../../../paraglide/messages.js';
 import { IonSpinner, useIonModal } from '@ionic/react';
 
 import AddressBookContactList from '../addressBook-contact-list/AddressBookContactList';
@@ -82,7 +85,7 @@ const AddressBookConnectionRequests: React.FC<{
                 }
             );
         } catch (err) {
-            console.log('blockProfile::error', err);
+            log.info('blockProfile::error', err);
             presentToast(
                 // @ts-ignore
                 err?.message || 'An error occurred, unable to block user',
@@ -136,7 +139,7 @@ const AddressBookConnectionRequests: React.FC<{
             {isLoading && (
                 <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full my-4">
                     <IonSpinner color="black" />
-                    <p className="mt-2 font-bold text-lg">Loading...</p>
+                    <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                 </section>
             )}
             {requestsExist && (

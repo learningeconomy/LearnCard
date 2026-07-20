@@ -1,6 +1,9 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Shield, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('signing-authority-step');
 
+import * as m from '../../../../paraglide/messages.js';
 import { useWallet } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 
@@ -9,7 +12,10 @@ interface SigningAuthorityStepProps {
     onBack: () => void;
 }
 
-export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({ onComplete, onBack }) => {
+export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({
+    onComplete,
+    onBack,
+}) => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
 
@@ -32,7 +38,7 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({ onCo
                 setPrimarySA(null);
             }
         } catch (err) {
-            console.error('Failed to fetch signing authority:', err);
+            log.error('Failed to fetch signing authority:', err);
             setPrimarySA(null);
         } finally {
             setLoading(false);
@@ -65,11 +71,16 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({ onCo
                 authority.name
             );
 
-            presentToast('Signing authority created!', { hasDismissButton: true });
+            presentToast(m['developerPortal.onboarding.signingAuthority.createdToast'](), {
+                hasDismissButton: true,
+            });
             fetchSigningAuthority();
         } catch (err) {
-            console.error('Failed to create signing authority:', err);
-            presentToast('Failed to create signing authority', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            log.error('Failed to create signing authority:', err);
+            presentToast(m['developerPortal.onboarding.signingAuthority.failedToast'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         } finally {
             setCreating(false);
         }
@@ -80,22 +91,25 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({ onCo
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Set Up Signing Authority</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.onboarding.signingAuthority.title']()}
+                </h3>
 
                 <p className="text-gray-600">
-                    A signing authority cryptographically signs your credentials, making them verifiable. 
-                    This proves the credentials actually came from you.
+                    {m['developerPortal.onboarding.signingAuthority.description']()}
                 </p>
             </div>
 
             {/* Status */}
-            <div className={`flex items-center gap-3 p-4 rounded-xl border ${
-                loading 
-                    ? 'bg-gray-50 border-gray-200' 
-                    : hasSigningAuthority 
-                        ? 'bg-emerald-50 border-emerald-200' 
+            <div
+                className={`flex items-center gap-3 p-4 rounded-xl border ${
+                    loading
+                        ? 'bg-gray-50 border-gray-200'
+                        : hasSigningAuthority
+                        ? 'bg-emerald-50 border-emerald-200'
                         : 'bg-amber-50 border-amber-200'
-            }`}>
+                }`}
+            >
                 {loading ? (
                     <Loader2 className="w-5 h-5 text-gray-500 animate-spin" />
                 ) : hasSigningAuthority ? (
@@ -105,29 +119,33 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({ onCo
                 )}
 
                 <div>
-                    <p className={`font-medium ${
-                        loading 
-                            ? 'text-gray-700' 
-                            : hasSigningAuthority 
-                                ? 'text-emerald-800' 
+                    <p
+                        className={`font-medium ${
+                            loading
+                                ? 'text-gray-700'
+                                : hasSigningAuthority
+                                ? 'text-emerald-800'
                                 : 'text-amber-800'
-                    }`}>
-                        {loading 
-                            ? 'Checking...' 
-                            : hasSigningAuthority 
-                                ? 'Signing authority configured' 
-                                : 'No signing authority found'}
+                        }`}
+                    >
+                        {loading
+                            ? 'Checking...'
+                            : hasSigningAuthority
+                            ? 'Signing authority configured'
+                            : 'No signing authority found'}
                     </p>
 
-                    <p className={`text-sm ${
-                        loading 
-                            ? 'text-gray-500' 
-                            : hasSigningAuthority 
-                                ? 'text-emerald-700' 
+                    <p
+                        className={`text-sm ${
+                            loading
+                                ? 'text-gray-500'
+                                : hasSigningAuthority
+                                ? 'text-emerald-700'
                                 : 'text-amber-700'
-                    }`}>
-                        {hasSigningAuthority 
-                            ? `Using: ${primarySA?.name}` 
+                        }`}
+                    >
+                        {hasSigningAuthority
+                            ? `Using: ${primarySA?.name}`
                             : 'Create one to sign credentials'}
                     </p>
                 </div>
@@ -143,12 +161,12 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({ onCo
                     {creating ? (
                         <>
                             <Loader2 className="w-4 h-4 animate-spin" />
-                            Creating...
+                            {m['developerPortal.onboarding.signingAuthority.creating']()}
                         </>
                     ) : (
                         <>
                             <Shield className="w-4 h-4" />
-                            Create Signing Authority
+                            {m['developerPortal.onboarding.signingAuthority.createButton']()}
                         </>
                     )}
                 </button>
@@ -156,12 +174,23 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({ onCo
 
             {/* Info about what it does */}
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                <h4 className="font-medium text-blue-800 mb-2">What does this do?</h4>
+                <h4 className="font-medium text-blue-800 mb-2">
+                    {m['developerPortal.onboarding.signingAuthority.whatDoesThisDo']()}
+                </h4>
 
                 <ul className="text-sm text-blue-700 space-y-1">
-                    <li>• Creates a cryptographic key pair for signing</li>
-                    <li>• Registers the key with LearnCard's verification network</li>
-                    <li>• Allows anyone to verify credentials you issue</li>
+                    <li>
+                        {'• '}
+                        {m['developerPortal.onboarding.signingAuthority.benefit1']()}
+                    </li>
+                    <li>
+                        {'• '}
+                        {m['developerPortal.onboarding.signingAuthority.benefit2']()}
+                    </li>
+                    <li>
+                        {'• '}
+                        {m['developerPortal.onboarding.signingAuthority.benefit3']()}
+                    </li>
                 </ul>
             </div>
 
@@ -172,7 +201,7 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({ onCo
                     className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back
+                    {m['developerPortal.onboarding.signingAuthority.back']()}
                 </button>
 
                 <button
@@ -180,7 +209,7 @@ export const SigningAuthorityStep: React.FC<SigningAuthorityStepProps> = ({ onCo
                     disabled={!hasSigningAuthority}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                    Continue
+                    {m['developerPortal.onboarding.signingAuthority.continue']()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>

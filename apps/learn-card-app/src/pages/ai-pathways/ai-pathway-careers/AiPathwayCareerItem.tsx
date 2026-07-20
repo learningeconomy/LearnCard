@@ -1,20 +1,20 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import numeral from 'numeral';
-import { useFlags } from 'launchdarkly-react-client-sdk';
+
+import { m } from '../../../paraglide/messages.js';
 
 import SlimCaretRight from '../../../components/svgs/SlimCaretRight';
 import AiPathwayCareerDetails from './AiPathwaysCareerDetails';
 import useTheme from '../../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../../theme/icons/index';
 
-import {
-    CredentialCategoryEnum,
-    ModalTypes,
-    useModal,
-    useSemanticSearchSkills,
-} from 'learn-card-base';
+import { CredentialCategoryEnum, ModalTypes, useModal } from 'learn-card-base';
 import { OccupationDetailsResponse } from 'learn-card-base/types/careerOneStop';
 import { getYearlyWages } from './ai-pathway-careers.helpers';
+import {
+    useGlobalSemanticSearchSkills,
+    useGlobalSkillFrameworks,
+} from '../../../helpers/globalSkillFrameworks.helpers';
 
 type SemanticSkillRecord = {
     id: string;
@@ -29,15 +29,18 @@ export const AiPathwayCareerItem: React.FC<{
 }> = ({ occupation, showDescription = false, variant = 'list' }) => {
     const { newModal } = useModal();
     const { getIconSet } = useTheme();
-    const flags = useFlags();
-    const frameworkId = flags?.selfAssignedSkillsFrameworkId as string;
+    const globalSkillFrameworks = useGlobalSkillFrameworks();
+    const frameworkIds = useMemo(
+        () => globalSkillFrameworks.map(framework => framework.frameworkId),
+        [globalSkillFrameworks]
+    );
     const onetTitle = occupation?.OnetTitle?.trim() ?? '';
 
     const iconSet = getIconSet(IconSetEnum.sideMenu);
     const SkillDecoration = iconSet[CredentialCategoryEnum.skill] as React.ComponentType<{
         className?: string;
     }>;
-    const { data: semanticSkillsData } = useSemanticSearchSkills(onetTitle, frameworkId, {
+    const { data: semanticSkillsData } = useGlobalSemanticSearchSkills(onetTitle, frameworkIds, {
         limit: 4,
     });
     const matchingSkills = (semanticSkillsData?.records ?? []) as SemanticSkillRecord[];
@@ -85,7 +88,7 @@ export const AiPathwayCareerItem: React.FC<{
                 </div>
                 <div className="w-full flex flex-col items-start justify-start">
                     <p className="text-grayscale-600 text-[13px] text-left font-semibold">
-                        AVG. ANNUAL SALARY
+                        {m['aiPathways.avgAnnualSalary']()}
                     </p>
                     <p className="text-indigo-400 text-xl font-semibold text-left">
                         ${numeral(medianSalary).format('0,0')}
@@ -97,7 +100,9 @@ export const AiPathwayCareerItem: React.FC<{
                         {totalSkillsCount > 0 && (
                             <p className="text-grayscale-600 text-sm text-left font-semibold">
                                 {totalSkillsCount}{' '}
-                                {totalSkillsCount === 1 ? 'Matching Skill' : 'Matching Skills'}
+                                {totalSkillsCount === 1
+                                    ? m['aiPathways.matchingSkill']()
+                                    : m['aiPathways.matchingSkills']()}
                             </p>
                         )}
                         <div className="w-full flex items-center gap-2 flex-wrap">
@@ -112,7 +117,7 @@ export const AiPathwayCareerItem: React.FC<{
                             {remainingSkillsCount > 0 && (
                                 <div className="inline-flex items-center rounded-full bg-violet-50 px-3 py-2">
                                     <p className="text-grayscale-900 text-xs font-semibold">
-                                        + {remainingSkillsCount} more
+                                        {m['aiPathways.plusMore']({ count: remainingSkillsCount })}
                                     </p>
                                 </div>
                             )}

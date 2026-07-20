@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { ErrorBoundary } from 'react-error-boundary';
 
@@ -18,14 +18,20 @@ import RequestInsightsCard from './request-insights/RequestInsightsCard';
 import AiFeatureLinks from '../../components/ai-feature-links/AiFeatureLinks';
 import AiInsightsUserRequestsToast from './toasts/AiInsightsUserRequestsToast';
 import AiInsightsPromptBoxContainer from './ai-inisghts-prompt/AiInsightsPromptBoxContainer';
+import { m } from '../../paraglide/messages.js';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
 import {
     CredentialCategoryEnum,
     useAiInsightCredentialMutation,
+    useAiFeatureGate,
+    useConsentedContracts,
+    useExistingAiInsightCredential,
     useGetCredentialsForSkills,
     aiInsightRefreshStore,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import { useLoadingLine } from '../../stores/loadingStore';
 import {
@@ -46,12 +52,20 @@ type Flags = {
     showGenerateAiInsightsButton?: boolean;
 };
 
+type ContractRequestRecord = {
+    contract?: { uri?: string };
+    status?: string | null;
+};
+
 const AiInsights: React.FC = () => {
     const { getThemedCategoryColors } = useTheme();
     const { currentLCNUser } = useGetCurrentLCNUser();
+    const { isAiEnabled, isLoading: aiFeatureGateLoading } = useAiFeatureGate();
+    const { presentToast } = useToast();
     const location = useLocation();
 
     const [selectedTab, setSelectedTab] = useState(AiInsightsTabsEnum.MyInsights);
+    const autoGenerateAiInsightsAttemptedRef = useRef(false);
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -76,6 +90,27 @@ const AiInsights: React.FC = () => {
         isLoading: allResolvedBoostsLoading,
     } = useGetCredentialsForSkills();
 
+    const { isLoading: consentedContractsLoading } = useConsentedContracts();
+
+    const { data: existingAiInsightCredential, isLoading: existingAiInsightCredentialLoading } =
+        useExistingAiInsightCredential({
+            enabled: isAiEnabled && !aiFeatureGateLoading && Boolean(currentLCNUser),
+        });
+    const [displayedAiInsightCredential, setDisplayedAiInsightCredential] = useState(
+        existingAiInsightCredential
+    );
+
+    useEffect(() => {
+        if (existingAiInsightCredential) {
+            setDisplayedAiInsightCredential(existingAiInsightCredential);
+            return;
+        }
+
+        if (!existingAiInsightCredentialLoading && existingAiInsightCredential === null) {
+            setDisplayedAiInsightCredential(null);
+        }
+    }, [existingAiInsightCredential, existingAiInsightCredentialLoading]);
+
     const { mutate: createAiInsightCredential, isPending: createAiInsightCredentialLoading } =
         useAiInsightCredentialMutation();
 
@@ -83,18 +118,89 @@ const AiInsights: React.FC = () => {
         currentLCNUser?.profileId ?? ''
     );
 
-    const pendingRequests = useMemo(() => {
-        return contractRequests?.filter(request => request?.status === 'pending') || [];
+    const pendingRequests = useMemo<ContractRequestRecord[]>(() => {
+        return (
+            contractRequests?.filter(
+                (request: ContractRequestRecord) => request?.status === 'pending'
+            ) || []
+        );
     }, [contractRequests]);
 
     const credentialsBackgroundFetching = credentialsFetching && !allResolvedBoostsLoading;
     const aiInsightCredentialRegenerating = aiInsightRefreshStore.use.status() === 'pending';
+    const walletCredentialsLoading = credentialsFetching || allResolvedBoostsLoading;
+    const hasWalletCredentials = Number(allResolvedCreds?.length ?? 0) > 0;
+    const aiInsightCredentialToDisplay =
+        existingAiInsightCredential ?? displayedAiInsightCredential;
+    const hasExistingAiInsightCredential = Boolean(aiInsightCredentialToDisplay);
+    const canGenerateAiInsights = hasWalletCredentials || hasExistingAiInsightCredential;
+
+    const generateAiInsights = useCallback(() => {
+        if (!canGenerateAiInsights) {
+            return;
+        }
+
+        createAiInsightCredential(undefined, {
+            onError: () => {
+                presentToast('Something went wrong. Please try again.', {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+            },
+        });
+    }, [canGenerateAiInsights, createAiInsightCredential, presentToast]);
+    const canAutoGenerateAiInsights =
+        selectedTab === AiInsightsTabsEnum.MyInsights &&
+        isAiEnabled &&
+        !aiFeatureGateLoading &&
+        Boolean(currentLCNUser) &&
+        !walletCredentialsLoading &&
+        !consentedContractsLoading &&
+        !existingAiInsightCredentialLoading &&
+        !createAiInsightCredentialLoading &&
+        !aiInsightCredentialToDisplay &&
+        hasWalletCredentials &&
+        !autoGenerateAiInsightsAttemptedRef.current;
+
+    useEffect(() => {
+        if (hasWalletCredentials) return;
+
+        autoGenerateAiInsightsAttemptedRef.current = false;
+    }, [hasWalletCredentials]);
+
+    const learningSnapshotsIsLoading = useMemo(() => {
+        if (hasExistingAiInsightCredential) {
+            return false;
+        }
+
+        return (
+            existingAiInsightCredentialLoading ||
+            createAiInsightCredentialLoading ||
+            walletCredentialsLoading ||
+            consentedContractsLoading ||
+            canAutoGenerateAiInsights
+        );
+    }, [
+        canAutoGenerateAiInsights,
+        consentedContractsLoading,
+        createAiInsightCredentialLoading,
+        existingAiInsightCredentialLoading,
+        hasExistingAiInsightCredential,
+        walletCredentialsLoading,
+    ]);
 
     useLoadingLine(
         credentialsBackgroundFetching ||
             createAiInsightCredentialLoading ||
             aiInsightCredentialRegenerating
     );
+
+    useEffect(() => {
+        if (!canAutoGenerateAiInsights) return;
+
+        autoGenerateAiInsightsAttemptedRef.current = true;
+        generateAiInsights();
+    }, [canAutoGenerateAiInsights, generateAiInsights]);
 
     const skillsMap = useMemo(() => {
         return mapBoostsToSkills(allResolvedCreds);
@@ -122,18 +228,23 @@ const AiInsights: React.FC = () => {
             return null;
         }
 
-        return pendingRequests.map((request, index) => (
-            <AiInsightsUserRequestsToast
-                key={`request-${index}`}
-                contractUri={request?.contract?.uri}
-                options={{
-                    className: 'bg-indigo-100 p-4 rounded-[16px] shadow-bottom-4-4',
-                    isInline: true,
-                    useDarkText: true,
-                    hideCloseButton: true,
-                }}
-            />
-        ));
+        return pendingRequests.flatMap((request: ContractRequestRecord, index: number) => {
+            const contractUri = request?.contract?.uri;
+            if (!contractUri) return [];
+
+            return [
+                <AiInsightsUserRequestsToast
+                    key={`request-${index}`}
+                    contractUri={contractUri}
+                    options={{
+                        className: 'bg-indigo-100 p-4 rounded-[16px] shadow-bottom-4-4',
+                        isInline: true,
+                        useDarkText: true,
+                        hideCloseButton: true,
+                    }}
+                />,
+            ];
+        });
     }, [pendingRequests]);
 
     const myInsights = (
@@ -143,12 +254,12 @@ const AiInsights: React.FC = () => {
                     <button
                         className="bg-indigo-600 text-white rounded-[16px] w-full py-2 shadow-button-bottom font-semibold"
                         type="button"
-                        disabled={createAiInsightCredentialLoading}
-                        onClick={() => createAiInsightCredential()}
+                        disabled={createAiInsightCredentialLoading || !canGenerateAiInsights}
+                        onClick={generateAiInsights}
                     >
                         {createAiInsightCredentialLoading
-                            ? 'Generating...'
-                            : 'Generate AI Insights'}
+                            ? m['aiInsights.generating']()
+                            : m['aiInsights.generateAiInsights']()}
                     </button>
                 )}
             </div>
@@ -157,7 +268,20 @@ const AiInsights: React.FC = () => {
             <ShareInsightsCard />
 
             {topSkills.length > 0 && <AiInsightsTopSkills topSkills={topSkills} />}
-            <AiInsightsLearningSnapshots isLoading={createAiInsightCredentialLoading} />
+            <AiInsightsLearningSnapshots
+                aiInsightCredential={aiInsightCredentialToDisplay}
+                isLoading={learningSnapshotsIsLoading}
+                isRegenerating={aiInsightCredentialRegenerating}
+                showRegenerate
+                onRegenerate={generateAiInsights}
+                regenerateLabel={aiInsightCredentialToDisplay ? 'Regenerate' : 'Generate'}
+                regenerateDisabled={
+                    createAiInsightCredentialLoading ||
+                    walletCredentialsLoading ||
+                    aiInsightCredentialRegenerating ||
+                    !canGenerateAiInsights
+                }
+            />
 
             <MySkillProfile />
 

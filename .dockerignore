@@ -2,9 +2,56 @@
 lib/didkit/target
 lib/ssi/target
 
+scripts/siwa-migration
+reference
+examples/openid4vc-playground
+
 # Dependencies (copied selectively in Dockerfiles)
 node_modules
 **/node_modules
+node_modules/**
+**/node_modules/**
+# Docker Desktop/BuildKit can still traverse package-local Bun workspace
+# symlinks during path-specific COPY instructions unless the workspace
+# node_modules directories are matched explicitly.
+**/node_modules/
+**/node_modules/*
+packages/*/node_modules
+packages/*/node_modules/**
+packages/*/*/node_modules
+packages/*/*/node_modules/**
+packages/*/*/*/node_modules
+packages/*/*/*/node_modules/**
+packages/plugins/learn-cloud/node_modules
+packages/plugins/learn-cloud/node_modules/**
+packages/plugins/linked-claims/node_modules
+packages/plugins/linked-claims/node_modules/**
+packages/plugins/learn-cloud/**
+!packages/plugins/learn-cloud/
+!packages/plugins/learn-cloud/package.json
+!packages/plugins/learn-cloud/project.json
+!packages/plugins/learn-cloud/jest.config.cjs
+!packages/plugins/learn-cloud/tsconfig.json
+!packages/plugins/learn-cloud/scripts/
+!packages/plugins/learn-cloud/scripts/**
+!packages/plugins/learn-cloud/src/
+!packages/plugins/learn-cloud/src/**
+packages/plugins/linked-claims/**
+!packages/plugins/linked-claims/
+!packages/plugins/linked-claims/package.json
+!packages/plugins/linked-claims/project.json
+!packages/plugins/linked-claims/jest.config.cjs
+!packages/plugins/linked-claims/tsconfig.json
+!packages/plugins/linked-claims/scripts/
+!packages/plugins/linked-claims/scripts/**
+!packages/plugins/linked-claims/src/
+!packages/plugins/linked-claims/src/**
+apps/*/node_modules
+apps/*/node_modules/**
+services/*/node_modules
+services/*/node_modules/**
+services/*/*/node_modules
+services/*/*/node_modules/**
 
 # Build outputs
 **/dist
@@ -20,6 +67,11 @@ node_modules
 # resolve `./build/BuildMode` from `PathwaysShell.tsx` at image-build time.
 !**/pages/pathways/build
 !**/pages/pathways/build/**
+
+# Git worktrees — Claude Code (.claude/worktrees) and manual (.worktrees)
+# accumulate full source checkouts and can add gigabytes to the build context.
+.claude
+.worktrees
 
 # Common exclusions
 *.log
@@ -43,3 +95,13 @@ examples
 # Native build artifacts
 **/*.node
 **/native/target
+
+# Native mobile projects (Capacitor iOS/Android) — never used by the server/web
+# Docker builds, but their untracked DerivedData/Pods/.gradle caches (multiple GB)
+# otherwise get pulled into the build context.
+apps/*/ios
+apps/*/android
+
+# Stray local dir not covered by .gitignore (Docker context is not git-aware,
+# so it must be listed explicitly).
+~

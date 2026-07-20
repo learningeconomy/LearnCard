@@ -3,11 +3,15 @@ import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { UploadTypesEnum } from 'learn-card-base';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
+import { createAiInsightCredential } from '../../hooks/useAiInsightCredential';
 import { networkStore } from '../../stores/NetworkStore';
 import {
+    clearAiInsightRefreshState,
     setAiInsightRefreshError,
     setAiInsightRefreshPending,
 } from '../../stores/aiInsightRefreshStore';
+import { getLogger } from '../../logging/logger';
+const log = getLogger('ai-passport');
 
 const aiInsightCredentialQueryKey = ['useAiInsightCredential'];
 const AI_INSIGHT_REFRESH_DEBOUNCE_MS = 1000;
@@ -19,9 +23,9 @@ const logAiInsightRefresh = (message: string, data?: Record<string, unknown>) =>
 
     try {
         if (data) {
-            console.log(`[AiInsightRefresh] ${message}`, data);
+            log.debug(`[AiInsightRefresh] ${message}`, data);
         } else {
-            console.log(`[AiInsightRefresh] ${message}`);
+            log.debug(`[AiInsightRefresh] ${message}`);
         }
     } catch {
         // logging should never break refresh flow
@@ -36,45 +40,10 @@ const logAiInsightRefreshError = (
     if (!ENABLE_AI_INSIGHT_REFRESH_LOGS) return;
 
     try {
-        console.error(`[AiInsightRefresh] ${message}`, data ?? {}, err);
+        log.error(`[AiInsightRefresh] ${message}`, data ?? {}, err);
     } catch {
         // logging should never break refresh flow
     }
-};
-
-export const requestAiPassportCredentialRefresh = async (
-    wallet: BespokeLearnCard
-): Promise<void> => {
-    const did = wallet.id.did();
-
-    logAiInsightRefresh('Requesting backend refresh', {
-        did,
-        aiServiceUrl: networkStore.get.aiServiceUrl(),
-    });
-
-    const response = await fetch(`${networkStore.get.aiServiceUrl()}/credentials?did=${did}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-    });
-
-    if (!response.ok) {
-        logAiInsightRefreshError(
-            'Backend refresh request failed',
-            new Error(`HTTP ${response.status} ${response.statusText}`),
-            {
-                did,
-                status: response.status,
-                statusText: response.statusText,
-            }
-        );
-        throw new Error('Failed to request AI Insight credential refresh');
-    }
-
-    logAiInsightRefresh('Backend refresh request accepted', {
-        did,
-        status: response.status,
-        statusText: response.statusText,
-    });
 };
 
 export const queueAiInsightCredentialRefresh = async ({
@@ -91,38 +60,49 @@ export const queueAiInsightCredentialRefresh = async ({
 
     const currentAiInsightCredential = queryClient.getQueryData<VC>(aiInsightCredentialQueryKey);
 
+    const baselineCredentialId = currentAiInsightCredential?.id ?? null;
+
     logAiInsightRefresh('Queueing refresh', {
         walletDid: wallet.id.did(),
-        currentCredentialId: currentAiInsightCredential?.id ?? null,
+        currentCredentialId: baselineCredentialId,
         currentCredentialIssuanceDate: currentAiInsightCredential?.issuanceDate ?? null,
         debounceMs: AI_INSIGHT_REFRESH_DEBOUNCE_MS,
     });
 
     setAiInsightRefreshPending({
         requestedAt: Date.now(),
-        baselineCredentialId: currentAiInsightCredential?.id ?? null,
+        baselineCredentialId,
     });
 
     aiPassportRefreshPromise = (async () => {
         try {
             await new Promise(resolve => setTimeout(resolve, AI_INSIGHT_REFRESH_DEBOUNCE_MS));
-            await requestAiPassportCredentialRefresh(wallet);
+            const aiInsightCredential = await createAiInsightCredential(wallet);
+
+            queryClient.setQueryData(aiInsightCredentialQueryKey, aiInsightCredential);
+            queryClient.setQueryData(['useExistingAiInsightCredential'], aiInsightCredential);
+
             logAiInsightRefresh('Invalidating cached AI insight credential', {
                 queryKey: aiInsightCredentialQueryKey,
             });
             await queryClient.invalidateQueries({ queryKey: aiInsightCredentialQueryKey });
+            await queryClient.invalidateQueries({ queryKey: ['useExistingAiInsightCredential'] });
+            await queryClient.invalidateQueries({ queryKey: ['useAiPathways'] });
+            await queryClient.invalidateQueries({ queryKey: ['training-programs'] });
             logAiInsightRefresh('Invalidated cached AI insight credential', {
                 queryKey: aiInsightCredentialQueryKey,
             });
+
+            clearAiInsightRefreshState();
         } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            setAiInsightRefreshError(message);
             logAiInsightRefreshError('Failed to request AI Insight credential refresh', error);
+            setAiInsightRefreshError(error instanceof Error ? error.message : String(error));
+            throw error;
+        } finally {
+            logAiInsightRefresh('Refresh promise cleared');
+            aiPassportRefreshPromise = null;
         }
-    })().finally(() => {
-        logAiInsightRefresh('Refresh promise cleared');
-        aiPassportRefreshPromise = null;
-    });
+    })();
 
     return aiPassportRefreshPromise;
 };
@@ -147,7 +127,7 @@ export const usePreloadAssessment = () => {
             queryClient.setQueryData(['assessment', boostId], assessment);
         },
         onError: error => {
-            console.error('Failed to preload assessment:', error);
+            log.error('Failed to preload assessment:', error);
         },
     });
 };
@@ -212,7 +192,7 @@ export const useUploadFileMutation = (fileType: UploadTypesEnum) => {
 
                 return responseJson;
             } catch (error) {
-                console.error('Failed to upload resume:', error);
+                log.error('Failed to upload resume:', error);
                 throw new Error(error as string);
             }
         },

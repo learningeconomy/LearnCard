@@ -1,6 +1,8 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-claim-card');
 
 import { IonSpinner, useIonAlert, IonPage } from '@ionic/react';
 import { useRenderMethodEnabled } from '../../../hooks/useRenderMethodEnabled';
@@ -11,7 +13,14 @@ const HourGlass = '/lotties/hourglass.json';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import BoostDetailsSideMenu from '../boostCMS/BoostPreview/BoostDetailsSideMenu';
 import BoostDetailsSideBar from '../boostCMS/BoostPreview/BoostDetailsSideBar';
-import { useAnalytics, AnalyticsEvents } from '@analytics';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    ProfileBuildMethod,
+    useProfileSnapshotCapture,
+    ACCOUNT_CREATED_AT_KEY,
+    SESSION_START_KEY,
+} from '@analytics';
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
 import { useGetResolvedCredential, useToast, ToastTypeEnum } from 'learn-card-base';
 
@@ -41,6 +50,7 @@ import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import ViewEndorsementRequest from '../../boost-endorsements/EndorsementRequestForm/ViewEndorsementRequest';
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
+import * as m from '../../../paraglide/messages.js';
 
 type BoostClaimCardProps = {
     credential: VC | VP;
@@ -100,6 +110,8 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     }, [credential]);
 
     const { track } = useAnalytics();
+    const { capture, snapshotRef } = useProfileSnapshotCapture();
+    const flowStartedAt = useRef(Date.now());
 
     const [isFront, setIsFront] = useState(true);
     const [isClaimLoading, setIsClaimLoading] = useState(false);
@@ -152,11 +164,29 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
 
     const _isEndorsement = isEndorsementCredential(credential) ?? false;
 
+    // A credential that fails verification because it's revoked can't be claimed
+    // (the backend rejects acceptCredential with "Credential has been revoked").
+    const isRevoked = vcVerifications.some(
+        (v: any) =>
+            v?.status !== 'Success' &&
+            /revoked/i.test(`${v?.message ?? ''} ${v?.details ?? ''} ${v?.check ?? ''}`)
+    );
+
     const handleBoostCredential = async (visibility?: boolean) => {
         const wallet = await initWallet();
 
+        if (isRevoked) {
+            presentToast(m['claim.revokedToast'](), {
+                duration: 4000,
+                type: ToastTypeEnum.Error,
+            });
+            return;
+        }
+
         if (!acceptCredentialLoading && !isClaimLoading && !isClaimed) {
             setIsClaimLoading(true);
+            // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
+            capture();
             try {
                 mutate(
                     { uri: credentialUri, metadata: notification?.data?.metadata },
@@ -178,11 +208,28 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                     category: category,
                                     boostType: achievementType,
                                     method: 'Notification',
+                                    msSinceMethodStarted: Date.now() - flowStartedAt.current,
+                                });
+
+                                const now = Date.now();
+                                const sessionStart = Number(
+                                    localStorage.getItem(SESSION_START_KEY) ?? now
+                                );
+                                const accountCreatedAt = Number(
+                                    localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
+                                );
+                                track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                                    method: ProfileBuildMethod.Notification,
+                                    itemType: 'credential',
+                                    itemCount: 1,
+                                    totalItemsAfter: snapshotRef.current.credentialCount + 1,
+                                    msSinceAccountCreated: now - accountCreatedAt,
+                                    msSinceSessionStart: now - sessionStart,
                                 });
                             }
 
                             setIsClaimed(true);
-                            presentToast(`Successfully claimed Credential!`, {
+                            presentToast(m['toasts.credentialClaimed'](), {
                                 duration: 3000,
                                 type: ToastTypeEnum.Success,
                             });
@@ -198,17 +245,26 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
 
                             closeModal();
                         },
+                        onError(err: any) {
+                            setIsClaimLoading(false);
+                            presentToast(
+                                m['claim.failedToClaim']({
+                                    message: err?.message ?? m['claim.pleaseTryAgain'](),
+                                }),
+                                { duration: 4000, type: ToastTypeEnum.Error }
+                            );
+                        },
                     }
                 );
             } catch (err) {
-                console.log('acceptCredential::error', err?.message);
+                log.info('acceptCredential::error', err?.message);
                 presentAlert({
                     backdropDismiss: false,
                     cssClass: 'boost-confirmation-alert',
-                    header: `There was an error: ${err?.message}`,
+                    header: m['claim.errorWithMessage']({ message: err?.message ?? '' }),
                     buttons: [
                         {
-                            text: 'Okay',
+                            text: m['contacts.okay'](),
                             role: 'cancel',
                             handler: () => {
                                 dismissAlert();
@@ -230,20 +286,24 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     const selectedCredential = credential;
 
     let claimStatusText;
-    const disableClaimButton = acceptCredentialLoading || isClaimLoading || isClaimed;
+    const disableClaimButton = acceptCredentialLoading || isClaimLoading || isClaimed || isRevoked;
 
     if (!isClaimLoading && isLoggedIn && credential && isClaimed) {
-        claimStatusText = 'Claimed';
-        if (isFamily) claimStatusText = 'Joined';
+        claimStatusText = m['contacts.claimed']();
+        if (isFamily) claimStatusText = m['contacts.joined']();
     }
     if (isClaimLoading && isLoggedIn) {
-        claimStatusText = 'Saving...';
-        if (isFamily) claimStatusText = 'Joining...';
+        claimStatusText = m['contacts.saving']();
+        if (isFamily) claimStatusText = m['contacts.joining']();
     }
 
     if (!isClaimLoading && isLoggedIn && credential && !isClaimed) {
-        claimStatusText = 'Accept';
-        if (isFamily) claimStatusText = 'Join';
+        claimStatusText = m['common.accept']();
+        if (isFamily) claimStatusText = m['contacts.joinBoost']();
+    }
+
+    if (isRevoked) {
+        claimStatusText = m['common.revoked']();
     }
 
     useEffect(() => {
@@ -371,7 +431,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                     <div className="relative max-w-full max-h-[80vh]">
                                         <img
                                             src={selectedImage}
-                                            alt="Full size attachment"
+                                            alt={m['claim.fullSizeAttachment']()}
                                             className="max-w-full max-h-[80vh] object-contain"
                                         />
                                     </div>

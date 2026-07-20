@@ -15,7 +15,7 @@ import BoostCMSMediaForm from './boostCMSForms/boostCMSMedia/BoostCMSMediaForm';
 import BoostPreview from './BoostPreview/BoostPreview';
 import BoostPreviewBody from './BoostPreview/BoostPreviewBody';
 import BoostPreviewFooter from './BoostPreview/BoostPreviewFooter';
-import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
+import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import BoostLoader from '../boostLoader/BoostLoader';
 import BoostCMSConfirmationPrompt from './BoostCMSConfirmationPrompts/BoostCMSConfirmationPrompt';
 import BoostCMSTitleForm from './boostCMSForms/boostCMSTitleForm/BoostCMSTitleForm';
@@ -79,6 +79,10 @@ import BoostIDCardCMSMembersForm from './BoostIDCardCMS/BoostIDCardCMSForms/Boos
 import BoostCMSDisplayTypeSelector from './boostCMSForms/boostCMSAppearance/BoostCMSDisplayTypeSelector';
 import BoostCMSSkillsAttachmentForm from './boostCMSForms/boostCMSSkills/BoostSkillAttachmentsForm';
 import BoostFrameworkSkillSelector from './boostCMSForms/boostCMSSkills/BoostFrameworkSkillSelector';
+import * as m from '../../../paraglide/messages.js';
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('update-boost-cms');
 
 const UpdateBoostCMS: React.FC = () => {
     const history = useHistory();
@@ -476,7 +480,7 @@ const UpdateBoostCMS: React.FC = () => {
 
             if (updatedBoost) {
                 setIsSaveLoading(false);
-                presentToast(`Boost saved successfully`, {
+                presentToast(m['toasts.boost.boostSavedSuccess'](), {
                     duration: 3000,
                     type: ToastTypeEnum.Success,
                 });
@@ -498,8 +502,8 @@ const UpdateBoostCMS: React.FC = () => {
             }
         } catch (e) {
             setIsSaveLoading(false);
-            console.log('error::savingBoost', e);
-            presentToast(`Unable to save boost`, {
+            log.info('error::savingBoost', e);
+            presentToast(m['toasts.boost.boostSaveFailed'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -534,8 +538,8 @@ const UpdateBoostCMS: React.FC = () => {
                 }
             } catch (e) {
                 setIsPublishLoading(false);
-                console.log('error::boosting::someone', e);
-                presentToast(`Error issuing boost`, {
+                log.info('error::boosting::someone', e);
+                presentToast(m['toasts.boost.boostIssuedError'](), {
                     duration: 3000,
                     type: ToastTypeEnum.Error,
                 });
@@ -586,7 +590,7 @@ const UpdateBoostCMS: React.FC = () => {
 
                 if (uris.length > 0) {
                     setIsLoading(false);
-                    presentToast(`Boost issued successfully`, {
+                    presentToast(m['toasts.boost.boostIssuedSuccess'](), {
                         duration: 3000,
                         type: ToastTypeEnum.Success,
                     });
@@ -597,7 +601,7 @@ const UpdateBoostCMS: React.FC = () => {
 
                 if (_boostUri) {
                     setIsSaveLoading(false);
-                    presentToast(`Boost saved successfully`, {
+                    presentToast(m['toasts.boost.boostSavedSuccess'](), {
                         duration: 3000,
                         type: ToastTypeEnum.Success,
                     });
@@ -606,8 +610,8 @@ const UpdateBoostCMS: React.FC = () => {
             }
         } catch (e) {
             setIsLoading(false);
-            console.log('error::boosting::someone', e);
-            presentToast(`Error issuing boost`, {
+            log.info('error::boosting::someone', e);
+            presentToast(m['toasts.boost.boostIssuedError'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -626,7 +630,7 @@ const UpdateBoostCMS: React.FC = () => {
         );
     } else {
         previewDisplay = (
-            <CredentialBadge
+            <CredentialBadgeNew
                 achievementType={state?.basicInfo?.achievementType}
                 boostType={state?.basicInfo?.type}
                 badgeThumbnail={state?.appearance?.badgeThumbnail}
@@ -677,7 +681,9 @@ const UpdateBoostCMS: React.FC = () => {
 
     const handleConfirmationModal = () => {
         const buttonText =
-            currentStep === BoostCMSStepsEnum.issueTo ? 'Continue Issuing' : 'Continue Editing';
+            currentStep === BoostCMSStepsEnum.issueTo
+                ? m['boost.cms.continueIssuing']()
+                : m['boost.cms.continueEditing']();
 
         newModal(
             <BoostCMSConfirmationPrompt
@@ -764,7 +770,7 @@ const UpdateBoostCMS: React.FC = () => {
                     isLoading={loading}
                     collectionPropName="admins"
                     showContactOptions={false}
-                    title="Assign Admins"
+                    title={m['boost.cms.issueTo.assignAdmins']()}
                     hideBoostShareableCode
                 />
                 {/* {isMembership && <BoostIDCardCMSMembersForm state={state} setState={setState} />} */}
@@ -829,13 +835,15 @@ const UpdateBoostCMS: React.FC = () => {
 
     let loadingText = '';
     if (isBoostLoading) {
-        loadingText = 'Loading boost...';
+        loadingText = m['boost.cms.loading.loading']();
     } else if (isLoading) {
-        loadingText = 'Issuing boost...';
+        loadingText = m['boost.cms.loading.issuing']();
     } else if (isPublishLoading) {
-        loadingText = skippedPublishStep ? 'Creating boost...' : 'Publishing boost...';
+        loadingText = skippedPublishStep
+            ? m['boost.cms.loading.creating']()
+            : m['boost.cms.loading.publishing']();
     } else if (isSaveLoading) {
-        loadingText = 'Saving boost...';
+        loadingText = m['boost.cms.loading.saving']();
     }
 
     return (
@@ -865,7 +873,7 @@ const UpdateBoostCMS: React.FC = () => {
                     <IonRow className="w-full flex items-center justify-center pb-[200px]">
                         <IonCol className="w-full flex items-center justify-center">
                             <button onClick={handleConfirmationModal} className="mt-4 pb-4">
-                                Quit
+                                {m['boost.cms.quit']()}
                             </button>
                         </IonCol>
                     </IonRow>

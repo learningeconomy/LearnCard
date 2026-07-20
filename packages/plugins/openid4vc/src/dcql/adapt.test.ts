@@ -23,14 +23,10 @@ const makeJwtVc = (vcBody: Record<string, unknown>): string => {
 };
 
 const base64url = (s: string): string =>
-    Buffer.from(s)
-        .toString('base64')
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '');
+    Buffer.from(s).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
 describe('adaptCredentialForDcql — jwt_vc_json', () => {
-    it('decodes a compact JWT-VC into the canonical W3C DCQL shape', () => {
+    it('decodes a compact JWT-VC into the canonical W3C DCQL shape', async () => {
         const jwt = makeJwtVc({
             '@context': ['https://www.w3.org/2018/credentials/v1'],
             type: ['VerifiableCredential', 'UniversityDegree'],
@@ -40,7 +36,7 @@ describe('adaptCredentialForDcql — jwt_vc_json', () => {
             },
         });
 
-        const out = adaptCredentialForDcql({ credential: jwt });
+        const out = await adaptCredentialForDcql({ credential: jwt });
 
         expect(out).toEqual({
             credential_format: 'jwt_vc_json',
@@ -55,18 +51,18 @@ describe('adaptCredentialForDcql — jwt_vc_json', () => {
         });
     });
 
-    it('honors an explicit format hint over the auto-inferred one', () => {
+    it('honors an explicit format hint over the auto-inferred one', async () => {
         const jwt = makeJwtVc({
             type: ['VC'],
             credentialSubject: { id: 'did:jwk:holder' },
         });
 
         // The adapter shouldn't second-guess the caller's hint.
-        const out = adaptCredentialForDcql({ credential: jwt, format: 'jwt_vc_json' });
+        const out = await adaptCredentialForDcql({ credential: jwt, format: 'jwt_vc_json' });
         expect(out?.credential_format).toBe('jwt_vc_json');
     });
 
-    it('extracts type from a JWT-VC inside a proof.jwt envelope', () => {
+    it('extracts type from a JWT-VC inside a proof.jwt envelope', async () => {
         // Some legacy issuers wrap the JWT-VC in an LDP-shaped envelope
         // with the actual JWS at `proof.jwt`. The adapter should peek
         // through.
@@ -79,42 +75,40 @@ describe('adaptCredentialForDcql — jwt_vc_json', () => {
             proof: { type: 'JwtProof2020', jwt: inner },
         };
 
-        const out = adaptCredentialForDcql({ credential: ldpEnvelope });
+        const out = await adaptCredentialForDcql({ credential: ldpEnvelope });
         expect(out?.credential_format).toBe('jwt_vc_json');
         expect(out?.type).toEqual(['VerifiableCredential', 'OpenBadgeCredential']);
     });
 
-    it('returns undefined for a non-JWS string', () => {
-        expect(
-            adaptCredentialForDcql({ credential: 'not.a.real.jwt' })
-        ).toBeUndefined();
+    it('returns undefined for a non-JWS string', async () => {
+        expect(await adaptCredentialForDcql({ credential: 'not.a.real.jwt' })).toBeUndefined();
     });
 
-    it('returns undefined when JWT payload has no `vc` claim', () => {
+    it('returns undefined when JWT payload has no `vc` claim', async () => {
         const header = base64url(JSON.stringify({ alg: 'EdDSA' }));
         const payload = base64url(JSON.stringify({ iss: 'did:jwk:abc' /* no vc */ }));
         const jwt = `${header}.${payload}.sig`;
 
-        expect(adaptCredentialForDcql({ credential: jwt })).toBeUndefined();
+        expect(await adaptCredentialForDcql({ credential: jwt })).toBeUndefined();
     });
 
-    it('returns undefined when the VC has no type array', () => {
+    it('returns undefined when the VC has no type array', async () => {
         const jwt = makeJwtVc({ credentialSubject: {} });
-        expect(adaptCredentialForDcql({ credential: jwt })).toBeUndefined();
+        expect(await adaptCredentialForDcql({ credential: jwt })).toBeUndefined();
     });
 
-    it('coerces a string `type` into a single-element array', () => {
+    it('coerces a string `type` into a single-element array', async () => {
         const jwt = makeJwtVc({
             type: 'VerifiableCredential',
             credentialSubject: {},
         });
-        const out = adaptCredentialForDcql({ credential: jwt });
+        const out = await adaptCredentialForDcql({ credential: jwt });
         expect(out?.type).toEqual(['VerifiableCredential']);
     });
 });
 
 describe('adaptCredentialForDcql — ldp_vc', () => {
-    it('passes a JSON-LD VC through with the right format tag', () => {
+    it('passes a JSON-LD VC through with the right format tag', async () => {
         const ldVc = {
             '@context': ['https://www.w3.org/2018/credentials/v1'],
             type: ['VerifiableCredential', 'UniversityDegree'],
@@ -122,11 +116,15 @@ describe('adaptCredentialForDcql — ldp_vc', () => {
             proof: { type: 'Ed25519Signature2020', proofValue: 'z...' },
         };
 
-        const out = adaptCredentialForDcql({ credential: ldVc });
+        const out = await adaptCredentialForDcql({ credential: ldVc });
 
         expect(out).toEqual({
             credential_format: 'ldp_vc',
-            type: ['VerifiableCredential', 'UniversityDegree'],
+            type: [
+                'VerifiableCredential',
+                'UniversityDegree',
+                'https://www.w3.org/2018/credentials#VerifiableCredential',
+            ],
             claims: expect.objectContaining({
                 credentialSubject: expect.objectContaining({ name: 'Alice' }),
             }),
@@ -134,12 +132,12 @@ describe('adaptCredentialForDcql — ldp_vc', () => {
         });
     });
 
-    it('returns undefined for a credential with no proof', () => {
+    it('returns undefined for a credential with no proof', async () => {
         // `inferDcqlFormat` only returns ldp_vc when proof is present;
         // a bare object with no proof falls through to "unknown format"
         // and the adapter returns undefined. This is the same behavior
         // PEX selector exhibits — keep them in lockstep.
-        const out = adaptCredentialForDcql({
+        const out = await adaptCredentialForDcql({
             credential: {
                 type: ['VerifiableCredential'],
                 credentialSubject: {},
@@ -148,8 +146,8 @@ describe('adaptCredentialForDcql — ldp_vc', () => {
         expect(out).toBeUndefined();
     });
 
-    it('returns undefined for a JSON-LD VC with no type', () => {
-        const out = adaptCredentialForDcql({
+    it('returns undefined for a JSON-LD VC with no type', async () => {
+        const out = await adaptCredentialForDcql({
             credential: {
                 credentialSubject: {},
                 proof: { type: 'Ed25519Signature2020' },
@@ -160,36 +158,121 @@ describe('adaptCredentialForDcql — ldp_vc', () => {
 });
 
 describe('adaptCredentialForDcql — unsupported', () => {
-    it('returns undefined for null / number / undefined inputs', () => {
-        expect(adaptCredentialForDcql({ credential: null })).toBeUndefined();
-        expect(adaptCredentialForDcql({ credential: 42 })).toBeUndefined();
-        expect(adaptCredentialForDcql({ credential: undefined })).toBeUndefined();
+    it('returns undefined for null / number / undefined inputs', async () => {
+        expect(await adaptCredentialForDcql({ credential: null })).toBeUndefined();
+        expect(await adaptCredentialForDcql({ credential: 42 })).toBeUndefined();
+        expect(await adaptCredentialForDcql({ credential: undefined })).toBeUndefined();
     });
 
-    it('returns undefined for sd-jwt-vc compact serialization', () => {
+    it('returns undefined for sd-jwt-vc compact serialization', async () => {
         // SD-JWT compact serialization uses tilde-delimited segments,
         // not three dot-separated. The adapter currently doesn't
         // support sd-jwt-vc and should drop the candidate cleanly
         // rather than mis-decoding it as jwt_vc_json.
         expect(
-            adaptCredentialForDcql({
+            await adaptCredentialForDcql({
                 credential: 'eyJhbGc.eyJ2Yy.sig~disclosure1~disclosure2',
             })
         ).toBeUndefined();
     });
 
-    it('honors a non-supported explicit format hint by dropping', () => {
+    it('honors a non-supported explicit format hint by dropping', async () => {
         // Caller explicitly says vc+sd-jwt — adapter doesn't yet
         // handle that branch and returns undefined.
         const jwt = makeJwtVc({ type: ['VC'], credentialSubject: {} });
         expect(
-            adaptCredentialForDcql({ credential: jwt, format: 'vc+sd-jwt' })
+            await adaptCredentialForDcql({ credential: jwt, format: 'vc+sd-jwt' })
         ).toBeUndefined();
     });
 });
 
+describe('adaptCredentialForDcql — sd-jwt-vc with parser', () => {
+    const VCT = 'https://example.com/credentials/sd-jwt-test';
+    const compact = 'header.payload.signature~Wyx~';
+
+    const parser = async (input: string) => {
+        expect(input).toBe(compact);
+        return {
+            claims: {
+                vct: VCT,
+                iss: 'did:jwk:issuer',
+                iat: 1700000000,
+                given_name: 'Ada',
+            },
+            vct: VCT,
+            issuer: 'did:jwk:issuer',
+            holderPublicKey: { kty: 'OKP', crv: 'Ed25519', x: 'xxx' },
+        };
+    };
+
+    it('emits a DcqlSdJwtVcCredential when given a compact string + parser', async () => {
+        const out = await adaptCredentialForDcql(
+            { credential: compact, format: 'dc+sd-jwt' },
+            { sdJwtParser: parser }
+        );
+        expect(out?.credential_format).toBe('dc+sd-jwt');
+        if (out?.credential_format === 'dc+sd-jwt' || out?.credential_format === 'vc+sd-jwt') {
+            expect(out.vct).toBe(VCT);
+            expect(out.cryptographic_holder_binding).toBe(true);
+            expect(out.claims).toMatchObject({ given_name: 'Ada' });
+        }
+    });
+
+    it('emits the right format when caller passes vc+sd-jwt', async () => {
+        const out = await adaptCredentialForDcql(
+            { credential: compact, format: 'vc+sd-jwt' },
+            { sdJwtParser: parser }
+        );
+        expect(out?.credential_format).toBe('vc+sd-jwt');
+    });
+
+    it('extracts compact from a W3C-wrapped SD-JWT (proof.type=SdJwtCompactProof)', async () => {
+        const wrapper = {
+            type: ['VerifiableCredential', 'SdJwtVcCredential'],
+            issuer: 'did:jwk:issuer',
+            sdJwtVct: VCT,
+            proof: { type: 'SdJwtCompactProof', jwt: compact },
+        };
+        const out = await adaptCredentialForDcql({ credential: wrapper }, { sdJwtParser: parser });
+        expect(out?.credential_format).toBe('dc+sd-jwt');
+    });
+
+    it('returns undefined when sdJwtParser is missing', async () => {
+        const out = await adaptCredentialForDcql({ credential: compact, format: 'dc+sd-jwt' });
+        expect(out).toBeUndefined();
+    });
+
+    it('returns undefined when the parser throws', async () => {
+        const out = await adaptCredentialForDcql(
+            { credential: compact, format: 'dc+sd-jwt' },
+            {
+                sdJwtParser: async () => {
+                    throw new Error('decode failed');
+                },
+            }
+        );
+        expect(out).toBeUndefined();
+    });
+
+    it('flags cryptographic_holder_binding=false when there is no cnf', async () => {
+        const noBindingParser = async () => ({
+            claims: { vct: VCT, iss: 'did:jwk:i' },
+            vct: VCT,
+            issuer: 'did:jwk:i',
+        });
+        const out = await adaptCredentialForDcql(
+            { credential: compact, format: 'dc+sd-jwt' },
+            { sdJwtParser: noBindingParser }
+        );
+        expect(out?.credential_format).toBe('dc+sd-jwt');
+        if (out?.credential_format === 'dc+sd-jwt') {
+            expect(out.cryptographic_holder_binding).toBe(false);
+        }
+    });
+});
+
 describe('adaptCredentialsForDcql — batch', () => {
-    it('drops unsupported entries silently and pairs adapted with original', () => {
+    it('drops unsupported entries silently and pairs adapted with original', async () => {
         const jwt = makeJwtVc({
             type: ['VerifiableCredential', 'UniversityDegree'],
             credentialSubject: {},
@@ -201,7 +284,7 @@ describe('adaptCredentialsForDcql — batch', () => {
         };
         const garbage = { foo: 'bar' };
 
-        const result = adaptCredentialsForDcql([
+        const result = await adaptCredentialsForDcql([
             { credential: jwt },
             { credential: ldVc },
             { credential: garbage },
@@ -212,5 +295,46 @@ describe('adaptCredentialsForDcql — batch', () => {
         expect(result[0]?.original.credential).toBe(jwt);
         expect(result[1]?.adapted.credential_format).toBe('ldp_vc');
         expect(result[1]?.original.credential).toBe(ldVc);
+    });
+});
+
+describe('adaptCredentialForDcql — expanded type IRIs (ldp_vc)', () => {
+    const ldVc = {
+        '@context': [
+            'https://www.w3.org/2018/credentials/v1',
+            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json',
+        ],
+        type: ['VerifiableCredential', 'OpenBadgeCredential'],
+        credentialSubject: { id: 'did:jwk:holder' },
+        proof: { type: 'DataIntegrityProof', proofValue: 'z...' },
+    };
+
+    it('augments compact terms with well-known expanded IRIs', async () => {
+        const out = await adaptCredentialForDcql({ credential: ldVc });
+
+        expect(out?.credential_format).toBe('ldp_vc');
+        expect((out as { type: string[] }).type).toEqual([
+            'VerifiableCredential',
+            'OpenBadgeCredential',
+            'https://www.w3.org/2018/credentials#VerifiableCredential',
+            'https://purl.imsglobal.org/spec/vc/ob/vocab.html#OpenBadgeCredential',
+        ]);
+    });
+
+    it('does not duplicate IRIs already present on the credential', async () => {
+        const out = await adaptCredentialForDcql({
+            credential: {
+                ...ldVc,
+                type: [
+                    'VerifiableCredential',
+                    'https://www.w3.org/2018/credentials#VerifiableCredential',
+                ],
+            },
+        });
+
+        expect((out as { type: string[] }).type).toEqual([
+            'VerifiableCredential',
+            'https://www.w3.org/2018/credentials#VerifiableCredential',
+        ]);
     });
 });

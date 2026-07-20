@@ -3,39 +3,40 @@ import moment from 'moment';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { ModalTypes, useModal, QRCodeScannerStore, useAiFeatureGate } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
-import CheckListContainer from 'apps/learn-card-app/src/components/learncard/checklist/CheckListContainer';
-import AiPassportPersonalizationContainer from 'apps/learn-card-app/src/components/ai-passport/AiPassportPersonalizationContainer';
+import CheckListContainer from '../../../components/learncard/checklist/CheckListContainer';
+import AiPassportPersonalizationContainer from '../../../components/ai-passport/AiPassportPersonalizationContainer';
 import SolidCircleIcon from 'learn-card-base/svgs/SolidCircleIcon';
-import AISessionsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/AISessionsQuickNav';
-import BoostsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/BoostsQuickNav';
-import CredentialQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/CredentialQuickNav';
-import ClaimCredentialQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ClaimCredentialQuickNav';
+import AISessionsQuickNav from '../../../components/svgs/quicknav/AISessionsQuickNav';
+import BoostsQuickNav from '../../../components/svgs/quicknav/BoostsQuickNav';
+import CredentialQuickNav from '../../../components/svgs/quicknav/CredentialQuickNav';
+import ClaimCredentialQuickNav from '../../../components/svgs/quicknav/ClaimCredentialQuickNav';
 import UnicornIcon from 'learn-card-base/svgs/UnicornIcon';
-import ResumeQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ResumeQuickNav';
+import ResumeQuickNav from '../../../components/svgs/quicknav/ResumeQuickNav';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
-import StudiesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/StudiesQuickNav';
-import ShareInsightsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ShareInsightsQuickNav';
-import UnderstandSkillsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/UnderstandSkillsQuickNav';
+import StudiesQuickNav from '../../../components/svgs/quicknav/StudiesQuickNav';
+import ShareInsightsQuickNav from '../../../components/svgs/quicknav/ShareInsightsQuickNav';
+import UnderstandSkillsQuickNav from '../../../components/svgs/quicknav/UnderstandSkillsQuickNav';
 import X from 'learn-card-base/svgs/X';
-import FamiliesQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/FamiliesQuickNav';
-import RequestInsightsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/RequestInsightsQuickNav';
+import FamiliesQuickNav from '../../../components/svgs/quicknav/FamiliesQuickNav';
+import RequestInsightsQuickNav from '../../../components/svgs/quicknav/RequestInsightsQuickNav';
 import AddToLearnCardQuickNav from '../../../components/svgs/quicknav/AddToLearnCardQuickNav';
 import { SkillsIconWithShape } from 'learn-card-base/svgs/wallet/SkillsIcon';
-import AddUserQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/AddUserQuickNav';
-import ImportCredentialQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ImportCredentialQuickNav';
-import SwitchAccountQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/SwitchAccountQuickNav';
-import CreateApiTokenQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/CreateApiTokenQuickNav';
-import CreateSigningAuthorityQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/CreateSigningAuthorityQuickNav';
-import CreateConsentFlowQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/CreateConsentFlowQuickNav';
-import SwitchNetworksQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/SwitchNetworksQuickNav';
-import ReadDocsQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/ReadDocsQuickNav';
-import AddChildQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/AddChildQuickNav';
-import SwitchChildQuickNav from 'apps/learn-card-app/src/components/svgs/quicknav/SwitchChildQuickNav';
-import NavBarPassportIcon from 'apps/learn-card-app/src/components/svgs/NavBarPassportIcon';
-import NavBarLaunchPadIcon from 'apps/learn-card-app/src/components/svgs/NavBarLaunchPadIcon';
+import AddUserQuickNav from '../../../components/svgs/quicknav/AddUserQuickNav';
+import ImportCredentialQuickNav from '../../../components/svgs/quicknav/ImportCredentialQuickNav';
+import SwitchAccountQuickNav from '../../../components/svgs/quicknav/SwitchAccountQuickNav';
+import CreateApiTokenQuickNav from '../../../components/svgs/quicknav/CreateApiTokenQuickNav';
+import CreateSigningAuthorityQuickNav from '../../../components/svgs/quicknav/CreateSigningAuthorityQuickNav';
+import CreateConsentFlowQuickNav from '../../../components/svgs/quicknav/CreateConsentFlowQuickNav';
+import SwitchNetworksQuickNav from '../../../components/svgs/quicknav/SwitchNetworksQuickNav';
+import ReadDocsQuickNav from '../../../components/svgs/quicknav/ReadDocsQuickNav';
+import AddChildQuickNav from '../../../components/svgs/quicknav/AddChildQuickNav';
+import SwitchChildQuickNav from '../../../components/svgs/quicknav/SwitchChildQuickNav';
+import NavBarPassportIcon from '../../../components/svgs/NavBarPassportIcon';
+import NavBarLaunchPadIcon from '../../../components/svgs/NavBarLaunchPadIcon';
 import IssueManagedBoostSelector from './IssueManagedBoostSelector';
 import { AiInsightsTabsEnum } from '../../ai-insights/ai-insight-tabs/ai-insights-tabs.helpers';
 import { RequestInsightsModal } from '../../ai-insights/request-insights/RequestInsightsModal';
@@ -47,25 +48,27 @@ import {
     iconBgColors,
 } from '../../../components/onboarding/onboardingRoles/OnboardingRoleItem';
 import LaunchPadRoleSelector from './LaunchPadRoleSelector';
-import { useTheme } from 'apps/learn-card-app/src/theme/hooks/useTheme';
-import { IconSetEnum } from 'apps/learn-card-app/src/theme/icons/index';
-import AccountSwitcherModal from 'apps/learn-card-app/src/components/learncard/AccountSwitcherModal';
-import { SwitcherStepEnum } from 'apps/learn-card-app/src/components/learncard/switcher.helpers';
-import FamilyBoostPreviewWrapper from 'apps/learn-card-app/src/components/familyCMS/FamilyBoostPreview/FamilyBoostPreviewWrapper';
-import useGetFamilyCredential from 'apps/learn-card-app/src/hooks/useGetFamilyCredential';
-import AdminToolsOptionsContainer from 'apps/learn-card-app/src/pages/adminToolsPage/AdminToolsModal/AdminToolsOptionsContainer';
+import { useTheme } from '../../../theme/hooks/useTheme';
+import { IconSetEnum } from '../../../theme/icons/index';
+import AccountSwitcherModal from '../../../components/learncard/AccountSwitcherModal';
+import { SwitcherStepEnum } from '../../../components/learncard/switcher.helpers';
+import FamilyBoostPreviewWrapper from '../../../components/familyCMS/FamilyBoostPreview/FamilyBoostPreviewWrapper';
+import useGetFamilyCredential from '../../../hooks/useGetFamilyCredential';
+import AdminToolsOptionsContainer from '../../adminToolsPage/AdminToolsModal/AdminToolsOptionsContainer';
 import {
     adminToolOptions,
     AdminToolOptionsEnum,
     developerToolOptions,
-} from 'apps/learn-card-app/src/pages/adminToolsPage/AdminToolsModal/admin-tools.helpers';
-import AdminToolsCreateProfileSimple from 'apps/learn-card-app/src/pages/adminToolsPage/AdminToolsAccountSwitcher/AdminToolsCreateProfileSimple';
-import useBoostModal from 'apps/learn-card-app/src/components/boost/hooks/useBoostModal';
-import { openDeveloperDocs } from 'apps/learn-card-app/src/helpers/externalLinkHelpers';
+} from '../../adminToolsPage/AdminToolsModal/admin-tools.helpers';
+import AdminToolsCreateProfileSimple from '../../adminToolsPage/AdminToolsAccountSwitcher/AdminToolsCreateProfileSimple';
+import useBoostModal from '../../../components/boost/hooks/useBoostModal';
+import useBoostRecoveryCheck from '../../../hooks/useBoostRecoveryCheck';
+import { openDeveloperDocs } from '../../../helpers/externalLinkHelpers';
 import {
     LearnCardRolesEnum,
     LearnCardRoles,
 } from '../../../components/onboarding/onboarding.helpers';
+import { getRoleTitle } from '../../../components/onboarding/onboardingRoles/onboardingRolesI18n';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 import {
     useWallet,
@@ -85,8 +88,42 @@ import {
 } from 'learn-card-base';
 import { getGreetingAndEmoji } from './launchPadHeader.helpers';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
-import AddToLearnCardMenuWrapper from '../../../components/add-to-learncard-menu/AddToLearnCardMenuWrapper';
-import AddToLearnCardMenu from '../../../components/add-to-learncard-menu/AddToLearnCardMenu';
+import AddToPassportMenu from '../../../components/add-to-passport/AddToPassportMenu';
+import * as m from '../../../paraglide/messages.js';
+
+// Translation map: internal ID → translated display label
+const ACTION_LABELS: Record<string, () => string> = {
+    'Add to LearnCard': () => m['launchpad.actions.addToLearnCard'](),
+    'Build My LearnCard': () => m['launchpad.actions.buildMyLearnCard'](),
+    'New AI Tutoring Session': () => m['launchpad.actions.newAiTutoringSession'](),
+    'Understand My Skills': () => m['launchpad.actions.understandMySkills'](),
+    'Customize AI Sessions': () => m['launchpad.actions.customizeAiSessions'](),
+    'Share Insights with Teacher': () => m['launchpad.actions.shareInsightsWithTeacher'](),
+    'View Learner Insights': () => m['launchpad.actions.viewLearnerInsights'](),
+    'Request Learner Insights': () => m['launchpad.actions.requestLearnerInsights'](),
+    'Issue Credential': () => m['launchpad.actions.issueCredential'](),
+    'Create Credential': () => m['launchpad.actions.createCredential'](),
+    'Edit Skills Frameworks': () => m['launchpad.actions.editSkillsFrameworks'](),
+    'Manage Skills Frameworks': () => m['launchpad.actions.manageSkillsFrameworks'](),
+    'Create Family': () => m['launchpad.actions.createFamily'](),
+    'View Family': () => m['launchpad.actions.viewFamily'](),
+    'Boost Child': () => m['launchpad.actions.boostChild'](),
+    'Add Child': () => m['launchpad.actions.addChild'](),
+    'Switch Child': () => m['launchpad.actions.switchChild'](),
+    'View Child Insights': () => m['launchpad.actions.viewChildInsights'](),
+    'Create API Token': () => m['launchpad.actions.createApiToken'](),
+    'Create Signing Authority': () => m['launchpad.actions.createSigningAuthority'](),
+    'Create ConsentFlow': () => m['launchpad.actions.createConsentFlow'](),
+    'Switch Network': () => m['launchpad.actions.switchNetwork'](),
+    'Read Docs': () => m['launchpad.actions.readDocs'](),
+    'Import Credentials': () => m['launchpad.actions.importCredentials'](),
+    'Create Organization': () => m['launchpad.actions.createOrganization'](),
+    'Switch Account': () => m['launchpad.actions.switchAccount'](),
+    'Claim Credential': () => m['launchpad.actions.claimCredential'](),
+};
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('launch-pad-action-modal');
 
 const getIconForActionButton = (
     label: string,
@@ -181,8 +218,10 @@ const ActionButton: React.FC<{
     role?: string;
 }> = ({ label, bg, bgHex, textColor, borderColor, to, onClick, role }) => {
     const history = useHistory();
+    const flags = useFlags();
     const { newModal, closeModal, closeAllModals } = useModal();
     const { handlePresentBoostModal } = useBoostModal(undefined, undefined, true, true);
+    const { checkAndPromptRecovery } = useBoostRecoveryCheck();
     const { theme, getIconSet } = useTheme();
     const brandingConfig = useBrandingConfig();
     const buildMyLCIcon = theme?.defaults?.buildMyLCIcon;
@@ -302,6 +341,13 @@ const ActionButton: React.FC<{
                 );
                 return;
             case 'Create Credential':
+                if (flags?.enableSimpleSend) {
+                    checkAndPromptRecovery(() => {
+                        closeAllModals();
+                        history.push('/issue');
+                    });
+                    return;
+                }
                 closeModal();
                 handlePresentBoostModal();
                 return;
@@ -419,7 +465,9 @@ const ActionButton: React.FC<{
                 <span className="mr-2 pb-[5px]">
                     {getIconForActionButton(label, { buildMyLCIcon, AiInsightsIcon })}
                 </span>{' '}
-                {label === 'Build My LearnCard' ? `Build My ${brandingConfig.name}` : label}
+                {label === 'Build My LearnCard'
+                    ? `Build My ${brandingConfig.name}`
+                    : ACTION_LABELS[label]?.() ?? label}
             </div>
         </button>
     );
@@ -475,7 +523,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         } catch (e) {
             setOptimisticRole(null);
             setRole((lcNetworkProfile?.role as LearnCardRolesEnum) ?? LearnCardRolesEnum.learner);
-            presentToast('Unable to update role', {
+            presentToast(m['launchpad.modal.unableToUpdateRole'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -492,12 +540,12 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         try {
             await refetchProfile();
         } catch (e) {
-            console.error('Failed to refresh profile cache after role change', e);
+            log.error('Failed to refresh profile cache after role change', e);
         }
 
-        const newRoleTitle = LearnCardRoles.find(r => r.type === newRole)?.title ?? 'Learner';
-        presentToast(`You're now a ${newRoleTitle}.`, {
-            title: 'Role updated',
+        const newRoleTitle = getRoleTitle(newRole);
+        presentToast(m['launchpad.modal.nowRole']({ role: newRoleTitle }), {
+            title: m['launchpad.modal.roleUpdated'](),
             type: ToastTypeEnum.Success,
             hasDismissButton: true,
             hasCheckmark: true,
@@ -526,7 +574,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         isChildProfile ? LearnCardRolesEnum.learner : role ?? LearnCardRolesEnum.learner
     ) as LearnCardRolesEnum;
 
-    const roleLabel = LearnCardRoles.find(r => r.type === activeRole)?.title ?? 'Learner';
+    const roleLabel = getRoleTitle(activeRole);
     const roleIconSrc = roleIcons[activeRole];
     const roleIconBgStyle: React.CSSProperties = { backgroundColor: iconBgColors[activeRole] };
 
@@ -701,7 +749,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             const wallet = await initWallet();
 
             if (!wallet || !currentLCNUser) {
-                presentToast('Unable to open Request Insights', {
+                presentToast(m['launchpad.modal.unableToOpenRequestInsights'](), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
@@ -738,7 +786,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                 }
             );
         } catch (e) {
-            presentToast('Unable to open Request Insights', {
+            presentToast(m['launchpad.modal.unableToOpenRequestInsights'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -746,21 +794,11 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
     };
 
     const handleAddToLearnCard = () => {
-        if (isDesktop) {
-            newModal(
-                <AddToLearnCardMenuWrapper />,
-                {
-                    sectionClassName: '!max-w-[500px] !bg-transparent !shadow-none',
-                },
-                { desktop: ModalTypes.Center }
-            );
-        } else {
-            newModal(
-                <AddToLearnCardMenu />,
-                { sectionClassName: '!max-w-[500px]' },
-                { mobile: ModalTypes.BottomSheet }
-            );
-        }
+        newModal(
+            <AddToPassportMenu />,
+            { sectionClassName: '!max-w-[500px]' },
+            { desktop: ModalTypes.Center, mobile: ModalTypes.BottomSheet }
+        );
     };
 
     return (
@@ -827,12 +865,14 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                                                     >
                                                         <img
                                                             src={roleIcons[roleItem.type]}
-                                                            alt={`${roleItem.title} icon`}
+                                                            alt={`${getRoleTitle(
+                                                                roleItem.type
+                                                            )} icon`}
                                                             className="h-[20px] w-[20px] object-contain"
                                                         />
                                                     </span>
                                                     <span className="flex-1 text-left">
-                                                        {roleItem.title}
+                                                        {getRoleTitle(roleItem.type)}
                                                     </span>
                                                     {isSelected && (
                                                         <Checkmark className="w-[15px] h-[15px] text-[#2A2F55]" />
@@ -855,8 +895,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                                         setRole={handleRoleChange}
                                     />,
                                     {
-                                        sectionClassName:
-                                            '!max-w-[600px] !mx-auto !max-h-[100%]',
+                                        sectionClassName: '!max-w-[600px] !mx-auto !max-h-[100%]',
                                     },
                                     {
                                         mobile: ModalTypes.BottomSheet,
@@ -878,7 +917,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                         actionModalCardTextColor ? { color: actionModalCardTextColor } : undefined
                     }
                 >
-                    What would you like to do?
+                    {m['launchpad.modal.whatWouldYouLikeToDo']()}
                 </h3>
             </div>
 
@@ -950,7 +989,9 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                             version="2"
                             className="w-[26px] h-[26px] min-w-[26px] min-h-[26px]"
                         />
-                        <span className="text-base font-poppins font-semibold">Passport</span>
+                        <span className="text-base font-poppins font-semibold">
+                            {m['launchpad.passport']()}
+                        </span>
                     </button>
                     <button
                         type="button"
@@ -968,7 +1009,9 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                             version="2"
                             className="w-[26px] h-[26px] min-w-[26px] min-h-[26px]"
                         />
-                        <span className="text-base font-poppins font-semibold">Launchpad</span>
+                        <span className="text-base font-poppins font-semibold">
+                            {m['launchpad.launchpad']()}
+                        </span>
                     </button>
                 </div>
             )}

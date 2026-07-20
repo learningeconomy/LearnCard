@@ -6,12 +6,7 @@
  * verification math is exercised end-to-end. No network, no fixtures
  * on disk.
  */
-import {
-    exportJWK,
-    generateKeyPair,
-    JWK,
-    SignJWT,
-} from 'jose';
+import { exportJWK, generateKeyPair, JWK, SignJWT } from 'jose';
 
 import {
     verifyAndDecodeRequestObject,
@@ -25,8 +20,7 @@ import {
 /* -------------------------------------------------------------------------- */
 
 const toB64url = (input: string | Uint8Array): string => {
-    const bytes =
-        typeof input === 'string' ? new TextEncoder().encode(input) : input;
+    const bytes = typeof input === 'string' ? new TextEncoder().encode(input) : input;
     return Buffer.from(bytes)
         .toString('base64')
         .replace(/\+/g, '-')
@@ -85,9 +79,7 @@ const baseClaims = (
     state: 'state-1',
     presentation_definition: {
         id: 'pd-1',
-        input_descriptors: [
-            { id: 'd1', constraints: { fields: [{ path: ['$.type'] }] } },
-        ],
+        input_descriptors: [{ id: 'd1', constraints: { fields: [{ path: ['$.type'] }] } }],
     },
     ...overrides,
 });
@@ -101,8 +93,7 @@ const mockFetch = (
         if (!route) throw new Error(`mockFetch: unexpected URL ${url}`);
 
         const status = route.status ?? 200;
-        const body =
-            typeof route.body === 'string' ? route.body : JSON.stringify(route.body);
+        const body = typeof route.body === 'string' ? route.body : JSON.stringify(route.body);
 
         return {
             ok: status >= 200 && status < 300,
@@ -110,9 +101,7 @@ const mockFetch = (
             statusText: 'OK',
             headers: new Headers({
                 'content-type':
-                    typeof route.body === 'string'
-                        ? 'application/jwt'
-                        : 'application/json',
+                    typeof route.body === 'string' ? 'application/jwt' : 'application/json',
             }),
             text: async () => body,
             json: async () => JSON.parse(body),
@@ -162,9 +151,7 @@ describe('verifyAndDecodeRequestObject — client_id_scheme=did (did:jwk)', () =
         const tamperedClaims = baseClaims(keyA, { client_id: keyB.did });
         const jws = await signRequestObject(keyA, tamperedClaims, { kid: keyB.kid });
 
-        await expect(
-            verifyAndDecodeRequestObject({ inlineJwt: jws })
-        ).rejects.toMatchObject({
+        await expect(verifyAndDecodeRequestObject({ inlineJwt: jws })).rejects.toMatchObject({
             name: 'RequestObjectError',
             code: 'request_signature_invalid',
         });
@@ -191,9 +178,9 @@ describe('verifyAndDecodeRequestObject — client_id_scheme=did (did:jwk)', () =
         // Signature value is irrelevant — we should fail before verify.
         const jws = `${header}.${payload}.${toB64url('sig')}`;
 
-        await expect(
-            verifyAndDecodeRequestObject({ inlineJwt: jws })
-        ).rejects.toMatchObject({ code: 'invalid_request_object' });
+        await expect(verifyAndDecodeRequestObject({ inlineJwt: jws })).rejects.toMatchObject({
+            code: 'invalid_request_object',
+        });
     });
 
     it('delegates to a custom didResolver for unsupported DID methods', async () => {
@@ -241,22 +228,20 @@ describe('verifyAndDecodeRequestObject — client_id_scheme=did (did:jwk)', () =
             { kid: 'did:totally:unsupported#k' }
         );
 
-        await expect(
-            verifyAndDecodeRequestObject({ inlineJwt: jws })
-        ).rejects.toMatchObject({ code: 'did_resolution_failed' });
+        await expect(verifyAndDecodeRequestObject({ inlineJwt: jws })).rejects.toMatchObject({
+            code: 'did_resolution_failed',
+        });
     });
 
     it('rejects a kid that does not exist on the DID document', async () => {
         const key = await makeVerifierKey();
-        const jws = await signRequestObject(
-            key,
-            baseClaims(key),
-            { kid: `${key.did}#does-not-exist` }
-        );
+        const jws = await signRequestObject(key, baseClaims(key), {
+            kid: `${key.did}#does-not-exist`,
+        });
 
-        await expect(
-            verifyAndDecodeRequestObject({ inlineJwt: jws })
-        ).rejects.toMatchObject({ code: 'request_signer_untrusted' });
+        await expect(verifyAndDecodeRequestObject({ inlineJwt: jws })).rejects.toMatchObject({
+            code: 'request_signer_untrusted',
+        });
     });
 });
 
@@ -311,20 +296,21 @@ describe('verifyAndDecodeRequestObject — did:web', () => {
             { ...baseClaims(key), client_id: didWeb },
             { kid: vmId }
         );
+        const didDocument: DidDocument = {
+            id: didWeb,
+            verificationMethod: [
+                {
+                    id: vmId,
+                    type: 'JsonWebKey2020',
+                    controller: didWeb,
+                    publicKeyJwk: key.publicJwk,
+                },
+            ],
+        };
 
         const fetchImpl = mockFetch({
             'https://verifier.test/tenants/acme/did.json': {
-                body: {
-                    id: didWeb,
-                    verificationMethod: [
-                        {
-                            id: vmId,
-                            type: 'JsonWebKey2020',
-                            controller: didWeb,
-                            publicKeyJwk: key.publicJwk,
-                        },
-                    ],
-                } satisfies DidDocument,
+                body: didDocument,
             },
         });
 
@@ -344,26 +330,26 @@ describe('verifyAndDecodeRequestObject — did:web', () => {
 describe('verifyAndDecodeRequestObject — unsupported / forbidden schemes', () => {
     it('refuses signed requests with client_id_scheme=redirect_uri', async () => {
         const key = await makeVerifierKey();
-        const jws = await signRequestObject(
-            key,
-            { ...baseClaims(key), client_id_scheme: 'redirect_uri' }
-        );
+        const jws = await signRequestObject(key, {
+            ...baseClaims(key),
+            client_id_scheme: 'redirect_uri',
+        });
 
-        await expect(
-            verifyAndDecodeRequestObject({ inlineJwt: jws })
-        ).rejects.toMatchObject({ code: 'unsupported_client_id_scheme' });
+        await expect(verifyAndDecodeRequestObject({ inlineJwt: jws })).rejects.toMatchObject({
+            code: 'unsupported_client_id_scheme',
+        });
     });
 
     it('refuses client_id_scheme=pre-registered until wiring exists', async () => {
         const key = await makeVerifierKey();
-        const jws = await signRequestObject(
-            key,
-            { ...baseClaims(key), client_id_scheme: 'pre-registered' }
-        );
+        const jws = await signRequestObject(key, {
+            ...baseClaims(key),
+            client_id_scheme: 'pre-registered',
+        });
 
-        await expect(
-            verifyAndDecodeRequestObject({ inlineJwt: jws })
-        ).rejects.toMatchObject({ code: 'unsupported_client_id_scheme' });
+        await expect(verifyAndDecodeRequestObject({ inlineJwt: jws })).rejects.toMatchObject({
+            code: 'unsupported_client_id_scheme',
+        });
     });
 
     it('infers prefix=did from a bare did:jwk client_id (OID4VP 1.0 implicit form)', async () => {
@@ -399,9 +385,9 @@ describe('verifyAndDecodeRequestObject — unsupported / forbidden schemes', () 
             client_id_scheme: undefined,
         });
 
-        await expect(
-            verifyAndDecodeRequestObject({ inlineJwt: jws })
-        ).rejects.toMatchObject({ code: 'unsupported_client_id_scheme' });
+        await expect(verifyAndDecodeRequestObject({ inlineJwt: jws })).rejects.toMatchObject({
+            code: 'unsupported_client_id_scheme',
+        });
     });
 
     // NOTE: positive-flow coverage for the
@@ -484,9 +470,9 @@ describe('verifyAndDecodeRequestObject — input validation', () => {
         const header = toB64url(JSON.stringify({ alg: 'EdDSA' }));
         const jws = `${header}.not-base64url-json.${toB64url('sig')}`;
 
-        await expect(
-            verifyAndDecodeRequestObject({ inlineJwt: jws })
-        ).rejects.toMatchObject({ code: 'invalid_request_object' });
+        await expect(verifyAndDecodeRequestObject({ inlineJwt: jws })).rejects.toMatchObject({
+            code: 'invalid_request_object',
+        });
     });
 });
 
@@ -506,9 +492,7 @@ describe('verifyAndDecodeRequestObject — client_id_scheme=x509_san_dns', () =>
             { x5c: ['MIIBkjCCATg=' /* bogus DER; never parsed */] }
         );
 
-        await expect(
-            verifyAndDecodeRequestObject({ inlineJwt: jws })
-        ).rejects.toMatchObject({
+        await expect(verifyAndDecodeRequestObject({ inlineJwt: jws })).rejects.toMatchObject({
             // Either invalid_request_object (cert parse failed first) or
             // request_signer_untrusted (trust policy empty). Both indicate
             // the verifier correctly refused.
@@ -518,14 +502,11 @@ describe('verifyAndDecodeRequestObject — client_id_scheme=x509_san_dns', () =>
 
     it('throws invalid_request_object when x5c header is missing', async () => {
         const key = await makeVerifierKey();
-        const jws = await signRequestObject(
-            key,
-            {
-                ...baseClaims(key),
-                client_id: 'verifier.test',
-                client_id_scheme: 'x509_san_dns',
-            }
-        );
+        const jws = await signRequestObject(key, {
+            ...baseClaims(key),
+            client_id: 'verifier.test',
+            client_id_scheme: 'x509_san_dns',
+        });
 
         await expect(
             verifyAndDecodeRequestObject({
@@ -533,5 +514,281 @@ describe('verifyAndDecodeRequestObject — client_id_scheme=x509_san_dns', () =>
                 unsafeAllowSelfSigned: true,
             })
         ).rejects.toMatchObject({ code: 'invalid_request_object' });
+    });
+});
+
+/* -------------------------------------------------------------------------- */
+/*                       request_uri_method=post (§5.10)                       */
+/* -------------------------------------------------------------------------- */
+
+describe('verifyAndDecodeRequestObject — request_uri_method=post (§5.10)', () => {
+    const jwsResponse = (jws: string) =>
+        ({ ok: true, status: 200, statusText: 'OK', text: async () => jws } as unknown as Response);
+
+    it('POSTs wallet_nonce and accepts a request object that echoes it', async () => {
+        const key = await makeVerifierKey();
+        const jws = await signRequestObject(key, baseClaims(key, { wallet_nonce: 'wn-abc' }));
+        const fetchMock = jest.fn().mockResolvedValue(jwsResponse(jws));
+
+        const request = await verifyAndDecodeRequestObject({
+            requestUri: 'https://verifier.test/req',
+            requestUriMethod: 'post',
+            walletNonce: 'wn-abc',
+            fetchImpl: fetchMock as unknown as typeof fetch,
+        });
+
+        expect(request.wallet_nonce).toBe('wn-abc');
+
+        const [url, init] = fetchMock.mock.calls[0];
+        expect(url).toBe('https://verifier.test/req');
+        expect(init.method).toBe('POST');
+        expect(init.headers.Accept).toBe('application/oauth-authz-req+jwt');
+        expect(String(init.body)).toContain('wallet_nonce=wn-abc');
+    });
+
+    it('rejects when the request object does not echo the sent wallet_nonce', async () => {
+        const key = await makeVerifierKey();
+        const jws = await signRequestObject(key, baseClaims(key, { wallet_nonce: 'different' }));
+        const fetchMock = jest.fn().mockResolvedValue(jwsResponse(jws));
+
+        await expect(
+            verifyAndDecodeRequestObject({
+                requestUri: 'https://verifier.test/req',
+                requestUriMethod: 'post',
+                walletNonce: 'wn-abc',
+                fetchImpl: fetchMock as unknown as typeof fetch,
+            })
+        ).rejects.toMatchObject({ code: 'invalid_request_object' });
+    });
+});
+
+/* -------------------------------------------------------------------------- */
+/*                              x509_hash (smoke)                             */
+/* -------------------------------------------------------------------------- */
+
+describe('verifyAndDecodeRequestObject — client_id_scheme=x509_hash (§5.9.3)', () => {
+    it('routes x509_hash to the x509 verifier (not rejected as unsupported)', async () => {
+        const key = await makeVerifierKey();
+        const jws = await signRequestObject(
+            key,
+            {
+                ...baseClaims(key),
+                client_id: 'x509_hash:Uvo3HtuIxuhC92rShpgqcT3YXwrqRxWEviRiA0OZszk',
+                client_id_scheme: 'x509_hash',
+            },
+            { x5c: ['MIIBkjCCATg=' /* bogus DER; never parsed */] }
+        );
+
+        // With a bogus cert the flow fails during chain parse / trust check —
+        // the point is it's ROUTED to x509 verification and does NOT throw
+        // unsupported_client_id_scheme.
+        await expect(
+            verifyAndDecodeRequestObject({ inlineJwt: jws, unsafeAllowSelfSigned: true })
+        ).rejects.toMatchObject({ name: 'RequestObjectError' });
+
+        await expect(
+            verifyAndDecodeRequestObject({ inlineJwt: jws, unsafeAllowSelfSigned: true })
+        ).rejects.not.toMatchObject({ code: 'unsupported_client_id_scheme' });
+    });
+});
+
+describe('verifyAndDecodeRequestObject — unsigned JSON Request Objects', () => {
+    const responseUri = 'https://verifier.example.com/exchanges/abc/response';
+    const requestUri = 'https://verifier.example.com/exchanges/abc/request';
+
+    const unsignedRequest = {
+        response_type: 'vp_token',
+        response_mode: 'direct_post',
+        client_id: `redirect_uri:${responseUri}`,
+        response_uri: responseUri,
+        nonce: 'nonce-123',
+        state: 'state-456',
+        dcql_query: {
+            credentials: [
+                {
+                    id: 'credential',
+                    format: 'ldp_vc',
+                    meta: {
+                        type_values: [['https://www.w3.org/2018/credentials#VerifiableCredential']],
+                    },
+                },
+            ],
+        },
+    };
+
+    it('accepts a plain-JSON request object when the client-id prefix is redirect_uri', async () => {
+        const fetchImpl = mockFetch({ [requestUri]: { body: unsignedRequest } });
+
+        const request = await verifyAndDecodeRequestObject({ requestUri, fetchImpl });
+
+        expect(request.client_id).toBe(`redirect_uri:${responseUri}`);
+        expect(request.client_id_scheme).toBe('redirect_uri');
+        expect(request.nonce).toBe('nonce-123');
+        expect(request.response_uri).toBe(responseUri);
+        expect(request.dcql_query).toBeDefined();
+    });
+
+    it('cross-checks the outer URL client_id against the unsigned request', async () => {
+        const fetchImpl = mockFetch({ [requestUri]: { body: unsignedRequest } });
+
+        await expect(
+            verifyAndDecodeRequestObject({
+                requestUri,
+                urlClientId: 'redirect_uri:https://attacker.example.com/response',
+                fetchImpl,
+            })
+        ).rejects.toMatchObject({ code: 'client_id_mismatch' });
+    });
+
+    it('rejects unsigned request objects for prefixes that require signatures', async () => {
+        const fetchImpl = mockFetch({
+            [requestUri]: {
+                body: { ...unsignedRequest, client_id: 'did:web:verifier.example.com' },
+            },
+        });
+
+        await expect(verifyAndDecodeRequestObject({ requestUri, fetchImpl })).rejects.toMatchObject(
+            {
+                code: 'invalid_request_object',
+                message: expect.stringMatching(/requires a signed JWS/),
+            }
+        );
+    });
+
+    it('rejects bodies that are neither JWS nor JSON', async () => {
+        const fetchImpl = mockFetch({ [requestUri]: { body: 'not-a-jws-or-json' } });
+
+        await expect(verifyAndDecodeRequestObject({ requestUri, fetchImpl })).rejects.toMatchObject(
+            {
+                code: 'invalid_request_object',
+                message: expect.stringMatching(/neither a compact JWS nor a JSON/),
+            }
+        );
+    });
+
+    it('rejects unsigned request objects missing a nonce with missing_nonce', async () => {
+        const { nonce: _omitted, ...withoutNonce } = unsignedRequest;
+        const fetchImpl = mockFetch({ [requestUri]: { body: withoutNonce } });
+
+        await expect(verifyAndDecodeRequestObject({ requestUri, fetchImpl })).rejects.toMatchObject(
+            { code: 'missing_nonce', name: 'VpError' }
+        );
+    });
+
+    it('rejects signed request objects missing a nonce with missing_nonce', async () => {
+        const key = await makeVerifierKey();
+        const { nonce: _omitted, ...withoutNonce } = baseClaims(key);
+        const jws = await signRequestObject(key, withoutNonce);
+
+        await expect(verifyAndDecodeRequestObject({ inlineJwt: jws })).rejects.toMatchObject({
+            code: 'missing_nonce',
+            name: 'VpError',
+        });
+    });
+});
+
+/* -------------------------------------------------------------------------- */
+/*                       transaction_data claim validation                    */
+/* -------------------------------------------------------------------------- */
+
+describe('verifyAndDecodeRequestObject — transaction_data claim', () => {
+    it('preserves a valid non-empty string array', async () => {
+        const key = await makeVerifierKey();
+        const jws = await signRequestObject(
+            key,
+            baseClaims(key, { transaction_data: ['eyJmYWtlIjoidGQifQ'] })
+        );
+
+        const request = await verifyAndDecodeRequestObject({ inlineJwt: jws });
+
+        expect(request.transaction_data).toEqual(['eyJmYWtlIjoidGQifQ']);
+    });
+
+    it.each([
+        ['empty array', []],
+        ['array with non-string entries', [42]],
+        ['non-array object', {}],
+        ['bare string', 'eyJmYWtlIjoidGQifQ'],
+    ])('rejects a malformed transaction_data claim (%s)', async (_label, transactionData) => {
+        const key = await makeVerifierKey();
+        const jws = await signRequestObject(
+            key,
+            baseClaims(key, { transaction_data: transactionData })
+        );
+
+        await expect(verifyAndDecodeRequestObject({ inlineJwt: jws })).rejects.toMatchObject({
+            code: 'invalid_transaction_data',
+        });
+    });
+});
+
+describe('verifyAndDecodeRequestObject — unsigned redirect_uri equality (OID4VP 1.0 §5.9.1)', () => {
+    const requestUri = 'https://verifier.example.com/exchanges/eq/request';
+
+    const unsignedBase = {
+        response_type: 'vp_token',
+        response_mode: 'direct_post',
+        nonce: 'nonce-eq',
+        dcql_query: {
+            credentials: [
+                {
+                    id: 'credential',
+                    format: 'ldp_vc',
+                    meta: {
+                        type_values: [['https://www.w3.org/2018/credentials#VerifiableCredential']],
+                    },
+                },
+            ],
+        },
+    };
+
+    it('rejects a canonical redirect_uri: client-id that differs from the response target', async () => {
+        const fetchImpl = mockFetch({
+            [requestUri]: {
+                body: {
+                    ...unsignedBase,
+                    client_id: 'redirect_uri:https://trusted.example/callback',
+                    response_uri: 'https://attacker.example/collect',
+                },
+            },
+        });
+
+        await expect(verifyAndDecodeRequestObject({ requestUri, fetchImpl })).rejects.toMatchObject(
+            { code: 'client_id_mismatch' }
+        );
+    });
+
+    it('rejects a legacy client_id_scheme=redirect_uri client-id that is cross-origin with the response target', async () => {
+        const fetchImpl = mockFetch({
+            [requestUri]: {
+                body: {
+                    ...unsignedBase,
+                    client_id: 'https://trusted.example/verify',
+                    client_id_scheme: 'redirect_uri',
+                    response_uri: 'https://attacker.example/collect',
+                },
+            },
+        });
+
+        await expect(verifyAndDecodeRequestObject({ requestUri, fetchImpl })).rejects.toMatchObject(
+            { code: 'client_id_mismatch' }
+        );
+    });
+
+    it('accepts a legacy client_id_scheme=redirect_uri client-id that is same-origin with the response target', async () => {
+        const fetchImpl = mockFetch({
+            [requestUri]: {
+                body: {
+                    ...unsignedBase,
+                    client_id: 'https://verifier.example.com/verify',
+                    client_id_scheme: 'redirect_uri',
+                    response_uri: 'https://verifier.example.com/exchanges/eq/response',
+                },
+            },
+        });
+
+        const request = await verifyAndDecodeRequestObject({ requestUri, fetchImpl });
+
+        expect(request.client_id_scheme).toBe('redirect_uri');
     });
 });

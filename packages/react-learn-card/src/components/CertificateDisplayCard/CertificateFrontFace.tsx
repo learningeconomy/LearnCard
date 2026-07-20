@@ -42,6 +42,10 @@ type CertificateFrontFaceProps = {
     unknownVerifierTitle?: string;
     hideAwardedTo?: boolean;
     hideFrontFaceDetails?: boolean;
+    onVerifierClick?: (
+        event: React.MouseEvent<HTMLButtonElement>,
+        verifierState: VerifierState
+    ) => void;
 };
 
 export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
@@ -62,6 +66,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     unknownVerifierTitle,
     hideAwardedTo: hideAwardedToProp,
     hideFrontFaceDetails,
+    onVerifierClick,
 }) => {
     const {
         title = '',
@@ -246,14 +251,14 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                         Certified by
                     </span>
                     {issuerDisplay.isDidValue ? (
-                        <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[14px] leading-[90%] font-jacques tracking-[0.25px] border-b-[1px] border-solid border-grayscale-200 w-full text-center overflow-ellipsis whitespace-normal scrollbar-hide">
+                        <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[14px] leading-[90%] font-jacques tracking-[0.25px] border-b-[1px] border-solid border-grayscale-200 w-full text-center line-clamp-2 break-words scrollbar-hide">
                             <span className="font-[600]">
                                 {issuerDisplay.isDidValue ? 'Digital ID: ' : ''}
                             </span>
                             <span className="text-grayscale-600">{issuerName}</span>
                         </span>
                     ) : (
-                        <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[25px] leading-[90%] font-sacramento border-b-[1px] border-solid border-grayscale-200 w-full text-center overflow-ellipsis whitespace-normal scrollbar-hide">
+                        <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[25px] leading-[90%] font-sacramento border-b-[1px] border-solid border-grayscale-200 w-full text-center line-clamp-2 break-words scrollbar-hide">
                             {issuerName}
                         </span>
                     )}
@@ -261,6 +266,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                     <VerifierStateBadgeAndText
                         verifierState={verifierState}
                         unknownVerifierTitle={unknownVerifierTitle}
+                        onClick={event => onVerifierClick?.(event, verifierState)}
                     />
                 </div>
                 {customBodyContentSlot && customBodyContentSlot}

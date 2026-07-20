@@ -18,14 +18,8 @@ import { exportJWK, generateKeyPair, importJWK, jwtVerify, JWK } from 'jose';
 import { UnsignedVP, VP, JWKWithPrivateKey } from '@learncard/types';
 
 import { getOpenID4VCPlugin } from './plugin';
-import type {
-    OpenID4VCDependentLearnCard,
-    OpenID4VCPluginMethods,
-} from './types';
-import type {
-    AuthorizationRequest,
-    PresentationDefinition,
-} from './vp/types';
+import type { OpenID4VCDependentLearnCard, OpenID4VCPluginMethods } from './types';
+import type { AuthorizationRequest, PresentationDefinition } from './vp/types';
 import { BuildPresentationError } from './vp/present';
 import { VpSignError } from './vp/sign';
 import { VpSubmitError } from './vp/submit';
@@ -35,8 +29,7 @@ import { VpSubmitError } from './vp/submit';
 /* -------------------------------------------------------------------------- */
 
 const toB64url = (input: string | Uint8Array): string => {
-    const bytes =
-        typeof input === 'string' ? new TextEncoder().encode(input) : input;
+    const bytes = typeof input === 'string' ? new TextEncoder().encode(input) : input;
     return Buffer.from(bytes)
         .toString('base64')
         .replace(/\+/g, '-')
@@ -49,7 +42,9 @@ const toB64url = (input: string | Uint8Array): string => {
  * the canonical "keys without DNS" method and what walt.id / EUDI use
  * for wallet-side holder bindings.
  */
-const didJwkFromPublicJwk = (pub: JWK): {
+const didJwkFromPublicJwk = (
+    pub: JWK
+): {
     did: string;
     kid: string;
 } => {
@@ -131,9 +126,10 @@ const buildMockLearnCard = async (): Promise<MockLearnCardHandle> => {
                     },
                 } as unknown as VP;
             },
-            issueCredential: async (c: unknown) => c as ReturnType<
-                NonNullable<OpenID4VCDependentLearnCard['invoke']>['issueCredential']
-            >,
+            issueCredential: async (c: unknown) =>
+                c as ReturnType<
+                    NonNullable<OpenID4VCDependentLearnCard['invoke']>['issueCredential']
+                >,
         },
     } as unknown as OpenID4VCDependentLearnCard;
 
@@ -181,11 +177,7 @@ const DEFAULT_PD: PresentationDefinition = {
             constraints: {
                 fields: [
                     {
-                        path: [
-                            '$.type',
-                            '$.vc.type',
-                            '$.verifiableCredential.type',
-                        ],
+                        path: ['$.type', '$.vc.type', '$.verifiableCredential.type'],
                         filter: {
                             type: 'array',
                             contains: { const: 'UniversityDegree' },
@@ -206,12 +198,15 @@ const DEFAULT_PD: PresentationDefinition = {
  *  - Responds 200 with `{ redirect_uri }` by default; overridable via
  *    `setResponse` to simulate verifier rejection.
  */
-const buildFakeVerifier = (opts: {
-    pd?: PresentationDefinition;
-    nonce?: string;
-    state?: string;
-    verifierOrigin?: string;
-} = {}): FakeVerifier => {
+const buildFakeVerifier = (
+    opts: {
+        pd?: PresentationDefinition;
+        nonce?: string;
+        state?: string;
+        verifierOrigin?: string;
+        clientMetadata?: Record<string, unknown>;
+    } = {}
+): FakeVerifier => {
     const verifierOrigin = opts.verifierOrigin ?? 'https://verifier.test';
     const nonce = opts.nonce ?? 'nonce-abcdef';
     const state = opts.state ?? 'state-xyz';
@@ -229,6 +224,7 @@ const buildFakeVerifier = (opts: {
     params.set('nonce', nonce);
     params.set('state', state);
     params.set('presentation_definition_uri', pdUri);
+    if (opts.clientMetadata) params.set('client_metadata', JSON.stringify(opts.clientMetadata));
 
     const authRequestUri = `openid4vp://authorize?${params.toString()}`;
 
@@ -259,23 +255,20 @@ const buildFakeVerifier = (opts: {
                 }
 
                 const body = String(init?.body ?? '');
-                const form = Object.fromEntries(
-                    new URLSearchParams(body).entries()
-                );
+                const form = Object.fromEntries(new URLSearchParams(body).entries());
 
                 const record: VerifierRecord = { form };
 
                 if (form.vp_token && looksLikeJws(form.vp_token)) {
-                    record.decodedVp = await verifyInboundVpJwt(
-                        form.vp_token,
-                        { expectedAudience: clientId, expectedNonce: nonce }
-                    );
+                    record.decodedVp = await verifyInboundVpJwt(form.vp_token, {
+                        expectedAudience: clientId,
+                        expectedNonce: nonce,
+                    });
                 }
 
                 submissions.push(record);
 
-                const resolved =
-                    typeof responder === 'function' ? responder(record) : responder;
+                const resolved = typeof responder === 'function' ? responder(record) : responder;
 
                 const bodyOut =
                     resolved.body === undefined
@@ -287,9 +280,7 @@ const buildFakeVerifier = (opts: {
                 return makeResponse(
                     resolved.status,
                     bodyOut,
-                    typeof resolved.body === 'string'
-                        ? 'text/plain'
-                        : 'application/json'
+                    typeof resolved.body === 'string' ? 'text/plain' : 'application/json'
                 );
             }
 
@@ -334,9 +325,7 @@ const verifyInboundVpJwt = async (
     // The iss claim holds the holder DID. did:jwk encodes the public
     // key in the DID itself — we just decode it, import, verify.
     const [, payloadB64] = jwt.split('.');
-    const payloadJson = JSON.parse(
-        Buffer.from(payloadB64!, 'base64').toString('utf8')
-    );
+    const payloadJson = JSON.parse(Buffer.from(payloadB64!, 'base64').toString('utf8'));
 
     if (typeof payloadJson.iss !== 'string') {
         throw new Error('FakeVerifier: VP JWT has no iss claim');
@@ -384,10 +373,7 @@ const degreeVc = (holderDid: string): Record<string, unknown> => ({
     },
 });
 
-const getPlugin = (
-    mock: MockLearnCardHandle,
-    fetchImpl: typeof fetch
-): OpenID4VCPluginMethods => {
+const getPlugin = (mock: MockLearnCardHandle, fetchImpl: typeof fetch): OpenID4VCPluginMethods => {
     const plugin = getOpenID4VCPlugin(mock.learnCard, { fetch: fetchImpl });
 
     // Every method of OpenID4VCPluginMethods is exposed as
@@ -431,9 +417,7 @@ describe('OpenID4VC plugin — presentCredentials end-to-end', () => {
 
         // Verifier accepted it (our fake responds 200 + redirect_uri).
         expect(result.submitted.status).toBe(200);
-        expect(result.submitted.redirectUri).toBe(
-            'https://verifier.test/success/state-xyz'
-        );
+        expect(result.submitted.redirectUri).toBe('https://verifier.test/success/state-xyz');
 
         // The verifier verified the JWS signature (it would have thrown
         // otherwise) and successfully decoded the VP envelope.
@@ -500,6 +484,45 @@ describe('OpenID4VC plugin — presentCredentials end-to-end', () => {
         // Descriptor_map paths point at the ldp envelope shape.
         const submission = JSON.parse(record.form.presentation_submission);
         expect(submission.descriptor_map[0].path).toBe('$.verifiableCredential[0]');
+    });
+
+    it('ldp_vp: signs with DataIntegrityProof when client_metadata restricts proof types', async () => {
+        const mock = await buildMockLearnCard();
+        const verifier = buildFakeVerifier({
+            clientMetadata: {
+                vp_formats_supported: {
+                    ldp_vp: {
+                        proof_type_values: ['DataIntegrityProof'],
+                        cryptosuite_values: ['eddsa-rdfc-2022', 'ecdsa-rdfc-2019'],
+                    },
+                },
+            },
+        });
+        const plugin = getPlugin(mock, verifier.fetchImpl);
+
+        const result = await plugin.presentCredentials(
+            verifier.session.authRequestUri,
+            [
+                {
+                    descriptorId: 'UniversityDegree',
+                    candidate: {
+                        credential: degreeVc(mock.did),
+                        format: 'ldp_vc',
+                    },
+                },
+            ],
+            { envelopeFormat: 'ldp_vp' }
+        );
+
+        expect(result.submitted.status).toBe(200);
+        expect(mock.ldpIssueCalls).toHaveLength(1);
+        expect(mock.ldpIssueCalls[0].options).toEqual({
+            domain: verifier.session.clientId,
+            challenge: verifier.session.nonce,
+            type: 'DataIntegrityProof',
+            cryptosuite: 'eddsa-rdfc-2022',
+            proofPurpose: 'authentication',
+        });
     });
 
     it('bubbles verifier rejection as VpSubmitError with status + body', async () => {
@@ -654,12 +677,140 @@ describe('OpenID4VC plugin — presentCredentials surface guarantees', () => {
             ]
         );
 
-        expect(preview.request.presentation_definition?.id).toBe(
-            verifier.session.pd.id
-        );
+        expect(preview.request.presentation_definition?.id).toBe(verifier.session.pd.id);
         expect(preview.selection.canSatisfy).toBe(true);
         expect(preview.selection.descriptors).toHaveLength(1);
         expect(preview.selection.descriptors[0].candidates).toHaveLength(1);
     });
 });
 
+describe('OpenID4VC plugin — SD-JWT-VC matcher wiring', () => {
+    const SD_JWT_VCT = 'https://example.com/credentials/playground';
+    const SD_JWT_COMPACT = 'header.payload.signature~Wyx~';
+
+    const sdJwtWrapper = {
+        '@context': ['https://www.w3.org/ns/credentials/v2'],
+        type: ['VerifiableCredential', 'SdJwtVcCredential'],
+        issuer: 'did:jwk:issuer',
+        sdJwtVct: SD_JWT_VCT,
+        proof: { type: 'SdJwtCompactProof', jwt: SD_JWT_COMPACT },
+    };
+
+    const buildSdJwtPd = (): PresentationDefinition => ({
+        id: 'sd-jwt-integration-pd',
+        input_descriptors: [
+            {
+                id: 'playground-sd-jwt',
+                format: {
+                    'dc+sd-jwt': { alg: ['EdDSA'] },
+                    'vc+sd-jwt': { alg: ['EdDSA'] },
+                },
+                constraints: {
+                    fields: [
+                        {
+                            path: ['$.vct'],
+                            filter: { type: 'string', const: SD_JWT_VCT },
+                        },
+                    ],
+                },
+            },
+        ],
+    });
+
+    const attachParser = (mock: MockLearnCardHandle): jest.Mock => {
+        const parseSdJwtVc = jest.fn(async (compact: string) => {
+            expect(compact).toBe(SD_JWT_COMPACT);
+            return {
+                vct: SD_JWT_VCT,
+                issuer: 'did:jwk:issuer',
+                claims: {
+                    vct: SD_JWT_VCT,
+                    iss: 'did:jwk:issuer',
+                    iat: 1700000000,
+                    given_name: 'Ada',
+                    family_name: 'Lovelace',
+                },
+                holderPublicKey: { kty: 'OKP', crv: 'Ed25519', x: 'xxx' },
+            };
+        });
+        (mock.learnCard.invoke as unknown as { parseSdJwtVc: typeof parseSdJwtVc }).parseSdJwtVc =
+            parseSdJwtVc;
+        return parseSdJwtVc;
+    };
+
+    it('matches an SD-JWT-wrapped candidate when learnCard.invoke.parseSdJwtVc is present', async () => {
+        const mock = await buildMockLearnCard();
+        const parserMock = attachParser(mock);
+        const verifier = buildFakeVerifier({ pd: buildSdJwtPd() });
+        const plugin = getPlugin(mock, verifier.fetchImpl);
+
+        const preview = await plugin.prepareVerifiablePresentation(
+            verifier.session.authRequestUri,
+            [{ credential: sdJwtWrapper }]
+        );
+
+        expect(preview.selection?.canSatisfy).toBe(true);
+        expect(preview.selection?.descriptors[0].candidates).toHaveLength(1);
+        expect(parserMock).toHaveBeenCalledTimes(1);
+        expect(parserMock).toHaveBeenCalledWith(SD_JWT_COMPACT);
+    });
+
+    it('reports cannot-satisfy when learnCard.invoke.parseSdJwtVc is absent', async () => {
+        const mock = await buildMockLearnCard();
+        const verifier = buildFakeVerifier({ pd: buildSdJwtPd() });
+        const plugin = getPlugin(mock, verifier.fetchImpl);
+
+        const preview = await plugin.prepareVerifiablePresentation(
+            verifier.session.authRequestUri,
+            [{ credential: sdJwtWrapper }]
+        );
+
+        expect(preview.selection?.canSatisfy).toBe(false);
+        expect(preview.selection?.descriptors[0].candidates).toHaveLength(0);
+    });
+
+    it('matches an SD-JWT-VC supplied as a bare compact string', async () => {
+        const mock = await buildMockLearnCard();
+        attachParser(mock);
+        const verifier = buildFakeVerifier({ pd: buildSdJwtPd() });
+        const plugin = getPlugin(mock, verifier.fetchImpl);
+
+        const preview = await plugin.prepareVerifiablePresentation(
+            verifier.session.authRequestUri,
+            [{ credential: SD_JWT_COMPACT, format: 'dc+sd-jwt' }]
+        );
+
+        expect(preview.selection?.canSatisfy).toBe(true);
+    });
+
+    it('matches against a deep claim path (e.g. $.given_name) after decoding', async () => {
+        const mock = await buildMockLearnCard();
+        attachParser(mock);
+        const pdAskingForClaim: PresentationDefinition = {
+            id: 'pd-deep-claim',
+            input_descriptors: [
+                {
+                    id: 'wants-given-name',
+                    format: { 'dc+sd-jwt': { alg: ['EdDSA'] } },
+                    constraints: {
+                        fields: [
+                            {
+                                path: ['$.given_name'],
+                                filter: { type: 'string', const: 'Ada' },
+                            },
+                        ],
+                    },
+                },
+            ],
+        };
+        const verifier = buildFakeVerifier({ pd: pdAskingForClaim });
+        const plugin = getPlugin(mock, verifier.fetchImpl);
+
+        const preview = await plugin.prepareVerifiablePresentation(
+            verifier.session.authRequestUri,
+            [{ credential: sdJwtWrapper }]
+        );
+
+        expect(preview.selection?.canSatisfy).toBe(true);
+    });
+});

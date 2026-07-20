@@ -5,6 +5,7 @@ import { DisplayTypeEnum, getDisplayIcon } from '../../helpers/display.helpers';
 import AlignmentSkillsCount from './AlignmentSkillsCount';
 import ThreeDotVertical from '../svgs/ThreeDotVertical';
 import { CircleCheckButton } from '../CircleCheckButton';
+import BadgeThumbnailImg from '../BadgeThumbnailImg/BadgeThumbnailImg';
 
 export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     title,
@@ -72,7 +73,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                 {customThumbComponent || (
                     <section className={defaultThumbClass}>
                         {thumbImgSrc?.trim() ? (
-                            <img
+                            <BadgeThumbnailImg
                                 className="w-full h-full rounded-full object-cover"
                                 src={thumbImgSrc}
                                 alt="Credential Achievement"
@@ -114,19 +115,25 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                             customTitle
                         )}
 
-                        {/* Issuer */}
-                        {customIssuerName || (
-                            <span className="text-[12px] text-grayscale-700 mt-1">
-                                by <span className="font-bold">{issuerName}</span>
+                        {/* Verifier & Issuer */}
+                        <div className="mt-1 w-full px-4 text-center">
+                            <span className="line-clamp-2 break-words text-[12px] leading-snug text-grayscale-700">
+                                {verifierBadge && (
+                                    <span className="mr-1 inline-block align-middle">
+                                        {verifierBadge}
+                                    </span>
+                                )}
+                                {customIssuerName || (
+                                    <span className="font-bold">{issuerName}</span>
+                                )}
                             </span>
-                        )}
+                        </div>
 
-                        {/* Date & Verifier */}
+                        {/* Date */}
                         {customDateDisplay || (
-                            <div className="text-[11px] text-grayscale-700 mt-1 flex flex-col items-center">
-                                {verifierBadge}
-                                <span>{dateDisplay}</span>
-                            </div>
+                            <span className="text-[11px] text-grayscale-700 mt-1">
+                                {dateDisplay}
+                            </span>
                         )}
 
                         {/* Skills count if in modal */}

@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 import { useHistory } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import {
@@ -22,6 +24,9 @@ import {
     getSSSConfig,
 } from 'learn-card-base';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('login-page');
+
 import { Capacitor } from '@capacitor/core';
 
 import { useFirebase } from '../../hooks/useFirebase';
@@ -41,7 +46,8 @@ import { IonContent, IonGrid, IonPage, IonRow } from '@ionic/react';
 import EmailForm from './forms/EmailForm';
 import PhoneForm from './forms/PhoneForm';
 import LoginFooter from './LoginFooter';
-import OnboardingContainer from '../../components/onboarding/OnboardingContainer';
+import { LanguagePickerCompact } from '../../components/sidemenu/LanguagePicker';
+import OnboardingFlow from '../../components/onboarding/v2/OnboardingFlow';
 import EUParentalConsentModalContent from '../../components/onboarding/onboardingNetworkForm/components/EUParentalConsentModalContent';
 import GenericErrorBoundary from '../../components/generic/GenericErrorBoundary';
 import SocialLoginsButtons from './SocialLogins/SocialLoginsButtons';
@@ -54,10 +60,13 @@ import EndorsementSuccessfullRequestModal from '../../components/boost-endorseme
 import endorsementRequestStore from '../../stores/endorsementsRequestStore';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useTheme } from '../../theme/hooks/useTheme';
+import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
 
 export const LoginContent: React.FC = () => {
     const { textLogo, brandMarkLight, fullLogoDark, desktopLoginBg } = useTenantBrandingAssets();
+    const { theme } = useTheme();
     const { newModal, closeModal } = useModal();
+    const { state: coordinatorState } = useAppAuth();
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
     const { appleLogin, googleLogin } = useFirebase();
@@ -92,23 +101,41 @@ export const LoginContent: React.FC = () => {
                 authStore.set.pinTokenExpire(result.tokenExpire);
             }
         } catch (e) {
-            console.error('///error handleGeneratePinUpdateToken', e);
+            log.error('///error handleGeneratePinUpdateToken', e);
         }
     }, [generatePinUpdateToken]);
+
+    const openOnboardingModal = useCallback(() => {
+        // OnboardingFlow unmount owns the `isOnboardingOpen(false)` reset.
+        redirectStore.set.isOnboardingOpen(true);
+
+        newModal(
+            <OnboardingFlow />,
+            {},
+            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+        );
+    }, [newModal]);
 
     // Removed unnecessary LC network redirect helper; inline push is sufficient.
 
     const handlePromptOnboarding = useCallback(async () => {
+        if (redirectStore.get.isOnboardingOpen()) {
+            return;
+        }
+
+        if (coordinatorState.status === 'needs_setup') {
+            openOnboardingModal();
+            return;
+        }
+
         if (!(currentUser && isLoggedIn && currentUser?.privateKey)) return;
+
         try {
             const wallet = await initWallet(currentUser.privateKey);
             const profile = await wallet?.invoke?.getProfile();
+
             if (!profile) {
-                newModal(
-                    <OnboardingContainer />,
-                    {},
-                    { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
-                );
+                openOnboardingModal();
             } else if (profile?.approved === false) {
                 // Re-prompt EU Parental Consent if user was previously marked unapproved
                 newModal(
@@ -126,15 +153,31 @@ export const LoginContent: React.FC = () => {
                 );
             }
         } catch (e) {
-            console.error('///error handlePromptOnboarding', e);
+            log.error('///error handlePromptOnboarding', e);
         }
-    }, [currentUser, isLoggedIn, initWallet, newModal]);
+    }, [coordinatorState.status, currentUser, isLoggedIn, initWallet, openOnboardingModal]);
 
     const didRedirectRef = useRef(false);
+    const didOpenOnboardingRef = useRef(false);
+
+    useEffect(() => {
+        if (coordinatorState.status !== 'needs_setup') {
+            didOpenOnboardingRef.current = false;
+        }
+    }, [coordinatorState.status]);
 
     useEffect(() => {
         if (didRedirectRef.current) return;
-        if (!currentUser && !isLoggedIn) return;
+        if (!currentUser && !isLoggedIn && coordinatorState.status !== 'needs_setup') return;
+
+        if (coordinatorState.status === 'needs_setup') {
+            if (didOpenOnboardingRef.current) return;
+
+            didOpenOnboardingRef.current = true;
+            didRedirectRef.current = false;
+            void handlePromptOnboarding();
+            return;
+        }
 
         didRedirectRef.current = true;
 
@@ -170,16 +213,17 @@ export const LoginContent: React.FC = () => {
                 void handleGeneratePinUpdateToken();
                 void handlePromptOnboarding();
             } else {
-                history.push('/launchpad');
+                history.push('/dashboard');
                 void handleGeneratePinUpdateToken();
                 void handlePromptOnboarding();
             }
         } catch (e) {
-            console.error(e);
+            log.error(e);
         }
     }, [
         currentUser,
         isLoggedIn,
+        coordinatorState.status,
         history,
         query,
         handleGeneratePinUpdateToken,
@@ -195,6 +239,10 @@ export const LoginContent: React.FC = () => {
             return () => clearTimeout(timer); // Add cleanup
         }
     }, [showConfirmation]);
+
+    const isNewUserSetup = coordinatorState.status === 'needs_setup';
+    const isReturningUser =
+        coordinatorState.status === 'ready' || coordinatorState.status === 'needs_recovery';
 
     // custom logins associated with the app
     const extraSocialLogins = useMemo(
@@ -216,6 +264,33 @@ export const LoginContent: React.FC = () => {
         ],
         [appleLogin, googleLogin]
     );
+
+    // Redirect-pending gate: once the wallet is built and the user counts as
+    // logged in, the effect above will history.push away from /login — but
+    // only on the tick AFTER React has already painted this component,
+    // flashing the login form between the boot loader and the app. Bridge
+    // that gap with a loader-colored overlay instead. Intentionally NOT
+    // LoginLoadingPage (an IonPage): nesting a page inside this route
+    // triggers Ionic's page transition twice — same reasoning as
+    // RouteTransitionLoader. needs_setup is excluded so the form stays
+    // visible under the onboarding modal.
+    const redirectPending =
+        (isLoggedIn || !!currentUser) && coordinatorState.status !== 'needs_setup';
+
+    if (redirectPending) {
+        return (
+            <div
+                className="fixed inset-0 z-[1000] flex items-center justify-center"
+                style={{ backgroundColor: theme.colors.defaults.loaders?.[0] ?? '#8B5CF6' }}
+            >
+                <img
+                    src={textLogo}
+                    alt="Logo"
+                    className="max-w-[300px] max-h-[80px] object-contain"
+                />
+            </div>
+        );
+    }
 
     return (
         <div className="w-full h-full flex flex-col items-center justify-center p-0 m-0 px-[30px] overflow-y-auto  pt-[150px] pb-[100px] sm:pt-[0px] sm:pb-[0px] ">
@@ -249,7 +324,7 @@ export const LoginContent: React.FC = () => {
                         <QrLoginRequester
                             serverUrl={getSSSConfig().serverUrl}
                             onApproved={(deviceShare, _approverDid, hint, version) => {
-                                console.debug(
+                                log.debug(
                                     '[QR Login] approved — share:',
                                     deviceShare.substring(0, 8) + '...',
                                     '| hint:',
@@ -297,20 +372,20 @@ export const LoginContent: React.FC = () => {
                         </div>
 
                         <h2 className="text-xl font-semibold text-grayscale-900 mb-2">
-                            You're all set!
+                            {m['login.qrApproved.heading']()}
                         </h2>
 
                         <p className="text-sm text-grayscale-600 leading-relaxed mb-6">
                             {accountHint ? (
-                                <>
-                                    Sign in with{' '}
-                                    <span className="font-medium text-grayscale-900">
-                                        {accountHint}
-                                    </span>{' '}
-                                    to access your account.
-                                </>
+                                <TransP
+                                    m={m['login.qrApproved.withHint']}
+                                    values={{ hint: accountHint }}
+                                    components={[
+                                        <span className="font-medium text-grayscale-900" key="h" />,
+                                    ]}
+                                />
                             ) : (
-                                'Now just sign in below to access your account.'
+                                m['login.qrApproved.noHint']()
                             )}
                         </p>
 
@@ -322,12 +397,34 @@ export const LoginContent: React.FC = () => {
                             }}
                             className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                         >
-                            Continue to Sign In
+                            {m['login.qrApproved.continueButton']()}
                         </button>
                     </div>
                 </IonRow>
             ) : (
                 <>
+                    <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
+                        <div
+                            className={`w-full p-3 rounded-[20px] border ${
+                                isNewUserSetup
+                                    ? 'bg-emerald-50 border-emerald-100'
+                                    : 'bg-white/20 border-white/10 backdrop-blur-sm'
+                            }`}
+                        >
+                            <p
+                                className={`text-sm font-medium ${
+                                    isNewUserSetup ? 'text-emerald-800' : 'text-white'
+                                }`}
+                            >
+                                {isNewUserSetup
+                                    ? m['login.prompt.newUser']()
+                                    : isReturningUser
+                                    ? m['login.prompt.returning']()
+                                    : m['login.prompt.default']()}
+                            </p>
+                        </div>
+                    </IonRow>
+
                     {showLinkedBanner && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
                             <div className="w-full p-3 bg-white/20 backdrop-blur-sm rounded-[20px] flex items-center justify-center gap-2.5">
@@ -347,13 +444,15 @@ export const LoginContent: React.FC = () => {
 
                                 <span className="text-sm text-white font-medium">
                                     {accountHint ? (
-                                        <>
-                                            Sign in with{' '}
-                                            <span className="font-semibold">{accountHint}</span> to
-                                            finish
-                                        </>
+                                        <TransP
+                                            m={m['login.linkedBanner.withHint']}
+                                            values={{ hint: accountHint }}
+                                            components={[
+                                                <span className="font-semibold" key="h" />,
+                                            ]}
+                                        />
                                     ) : (
-                                        'Device linked — sign in to finish'
+                                        m['login.linkedBanner.noHint']()
                                     )}
                                 </span>
                             </div>
@@ -371,11 +470,42 @@ export const LoginContent: React.FC = () => {
                                     />
                                 )}
                                 <span className="text-sm text-white font-medium">
-                                    You'll be taken back to{' '}
-                                    <span className="font-semibold">
-                                        {installIntent.appName ?? 'the app'}
-                                    </span>{' '}
-                                    after sign in
+                                    <TransP
+                                        m={m['login.installIntent.banner']}
+                                        values={{
+                                            appName:
+                                                installIntent.appName ??
+                                                m['login.installIntent.defaultAppName'](),
+                                        }}
+                                        components={[<span className="font-semibold" key="a" />]}
+                                    />
+                                </span>
+                            </div>
+                        </IonRow>
+                    )}
+
+                    {((query.get('redirectTo') ?? '').includes('createFamily=true') ||
+                        Boolean(query.get('underageFamily'))) && (
+                        <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
+                            <div className="w-full p-3 bg-white/20 backdrop-blur-sm rounded-[20px] flex items-start gap-2.5">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="w-5 h-5 text-white shrink-0 mt-0.5"
+                                    aria-hidden="true"
+                                >
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                    <circle cx="9" cy="7" r="4" />
+                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                                </svg>
+                                <span className="text-sm text-white leading-relaxed">
+                                    Sign in as a parent or guardian to create a family account and
+                                    add your child.
                                 </span>
                             </div>
                         </IonRow>
@@ -430,7 +560,7 @@ export const LoginContent: React.FC = () => {
                                                 : indexedDBLocalPersistence
                                         );
                                     } catch (e) {
-                                        console.warn('Failed to set Firebase persistence', e);
+                                        log.warn('Failed to set Firebase persistence', e);
                                     }
                                 }}
                                 className={`
@@ -468,7 +598,7 @@ export const LoginContent: React.FC = () => {
                                     ${isPublicMode ? 'text-white font-medium' : 'text-white/60'}
                                 `}
                                 >
-                                    Shared or public computer
+                                    {m['login.sharedComputer']()}
                                 </span>
                             </button>
                         </IonRow>
@@ -480,7 +610,7 @@ export const LoginContent: React.FC = () => {
                                 onClick={() => setShowQrLogin(true)}
                                 className="text-sm text-white/80 hover:text-white underline transition-colors"
                             >
-                                Sign in from another device
+                                {m['login.signInFromAnotherDevice']()}
                             </button>
                         </IonRow>
                     )}
@@ -533,6 +663,12 @@ const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
                 className="flex flex-col flex-grow"
                 style={{ '--background': loginBgColor } as React.CSSProperties}
             >
+                {/* Pre-auth language switcher. Positioned over the login background
+                    in the safe-area top-right; the side-menu LanguagePicker isn't
+                    reachable until after sign-in. */}
+                <div className="absolute top-0 end-0 z-10 pe-4 pt-[max(env(safe-area-inset-top),12px)]">
+                    <LanguagePickerCompact />
+                </div>
                 <IonGrid
                     className="h-full w-full flex items-center justify-center"
                     style={{ backgroundColor: loginBgColor }}

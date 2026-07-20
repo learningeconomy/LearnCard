@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useModal, useDeviceTypeByWidth } from 'learn-card-base';
 
+import * as m from '../../paraglide/messages.js';
+
 import RelatedSkills from './RelatedSkills';
 import SkillFrameworkInfoBox from './SkillFrameworkInfoBox';
 
@@ -31,13 +33,21 @@ enum AddSkillTabEnum {
 type AddSkillModalProps = {
     frameworkId: string;
     skill: SkillFrameworkNode;
-    handleAdd?: (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => void;
+    handleAdd?: (
+        skill: SkillFrameworkNode,
+        proficiencyLevel: SkillLevel,
+        frameworkId?: string
+    ) => void;
     isEdit?: boolean;
     handleEditProficiency?: (proficiencyLevel: SkillLevel) => void;
     handleDelete?: () => void;
     initialProficiencyLevel?: SkillLevel;
     selectedSkills?: SelectedSkill[];
-    handleAddRelatedSkill?: (skill: SkillFrameworkNode, proficiencyLevel: SkillLevel) => void;
+    handleAddRelatedSkill?: (
+        skill: SkillFrameworkNode,
+        proficiencyLevel: SkillLevel,
+        frameworkId?: string
+    ) => void;
     handleEditRelatedSkill?: (skillId: string, proficiencyLevel: SkillLevel) => void;
     handleRemoveRelatedSkill?: (skillId: string) => void;
     previousSkills?: PreviousSkillInfo[];
@@ -244,7 +254,7 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
                                                     version="outlined"
                                                 />
                                                 <p className="text-[14px] text-grayscale-900 font-poppins font-[600] uppercase">
-                                                    Framework Tier
+                                                    {m['skills.addSkill.frameworkTier']()}
                                                 </p>
                                             </>
                                         ) : (
@@ -254,7 +264,7 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
                                                     version="filled"
                                                 />
                                                 <p className="text-[14px] text-grayscale-900 font-poppins font-[600] uppercase">
-                                                    Skill
+                                                    {m['skills.skill']()}
                                                 </p>
                                             </>
                                         )}
@@ -297,8 +307,12 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
                                                                         className="font-[600]"
                                                                     >
                                                                         {isExpanded
-                                                                            ? 'Show less'
-                                                                            : 'Show more'}
+                                                                            ? m[
+                                                                                  'skills.misc.showLess'
+                                                                              ]()
+                                                                            : m[
+                                                                                  'skills.misc.showMore'
+                                                                              ]()}
                                                                     </button>
                                                                 </>
                                                             )}
@@ -351,17 +365,19 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
                         }
                         className="px-[15px] py-[7px] bg-white rounded-full text-grayscale-900 flex-1 font-poppins text-[17px] border-[1px] border-grayscale-200 border-solid focus:outline-none"
                     >
-                        {selectedTab === AddSkillTabEnum.Options ? 'Details' : 'Options'}
+                        {selectedTab === AddSkillTabEnum.Options
+                            ? m['skills.addSkill.details']()
+                            : m['skills.addSkill.options']()}
                     </button>
                     {!isEdit && (
                         <button
                             onClick={() => {
-                                handleAdd?.(skill, proficiencyLevel);
+                                handleAdd?.(skill, proficiencyLevel, frameworkId);
                                 closeModal();
                             }}
                             className="px-[15px] py-[7px] bg-indigo-600 rounded-full text-white flex-1 font-poppins text-[17px] font-bold tracking-[0.25px] leading-[24px] h-[41.5px]"
                         >
-                            Add Skill
+                            {m['pathways.addSkill']()}
                         </button>
                     )}
                     {isEdit && (
@@ -371,7 +387,7 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
                                 disabled={!hasProficiencyChanged}
                                 className="px-[15px] py-[7px] rounded-full text-white flex-1 font-poppins text-[17px] font-bold tracking-[0.25px] leading-[24px] h-[41.5px] bg-indigo-600 disabled:bg-grayscale-300 "
                             >
-                                Update
+                                {m['common.update']()}
                             </button>
                             <button
                                 onClick={() => {

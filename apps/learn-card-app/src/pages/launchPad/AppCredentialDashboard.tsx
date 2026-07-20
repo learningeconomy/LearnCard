@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Award, Bell } from 'lucide-react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('app-credential-dashboard');
 
 import { useWallet, useModal, ModalTypes } from 'learn-card-base';
 
@@ -75,7 +77,7 @@ export const AppCredentialDashboard: React.FC<AppCredentialDashboardProps> = ({
             const result = await wallet.invoke.getMyCredentialsFromApp(appId, { limit: 1 });
             setCredentialCount(result.totalCount);
         } catch (error) {
-            console.error('[AppCredentialDashboard] Error fetching credential count:', error);
+            log.error('Error fetching credential count', error);
         }
     }, [appId, initWallet]);
 
@@ -94,7 +96,7 @@ export const AppCredentialDashboard: React.FC<AppCredentialDashboardProps> = ({
                 setNotificationCount(result.notifications.length);
             }
         } catch (error) {
-            console.error('[AppCredentialDashboard] Error fetching notification count:', error);
+            log.error('Error fetching notification count', error);
         }
     }, [listingId, initWallet]);
 

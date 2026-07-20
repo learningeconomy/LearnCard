@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import moment from 'moment';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('claim-boost');
 
 import { IonPage, IonSpinner, useIonModal, useIonAlert, IonRow } from '@ionic/react';
 import { useRenderMethodEnabled } from '../../hooks/useRenderMethodEnabled';
@@ -34,7 +36,14 @@ import {
     boostPreviewStore,
 } from 'learn-card-base';
 
-import { useAnalytics, AnalyticsEvents } from '@analytics';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    ProfileBuildMethod,
+    useProfileSnapshotCapture,
+    ACCOUNT_CREATED_AT_KEY,
+    SESSION_START_KEY,
+} from '@analytics';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 import { useUploadVcFromText } from '../../hooks/useUploadVcFromText';
@@ -51,6 +60,7 @@ import {
 } from 'learn-card-base/helpers/credentialHelpers';
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
+import * as m from '../../paraglide/messages.js';
 
 const ClaimBoostBodyPreviewOverride: React.FC<{
     boostVC: VC;
@@ -94,7 +104,8 @@ const ClaimBoostBodyPreviewOverride: React.FC<{
                     <div className="vc-issue-details mt-[10px] flex flex-col justify-center items-center text-center font-montserrat text-[14px] leading-[20px]">
                         <span className="created-at text-grayscale-700">{issueDate}</span>
                         <span className="issued-by text-grayscale-900 font-[500]">
-                            by <strong className="font-[700] capitalize">{issuerName}</strong>
+                            {m['claim.by']()}{' '}
+                            <strong className="font-[700] capitalize">{issuerName}</strong>
                         </span>
                     </div>
                     <CredentialVerificationDisplay credential={boostVC} showText />
@@ -113,7 +124,8 @@ const ClaimBoostBodyPreviewOverride: React.FC<{
             <div className="vc-issue-details mt-[10px] flex flex-col justify-center items-center text-center font-montserrat text-[14px] leading-[20px]">
                 <span className="created-at text-grayscale-700">{issueDate}</span>
                 <span className="issued-by text-grayscale-900 font-[500]">
-                    by <strong className="font-[700] capitalize">{issuerName}</strong>
+                    {m['claim.by']()}{' '}
+                    <strong className="font-[700] capitalize">{issuerName}</strong>
                 </span>
             </div>
         </>
@@ -132,6 +144,8 @@ const ClaimBoost: React.FC<{
     const { initWallet, addVCtoWallet } = useWallet();
     const [presentAlert, dismissAlert] = useIonAlert();
     const { track } = useAnalytics();
+    const { capture, snapshotRef } = useProfileSnapshotCapture();
+    const flowStartedAt = useRef(Date.now());
     const { newModal, closeModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
 
@@ -183,9 +197,9 @@ const ClaimBoost: React.FC<{
             setLoading(true);
 
             const result = await fetch(
-                `${networkStore.get.networkApiUrl()}/storage/resolve?uri=${encodeURIComponent(boostUri)}${
-                    challenge ? `&challenge=${encodeURIComponent(challenge)}` : ''
-                }`
+                `${networkStore.get.networkApiUrl()}/storage/resolve?uri=${encodeURIComponent(
+                    boostUri
+                )}${challenge ? `&challenge=${encodeURIComponent(challenge)}` : ''}`
             );
 
             if (result.status !== 200) throw new Error('Error resolving boost');
@@ -195,7 +209,7 @@ const ClaimBoost: React.FC<{
             setBoost(boostVC);
             verify(boostVC);
         } catch (error: any) {
-            console.error(error);
+            log.error(error);
         } finally {
             setLoading(false);
         }
@@ -215,6 +229,8 @@ const ClaimBoost: React.FC<{
 
         try {
             setIsClaimLoading(true);
+            // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
+            capture();
 
             const claimedBoostUri = await wallet?.invoke?.claimBoostWithLink(boostUri, challenge);
             await addVCtoWallet({ uri: claimedBoostUri });
@@ -227,6 +243,21 @@ const ClaimBoost: React.FC<{
                     boostType: category,
                     achievementType,
                     method: 'Claim Modal',
+                    msSinceMethodStarted: Date.now() - flowStartedAt.current,
+                });
+
+                const now = Date.now();
+                const sessionStart = Number(localStorage.getItem(SESSION_START_KEY) ?? now);
+                const accountCreatedAt = Number(
+                    localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
+                );
+                track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                    method: ProfileBuildMethod.ClaimLink,
+                    itemType: 'credential',
+                    itemCount: 1,
+                    totalItemsAfter: snapshotRef.current.credentialCount + 1,
+                    msSinceAccountCreated: now - accountCreatedAt,
+                    msSinceSessionStart: now - sessionStart,
                 });
             }
 
@@ -240,14 +271,14 @@ const ClaimBoost: React.FC<{
                 history?.push('/');
             }
 
-            presentToast(`Successfully claimed Credential!`, {
+            presentToast(m['toasts.credentialClaimed'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (e) {
             setIsClaimLoading(false);
 
-            presentToast(`Unable to claim Credential`, {
+            presentToast(m['toasts.credentialClaimFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -255,10 +286,10 @@ const ClaimBoost: React.FC<{
             presentAlert({
                 backdropDismiss: false,
                 cssClass: 'boost-confirmation-alert',
-                header: `The boost claim link has expired or has reached the maximum number of times it can be claimed.`,
+                header: m['claim.boost.expiredHeader'](),
                 buttons: [
                     {
-                        text: 'Okay',
+                        text: m['contacts.okay'](),
                         role: 'cancel',
                         handler: () => {
                             dismissAlert();
@@ -268,7 +299,7 @@ const ClaimBoost: React.FC<{
                 ],
             });
 
-            console.warn('claimBoostWithLink::error', e);
+            log.warn('claimBoostWithLink::error', e);
         }
     };
 
@@ -288,14 +319,14 @@ const ClaimBoost: React.FC<{
 
             history?.push('/');
 
-            presentToast(`Successfully claimed Credential!`, {
+            presentToast(m['toasts.credentialClaimed'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (e) {
             setIsClaimLoading(false);
 
-            presentToast(`Unable to claim Credential`, {
+            presentToast(m['toasts.credentialClaimFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -335,17 +366,17 @@ const ClaimBoost: React.FC<{
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
     const displayCredential = unwrapBoostCredential(renderMethodSource as VC) as VC;
 
-    let actionButtonText = 'Accept';
+    let actionButtonText = m['common.accept']();
 
     if (isClaimLoading) {
-        actionButtonText = 'Loading...';
-        if (isFamily) actionButtonText = 'Joining...';
+        actionButtonText = m['common.loading']();
+        if (isFamily) actionButtonText = m['contacts.joining']();
     } else if (!isClaimLoading && isClaimed) {
-        actionButtonText = 'Accepted';
-        if (isFamily) actionButtonText = 'Joined';
+        actionButtonText = m['claim.boost.accepted']();
+        if (isFamily) actionButtonText = m['contacts.joined']();
     } else {
-        actionButtonText = 'Accept';
-        if (isFamily) actionButtonText = 'Join';
+        actionButtonText = m['common.accept']();
+        if (isFamily) actionButtonText = m['contacts.joinBoost']();
     }
 
     useEffect(() => {
@@ -465,16 +496,18 @@ const ClaimBoost: React.FC<{
                             {loading && (
                                 <section className="relative loading-spinner-container flex flex-col items-center justify-center h-full w-full">
                                     <IonSpinner color="black" />
-                                    <p className="mt-2 font-bold text-lg">Loading...</p>
+                                    <p className="mt-2 font-bold text-lg">
+                                        {m['common.loading']()}
+                                    </p>
                                 </section>
                             )}
                             {!loading && !boost && !vc && (
                                 <section className="h-full flex flex-col pt-[10px] px-[20px] text-center justify-center">
                                     <h1 className="text-center text-xl font-bold text-grayscale-800">
-                                        Eeek!
+                                        {m['claim.notFound.title']()}
                                     </h1>
                                     <strong className="text-center font-medium text-grayscale-600">
-                                        Unable to find Credential
+                                        {m['claim.notFound.message']()}
                                     </strong>
                                 </section>
                             )}
@@ -494,13 +527,9 @@ const ClaimBoost: React.FC<{
                                             }
                                             className="w-full"
                                         />
-                                    ) : (
-                                        boostCredentialWithId
-                                            ? renderClaimCredentialDisplay(
-                                                  boostCredentialWithId
-                                              )
-                                            : null
-                                    )}
+                                    ) : boostCredentialWithId ? (
+                                        renderClaimCredentialDisplay(boostCredentialWithId)
+                                    ) : null}
                                 </div>
                             )}
 

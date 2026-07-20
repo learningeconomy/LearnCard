@@ -1,6 +1,10 @@
 import { useMutation } from '@tanstack/react-query';
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 import { useIonAlert } from '@ionic/react';
+import { getCurrentUserPrivateKey } from 'learn-card-base/helpers/privateKeyHelpers';
+
+import { getLogger } from '../../logging/logger';
+const log = getLogger('firebase');
 
 export const useSendLoginVerificationCode = () => {
     const { initWallet } = useWallet();
@@ -77,7 +81,7 @@ export const useVerifyContactMethodWithProofOfLogin = () => {
         },
         onSuccess: data => {
             if (!data?.success) {
-                console.warn(
+                log.warn(
                     'useVerifyContactMethodWithProofOfLogin: Failed to verify contact method with Proof of Login',
                     data?.error
                 );
@@ -95,7 +99,11 @@ export const useGetProofOfLoginVp = (opts?: { showAlert?: boolean }) => {
         {
             mutationFn: async ({ token }: { token: string }) => {
                 try {
-                    const wallet = await initWallet('aaa');
+                    // The server route ignores the caller's DID. Reuse the active
+                    // wallet when signed in; only build the dummy wallet pre-login.
+                    const wallet = (await getCurrentUserPrivateKey())
+                        ? await initWallet()
+                        : await initWallet('aaa');
                     const data = await wallet?.invoke?.getProofOfLoginVp(token);
 
                     return data;
@@ -117,7 +125,7 @@ export const useGetProofOfLoginVp = (opts?: { showAlert?: boolean }) => {
                             ],
                         });
                     } else {
-                        console.warn(
+                        log.warn(
                             'useGetProofOfLoginVp: Failed to get Proof of Login VP',
                             data?.error
                         );
@@ -150,7 +158,7 @@ export const useVerifyLoginVerificationCode = () => {
         },
         onSuccess: data => {
             if (!data?.success) {
-                console.error(data)
+                log.error(data);
                 presentAlert({
                     header: 'Error',
                     message: data?.message || 'Failed to verify login verification code',

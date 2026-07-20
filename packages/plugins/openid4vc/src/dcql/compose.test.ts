@@ -16,7 +16,7 @@ const universityDegreeJwt = makeJwtVc({
 });
 
 describe('buildDcqlQuery', () => {
-    it('returns a parsed query for a hand-rolled valid input', () => {
+    it('returns a parsed query for a hand-rolled valid input', async () => {
         const query = buildDcqlQuery({
             credentials: [
                 {
@@ -31,7 +31,7 @@ describe('buildDcqlQuery', () => {
         expect(query.credentials[0]?.id).toBe('degree');
     });
 
-    it('throws VpError for malformed input', () => {
+    it('throws VpError for malformed input', async () => {
         // No `credentials` field at all → both parse and validate
         // would reject. Caller gets the plugin's stable error code.
         expect(() => buildDcqlQuery({ wrong: 'shape' })).toThrow();
@@ -39,7 +39,7 @@ describe('buildDcqlQuery', () => {
 });
 
 describe('requestW3cVc — single-credential builder', () => {
-    it('produces a query the holder selector accepts', () => {
+    it('produces a query the holder selector accepts', async () => {
         const query = requestW3cVc({
             id: 'degree',
             types: ['VerifiableCredential', 'UniversityDegree'],
@@ -47,16 +47,13 @@ describe('requestW3cVc — single-credential builder', () => {
 
         // Round-trip: hand the composed query to the holder selector
         // alongside a matching candidate; canSatisfy must be true.
-        const result = selectCredentialsForDcql(
-            [{ credential: universityDegreeJwt }],
-            query
-        );
+        const result = await selectCredentialsForDcql([{ credential: universityDegreeJwt }], query);
 
         expect(result.canSatisfy).toBe(true);
         expect(result.matches.degree?.candidates).toHaveLength(1);
     });
 
-    it('defaults format to jwt_vc_json', () => {
+    it('defaults format to jwt_vc_json', async () => {
         const query = requestW3cVc({
             id: 'any',
             types: ['VerifiableCredential', 'UniversityDegree'],
@@ -65,7 +62,7 @@ describe('requestW3cVc — single-credential builder', () => {
         expect(query.credentials[0]?.format).toBe('jwt_vc_json');
     });
 
-    it('honors an explicit ldp_vc format', () => {
+    it('honors an explicit ldp_vc format', async () => {
         const query = requestW3cVc({
             id: 'any',
             format: 'ldp_vc',
@@ -75,7 +72,7 @@ describe('requestW3cVc — single-credential builder', () => {
         expect(query.credentials[0]?.format).toBe('ldp_vc');
     });
 
-    it('threads claim filters through to the holder side', () => {
+    it('threads claim filters through to the holder side', async () => {
         const restrictiveQuery = requestW3cVc({
             id: 'bsc_only',
             types: ['VerifiableCredential', 'UniversityDegree'],
@@ -92,19 +89,17 @@ describe('requestW3cVc — single-credential builder', () => {
             credentialSubject: { degreeName: 'MSc Linguistics' },
         });
 
-        const result = selectCredentialsForDcql(
+        const result = await selectCredentialsForDcql(
             [{ credential: universityDegreeJwt }, { credential: otherDegree }],
             restrictiveQuery
         );
 
         // Only the BSc must match — the MSc is dropped by the values filter.
         expect(result.matches.bsc_only?.candidates).toHaveLength(1);
-        expect(result.matches.bsc_only?.candidates[0]?.credential).toBe(
-            universityDegreeJwt
-        );
+        expect(result.matches.bsc_only?.candidates[0]?.credential).toBe(universityDegreeJwt);
     });
 
-    it('rejects an empty types array up front', () => {
+    it('rejects an empty types array up front', async () => {
         // Better than letting the dcql library's valibot stack
         // trace surface to UI code.
         expect(() => requestW3cVc({ id: 'x', types: [] })).toThrow(/types/);

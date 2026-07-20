@@ -10,6 +10,7 @@ import {
     assembleDcqlVpToken,
     buildDcqlResponse,
     signDcqlPresentations,
+    DcqlSignError,
 } from './respond';
 import type { ProofJwtSigner } from '../vci/types';
 
@@ -17,7 +18,9 @@ const HOLDER = 'did:jwk:holder';
 const AUDIENCE = 'https://verifier.example/openid4vc/verify';
 const NONCE = 'nonce-for-respond-tests';
 
-const makeJwtSigner = (overrides: Partial<ProofJwtSigner> = {}): ProofJwtSigner & {
+const makeJwtSigner = (
+    overrides: Partial<ProofJwtSigner> = {}
+): ProofJwtSigner & {
     signCalls: Array<{ header: Record<string, unknown>; payload: Record<string, unknown> }>;
 } => {
     const signer = {
@@ -111,8 +114,8 @@ describe('assembleDcqlVpToken', () => {
         ]);
 
         expect(out).toEqual({
-            a: 'jwt.a.sig',
-            b: 'jwt.b.sig',
+            a: ['jwt.a.sig'],
+            b: ['jwt.b.sig'],
         });
     });
 
@@ -157,7 +160,7 @@ describe('buildDcqlResponse — end-to-end orchestration', () => {
         expect(result.presentations).toHaveLength(1);
         expect(result.presentations[0]?.credentialQueryId).toBe('degree');
         expect(result.vpToken).toEqual({
-            degree: result.presentations[0]?.vpToken,
+            degree: [result.presentations[0]?.vpToken],
         });
     });
 });
@@ -166,9 +169,7 @@ describe('buildDcqlResponse — end-to-end orchestration', () => {
 
 function makeJwtVc(vcBody: Record<string, unknown>): string {
     const header = base64url(JSON.stringify({ alg: 'EdDSA', typ: 'JWT' }));
-    const payload = base64url(
-        JSON.stringify({ iss: 'did:jwk:abc', sub: HOLDER, vc: vcBody })
-    );
+    const payload = base64url(JSON.stringify({ iss: 'did:jwk:abc', sub: HOLDER, vc: vcBody }));
     return `${header}.${payload}.signature`;
 }
 
@@ -179,3 +180,142 @@ function base64url(s: string): string {
         .replace(/\//g, '_')
         .replace(/=+$/, '');
 }
+
+describe('signDcqlPresentations — SD-JWT-VC passthrough', () => {
+    const sdJwtCompact =
+        'eyJhbGciOiJFZERTQSIsInR5cCI6ImRjK3NkLWp3dCJ9.eyJpc3MiOiJkaWQ6d2ViOmlzc3VlciJ9.signature~WyJzYWx0IiwiZ2l2ZW5fbmFtZSIsIkFkYSJd~';
+    const presentedCompact = `${sdJwtCompact}eyJraGVhZGVyIjoia2Ira2J0In0.eyJzZF9oYXNoIjoiYWJjIn0.kbsig`;
+
+    it('routes kind="sd-jwt-vc" entries through the sdJwtPresenter and skips VP signing', async () => {
+        const query = parseDcqlQuery({
+            credentials: [
+                {
+                    id: 'pid',
+                    format: 'dc+sd-jwt',
+                    meta: { vct_values: ['urn:test:pid'] },
+                },
+            ],
+        });
+
+        const built = buildDcqlPresentations({
+            query,
+            chosen: [{ credentialQueryId: 'pid', candidate: { credential: sdJwtCompact } }],
+            holder: HOLDER,
+        });
+
+        const presenter = jest.fn(async (_c: string, _o) => ({ compact: presentedCompact }));
+        const jwtSigner = makeJwtSigner();
+
+        const result = await signDcqlPresentations(
+            { built, audience: AUDIENCE, nonce: NONCE, holder: HOLDER },
+            { sdJwtPresenter: presenter, jwtSigner }
+        );
+
+        expect(result).toHaveLength(1);
+        expect(result[0]?.credentialQueryId).toBe('pid');
+        expect(result[0]?.vpToken).toBe(presentedCompact);
+        expect(result[0]?.vpFormat).toBe('dc+sd-jwt');
+        expect(presenter).toHaveBeenCalledWith(sdJwtCompact, {
+            audience: AUDIENCE,
+            nonce: NONCE,
+        });
+        expect(jwtSigner.signCalls).toHaveLength(0);
+    });
+
+    it('throws DcqlSignError(missing_sd_jwt_presenter) when SD-JWT entry has no presenter', async () => {
+        const query = parseDcqlQuery({
+            credentials: [
+                {
+                    id: 'pid',
+                    format: 'dc+sd-jwt',
+                    meta: { vct_values: ['urn:test:pid'] },
+                },
+            ],
+        });
+
+        const built = buildDcqlPresentations({
+            query,
+            chosen: [{ credentialQueryId: 'pid', candidate: { credential: sdJwtCompact } }],
+            holder: HOLDER,
+        });
+
+        await expect(
+            signDcqlPresentations({ built, audience: AUDIENCE, nonce: NONCE, holder: HOLDER }, {})
+        ).rejects.toMatchObject({
+            name: 'DcqlSignError',
+            code: 'missing_sd_jwt_presenter',
+        });
+    });
+
+    it('wraps presenter errors in DcqlSignError(sd_jwt_present_failed)', async () => {
+        const query = parseDcqlQuery({
+            credentials: [
+                {
+                    id: 'pid',
+                    format: 'dc+sd-jwt',
+                    meta: { vct_values: ['urn:test:pid'] },
+                },
+            ],
+        });
+
+        const built = buildDcqlPresentations({
+            query,
+            chosen: [{ credentialQueryId: 'pid', candidate: { credential: sdJwtCompact } }],
+            holder: HOLDER,
+        });
+
+        const presenter = jest.fn(async () => {
+            throw new Error('verifier rejected nonce');
+        });
+
+        const err = (await signDcqlPresentations(
+            { built, audience: AUDIENCE, nonce: NONCE, holder: HOLDER },
+            { sdJwtPresenter: presenter }
+        ).catch(e => e)) as DcqlSignError;
+
+        expect(err).toBeInstanceOf(DcqlSignError);
+        expect(err.code).toBe('sd_jwt_present_failed');
+        expect(err.message).toContain('verifier rejected nonce');
+    });
+
+    it('mixes VP and SD-JWT entries in a single buildDcqlResponse call', async () => {
+        const query = parseDcqlQuery({
+            credentials: [
+                {
+                    id: 'degree',
+                    format: 'jwt_vc_json',
+                    meta: { type_values: [['VerifiableCredential', 'UniversityDegree']] },
+                },
+                {
+                    id: 'pid',
+                    format: 'dc+sd-jwt',
+                    meta: { vct_values: ['urn:test:pid'] },
+                },
+            ],
+        });
+
+        const built = buildDcqlPresentations({
+            query,
+            chosen: [
+                { credentialQueryId: 'degree', candidate: { credential: universityDegreeJwt } },
+                { credentialQueryId: 'pid', candidate: { credential: sdJwtCompact } },
+            ],
+            holder: HOLDER,
+        });
+
+        const presenter = jest.fn(async () => ({ compact: presentedCompact }));
+        const jwtSigner = makeJwtSigner();
+
+        const response = await buildDcqlResponse(
+            { built, audience: AUDIENCE, nonce: NONCE, holder: HOLDER },
+            { sdJwtPresenter: presenter, jwtSigner }
+        );
+
+        expect(Object.keys(response.vpToken).sort()).toEqual(['degree', 'pid']);
+        expect(response.vpToken.pid).toEqual([presentedCompact]);
+        expect(response.vpToken.degree).toHaveLength(1);
+        expect(typeof response.vpToken.degree?.[0]).toBe('string');
+        expect(jwtSigner.signCalls).toHaveLength(1);
+        expect(presenter).toHaveBeenCalledTimes(1);
+    });
+});

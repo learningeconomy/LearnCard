@@ -1,6 +1,6 @@
 import React from 'react';
 import { format } from 'date-fns';
-import { Flipper, Flipped } from 'react-flip-toolkit';
+import { Flipped as UntypedFlipped } from 'react-flip-toolkit';
 
 import MediaAttachmentsBox from './MediaAttachmentsBox';
 import TruncateTextBox from './TruncateTextBox';
@@ -16,6 +16,14 @@ import {
     VideoMetadata,
 } from '../../types';
 import LeftArrow from '../svgs/LeftArrow';
+
+type FlippedComponentProps = React.PropsWithChildren<{
+    flipId?: string;
+    inverseFlipId?: string;
+    scale?: boolean;
+}>;
+
+const Flipped = UntypedFlipped as unknown as React.FC<FlippedComponentProps>;
 
 /*
 const defaultTagsToSkills = (tags: string[]) => {

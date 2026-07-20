@@ -13,7 +13,8 @@ import {
     useConfirmation,
     useCreateBoost,
     useGetProfile,
-    useFilestack,
+    useImageUpload,
+    isKnownImageUploadUrl,
     useGetBoost,
     useModal,
     useToast,
@@ -38,6 +39,8 @@ import BulkBoostImportInstructions from './BulkImportInstructions';
 import BulkImportMissingImagesError from './BulkImportMissingImagesError';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import BulkImportDataRow from './BulkImportDataRow';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('bulk-boost-import-page');
 
 export enum ImageStatus {
     validUrl = 'valid-url',
@@ -127,7 +130,7 @@ const BulkBoostImportPage: React.FC = () => {
     const { data: networkBoost } = useGetBoost(parentUri);
     const networkName = networkBoost?.meta?.edits?.name ?? networkBoost?.name;
 
-    const { uploadImageFromUrl, singleImageUpload } = useFilestack({
+    const { uploadImageFromUrl, singleImageUpload } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (url, _file, data) => {},
     });
@@ -264,7 +267,7 @@ const BulkBoostImportPage: React.FC = () => {
                 type: ToastTypeEnum.Success,
             });
         } catch (error) {
-            console.error('Error extracting ZIP file:', error);
+            log.error('Error extracting ZIP file:', error);
             presentToast('Error extracting ZIP file', {
                 type: ToastTypeEnum.Error,
             });
@@ -325,7 +328,7 @@ const BulkBoostImportPage: React.FC = () => {
                                     50 + Math.floor((completedUploads / totalUploads) * 100 * 0.5)
                                 ); // Last 50% is Filestack upload
                             } catch (error) {
-                                console.error(`Failed to upload image ${filename}:`, error);
+                                log.error(`Failed to upload image ${filename}:`, error);
                                 newRowMap.set(key, {
                                     originalValue: info.originalValue,
                                     status: ImageStatus.missing,
@@ -475,14 +478,14 @@ const BulkBoostImportPage: React.FC = () => {
         try {
             await Promise.all(
                 csvData.map(async data => {
-                    // upload images if they're not already in filestack
+                    // upload images if they're not already in configured image storage
                     let badgeThumb = data[DataKeys.image];
-                    if (badgeThumb && !badgeThumb.includes('filestack')) {
+                    if (badgeThumb && !isKnownImageUploadUrl(badgeThumb)) {
                         badgeThumb = await uploadImageFromUrl(badgeThumb);
                     }
 
                     let bgImage = data[DataKeys.backgroundImage];
-                    if (bgImage && !bgImage.includes('filestack')) {
+                    if (bgImage && !isKnownImageUploadUrl(bgImage)) {
                         bgImage = await uploadImageFromUrl(bgImage);
                     }
 
@@ -511,7 +514,7 @@ const BulkBoostImportPage: React.FC = () => {
 
             history.push('/admin-tools');
         } catch (e) {
-            console.error('Failed to bulk import boosts: ', e.message);
+            log.error('Failed to bulk import boosts: ', e.message);
 
             presentToast(`Bulk boost import failed! ${e.message}`, {
                 duration: 5000,

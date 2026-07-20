@@ -19,16 +19,31 @@ custom:
     config:
         CACHE_INSTANCE_SIZE: cache.t2.micro
     esbuild:
+        # serverless-esbuild does not support Bun as a Lambda artifact packager.
+        # Bun remains the repo installer/runner; pnpm is used only for packaging externals.
         packager: pnpm
         plugins: esbuildPlugins.cjs
         bundle: true
         minify: true
+        # @learncard/init's default (node.import) entry uses createRequire('./index.cjs'),
+        # which esbuild cannot bundle — the emitted Lambda bundle is left with a runtime
+        # require('./index.cjs') that does not exist next to the output, so the function
+        # throws at init and every route 500s. Point esbuild at init's self-contained
+        # bundler ESM build instead. (See LC staging incident 2026-06-11 / PR #1297.)
+        alias:
+            '@learncard/init': '@learncard/init/dist/init.esm.js'
         external:
             [
                 'snappy',
                 '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm',
                 '@learncard/didkit-plugin-node/*.node',
             ]
+        # didkit-plugin-node ships via the didkitNative Lambda Layer. `exclude` both
+        # marks it esbuild-external AND stops the packager from installing a
+        # binary-less registry copy into the artifact (which would shadow the layer,
+        # since /var/task/node_modules wins over NODE_PATH). 'aws-sdk' is the
+        # serverless-esbuild default and must be preserved when overriding.
+        exclude: ['aws-sdk', '@learncard/didkit-plugin-node']
         sourcemap: external
         target: 'node20'
         watch:
@@ -80,17 +95,36 @@ custom:
 
 package:
     individually: true
+    # DIDKit assets no longer ship via node_modules copy-patterns: those globs were
+    # service-relative and match nothing under Bun workspaces (root cause of the
+    # 2026-07-02 staging incident, PR #1341) — and if a service-level node_modules
+    # ever reappeared, force-including didkit-plugin-node here would shadow the
+    # didkitNative Lambda Layer (/var/task/node_modules wins over NODE_PATH). The
+    # WASM ships inside the bundle (esbuildPlugins.cjs); native ships via the Layer.
     patterns:
         - '!node_modules/**'
-        - 'node_modules/@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
-        - 'node_modules/@learncard/didkit-plugin-node/*.node'
-        - 'node_modules/@learncard/didkit-plugin-node/package.json'
-        - 'node_modules/@learncard/didkit-plugin-node/dist/**'
         - 'src/swagger-ui'
+
+# Ships @learncard/didkit-plugin-node (JS wrapper + linux-x64 napi binary) and
+# its runtime @learncard/didkit-plugin dependency at /opt/nodejs/node_modules so
+# the native-first DIDKit path in learnCard.helpers.ts resolves in Lambda instead
+# of silently falling back to WASM. Assembled by scripts/prepare-didkit-native-layer.cjs.
+layers:
+    didkitNative:
+        path: didkit-native-layer
+        name: ${self:service}-${opt:stage, 'dev'}-didkit-native
+        description: Native DIDKit napi addon and runtime DIDKit dependency
+        compatibleRuntimes:
+            - nodejs20.x
+        compatibleArchitectures:
+            - x86_64
 
 provider:
     name: aws
     runtime: nodejs20.x
+    # Attach the native DIDKit layer to every function in this service.
+    layers:
+        - { Ref: DidkitNativeLambdaLayer }
     memorySize: 2048
     timeout: 29
     stage: ${opt:stage, "dev"}

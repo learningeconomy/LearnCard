@@ -38,6 +38,9 @@ import { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
 import ShareModal from '../share/ShareModal';
 import ScannerPermissionsPrompt from '../scanner-permissions-prompt/ScannerPermissionsPrompt';
 import { useCheckIfUserInNetwork } from '../network-prompts/hooks/useCheckIfUserInNetwork';
+import { getLogger } from 'learn-card-base';
+import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
+const log = getLogger('qr-code-user-card');
 
 const QrCodeUserCard: React.FC<{
     handleQRCodeCardModal: () => void;
@@ -51,8 +54,7 @@ const QrCodeUserCard: React.FC<{
     const { clearDB } = useSQLiteStorage();
     const { presentToast } = useToast();
     const queryClient = useQueryClient();
-    const { data: isCurrentUserLCNUser } =
-        useIsCurrentUserLCNUser();
+    const { data: isCurrentUserLCNUser } = useIsCurrentUserLCNUser();
     const { data: currentLCNUser } = useGetProfile();
     const checkIfUserInNetwork = useCheckIfUserInNetwork();
     const { handleLogout: logoutHook } = useLogout();
@@ -138,7 +140,7 @@ const QrCodeUserCard: React.FC<{
                 const connections = await wallet.invoke.getConnections();
                 setConnections(connections);
             } catch (e) {
-                console.log('getConnections::error', e);
+                log.debug('getConnections::error', e);
             }
         };
 
@@ -225,7 +227,7 @@ const QrCodeUserCard: React.FC<{
                 <div className="max-w-[90%] w-full h-auto relative">
                     <QRCodeSVG
                         className="h-full w-full"
-                        value={`https://pass.scout.org/connect?connect=true&did=${walletDid}`}
+                        value={`${getAppBaseUrl()}/connect?connect=true&did=${walletDid}`}
                         data-testid="qrcode-card"
                         bgColor="transparent"
                     />

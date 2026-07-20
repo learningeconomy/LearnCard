@@ -8,7 +8,7 @@
 # For example, run
 #
 # ```bash`
-# npx @learncard/cli
+# bunx @learncard/cli
 # ```
 #
 # Followed by

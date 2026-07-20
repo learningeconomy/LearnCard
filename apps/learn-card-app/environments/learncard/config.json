@@ -1,5 +1,5 @@
 {
-    "_defaults": "Fallback defaults live in packages/learn-card-base/src/config/tenantDefaults.ts — run `pnpm lc resolve learncard` to see the final merged config.",
+    "_defaults": "Fallback defaults live in packages/learn-card-base/src/config/tenantDefaults.ts — run `bun run lc resolve learncard` to see the final merged config.",
 
     "tenantId": "learncard",
     "domain": "learncard.app",
@@ -75,7 +75,8 @@
         "themeSwitching": true,
         "introSlides": true,
         "pathways": true,
-        "launchPadQuickActions": false
+        "launchPadQuickActions": false,
+        "dashboardHome": true
     },
 
     "observability": {
@@ -99,6 +100,11 @@
         "websiteUrl": "https://www.learncard.com/"
     },
 
+    "i18n": {
+        "defaultLanguage": "en",
+        "supportedLanguages": ["en", "es", "fr", "ar"]
+    },
+
     "native": {
         "bundleId": "com.learncard.app",
         "displayName": "LearnCard",
@@ -108,6 +114,12 @@
             "learncardapp.netlify.com",
             "lcw.app"
         ],
-        "customSchemes": ["dccrequest", "msprequest", "asuprequest"]
+        "customSchemes": [
+            "dccrequest",
+            "msprequest",
+            "asuprequest",
+            "openid4vp",
+            "openid-credential-offer"
+        ]
     }
 }

@@ -3,8 +3,21 @@ import { useWallet } from './useWallet';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { LCR } from 'learn-card-base/types/credential-records';
 import type { UnsignedVC } from '@learncard/types';
+import { getLogger } from '../logging/logger';
+const log = getLogger('use-verifiable-data');
 
 const VERIFIABLE_DATA_CATEGORY = 'VerifiableData';
+
+/** Prefix used for the LearnCloud index `id` of every verifiable-data record. */
+export const VERIFIABLE_DATA_INDEX_PREFIX = '__verifiable_data_';
+
+/** Builds the canonical index `id` for a verifiable-data key. */
+export const getVerifiableDataIndexId = (key: string): string =>
+    `${VERIFIABLE_DATA_INDEX_PREFIX}${key}__`;
+
+/** True when a credential record is internal verifiable-data plumbing (not a user-facing credential). */
+export const isVerifiableDataRecord = (record?: { id?: string } | null): boolean =>
+    typeof record?.id === 'string' && record.id.startsWith(VERIFIABLE_DATA_INDEX_PREFIX);
 
 export type VerifiableDataOptions = {
     /** Optional credential category. Defaults to 'VerifiableData' */
@@ -78,7 +91,7 @@ const storeVerifiableData = async <T>(
     category: string,
     options?: Pick<VerifiableDataOptions, 'name' | 'description'>
 ): Promise<string> => {
-    const indexId = `__verifiable_data_${key}__`;
+    const indexId = getVerifiableDataIndexId(key);
 
     // Check whether an index record already exists for this key
     const existingRecords = await wallet.index.LearnCloud.get<VerifiableDataRecord<T>>({
@@ -105,6 +118,7 @@ const storeVerifiableData = async <T>(
             title: `VerifiableData: ${key}`,
             verifiableData: data as any,
             issuanceDate,
+            sharedUris: {},
         });
     } else {
         // First write for this key — create a new index record
@@ -134,7 +148,7 @@ const getVerifiableData = async <T>(
     key: string
 ): Promise<VerifiableDataResult<T>> => {
     const records = await wallet.index.LearnCloud.get<VerifiableDataRecord<T>>({
-        id: `__verifiable_data_${key}__`,
+        id: getVerifiableDataIndexId(key),
     });
 
     if (records?.length > 0 && records[0].verifiableData !== undefined) {
@@ -161,7 +175,7 @@ const getVerifiableData = async <T>(
                 };
             }
         } catch (e) {
-            console.warn('Failed to read verifiable data credential:', e);
+            log.warn('Failed to read verifiable data credential:', e);
         }
     }
 
@@ -242,11 +256,19 @@ export const useVerifiableData = <T>(key: string, options?: VerifiableDataOption
         onError: (_error, _data, context) => {
             queryClient.setQueryData(queryKey, context?.previousData);
         },
-        onSuccess: (_, data) => {
+        onSuccess: async (_, data) => {
             // Update the cache with the new data
             queryClient.setQueryData(queryKey, {
                 data,
                 issuanceDate: new Date().toISOString(),
+            });
+
+            await queryClient.removeQueries({
+                queryKey: ['useGetCredentialList'],
+            });
+
+            queryClient.invalidateQueries({
+                queryKey: ['useSyncConsentFlow'],
             });
         },
     });

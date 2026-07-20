@@ -45,6 +45,10 @@ type BoostGenericCardWrapperProps = {
     uri?: string;
     indicatorColor?: string;
     unknownVerifierTitle?: string;
+    relativeDate?: boolean;
+    compact?: boolean;
+    isCLR?: boolean;
+    trustedVerifierOnly?: boolean;
 };
 
 export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = ({
@@ -78,6 +82,10 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
     uri,
     indicatorColor,
     unknownVerifierTitle,
+    relativeDate,
+    compact,
+    isCLR,
+    trustedVerifierOnly,
 }) => {
     if (boostPageViewMode === BoostPageViewMode.List) {
         return (
@@ -96,6 +104,9 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
                 indicatorColor={indicatorColor}
                 uri={uri}
                 unknownVerifierTitle={unknownVerifierTitle}
+                relativeDate={relativeDate}
+                compact={compact}
+                trustedVerifierOnly={trustedVerifierOnly}
             />
         );
     }
@@ -122,12 +133,13 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
             customDateDisplay={customDateDisplay}
             customIssuerName={customIssuerName}
             verifierBadge={
-                loading ? null : (
+                loading || isCLR ? null : (
                     <CredentialVerificationDisplay
                         credential={credential}
-                        iconClassName="!w-[15px] !h-[15px] mr-1"
+                        iconClassName="!w-[15px] !h-[15px]"
                         showText={!!unknownVerifierTitle}
                         unknownVerifierTitle={unknownVerifierTitle}
+                        trustedOnly={trustedVerifierOnly}
                     />
                 )
             }

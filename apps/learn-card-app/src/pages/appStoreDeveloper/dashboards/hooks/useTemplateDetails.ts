@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-template-details');
 /**
  * useTemplateManager - Full template CRUD operations
  *
@@ -10,6 +12,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 import { useWallet } from 'learn-card-base';
+import * as m from '../../../../paraglide/messages.js';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import type { UnsignedVC } from '@learncard/types';
 
@@ -203,7 +206,7 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
                             name:
                                 fullBoost?.name ||
                                 (credential?.name as string) ||
-                                'Untitled Template',
+                                m['developerPortal.dashboards.template.untitled'](),
                             description: (credential?.description as string) || '',
                             achievementType:
                                 (templateConfig?.achievementType as string) ||
@@ -223,7 +226,7 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
                             isAddedToListing: !!templateAlias,
                         } as ManagedTemplate;
                     } catch (e) {
-                        console.warn('Failed to fetch boost:', boostUri, e);
+                        log.warn('Failed to fetch boost', e, { boostUri });
                         return null;
                     }
                 });
@@ -269,7 +272,7 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
                                     name:
                                         fullChild?.name ||
                                         (childCredential?.name as string) ||
-                                        'Untitled Template',
+                                        m['developerPortal.dashboards.template.untitled'](),
                                     description: (childCredential?.description as string) || '',
                                     achievementType:
                                         (childConfig?.achievementType as string) || 'Achievement',
@@ -285,7 +288,7 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
                                     parentTemplateId: master.boostUri,
                                 } as CredentialTemplate;
                             } catch (e) {
-                                console.warn('Failed to fetch child boost:', childUri, e);
+                                log.warn('Failed to fetch child boost:', childUri, e);
                                 return null;
                             }
                         });
@@ -297,7 +300,9 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
 
                         return { masterId: master.id, children };
                     } catch (e) {
-                        console.warn('Failed to fetch boost children:', master.boostUri, e);
+                        log.warn('Failed to fetch boost children', e, {
+                            boostUri: master.boostUri,
+                        });
                         return { masterId: master.id, children: [] };
                     }
                 });
@@ -327,7 +332,7 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
                 setError(null);
             } catch (err) {
                 if (cancelled) return;
-                console.error('[useTemplateDetails] Failed to fetch templates:', err);
+                log.error('Failed to fetch templates', err);
                 setError(err instanceof Error ? err : new Error('Failed to fetch templates'));
             } finally {
                 if (!cancelled) {
@@ -374,7 +379,10 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
             }
 
             const wallet = await initWalletRef.current();
-            const name = options?.name || (credential.name as string) || 'Untitled Template';
+            const name =
+                options?.name ||
+                (credential.name as string) ||
+                m['developerPortal.dashboards.template.untitled']();
 
             // Generate or use provided alias (only meaningful with listingId)
             let templateAlias = options?.alias || generateTemplateAlias(name);
@@ -469,7 +477,10 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
             options?: { name?: string }
         ): Promise<void> => {
             const wallet = await initWalletRef.current();
-            const name = options?.name || (credential.name as string) || 'Untitled Template';
+            const name =
+                options?.name ||
+                (credential.name as string) ||
+                m['developerPortal.dashboards.template.untitled']();
 
             // Replace system placeholders
             const issuerDid = wallet.id.did();
@@ -546,7 +557,7 @@ export function useTemplateManager(options: TemplateManagerOptions): TemplateMan
                 await wallet.invoke.deleteBoost(boostUri);
             } catch (err) {
                 // Boost deletion may fail if it's LIVE status - that's okay, we've removed the association
-                console.warn('Could not delete boost (may be LIVE status):', err);
+                log.warn('Could not delete boost (may be LIVE status):', err);
             }
 
             // Refetch to update local state

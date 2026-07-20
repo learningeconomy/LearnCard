@@ -1,4 +1,7 @@
-#!/usr/bin/env npx tsx
+#!/usr/bin/env bun
+
+import { getLogger } from 'learn-card-base/src/logging/logger';
+const log = getLogger();
 
 /**
  * create-theme.ts — Interactive theme scaffolding tool.
@@ -8,13 +11,21 @@
  *   - assets/ directory with placeholder files
  *
  * Usage:
- *   npx tsx scripts/create-theme.ts
- *   npx tsx scripts/create-theme.ts --id=mytheme     # skip the ID prompt
- *   npx tsx scripts/create-theme.ts --extends=colorful # inherit from colorful
+ *   bun scripts/create-theme.ts
+ *   bun scripts/create-theme.ts --id=mytheme     # skip the ID prompt
+ *   bun scripts/create-theme.ts --extends=colorful # inherit from colorful
  */
 
 import { createInterface } from 'readline';
-import { existsSync, mkdirSync, writeFileSync, readdirSync, readFileSync, copyFileSync, statSync } from 'fs';
+import {
+    existsSync,
+    mkdirSync,
+    writeFileSync,
+    readdirSync,
+    readFileSync,
+    copyFileSync,
+    statSync,
+} from 'fs';
 import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -49,7 +60,10 @@ const askYesNo = async (question: string, defaultYes = true): Promise<boolean> =
 };
 
 const slugify = (s: string): string =>
-    s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    s
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
 
 const bold = (s: string): string => `\x1b[1m${s}\x1b[0m`;
 const green = (s: string): string => `\x1b[32m${s}\x1b[0m`;
@@ -194,16 +208,16 @@ const buildThemeJson = (opts: {
 // ---------------------------------------------------------------------------
 
 const main = async () => {
-    console.log('');
-    console.log(bold('🎨 LearnCard Theme Creator'));
-    console.log(dim('   Create a new theme in a few easy steps.\n'));
+    log.info('');
+    log.info(bold('🎨 LearnCard Theme Creator'));
+    log.info(dim('   Create a new theme in a few easy steps.\n'));
 
     const existingThemes = discoverThemes();
     const iconSets = discoverIconSets();
 
-    console.log(dim(`   Existing themes: ${existingThemes.join(', ') || 'none'}`));
-    console.log(dim(`   Available icon sets: ${iconSets.join(', ')}`));
-    console.log('');
+    log.info(dim(`   Existing themes: ${existingThemes.join(', ') || 'none'}`));
+    log.info(dim(`   Available icon sets: ${iconSets.join(', ')}`));
+    log.info('');
 
     // ── Step 1: Theme ID ────────────────────────────────────────────────
     const cliId = process.argv.find(a => a.startsWith('--id='))?.split('=')[1];
@@ -212,14 +226,14 @@ const main = async () => {
     let themeId = cliId || '';
 
     if (!themeId) {
-        console.log(cyan('Step 1/5') + ' — Choose a theme ID');
-        console.log(dim('   Lowercase alphanumeric slug. This becomes the directory name.'));
+        log.info(cyan('Step 1/5') + ' — Choose a theme ID');
+        log.info(dim('   Lowercase alphanumeric slug. This becomes the directory name.'));
 
         themeId = slugify(await ask('Theme ID'));
     }
 
     if (!themeId) {
-        console.log(yellow('  No theme ID provided. Aborting.'));
+        log.info(yellow('  No theme ID provided. Aborting.'));
         rl.close();
         return;
     }
@@ -227,32 +241,32 @@ const main = async () => {
     const themeDir = join(THEME_SCHEMAS_DIR, themeId);
 
     if (existsSync(themeDir)) {
-        console.log(yellow(`  Theme "${themeId}" already exists at ${themeDir}`));
+        log.info(yellow(`  Theme "${themeId}" already exists at ${themeDir}`));
 
         const overwrite = await askYesNo('Overwrite?', false);
 
         if (!overwrite) {
-            console.log(dim('  Cancelled.'));
+            log.info(dim('  Cancelled.'));
             rl.close();
             return;
         }
     }
 
     // ── Step 2: Display name ────────────────────────────────────────────
-    console.log('');
-    console.log(cyan('Step 2/5') + ' — Display name');
+    log.info('');
+    log.info(cyan('Step 2/5') + ' — Display name');
 
     const defaultDisplayName = themeId.charAt(0).toUpperCase() + themeId.slice(1);
     const displayName = await ask('Display name', defaultDisplayName);
 
     // ── Step 3: Extends (parent theme) ──────────────────────────────────
-    console.log('');
-    console.log(cyan('Step 3/5') + ' — Inherit from a parent theme');
-    console.log(dim('   Leave blank for a standalone theme, or pick a parent.'));
+    log.info('');
+    log.info(cyan('Step 3/5') + ' — Inherit from a parent theme');
+    log.info(dim('   Leave blank for a standalone theme, or pick a parent.'));
 
     if (existingThemes.length > 0) {
         existingThemes.forEach((t, i) => {
-            console.log(`     ${cyan(`${i + 1}`)}  ${t}`);
+            log.info(`     ${cyan(`${i + 1}`)}  ${t}`);
         });
     }
 
@@ -269,15 +283,15 @@ const main = async () => {
     }
 
     if (extendsTheme && !existingThemes.includes(extendsTheme)) {
-        console.log(yellow(`  Warning: parent theme "${extendsTheme}" not found. Proceeding anyway.`));
+        log.info(yellow(`  Warning: parent theme "${extendsTheme}" not found. Proceeding anyway.`));
     }
 
     // ── Step 4: Icon set ────────────────────────────────────────────────
-    console.log('');
-    console.log(cyan('Step 4/5') + ' — Icon set');
+    log.info('');
+    log.info(cyan('Step 4/5') + ' — Icon set');
 
     iconSets.forEach((s, i) => {
-        console.log(`     ${cyan(`${i + 1}`)}  ${s}`);
+        log.info(`     ${cyan(`${i + 1}`)}  ${s}`);
     });
 
     const iconSetInput = await ask('Icon set', iconSets[0]);
@@ -291,29 +305,29 @@ const main = async () => {
     }
 
     // ── Step 5: View mode ───────────────────────────────────────────────
-    console.log('');
-    console.log(cyan('Step 5/5') + ' — Default view mode');
-    console.log(`     ${cyan('1')}  grid`);
-    console.log(`     ${cyan('2')}  list`);
+    log.info('');
+    log.info(cyan('Step 5/5') + ' — Default view mode');
+    log.info(`     ${cyan('1')}  grid`);
+    log.info(`     ${cyan('2')}  list`);
 
     const viewModeInput = await ask('View mode', '1');
     const viewMode = viewModeInput === '2' ? 'list' : 'grid';
 
     // ── Summary ─────────────────────────────────────────────────────────
-    console.log('');
-    console.log(bold('Summary:'));
-    console.log(`  ID:           ${bold(themeId)}`);
-    console.log(`  Display name: ${displayName}`);
-    console.log(`  Extends:      ${extendsTheme || dim('(standalone)')}`);
-    console.log(`  Icon set:     ${iconSet}`);
-    console.log(`  View mode:    ${viewMode}`);
-    console.log(`  Directory:    ${dim(themeDir)}`);
-    console.log('');
+    log.info('');
+    log.info(bold('Summary:'));
+    log.info(`  ID:           ${bold(themeId)}`);
+    log.info(`  Display name: ${displayName}`);
+    log.info(`  Extends:      ${extendsTheme || dim('(standalone)')}`);
+    log.info(`  Icon set:     ${iconSet}`);
+    log.info(`  View mode:    ${viewMode}`);
+    log.info(`  Directory:    ${dim(themeDir)}`);
+    log.info('');
 
     const confirm = await askYesNo('Create this theme?');
 
     if (!confirm) {
-        console.log(dim('  Cancelled.'));
+        log.info(dim('  Cancelled.'));
         rl.close();
         return;
     }
@@ -336,7 +350,7 @@ const main = async () => {
 
             if (!existsSync(dest) && statSync(src).isFile()) {
                 copyFileSync(src, dest);
-                console.log(`  ${green('+')} assets/${file} ${dim(`(from ${sourceTheme})`)}`);
+                log.info(`  ${green('+')} assets/${file} ${dim(`(from ${sourceTheme})`)}`);
             }
         }
     }
@@ -350,29 +364,29 @@ const main = async () => {
         viewMode,
     });
 
-    writeFileSync(
-        join(themeDir, 'theme.json'),
-        JSON.stringify(themeJson, null, 4) + '\n',
-        'utf-8',
-    );
+    writeFileSync(join(themeDir, 'theme.json'), JSON.stringify(themeJson, null, 4) + '\n', 'utf-8');
 
-    console.log(`  ${green('+')} theme.json`);
+    log.info(`  ${green('+')} theme.json`);
 
     // ── Done ────────────────────────────────────────────────────────────
-    console.log('');
-    console.log(green('✅ Theme created!'));
-    console.log('');
-    console.log('  Next steps:');
-    console.log(`    1. Edit ${cyan(`src/theme/schemas/${themeId}/theme.json`)} to customize colors and styles`);
-    console.log(`    2. Replace assets in ${cyan(`src/theme/schemas/${themeId}/assets/`)}`);
-    console.log(`    3. Run ${cyan('pnpm lc validate')} to check your theme`);
-    console.log(`    4. Add "${themeId}" to your tenant's ${cyan('allowedThemes')} in config.json`);
-    console.log('');
+    log.info('');
+    log.info(green('✅ Theme created!'));
+    log.info('');
+    log.info('  Next steps:');
+    log.info(
+        `    1. Edit ${cyan(
+            `src/theme/schemas/${themeId}/theme.json`
+        )} to customize colors and styles`
+    );
+    log.info(`    2. Replace assets in ${cyan(`src/theme/schemas/${themeId}/assets/`)}`);
+    log.info(`    3. Run ${cyan('bun run lc validate')} to check your theme`);
+    log.info(`    4. Add "${themeId}" to your tenant's ${cyan('allowedThemes')} in config.json`);
+    log.info('');
 
     rl.close();
 };
 
 main().catch(err => {
-    console.error('Unexpected error:', err);
+    log.error('Unexpected error:', err);
     process.exit(1);
 });

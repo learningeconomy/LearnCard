@@ -9,6 +9,7 @@ import { SkillLevel } from './skillTypes';
 import ViewAlignmentInfo from '../SkillFrameworks/ViewAlignmentInfo';
 
 import { ModalTypes, useModal } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 import { SkillFramework, SkillFrameworkNode } from '../../components/boost/boost';
 
@@ -106,7 +107,9 @@ const SelfAssignedSkillRow: React.FC<SelfAssignedSkillRowProps> = ({
                         onClick={() => setIsExpanded(!isExpanded)}
                         className="flex items-center gap-[5px] text-grayscale-700 font-poppins text-[12px] font-[600]"
                     >
-                        {isExpanded ? 'Hide options' : 'Show options'}
+                        {isExpanded
+                            ? m['skills.misc.hideOptions']()
+                            : m['skills.misc.showOptions']()}
                         <SlimCaretRight
                             className={`w-[15px] h-[15px] ${
                                 isExpanded ? 'rotate-[270deg]' : 'rotate-[90deg]'

@@ -1,6 +1,7 @@
 import React from 'react';
 
 import TrashBin from 'learn-card-base/svgs/TrashBin';
+import * as m from '../../../paraglide/messages.js';
 
 const DeleteEndorsementOverlay: React.FC<{
     setShowDeleteOverlay: (show: boolean) => void;
@@ -12,7 +13,7 @@ const DeleteEndorsementOverlay: React.FC<{
     return (
         <div className="flex flex-col items-center justify-center absolute top-0 left-0 w-full h-full bg-grayscale-900 bg-opacity-80 z-10 gap-4 px-4 rounded-[20px]">
             {!hideIcon && <TrashBin className="w-6 h-6 text-white" />}
-            <h1 className="text-xl font-semibold text-white">Delete Endorsement?</h1>
+            <h1 className="text-xl font-semibold text-white">{m['endorsement.delete.title']()}</h1>
             <button
                 className="text-rose-600 px-4 py-[12px] bg-white text-[17px] font-semibold  rounded-full w-full"
                 onClick={() => {
@@ -20,13 +21,13 @@ const DeleteEndorsementOverlay: React.FC<{
                     setShowDeleteOverlay(false);
                 }}
             >
-                {text || 'Yes, Delete'}
+                {text || m['endorsement.delete.confirm']()}
             </button>
             <button
                 className="text-grayscale-900 px-4 py-[12px] bg-white text-[17px] font-semibold rounded-full w-full"
                 onClick={() => setShowDeleteOverlay(false)}
             >
-                Cancel
+                {m['common.cancel']()}
             </button>
         </div>
     );

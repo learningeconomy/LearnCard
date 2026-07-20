@@ -1,5 +1,8 @@
 import React, { useMemo } from 'react';
 import { Info, Plus, X, Video, Shield, Smartphone, Palette, Users } from 'lucide-react';
+
+import * as m from '../../../paraglide/messages.js';
+import { mDynamic } from '../../../i18n/mDynamic';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import type { AppStoreListingCreate, AgeRating } from '../types';
@@ -56,39 +59,49 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
     return (
         <div className="space-y-6">
             <div className="text-center mb-6">
-                <h2 className="text-xl font-semibold text-gray-700">App Information</h2>
+                <h2 className="text-xl font-semibold text-gray-700">
+                    {m['developerPortal.components.appDetailsStep.title']()}
+                </h2>
 
                 <p className="text-sm text-gray-500 mt-1">
-                    Tell us about your application. This information will be displayed to users.
+                    {m['developerPortal.components.appDetailsStep.description']()}
                 </p>
             </div>
 
             {/* Icon Upload */}
             <div className="flex flex-col items-center gap-3">
-                <label className="text-sm font-medium text-gray-600">App Icon</label>
+                <label className="text-sm font-medium text-gray-600">
+                    {m['developerPortal.components.appDetailsStep.appIcon']()}
+                </label>
 
                 <ImageUpload
                     value={data.icon_url}
                     onChange={url => handleChange('icon_url', url)}
                     onRemove={() => handleChange('icon_url', '')}
-                    placeholder="Click to upload icon"
+                    placeholder={m['developerPortal.components.appDetailsStep.clickToUpload']()}
                     previewClassName="w-24 h-24 rounded-2xl"
                 />
 
-                <p className="text-xs text-gray-400">512×512px recommended</p>
+                <p className="text-xs text-gray-400">
+                    {m['developerPortal.components.appDetailsStep.resolutionRecommend']()}
+                </p>
 
                 {errors.icon_url && <p className="text-sm text-red-500">{errors.icon_url}</p>}
             </div>
 
             {/* Display Name */}
             <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Display Name</label>
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                    {m['developerPortal.components.appDetailsStep.displayName']()}
+                </label>
 
                 <input
                     type="text"
                     value={data.display_name || ''}
                     onChange={e => handleChange('display_name', e.target.value)}
-                    placeholder="My Amazing App"
+                    placeholder={m[
+                        'developerPortal.components.appDetailsStep.displayNamePlaceholder'
+                    ]()}
                     className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
                         errors.display_name ? 'border-red-300' : 'border-gray-200'
                     }`}
@@ -142,13 +155,17 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
 
             {/* Tagline */}
             <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Tagline</label>
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                    {m['developerPortal.components.appDetailsStep.tagline']()}
+                </label>
 
                 <input
                     type="text"
                     value={data.tagline || ''}
                     onChange={e => handleChange('tagline', e.target.value)}
-                    placeholder="A short, catchy description of your app"
+                    placeholder={m[
+                        'developerPortal.components.appDetailsStep.taglinePlaceholder'
+                    ]()}
                     className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
                         errors.tagline ? 'border-red-300' : 'border-gray-200'
                     }`}
@@ -169,13 +186,15 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
             {/* Full Description */}
             <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1">
-                    Full Description
+                    {m['developerPortal.components.appDetailsStep.fullDescription']()}
                 </label>
 
                 <textarea
                     value={data.full_description || ''}
                     onChange={e => handleChange('full_description', e.target.value)}
-                    placeholder="Describe what your app does, its key features, and how it helps users..."
+                    placeholder={m[
+                        'developerPortal.components.appDetailsStep.fullDescriptionPlaceholder'
+                    ]()}
                     className={`w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 min-h-[120px] resize-y ${
                         errors.full_description ? 'border-red-300' : 'border-gray-200'
                     }`}
@@ -197,18 +216,22 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
 
             {/* Category */}
             <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Category</label>
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                    {m['developerPortal.components.appDetailsStep.category']()}
+                </label>
 
                 <select
                     value={data.category || ''}
                     onChange={e => handleChange('category', e.target.value)}
                     className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                 >
-                    <option value="">Select a category</option>
+                    <option value="">
+                        {m['developerPortal.components.appDetailsStep.selectCategory']()}
+                    </option>
 
                     {visibleCategoryOptions.map(cat => (
                         <option key={cat.value} value={cat.value}>
-                            {cat.label}
+                            {mDynamic(cat.labelKey)}
                         </option>
                     ))}
                 </select>
@@ -219,21 +242,23 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                 <div className="flex items-center gap-2 mb-2">
                     <Users className="w-4 h-4 text-gray-400" />
 
-                    <label className="text-sm font-medium text-gray-600">Age Restrictions</label>
+                    <label className="text-sm font-medium text-gray-600">
+                        {m['developerPortal.components.appDetailsStep.ageRestrictions']()}
+                    </label>
 
-                    <span className="text-xs text-gray-400">(optional)</span>
+                    <span className="text-xs text-gray-400">
+                        {m['developerPortal.components.appDetailsStep.optional']()}
+                    </span>
                 </div>
 
                 <p className="text-xs text-gray-400 mb-3">
-                    Set age requirements for your app. Age Rating will display in the UI and
-                    requires guardian approval for underage child profiles. Minimum Age is a hard
-                    block that hides the app entirely.
+                    {m['developerPortal.components.appDetailsStep.ageRestrictionsDesc']()}
                 </p>
 
                 <div className="grid grid-cols-2 gap-3">
                     <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">
-                            Age Rating
+                            {m['developerPortal.components.appDetailsStep.ageRating']()}
                         </label>
 
                         <select
@@ -246,7 +271,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                             }
                             className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                         >
-                            <option value="">No rating</option>
+                            <option value="">
+                                {m['developerPortal.components.appDetailsStep.noRating']()}
+                            </option>
 
                             {AGE_RATING_OPTIONS.map(opt => (
                                 <option key={opt.value} value={opt.value}>
@@ -258,7 +285,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
 
                     <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">
-                            Minimum Age
+                            {m['developerPortal.components.appDetailsStep.minimumAge']()}
                         </label>
 
                         <input
@@ -276,7 +303,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                                             : Math.min(18, Math.max(0, parseInt(val, 10))),
                                 });
                             }}
-                            placeholder="e.g., 13"
+                            placeholder={m[
+                                'developerPortal.components.appDetailsStep.ageRatingPlaceholder'
+                            ]()}
                             className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                         />
                     </div>
@@ -286,16 +315,30 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                     <div className="mt-2 p-2 bg-amber-50 border border-amber-100 rounded-lg space-y-1">
                         {data.min_age !== undefined && (
                             <p className="text-xs text-red-700">
-                                <strong>Hard block:</strong> Users under {data.min_age} will not see
-                                this app at all.
+                                <strong>
+                                    {m[
+                                        'developerPortal.components.appDetailsStep.hardBlockLabel'
+                                    ]()}
+                                    :
+                                </strong>{' '}
+                                {m['developerPortal.components.appDetailsStep.hardBlockDesc']({
+                                    age: data.min_age,
+                                })}
                             </p>
                         )}
                         {data.age_rating && (
                             <p className="text-xs text-amber-700">
-                                <strong>Soft block:</strong> Child profiles under{' '}
-                                {AGE_RATING_OPTIONS.find(o => o.value === data.age_rating)
-                                    ?.minAge ?? 0}{' '}
-                                will need guardian approval to install.
+                                <strong>
+                                    {m[
+                                        'developerPortal.components.appDetailsStep.softBlockLabel'
+                                    ]()}
+                                    :
+                                </strong>{' '}
+                                {m['developerPortal.components.appDetailsStep.softBlockDesc']({
+                                    age:
+                                        AGE_RATING_OPTIONS.find(o => o.value === data.age_rating)
+                                            ?.minAge ?? 0,
+                                })}
                             </p>
                         )}
                     </div>
@@ -308,14 +351,16 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                     <Palette className="w-4 h-4 text-gray-400" />
 
                     <label className="text-sm font-medium text-gray-600">
-                        Listing Background Color
+                        {m['developerPortal.components.appDetailsStep.listingBgColor']()}
                     </label>
 
-                    <span className="text-xs text-gray-400">(optional)</span>
+                    <span className="text-xs text-gray-400">
+                        {m['developerPortal.components.appDetailsStep.optional']()}
+                    </span>
                 </div>
 
                 <p className="text-xs text-gray-400 mb-2">
-                    Choose a background color for your app's detail page
+                    {m['developerPortal.components.appDetailsStep.listingBgColorDesc']()}
                 </p>
 
                 <div className="flex items-center gap-3">
@@ -357,10 +402,12 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
 
             {/* Highlights */}
             <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Highlights</label>
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                    {m['developerPortal.components.appDetailsStep.highlights']()}
+                </label>
 
                 <p className="text-xs text-gray-400 mb-2">
-                    Add key benefits or reasons to use your app (displayed as bullet points)
+                    {m['developerPortal.components.appDetailsStep.highlightsDesc']()}
                 </p>
 
                 <div className="space-y-2">
@@ -370,7 +417,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                                 type="text"
                                 value={highlight}
                                 onChange={e => updateArrayItem('highlights', index, e.target.value)}
-                                placeholder="e.g., All your learning stored in one place"
+                                placeholder={m[
+                                    'developerPortal.components.appDetailsStep.highlightPlaceholder'
+                                ]()}
                                 className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                                 maxLength={200}
                             />
@@ -393,17 +442,19 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         className="mt-2 flex items-center gap-2 text-sm text-cyan-600 hover:text-cyan-700 transition-colors"
                     >
                         <Plus className="w-4 h-4" />
-                        Add highlight
+                        {m['developerPortal.components.appDetailsStep.addHighlight']()}
                     </button>
                 )}
             </div>
 
             {/* Screenshots */}
             <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Screenshots</label>
+                <label className="block text-sm font-medium text-gray-600 mb-1">
+                    {m['developerPortal.components.appDetailsStep.screenshots']()}
+                </label>
 
                 <p className="text-xs text-gray-400 mb-2">
-                    Upload or paste screenshot URLs (392×696 recommended, 9:16 aspect ratio)
+                    {m['developerPortal.components.appDetailsStep.screenshotsDesc']()}
                 </p>
 
                 <div className="space-y-3">
@@ -425,7 +476,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         className="mt-3 flex items-center gap-2 text-sm text-cyan-600 hover:text-cyan-700 transition-colors"
                     >
                         <Plus className="w-4 h-4" />
-                        Add screenshot
+                        {m['developerPortal.components.appDetailsStep.addScreenshot']()}
                     </button>
                 )}
             </div>
@@ -435,16 +486,22 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                 <div className="flex items-center gap-2 mb-1">
                     <Video className="w-4 h-4 text-gray-400" />
 
-                    <label className="text-sm font-medium text-gray-600">Promo Video URL</label>
+                    <label className="text-sm font-medium text-gray-600">
+                        {m['developerPortal.components.appDetailsStep.promoVideoUrl']()}
+                    </label>
 
-                    <span className="text-xs text-gray-400">(optional)</span>
+                    <span className="text-xs text-gray-400">
+                        {m['developerPortal.components.appDetailsStep.optional']()}
+                    </span>
                 </div>
 
                 <input
                     type="url"
                     value={data.promo_video_url || ''}
                     onChange={e => handleChange('promo_video_url', e.target.value)}
-                    placeholder="https://youtube.com/watch?v=..."
+                    placeholder={m[
+                        'developerPortal.components.appDetailsStep.promoVideoPlaceholder'
+                    ]()}
                     className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                 />
             </div>
@@ -454,9 +511,13 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                 <div className="flex items-center gap-2 mb-2">
                     <Shield className="w-4 h-4 text-gray-400" />
 
-                    <label className="text-sm font-medium text-gray-600">Legal &amp; Privacy</label>
+                    <label className="text-sm font-medium text-gray-600">
+                        {m['developerPortal.components.appDetailsStep.legalPrivacy']()}
+                    </label>
 
-                    <span className="text-xs text-gray-400">(optional)</span>
+                    <span className="text-xs text-gray-400">
+                        {m['developerPortal.components.appDetailsStep.optional']()}
+                    </span>
                 </div>
 
                 <div className="space-y-3">
@@ -464,7 +525,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         type="url"
                         value={data.privacy_policy_url || ''}
                         onChange={e => handleChange('privacy_policy_url', e.target.value)}
-                        placeholder="Privacy Policy URL"
+                        placeholder={m[
+                            'developerPortal.components.appDetailsStep.privacyPolicyUrl'
+                        ]()}
                         className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                     />
 
@@ -472,7 +535,9 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         type="url"
                         value={data.terms_url || ''}
                         onChange={e => handleChange('terms_url', e.target.value)}
-                        placeholder="Terms of Service URL"
+                        placeholder={m[
+                            'developerPortal.components.appDetailsStep.termsOfServiceUrl'
+                        ]()}
                         className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                     />
                 </div>
@@ -484,10 +549,12 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                     <Smartphone className="w-4 h-4 text-gray-400" />
 
                     <label className="text-sm font-medium text-gray-600">
-                        Native App Store Links
+                        {m['developerPortal.components.appDetailsStep.nativeAppStoreLinks']()}
                     </label>
 
-                    <span className="text-xs text-gray-400">(optional)</span>
+                    <span className="text-xs text-gray-400">
+                        {m['developerPortal.components.appDetailsStep.optional']()}
+                    </span>
                 </div>
 
                 <div className="space-y-3">
@@ -495,7 +562,7 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         type="text"
                         value={data.ios_app_store_id || ''}
                         onChange={e => handleChange('ios_app_store_id', e.target.value)}
-                        placeholder="iOS App Store ID (e.g., 123456789)"
+                        placeholder={m['developerPortal.components.appDetailsStep.iosAppStoreId']()}
                         className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                     />
 
@@ -503,28 +570,31 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                         type="text"
                         value={data.android_app_store_id || ''}
                         onChange={e => handleChange('android_app_store_id', e.target.value)}
-                        placeholder="Android Package Name (e.g., com.example.app)"
+                        placeholder={m[
+                            'developerPortal.components.appDetailsStep.androidAppStoreId'
+                        ]()}
                         className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                     />
                 </div>
                 <div>
                     <div className="flex items-center gap-2 mb-2 mt-2">
                         <label className="text-sm font-medium text-gray-600">
-                            Contact Information
+                            {m['developerPortal.components.appDetailsStep.contactInformation']()}
                         </label>
 
-                        <span className="text-xs text-gray-400">(optional)</span>
+                        <span className="text-xs text-gray-400">
+                            {m['developerPortal.components.appDetailsStep.optional']()}
+                        </span>
                     </div>
 
                     <p className="text-xs text-gray-400 mb-2">
-                        A reliable contact method in case any issues arise with your application
-                        during the review process.
+                        {m['developerPortal.components.appDetailsStep.contactInfoDesc']()}
                     </p>
                     <input
                         type="email"
                         value={data.contact_email || ''}
                         onChange={e => handleChange('contact_email', e.target.value.trim())}
-                        placeholder="Email address"
+                        placeholder={m['developerPortal.components.appDetailsStep.emailAddress']()}
                         className={`flex-1 w-full px-4 py-2.5 bg-white border rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 ${
                             errors.contact_email ? 'border-red-300' : 'border-gray-200'
                         }`}
@@ -540,16 +610,18 @@ export const AppDetailsStep: React.FC<AppDetailsStepProps> = ({ data, onChange, 
                 <Info className="w-5 h-5 text-cyan-600 flex-shrink-0 mt-0.5" />
 
                 <div className="text-sm text-gray-600">
-                    <p className="font-medium text-gray-700 mb-1">Tips for a great listing</p>
+                    <p className="font-medium text-gray-700 mb-1">
+                        {m['developerPortal.components.appDetailsStep.tipsForGreatListing']()}
+                    </p>
 
                     <ul className="space-y-1 text-xs">
-                        <li>• Use a clear, recognizable app icon (512x512px recommended)</li>
+                        <li>• {m['developerPortal.components.appDetailsStep.tip1']()}</li>
 
-                        <li>• Keep your tagline concise and action-oriented</li>
+                        <li>• {m['developerPortal.components.appDetailsStep.tip2']()}</li>
 
-                        <li>• Highlight key features and benefits in your description</li>
+                        <li>• {m['developerPortal.components.appDetailsStep.tip3']()}</li>
 
-                        <li>• Add 3-5 highlights explaining your app's value</li>
+                        <li>• {m['developerPortal.components.appDetailsStep.tip4']()}</li>
                     </ul>
                 </div>
             </div>

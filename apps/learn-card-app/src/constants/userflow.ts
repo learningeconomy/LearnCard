@@ -1,4 +1,6 @@
 import userflow from 'userflow.js';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('userflow');
 
 import { useEffect } from 'react';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
@@ -13,7 +15,7 @@ const getUserflowToken = (): string => {
     try {
         return getResolvedTenantConfig().observability.userflowToken;
     } catch {
-        return (typeof IS_PRODUCTION !== 'undefined' && IS_PRODUCTION)
+        return typeof IS_PRODUCTION !== 'undefined' && IS_PRODUCTION
             ? 'ct_qq6z63mixbhyzbzsgmivgrftda'
             : 'ct_w53eaxhevvf2vejzrecekeq3nu';
     }
@@ -37,20 +39,20 @@ export const useUserflowIdentify = (options: UseUserflowIdentifyOptions = {}) =>
     useEffect(() => {
         if (getUserflowToken()) {
             if (currentUser) {
-                if (options.debug) console.debug('Userflow Identify user! 🎸', currentUser);
+                if (options.debug) log.debug('Userflow Identify user! 🎸', currentUser);
                 getDID()
                     .then(did => {
                         const userAttributes = {
                             device_type: window?.innerWidth > 800 ? 'desktop' : 'mobile',
                         };
                         if (options.debug)
-                            console.debug('🔍 Userflow Context Identified', did, userAttributes);
+                            log.debug('🔍 Userflow Context Identified', did, userAttributes);
 
                         userflow.identify(did, userAttributes);
                     })
                     .catch(e => {
                         if (options.debug) {
-                            console.error(
+                            log.error(
                                 '❌ Unable to identify Userflow User because DID could not be generated.',
                                 e
                             );

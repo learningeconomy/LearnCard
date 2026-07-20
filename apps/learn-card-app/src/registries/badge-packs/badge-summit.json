@@ -1,0 +1,687 @@
+{
+    "categories": [
+        {
+            "id": "vibes",
+            "label": "Vibes & Community",
+            "description": "For the mood-shapers and memory-keepers.",
+            "order": 1,
+            "types": [
+                "ext:VibeCurator",
+                "ext:ChaosCoordinator",
+                "ext:HypeArchitect",
+                "ext:LoreKeeper",
+                "ext:SideQuestSpecialist",
+                "ext:QuietGenius",
+                "ext:CommunityHelper",
+                "ext:FoodSniper",
+                "ext:VisualStoryteller",
+                "ext:LogicMaster"
+            ]
+        },
+        {
+            "id": "standards",
+            "label": "Standards & Specs",
+            "description": "For the spec-keepers and interop builders.",
+            "order": 2,
+            "types": [
+                "ext:SchemaWhisperer",
+                "ext:AlignmentWizard",
+                "ext:CLRCartographer",
+                "ext:VerifiableVibes",
+                "ext:BadgeGoblin",
+                "ext:MetadataMystic",
+                "ext:InteropDiplomat",
+                "ext:BackpackElder",
+                "ext:IssuerTherapist",
+                "ext:SpecGremlin"
+            ]
+        },
+        {
+            "id": "leaders",
+            "label": "Leaders & Changemakers",
+            "description": "For the ones who move everyone forward.",
+            "order": 3,
+            "types": [
+                "ext:Leader",
+                "ext:Trailblazer",
+                "ext:Catalyst",
+                "ext:ChangeMaker",
+                "ext:Ambassador",
+                "ext:Organizer",
+                "ext:Moderator"
+            ]
+        },
+        {
+            "id": "mastery",
+            "label": "Brains & Mastery",
+            "description": "For deep skill and know-how.",
+            "order": 4,
+            "types": [
+                "ext:Expert",
+                "ext:Maven",
+                "ext:Sage",
+                "ext:Aficionado",
+                "ext:Connoisseur",
+                "ext:Perfectionist",
+                "ext:Psychic",
+                "ext:Magician"
+            ]
+        },
+        {
+            "id": "heart",
+            "label": "Heart & Team",
+            "description": "For the glue that holds people together.",
+            "order": 5,
+            "types": [
+                "ext:Connector",
+                "ext:TeamPlayer",
+                "ext:Enabler",
+                "ext:Charmer",
+                "ext:Enthusiast",
+                "ext:Promoter"
+            ]
+        },
+        {
+            "id": "bold",
+            "label": "Bold & Adventurous",
+            "description": "For the fearless and the first.",
+            "order": 6,
+            "types": [
+                "ext:Risktaker",
+                "ext:Maverick",
+                "ext:Cowboy",
+                "ext:Wanderer",
+                "ext:Opportunist",
+                "ext:Challenger",
+                "ext:ChallengeMaker"
+            ]
+        },
+        {
+            "id": "culture",
+            "label": "Culture & Cool",
+            "description": "For taste, trends, and star power.",
+            "order": 7,
+            "types": [
+                "ext:CoolCat",
+                "ext:Tastemaker",
+                "ext:Trendsetter",
+                "ext:Influencer",
+                "ext:Star",
+                "ext:HotShot",
+                "ext:Informer",
+                "ext:Propagator"
+            ]
+        },
+        {
+            "id": "fun",
+            "label": "Fun & Energy",
+            "description": "For the life of the party.",
+            "order": 8,
+            "types": [
+                "ext:PartyAnimal",
+                "ext:PartyPlanner",
+                "ext:Entertainer",
+                "ext:TroubleMaker",
+                "ext:Doer"
+            ]
+        },
+        {
+            "id": "other",
+            "label": "Other",
+            "description": "Everything else.",
+            "order": 999,
+            "types": []
+        }
+    ],
+    "badges": [
+        {
+            "category": "Bold & Adventurous",
+            "type": "ext:Risktaker",
+            "title": "Risktaker",
+            "url": "https://peerbadges.com/api/public/badge-images/dc44838b-5f10-4544-933b-8dd7bde36026.jpg",
+            "backgroundColor": "#EF4444",
+            "description": "For the person who leans into the uncertain moment and moves first, even when the safer choice is right there on the table.",
+            "criteria": "Award this to the peer who takes the bold shot, tries the untested idea, or volunteers for the thing no one else will touch."
+        },
+        {
+            "category": "Bold & Adventurous",
+            "type": "ext:Opportunist",
+            "title": "Opportunist",
+            "url": "https://peerbadges.com/assets/opportunist-DTnUT9cN.png",
+            "backgroundColor": "#EAB308",
+            "description": "Reserved for the person who sees the opening three seconds before anyone else and quietly walks through it.",
+            "criteria": "Award this to the peer with a knack for spotting the moment, the angle, or the offer that everyone else missed."
+        },
+        {
+            "category": "Culture & Cool",
+            "type": "ext:CoolCat",
+            "title": "Cool Cat",
+            "url": "https://peerbadges.com/assets/coolcat-BgJm7Jmy.png",
+            "backgroundColor": "#3B82F6",
+            "description": "For the person whose calm makes hard rooms easier and whose vibe is somehow always dialed in.",
+            "criteria": "Award this to the peer who stays effortlessly composed, keeps their cool under pressure, and just makes hanging out feel good."
+        },
+        {
+            "category": "Leaders & Changemakers",
+            "type": "ext:Trailblazer",
+            "title": "Trailblazer",
+            "url": "https://peerbadges.com/assets/trailblazer-DPmSJvgl.png",
+            "backgroundColor": "#F97316",
+            "description": "Reserved for the person who goes first, cuts the path, and turns around to wave everyone else through.",
+            "criteria": "Award this to the peer who pioneers a new approach, opens a new space, or tries the thing no one has tried yet."
+        },
+        {
+            "category": "Culture & Cool",
+            "type": "ext:Influencer",
+            "title": "Influencer",
+            "url": "https://peerbadges.com/assets/influencer-ClnjkKHW.png",
+            "backgroundColor": "#8B5CF6",
+            "description": "For the person whose opinions shape what the rest of the group ends up caring about.",
+            "criteria": "Award this to the peer whose recommendations, taste, or perspective consistently changes what others try, buy, or believe."
+        },
+        {
+            "category": "Heart & Team",
+            "type": "ext:Connector",
+            "title": "Connector",
+            "url": "https://peerbadges.com/assets/connector-BYEgbEoj.png",
+            "backgroundColor": "#14B8A6",
+            "description": "Reserved for the person who somehow knows exactly who you should meet and makes the introduction before you finish the sentence.",
+            "criteria": "Award this to the peer who bridges people, teams, and worlds, and turns strangers into collaborators."
+        },
+        {
+            "category": "Culture & Cool",
+            "type": "ext:Trendsetter",
+            "title": "Trendsetter",
+            "url": "https://peerbadges.com/assets/trendsetter-Btsl4oNn.png",
+            "backgroundColor": "#EC4899",
+            "description": "For the person who was into it six months before it was a thing, and will be onto the next thing by the time you catch up.",
+            "criteria": "Award this to the peer whose choices, style, or interests reliably show up in everyone else's feed a few months later."
+        },
+        {
+            "category": "Leaders & Changemakers",
+            "type": "ext:Organizer",
+            "title": "Organizer",
+            "url": "https://peerbadges.com/api/public/badge-images/9074b81e-15a1-4d7d-abd5-8a87db7d9afd.png",
+            "backgroundColor": "#f98575",
+            "description": "Reserved for the person who turns a vague group idea into an actual date, place, plan, and shared calendar invite.",
+            "criteria": "Award this to the peer who makes gatherings, trips, or projects actually happen because they took the reins."
+        },
+        {
+            "category": "Leaders & Changemakers",
+            "type": "ext:Moderator",
+            "title": "Moderator",
+            "url": "https://peerbadges.com/assets/moderator-BOnCUeQF.png",
+            "backgroundColor": "#0D9488",
+            "description": "For the person who keeps the conversation fair, the tone kind, and the space usable for everyone in it.",
+            "criteria": "Award this to the peer who steadies heated moments, welcomes newcomers, and holds the group to its better self."
+        },
+        {
+            "category": "Leaders & Changemakers",
+            "type": "ext:Leader",
+            "title": "Leader",
+            "url": "https://peerbadges.com/assets/leader-CgjppJN8.png",
+            "backgroundColor": "#2563EB",
+            "description": "Reserved for the person others quietly look to when it's time to decide, commit, or move.",
+            "criteria": "Award this to the peer who steps up, takes responsibility, and makes the group better by leading it."
+        },
+        {
+            "category": "Brains & Mastery",
+            "type": "ext:Expert",
+            "title": "Expert",
+            "url": "https://peerbadges.com/assets/expert-CmKQpI5h.png",
+            "backgroundColor": "#7C3AED",
+            "description": "For the person you text when you need the actual answer, not the guess.",
+            "criteria": "Award this to the peer whose deep knowledge in a subject has saved you time, money, or embarrassment."
+        },
+        {
+            "category": "Brains & Mastery",
+            "type": "ext:Aficionado",
+            "title": "Aficionado",
+            "url": "https://peerbadges.com/assets/aficionado-DLRZJDay.png",
+            "backgroundColor": "#DB2777",
+            "description": "Reserved for the person whose love for a niche runs deep enough to change how the rest of us appreciate it.",
+            "criteria": "Award this to the peer whose obsessive fondness for a topic, craft, or scene has made you a little more curious about it too."
+        },
+        {
+            "category": "Brains & Mastery",
+            "type": "ext:Psychic",
+            "title": "Psychic",
+            "url": "https://peerbadges.com/assets/psychic-LPnNPMRH.png",
+            "backgroundColor": "#9333EA",
+            "description": "For the person who calls the outcome before it happens and then pretends they didn't.",
+            "criteria": "Award this to the peer whose predictions, hunches, or gut reads have been unsettlingly on the money."
+        },
+        {
+            "category": "Brains & Mastery",
+            "type": "ext:Magician",
+            "title": "Magician",
+            "url": "https://peerbadges.com/assets/magician-B2zEYnMf.png",
+            "backgroundColor": "#6D28D9",
+            "description": "Reserved for the person who pulls off the thing that shouldn't have been possible and won't quite explain how.",
+            "criteria": "Award this to the peer who conjures results, opportunities, or fixes that look suspiciously like sleight of hand."
+        },
+        {
+            "category": "Heart & Team",
+            "type": "ext:Charmer",
+            "title": "Charmer",
+            "url": "https://peerbadges.com/assets/charmer-C4fmPXOM.png",
+            "backgroundColor": "#F472B6",
+            "description": "For the person who could probably convince a locked door to open on its own.",
+            "criteria": "Award this to the peer whose warmth, wit, and easy way with people gets doors, upgrades, and second chances."
+        },
+        {
+            "category": "Bold & Adventurous",
+            "type": "ext:Cowboy",
+            "title": "Cowboy",
+            "url": "https://peerbadges.com/api/public/badge-images/ec1654e0-748a-4097-a582-e418e845fec4.png",
+            "backgroundColor": "#e5bc5c",
+            "description": "Reserved for the person who rides in, does the thing their own way, and rides back out before the rules catch up.",
+            "criteria": "Award this to the peer with a rugged, improvisational streak who gets it done without asking permission."
+        },
+        {
+            "category": "Brains & Mastery",
+            "type": "ext:Perfectionist",
+            "title": "Perfectionist",
+            "url": "https://peerbadges.com/assets/perfectionist-DcMDBMc8.png",
+            "backgroundColor": "#059669",
+            "description": "For the person who notices the one pixel that's off and cannot rest until it isn't.",
+            "criteria": "Award this to the peer whose exacting standards quietly raise the quality of everything the group touches."
+        },
+        {
+            "category": "Bold & Adventurous",
+            "type": "ext:Wanderer",
+            "title": "Wanderer",
+            "url": "https://peerbadges.com/assets/wanderer-BSgBbJmM.png",
+            "backgroundColor": "#0891B2",
+            "description": "Reserved for the person whose latest location update is somehow always a place you had to look up.",
+            "criteria": "Award this to the peer whose restless curiosity keeps them moving, exploring, and bringing back stories worth hearing."
+        },
+        {
+            "category": "Heart & Team",
+            "type": "ext:TeamPlayer",
+            "title": "Team Player",
+            "url": "https://peerbadges.com/assets/teamplayer-DfHlt1-A.png",
+            "backgroundColor": "#16A34A",
+            "description": "For the person who makes the group stronger just by being in it and never needs to be asked twice.",
+            "criteria": "Award this to the peer who shows up for shared goals, shares credit generously, and puts the team ahead of the spotlight."
+        },
+        {
+            "category": "Culture & Cool",
+            "type": "ext:Star",
+            "title": "Star",
+            "url": "https://peerbadges.com/assets/star-C-RHHKyk.png",
+            "backgroundColor": "#F59E0B",
+            "description": "Reserved for the person the room notices without them having to try.",
+            "criteria": "Award this to the peer whose talent, presence, or performance consistently steals the show in the best possible way."
+        },
+        {
+            "category": "Fun & Energy",
+            "type": "ext:PartyAnimal",
+            "title": "Party Animal",
+            "url": "https://peerbadges.com/assets/partyanimal-BQ16HmQc.png",
+            "backgroundColor": "#E11D48",
+            "description": "For the person still going strong three hours after everyone said they were leaving.",
+            "criteria": "Award this to the peer whose energy keeps a night alive well past the point most people tap out."
+        },
+        {
+            "category": "Fun & Energy",
+            "type": "ext:TroubleMaker",
+            "title": "Trouble Maker",
+            "url": "https://peerbadges.com/api/public/badge-images/73b479b8-9caa-4609-86ff-ca7708f4de1b.png",
+            "backgroundColor": "#ea3d38",
+            "description": "Reserved for the person whose bad ideas make the best stories later.",
+            "criteria": "Award this to the peer whose mischievous streak reliably produces just enough chaos to make things memorable."
+        },
+        {
+            "category": "Fun & Energy",
+            "type": "ext:Doer",
+            "title": "Doer",
+            "url": "https://peerbadges.com/api/public/badge-images/235a7194-3c12-41f9-be28-c69a906b26a2.jpg",
+            "backgroundColor": "#fd8f1d",
+            "description": "For the person who stops talking about it around the time everyone else is still forming opinions, and just does it.",
+            "criteria": "Award this to the peer who ships, executes, and reliably turns intention into finished work."
+        },
+        {
+            "category": "Fun & Energy",
+            "type": "ext:Entertainer",
+            "title": "Entertainer",
+            "url": "https://peerbadges.com/assets/entertainer-CPerm4Hm.png",
+            "backgroundColor": "#C026D3",
+            "description": "Reserved for the person who could make a delayed flight fun and probably has.",
+            "criteria": "Award this to the peer whose jokes, stories, and general showmanship keep everyone else laughing."
+        },
+        {
+            "category": "Brains & Mastery",
+            "type": "ext:Connoisseur",
+            "title": "Connoisseur",
+            "url": "https://peerbadges.com/assets/connoisseur-Dp1v-up3.png",
+            "backgroundColor": "#A16207",
+            "description": "For the person whose taste is educated enough that you just trust the pick.",
+            "criteria": "Award this to the peer whose refined judgment in a specific domain reliably points the rest of us toward the good stuff."
+        },
+        {
+            "category": "Leaders & Changemakers",
+            "type": "ext:ChangeMaker",
+            "title": "Change Maker",
+            "url": "https://peerbadges.com/assets/changemaker-DfVLpQa6.png",
+            "backgroundColor": "#10B981",
+            "description": "Reserved for the person who looks at how things are and quietly starts building how they should be.",
+            "criteria": "Award this to the peer whose ideas and actions have measurably shifted the culture, process, or outcomes around them."
+        },
+        {
+            "category": "Leaders & Changemakers",
+            "type": "ext:Ambassador",
+            "title": "Ambassador",
+            "url": "https://peerbadges.com/api/public/badge-images/b01c7cdb-3c5b-474e-b818-74a69758bc9d.png",
+            "backgroundColor": "#7bdcfb",
+            "description": "For the person who represents the group well wherever they go, without ever making it feel like a pitch.",
+            "criteria": "Award this to the peer who speaks for the community, brings new people in, and makes outsiders feel welcome."
+        },
+        {
+            "category": "Leaders & Changemakers",
+            "type": "ext:Catalyst",
+            "title": "Catalyst",
+            "url": "https://peerbadges.com/assets/catalyst-DhsOL9fM.png",
+            "backgroundColor": "#A855F7",
+            "description": "Reserved for the person whose presence in a conversation makes something new actually happen.",
+            "criteria": "Award this to the peer who sparks the idea, the collaboration, or the momentum that gets things moving."
+        },
+        {
+            "category": "Bold & Adventurous",
+            "type": "ext:ChallengeMaker",
+            "title": "Challenge Maker",
+            "url": "https://peerbadges.com/assets/challengemaker-Bc8RIFZb.png",
+            "backgroundColor": "#B91C1C",
+            "description": "For the person who invents the dare, the game, or the goal that pulls everyone else up a level.",
+            "criteria": "Award this to the peer who dreams up the fun, ambitious, or slightly-too-hard challenge the group ends up bragging about."
+        },
+        {
+            "category": "Bold & Adventurous",
+            "type": "ext:Challenger",
+            "title": "Challenger",
+            "url": "https://peerbadges.com/assets/challenger-Waemm6eN.png",
+            "backgroundColor": "#C2410C",
+            "description": "Reserved for the person who pushes the assumption, asks the harder question, and won't let a lazy answer pass.",
+            "criteria": "Award this to the peer whose willingness to disagree, in good faith, makes the whole group's thinking sharper."
+        },
+        {
+            "category": "Heart & Team",
+            "type": "ext:Enabler",
+            "title": "Enabler",
+            "url": "https://peerbadges.com/assets/enabler-J1fXXECl.png",
+            "backgroundColor": "#2DD4BF",
+            "description": "For the person who quietly clears the path so someone else can do their best work.",
+            "criteria": "Award this to the peer who removes blockers, opens doors, and makes it possible for others to succeed."
+        },
+        {
+            "category": "Heart & Team",
+            "type": "ext:Enthusiast",
+            "title": "Enthusiast",
+            "url": "https://peerbadges.com/assets/enthusiast-D6x4Z175.png",
+            "backgroundColor": "#F43F5E",
+            "description": "Reserved for the person whose genuine excitement makes you care about things you didn't know you could care about.",
+            "criteria": "Award this to the peer whose contagious energy for a topic or project pulls others in."
+        },
+        {
+            "category": "Culture & Cool",
+            "type": "ext:HotShot",
+            "title": "Hot Shot",
+            "url": "https://peerbadges.com/assets/hotshot-6OX11nlS.png",
+            "backgroundColor": "#FB923C",
+            "description": "For the person on the streak, delivering the win, and making it look easier than it is.",
+            "criteria": "Award this to the peer whose recent run of results, moves, or performances has been undeniably impressive."
+        },
+        {
+            "category": "Culture & Cool",
+            "type": "ext:Informer",
+            "title": "Informer",
+            "url": "https://peerbadges.com/assets/informer-3weW9B-v.png",
+            "backgroundColor": "#38BDF8",
+            "description": "Reserved for the person who reliably shows up with the article, the update, or the heads-up before you needed it.",
+            "criteria": "Award this to the peer who keeps the group in the loop with useful, well-timed information."
+        },
+        {
+            "category": "Brains & Mastery",
+            "type": "ext:Maven",
+            "title": "Maven",
+            "url": "https://peerbadges.com/assets/maven-BJcNA5C1.png",
+            "backgroundColor": "#7E22CE",
+            "description": "For the person whose accumulated know-how in a domain is basically a public utility at this point.",
+            "criteria": "Award this to the peer whose depth, generosity with knowledge, and pattern recognition make them the go-to in their field."
+        },
+        {
+            "category": "Bold & Adventurous",
+            "type": "ext:Maverick",
+            "title": "Maverick",
+            "url": "https://peerbadges.com/assets/maverick-qXtWnWRq.png",
+            "backgroundColor": "#991B1B",
+            "description": "Reserved for the person who plays their own game and somehow keeps winning it.",
+            "criteria": "Award this to the peer whose independent streak, unusual approach, or refusal to conform produces real results."
+        },
+        {
+            "category": "Fun & Energy",
+            "type": "ext:PartyPlanner",
+            "title": "Party Planner",
+            "url": "https://peerbadges.com/assets/partyplanner-DJrYB1ms.png",
+            "backgroundColor": "#BE185D",
+            "description": "For the person who thinks in guest lists, playlists, and vibe curves, and always seems to nail all three.",
+            "criteria": "Award this to the peer who designs gatherings that people are still talking about weeks later."
+        },
+        {
+            "category": "Heart & Team",
+            "type": "ext:Promoter",
+            "title": "Promoter",
+            "url": "https://peerbadges.com/assets/promoter-B4LNgzlU.png",
+            "backgroundColor": "#FBBF24",
+            "description": "Reserved for the person whose enthusiastic sharing has quietly built more audiences than they'll ever admit.",
+            "criteria": "Award this to the peer who champions other people's work, shows up to the events, and gets the word out."
+        },
+        {
+            "category": "Culture & Cool",
+            "type": "ext:Propagator",
+            "title": "Propagator",
+            "url": "https://peerbadges.com/assets/propagator-D1VIzr2_.png",
+            "backgroundColor": "#22C55E",
+            "description": "For the person who takes a small idea and helps it grow roots in five other communities.",
+            "criteria": "Award this to the peer who spreads useful ideas, practices, or projects far beyond their original audience."
+        },
+        {
+            "category": "Brains & Mastery",
+            "type": "ext:Sage",
+            "title": "Sage",
+            "url": "https://peerbadges.com/assets/sage-BkzRrc1G.png",
+            "backgroundColor": "#0369A1",
+            "description": "Reserved for the person whose considered advice tends to age extremely well.",
+            "criteria": "Award this to the peer whose wisdom, perspective, and thoughtful counsel have helped others make better decisions."
+        },
+        {
+            "category": "Culture & Cool",
+            "type": "ext:Tastemaker",
+            "title": "Tastemaker",
+            "url": "https://peerbadges.com/assets/tastemaker-B4aPtMLF.png",
+            "backgroundColor": "#FB7185",
+            "description": "For the person whose picks quietly define what the rest of the group ends up loving.",
+            "criteria": "Award this to the peer whose eye, ear, or palate consistently sets the standard for what's good around here."
+        },
+        {
+            "category": "Vibes & Community",
+            "type": "ext:VibeCurator",
+            "title": "Vibe Curator",
+            "url": "https://peerbadges.com/assets/vibecurator-BaqcWbWi.png",
+            "backgroundColor": "#8B5CF6",
+            "description": "Reserved for the community members who know exactly how to make a room feel better, warmer, stranger, or more alive.",
+            "criteria": "Award this to the person who brings the perfect music, mood, lighting, playlist, or general atmosphere to any gathering."
+        },
+        {
+            "category": "Vibes & Community",
+            "type": "ext:ChaosCoordinator",
+            "title": "Chaos Coordinator",
+            "url": "https://peerbadges.com/assets/chaoscoordinator-CuDqEeDj.png",
+            "backgroundColor": "#EF4444",
+            "description": "For the person who somehow turns confusion, missed messages, late arrivals, and half-formed plans into an actual functioning experience.",
+            "criteria": "Award this to the person who saves the day when the group chat becomes a disaster and everyone else has emotionally resigned."
+        },
+        {
+            "category": "Vibes & Community",
+            "type": "ext:HypeArchitect",
+            "title": "Hype Architect",
+            "url": "https://peerbadges.com/assets/hypearchitect-DxQu0es6.png",
+            "backgroundColor": "#F97316",
+            "description": "Reserved for the rare friend who makes other people feel braver, cooler, funnier, and more capable than they did five minutes ago.",
+            "criteria": "Award this to someone who consistently celebrates others, boosts confidence, and brings main-character energy to their peers."
+        },
+        {
+            "category": "Vibes & Community",
+            "type": "ext:LoreKeeper",
+            "title": "Lore Keeper",
+            "url": "https://peerbadges.com/api/public/badge-images/895be8ef-9882-4fdf-ac7e-5df199e4ceae.jpg",
+            "backgroundColor": "#A16207",
+            "description": "For the community member who remembers every inside joke, legendary night, strange detail, and oddly important piece of group history.",
+            "criteria": "Award this to the person who preserves the stories, explains the references, and keeps the mythology of the group alive."
+        },
+        {
+            "category": "Vibes & Community",
+            "type": "ext:SideQuestSpecialist",
+            "title": "Side Quest Specialist",
+            "url": "https://peerbadges.com/assets/sidequestspecialist-XPeZtCQl.png",
+            "backgroundColor": "#0EA5E9",
+            "description": "Reserved for the person who can turn a normal day into an unexpected adventure with one suspiciously casual suggestion.",
+            "criteria": "Award this to someone known for spontaneous detours, weird little missions, hidden gems, and unusually successful side quests."
+        },
+        {
+            "category": "Vibes & Community",
+            "type": "ext:QuietGenius",
+            "title": "Quiet Genius",
+            "url": "https://peerbadges.com/assets/quietgenius-DFpkS8FV.png",
+            "backgroundColor": "#0D9488",
+            "description": "For the person who may not always take the spotlight, but regularly drops the exact idea, fix, or observation everyone needed.",
+            "criteria": "Award this to the person whose thoughtful contributions, subtle brilliance, or perfectly timed insight make the whole team better."
+        },
+        {
+            "category": "Vibes & Community",
+            "type": "ext:CommunityHelper",
+            "title": "Community Helper",
+            "url": "https://peerbadges.com/api/public/badge-images/b6568163-b0fa-493a-8010-7fc18c6a156f.png",
+            "backgroundColor": "#f8f1dd",
+            "description": "Reserved for the community members who show up when someone needs a hand, a pointer, a fix, or just a little extra kindness.",
+            "criteria": "Award this to the person who helped another community member solve a problem, feel welcome, find their way, or get unstuck."
+        },
+        {
+            "category": "Vibes & Community",
+            "type": "ext:FoodSniper",
+            "title": "Food Sniper",
+            "url": "https://peerbadges.com/api/public/badge-images/b5a319ca-e6b9-4aa0-aa81-bb44970e26a1.png",
+            "backgroundColor": "#5ebaaf",
+            "description": "Reserved for the community members with impeccable taste and a talent for discovering the best culinary spots.",
+            "criteria": "Award this to the person known for providing the ultimate restaurant recommendations or leading the team to the best local eats."
+        },
+        {
+            "category": "Vibes & Community",
+            "type": "ext:VisualStoryteller",
+            "title": "Visual Storyteller",
+            "url": "https://peerbadges.com/assets/visualstoryteller-BMAZ0Qrl.png",
+            "backgroundColor": "#EC4899",
+            "description": "For the community member who turns ideas, data, moments, and messy concepts into visuals that people can actually feel and understand.",
+            "criteria": "Award this to someone who contributes strong creative assets, presentation design, diagrams, images, brand moments, or visual explanations."
+        },
+        {
+            "category": "Vibes & Community",
+            "type": "ext:LogicMaster",
+            "title": "Logic Master",
+            "url": "https://peerbadges.com/assets/logicmaster-BqtnSfnH.png",
+            "backgroundColor": "#2563EB",
+            "description": "Reserved for the person who brings structure to complexity, catches the hidden flaw, and makes the whole system make sense.",
+            "criteria": "Award this to someone who contributes technical thinking, clear reasoning, elegant problem-solving, or the decisive “wait, actually…” that saves the project."
+        },
+        {
+            "category": "Standards & Specs",
+            "type": "ext:SchemaWhisperer",
+            "title": "Schema Whisperer",
+            "url": "https://peerbadges.com/assets/schemawhisperer-O-eS14Zj.png",
+            "backgroundColor": "#7C3AED",
+            "description": "Reserved for the community member who can stare into a tangled credential payload and somehow emerge with elegance, order, and valid JSON-LD.",
+            "criteria": "Award this to the person who helps make badge data cleaner, more interoperable, and less likely to summon ancient standards demons."
+        },
+        {
+            "category": "Standards & Specs",
+            "type": "ext:AlignmentWizard",
+            "title": "Alignment Wizard",
+            "url": "https://peerbadges.com/assets/alignmentwizard-Uun1vo9E.png",
+            "backgroundColor": "#9333EA",
+            "description": "For the person who can connect a badge to a skill, a skill to a framework, a framework to a job, and somehow make it all seem obvious.",
+            "criteria": "Award this to someone known for mapping competencies, standards, occupations, and learning outcomes into something humans can actually use."
+        },
+        {
+            "category": "Standards & Specs",
+            "type": "ext:CLRCartographer",
+            "title": "CLR Cartographer",
+            "url": "https://peerbadges.com/assets/clrcartographer-Bzn4XeFC.png",
+            "backgroundColor": "#0369A1",
+            "description": "Reserved for the brave soul who helps communities navigate the wild territory between transcripts, credentials, skills, evidence, and learner records.",
+            "criteria": "Award this to the person who makes Comprehensive Learner Records feel less like a maze and more like a map."
+        },
+        {
+            "category": "Standards & Specs",
+            "type": "ext:VerifiableVibes",
+            "title": "Verifiable Vibes",
+            "url": "https://peerbadges.com/api/public/badge-images/a3ab4084-4829-4e7f-9c8b-2c49d247a221.jpg",
+            "backgroundColor": "#10B981",
+            "description": "For the community member who believes trust is beautiful, signatures are poetry, and verification should work before anyone starts the demo.",
+            "criteria": "Award this to someone who helps ensure badges can be issued, held, shared, checked, and trusted without theatrical hand-waving."
+        },
+        {
+            "category": "Standards & Specs",
+            "type": "ext:BadgeGoblin",
+            "title": "Badge Goblin",
+            "url": "https://peerbadges.com/assets/badgegoblin-BqZ4xosc.png",
+            "backgroundColor": "#059669",
+            "description": "Reserved for the person who wants everything to be a badge, and is usually, annoyingly, kind of right.",
+            "criteria": "Award this to someone who keeps finding delightful, useful, or deeply unnecessary things that deserve to be credentialed."
+        },
+        {
+            "category": "Standards & Specs",
+            "type": "ext:MetadataMystic",
+            "title": "Metadata Mystic",
+            "url": "https://peerbadges.com/assets/metadatamystic-DPh9vx2v.png",
+            "backgroundColor": "#6D28D9",
+            "description": "For the person who understands that the visible badge is only the charm on the necklace. The real magic is in the structured data underneath.",
+            "criteria": "Award this to someone who improves descriptions, evidence, criteria, tags, alignments, issuers, expiration, revocation, or any other sacred metadata field."
+        },
+        {
+            "category": "Standards & Specs",
+            "type": "ext:InteropDiplomat",
+            "title": "Interop Diplomat",
+            "url": "https://peerbadges.com/assets/interopdiplomat-Coo7tZBN.png",
+            "backgroundColor": "#0284C7",
+            "description": "Reserved for the patient negotiator who can bring platforms, vendors, wallets, registries, and institutions into the same room without causing a standards incident.",
+            "criteria": "Award this to the person who advances interoperability through grace, persistence, and the occasional heroic spreadsheet."
+        },
+        {
+            "category": "Standards & Specs",
+            "type": "ext:BackpackElder",
+            "title": "Backpack Elder",
+            "url": "https://peerbadges.com/assets/backpackelder-Bp0JaFqZ.png",
+            "backgroundColor": "#B45309",
+            "description": "For the community member who remembers where the badges came from, why they mattered, and which conversations everyone keeps accidentally rediscovering.",
+            "criteria": "Award this to someone who carries the lore of Open Badges and helps newer people understand the movement, not just the spec."
+        },
+        {
+            "category": "Standards & Specs",
+            "type": "ext:IssuerTherapist",
+            "title": "Issuer Therapist",
+            "url": "https://peerbadges.com/assets/issuertherapist-MZorEmTj.png",
+            "backgroundColor": "#DB2777",
+            "description": "Reserved for the person who gently helps organizations admit that their badge criteria are unclear, their evidence is vibes, and their taxonomy needs love.",
+            "criteria": "Award this to someone who helps issuers design better badges with clearer value, stronger evidence, and fewer existential credentialing crises."
+        },
+        {
+            "category": "Standards & Specs",
+            "type": "ext:SpecGremlin",
+            "title": "Spec Gremlin",
+            "url": "https://peerbadges.com/assets/specgremlin-ChjYL6A-.png",
+            "backgroundColor": "#B91C1C",
+            "description": "For the person who reads the implementation notes, finds the edge case, asks the terrifying question, and saves everyone six months of pain.",
+            "criteria": "Award this to someone who catches ambiguity, breaks assumptions, stress-tests the standard, or says, “Technically…” and is unfortunately correct."
+        }
+    ]
+}

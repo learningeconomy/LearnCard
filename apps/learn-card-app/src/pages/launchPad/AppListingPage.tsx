@@ -1,7 +1,10 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import * as m from '../../paraglide/messages.js';
 import { useParams, useHistory } from 'react-router-dom';
 import type { AppStoreListing } from '@learncard/types';
 import numeral from 'numeral';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('app-listing-page');
 
 import { IonPage, IonContent, IonSpinner, IonToast } from '@ionic/react';
 import {
@@ -162,12 +165,12 @@ const AppListingPage: React.FC = () => {
         if (isCheckingInstalled) return;
         if (!listing) return;
         if (installIntent?.listingId !== listingId) return;
-        // Wait for onboarding to finish — OnboardingContainer sets this flag
+        // Wait for onboarding to finish — OnboardingFlow sets this flag
         if (isOnboardingOpen) return;
 
-        // For new-user path: OnboardingContainer is opened via newModal() (a portal),
+        // For new-user path: OnboardingFlow is opened via newModal() (a portal),
         // so its useEffect fires *after* this one in the same render cycle.
-        // The 300ms delay gives OnboardingContainer time to mount, set isOnboardingOpen=true,
+        // The 300ms delay gives OnboardingFlow time to mount, set isOnboardingOpen=true,
         // and claim installIntent before we act on it.
         const timer = setTimeout(() => {
             // Re-check after delay using fresh store values (avoids stale-closure issues)
@@ -192,7 +195,15 @@ const AppListingPage: React.FC = () => {
         }, 300);
 
         return () => clearTimeout(timer);
-    }, [installIntent, isOnboardingOpen, isLoggedIn, isCheckingInstalled, listing, isInstalled, isChildProfile]);
+    }, [
+        installIntent,
+        isOnboardingOpen,
+        isLoggedIn,
+        isCheckingInstalled,
+        listing,
+        isInstalled,
+        isChildProfile,
+    ]);
 
     const handleShareApp = async () => {
         if (!listing) return;
@@ -203,7 +214,7 @@ const AppListingPage: React.FC = () => {
             closeModal();
             setShowCopiedToast(true);
         } catch (err) {
-            console.error('Failed to copy link:', err);
+            log.error('Failed to copy link:', err);
         }
     };
 
@@ -244,9 +255,7 @@ const AppListingPage: React.FC = () => {
                     <h3 className="text-lg font-semibold text-gray-900 mb-1">
                         {listing.display_name} installed
                     </h3>
-                    <p className="text-sm text-gray-500 mb-6">
-                        Would you like to open it now?
-                    </p>
+                    <p className="text-sm text-gray-500 mb-6">Would you like to open it now?</p>
                     <div className="flex gap-3">
                         <button
                             onClick={() => closeModal()}
@@ -274,7 +283,7 @@ const AppListingPage: React.FC = () => {
                 { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
             );
         } catch (error) {
-            console.error('Failed to install app:', error);
+            log.error('Failed to install app:', error);
         } finally {
             setIsProcessing(false);
         }
@@ -329,14 +338,14 @@ const AppListingPage: React.FC = () => {
                 try {
                     await withdrawConsent(termsUri);
                 } catch (error) {
-                    console.error('Failed to withdraw consent:', error);
+                    log.error('Failed to withdraw consent:', error);
                     // Continue with uninstall even if consent withdrawal fails
                 }
             }
 
             await uninstallMutation.mutateAsync(listing.listing_id);
         } catch (error) {
-            console.error('Failed to uninstall app:', error);
+            log.error('Failed to uninstall app:', error);
         } finally {
             setIsProcessing(false);
         }
@@ -591,7 +600,7 @@ const AppListingPage: React.FC = () => {
                             className="flex items-center gap-1 hover:bg-amber-600 rounded-lg px-2 py-1 transition-colors"
                         >
                             <ArrowLeft className="w-4 h-4" />
-                            <span className="text-sm font-medium">Back</span>
+                            <span className="text-sm font-medium">{m['common.back']()}</span>
                         </button>
                         <div className="flex items-center gap-2">
                             <Eye className="w-4 h-4" />

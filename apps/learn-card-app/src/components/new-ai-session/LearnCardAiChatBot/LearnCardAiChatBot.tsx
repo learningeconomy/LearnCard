@@ -2,6 +2,8 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useStore } from '@nanostores/react';
 import { useDeviceTypeByWidth, useKeyboardHeight, isPlatformIOS } from 'learn-card-base';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('learn-card-ai-chat-bot');
 
 import ChatHeader from './ChatHeader';
 import ChatInput from './ChatInput';
@@ -170,7 +172,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
         const handleVisibility = () => {
             const threadId = currentThreadId.get();
             const { did } = auth.get();
-            console.debug('visibility change', document.visibilityState, threadId, did);
+            log.debug('visibility change', document.visibilityState, threadId, did);
 
             if (threadId && did) {
                 if (document.visibilityState === 'hidden') {
@@ -187,7 +189,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                                 `${getBackendUrl()}/threads/visibility?did=${did}`,
                                 form
                             );
-                            console.debug('sent beacon after 5min hidden');
+                            log.debug('sent beacon after 5min hidden');
                             // After the timer fires, reset it to null so a new one can be created.
                             hiddenTimer = null;
                         }, 5 * 60 * 1000); // 5 minutes
@@ -204,7 +206,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                     form.append('threadId', threadId);
                     form.append('event', 'visible');
                     navigator.sendBeacon(`${getBackendUrl()}/threads/visibility?did=${did}`, form);
-                    console.debug('sent beacon visible');
+                    log.debug('sent beacon visible');
                 }
             }
         };
@@ -277,119 +279,123 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
 
     return (
         <AiFeatureGate>
-        <div
-            className="flex flex-col h-full min-h-0 w-full bg-white"
-            style={keyboardInset > 0 ? { paddingBottom: keyboardInset } : undefined}
-        >
-            {isEnding && showEndingLoader && (
-                <AiSessionLoader
-                    contractUri={contractUri}
-                    overrideText={sessionWrapUpText}
-                    // !force user to wait
-                    // showActionButton={true}
-                    // actionButtonText="Back to AI Sessions"
-                    // actionButtonHandler={() => {
-                    //     closeModal();
-                    //     if (isDesktop) {
-                    //         handleStartOver?.();
-                    //     }
-                    //     history.push('/ai/topics');
-                    // }}
-                    // containerClassName="flex-col"
-                    // showCloseButton={true}
-                    // closeButtonHandler={() => {
-                    //     showEndingSessionLoader.set(false);
-                    // }}
-                />
-            )}
+            <div
+                className="flex flex-col h-full min-h-0 w-full bg-white"
+                style={keyboardInset > 0 ? { paddingBottom: keyboardInset } : undefined}
+            >
+                {isEnding && showEndingLoader && (
+                    <AiSessionLoader
+                        contractUri={contractUri}
+                        overrideText={sessionWrapUpText}
+                        // !force user to wait
+                        // showActionButton={true}
+                        // actionButtonText="Back to AI Sessions"
+                        // actionButtonHandler={() => {
+                        //     closeModal();
+                        //     if (isDesktop) {
+                        //         handleStartOver?.();
+                        //     }
+                        //     history.push('/ai/topics');
+                        // }}
+                        // containerClassName="flex-col"
+                        // showCloseButton={true}
+                        // closeButtonHandler={() => {
+                        //     showEndingSessionLoader.set(false);
+                        // }}
+                    />
+                )}
 
-            {loading && mode === AiSessionMode.insights && (
-                <AiChatLoading contractUri={contractUri} />
-            )}
+                {loading && mode === AiSessionMode.insights && (
+                    <AiChatLoading contractUri={contractUri} />
+                )}
 
-            {(!loading || mode !== AiSessionMode.insights) && (
-                <>
-                    <ChatHeader mode={mode} aiApp={aiApp} initialTopic={initialTopic} />
-                    <div className="flex flex-col flex-1 min-h-0 min-w-0 w-full max-w-[829px] mx-auto sm:pb-[30px]">
-                    <div
-                        ref={chatContainerRef}
-                        className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col px-4 relative"
-                    >
-                        <div ref={chatContentRef} className="flex flex-col min-w-0">
-                            {mode !== AiSessionMode.insights && <AiSessionPlan />}
+                {(!loading || mode !== AiSessionMode.insights) && (
+                    <>
+                        <ChatHeader mode={mode} aiApp={aiApp} initialTopic={initialTopic} />
+                        <div className="flex flex-col flex-1 min-h-0 min-w-0 w-full max-w-[829px] mx-auto sm:pb-[30px]">
+                            <div
+                                ref={chatContainerRef}
+                                className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col px-4 relative"
+                            >
+                                <div ref={chatContentRef} className="flex flex-col min-w-0">
+                                    {mode !== AiSessionMode.insights && <AiSessionPlan />}
 
-                            {messagesToShow.map((msg, index) => {
-                                const isLastUser = index === lastUserIdx;
-                                const isTail = index === messagesToShow.length - 1;
-                                // Reserve viewport space on whatever is the last rendered block.
-                                // When streaming, that's the StreamingMessage below; otherwise
-                                // it's the tail message wrapper. Keeps the user bubble pinned
-                                // to the top without creating a gap before the assistant reply.
-                                const pinStyle =
-                                    isTail && !streaming && viewportAllowance > 0
-                                        ? {
-                                              minHeight: `${Math.max(
-                                                  0,
-                                                  viewportAllowance - 24
-                                              )}px`,
-                                          }
-                                        : undefined;
+                                    {messagesToShow.map((msg, index) => {
+                                        const isLastUser = index === lastUserIdx;
+                                        const isTail = index === messagesToShow.length - 1;
+                                        // Reserve viewport space on whatever is the last rendered block.
+                                        // When streaming, that's the StreamingMessage below; otherwise
+                                        // it's the tail message wrapper. Keeps the user bubble pinned
+                                        // to the top without creating a gap before the assistant reply.
+                                        const pinStyle =
+                                            isTail && !streaming && viewportAllowance > 0
+                                                ? {
+                                                      minHeight: `${Math.max(
+                                                          0,
+                                                          viewportAllowance - 24
+                                                      )}px`,
+                                                  }
+                                                : undefined;
 
-                                return (
-                                    <div
-                                        key={msg.id ?? index}
-                                        ref={isLastUser ? lastUserMessageRef : undefined}
-                                        className="w-full"
-                                        style={pinStyle}
-                                    >
-                                        <MessageWithQuestions message={msg} aiApp={aiApp} />
-                                    </div>
-                                );
-                            })}
+                                        return (
+                                            <div
+                                                key={msg.id ?? index}
+                                                ref={isLastUser ? lastUserMessageRef : undefined}
+                                                className="w-full"
+                                                style={pinStyle}
+                                            >
+                                                <MessageWithQuestions message={msg} aiApp={aiApp} />
+                                            </div>
+                                        );
+                                    })}
 
-                            {streaming && (
-                                <div
-                                    className="w-full"
-                                    style={
-                                        viewportAllowance > 0
-                                            ? {
-                                                  minHeight: `${Math.max(
-                                                      0,
-                                                      viewportAllowance - 24
-                                                  )}px`,
-                                              }
-                                            : undefined
-                                    }
-                                >
-                                    <StreamingMessage aiApp={aiApp} />
-                                </div>
-                            )}
-                        </div>
-
-                        {(!isAtBottom || streaming) && (
-                            <div className="sticky bottom-[20px] left-1/2 transform -translate-x-1/2 w-fit">
-                                <button
-                                    onClick={() => scrollToBottom('smooth')}
-                                    className="relative p-[11px] bg-white rounded-full border-solid border-[1px] border-grayscale-200 shadow-button-bottom text-grayscale-900"
-                                    aria-label={streaming ? 'AI is responding — scroll to bottom' : 'Scroll to bottom'}
-                                >
                                     {streaming && (
-                                        <span
-                                            className="pointer-events-none absolute inset-[-3px] rounded-full border-[2px] border-transparent border-t-emerald-700 animate-spin"
-                                            aria-hidden="true"
-                                        />
+                                        <div
+                                            className="w-full"
+                                            style={
+                                                viewportAllowance > 0
+                                                    ? {
+                                                          minHeight: `${Math.max(
+                                                              0,
+                                                              viewportAllowance - 24
+                                                          )}px`,
+                                                      }
+                                                    : undefined
+                                            }
+                                        >
+                                            <StreamingMessage aiApp={aiApp} />
+                                        </div>
                                     )}
-                                    <CaretDown version="2" />
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                                </div>
 
-                    <div className="sm:px-4">{!loading && <ChatInput />}</div>
-                    </div>
-                </>
-            )}
-        </div>
+                                {(!isAtBottom || streaming) && (
+                                    <div className="sticky bottom-[20px] left-1/2 transform -translate-x-1/2 w-fit">
+                                        <button
+                                            onClick={() => scrollToBottom('smooth')}
+                                            className="relative p-[11px] bg-white rounded-full border-solid border-[1px] border-grayscale-200 shadow-button-bottom text-grayscale-900"
+                                            aria-label={
+                                                streaming
+                                                    ? 'AI is responding — scroll to bottom'
+                                                    : 'Scroll to bottom'
+                                            }
+                                        >
+                                            {streaming && (
+                                                <span
+                                                    className="pointer-events-none absolute inset-[-3px] rounded-full border-[2px] border-transparent border-t-emerald-700 animate-spin"
+                                                    aria-hidden="true"
+                                                />
+                                            )}
+                                            <CaretDown version="2" />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="sm:px-4">{!loading && <ChatInput />}</div>
+                        </div>
+                    </>
+                )}
+            </div>
         </AiFeatureGate>
     );
 };

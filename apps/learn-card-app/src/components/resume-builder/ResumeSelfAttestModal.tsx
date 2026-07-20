@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('resume-self-attest-modal');
 
 import { IonSpinner } from '@ionic/react';
 import {
@@ -15,12 +17,19 @@ import {
 
 import useWallet from 'learn-card-base/hooks/useWallet';
 
-import { initialBoostCMSState, LCNBoostStatusEnum } from '../boost/boost';
+import {
+    BoostCMSAppearanceDisplayTypeEnum,
+    initialBoostCMSState,
+    type BoostCMSState,
+} from 'learn-card-base/components/boost/boost';
+import { LCNBoostStatusEnum } from '../boost/boost';
 import { getDefaultDisplayType, sendBoostCredential } from '../boost/boostHelpers';
 import { useAddCredentialToWallet } from '../boost/mutations';
 import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
 import type { ResumeSectionKey } from './resume-builder.helpers';
 import { switchedProfileStore } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
+import { useLocale } from '../../i18n';
 
 type ResumeSelfAttestModalProps = {
     category: ResumeSectionKey;
@@ -47,7 +56,7 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
 
     const handleSelfIssue = async () => {
         if (!profile?.profileId) {
-            presentToast('Unable to self issue without a profile.', {
+            presentToast(m['toasts.resume.selfIssueNoProfile'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -61,7 +70,11 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
             if (!wallet) throw new Error('Wallet is not initialized');
 
             const customBoostType = constructCustomBoostType(boostCategory, name.trim());
-            const state = {
+            const displayType =
+                Object.values(BoostCMSAppearanceDisplayTypeEnum).find(
+                    type => type === String(getDefaultDisplayType(boostCategory))
+                ) ?? BoostCMSAppearanceDisplayTypeEnum.Badge;
+            const state: BoostCMSState = {
                 ...initialBoostCMSState,
                 basicInfo: {
                     ...initialBoostCMSState.basicInfo,
@@ -69,11 +82,15 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
                     description: description.trim(),
                     type: boostCategory,
                     achievementType: customBoostType,
+                    memberTitles: initialBoostCMSState.basicInfo.memberTitles ?? {
+                        guardians: { singular: 'Guardian', plural: 'Guardians' },
+                        dependents: { singular: 'Member', plural: 'Members' },
+                    },
                 },
                 appearance: {
                     ...initialBoostCMSState.appearance,
                     badgeThumbnail: metadata?.CategoryImage ?? '',
-                    displayType: getDefaultDisplayType(boostCategory),
+                    displayType,
                 },
             };
 
@@ -89,7 +106,16 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
 
             if (!boostUri) throw new Error('Boost was created without a URI');
 
-            const { sentBoost } = await sendBoostCredential(wallet, profile.profileId, boostUri);
+            const { sentBoost, sentBoostUri } = await sendBoostCredential(
+                wallet,
+                profile.profileId,
+                boostUri
+            );
+            if (!sentBoost) throw new Error('Unable to prepare credential');
+            if (!sentBoostUri) throw new Error('Credential was created without a URI');
+
+            await wallet.invoke.acceptCredential(sentBoostUri);
+
             const issuedVcUri = await wallet.store.LearnCloud.uploadEncrypted?.(sentBoost);
 
             if (!issuedVcUri) throw new Error('Unable to save issued credential');
@@ -109,8 +135,8 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
             }
             closeModal();
         } catch (error) {
-            console.error('resume self issue error', error);
-            presentToast('Unable to self issue credential', {
+            log.error('resume self issue error', error);
+            presentToast(m['toasts.resume.selfIssueFailed'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -119,7 +145,12 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
         }
     };
 
-    const heading = useMemo(() => metadata?.titleSingular ?? 'Credential', [metadata]);
+    const locale = useLocale();
+
+    const heading = useMemo(
+        () => metadata?.titleSingular ?? m['passport.resumeBuilder.credential'](),
+        [metadata, locale]
+    );
 
     return (
         <div className="flex flex-col gap-[10px] items-center w-full max-w-[340px] mx-auto">
@@ -136,7 +167,7 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
                     )}
                 </div>
                 <h2 className="font-poppins text-[22px] leading-[100%] text-grayscale-900">
-                    Add {heading}
+                    {m['passport.resumeBuilder.selfAttest.addTitle']({ type: heading })}
                 </h2>
 
                 <div className="flex flex-col gap-[12px] w-full">
@@ -144,7 +175,7 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
                         autoCapitalize="on"
                         value={name}
                         onChange={event => setName(event.target.value)}
-                        placeholder="Name..."
+                        placeholder={m['passport.resumeBuilder.selfAttest.namePlaceholder']()}
                         className="w-full bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-500 rounded-[15px] px-[15px] py-[12px] border-none outline-none"
                         maxLength={60}
                     />
@@ -152,7 +183,9 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
                         autoCapitalize="on"
                         value={description}
                         onChange={event => setDescription(event.target.value)}
-                        placeholder="Description..."
+                        placeholder={m[
+                            'passport.resumeBuilder.selfAttest.descriptionPlaceholder'
+                        ]()}
                         className="w-full min-h-[108px] max-h-[180px] overflow-y-auto resize-none bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-500 rounded-[15px] px-[15px] py-[12px] border-none outline-none"
                         rows={4}
                     />
@@ -164,14 +197,18 @@ export const ResumeSelfAttestModal: React.FC<ResumeSelfAttestModalProps> = ({ ca
                     onClick={closeModal}
                     disabled={isLoading}
                 >
-                    Back
+                    {m['common.back']()}
                 </button>
                 <button
                     className={`flex items-center justify-center gap-2 flex-1 py-[10px] px-[20px] rounded-[30px] font-poppins text-[17px] leading-[130%] tracking-[-0.25px] shadow-bottom-4-4 text-white disabled:bg-grayscale-300 bg-${metadata?.color}`}
                     onClick={handleSelfIssue}
                     disabled={continueDisabled}
                 >
-                    {isLoading ? <IonSpinner name="crescent" className="w-4 h-4" /> : 'Add'}
+                    {isLoading ? (
+                        <IonSpinner name="crescent" className="w-4 h-4" />
+                    ) : (
+                        m['common.add']()
+                    )}
                 </button>
             </div>
         </div>

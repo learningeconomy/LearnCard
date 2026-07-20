@@ -21,6 +21,8 @@ import { useCheckIfUserInNetwork } from 'apps/scouts/src/components/network-prom
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 
 import { useAcceptConnectionRequestMutation } from 'learn-card-base';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('add-contact-view');
 
 export enum AddContactViewMode {
     acceptInvite = 'acceptInvite',
@@ -106,7 +108,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
             // @ts-ignore
             if (err?.message.includes('Connection already requested')) setConnectionRequested(true);
             // @ts-ignore
-            console.log('connectionReq::error', err?.message);
+            log.debug('connectionReq::error', err?.message);
             setLoading(false);
         }
     };
@@ -119,7 +121,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
         const wallet = await initWallet();
 
         if (!currentLCNUser && !currentLCNUserLoading) {
-            handlePresentJoinNetworkModal();
+            void handlePresentJoinNetworkModal({ forceOpen: true });
         }
 
         setLoading(true);
@@ -143,7 +145,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                 hasDismissButton: true,
             });
             // @ts-ignore
-            console.log('connection::error', err?.message);
+            log.debug('connection::error', err?.message);
             setLoading(false);
         }
     };

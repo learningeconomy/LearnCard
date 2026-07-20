@@ -12,6 +12,18 @@ The `@learncard/partner-connect` SDK is a Promise-based JavaScript library that 
 -   **Message Queue**: Tracks pending requests with unique IDs and timeouts
 -   **Central Listener**: Validates origins and resolves/rejects promises
 -   **Type System**: Comprehensive TypeScript definitions for all APIs
+-   **MockHost** (`src/mock-host.ts`): Simulates the LearnCard host when the SDK is not embedded, so partner apps run and demo standalone
+-   **Embed detection** (`isEmbedded`): Reports whether the SDK is running inside an iframe host
+
+### Standalone Mock Mode
+
+When the SDK is not embedded in a LearnCard host, no host answers its `postMessage` requests. Mock mode (on by default via `mock: 'auto'`) intercepts the single `sendMessage(action, payload)` chokepoint and returns host-shaped responses, so every method resolves without a real host.
+
+-   Activation: `mock` option — `'auto'` (default) mocks only when **no LearnCard host is present AND the page is on a local dev host** (`localhost`, `127.0.0.1`, `[::1]`, `*.localhost`, `*.local`); `'standalone'` mocks whenever no host is present, on **any** origin (remote previews like Lovable/Netlify), but goes real when embedded in LearnCard; `true` always mocks, even embedded (CI/tests); `false` never mocks. `mockOptions` tunes UI/logging/persistence/DID/namespace.
+-   Parent trust: an embedding parent counts as LearnCard only when `ancestorOrigins[0]` matches a configured host origin **pattern** (the any-localhost native-app heuristic is not sufficient). A known foreign parent (e.g. a cross-origin Storybook manager) is treated like standalone — mock on local dev, fast `LC_NOT_EMBEDDED` otherwise. When the parent is ambiguous (Firefox, or a localhost parent) on a local dev host, a one-time side-effect-free `GET_SYNC_STATUS` probe (`hostProbeTimeout`, default 1500 ms) decides between real host and mock; requests queue behind the decision.
+-   Never widen auto-mock activation to non-local origins: a standalone production partner app must never receive fabricated identity or auto-granted consent.
+-   `MockHost` is browser-oriented but SSR-safe (never touches `document` at import) and dependency-free. Counters persist to `localStorage`; UI is injected DOM cleaned up on `destroy()`.
+-   Response shapes MUST match the real host handlers in `apps/learn-card-app/src/hooks/post-message/useLearnCardPostMessage.handlers.ts`. Update both together.
 
 ### Security Model
 
@@ -77,7 +89,8 @@ public newFeature(params: unknown): Promise<NewFeatureResponse> {
 
 3. Document the method with JSDoc including examples
 4. Update the README.md with the new method
-5. Test with example applications
+5. **Add a matching case to `MockHost.handle` (`src/mock-host.ts`)** so the method also resolves in standalone mock mode
+6. Test with example applications
 
 #### Updating Security Configuration
 
@@ -150,16 +163,17 @@ public async someMethod(): Promise<Response> {
 
 ### Build Commands
 
--   **Build**: `pnpm exec nx build partner-connect-sdk`
--   **Development**: `pnpm exec nx dev partner-connect-sdk`
--   **Type Check**: `pnpm exec nx typecheck partner-connect-sdk`
+-   **Build**: `bunx nx build partner-connect-sdk`
+-   **Development**: `bunx nx dev partner-connect-sdk`
+-   **Type Check**: `bunx nx typecheck partner-connect-sdk`
 
 ### Build Outputs
 
-The package builds to multiple formats:
+The package builds to multiple formats (paths come from `package.json` `main`/`module`/`exports`):
 
--   **CommonJS**: `dist/partner-connect.js`
--   **ESM**: `dist/partner-connect.esm.js`
+-   **CommonJS**: `dist/partner-connect.js` (the `require` condition)
+-   **ESM (bundler)**: `dist/partner-connect.esm.js` (the `import`/`module` condition)
+-   **ESM (Node)**: `dist/partner-connect.mjs` (the `node.import` condition, for raw Node ESM consumers)
 -   **Types**: `dist/index.d.ts`
 
 ### Browser Compatibility

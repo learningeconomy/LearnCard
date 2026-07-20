@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import {
     useModal,
     ModalTypes,
@@ -8,30 +7,27 @@ import {
     useGetBoostSkills,
     useToast,
     ToastTypeEnum,
-    useGetSkillFrameworkById,
 } from 'learn-card-base';
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('self-assign-skills-modal');
 
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import SkillsCloseConfirmationModal from './SkillsCloseConfirmationModal';
 import { IonFooter, IonSpinner } from '@ionic/react';
-import { GenericErrorView } from 'learn-card-base/components/generic/GenericErrorBoundary';
 
 import SkillSearchSelector from './SkillSearchSelector';
 import { SelectedSkill } from './skillTypes';
+import * as m from '../../paraglide/messages.js';
 
 type SelfAssignSkillsModalProps = {};
 
 const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
-    const flags = useFlags();
     const { presentToast } = useToast();
     const { closeModal, newModal } = useModal();
 
     const [isUpdating, setIsUpdating] = useState(false);
     const [selectedSkills, setSelectedSkills] = useState<SelectedSkill[]>([]);
-
-    const frameworkId = flags?.selfAssignedSkillsFrameworkId;
-    const { data: selfAssignedSkillFramework, isLoading: selfAssignedSkillFrameworkLoading } =
-        useGetSkillFrameworkById(frameworkId);
 
     const { mutateAsync: createOrUpdateSkills } = useManageSelfAssignedSkillsBoost();
     const { data: sasBoostData } = useGetSelfAssignedSkillsBoost();
@@ -40,20 +36,35 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
     useEffect(() => {
         if (sasBoostSkills) {
             setSelectedSkills(
-                sasBoostSkills.map(s => ({ id: s.id, proficiency: s.proficiencyLevel }))
+                sasBoostSkills.map(
+                    (s: { id: string; frameworkId: string; proficiencyLevel: number }) => ({
+                        id: s.id,
+                        frameworkId: s.frameworkId,
+                        proficiency: s.proficiencyLevel,
+                    })
+                )
             );
         }
     }, [sasBoostSkills]);
 
     const hasNoChanges = useMemo(() => {
-        const currentIds = new Set(selectedSkills.map(s => s.id));
-        const originalIds = new Set(sasBoostSkills?.map((s: { id: string }) => s.id) ?? []);
+        const currentKeys = new Set(
+            selectedSkills.map(skill => `${skill.frameworkId}::${skill.id}`)
+        );
+        const originalKeys = new Set(
+            sasBoostSkills?.map(
+                (skill: { id: string; frameworkId: string }) => `${skill.frameworkId}::${skill.id}`
+            ) ?? []
+        );
         const sameIds =
-            currentIds.size === originalIds.size &&
-            [...currentIds].every(id => originalIds.has(id));
+            currentKeys.size === originalKeys.size &&
+            [...currentKeys].every(key => originalKeys.has(key));
         if (!sameIds) return false;
         return selectedSkills.every(s => {
-            const original = sasBoostSkills?.find((o: { id: string }) => o.id === s.id);
+            const original = sasBoostSkills?.find(
+                (o: { id: string; frameworkId: string }) =>
+                    o.id === s.id && o.frameworkId === s.frameworkId
+            );
             return original && original.proficiencyLevel === s.proficiency;
         });
     }, [selectedSkills, sasBoostSkills]);
@@ -78,17 +89,17 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
         try {
             await createOrUpdateSkills({
                 skills: selectedSkills.map(s => ({
-                    frameworkId: frameworkId,
+                    frameworkId: s.frameworkId,
                     id: s.id,
                     proficiencyLevel: s.proficiency,
                 })),
             });
 
-            presentToast('Skills saved successfully!', {
+            presentToast(m['toasts.skills.savedSuccess'](), {
                 type: ToastTypeEnum.Success,
             });
         } catch (error: any) {
-            console.error('Error creating or updating skills:', error);
+            log.error('Error creating or updating skills:', error);
             presentToast(`Error saving skills!${error?.message ? ` ${error?.message}` : ''}`, {
                 type: ToastTypeEnum.Error,
             });
@@ -99,20 +110,16 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
         closeModal();
     };
 
-    const errorLoadingFramework = !selfAssignedSkillFramework && !selfAssignedSkillFrameworkLoading;
-
     return (
         <div className="h-full relative bg-grayscale-50 overflow-hidden">
             <div className="px-[20px] py-[20px] bg-white safe-area-top-margin flex flex-col gap-[10px] z-20 relative border-b-[1px] border-grayscale-200 border-solid rounded-b-[30px]">
                 <div className="flex items-center gap-[10px] text-grayscale-900">
                     <PuzzlePiece className="w-[40px] h-[40px]" version="filled" />
                     <h5 className="text-[22px] font-poppins font-[600] leading-[24px]">
-                        Add Skills
+                        {m['boost.cms.skills.addSkills']()}
                     </h5>
                 </div>
             </div>
-
-            {errorLoadingFramework && <GenericErrorView errorMessage="Error loading framework" />}
 
             {isUpdating && (
                 <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-30">
@@ -120,15 +127,13 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                 </div>
             )}
 
-            {!errorLoadingFramework && (
-                <section className="h-full pt-[20px] px-[20px] pb-[222px] overflow-y-auto z-0 relative">
-                    <SkillSearchSelector
-                        selectedSkills={selectedSkills}
-                        onSelectedSkillsChange={setSelectedSkills}
-                        showSuggestSkill={true}
-                    />
-                </section>
-            )}
+            <section className="h-full pt-[20px] px-[20px] pb-[222px] overflow-y-auto z-0 relative">
+                <SkillSearchSelector
+                    selectedSkills={selectedSkills}
+                    onSelectedSkillsChange={setSelectedSkills}
+                    showSuggestSkill={true}
+                />
+            </section>
 
             <IonFooter
                 mode="ios"
@@ -139,17 +144,15 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                         onClick={handleClose}
                         className="p-[10px] bg-white rounded-full text-grayscale-900 shadow-button-bottom flex-1 font-poppins text-[17px] border-solid border-[1px] border-grayscale-200 leading-[22px]"
                     >
-                        Close
+                        {m['common.close']()}
                     </button>
 
                     <button
                         onClick={handleSave}
                         className="px-[15px] py-[7px] bg-emerald-700 text-white rounded-[30px] text-[17px] font-[600] font-poppins leading-[24px] tracking-[0.25px] shadow-button-bottom h-[44px] flex-1 disabled:bg-grayscale-300"
-                        disabled={
-                            hasNoChanges || skillsLoading || isUpdating || errorLoadingFramework
-                        }
+                        disabled={hasNoChanges || skillsLoading || isUpdating}
                     >
-                        Save
+                        {m['common.save']()}
                     </button>
                 </div>
             </IonFooter>

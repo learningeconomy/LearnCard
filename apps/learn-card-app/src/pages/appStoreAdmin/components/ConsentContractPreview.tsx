@@ -1,7 +1,15 @@
 import React from 'react';
 import { Loader2, ShieldAlert, BookOpen, PenTool, Eye } from 'lucide-react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('consent-contract-preview');
 
-import { useModal, ModalTypes, useWallet, contractCategoryNameToCategoryMetadata } from 'learn-card-base';
+import {
+    useModal,
+    ModalTypes,
+    useWallet,
+    contractCategoryNameToCategoryMetadata,
+} from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 import { useQuery } from '@tanstack/react-query';
 
 import FullScreenConsentFlow from '../../consentFlow/FullScreenConsentFlow';
@@ -16,21 +24,22 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
     const { newModal } = useModal();
     const { initWallet } = useWallet();
 
-    const { data: selectedContract, isLoading: isLoadingContract } = useQuery<ConsentFlowContractDetails | null>({
-        queryKey: ['getContract', contractUri],
-        queryFn: async () => {
-            if (!contractUri) return null;
+    const { data: selectedContract, isLoading: isLoadingContract } =
+        useQuery<ConsentFlowContractDetails | null>({
+            queryKey: ['getContract', contractUri],
+            queryFn: async () => {
+                if (!contractUri) return null;
 
-            try {
-                const wallet = await initWallet();
-                return await wallet.invoke.getContract(contractUri);
-            } catch (error) {
-                console.error('Failed to fetch contract:', error);
-                return null;
-            }
-        },
-        enabled: !!contractUri,
-    });
+                try {
+                    const wallet = await initWallet();
+                    return await wallet.invoke.getContract(contractUri);
+                } catch (error) {
+                    log.error('Failed to fetch contract:', error);
+                    return null;
+                }
+            },
+            enabled: !!contractUri,
+        });
 
     const readCategories = selectedContract?.contract?.read?.credentials?.categories || {};
     const writeCategories = selectedContract?.contract?.write?.credentials?.categories || {};
@@ -58,7 +67,9 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
     return (
         <div>
             <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-medium text-gray-600">Consent Flow Contract</h3>
+                <h3 className="text-sm font-medium text-gray-600">
+                    {m['appStoreAdmin.listing.contractTitle']()}
+                </h3>
 
                 {selectedContract && (
                     <button
@@ -66,7 +77,7 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-100 text-cyan-700 rounded-lg text-xs font-medium hover:bg-cyan-200 transition-colors"
                     >
                         <Eye className="w-3.5 h-3.5" />
-                        Preview Contract
+                        {m['appStoreAdmin.listing.previewContract']()}
                     </button>
                 )}
             </div>
@@ -74,7 +85,9 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
             {isLoadingContract ? (
                 <div className="p-4 bg-gray-50 rounded-lg flex items-center justify-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                    <span className="text-sm text-gray-500">Loading contract...</span>
+                    <span className="text-sm text-gray-500">
+                        {m['appStoreAdmin.listing.loadingContract']()}
+                    </span>
                 </div>
             ) : selectedContract ? (
                 <div className="space-y-3">
@@ -93,7 +106,9 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
                         )}
 
                         <div>
-                            <p className="text-sm font-medium text-gray-700">{selectedContract.name}</p>
+                            <p className="text-sm font-medium text-gray-700">
+                                {selectedContract.name}
+                            </p>
                             {selectedContract.subtitle && (
                                 <p className="text-xs text-gray-400">{selectedContract.subtitle}</p>
                             )}
@@ -104,13 +119,16 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
                     <div className="bg-cyan-50 border border-cyan-100 rounded-lg p-3">
                         <div className="flex items-center gap-2 mb-2">
                             <BookOpen className="w-4 h-4 text-cyan-600" />
-                            <span className="text-xs font-medium text-cyan-700">Read Access</span>
+                            <span className="text-xs font-medium text-cyan-700">
+                                {m['appStoreAdmin.listing.readAccess']()}
+                            </span>
                         </div>
 
                         {hasReadCategories ? (
                             <div className="flex flex-wrap gap-1.5">
                                 {Object.keys(readCategories).map(category => {
-                                    const metadata = contractCategoryNameToCategoryMetadata(category);
+                                    const metadata =
+                                        contractCategoryNameToCategoryMetadata(category);
 
                                     return (
                                         <span
@@ -126,7 +144,9 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
                                 })}
                             </div>
                         ) : (
-                            <p className="text-xs text-cyan-600 italic">No read permissions requested</p>
+                            <p className="text-xs text-cyan-600 italic">
+                                {m['appInstall.noReadRequested']()}
+                            </p>
                         )}
                     </div>
 
@@ -134,13 +154,16 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
                     <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3">
                         <div className="flex items-center gap-2 mb-2">
                             <PenTool className="w-4 h-4 text-emerald-600" />
-                            <span className="text-xs font-medium text-emerald-700">Write Access</span>
+                            <span className="text-xs font-medium text-emerald-700">
+                                {m['appStoreAdmin.listing.writeAccess']()}
+                            </span>
                         </div>
 
                         {hasWriteCategories ? (
                             <div className="flex flex-wrap gap-1.5">
                                 {Object.keys(writeCategories).map(category => {
-                                    const metadata = contractCategoryNameToCategoryMetadata(category);
+                                    const metadata =
+                                        contractCategoryNameToCategoryMetadata(category);
 
                                     return (
                                         <span
@@ -156,14 +179,18 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
                                 })}
                             </div>
                         ) : (
-                            <p className="text-xs text-emerald-600 italic">No write permissions requested</p>
+                            <p className="text-xs text-emerald-600 italic">
+                                {m['appInstall.noWriteRequested']()}
+                            </p>
                         )}
                     </div>
                 </div>
             ) : (
                 <div className="p-3 bg-gray-100 rounded-lg">
                     <p className="text-xs text-gray-500 font-mono break-all">{contractUri}</p>
-                    <p className="text-xs text-gray-400 mt-1 italic">Contract details not available</p>
+                    <p className="text-xs text-gray-400 mt-1 italic">
+                        {m['appStoreAdmin.listing.contractNotAvailable']()}
+                    </p>
                 </div>
             )}
         </div>

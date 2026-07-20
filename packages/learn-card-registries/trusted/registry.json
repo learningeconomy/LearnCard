@@ -29,6 +29,11 @@
             "location": "Kuala Lumpur, Malaysia",
             "url": "https://www.scout.org/"
         },
+        "did:web:scoutnetwork.org:users:world-scouting": {
+            "name": "World Scouting",
+            "location": "Kuala Lumpur, Malaysia",
+            "url": "https://www.scout.org/"
+        },
         "did:web:network.learncard.com:users:learnfleet-academy": {
             "name": "LearnFleet Academy",
             "location": "Washington, DC, USA",
@@ -53,6 +58,11 @@
             "name": "DCC did:key for testing a did in four registries",
             "location": "Cambridge, MA, USA",
             "url": "https://digitalcredentials.mit.edu"
+        },
+        "did:key:z6MkpTTKmRmcQfYRqjZs4uA1LactrSNB1vTCjBYMhG8E7u9Y": {
+            "name": "LER Interoperability Test Suite",
+            "location": "Cambridge, MA, USA",
+            "url": "https://ler-tests.prettygoodskills.com/"
         },
         "did:key:z6MkpLDL3RoAoMRTwTgo3rs39ZwssfaPKtGdZw7AGRN7CK4W": {
             "name": "(Example) My University",

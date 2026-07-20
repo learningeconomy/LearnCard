@@ -1,5 +1,79 @@
 # Changelog
 
+## 1.0.145
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.27
+    -   @learncard/didkit-plugin@1.9.7
+    -   @learncard/meta-mask-snap@1.0.123
+
+## 1.0.144
+
+### Patch Changes
+
+-   Updated dependencies [[`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68)]:
+    -   @learncard/core@9.4.26
+    -   @learncard/didkit-plugin@1.9.6
+    -   @learncard/meta-mask-snap@1.0.122
+
+## 1.0.143
+
+### Patch Changes
+
+-   Updated dependencies [[`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299)]:
+    -   @learncard/core@9.4.25
+    -   @learncard/didkit-plugin@1.9.5
+    -   @learncard/meta-mask-snap@1.0.121
+
+## 1.0.142
+
+### Patch Changes
+
+-   [#1327](https://github.com/learningeconomy/LearnCard/pull/1327) [`9853f6a89fa9103975ec855367e789746aee5387`](https://github.com/learningeconomy/LearnCard/commit/9853f6a89fa9103975ec855367e789746aee5387) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Upgrade Astro example apps to the Zod 4-compatible Astro 6 line, remove the Astro-specific Zod 3 override, and keep package builds compatible with the updated esbuild runtime.
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.24
+    -   @learncard/didkit-plugin@1.9.4
+    -   @learncard/meta-mask-snap@1.0.120
+
+## 1.0.141
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.23
+    -   @learncard/didkit-plugin@1.9.3
+    -   @learncard/meta-mask-snap@1.0.119
+
+## 1.0.140
+
+### Patch Changes
+
+-   Updated dependencies [[`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083)]:
+    -   @learncard/core@9.4.22
+    -   @learncard/didkit-plugin@1.9.2
+    -   @learncard/meta-mask-snap@1.0.118
+
+## 1.0.139
+
+### Patch Changes
+
+-   Updated dependencies [[`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2)]:
+    -   @learncard/didkit-plugin@1.9.1
+    -   @learncard/core@9.4.21
+    -   @learncard/meta-mask-snap@1.0.117
+
+## 1.0.138
+
+### Patch Changes
+
+-   Updated dependencies [[`7c5fea147f7c9876dd8d7cbe2ece082eb0e5a42b`](https://github.com/learningeconomy/LearnCard/commit/7c5fea147f7c9876dd8d7cbe2ece082eb0e5a42b)]:
+    -   @learncard/didkit-plugin@1.9.0
+    -   @learncard/core@9.4.20
+    -   @learncard/meta-mask-snap@1.0.116
+
 ## 1.0.137
 
 ### Patch Changes

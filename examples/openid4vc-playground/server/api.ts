@@ -29,17 +29,19 @@ import {
     type CreateVerifySessionOptions,
     type MintOfferOptions,
 } from './waltid';
-import {
-    createEudiVerifySession,
-    getEudiVerifyStatus,
-} from './eudi';
+import { createEudiVerifySession, getEudiVerifyStatus } from './eudi';
 import { mintHostedEudiOffer } from './eudi-issuer';
+import {
+    createEmbeddedVerifySession,
+    getEmbeddedVerifyStatus,
+    mintEmbeddedSdJwtOffer,
+} from './embedded';
 
 /** Resolved on import; lets every endpoint share an env baseline. */
 const ISSUER_BASE_URL = process.env.WALTID_ISSUER_BASE_URL ?? 'http://localhost:7002';
 const VERIFIER_BASE_URL = process.env.WALTID_VERIFIER_BASE_URL ?? 'http://localhost:7003';
-const EUDI_VERIFIER_BASE_URL =
-    process.env.EUDI_VERIFIER_BASE_URL ?? 'http://localhost:7004';
+const EUDI_VERIFIER_BASE_URL = process.env.EUDI_VERIFIER_BASE_URL ?? 'http://localhost:7004';
+const EMBEDDED_BASE_URL = process.env.EMBEDDED_BASE_URL ?? 'http://localhost:5173';
 
 /* -------------------------------------------------------------------------- */
 /*                          provider \u00d7 scenario catalogue                     */
@@ -71,13 +73,15 @@ type LaunchResult =
 interface VciImpl {
     kind: 'vci';
     label: string;
-    run: () => Promise<{ rawOfferUri: string }>;
+    embedded?: boolean;
+    run: (publicBaseUrl: string) => Promise<{ rawOfferUri: string }>;
 }
 
 interface VpImpl {
     kind: 'vp';
     label: string;
-    run: () => Promise<{ rawAuthRequestUri: string; state: string }>;
+    embedded?: boolean;
+    run: (publicBaseUrl: string) => Promise<{ rawAuthRequestUri: string; state: string }>;
 }
 
 /**
@@ -87,7 +91,31 @@ interface VpImpl {
  * \u2192 fill in more entries with a different prefix.
  */
 const IMPLS: Record<string, VciImpl | VpImpl> = {
-    /* ----------------------------- VCI \u2014 walt.id ---------------------------- */
+    /* --------------------- Embedded (no external deps) ---------------------- */
+
+    'embedded:embedded-vci-sdjwt-cnf': {
+        kind: 'vci',
+        label: 'SD-JWT-VC with cnf binding — embedded',
+        embedded: true,
+        run: async (publicBaseUrl: string) => {
+            const { rawOfferUri } = await mintEmbeddedSdJwtOffer({ publicBaseUrl });
+            return { rawOfferUri };
+        },
+    },
+
+    'embedded:embedded-vp-sdjwt-pex': {
+        kind: 'vp',
+        label: 'SD-JWT-VC PEX presentation — embedded',
+        embedded: true,
+        run: async (publicBaseUrl: string) => {
+            const { rawAuthRequestUri, state } = await createEmbeddedVerifySession({
+                publicBaseUrl,
+            });
+            return { rawAuthRequestUri, state };
+        },
+    },
+
+    /* ----------------------------- VCI — walt.id ---------------------------- */
 
     'waltid:vci-pre-auth-no-pin': {
         kind: 'vci',
@@ -204,9 +232,7 @@ const IMPLS: Record<string, VciImpl | VpImpl> = {
         run: async () => {
             const session = await createWaltidVerifySession({
                 verifierBaseUrl: VERIFIER_BASE_URL,
-                requestCredentials: [
-                    { type: 'UniversityDegree', format: 'jwt_vc_json' },
-                ],
+                requestCredentials: [{ type: 'UniversityDegree', format: 'jwt_vc_json' }],
             });
             return {
                 rawAuthRequestUri: session.authorizationRequestUri,
@@ -224,9 +250,7 @@ const IMPLS: Record<string, VciImpl | VpImpl> = {
             // the wallet's picker should appear on the consent screen.
             const session = await createWaltidVerifySession({
                 verifierBaseUrl: VERIFIER_BASE_URL,
-                requestCredentials: [
-                    { type: 'UniversityDegree', format: 'jwt_vc_json' },
-                ],
+                requestCredentials: [{ type: 'UniversityDegree', format: 'jwt_vc_json' }],
             });
             return {
                 rawAuthRequestUri: session.authorizationRequestUri,
@@ -251,42 +275,37 @@ const IMPLS: Record<string, VciImpl | VpImpl> = {
         run: async () => {
             const session = await createWaltidVerifySession({
                 verifierBaseUrl: VERIFIER_BASE_URL,
-                requestCredentials: [
-                    { type: 'UniversityDegree', format: 'jwt_vc_json' },
+                requestCredentials: [{ type: 'UniversityDegree', format: 'jwt_vc_json' }],
+            });
+            const swappedUri = overridePresentationDefinition(session.authorizationRequestUri, {
+                id: 'playground-claims-constraint',
+                input_descriptors: [
+                    {
+                        id: 'degree-with-name',
+                        format: { jwt_vc_json: { alg: ['EdDSA'] } },
+                        constraints: {
+                            fields: [
+                                {
+                                    // Must be a UniversityDegree by type.
+                                    path: ['$.vc.type', '$.type'],
+                                    filter: {
+                                        type: 'array',
+                                        contains: { const: 'UniversityDegree' },
+                                    },
+                                },
+                                {
+                                    // AND must have a `degree.name`.
+                                    path: [
+                                        '$.vc.credentialSubject.degree.name',
+                                        '$.credentialSubject.degree.name',
+                                    ],
+                                    filter: { type: 'string' },
+                                },
+                            ],
+                        },
+                    },
                 ],
             });
-            const swappedUri = overridePresentationDefinition(
-                session.authorizationRequestUri,
-                {
-                    id: 'playground-claims-constraint',
-                    input_descriptors: [
-                        {
-                            id: 'degree-with-name',
-                            format: { jwt_vc_json: { alg: ['EdDSA'] } },
-                            constraints: {
-                                fields: [
-                                    {
-                                        // Must be a UniversityDegree by type.
-                                        path: ['$.vc.type', '$.type'],
-                                        filter: {
-                                            type: 'array',
-                                            contains: { const: 'UniversityDegree' },
-                                        },
-                                    },
-                                    {
-                                        // AND must have a `degree.name`.
-                                        path: [
-                                            '$.vc.credentialSubject.degree.name',
-                                            '$.credentialSubject.degree.name',
-                                        ],
-                                        filter: { type: 'string' },
-                                    },
-                                ],
-                            },
-                        },
-                    ],
-                }
-            );
             return {
                 rawAuthRequestUri: swappedUri,
                 state: session.state,
@@ -306,11 +325,10 @@ const IMPLS: Record<string, VciImpl | VpImpl> = {
     'eudi:vci-eudi-diploma-sdjwt': {
         kind: 'vci',
         label: 'Academic diploma (SD-JWT VC) \u2014 EUDI hosted',
-        run: async () => {
+        run: async (publicBaseUrl: string) => {
             const { rawOfferUri } = mintHostedEudiOffer({
-                credentialConfigurationIds: [
-                    'eu.europa.ec.eudi.diploma_vc_sd_jwt',
-                ],
+                publicBaseUrl,
+                credentialConfigurationIds: ['eu.europa.ec.eudi.diploma_vc_sd_jwt'],
             });
             return { rawOfferUri };
         },
@@ -319,8 +337,9 @@ const IMPLS: Record<string, VciImpl | VpImpl> = {
     'eudi:vci-eudi-pid-sdjwt': {
         kind: 'vci',
         label: 'Personal ID (SD-JWT VC) \u2014 EUDI hosted',
-        run: async () => {
+        run: async (publicBaseUrl: string) => {
             const { rawOfferUri } = mintHostedEudiOffer({
+                publicBaseUrl,
                 credentialConfigurationIds: ['eu.europa.ec.eudi.pid_vc_sd_jwt'],
             });
             return { rawOfferUri };
@@ -330,8 +349,9 @@ const IMPLS: Record<string, VciImpl | VpImpl> = {
     'eudi:vci-eudi-mdl-mdoc': {
         kind: 'vci',
         label: 'Mobile Driving Licence (mDoc) \u2014 EUDI hosted',
-        run: async () => {
+        run: async (publicBaseUrl: string) => {
             const { rawOfferUri } = mintHostedEudiOffer({
+                publicBaseUrl,
                 credentialConfigurationIds: ['eu.europa.ec.eudi.mdl_mdoc'],
             });
             return { rawOfferUri };
@@ -359,9 +379,7 @@ const IMPLS: Record<string, VciImpl | VpImpl> = {
                             id: 'degree',
                             format: 'dc+sd-jwt',
                             meta: {
-                                vct_values: [
-                                    'https://example.com/UniversityDegree',
-                                ],
+                                vct_values: ['https://example.com/UniversityDegree'],
                             },
                         },
                     ],
@@ -405,9 +423,7 @@ const IMPLS: Record<string, VciImpl | VpImpl> = {
         run: async () => {
             const session = await createWaltidVerifySession({
                 verifierBaseUrl: VERIFIER_BASE_URL,
-                requestCredentials: [
-                    { type: 'UniversityDegree', format: 'jwt_vc_json' },
-                ],
+                requestCredentials: [{ type: 'UniversityDegree', format: 'jwt_vc_json' }],
                 responseMode: 'direct_post.jwt',
             } satisfies CreateVerifySessionOptions);
             return {
@@ -427,8 +443,14 @@ export interface LaunchRequestBody {
     scenarioId: string;
 }
 
+export interface LaunchContext {
+    /** Origin of the playground itself (e.g. `http://localhost:5173`), derived from the launch request's Host header. */
+    publicBaseUrl?: string;
+}
+
 export const handleLaunch = async (
-    body: LaunchRequestBody
+    body: LaunchRequestBody,
+    context: LaunchContext = {}
 ): Promise<LaunchResult> => {
     const key = `${body.providerId}:${body.scenarioId}`;
     const impl = IMPLS[key];
@@ -440,11 +462,11 @@ export const handleLaunch = async (
         );
     }
 
+    const embeddedBase = context.publicBaseUrl ?? EMBEDDED_BASE_URL;
+
     if (impl.kind === 'vci') {
-        const { rawOfferUri } = await impl.run();
-        // Resolve to by-value so the wallet's https-only guard on
-        // `credential_offer_uri` doesn't reject the local Docker URL.
-        const uri = await resolveOfferToByValue(rawOfferUri);
+        const { rawOfferUri } = await impl.run(embeddedBase);
+        const uri = impl.embedded ? rawOfferUri : await resolveOfferToByValue(rawOfferUri);
         return {
             kind: 'vci',
             uri,
@@ -454,8 +476,10 @@ export const handleLaunch = async (
         };
     }
 
-    const { rawAuthRequestUri, state } = await impl.run();
-    const uri = await resolveAuthorizationRequestToByValue(rawAuthRequestUri);
+    const { rawAuthRequestUri, state } = await impl.run(embeddedBase);
+    const uri = impl.embedded
+        ? rawAuthRequestUri
+        : await resolveAuthorizationRequestToByValue(rawAuthRequestUri);
     return {
         kind: 'vp',
         uri,
@@ -488,12 +512,28 @@ export const handleStatus = async (q: StatusQuery): Promise<StatusResult> => {
     if (q.kind === 'vci') {
         return {
             status: 'pending',
-            detail: 'walt.id does not expose a per-offer redemption status \u2014 watch the wallet for completion.',
+            detail: 'No issuer exposes a per-offer redemption status \u2014 watch the wallet for completion.',
         };
     }
 
     if (!q.state) {
         throw new ApiError(400, 'VP status query requires `state`');
+    }
+
+    if (q.providerId === 'embedded') {
+        const verdict = getEmbeddedVerifyStatus(q.state);
+        if (verdict.status === 'success') {
+            const detail = `${verdict.detail} Disclosed: ${
+                Object.keys(verdict.disclosedClaims).join(', ') || '(none)'
+            }. Hidden: ${verdict.hiddenClaimKeys.join(', ') || '(none)'}. KB-JWT: ${
+                verdict.hasKeyBinding ? 'present' : 'absent'
+            }.`;
+            return { status: 'success', detail };
+        }
+        if (verdict.status === 'fail') {
+            return { status: 'fail', detail: verdict.detail };
+        }
+        return { status: 'pending' };
     }
 
     if (q.providerId === 'waltid') {
@@ -522,8 +562,7 @@ export const handleStatus = async (q: StatusQuery): Promise<StatusResult> => {
         }
         return {
             status: 'success',
-            detail:
-                'EUDI received a wallet response. Reference verifier doesn\u2019t emit a verdict boolean \u2014 inspect the verifier UI for details.',
+            detail: 'EUDI received a wallet response. Reference verifier doesn\u2019t emit a verdict boolean \u2014 inspect the verifier UI for details.',
         };
     }
 

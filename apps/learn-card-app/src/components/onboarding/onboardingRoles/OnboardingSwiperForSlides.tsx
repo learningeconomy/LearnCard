@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import * as m from '../../../paraglide/messages.js';
 import { IonicSlides } from '@ionic/react';
 import { LearnCardRolesEnum, LearnCardRoleType } from '../onboarding.helpers';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Keyboard, Navigation, Pagination, Scrollbar, Swiper as SwiperInterface } from 'swiper';
+import type { Swiper as SwiperInterface } from 'swiper/types';
+import { Keyboard, Navigation, Pagination, Scrollbar } from 'swiper/modules';
 import OnboardingSlide from './OnboardingSlide';
 import { getSlideContent, roleSlideContent } from './onboardingSlideContent';
 
@@ -100,7 +102,7 @@ const OnboardingSwiperForSlides: React.FC<OnboardingSwiperForSlidesProps> = ({ r
                     className="border-[1px] border-grayscale-800 border-solid bg-white max-w-[335px] w-full py-[10px] rounded-[40px] text-grayscale-800 font-poppins font-semibold text-[17px] mb-[10px]"
                     onClick={isLastSlide ? handleGetStarted : handleNextSlide}
                 >
-                    {isLastSlide ? 'Get Started' : 'Next'}
+                    {isLastSlide ? m['onboarding.slides.getStarted']() : m['common.next']()}
                 </button>
                 <div className="swiper-pagination onboarding-swiper-pagination"></div>
             </div>

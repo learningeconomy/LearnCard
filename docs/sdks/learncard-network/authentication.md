@@ -13,7 +13,7 @@ To interact with the LearnCard Network API, you can choose one of two ways to au
 To authenticate using the LearnCard Network Plugin (`@learncard/network-plugin`), first install the package:
 
 ```bash
-pnpm install @learncard/network-plugin
+bun add @learncard/network-plugin
 ```
 
 Then, either instantiate a LearnCard Network enabled LearnCard, or add the Network Plugin to an existing LearnCard:
@@ -84,8 +84,8 @@ const networkLearnCard = await learnCard.addPlugin(
 ```typescript
 // Step 1: Create an AuthGrant with specific permissions
 const grantId = await learnCard.invoke.addAuthGrant({
-    name: "Boost Sender Auth",
-    description: "Permission to send boosts",
+    name: 'Boost Sender Auth',
+    description: 'Permission to send boosts',
     scope: 'boosts:write',
 });
 
@@ -94,8 +94,8 @@ const token = await learnCard.invoke.getAPITokenForAuthGrant(grantId);
 
 // Step 3: Prepare the payload for your API request
 const payload = {
-    boostUri: "uri-of-the-boost-to-send",
-    signingAuthority: "your-signing-authority"
+    boostUri: 'uri-of-the-boost-to-send',
+    signingAuthority: 'your-signing-authority',
 };
 
 // Step 4: Make an authenticated HTTP request using the token
@@ -131,14 +131,14 @@ Profile management uses DID-based authentication with a challenge-response mecha
 **Simple High-Level Auth Flow:**
 
 ```mermaid
-sequenceDiagram  
-    participant Client as Client  
-    participant Network as Network API  
-          Client->>Network: Request access  
-          Network->>Client: Provide challenge  
-          Client->>Client: Sign challenge with DID  
-          Client->>Network: Submit signed challenge  
-          Network->>Network: Verify signature  
+sequenceDiagram
+    participant Client as Client
+    participant Network as Network API
+          Client->>Network: Request access
+          Network->>Client: Provide challenge
+          Client->>Client: Sign challenge with DID
+          Client->>Network: Submit signed challenge
+          Network->>Network: Verify signature
           Network->>Client: Grant authenticated access
 ```
 

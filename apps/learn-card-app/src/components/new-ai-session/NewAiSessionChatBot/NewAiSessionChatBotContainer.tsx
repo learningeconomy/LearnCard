@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
+import { m } from '../../../paraglide/messages.js';
+
 import { ChatBotBubbleAnswer, ChatBotBubbleQuestion } from './helpers/ChatBotBubble';
 import LearnCardAiChatBot from '../LearnCardAiChatBot/LearnCardAiChatBot';
 import StartAiSessionButton from './helpers/StartAiSessionButton';
@@ -32,7 +34,7 @@ import { sessionLoadingText } from '../newAiSession.helpers';
 import { usePathQuery } from 'learn-card-base';
 
 import { chatBotStore, useChatBotQA } from '../../../stores/chatBotStore';
-import { useAnalytics, AnalyticsEvents } from '@analytics';
+import { useAnalytics, AnalyticsEvents, useEngagementSignal } from '@analytics';
 
 export const NewAiSessionChatBotContainer: React.FC<{
     setActiveStep: (step: NewAiSessionStepEnum) => void;
@@ -59,6 +61,7 @@ export const NewAiSessionChatBotContainer: React.FC<{
     const setChatBotQA = chatBotStore.set.setChatBotQA;
     const mode = chatBotStore.useTracked.mode();
     const { track } = useAnalytics();
+    const fireEngagement = useEngagementSignal();
 
     // const [visibleIndexes, setVisibleIndexes] = useState<number[]>([]);
     const visibleIndexes = chatBotStore.useTracked.visibleIndexes();
@@ -187,6 +190,8 @@ export const NewAiSessionChatBotContainer: React.FC<{
                 appType: 'internal',
                 appName: app?.name,
             });
+            // LC-1853 (review #7): per-session gate.
+            fireEngagement('ai_chat');
             setStartInternalAiChatBot?.(true);
             return;
         }
@@ -196,6 +201,8 @@ export const NewAiSessionChatBotContainer: React.FC<{
             appType: 'external',
             appName: aiPassportApps.find(a => a.id === appAnswer)?.name,
         });
+        // LC-1853 (review #7): per-session gate.
+        fireEngagement('ai_chat');
         setShowLoader(true);
 
         setTimeout(() => {
@@ -223,10 +230,15 @@ export const NewAiSessionChatBotContainer: React.FC<{
 
     return (
         <div
-            className={`relative w-full flex flex-col pt-[80px] ${isDesktop ? 'max-w-[800px]' : ''}`}
+            className={`relative w-full flex flex-col pt-[80px] ${
+                isDesktop ? 'max-w-[800px]' : ''
+            }`}
             style={{ paddingTop: 'calc(80px + env(safe-area-inset-top))' }}
         >
-            <OnboardingHeader title="New Topic" onClose={isDesktop ? handleStartOver : undefined} />
+            <OnboardingHeader
+                title={m['aiSession.newTopic']()}
+                onClose={isDesktop ? handleStartOver : undefined}
+            />
             {showLoader && (
                 <AiSessionLoader chatBotQA={chatBotQA} overrideText={sessionLoadingText} />
             )}

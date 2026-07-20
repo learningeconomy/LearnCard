@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import queryString from 'query-string';
 import { useHistory, useLocation, Link, useParams } from 'react-router-dom';
-import { BrandingEnum, CredentialCategoryEnum, ModalTypes, useModal } from 'learn-card-base';
+import { BrandingEnum, ModalTypes, useModal, BoostCategoryOptionsEnum } from 'learn-card-base';
 import { IonContent, IonPage } from '@ionic/react';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { useFlags } from 'launchdarkly-react-client-sdk';
@@ -14,7 +14,6 @@ import NewBoostSelectMenu from '../../components/boost/boost-select-menu/NewBoos
 import { ScoutsNewsList } from '../../components/scout-news/ScoutNews';
 import { MV_TYPEFORM, openExternalLink } from '../../helpers/externalLinkHelpers';
 import useAppConnectModal from '../../hooks/useConnectAppModal';
-import { useJoinLCNetworkModal } from '../../components/network-prompts/hooks/useJoinLCNetworkModal';
 import { useIsCurrentUserLCNUser, useGetUnreadUserNotifications } from 'learn-card-base';
 
 import MiniPack from '../../assets/images/mini-pack.png';
@@ -23,6 +22,9 @@ import ContactsIcon from '../../assets/icons/ContactsIcon';
 import TroopsIcon from '../../assets/icons/TroopsIcon';
 import AlertsIcon from '../../assets/icons/AlertsIcon';
 import ViewAlignmentInfo from '../SkillFrameworks/ViewAlignmentInfo';
+import { useCheckIfUserInNetwork } from '../../components/network-prompts/hooks/useCheckIfUserInNetwork';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('launch-pad');
 
 type CapacitorBundle = {
     version: string;
@@ -45,8 +47,7 @@ const LaunchPad: React.FC = () => {
     const [_updateVersion, setUpdateVersion] = useState('');
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [_bundle, setBundle] = useState<CapacitorBundle | null>(null);
-    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
-    const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
+    const checkIfUserInNetwork = useCheckIfUserInNetwork();
     const { data: unreadNotifications } = useGetUnreadUserNotifications();
     const { presentConnectAppModal, loading: modalLoading } = useAppConnectModal(
         String(connectTo || ''),
@@ -93,7 +94,7 @@ const LaunchPad: React.FC = () => {
                 );
             }
         } catch (error) {
-            console.error('Update available error:', error);
+            log.error('Update available error:', error);
         }
     };
 
@@ -114,8 +115,7 @@ const LaunchPad: React.FC = () => {
         (e: React.MouseEvent) => {
             e.preventDefault();
 
-            if (!currentLCNUser && !currentLCNUserLoading) {
-                handlePresentJoinNetworkModal();
+            if (!checkIfUserInNetwork()) {
                 return;
             }
 
@@ -123,12 +123,12 @@ const LaunchPad: React.FC = () => {
                 <NewBoostSelectMenu
                     handleCloseModal={closeModal}
                     showHardcodedBoostPacks
-                    category={CredentialCategoryEnum.socialBadge}
+                    category={BoostCategoryOptionsEnum.socialBadge}
                 />,
                 { className: '!p-0', sectionClassName: '!p-0' }
             );
         },
-        [currentLCNUser, currentLCNUserLoading, handlePresentJoinNetworkModal, newModal, closeModal]
+        [checkIfUserInNetwork, newModal, closeModal]
     );
 
     const navButtons = [

@@ -2,6 +2,8 @@ import React from 'react';
 import PreloadingLink from '../generic/PreloadingLink';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
+import * as m from '../../paraglide/messages.js';
+
 import CustomSpinner from '../svgs/CustomSpinner';
 import { IonMenuToggle, IonList } from '@ionic/react';
 
@@ -14,6 +16,7 @@ import {
     walletStore,
     WalletSyncState,
 } from 'learn-card-base';
+import { getSideMenuLinkLabel } from 'learn-card-base/components/sidemenu/sidemenuHelpers';
 
 import { chatBotStore } from '../../stores/chatBotStore';
 
@@ -27,7 +30,7 @@ const SideMenuSecondaryLinks: React.FC<{
     setActiveTab: React.Dispatch<React.SetStateAction<string>>;
 }> = ({ activeTab, setActiveTab }) => {
     const { theme, getIconSet, getColorSet } = useTheme();
-    const iconSet = getIconSet(IconSetEnum.sideMenu);
+    const iconSet = getIconSet(IconSetEnum.sideMenu) as Record<string, React.FC<any>>;
     const colors = getColorSet(ColorSetEnum.sideMenu);
 
     const flags = useFlags();
@@ -63,8 +66,13 @@ const SideMenuSecondaryLinks: React.FC<{
 
     const isPathActive = (tab: string) => {
         const isAdminToolsActive = tab === '/admin-tools' && activeTab.startsWith(tab);
+        const isPassportActive =
+            tab === '/passport' &&
+            ['/passport', '/wallet', '/home'].some(
+                prefix => activeTab === prefix || activeTab.startsWith(prefix + '/')
+            );
 
-        if (tab === activeTab || isAdminToolsActive) return true;
+        if (tab === activeTab || isAdminToolsActive || isPassportActive) return true;
         return false;
     };
 
@@ -92,14 +100,17 @@ const SideMenuSecondaryLinks: React.FC<{
     const isSyncing = isWalletSyncing.status === WalletSyncState.Syncing;
     const isCompleted = isWalletSyncing.status === WalletSyncState.Completed;
 
-    let walletText = 'Passport';
-    if (isSyncing || isCompleted) walletText = isWalletSyncing?.text ?? 'Passport';
+    const passportLabel = m['sidemenu.links.passport']();
+    let walletText = passportLabel;
+    if (isSyncing || isCompleted) walletText = isWalletSyncing?.text ?? passportLabel;
 
     let walletTextStyles = '';
     if (isSyncing) walletTextStyles = `${colors.syncingColor}`;
     if (isCompleted) walletTextStyles = `${colors.completedColor}`;
 
     const sideMenuLinks = theme?.sideMenuSecondaryLinks;
+
+    if (!sideMenuLinks || sideMenuLinks.length === 0) return null;
 
     const secondaryLinks = sideMenuLinks?.map(link => {
         if (link?.path === '/families' && !canCreateFamilies)
@@ -149,20 +160,20 @@ const SideMenuSecondaryLinks: React.FC<{
                     e.preventDefault();
                     const msg =
                         reason === 'disabled_minor'
-                            ? 'AI features are not available for users under 18.'
-                            : 'AI features are currently disabled. You can enable them in Privacy & Data from your profile.';
+                            ? m['launchpad.aiDisabledMinor']()
+                            : m['launchpad.aiDisabledPrivacy']();
                     presentToast(msg, { type: ToastTypeEnum.Error });
                 }}
                 className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles} opacity-50`}
             >
-                {renderIcon()} {link.label}
+                {renderIcon()} {getSideMenuLinkLabel(m, link)}
             </button>
         ) : (
             <PreloadingLink
                 to={linkPath}
                 className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
             >
-                {renderIcon()} {link.label}
+                {renderIcon()} {getSideMenuLinkLabel(m, link)}
             </PreloadingLink>
         );
 
@@ -172,18 +183,18 @@ const SideMenuSecondaryLinks: React.FC<{
                     to={link.path}
                     className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles} ${walletTextStyles}`}
                 >
-                    {(isSyncing || isCompleted) && (
-                        <div
-                            className={`flex items-center justify-center absolute top-[12px] z-50 h-[28px] w-[28px] rounded-[10px]`}
-                        >
-                            {isSyncing && (
-                                <CustomSpinner
-                                    className={`${colors?.syncingColor} h-[18px] w-[18px]`}
-                                />
-                            )}
-                        </div>
-                    )}
-                    {renderIcon({ isCompleted, isSyncing })}{' '}
+                    <div className="relative mr-[10px] h-[35px] w-[35px] shrink-0">
+                        {(isSyncing || isCompleted) && (
+                            <div className="absolute inset-0 z-50 flex items-center justify-center rounded-[10px]">
+                                {isSyncing && (
+                                    <CustomSpinner
+                                        className={`${colors?.syncingColor} h-[18px] w-[18px]`}
+                                    />
+                                )}
+                            </div>
+                        )}
+                        {renderIcon({ isCompleted, isSyncing })}
+                    </div>
                     {walletText}
                 </PreloadingLink>
             );
@@ -196,7 +207,7 @@ const SideMenuSecondaryLinks: React.FC<{
                         if (link.path === '/ai/topics') chatBotStore.set.resetStore();
                         setActiveTab(link.path);
                     }}
-                    className="flex items-center justify-center px-2 py-0"
+                    className="flex items-center justify-center px-0 py-[3px]"
                 >
                     {linkEl}
                 </li>
@@ -209,11 +220,7 @@ const SideMenuSecondaryLinks: React.FC<{
         );
     });
 
-    return (
-        <IonList className="m-4 rounded-2xl h-auto pt-4 pb-4">
-            {secondaryLinks}
-        </IonList>
-    );
+    return <IonList className="m-4 rounded-2xl h-auto pt-4 pb-4">{secondaryLinks}</IonList>;
 };
 
 export default SideMenuSecondaryLinks;

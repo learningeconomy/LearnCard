@@ -2,6 +2,8 @@ import React from 'react';
 
 import Calendar from '../../svgs/Calendar';
 
+import * as m from '../../../paraglide/messages.js';
+
 type ResumePreviewCredentialDateDisplayProps = {
     isEditing: boolean;
     startLabel?: string;
@@ -27,7 +29,7 @@ const ResumePreviewCredentialDateDisplay: React.FC<ResumePreviewCredentialDateDi
         <div className="flex items-center gap-1">
             {!isEditing ? (
                 <span className="block sm:inline font-medium text-grayscale-600 leading-tight">
-                    {dateLabel ? `• ${dateLabel}` : ''}
+                    {dateLabel}
                 </span>
             ) : (
                 <>
@@ -35,10 +37,12 @@ const ResumePreviewCredentialDateDisplay: React.FC<ResumePreviewCredentialDateDi
                         data-pdf-hide
                         type="button"
                         onClick={onOpenStartDatePicker}
-                        className="ml-1 sm:mt-0 inline-flex items-center gap-2 rounded-[10px] bg-indigo-50 px-3 py-1.5"
+                        className="sm:mt-0 inline-flex items-center gap-2 rounded-[10px] bg-indigo-50 px-3 py-1.5"
                     >
                         <span className="font-medium text-sm text-grayscale-900">
-                            {formattedStartDate || startLabel || 'Start date'}
+                            {formattedStartDate ||
+                                startLabel ||
+                                m['passport.resumeBuilder.dates.start']()}
                         </span>
                         <Calendar className="w-5 h-5 text-grayscale-900" />
                     </button>
@@ -46,10 +50,10 @@ const ResumePreviewCredentialDateDisplay: React.FC<ResumePreviewCredentialDateDi
                         data-pdf-hide
                         type="button"
                         onClick={onOpenEndDatePicker}
-                        className="ml-1 sm:mt-0 inline-flex items-center gap-2 rounded-[10px] bg-indigo-50 px-3 py-1.5"
+                        className="sm:mt-0 inline-flex items-center gap-2 rounded-[10px] bg-indigo-50 px-3 py-1.5"
                     >
                         <span className="font-medium text-sm text-grayscale-900">
-                            {formattedEndDate || 'End date'}
+                            {formattedEndDate || m['passport.resumeBuilder.dates.end']()}
                         </span>
                         <Calendar className="w-5 h-5 text-grayscale-900" />
                     </button>
@@ -60,7 +64,7 @@ const ResumePreviewCredentialDateDisplay: React.FC<ResumePreviewCredentialDateDi
                 style={{ display: 'none' }}
                 className="font-medium text-grayscale-600"
             >
-                {dateLabel ? `• ${dateLabel}` : ''}
+                {dateLabel}
             </span>
         </div>
     );

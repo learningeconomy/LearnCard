@@ -3,25 +3,49 @@
  * Add new events here with their corresponding payload types.
  */
 
+// ── LC-1853 Profile-building analytics ──────────────────────────────────────
+
+/** How the user added an item to their profile. Used by `profile_item_added` only. */
+export enum ProfileBuildMethod {
+    Notification = 'notification',
+    ClaimLink = 'claim_link',
+    Dashboard = 'dashboard',
+    VcApiRequest = 'vc_api_request',
+    SelfIssue = 'self_issue',
+    ReceivedBoost = 'received_boost',
+    SelfArticulation = 'self_articulation',
+    SkillsProfileData = 'skills_profile_data',
+    ConsentFlow = 'consent_flow',
+    ResumeImport = 'resume_import',
+}
+
+/** Snapshot of the user's profile state at a point in time. */
+export interface ProfileSnapshot {
+    credentialCount: number;
+    hasSkillsProfile: boolean;
+    skillsCount: number;
+    daysSinceSignup: number;
+}
+
 export const AnalyticsEvents = {
     // Boost/Credential Claims
     CLAIM_BOOST: 'claim_boost',
-    
+
     // Boost CMS
     BOOST_CMS_PUBLISH: 'boostCMS_publish',
     BOOST_CMS_ISSUE_TO: 'boostCMS_issue_to',
     BOOST_CMS_CONFIRMATION: 'boostCMS_confirmation',
     BOOST_CMS_DATA_ENTRY: 'boostCMS_data_entry',
-    
+
     // Sharing & Link Generation
     GENERATE_SHARE_LINK: 'generate_share_link',
     GENERATE_CLAIM_LINK: 'generate_claim_link',
-    
+
     // Boost Sending
     SELF_BOOST: 'self_boost',
     SEND_BOOST: 'send_boost',
     SEND_BOOST_WITH_ATTACHMENTS: 'send_boost_with_attachments',
-    
+
     // Navigation/Screens
     SCREEN_VIEW: 'screen_view',
 
@@ -38,6 +62,8 @@ export const AnalyticsEvents = {
     // Consent Flow
     CONSENT_FLOW_STARTED: 'consent_flow_started',
     CONSENT_FLOW_ACCEPTED: 'consent_flow_accepted',
+    CONSENT_FLOW_INSTALL_COMPLETED: 'consent_flow.installCompleted',
+    CONSENT_FLOW_SYNC_JOB: 'consent_flow.syncJob',
 
     // LaunchPad
     LAUNCHPAD_APP_CLICKED: 'launchpad_app_clicked',
@@ -112,7 +138,7 @@ export const AnalyticsEvents = {
      */
     OPENID_RESILIENCE_OUTCOME: 'openid_resilience_outcome',
 
-    /** 
+    /**
      * Fired when the resilience orchestrator gave up on an error
      * whose classified `kind` suggested it might have been
      * recoverable (wallet / request_invalid / unknown). Used to mine
@@ -137,6 +163,20 @@ export const AnalyticsEvents = {
     // LC-1644 frontend perf telemetry — captures user-perceived sendCredential→claim flow.
     // Joinable to backend `bench.appevent.iteration` via `run_id` when fired from the bench panel.
     FRONTEND_SENDCREDENTIAL_ITERATION: 'frontend.sendcredential.iteration',
+
+    // LC-1862 Credential lifecycle management (revoke/suspend/unsuspend)
+    CREDENTIAL_REVOKED: 'credential_revoked',
+    CREDENTIAL_SUSPENDED: 'credential_suspended',
+    CREDENTIAL_UNSUSPENDED: 'credential_unsuspended',
+
+    // ── LC-1853 Profile-building analytics ──────────────────────────────────
+    ACCOUNT_CREATED: 'account_created',
+    PROFILE_ITEM_ADDED: 'profile_item_added',
+    ENGAGEMENT_SIGNAL: 'engagement_signal',
+    SKILL_PROFILE_STEP_STARTED: 'skill_profile_step_started',
+    SKILL_PROFILE_STEP_COMPLETED: 'skill_profile_step_completed',
+    SKILL_PROFILE_COMPLETED: 'skill_profile_completed',
+    SKILL_PROFILE_ABANDONED: 'skill_profile_abandoned',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];
@@ -151,6 +191,8 @@ export interface AnalyticsEventPayloads {
         boostType?: string;
         achievementType?: string;
         method: 'VC-API Request' | 'Dashboard' | 'Claim Modal' | 'Notification' | string;
+        /** LC-1853: ms from when the claim flow started to when the boost was claimed. */
+        msSinceMethodStarted?: number;
     };
 
     [AnalyticsEvents.BOOST_CMS_PUBLISH]: {
@@ -197,12 +239,16 @@ export interface AnalyticsEventPayloads {
         category?: string;
         boostType?: string;
         method: 'Managed Boost' | string;
+        /** LC-1853: ms from when the self-boost flow started. */
+        msSinceMethodStarted?: number;
     };
 
     [AnalyticsEvents.SEND_BOOST]: {
         category?: string;
         boostType?: string;
         method: 'Managed Boost' | string;
+        /** LC-1853: ms from when the send-boost flow started. */
+        msSinceMethodStarted?: number;
     };
 
     [AnalyticsEvents.SEND_BOOST_WITH_ATTACHMENTS]: {
@@ -237,6 +283,8 @@ export interface AnalyticsEventPayloads {
     [AnalyticsEvents.ONBOARDING_COMPLETED]: {
         role?: string;
         country?: string;
+        /** LC-1853: ms from when the onboarding flow started. */
+        msSinceMethodStarted?: number;
     };
 
     [AnalyticsEvents.CONSENT_FLOW_STARTED]: {
@@ -246,6 +294,25 @@ export interface AnalyticsEventPayloads {
     [AnalyticsEvents.CONSENT_FLOW_ACCEPTED]: {
         contractName?: string;
         alreadyConsented: boolean;
+    };
+
+    [AnalyticsEvents.CONSENT_FLOW_INSTALL_COMPLETED]: {
+        contractUri: string;
+        ownerDid: string;
+        elapsedMs: number;
+        status: 'success' | 'error' | 'already_consented';
+    };
+
+    [AnalyticsEvents.CONSENT_FLOW_SYNC_JOB]: {
+        contractUri: string;
+        termsUri: string;
+        ownerDid: string;
+        phase: 'queued' | 'running' | 'done' | 'error';
+        elapsedMs?: number;
+        totalCredentials?: number;
+        completedCredentials?: number;
+        failedCredentials?: number;
+        retryCount?: number;
     };
 
     [AnalyticsEvents.LAUNCHPAD_APP_CLICKED]: {
@@ -432,13 +499,7 @@ export interface AnalyticsEventPayloads {
     [AnalyticsEvents.PATHWAYS_ACTION_DISPATCHED]: {
         nodeId: string;
         /** Resolved `ActionDescriptor.kind` at click time. */
-        kind:
-            | 'in-app-route'
-            | 'app-listing'
-            | 'ai-session'
-            | 'external-url'
-            | 'mcp-tool'
-            | 'none';
+        kind: 'in-app-route' | 'app-listing' | 'ai-session' | 'external-url' | 'mcp-tool' | 'none';
         /** How the resolver arrived at that kind. */
         source: 'explicit' | 'earn-url' | 'mcp-policy' | 'none';
         /**
@@ -616,6 +677,55 @@ export interface AnalyticsEventPayloads {
             | 'connection-request'
             | 'raw-vc'
             | 'interaction';
+    };
+
+    // ── LC-1853 Profile-building analytics ──────────────────────────────────
+
+    [AnalyticsEvents.ACCOUNT_CREATED]: {
+        method: 'new_signup' | 'returning_user';
+        signupSource?: string;
+    };
+
+    [AnalyticsEvents.PROFILE_ITEM_ADDED]: {
+        method: ProfileBuildMethod;
+        itemType: 'credential' | 'skill' | 'profile_data';
+        /** Always 1 per call. */
+        itemCount: number;
+        /** Pre-mutation count + 1 (arithmetic — do NOT re-read). */
+        totalItemsAfter: number;
+        msSinceAccountCreated: number;
+        msSinceSessionStart: number;
+    };
+
+    [AnalyticsEvents.ENGAGEMENT_SIGNAL]: {
+        signal: 'ai_chat' | 'ai_insights' | 'ai_pathway' | 'returning_session';
+        profileSnapshot: ProfileSnapshot;
+    };
+
+    [AnalyticsEvents.SKILL_PROFILE_STEP_STARTED]: { step: 1 | 2 | 3 | 4 | 5 };
+
+    [AnalyticsEvents.SKILL_PROFILE_STEP_COMPLETED]: {
+        step: 1 | 2 | 3 | 4 | 5;
+        stepDurationMs: number;
+        fieldsCompleted: string[];
+    };
+
+    [AnalyticsEvents.SKILL_PROFILE_COMPLETED]: { totalDurationMs: number };
+
+    [AnalyticsEvents.SKILL_PROFILE_ABANDONED]: { step: 1 | 2 | 3 | 4 | 5; stepDurationMs: number };
+
+    // LC-1862 Credential lifecycle management
+    [AnalyticsEvents.CREDENTIAL_REVOKED]: {
+        boostUri: string;
+        surface: 'managed-boosts' | 'issuer-dashboard';
+    };
+    [AnalyticsEvents.CREDENTIAL_SUSPENDED]: {
+        boostUri: string;
+        surface: 'managed-boosts' | 'issuer-dashboard';
+    };
+    [AnalyticsEvents.CREDENTIAL_UNSUSPENDED]: {
+        boostUri: string;
+        surface: 'managed-boosts' | 'issuer-dashboard';
     };
 }
 

@@ -1,8 +1,15 @@
 import React, { useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('login-with-seed');
 
 import useWallet from 'learn-card-base/hooks/useWallet';
-import { currentUserStore, getRandomBaseColor, getNotificationsEndpoint, useSQLiteStorage } from 'learn-card-base';
+import {
+    currentUserStore,
+    getRandomBaseColor,
+    getNotificationsEndpoint,
+    useSQLiteStorage,
+} from 'learn-card-base';
 import { walletStore } from 'learn-card-base/stores/walletStore';
 
 import { IonCol, IonInput } from '@ionic/react';
@@ -66,7 +73,7 @@ const LoginWithSeed: React.FC = () => {
                         notificationsWebhook: getNotificationsEndpoint(),
                     });
                 } catch (err) {
-                    console.log('createProfile::error (may already exist)', err);
+                    log.info('createProfile::error (may already exist)', err);
                 }
                 // Match production createProfile callers — drop cached
                 // getProfile so useIsCurrentUserLCNUser refetches and the LCN
@@ -76,7 +83,7 @@ const LoginWithSeed: React.FC = () => {
 
             history.push('/wallet');
         } catch (e) {
-            console.log('///login error');
+            log.info('///login error');
         }
     };
 

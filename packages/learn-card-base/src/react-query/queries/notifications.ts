@@ -32,6 +32,9 @@ export const DEFAULT_ARCHIVE_FILTER = {
     archived: true,
 };
 
+import { getLogger } from '../../logging/logger';
+const log = getLogger('notifications');
+
 /* fetches notifications for a user, returns an array of notifications */
 export const useGetUserNotifications = (
     options: PaginatedNotificationsOptionsType,
@@ -61,7 +64,7 @@ export const useGetUserNotifications = (
                 );
                 return data;
             } catch (error) {
-                console.error('Error fetching notifications:', error);
+                log.error('Error fetching notifications:', error);
                 return Promise.reject(new Error(error));
             }
         },
@@ -70,12 +73,17 @@ export const useGetUserNotifications = (
 };
 
 /* Get unread user notifications (up to 30) */
-export const useGetUnreadUserNotifications = () => {
+export const useGetUnreadUserNotifications = (options?: {
+    refetchInterval?: number;
+    enabled?: boolean;
+}) => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
 
     return useQuery({
         queryKey: ['useGetUnreadUserNotifications', switchedDid ?? ''],
+        refetchInterval: options?.refetchInterval,
+        enabled: options?.enabled,
         queryFn: async () => {
             const wallet = await initWallet();
             const options = {

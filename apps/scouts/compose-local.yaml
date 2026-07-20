@@ -1,38 +1,5 @@
 services:
-    # app:
-    #     image: learncard-monorepo-local
-    #     build:
-    #         context: ../../
-    #         dockerfile: Dockerfile.monorepo
-    #     container_name: 'scouts-app'
-    #     expose:
-    #         - 3000
-    #     ports:
-    #         - '3000:3000'
-    #     command: ['sh', '-c', 'pnpm exec nx docker-start scouts']
-    #     depends_on:
-    #         - brain
-    #         - cloud
-    #         - api
-    #         - delete-service
-    #     networks:
-    #         - learn-card
-    #     extra_hosts:
-    #         - 'localhost:host-gateway'
-    #     environment:
-    #         LCN_URL: http://localhost:4000/trpc
-    #         LCN_API_URL: http://localhost:4000/api
-    #         CLOUD_URL: http://localhost:4100/trpc
-    #         API_URL: http://localhost:5100/trpc
-    #         SKIP_DIDKIT_NAPI: '1'
-    #         CHOKIDAR_USEPOLLING: 'true'
-    #         CHOKIDAR_INTERVAL: '1000'
-    #     volumes:
-    #         - ./src:/app/apps/scouts/src
-    #         - ./vite.config.ts:/app/apps/scouts/vite.config.ts
-    #         - ../../packages:/app/packages
-
-    watcher:
+    app:
         image: learncard-monorepo-local
         build:
             context: ../../
@@ -42,7 +9,7 @@ services:
             - 3000
         ports:
             - '3000:3000'
-        command: ['sh', '-c', 'pnpm exec nx docker-start scouts']
+        command: ['sh', '-c', 'bun run --cwd apps/scouts docker-start']
         depends_on:
             - brain
             - cloud
@@ -56,43 +23,19 @@ services:
             - path: ./.env
               required: false
         environment:
-            LCN_URL: http://localhost:4000/trpc
-            LCN_API_URL: http://localhost:4000/api
-            CLOUD_URL: http://localhost:4100/trpc
-            LEARN_CLOUD_XAPI_URL: http://localhost:4100/xapi
-            API_URL: http://localhost:5100/trpc
+            LCN_URL: ${LCN_URL:-http://localhost:4000/trpc}
+            LCN_API_URL: ${LCN_API_URL:-http://localhost:4000/api}
+            CLOUD_URL: ${CLOUD_URL:-http://localhost:4100/trpc}
+            LEARN_CLOUD_XAPI_URL: ${LEARN_CLOUD_XAPI_URL:-http://localhost:4100/xapi}
+            API_URL: ${API_URL:-http://localhost:5100/trpc}
             SKIP_DIDKIT_NAPI: '1'
+            VITE_DOCKER_SOURCE: 'true'
             CHOKIDAR_USEPOLLING: 'true'
             CHOKIDAR_INTERVAL: '1000'
         volumes:
-            - ./src:/app/apps/scouts/src
-            - ./vite.config.ts:/app/apps/scouts/vite.config.ts
+            - .:/app/apps/scouts
             - ../../packages:/app/packages
-
-    watcher:
-        image: learncard-monorepo-local
-        container_name: 'lcn-watcher'
-        # user: '${UID:-1000}:${GID:-1000}'
-        command:
-            [
-                'pnpm',
-                'exec',
-                'nx',
-                'watch',
-                '--all',
-                '--verbose',
-                '--',
-                'sh',
-                '/app/tools/scripts/nx-watch-build.sh',
-            ]
-        networks:
-            - learn-card
-        environment:
-            SKIP_DIDKIT_NAPI: '1'
-            CHOKIDAR_USEPOLLING: 'true'
-            CHOKIDAR_INTERVAL: '1000'
-        volumes:
-            - ../../packages:/app/packages
+            - ../../services/learn-card-network:/app/services/learn-card-network
 
     delete-service:
         build: ../../services/playwright-delete-service
@@ -130,12 +73,12 @@ services:
         build:
             context: ../../
             dockerfile: Dockerfile.monorepo
-        container_name: 'lcn-brain-service'
+        container_name: 'scouts-brain-service'
         expose:
             - 4000
         ports:
             - '4000:4000'
-        command: ['sh', '-c', 'cd services/learn-card-network/brain-service && pnpm dev']
+        command: ['sh', '-c', 'cd services/learn-card-network/brain-service && bun run dev']
         depends_on:
             neo4j:
                 condition: service_healthy
@@ -151,8 +94,7 @@ services:
             - path: ../../services/learn-card-network/brain-service/.env
               required: false
         volumes:
-            - ../../services/learn-card-network/brain-service/src:/app/services/learn-card-network/brain-service/src
-            - ../../services/learn-card-network/brain-service/nodemon.docker.json:/app/services/learn-card-network/brain-service/nodemon.docker.json
+            - ../../services/learn-card-network:/app/services/learn-card-network
             - ../../packages:/app/packages
         environment:
             IS_OFFLINE: true
@@ -180,12 +122,12 @@ services:
         build:
             context: ../../
             dockerfile: Dockerfile.monorepo
-        container_name: 'lcn-cloud-service'
+        container_name: 'scouts-cloud-service'
         expose:
             - 4100
         ports:
             - '4100:4100'
-        command: ['sh', '-c', 'cd services/learn-card-network/learn-cloud-service && pnpm dev']
+        command: ['sh', '-c', 'cd services/learn-card-network/learn-cloud-service && bun run dev']
         depends_on:
             - mongodb
             - redis2
@@ -197,8 +139,7 @@ services:
             - path: ../../services/learn-card-network/learn-cloud-service/.env
               required: false
         volumes:
-            - ../../services/learn-card-network/learn-cloud-service/src:/app/services/learn-card-network/learn-cloud-service/src
-            - ../../services/learn-card-network/learn-cloud-service/nodemon.docker.json:/app/services/learn-card-network/learn-cloud-service/nodemon.docker.json
+            - ../../services/learn-card-network:/app/services/learn-card-network
             - ../../packages:/app/packages
         environment:
             IS_OFFLINE: true
@@ -217,12 +158,12 @@ services:
         build:
             context: ../../
             dockerfile: Dockerfile.monorepo
-        container_name: 'lcn-api-service'
+        container_name: 'scouts-api-service'
         expose:
             - 5100
         ports:
             - '5100:5100'
-        command: ['sh', '-c', 'cd services/learn-card-network/lca-api && pnpm dev']
+        command: ['sh', '-c', 'cd services/learn-card-network/lca-api && bun run dev']
         depends_on:
             - mongodb
             - redis3
@@ -233,9 +174,10 @@ services:
         env_file:
             - path: ../../services/learn-card-network/lca-api/.env
               required: false
+            - path: ../../services/learn-card-network/lca-api/.env.scouts
+              required: false
         volumes:
-            - ../../services/learn-card-network/lca-api/src:/app/services/learn-card-network/lca-api/src
-            - ../../services/learn-card-network/lca-api/nodemon.docker.json:/app/services/learn-card-network/lca-api/nodemon.docker.json
+            - ../../services/learn-card-network:/app/services/learn-card-network
             - ../../packages:/app/packages
         environment:
             IS_OFFLINE: true
@@ -250,10 +192,11 @@ services:
             REDIS_HOST: redis3
             REDIS_PORT: 6379
             METABASE_SECRET_KEY: ${METABASE_SECRET_KEY:-notARealSecretKey}
+            POSTMARK_FROM_EMAIL: ${POSTMARK_FROM_EMAIL:-scoutnetwork.org}
 
     neo4j:
         image: neo4j:latest
-        container_name: 'lcn-neo4j'
+        container_name: 'scouts-neo4j'
         ports:
             - '7687:7687'
             - '7474:7474'
@@ -275,7 +218,7 @@ services:
 
     redis:
         image: redis:alpine
-        container_name: 'lcn-redis'
+        container_name: 'scouts-redis'
         environment:
             - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
             - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
@@ -286,7 +229,7 @@ services:
 
     redis2:
         image: redis:alpine
-        container_name: 'lcn-redis2'
+        container_name: 'scouts-redis2'
         environment:
             - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
             - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
@@ -297,7 +240,7 @@ services:
 
     redis3:
         image: redis:alpine
-        container_name: 'lcn-redis3'
+        container_name: 'scouts-redis3'
         environment:
             - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
             - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
@@ -318,7 +261,7 @@ services:
                 '--logpath',
                 '/var/log/mongodb/mongod.log',
             ]
-        container_name: 'lcn-mongodb'
+        container_name: 'scouts-mongodb'
         image: mongo:7.0
         expose:
             - 27017
@@ -339,7 +282,7 @@ services:
 
     elasticmq:
         image: softwaremill/elasticmq-native
-        container_name: 'lcn-elasticmq'
+        container_name: 'scouts-elasticmq'
         depends_on:
             - api
         expose:

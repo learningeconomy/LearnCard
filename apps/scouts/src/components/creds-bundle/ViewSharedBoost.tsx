@@ -35,8 +35,9 @@ import { getBespokeLearnCard, getUserHandleFromDid } from 'learn-card-base/helpe
 import { getWallpaperBackgroundStyles, isTroopCredential } from '../../helpers/troop.helpers';
 import { BrandingEnum, useGetProfile, useIsLoggedIn, useModal, ModalTypes } from 'learn-card-base';
 import { VC, VerificationItem, VP } from '@learncard/types';
-
-const websiteLink = 'https://pass.scout.org/login';
+import { getLogger } from 'learn-card-base';
+import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
+const log = getLogger('view-shared-boost');
 
 const ViewSharedBoost: React.FC = () => {
     const history = useHistory();
@@ -96,7 +97,7 @@ const ViewSharedBoost: React.FC = () => {
 
             setVerificationItems(verifications);
 
-            console.log('verifications', verifications);
+            log.debug('verifications', verifications);
 
             setVC(resolvedVc);
             if (resolvedVc?.verifiableCredential) {
@@ -129,7 +130,7 @@ const ViewSharedBoost: React.FC = () => {
                         text: 'Cancel',
                         role: 'cancel',
                         handler: () => {
-                            console.log('Cancel clicked');
+                            log.debug('Cancel clicked');
                         },
                     },
                 ],
@@ -146,6 +147,8 @@ const ViewSharedBoost: React.FC = () => {
     }, [pin, tryRefetch]);
 
     const openWebsite = async () => {
+        const websiteLink = `${getAppBaseUrl()}/login`;
+
         if (Capacitor.isNativePlatform()) {
             await Browser?.open({ url: websiteLink });
         } else {
@@ -168,7 +171,7 @@ const ViewSharedBoost: React.FC = () => {
                 credential={boost as any}
                 verificationItems={verificationItems}
                 boostUri={(boost as any)?.boostId}
-            //profileId={current user profile id?}
+                //profileId={current user profile id?}
             />
         </div>
     );
@@ -230,8 +233,9 @@ const ViewSharedBoost: React.FC = () => {
                 )}
                 {boost && wallet && !loading && (
                     <section
-                        className={`relative w-full h-full text-left flex flex-col items-center justify-start pt-4 overflow-y-scroll pb-[100px] ${category === 'ID' ? 'px-[12px]' : 'px-[32px]'
-                            } ]`}
+                        className={`relative w-full h-full text-left flex flex-col items-center justify-start pt-4 overflow-y-scroll pb-[100px] ${
+                            category === 'ID' ? 'px-[12px]' : 'px-[32px]'
+                        } ]`}
                         style={isTroopId ? troopBackgroundStyles : undefined}
                     >
                         {/* 

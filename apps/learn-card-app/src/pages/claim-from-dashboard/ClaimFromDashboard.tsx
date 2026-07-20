@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import moment from 'moment';
 import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
@@ -12,6 +12,9 @@ import {
     IonToolbar,
     useIonModal,
 } from '@ionic/react';
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('claim-from-dashboard');
 
 import ClaimBoostLoggedOutPrompt from 'learn-card-base/components/boost/claimBoostLoggedOutPrompt/ClaimBoostLoggedOutPrompt';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
@@ -33,7 +36,14 @@ import {
 } from 'learn-card-base';
 import { useQueryClient } from '@tanstack/react-query';
 import useRegistry from 'learn-card-base/hooks/useRegistry';
-import { useAnalytics, AnalyticsEvents } from '@analytics';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    ProfileBuildMethod,
+    useProfileSnapshotCapture,
+    ACCOUNT_CREATED_AT_KEY,
+    SESSION_START_KEY,
+} from '@analytics';
 
 import {
     getAchievementType,
@@ -44,6 +54,7 @@ import {
 import { getEmojiFromDidString, getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 
 import useTheme from '../../theme/hooks/useTheme';
+import * as m from '../../paraglide/messages.js';
 
 export type FromDashboardMetadata = {
     credentialName: string;
@@ -104,7 +115,8 @@ export const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boost
                 <div className="vc-issue-details mt-[10px] flex flex-col items-center font-montserrat text-[14px] leading-[20px]">
                     <span className="created-at text-grayscale-700">{issueDate}</span>
                     <span className="issued-by text-grayscale-900 font-[500]">
-                        by <strong className="font-[700] capitalize">{issuerName}</strong>
+                        {m['claim.by']()}{' '}
+                        <strong className="font-[700] capitalize">{issuerName}</strong>
                     </span>
                 </div>
             </>
@@ -126,7 +138,8 @@ export const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boost
             <div className="vc-issue-details mt-[10px] flex flex-col items-center font-montserrat text-[14px] leading-[20px]">
                 <span className="created-at text-grayscale-700">{issueDate}</span>
                 <span className="issued-by text-grayscale-900 font-[500]">
-                    by <strong className="font-[700] capitalize">{issuerName}</strong>
+                    {m['claim.by']()}{' '}
+                    <strong className="font-[700] capitalize">{issuerName}</strong>
                 </span>
             </div>
         </>
@@ -142,6 +155,8 @@ const ClaimFromDashboard: React.FC = () => {
     const [metadata, setMetadata] = useState<FromDashboardMetadata | undefined>();
 
     const { track } = useAnalytics();
+    const { capture, snapshotRef } = useProfileSnapshotCapture();
+    const flowStartedAt = useRef(Date.now());
 
     const queryClient = useQueryClient();
     const registry = useRegistry();
@@ -187,7 +202,7 @@ const ClaimFromDashboard: React.FC = () => {
                     headers: { Authorization: `Bearer ${token}` },
                 });
 
-                if (res.status !== 200) console.error('Rip lol');
+                if (res.status !== 200) log.error('Rip lol');
                 else {
                     const { links, metadata } = (await res.json()) as {
                         links: {
@@ -249,7 +264,7 @@ const ClaimFromDashboard: React.FC = () => {
                     setCredential(await credResponse.json());
                 }
             } catch (error) {
-                console.error(error);
+                log.error(error);
             }
 
             setLoading(false);
@@ -271,6 +286,8 @@ const ClaimFromDashboard: React.FC = () => {
         try {
             if (!credential) return;
             setClaimingCredential(true);
+            // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
+            capture();
 
             await storeAndAddVCToWallet(credential, { title: name });
 
@@ -282,19 +299,34 @@ const ClaimFromDashboard: React.FC = () => {
                     category: category,
                     boostType: achievementType,
                     method: 'Dashboard',
+                    msSinceMethodStarted: Date.now() - flowStartedAt.current,
+                });
+
+                const now = Date.now();
+                const sessionStart = Number(localStorage.getItem(SESSION_START_KEY) ?? now);
+                const accountCreatedAt = Number(
+                    localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
+                );
+                track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                    method: ProfileBuildMethod.Dashboard,
+                    itemType: 'credential',
+                    itemCount: 1,
+                    totalItemsAfter: snapshotRef.current.credentialCount + 1,
+                    msSinceAccountCreated: now - accountCreatedAt,
+                    msSinceSessionStart: now - sessionStart,
                 });
             }
 
             setClaimingCredential(false);
             handleAfterCredentialClaim();
 
-            presentToast(`Successfully claimed Credential!`, {
+            presentToast(m['toasts.credentialClaimed'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (e) {
             setClaimingCredential(false);
-            console.error('Error claiming credential', e);
+            log.error('Error claiming credential', e);
             /**
              * Sometimes, when claiming a credential, this error is thrown:
              * TRPCClientError: Record with that ID already exists!
@@ -302,7 +334,7 @@ const ClaimFromDashboard: React.FC = () => {
              * So, it's more of a warning and we can warn them that it already exists, and proceed.
              **/
             if (e instanceof Error && e?.message?.includes('exists')) {
-                presentToast(`You have already claimed this credential.`, {
+                presentToast(m['toasts.alreadyClaimed'](), {
                     type: ToastTypeEnum.Success,
                     hasDismissButton: true,
                 });
@@ -310,7 +342,7 @@ const ClaimFromDashboard: React.FC = () => {
                 // We are assuming it is a success since user already has this credential.
                 handleAfterCredentialClaim();
             } else {
-                presentToast(`Oops, we couldn't claim the credential.`, {
+                presentToast(m['toasts.claimOops'](), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
@@ -322,7 +354,9 @@ const ClaimFromDashboard: React.FC = () => {
         return <ClaimFromDashboardLoggedOut metadata={metadata} />;
     }
 
-    const loadingText = claimingCredential ? 'Claiming Credential' : 'Fetching Credential';
+    const loadingText = claimingCredential
+        ? m['claim.claimingCredential']()
+        : m['claim.fetchingCredential']();
 
     const isCertificate = credential?.display?.displayType === 'certificate';
     const isID =
@@ -353,10 +387,10 @@ const ClaimFromDashboard: React.FC = () => {
                     {!loading && !credential && (
                         <section className="flex flex-col pt-[10px] px-[20px] text-center justify-center">
                             <h1 className="text-center text-xl font-bold text-grayscale-800">
-                                Eeek!
+                                {m['claim.notFound.title']()}
                             </h1>
                             <strong className="text-center font-medium text-grayscale-600">
-                                Unable to find credential
+                                {m['claim.notFound.message']()}
                             </strong>
                         </section>
                     )}
@@ -399,7 +433,7 @@ const ClaimFromDashboard: React.FC = () => {
                                 className={`flex items-center justify-center bg-${primaryColor} text-white py-2 mr-3 font-bold text-2xl tracking-wider rounded-[40px] shadow-2xl w-[200px] max-w-[320px] ml-2 normal font-poppins`}
                                 disabled={claimingCredential}
                             >
-                                Accept
+                                {m['common.accept']()}
                             </button>
                         )}
 
@@ -416,7 +450,7 @@ const ClaimFromDashboard: React.FC = () => {
                                 className={`flex items-center justify-center bg-${primaryColor} text-white py-2 mr-3 font-bold text-2xl tracking-wider rounded-[40px] shadow-2xl w-[200px] max-w-[320px] ml-2 normal font-poppins`}
                                 disabled={claimingCredential}
                             >
-                                Accept
+                                {m['common.accept']()}
                             </button>
                         )}
 

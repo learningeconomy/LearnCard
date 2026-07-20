@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import {
     useModal,
     useContract,
     useUpdateTerms,
     ModalTypes,
     LaunchPadAppListItem,
+    useConsentedContracts,
 } from 'learn-card-base';
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-consent-flow');
 
 import PostConsentFlowSyncCard from '../launchPad/PostConsentFlowSyncCard';
 import FullScreenConsentFlow from './FullScreenConsentFlow';
@@ -54,7 +57,7 @@ export const useConsentFlow = (
         if (hasConsented && false) {
             // handled by FullScreenConsentFlow with isPostConsent
             //   this is removable, just keeping it around as a reference for now
-            newModal(<PostConsentFlowSyncCard consentedContract={consentedContract} />, {
+            newModal(<PostConsentFlowSyncCard consentedContract={consentedContract!} />, {
                 sectionClassName: '!max-w-[400px]',
             });
         } else if (contract?.needsGuardianConsent && !hasConsented) {
@@ -81,7 +84,7 @@ export const useConsentFlow = (
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
         } else {
-            console.log('Failed to open ConsentFlow modal: contract not yet loaded');
+            log.info('Failed to open ConsentFlow modal: contract not yet loaded');
         }
     };
 

@@ -5,7 +5,7 @@ import ReactCodeInput from 'react-code-input';
 import Countdown from 'react-countdown';
 import { z } from 'zod';
 
-import { IonCheckbox, IonCol, IonInput, IonToggle, IonRouterLink } from '@ionic/react';
+import { IonCheckbox, IonCol, IonToggle, IonRouterLink } from '@ionic/react';
 
 import { useFirebase } from '../../../hooks/useFirebase';
 
@@ -24,6 +24,8 @@ import {
     useVerifyLoginVerificationCode,
 } from 'learn-card-base';
 import { generatePK } from '../../../helpers/privateKeyHelpers';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('email-form');
 
 const StateValidator = z.object({
     email: z.string().regex(EMAIL_REGEX, `Missing or Invalid Email`),
@@ -46,7 +48,7 @@ const EmailForm: React.FC = () => {
     const verificationEmail = redirectStore.get.email();
     const shouldVerifyCode = Boolean(query.get('verifyCode') || verificationEmail);
 
-    const [email, setEmail] = useState<string | null | undefined>('');
+    const [email, setEmail] = useState<string>('');
     const [code, setCode] = useState<string>('');
     const [password, setPassword] = useState<string | null | undefined>('');
     const [currentStep, setCurrentStep] = useState<EmailFormStepsEnum>(EmailFormStepsEnum.email);
@@ -105,6 +107,37 @@ const EmailForm: React.FC = () => {
         return false;
     };
 
+    const handleVerifyCode = async () => {
+        if (validateCode()) {
+            try {
+                setCodeError('');
+                setIsLoading(true);
+
+                const response = await verifyLoginVerificationCode({
+                    email: verificationEmail as string,
+                    code,
+                });
+
+                if (response?.token) {
+                    redirectStore.set.email(null);
+                    await signInWithCustomFirebaseToken(response?.token);
+                }
+
+                setIsLoading(false);
+            } catch (e) {
+                setIsLoading(false);
+                setCodeError('Unable to verify code. Please try again.');
+            }
+        }
+    };
+
+    useEffect(() => {
+        if (currentStep === EmailFormStepsEnum.verification && code.length === 6 && !isLoading) {
+            // auto verify code when 6 digits are entered
+            handleVerifyCode();
+        }
+    }, [code, currentStep]);
+
     const handleDemoLogin = async () => {
         try {
             const dummyString = email + 'password123';
@@ -147,7 +180,7 @@ const EmailForm: React.FC = () => {
             // ! hotFix: hard refresh on login, otherwise sidememu does not display
             window.location.href = '/campfire';
         } catch (e) {
-            console.log('///login error');
+            log.debug('///login error');
         }
     };
 
@@ -169,7 +202,7 @@ const EmailForm: React.FC = () => {
                             setIsLoading(false);
                         } catch (e) {
                             setIsLoading(false);
-                            console.log('///sendSignInLink error', e);
+                            log.debug('///sendSignInLink error', e);
                         }
                     } else {
                         try {
@@ -180,7 +213,7 @@ const EmailForm: React.FC = () => {
                             setIsLoading(false);
                         } catch (e) {
                             setIsLoading(false);
-                            console.log('///sendLoginVerificationCode error', e);
+                            log.debug('///sendLoginVerificationCode error', e);
                         }
                     }
 
@@ -188,25 +221,7 @@ const EmailForm: React.FC = () => {
                 }
             }
         } else if (currentStep === EmailFormStepsEnum.verification) {
-            if (validateCode()) {
-                try {
-                    setCodeError('');
-                    setIsLoading(true);
-
-                    const response = await verifyLoginVerificationCode({
-                        email: verificationEmail as string,
-                        code: code as string,
-                    });
-                    if (response?.token) {
-                        redirectStore.set.email(null);
-                        await signInWithCustomFirebaseToken(response?.token);
-                    }
-                    setIsLoading(false);
-                } catch (e) {
-                    setIsLoading(false);
-                    setCodeError('Unable to verify code. Please try again.');
-                }
-            }
+            await handleVerifyCode();
         } else if (currentStep === EmailFormStepsEnum.passwordExistingUser) {
             // todo: trigger login to existing account
         } else if (currentStep === EmailFormStepsEnum.passwordNewUser) {
@@ -221,7 +236,7 @@ const EmailForm: React.FC = () => {
             setIsResendCodeLoading(false);
         } catch (e) {
             setIsResendCodeLoading(false);
-            console.log('///sendLoginVerificationCode error', e);
+            log.debug('///sendLoginVerificationCode error', e);
         }
     };
 
@@ -240,20 +255,22 @@ const EmailForm: React.FC = () => {
         formTitle = (
             <p className="font-medium text-sm text-grayscale-600 uppercase">Login with Email</p>
         );
+        const emailError = errors.email?.[0];
         activeStep = (
-            <IonCol size="12">
-                <IonInput
-                    autocapitalize="on"
-                    className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] !px-4 !py-2 font-medium font-notoSans tracking-wide text-base ${
-                        errors.email ? 'login-input-email-error' : ''
-                    }`}
+            <div className="w-full flex items-center justify-center">
+                <input
+                    aria-label="Email"
+                    autoCapitalize="on"
+                    className={`w-full px-4 py-3 bg-grayscale-100 border rounded-[15px] font-medium font-notoSans tracking-widest text-base text-grayscale-900 placeholder:text-grayscale-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
+                        emailError ? 'border-red-300' : 'border-grayscale-200'
+                    } ${emailError ? 'login-input-email-error' : ''}`}
                     placeholder="Email address"
-                    onIonInput={e => setEmail(e.detail.value)}
+                    onChange={e => setEmail(e.target.value)}
                     value={email}
                     type="text"
                 />
-                {errors.email && <p className="login-input-error-msg">{errors.email}</p>}
-            </IonCol>
+                {emailError && <p className="login-input-error-msg">{emailError}</p>}
+            </div>
         );
         // buttonTitle = 'Continue';
         buttonTitle = 'Send Login Code';
@@ -269,10 +286,7 @@ const EmailForm: React.FC = () => {
             </p>
         );
         activeStep = (
-            <IonCol
-                size="12"
-                className="w-full flex flex-col items-center justify-center ion-no-padding ion-no-margin mb-[20px]"
-            >
+            <IonCol size="12" className="w-full ion-no-padding ion-no-margin mb-[20px]">
                 <ReactCodeInput
                     name="phoneVerification"
                     inputMode="numeric"
@@ -283,9 +297,9 @@ const EmailForm: React.FC = () => {
                         errors.code || codeError ? 'react-code-input-error' : ''
                     }`}
                 />
-                {errors?.code && (
+                {errors?.code?.[0] && (
                     <p className="w-full text-center mt-2 text-red-500 font-medium">
-                        {errors?.code}
+                        {errors?.code?.[0]}
                     </p>
                 )}
                 {codeError && (
@@ -346,15 +360,15 @@ const EmailForm: React.FC = () => {
         <form onSubmit={handleOnClick} className="w-full">
             <IonCol size="12">{formTitle}</IonCol>
             {activeStep}
-            <IonCol size="12" className="flex items-center justify-center">
+            <div className="flex items-center justify-center py-[20px] w-full mx-auto">
                 <button
-                    className="bg-sp-purple-base text-white ion-padding w-full font-bold rounded-[30px]"
+                    className="bg-sp-purple-base text-white ion-padding w-full font-bold rounded-[30px] disabled:opacity-50"
                     onClick={handleOnClick}
                     disabled={disabled}
                 >
                     {buttonTitle}
                 </button>
-            </IonCol>
+            </div>
             {currentStep === EmailFormStepsEnum.verification && verificationEmail && (
                 <div className="flex items-center justify-center w-full">
                     <Countdown

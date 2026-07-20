@@ -4,7 +4,8 @@ import { useHistory } from 'react-router-dom';
 import {
     useModal,
     useToast,
-    useFilestack,
+    useImageUpload,
+    isKnownImageUploadUrl,
     useGetProfile,
     useCreateBoost,
     useConfirmation,
@@ -13,7 +14,7 @@ import {
     ModalTypes,
     BoostCMSState,
     ToastTypeEnum,
-    CredentialBadge,
+    CredentialBadgeNew,
     boostCategoryMetadata,
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
@@ -96,6 +97,9 @@ export type BadgeDataRow = {
     [DataKeys.skills]: string[]; // e.g. [ "Durable - Adaptability - Flexibility", "Durable - Lifelong Learning - Critical Thinking"]
 };
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('bulk-boost-import-page');
+
 const BulkBoostImportPage: React.FC = () => {
     const history = useHistory();
     const confirm = useConfirmation();
@@ -122,7 +126,7 @@ const BulkBoostImportPage: React.FC = () => {
     //   row index -> image status
     const [imageTracking, setImageTracking] = useState<ImageTrackingType>(new Map());
 
-    const { uploadImageFromUrl, singleImageUpload } = useFilestack({
+    const { uploadImageFromUrl, singleImageUpload } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (url, _file, data) => {},
     });
@@ -260,7 +264,7 @@ const BulkBoostImportPage: React.FC = () => {
                 type: ToastTypeEnum.Success,
             });
         } catch (error) {
-            console.error('Error extracting ZIP file:', error);
+            log.error('Error extracting ZIP file:', error);
             presentToast('Error extracting ZIP file', {
                 type: ToastTypeEnum.Error,
             });
@@ -321,7 +325,7 @@ const BulkBoostImportPage: React.FC = () => {
                                     50 + Math.floor((completedUploads / totalUploads) * 100 * 0.5)
                                 ); // Last 50% is Filestack upload
                             } catch (error) {
-                                console.error(`Failed to upload image ${filename}:`, error);
+                                log.error(`Failed to upload image ${filename}:`, error);
                                 newRowMap.set(key, {
                                     originalValue: info.originalValue,
                                     status: ImageStatus.missing,
@@ -457,14 +461,14 @@ const BulkBoostImportPage: React.FC = () => {
             // Process batch using Promise.all for parallel processing
             await Promise.all(
                 csvData.map(async (data, index) => {
-                    // upload images if they're not already in filestack
+                    // upload images if they're not already in configured image storage
                     let badgeThumb = data[DataKeys.image];
-                    if (badgeThumb && !badgeThumb.includes('filestack')) {
+                    if (badgeThumb && !isKnownImageUploadUrl(badgeThumb)) {
                         badgeThumb = await uploadImageFromUrl(badgeThumb);
                     }
 
                     let bgImage = data[DataKeys.backgroundImage];
-                    if (bgImage && !bgImage.includes('filestack')) {
+                    if (bgImage && !isKnownImageUploadUrl(bgImage)) {
                         bgImage = await uploadImageFromUrl(bgImage);
                     }
 
@@ -493,7 +497,7 @@ const BulkBoostImportPage: React.FC = () => {
 
             history.push('/admin-tools');
         } catch (e) {
-            console.error('Failed to bulk import boosts: ', e.message);
+            log.error('Failed to bulk import boosts: ', e.message);
 
             presentToast(`Bulk boost import failed! ${e.message}`, {
                 duration: 5000,
@@ -520,7 +524,7 @@ const BulkBoostImportPage: React.FC = () => {
                 idFooterClassName="p-0 m-0 mt-[-15px] boost-id-preview-footer"
             />
         ) : (
-            <CredentialBadge
+            <CredentialBadgeNew
                 achievementType={state?.basicInfo?.achievementType}
                 boostType={state?.basicInfo?.type}
                 badgeThumbnail={state?.appearance?.badgeThumbnail}

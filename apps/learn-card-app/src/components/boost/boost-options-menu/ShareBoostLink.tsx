@@ -12,7 +12,7 @@ import CredentialVerificationDisplay from 'learn-card-base/components/Credential
 
 import {
     BoostCategoryOptionsEnum,
-    CredentialBadge,
+    CredentialBadgeNew,
     CredentialCategoryEnum,
     ProfilePicture,
     getBoostMetadata,
@@ -36,6 +36,7 @@ import {
 
 import { UnsignedVC, VC } from '@learncard/types';
 import { getEmojiFromDidString } from 'learn-card-base/helpers/walletHelpers';
+import * as m from '../../../paraglide/messages.js';
 
 type ShareBoostLinkProps = {
     handleClose?: () => void;
@@ -46,6 +47,7 @@ type ShareBoostLinkProps = {
     onBackButtonClick?: () => void;
     hideLinkedIn?: boolean;
     isEndorsementRequest?: boolean;
+    compact?: boolean;
 };
 
 const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
@@ -57,6 +59,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     onBackButtonClick,
     hideLinkedIn = false,
     isEndorsementRequest = false,
+    compact = false,
 }) => {
     const { presentToast } = useToast();
     const [shareLink, setShareLink] = useState<string | undefined>('');
@@ -111,7 +114,11 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     } = useGetProfile();
 
     if (isLCNetworkUrlIssuer) {
-        issuerName = profile ? profile?.displayName : isLoading ? 'Loading...' : 'Unknown';
+        issuerName = profile
+            ? profile?.displayName
+            : isLoading
+            ? m['common.loading']()
+            : m['common.unknown']();
     } else {
         issuerName = getIssuerNameNonBoost(cred);
     }
@@ -120,14 +127,8 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
         issueeName = myProfile
             ? myProfile?.displayName
             : myProfileLoading
-            ? 'Loading...'
-            : 'Unknown';
-
-        issueeName = myProfile
-            ? myProfile?.displayName
-            : myProfileLoading
-            ? 'Loading...'
-            : 'Unknown';
+            ? m['common.loading']()
+            : m['common.unknown']();
     } else {
         issueeName = cred?.credentialSubject?.id;
     }
@@ -184,11 +185,11 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
             await Clipboard.write({
                 string: shareLink,
             });
-            presentToast('Share link copied to clipboard', {
+            presentToast(m['toasts.boost.shareLinkCopied'](), {
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy share link to clipboard', {
+            presentToast(m['toasts.boost.shareLinkCopyFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -224,6 +225,23 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
         return linkedInUrl;
     };
 
+    if (compact) {
+        return (
+            <div className="relative shrink-0 rounded-[16px] border border-grayscale-200 bg-white p-3 pb-8">
+                <div className="flex h-[50px] w-[50px] items-center justify-center">
+                    {isLinkLoading || !shareLink ? (
+                        <IonSpinner name="crescent" className="h-5 w-5 text-grayscale-600" />
+                    ) : (
+                        <QRCodeSVG value={shareLink} size={50} />
+                    )}
+                </div>
+                <div className="absolute bottom-[5px] left-1/2 -translate-x-1/2">
+                    <CredentialVerificationDisplay credential={cred} iconClassName="w-6 h-6" />
+                </div>
+            </div>
+        );
+    }
+
     return (
         <>
             <IonGrid
@@ -252,7 +270,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                     </button>
                                 )}
                             </div>
-                            <p className="font-poppins text-xl text-white">Share</p>
+                            <p className="font-poppins text-xl text-white">{m['common.share']()}</p>
                             <button onClick={handleClose}>
                                 <X className="text-white h-8 w-8" />
                             </button>
@@ -353,7 +371,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                             {isID && subjectProfileImageElement}
 
                             {!isID && !isFamily && (
-                                <CredentialBadge
+                                <CredentialBadgeNew
                                     achievementType={achievementType}
                                     fallbackCircleText={title}
                                     boostType={categoryType as BoostCategoryOptionsEnum}

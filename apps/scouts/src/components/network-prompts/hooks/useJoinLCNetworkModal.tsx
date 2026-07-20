@@ -2,7 +2,12 @@ import React, { useCallback } from 'react';
 import ModalLayout from '../../../layout/ModalLayout';
 import JoinNetworkPrompt from '../JoinNetworkPrompt';
 import NewJoinNetworkPrompt from '../NewJoinNetworkPrompt';
-import { useIsCurrentUserLCNUser, useIsLoggedIn, useModal, ModalTypes } from 'learn-card-base';
+import {
+    useAuthStatus,
+    shouldPromptProfileOnboarding,
+    useModal,
+    ModalTypes,
+} from 'learn-card-base';
 import deletingAccountStore from 'learn-card-base/stores/deletingAccountStore';
 
 import { closeAll } from '../../../helpers/uiHelpers';
@@ -25,9 +30,7 @@ export const useJoinLCNetworkModal = (
     showNotificationsModal: boolean = false,
     onDismiss?: () => void
 ) => {
-    const { data, isLoading } = useIsCurrentUserLCNUser();
-
-    const isLoggedIn = useIsLoggedIn();
+    const authStatus = useAuthStatus();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.Cancel,
@@ -39,31 +42,43 @@ export const useJoinLCNetworkModal = (
                 handleCloseModal={() => {
                     closeModal();
                     closeAll?.();
+                    onDismiss?.();
                 }}
                 showNotificationsModal={showNotificationsModal}
             />,
-            {},
-            { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+            {
+                sectionClassName: '!max-w-[400px]',
+                cancelButtonTextOverride: 'Skip For Now',
+            }
         );
-    }, [newModal, closeModal, showNotificationsModal]);
+    }, [newModal, closeModal, showNotificationsModal, onDismiss]);
 
-    const handlePresentJoinNetworkModal = useCallback(async () => {
-        const deletingAccount = deletingAccountStore.get.deletingAccount();
-        if (deletingAccount) {
+    const handlePresentJoinNetworkModal = useCallback(
+        async (options?: { forceOpen?: boolean }) => {
+            const deletingAccount = deletingAccountStore.get.deletingAccount();
+            if (deletingAccount) {
+                return { prompted: false };
+            }
+
+            if (options?.forceOpen) {
+                openNetworkModal();
+                return { prompted: true };
+            }
+
+            if (shouldPromptProfileOnboarding(authStatus)) {
+                openNetworkModal();
+                return { prompted: true };
+            }
+
             return { prompted: false };
-        }
-        if (!isLoading && !data && isLoggedIn) {
-            openNetworkModal();
-            return { prompted: true };
-        }
-        return { prompted: false };
-    }, [isLoading, data, isLoggedIn, openNetworkModal]);
+        },
+        [authStatus, openNetworkModal]
+    );
 
     return {
         handlePresentJoinNetworkModal,
         dismissNetworkModal: closeModal,
     };
 };
-
 
 export default useJoinLCNetworkModal;

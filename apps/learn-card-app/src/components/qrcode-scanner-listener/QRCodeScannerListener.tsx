@@ -8,13 +8,15 @@ import AddContactView, {
 } from '../../pages/addressBook/addContactView/AddContactView';
 import { IonModal, IonContent, IonPage, IonSpinner } from '@ionic/react';
 
-import { useToast, ToastTypeEnum } from 'learn-card-base';
-
+import { useToast, ToastTypeEnum, getLogger } from 'learn-card-base';
 import QRCodeScannerStore from 'learn-card-base/stores/QRCodeScannerStore';
 
 import { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
+import * as m from '../../paraglide/messages.js';
 import { VC } from '@learncard/types';
 import { useClaimInputRouter } from '../../hooks/useClaimInputRouter';
+
+const log = getLogger('qr-scanner');
 
 export const QRCodeScannerListener: React.FC = () => {
     const { presentToast } = useToast();
@@ -84,17 +86,14 @@ export const QRCodeScannerListener: React.FC = () => {
             }
             // 'routed' — the router already called history.push; nothing more to do.
         } catch (error) {
-            console.log('❌❌ scanner::error ❌❌', error);
+            log.error('scanner::error', error);
             await handleCancelScanning();
             setLoading(false);
 
-            presentToast(
-                `Oops! ${error instanceof Error ? error.message : 'There was an error scanning the QR Code.'}`,
-                {
-                    type: ToastTypeEnum.Error,
-                    hasDismissButton: true,
-                }
-            );
+            presentToast(m['scanner.failed'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         }
     };
 
@@ -111,11 +110,11 @@ export const QRCodeScannerListener: React.FC = () => {
             if (showScanner) {
                 handleStartScanning()
                     .then(async (res: any) => {
-                        console.log('scan::success', res);
+                        log.debug('scan::success', { rawValue: res?.rawValue });
                         await handleScan(res?.rawValue);
                     })
                     .catch(async error => {
-                        console.log('scan::error', error);
+                        log.error('scan::error', error);
                         await handleCancelScanning();
                     });
             } else if (!showScanner) {
@@ -137,7 +136,9 @@ export const QRCodeScannerListener: React.FC = () => {
                         {loading && (
                             <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
                                 <IonSpinner color="black" />
-                                <p className="mt-2 font-bold text-lg">Loading...</p>
+                                <p className="mt-2 font-bold text-lg">
+                                    {m['scanner.processing']()}
+                                </p>
                             </section>
                         )}
                         {!loading && contact && (
@@ -150,17 +151,14 @@ export const QRCodeScannerListener: React.FC = () => {
                         {!loading && !contact && (
                             <section className="flex flex-col items-center text-center justify-center h-[90%]">
                                 <h1 className="text-center text-xl font-bold text-grayscale-800 m-0 p-0 mt-4">
-                                    Eeek!
+                                    {m['scanner.failed']()}
                                 </h1>
-                                <strong className="text-center font-medium text-grayscale-600 m-0 p-0">
-                                    An error ocurred!
-                                </strong>
                                 <div className="w-full flex items-center justify-center mt-8">
                                     <button
                                         onClick={() => setIsOpen(false)}
                                         className="text-grayscale-900 text-center text-sm"
                                     >
-                                        Cancel
+                                        {m['common.close']()}
                                     </button>
                                 </div>
                             </section>

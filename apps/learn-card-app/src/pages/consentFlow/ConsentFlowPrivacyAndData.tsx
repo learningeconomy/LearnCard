@@ -20,10 +20,18 @@ import ConsentFlowReadSharing from './ConsentFlowReadSharing';
 import ConsentFlowWriteSharing from './ConsentFlowWriteSharing';
 import ContractPermissionsAndDetailsText from './ContractPermissionsAndDetailsText';
 import PrivacyAndDataHeader from './PrivacyAndDataHeader';
+import ConsentFlowVerifiableDataSharingItem from './ConsentFlowVerifiableDataSharingItem';
 
 import { curriedStateSlice } from '@learncard/helpers';
-import { getPrivacyAndDataInfo } from '../../helpers/contract.helpers';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
+import * as m from '../../paraglide/messages.js';
+import TransP from '../../i18n/TransP';
+import {
+    getAllCredentialUrisForCategory,
+    getPrivacyAndDataInfo,
+    isVerifiableDataContractCategory,
+    VERIFIABLE_DATA_CONTRACT_CATEGORIES,
+} from '../../helpers/contract.helpers';
 
 type ConsentFlowPrivacyAndDataProps = {
     contractDetails: ConsentFlowContractDetails;
@@ -33,6 +41,10 @@ type ConsentFlowPrivacyAndDataProps = {
 
     isPostConsent?: boolean;
     headerClass?: string;
+
+    embedded?: boolean;
+    onSaved?: () => void;
+    onCancel?: () => void;
 
     // Optional: pass these directly to avoid lookup issues
     termsUri?: string;
@@ -48,6 +60,10 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
 
     isPostConsent,
     headerClass,
+
+    embedded = false,
+    onSaved,
+    onCancel,
 
     termsUri: propTermsUri,
     ownerDid: propOwnerDid,
@@ -93,15 +109,35 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
     }>({ oneTimeShare: false, customDuration: '' });
 
     const [loadingShareAllCredentials, setLoadingShareAllCredentials] = useState(false);
+    const updateSlice = curriedStateSlice(setTerms);
+
+    const updateRead = curriedStateSlice(updateSlice('read'));
+
+    const updateWrite = curriedStateSlice(updateSlice('write'));
+    const updateWriteCredentials = curriedStateSlice(updateWrite('credentials'));
+
     const { initWallet } = useWallet();
+    const readTerms = {
+        anonymize: false,
+        personal: {},
+        ...(terms.read ?? {}),
+        credentials: {
+            shareAll: false,
+            sharing: false,
+            ...(terms.read?.credentials ?? {}),
+            categories: terms.read?.credentials?.categories ?? {},
+        },
+    } as ConsentFlowTerms['read'];
+    const readCredentials = readTerms.credentials;
+
     useEffect(() => {
         const populateCredsForLiveSync = async () => {
             // we need to populate the terms.read.credentials.categories.[Category].shared array if live syncing (shareAll) is turned on
             //   this is because live sync only properly syncs *new* credentials, we need to populate the shared array for initial sharing
             //   Note: this has the side effect of always triggering the save condition if a user has more than 15 credentials in a category with shareAll
             //         since the contract terms endpoint only returns 15 uris
-            const categoriesWithLiveSync = Object.keys(terms.read.credentials.categories).filter(
-                category => terms.read.credentials.categories[category].shareAll
+            const categoriesWithLiveSync = Object.keys(readCredentials.categories ?? {}).filter(
+                category => readCredentials.categories?.[category]?.shareAll
             );
 
             if (categoriesWithLiveSync.length > 0) {
@@ -110,16 +146,23 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                     const wallet = await initWallet();
 
                     const updatedTerms = cloneDeep(terms);
-                    await Promise.all(
-                        categoriesWithLiveSync.map(async category => {
-                            const allCategoryCredUris = (
-                                await wallet.index.LearnCloud.get({ category })
-                            ).map(item => item.uri);
-
-                            updatedTerms.read.credentials.categories[category].shared =
-                                allCategoryCredUris;
-                        })
-                    );
+                    updatedTerms.read ??= readTerms;
+                    updatedTerms.read.credentials ??= {
+                        shareAll: false,
+                        sharing: false,
+                        categories: {},
+                    };
+                    updatedTerms.read.credentials.categories ??= {};
+                    for (const category of categoriesWithLiveSync) {
+                        updatedTerms.read.credentials.categories[category] = {
+                            ...(updatedTerms.read.credentials.categories[category] ?? {
+                                shareAll: true,
+                                sharing: true,
+                                shared: [],
+                            }),
+                            shared: await getAllCredentialUrisForCategory(wallet, category),
+                        };
+                    }
 
                     const isUpdated = !isEqual(terms, updatedTerms);
 
@@ -135,23 +178,80 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
         populateCredsForLiveSync();
     }, [terms]);
 
+    const handleUpdateVerifiableDataCategory = async (
+        category: string,
+        mode: 'liveSync' | 'shareOnce' | 'deny'
+    ) => {
+        try {
+            if (mode === 'deny') {
+                setTerms(draft => {
+                    draft.read ??= {
+                        anonymize: false,
+                        credentials: { shareAll: false, sharing: false, categories: {} },
+                        personal: {},
+                    };
+
+                    draft.read.credentials ??= {
+                        shareAll: false,
+                        sharing: false,
+                        categories: {},
+                    };
+                    draft.read.credentials.categories ??= {};
+
+                    draft.read.credentials.categories[category] = {
+                        shareAll: false,
+                        shared: [],
+                        sharing: false,
+                    };
+                });
+                return;
+            }
+
+            const wallet = await initWallet();
+            const shared = (await wallet.index.LearnCloud.get({ category })).map(item => item.uri);
+
+            setTerms(draft => {
+                draft.read ??= {
+                    anonymize: false,
+                    credentials: { shareAll: false, sharing: false, categories: {} },
+                    personal: {},
+                };
+
+                draft.read.credentials ??= { shareAll: false, sharing: false, categories: {} };
+                draft.read.credentials.categories ??= {};
+
+                draft.read.credentials.categories[category] = {
+                    shareAll: mode === 'liveSync',
+                    shared,
+                    sharing: true,
+                };
+            });
+        } catch (error) {
+            presentToast('Connection issue. Please check your internet and try again.', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        }
+    };
+
     const isUpdated = !isEqual(initialTerms, terms);
 
-    const updateSlice = curriedStateSlice(setTerms);
+    const allReadToggle = Object.keys(readCredentials.categories ?? {})
+        .filter(category => !isVerifiableDataContractCategory(category))
+        .every(category => {
+            const categoryState = readCredentials.categories?.[category];
 
-    const updateRead = curriedStateSlice(updateSlice('read'));
-
-    const updateWrite = curriedStateSlice(updateSlice('write'));
-    const updateWriteCredentials = curriedStateSlice(updateWrite('credentials'));
-
-    const allReadToggle = Object.values(terms.read.credentials.categories).every(
-        category => category.sharing && category.shareAll
-    );
+            return Boolean(categoryState?.sharing && categoryState.shareAll);
+        });
     const allWriteToggle = Object.values(terms.write.credentials.categories).every(Boolean);
 
     const handleToggleAllCategoryReadToggles = () => {
         updateSlice('read', oldRead => {
             Object.keys(oldRead.credentials.categories).forEach(key => {
+                if (isVerifiableDataContractCategory(key)) {
+                    return;
+                }
+
                 const category = oldRead.credentials.categories[key];
                 const required =
                     contractDetails?.contract.read.credentials.categories[key]?.required;
@@ -177,10 +277,36 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
         return <></>;
     }
 
-    const contractCategoryReadDataExists =
-        Object.keys(contractDetails.contract.read.credentials.categories ?? {}).length > 0;
+    const contractCategoryReadCategories = Object.keys(
+        contractDetails.contract.read.credentials.categories ?? {}
+    );
+    const contractCategoryReadDataExists = contractCategoryReadCategories.some(
+        category => !isVerifiableDataContractCategory(category)
+    );
+    const contractPersonalReadCategories = Object.keys(
+        contractDetails.contract.read.personal ?? {}
+    );
+    const verifiableDataCategories = VERIFIABLE_DATA_CONTRACT_CATEGORIES.filter(category =>
+        contractCategoryReadCategories.includes(category)
+    );
+    const verifiableDataPersonalItems = verifiableDataCategories.map(category => (
+        <ConsentFlowVerifiableDataSharingItem
+            key={category}
+            term={
+                readTerms.credentials?.categories?.[category] ?? {
+                    shareAll: false,
+                    shared: [],
+                    sharing: false,
+                }
+            }
+            category={category}
+            titleOverride={category === 'Role Experience' ? 'Experience in Role' : undefined}
+            required={contractDetails.contract.read.credentials.categories[category]?.required}
+            onModeChange={mode => handleUpdateVerifiableDataCategory(category, mode)}
+        />
+    ));
     const contractPersonalReadDataExists =
-        Object.keys(contractDetails.contract.read.personal ?? {}).length > 0;
+        contractPersonalReadCategories.length > 0 || verifiableDataCategories.length > 0;
     const contractCategoryWriteDataExists =
         Object.keys(contractDetails.contract.write.credentials.categories ?? {}).length > 0;
     // const contractPersonalWriteDataExists =
@@ -188,15 +314,17 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
 
     const { name, image, appStyles } = getPrivacyAndDataInfo(contractDetails, app);
 
-    const saveWord = updatingTerms ? 'Saving...' : 'Save';
+    const saveWord = updatingTerms ? m['consentFlow.saving']() : m['common.save']();
 
     return (
-        <div className="h-full">
-            <PrivacyAndDataHeader name={name} image={image} className={headerClass} />
+        <div className={embedded ? 'relative h-full overflow-hidden' : 'h-full'}>
+            {!embedded && (
+                <PrivacyAndDataHeader name={name} image={image} className={headerClass} />
+            )}
 
             <div
                 className="h-full w-full flex flex-col gap-[20px] overflow-y-auto p-[20px] pb-[300px]"
-                style={appStyles}
+                style={embedded ? undefined : appStyles}
             >
                 <div className="text-grayscale-900 text-[14px] rounded-[15px] bg-white w-full p-[15px] flex flex-col gap-[10px] shadow-box-bottom">
                     <ContractPermissionsAndDetailsText
@@ -209,8 +337,12 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                 <div className="text-grayscale-900 text-[14px] rounded-[15px] bg-white w-full p-[15px] flex flex-col gap-[20px] shadow-box-bottom">
                     <h4 className="text-grayscale-900 text-[20px] font-notoSans">
                         {contractCategoryReadDataExists
-                            ? `Share Your ${brandingConfig?.name} Data`
-                            : `This app is not able to read any credentials from your ${brandingConfig?.name}.`}
+                            ? m['consentFlow.privacyData.shareData']({
+                                  brand: brandingConfig?.name ?? '',
+                              })
+                            : m['consentFlow.privacyData.cannotRead']({
+                                  brand: brandingConfig?.name ?? '',
+                              })}
                     </h4>
 
                     {contractCategoryReadDataExists && (
@@ -225,10 +357,12 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                                     : 'text-grayscale-500'
                                             }`}
                                         >
-                                            {allReadToggle ? 'Active' : 'Off'}
+                                            {allReadToggle
+                                                ? m['consentFlow.status.active']()
+                                                : m['consentFlow.status.off']()}
                                         </output>
                                         <p className="font-notoSans text-grayscale-900 text-[20px]">
-                                            Live Sync All
+                                            {m['consentFlow.liveSyncAll']()}
                                         </p>
                                     </label>
 
@@ -242,11 +376,10 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                 </div>
 
                                 <p className="text-grayscale-600 text-[14px] font-notoSans">
-                                    Turning on{' '}
-                                    <span className="font-[600] font-notoSans">Live Sync</span> will
-                                    automatically share all credentials as you get them. If it's
-                                    turned off, you can selectively share specific wallet categories
-                                    and credentials at any time
+                                    <TransP
+                                        m={m['consentFlow.privacyData.liveSyncDescription']}
+                                        components={[<span className="font-[600] font-notoSans" />]}
+                                    />
                                 </p>
                             </div>
 
@@ -256,6 +389,9 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                 setState={updateSlice('read')}
                                 contractOwnerDid={contractDetails.owner?.did}
                                 showPersonal={false}
+                                categoryFilter={category =>
+                                    !isVerifiableDataContractCategory(category)
+                                }
                                 contractDetails={contractDetails}
                                 app={app}
                             />
@@ -266,7 +402,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                 {contractPersonalReadDataExists && (
                     <div className="text-grayscale-900 text-[14px] rounded-[15px] bg-white w-full p-[15px] flex flex-col gap-[20px] shadow-box-bottom">
                         <h4 className="text-grayscale-900 text-[20px] font-notoSans">
-                            Share Your Personal Data
+                            {m['consentFlow.privacyData.sharePersonalData']()}
                         </h4>
 
                         <div className="flex flex-col">
@@ -279,10 +415,12 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                                 : 'text-grayscale-500'
                                         }`}
                                     >
-                                        {terms.read.anonymize ? 'On' : 'Off'}
+                                        {terms.read.anonymize
+                                            ? m['consentFlow.status.on']()
+                                            : m['consentFlow.status.off']()}
                                     </output>
                                     <p className="font-notoSans text-grayscale-900 text-[20px]">
-                                        Anonymize
+                                        {m['consentFlow.anonymize']()}
                                     </p>
                                 </label>
 
@@ -290,24 +428,27 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                     mode="ios"
                                     className="[--background:white]"
                                     color="emerald-700"
-                                    onClick={() => updateRead('anonymize', !terms.read.anonymize)}
-                                    checked={terms.read.anonymize}
+                                    onClick={() => updateRead('anonymize', !readTerms.anonymize)}
+                                    checked={readTerms.anonymize}
                                 />
                             </div>
 
                             <p className="text-grayscale-600 text-[14px] font-notoSans">
-                                Turning on{' '}
-                                <span className="font-[600] font-notoSans">Anonymize</span> will
-                                hide your name, profile picture, and email when sharing to this app.
+                                <TransP
+                                    m={m['consentFlow.privacyData.anonymizeDescription']}
+                                    components={[<span className="font-[600] font-notoSans" />]}
+                                />
                             </p>
                         </div>
 
                         <ConsentFlowReadSharing
                             contract={contractDetails.contract.read}
-                            terms={terms.read}
+                            terms={readTerms}
                             setState={updateSlice('read')}
                             contractOwnerDid={contractDetails.owner?.did}
                             showCategories={false}
+                            showPersonal
+                            extraPersonalItems={verifiableDataPersonalItems}
                         />
                     </div>
                 )}
@@ -315,8 +456,13 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                 <div className="text-grayscale-900 text-[14px] rounded-[15px] bg-white w-full p-[15px] flex flex-col gap-[20px] shadow-box-bottom">
                     <h4 className="text-grayscale-900 text-[20px] font-notoSans">
                         {contractCategoryWriteDataExists
-                            ? `Allow ${name} to Add Data to Your ${brandingConfig?.name}`
-                            : `This app is not able to write any data to your ${brandingConfig?.name}.`}
+                            ? m['consentFlow.privacyData.allowAddData']({
+                                  name,
+                                  brand: brandingConfig?.name ?? '',
+                              })
+                            : m['consentFlow.privacyData.cannotWrite']({
+                                  brand: brandingConfig?.name ?? '',
+                              })}
                     </h4>
 
                     {contractCategoryWriteDataExists && (
@@ -331,10 +477,12 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                                     : 'text-grayscale-500'
                                             }`}
                                         >
-                                            {allWriteToggle ? 'Active' : 'Off'}
+                                            {allWriteToggle
+                                                ? m['consentFlow.status.active']()
+                                                : m['consentFlow.status.off']()}
                                         </output>
                                         <p className="font-notoSans text-grayscale-900 text-[20px]">
-                                            Allow All
+                                            {m['consentFlow.allowAll']()}
                                         </p>
                                     </label>
 
@@ -348,11 +496,11 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                 </div>
 
                                 <p className="text-grayscale-600 text-[14px] font-notoSans">
-                                    Turning on{' '}
-                                    <span className="font-[600] font-notoSans">Allow All</span> will
-                                    let the app issue credentials and add them to your{' '}
-                                    {brandingConfig?.name}. If turned off, you can selectively choose
-                                    which wallet categories that the app can add to.
+                                    <TransP
+                                        m={m['consentFlow.privacyData.writeDescription']}
+                                        values={{ brand: brandingConfig?.name ?? '' }}
+                                        components={[<span className="font-[600] font-notoSans" />]}
+                                    />
                                 </p>
                             </div>
 
@@ -370,16 +518,18 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
             <ConsentFlowFooter
                 actionButtonText={isPostConsent ? saveWord : undefined}
                 actionButtonDisabled={updatingTerms || loadingShareAllCredentials || !isUpdated}
+                actionButtonColorClass={embedded ? 'bg-emerald-600' : undefined}
                 onActionButtonClick={async () => {
                     if (isPostConsent && isUpdated) {
                         try {
                             await guardedAction(async () => {
                                 await updateTerms(terms, shareDuration);
                             });
-                            closeModal();
                             presentToast('Successfully updated!', {
                                 type: ToastTypeEnum.Success,
                             });
+                            if (embedded) onSaved?.();
+                            else closeModal();
                         } catch (e) {
                             presentToast(`Failed to update terms: ${e.message}`, {
                                 type: ToastTypeEnum.Error,
@@ -387,10 +537,11 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                         }
                     }
                 }}
-                secondaryButtonText={isPostConsent ? 'Cancel' : 'Back'}
+                secondaryButtonText={isPostConsent ? m['common.cancel']() : m['common.back']()}
                 onSecondaryButtonClick={async () => {
                     saveTerms?.(terms);
-                    closeModal();
+                    if (embedded) onCancel?.();
+                    else closeModal();
                 }}
             />
         </div>

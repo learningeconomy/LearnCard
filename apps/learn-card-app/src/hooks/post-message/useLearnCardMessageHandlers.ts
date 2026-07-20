@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useHistory } from 'react-router-dom';
 import {
@@ -8,9 +8,16 @@ import {
     ModalTypes,
     LEARNCARD_AI_URL,
     getOrFetchIntegrationForListing,
+    pendingContractSyncStore,
+    getCategoryForCredential,
+    getOrCreateSharedUriForWallet,
+    contractCategoryNameToCategoryMetadata,
+    isJobTerminal,
+    MAX_JOB_RETRIES,
 } from 'learn-card-base';
 import { UnsignedVP, VC, VP } from '@learncard/types';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
+import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
 import { ActionHandlers, AppEvent } from './useLearnCardPostMessage';
 import { createActionHandlers } from './useLearnCardPostMessage.handlers';
@@ -23,6 +30,16 @@ import {
     markClaimCompleted as markSendCredentialClaimCompleted,
     flushOnError as flushSendCredentialFlowOnError,
 } from '../../helpers/sendCredentialFlow.helpers';
+import {
+    clearLearnerContextCache,
+    LEARNER_CONTEXT_CACHE_TTL_MS,
+    getLearnerContextCacheKey,
+    readLearnerContextCache,
+    writeLearnerContextCache,
+    type LearnerContextCacheEntry,
+    type LearnerContextRequestOptions,
+    type LearnerContextSourceData,
+} from './learnerContextCache.helpers';
 
 interface LaunchConfig {
     url?: string;
@@ -45,6 +62,116 @@ interface UseLearnCardMessageHandlersOptions {
     }) => void;
     debug?: boolean;
 }
+
+import { getLogger } from 'learn-card-base';
+const moduleLog = getLogger('use-learn-card-message-handlers');
+
+type LearnerContextFillTimings = {
+    credentialReadMs?: number;
+    promptizerMs?: number;
+};
+
+const learnerContextCacheFills = new Map<
+    string,
+    { promise: Promise<LearnerContextCacheEntry>; timings: LearnerContextFillTimings }
+>();
+const prewarmedCacheKeys = new Map<string, number>();
+
+type LearnerContextMetadata = {
+    cacheStatus?: 'browser-hit' | 'browser-miss' | 'backend-hit' | 'backend-miss' | 'structured';
+    timings?: {
+        totalMs: number;
+        sdkRoundTripMs?: number;
+        appEventMs?: number;
+        credentialReadMs?: number;
+        promptizerMs?: number;
+        cacheLookupMs?: number;
+        prewarmAgeMs?: number;
+    };
+    backendMetadata?: Record<string, unknown>;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+    Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+
+const getStringValue = (
+    record: Record<string, unknown> | undefined,
+    key: string
+): string | undefined => {
+    const value = record?.[key];
+    return typeof value === 'string' ? value : undefined;
+};
+
+const getPendingSyncStatus = (contractUri?: string) => {
+    const allJobs = Object.values(pendingContractSyncStore.get.jobs());
+    // When a contractUri is provided (a partner app asking about its own
+    // contract), only consider that contract's jobs so an unrelated contract's
+    // sync can't make this app appear to be syncing or skew its progress
+    // totals. With no contractUri we fall back to the store-global view.
+    const jobs = contractUri ? allJobs.filter(job => job.contractUri === contractUri) : allJobs;
+    // A job that just errored but still has retries left is not terminal — it
+    // will be retried by the worker — so treat it as active. Otherwise a
+    // waitForSync caller could see a premature "ready" during the retry window.
+    const activeJobs = jobs.filter(
+        job =>
+            job.status === 'queued' ||
+            job.status === 'running' ||
+            (job.status === 'error' && job.retryCount < MAX_JOB_RETRIES)
+    );
+    const latestTerminalJob = jobs
+        .filter(isJobTerminal)
+        .sort((a, b) => b.updatedAt - a.updatedAt)[0];
+
+    const relevantJobs =
+        activeJobs.length > 0 ? activeJobs : latestTerminalJob ? [latestTerminalJob] : [];
+
+    const progress = relevantJobs.reduce(
+        (summary, job) => ({
+            totalCredentials: summary.totalCredentials + job.totalCredentials,
+            completedCredentials: summary.completedCredentials + job.completedCredentials,
+            failedCredentials: summary.failedCredentials + job.failedCredentials,
+            retryCount: summary.retryCount + job.retryCount,
+        }),
+        {
+            totalCredentials: 0,
+            completedCredentials: 0,
+            failedCredentials: 0,
+            retryCount: 0,
+        }
+    );
+
+    if (activeJobs.length > 0) {
+        return {
+            status: 'syncing' as const,
+            progress,
+        };
+    }
+
+    if (latestTerminalJob?.status === 'error') {
+        return {
+            status: 'error' as const,
+            progress,
+            lastError: latestTerminalJob.lastError,
+        };
+    }
+
+    return {
+        status: 'ready' as const,
+        progress,
+    };
+};
+
+const waitForPendingSync = async (contractUri?: string, timeoutMs = 25000) => {
+    const startedAt = Date.now();
+
+    while (Date.now() - startedAt < timeoutMs) {
+        const status = getPendingSyncStatus(contractUri);
+        if (status.status !== 'syncing') return status;
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    return getPendingSyncStatus(contractUri);
+};
 
 /**
  * Shared hook for creating LEARNCARD_V1 message handlers.
@@ -70,14 +197,14 @@ export function useLearnCardMessageHandlers({
     // Debug logging helper
     const log = useCallback(
         (...args: unknown[]) => {
-            if (debug) console.log('[PostMessage]', ...args);
+            if (debug) moduleLog.info('[PostMessage]', ...args);
         },
         [debug]
     );
 
     const logError = useCallback(
         (...args: unknown[]) => {
-            if (debug) console.error('[PostMessage]', ...args);
+            if (debug) moduleLog.error('[PostMessage]', ...args);
         },
         [debug]
     );
@@ -232,6 +359,273 @@ export function useLearnCardMessageHandlers({
         return getOrFetchIntegrationForListing(queryClient, wallet, appId);
     };
 
+    type LearnCardWallet = NonNullable<Awaited<ReturnType<typeof initWallet>>>;
+
+    const getConfiguredContractUri = async () => {
+        const launchConfigContractUri = launchConfig?.contractUri as string | undefined;
+        if (launchConfigContractUri) return launchConfigContractUri;
+        if (!appId) return undefined;
+
+        const integration = await getIntegrationForListing(appId);
+        const guideState = integration?.guideState as
+            | {
+                  config?: {
+                      consentFlowConfig?: { contractUri?: string };
+                      embedAppConfig?: {
+                          featureConfig?: {
+                              'request-data-consent'?: { contractUri?: string };
+                          };
+                      };
+                  };
+              }
+            | undefined;
+
+        return (
+            guideState?.config?.embedAppConfig?.featureConfig?.['request-data-consent']
+                ?.contractUri || guideState?.config?.consentFlowConfig?.contractUri
+        );
+    };
+
+    const normalizeLearnerContextOptions = useCallback(
+        (options: LearnerContextRequestOptions = {}): LearnerContextRequestOptions => ({
+            includeCredentials: options.includeCredentials ?? true,
+            includePersonalData: options.includePersonalData ?? false,
+            format: options.format ?? 'prompt',
+            instructions: options.instructions,
+            detailLevel: options.detailLevel ?? 'compact',
+            waitForSync: options.waitForSync,
+        }),
+        []
+    );
+
+    const fetchLearnerContextSource = useCallback(
+        async (
+            learnCard: LearnCardWallet,
+            options: LearnerContextRequestOptions
+        ): Promise<LearnerContextSourceData> => {
+            if (!appId) throw new Error('App listing not available');
+
+            if (!learnCard.invoke.sendAppEvent) {
+                throw new Error('sendAppEvent not available - rebuild types');
+            }
+
+            const result = await learnCard.invoke.sendAppEvent(appId, {
+                type: 'request-learner-context',
+                includeCredentials: options.includeCredentials,
+                includePersonalData: options.includePersonalData,
+                instructions: options.instructions,
+                detailLevel: options.detailLevel,
+            });
+
+            const rawCredentialUris = Array.isArray(result.credentialUris)
+                ? result.credentialUris
+                : [];
+            const credentialUris =
+                options.includeCredentials === false
+                    ? []
+                    : Array.from(
+                          new Set(
+                              rawCredentialUris.filter(
+                                  (uri): uri is string => typeof uri === 'string'
+                              )
+                          )
+                      ).sort();
+            const personalData =
+                options.includePersonalData && isRecord(result.personalData)
+                    ? result.personalData
+                    : undefined;
+
+            return {
+                appId,
+                did: typeof result.did === 'string' ? result.did : await learnCard.id.did(),
+                credentialUris,
+                personalData,
+                displayName:
+                    getStringValue(personalData, 'name') ??
+                    getStringValue(personalData, 'displayName'),
+            };
+        },
+        [appId]
+    );
+
+    const resolveLearnerContextCredentials = useCallback(
+        async (learnCard: LearnCardWallet, credentialUris: string[]): Promise<unknown[]> => {
+            const credentials = await Promise.all(
+                credentialUris.map(async uri => {
+                    try {
+                        return learnCard.read.get(uri);
+                    } catch (error) {
+                        logError(`Failed to resolve credential ${uri}:`, error);
+                        return undefined;
+                    }
+                })
+            );
+
+            return credentials.filter(credential => credential !== undefined);
+        },
+        [logError]
+    );
+
+    const generatePromptForLearnerContext = useCallback(
+        async (
+            credentials: unknown[],
+            personalData: Record<string, unknown> | undefined,
+            options: LearnerContextRequestOptions
+        ): Promise<{ prompt: string; backendMetadata?: Record<string, unknown> }> => {
+            const aiServiceUrl = (
+                import.meta.env.VITE_LEARNCARD_AI_URL ||
+                networkStore.get.aiServiceUrl() ||
+                LEARNCARD_AI_URL
+            ).replace(/\/+$/, '');
+
+            try {
+                // The formatter URL is tenant/deployment configuration, not partner input.
+                // End-user authorization happens before this point via login + ConsentFlow.
+                const promptizerResponse = await fetch(
+                    `${aiServiceUrl}/ai/learner-context/format`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            credentials,
+                            personalData,
+                            instructions: options.instructions,
+                            detailLevel: options.detailLevel,
+                            includeStructuredContext: false,
+                            maxCredentials: credentials.length,
+                        }),
+                    }
+                );
+
+                if (!promptizerResponse.ok) {
+                    return {
+                        prompt: `User has ${credentials.length} credentials.`,
+                        backendMetadata: { promptizerError: true },
+                    };
+                }
+
+                const promptizerData: unknown = await promptizerResponse.json();
+
+                return {
+                    prompt:
+                        isRecord(promptizerData) && typeof promptizerData.prompt === 'string'
+                            ? promptizerData.prompt
+                            : '',
+                    backendMetadata:
+                        isRecord(promptizerData) && isRecord(promptizerData.metadata)
+                            ? promptizerData.metadata
+                            : undefined,
+                };
+            } catch (error) {
+                logError('Failed to call promptizer:', error);
+
+                return {
+                    prompt: `User has ${credentials.length} credentials.`,
+                    backendMetadata: { promptizerError: true },
+                };
+            }
+        },
+        [logError]
+    );
+
+    const fillLearnerContextCache = useCallback(
+        async (
+            learnCard: LearnCardWallet,
+            source: LearnerContextSourceData,
+            options: LearnerContextRequestOptions,
+            key: string,
+            timings?: LearnerContextMetadata['timings']
+        ): Promise<LearnerContextCacheEntry> => {
+            const existingFill = learnerContextCacheFills.get(key);
+            if (existingFill) {
+                const entry = await existingFill.promise;
+                if (timings) Object.assign(timings, existingFill.timings);
+                return entry;
+            }
+
+            const fillTimings: LearnerContextFillTimings = {};
+
+            const fillPromise = (async () => {
+                const credentialReadStartedAt = performance.now();
+                const credentials = await resolveLearnerContextCredentials(
+                    learnCard,
+                    source.credentialUris
+                );
+                fillTimings.credentialReadMs = performance.now() - credentialReadStartedAt;
+
+                const promptizerStartedAt = performance.now();
+                const { prompt, backendMetadata } = await generatePromptForLearnerContext(
+                    credentials,
+                    source.personalData,
+                    options
+                );
+                fillTimings.promptizerMs = performance.now() - promptizerStartedAt;
+
+                const entry: LearnerContextCacheEntry = {
+                    key,
+                    prompt,
+                    did: source.did,
+                    displayName: source.displayName,
+                    credentialUris: source.credentialUris,
+                    personalData: source.personalData,
+                    backendMetadata,
+                    createdAt: Date.now(),
+                };
+
+                writeLearnerContextCache(entry);
+
+                return entry;
+            })();
+
+            learnerContextCacheFills.set(key, { promise: fillPromise, timings: fillTimings });
+
+            try {
+                const entry = await fillPromise;
+                if (timings) Object.assign(timings, fillTimings);
+                return entry;
+            } finally {
+                learnerContextCacheFills.delete(key);
+            }
+        },
+        [generatePromptForLearnerContext, resolveLearnerContextCredentials]
+    );
+
+    const prewarmLearnerContext = useCallback(
+        async (inputOptions: LearnerContextRequestOptions): Promise<void> => {
+            try {
+                const learnCard = await initWallet();
+                if (!learnCard) return;
+
+                const options = normalizeLearnerContextOptions(inputOptions);
+                const source = await fetchLearnerContextSource(learnCard, options);
+                const key = getLearnerContextCacheKey(source, options);
+
+                const now = Date.now();
+                const lastPrewarmAt = prewarmedCacheKeys.get(key);
+                if (
+                    lastPrewarmAt !== undefined &&
+                    now - lastPrewarmAt < LEARNER_CONTEXT_CACHE_TTL_MS
+                ) {
+                    return;
+                }
+
+                if (readLearnerContextCache(key, now)) return;
+
+                await fillLearnerContextCache(learnCard, source, options, key);
+                prewarmedCacheKeys.set(key, Date.now());
+            } catch (error) {
+                log('Learner context prewarm skipped', error);
+            }
+        },
+        [
+            fetchLearnerContextSource,
+            fillLearnerContextCache,
+            initWallet,
+            log,
+            normalizeLearnerContextOptions,
+        ]
+    );
+
     const handlers = useMemo(
         () =>
             createActionHandlers({
@@ -262,7 +656,7 @@ export function useLearnCardMessageHandlers({
 
                             // Check if already trusted
                             // if (isOriginTrusted(origin)) {
-                            //     console.log('[PostMessage] Origin already trusted:', origin);
+                            //     log.info('[PostMessage] Origin already trusted:', origin);
                             //     resolve(true);
                             //     return;
                             // }
@@ -359,27 +753,9 @@ export function useLearnCardMessageHandlers({
                 },
                 getContractUri: () => launchConfig?.contractUri as string | undefined,
                 getIntegrationContractUri: async () => {
-                    if (!appId) return undefined;
-
-                    const integration = await getIntegrationForListing(appId);
-                    const guideState = integration?.guideState as
-                        | {
-                            config?: {
-                                consentFlowConfig?: { contractUri?: string };
-                                embedAppConfig?: {
-                                    featureConfig?: {
-                                        'request-data-consent'?: { contractUri?: string };
-                                    };
-                                };
-                            };
-                        }
-                        | undefined;
-
-                    return (
-                        guideState?.config?.embedAppConfig?.featureConfig?.['request-data-consent']
-                            ?.contractUri || guideState?.config?.consentFlowConfig?.contractUri
-                    );
+                    return getConfiguredContractUri();
                 },
+                prewarmLearnerContext,
 
                 // Credential handlers
                 showCredentialAcceptanceModal: async (credential: any) => {
@@ -507,6 +883,52 @@ export function useLearnCardMessageHandlers({
                     }
 
                     const credential = await learnCard.read.get(id);
+
+                    try {
+                        const contractUri = await getConfiguredContractUri();
+                        const consentedContract = consentedContracts?.find(
+                            contract => contract.contract.uri === contractUri
+                        );
+                        const category = credential
+                            ? await getCategoryForCredential(credential, learnCard, false)
+                            : undefined;
+                        const categoryInfo = category
+                            ? consentedContract?.terms.read.credentials.categories[category]
+                            : undefined;
+
+                        if (
+                            contractUri &&
+                            consentedContract &&
+                            category &&
+                            typeof categoryInfo === 'object' &&
+                            categoryInfo.shareAll &&
+                            categoryInfo.sharing &&
+                            (!categoryInfo.shareUntil ||
+                                categoryInfo.shareUntil > new Date().toISOString())
+                        ) {
+                            const credentialCategory =
+                                contractCategoryNameToCategoryMetadata(category)?.credentialType ??
+                                category;
+                            const sharedUri = await getOrCreateSharedUriForWallet(
+                                learnCard,
+                                consentedContract.contract.owner.did,
+                                queryClient,
+                                id,
+                                credentialCategory
+                            );
+
+                            if (sharedUri) {
+                                await learnCard.invoke.syncCredentialsToContract(
+                                    consentedContract.uri,
+                                    {
+                                        [category]: [sharedUri],
+                                    }
+                                );
+                            }
+                        }
+                    } catch (error) {
+                        logError('Failed to lazily materialize credential share:', error);
+                    }
 
                     log('Fetched credential:', credential);
                     sdkActivityStore.set.endActivity();
@@ -938,250 +1360,253 @@ export function useLearnCardMessageHandlers({
                 // App events - only available when appId is provided
                 sendAppEvent: appId
                     ? async (listingId: string, event: AppEvent) => {
-                        const learnCard = await initWallet();
+                          const learnCard = await initWallet();
 
-                        if (!learnCard) {
-                            sdkActivityStore.set.endActivity();
-                            throw new Error('Wallet not initialized');
-                        }
+                          if (!learnCard) {
+                              sdkActivityStore.set.endActivity();
+                              throw new Error('Wallet not initialized');
+                          }
 
-                        if (!learnCard.invoke.sendAppEvent) {
-                            sdkActivityStore.set.endActivity();
-                            throw new Error('sendAppEvent not available - rebuild types');
-                        }
+                          if (!learnCard.invoke.sendAppEvent) {
+                              sdkActivityStore.set.endActivity();
+                              throw new Error('sendAppEvent not available - rebuild types');
+                          }
 
-                        // LC-1644 perf telemetry — only the send-credential path triggers
-                        // the user-facing claim flow we want to time. Other event types
-                        // (check-credential, send-ai-session-credential) follow different paths.
-                        const isSendCredential = event.type === 'send-credential';
-                        if (isSendCredential) {
-                            startSendCredentialFlow({
-                                listingId,
-                                eventType: event.type,
-                            });
-                        }
+                          // LC-1644 perf telemetry — only the send-credential path triggers
+                          // the user-facing claim flow we want to time. Other event types
+                          // (check-credential, send-ai-session-credential) follow different paths.
+                          const isSendCredential = event.type === 'send-credential';
+                          if (isSendCredential) {
+                              startSendCredentialFlow({
+                                  listingId,
+                                  eventType: event.type,
+                              });
+                          }
 
-                        let result;
-                        try {
-                            result = await learnCard.invoke.sendAppEvent(listingId, event);
-                        } catch (err) {
-                            if (isSendCredential) {
-                                void flushSendCredentialFlowOnError({
-                                    phase: 'request',
-                                    message: err instanceof Error ? err.message : String(err),
-                                });
-                            }
-                            throw err;
-                        }
+                          let result;
+                          try {
+                              result = await learnCard.invoke.sendAppEvent(listingId, event);
+                          } catch (err) {
+                              if (isSendCredential) {
+                                  void flushSendCredentialFlowOnError({
+                                      phase: 'request',
+                                      message: err instanceof Error ? err.message : String(err),
+                                  });
+                              }
+                              throw err;
+                          }
 
-                        if (isSendCredential) {
-                            markSendCredentialResponseReceived({
-                                alreadyClaimed: !!result.alreadyClaimed,
-                            });
-                        }
+                          if (isSendCredential) {
+                              markSendCredentialResponseReceived({
+                                  alreadyClaimed: !!result.alreadyClaimed,
+                              });
+                          }
 
-                        // If a credential was issued via send-credential event, notify the parent component
-                        // Note: check-credential also returns credentialUri but should NOT trigger the modal
-                        if (
-                            event.type === 'send-credential' &&
-                            result.credentialUri &&
-                            !result.alreadyClaimed &&
-                            onCredentialIssued
-                        ) {
-                            onCredentialIssued(
-                                result.credentialUri as string,
-                                result.boostUri as string | undefined,
-                                result.credential as VC | VP | undefined
-                            );
-                        } else if (isSendCredential) {
-                            // alreadyClaimed branch (or send-credential without onCredentialIssued
-                            // wired) — the modal never mounts, so flush the flow as a terminal
-                            // event with whatever phases we captured. `already_claimed` outcome
-                            // surfaces in PostHog so we can filter it out of warm-path stats.
-                            void markSendCredentialClaimCompleted();
-                        }
+                          // If a credential was issued via send-credential event, notify the parent component
+                          // Note: check-credential also returns credentialUri but should NOT trigger the modal
+                          if (
+                              event.type === 'send-credential' &&
+                              result.credentialUri &&
+                              !result.alreadyClaimed &&
+                              onCredentialIssued
+                          ) {
+                              onCredentialIssued(
+                                  result.credentialUri as string,
+                                  result.boostUri as string | undefined,
+                                  result.credential as VC | VP | undefined
+                              );
+                          } else if (isSendCredential) {
+                              // alreadyClaimed branch (or send-credential without onCredentialIssued
+                              // wired) — the modal never mounts, so flush the flow as a terminal
+                              // event with whatever phases we captured. `already_claimed` outcome
+                              // surfaces in PostHog so we can filter it out of warm-path stats.
+                              void markSendCredentialClaimCompleted();
+                          }
 
-                        if (event.type === 'send-ai-session-credential') {
-                            const { topicCredentialUri, sessionCredentialUri, isNewTopic } =
-                                result;
+                          if (event.type === 'send-ai-session-credential') {
+                              const { topicCredentialUri, sessionCredentialUri, isNewTopic } =
+                                  result;
 
-                            if (topicCredentialUri && isNewTopic) {
-                                try {
-                                    const topicCredential = await learnCard.read.get(
-                                        topicCredentialUri as string
-                                    );
-                                    if (topicCredential) {
-                                        await storeAndAddVCToWallet(
-                                            topicCredential,
-                                            { title: topicCredential.name || 'AI Topic' },
-                                            'LearnCloud',
-                                            true
-                                        );
-                                    }
-                                } catch (e) {
-                                    console.error(
-                                        '[AI Topics] Failed to store topic credential:',
-                                        e
-                                    );
-                                }
-                            }
+                              if (topicCredentialUri && isNewTopic) {
+                                  try {
+                                      const topicCredential = await learnCard.read.get(
+                                          topicCredentialUri as string
+                                      );
+                                      if (topicCredential) {
+                                          await storeAndAddVCToWallet(
+                                              topicCredential,
+                                              { title: topicCredential.name || 'AI Topic' },
+                                              'LearnCloud',
+                                              true
+                                          );
+                                      }
+                                  } catch (e) {
+                                      logError('[AI Topics] Failed to store topic credential:', e);
+                                  }
+                              }
 
-                            if (sessionCredentialUri) {
-                                try {
-                                    const sessionCredential = await learnCard.read.get(
-                                        sessionCredentialUri as string
-                                    );
-                                    if (sessionCredential) {
-                                        await storeAndAddVCToWallet(
-                                            sessionCredential,
-                                            { title: sessionCredential.name || 'AI Session' },
-                                            'LearnCloud',
-                                            true
-                                        );
-                                    }
-                                } catch (e) {
-                                    console.error(
-                                        '[AI Topics] Failed to store session credential:',
-                                        e
-                                    );
-                                }
-                            }
-                        }
+                              if (sessionCredentialUri) {
+                                  try {
+                                      const sessionCredential = await learnCard.read.get(
+                                          sessionCredentialUri as string
+                                      );
+                                      if (sessionCredential) {
+                                          await storeAndAddVCToWallet(
+                                              sessionCredential,
+                                              { title: sessionCredential.name || 'AI Session' },
+                                              'LearnCloud',
+                                              true
+                                          );
+                                      }
+                                  } catch (e) {
+                                      logError(
+                                          '[AI Topics] Failed to store session credential:',
+                                          e
+                                      );
+                                  }
+                              }
+                          }
 
-                        // If a notification was sent, trigger the toast overlay
-                        if (
-                            event.type === 'send-notification' &&
-                            result.sent &&
-                            onAppNotification
-                        ) {
-                            onAppNotification({
-                                title: (event as Record<string, unknown>).title as
-                                    | string
-                                    | undefined,
-                                body: (event as Record<string, unknown>).body as
-                                    | string
-                                    | undefined,
-                                actionPath: (event as Record<string, unknown>).actionPath as
-                                    | string
-                                    | undefined,
-                                category: (event as Record<string, unknown>).category as
-                                    | string
-                                    | undefined,
-                                priority: (event as Record<string, unknown>).priority as
-                                    | string
-                                    | undefined,
-                            });
-                        }
+                          // If a notification was sent, trigger the toast overlay
+                          if (
+                              event.type === 'send-notification' &&
+                              result.sent &&
+                              onAppNotification
+                          ) {
+                              onAppNotification({
+                                  title: (event as Record<string, unknown>).title as
+                                      | string
+                                      | undefined,
+                                  body: (event as Record<string, unknown>).body as
+                                      | string
+                                      | undefined,
+                                  actionPath: (event as Record<string, unknown>).actionPath as
+                                      | string
+                                      | undefined,
+                                  category: (event as Record<string, unknown>).category as
+                                      | string
+                                      | undefined,
+                                  priority: (event as Record<string, unknown>).priority as
+                                      | string
+                                      | undefined,
+                              });
+                          }
 
-                        sdkActivityStore.set.endActivity();
-                        return result;
-                    }
+                          sdkActivityStore.set.endActivity();
+                          return result;
+                      }
                     : undefined,
                 getAppListingId: appId ? () => appId : undefined,
                 getIntegrationForListing: getIntegrationForListing,
 
                 // Learner context - only available when appId is provided
                 requestLearnerContext: appId
-                    ? async (options: {
-                        includeCredentials?: boolean;
-                        includePersonalData?: boolean;
-                        format?: string;
-                        instructions?: string;
-                        detailLevel?: string;
-                    }) => {
-                        const learnCard = await initWallet();
+                    ? async (inputOptions: LearnerContextRequestOptions = {}) => {
+                          const startedAt = performance.now();
+                          const timings: NonNullable<LearnerContextMetadata['timings']> = {
+                              totalMs: 0,
+                          };
+                          const options = normalizeLearnerContextOptions(inputOptions);
 
-                        if (!learnCard) {
-                            throw new Error('Wallet not initialized');
-                        }
+                          const appContractUri = await getConfiguredContractUri();
 
-                        if (!learnCard.invoke.sendAppEvent) {
-                            throw new Error('sendAppEvent not available - rebuild types');
-                        }
+                          if (options.waitForSync) {
+                              const syncStatus = await waitForPendingSync(appContractUri);
 
-                        const result = await learnCard.invoke.sendAppEvent(appId, {
-                            type: 'request-learner-context',
-                            includeCredentials: options.includeCredentials,
-                            includePersonalData: options.includePersonalData,
-                            instructions: options.instructions,
-                            detailLevel: options.detailLevel,
-                        });
+                              if (syncStatus.status === 'syncing') {
+                                  return {
+                                      status: 'syncing' as const,
+                                      progress: syncStatus.progress,
+                                      prompt: '',
+                                      raw:
+                                          options.format === 'structured'
+                                              ? { credentials: [] }
+                                              : undefined,
+                                      did: '',
+                                  };
+                              }
 
-                        // Only fetch and include credentials if requested
-                        let validCredentials: unknown[] = [];
-                        if (options.includeCredentials !== false) {
-                            const credentialUris = (result.credentialUris as string[]) || [];
+                              if (syncStatus.status === 'error') {
+                                  throw new Error(syncStatus.lastError ?? 'Data sync failed');
+                              }
+                          }
 
-                            const credentials = await Promise.all(
-                                credentialUris.map(async uri => {
-                                    try {
-                                        return await learnCard.read.get(uri);
-                                    } catch (error) {
-                                        console.error(
-                                            `Failed to resolve credential ${uri}:`,
-                                            error
-                                        );
-                                        return null;
-                                    }
-                                })
-                            );
+                          const learnCard = await initWallet();
 
-                            validCredentials = credentials.filter((c: unknown) => c !== null);
-                        }
+                          if (!learnCard) throw new Error('Wallet not initialized');
 
-                        // Only include personal data if requested
-                        let personalData: Record<string, string> | undefined;
-                        if (options.includePersonalData) {
-                            personalData = (result.personalData as Record<string, string>) || {};
-                        }
+                          const sourceStartedAt = performance.now();
+                          const source = await fetchLearnerContextSource(learnCard, options);
+                          timings.appEventMs = performance.now() - sourceStartedAt;
 
-                        let prompt = '';
-                        if (options.format === 'prompt') {
-                            try {
-                                const promptizerResponse = await fetch(
-                                    `${LEARNCARD_AI_URL}/ai/learner-context/format`,
-                                    {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({
-                                            credentials: validCredentials,
-                                            personalData,
-                                            instructions: options.instructions,
-                                            detailLevel: options.detailLevel,
-                                            includeStructuredContext: true,
-                                            maxCredentials: validCredentials.length,
-                                        }),
-                                    }
-                                );
+                          if (options.format === 'structured') {
+                              const credentialReadStartedAt = performance.now();
+                              const credentials = await resolveLearnerContextCredentials(
+                                  learnCard,
+                                  source.credentialUris
+                              );
+                              timings.credentialReadMs =
+                                  performance.now() - credentialReadStartedAt;
+                              timings.totalMs = performance.now() - startedAt;
 
-                                if (promptizerResponse.ok) {
-                                    const promptizerData = await promptizerResponse.json();
-                                    prompt = promptizerData.prompt || '';
-                                } else {
-                                    prompt = `User has ${validCredentials.length} credentials.`;
-                                }
-                            } catch (error) {
-                                console.error('Failed to call promptizer:', error);
-                                prompt = `User has ${validCredentials.length} credentials.`;
-                            }
-                        }
+                              return {
+                                  prompt: '',
+                                  raw: {
+                                      credentials,
+                                      personalData: source.personalData,
+                                  },
+                                  did: source.did,
+                                  displayName: source.displayName,
+                                  metadata: {
+                                      cacheStatus: 'structured',
+                                      timings,
+                                  },
+                              };
+                          }
 
-                        return {
-                            prompt,
-                            raw:
-                                options.format === 'structured'
-                                    ? {
-                                        credentials: validCredentials,
-                                        personalData,
-                                    }
-                                    : undefined,
-                            did: (result.did as string) || '',
-                            displayName:
-                                personalData?.name ||
-                                (result.personalData as { displayName?: string })?.displayName,
-                        };
-                    }
+                          const cacheLookupStartedAt = performance.now();
+                          const key = getLearnerContextCacheKey(source, options);
+                          const cached = readLearnerContextCache(key);
+                          timings.cacheLookupMs = performance.now() - cacheLookupStartedAt;
+
+                          if (cached) {
+                              timings.prewarmAgeMs = Date.now() - cached.createdAt;
+                              timings.totalMs = performance.now() - startedAt;
+
+                              return {
+                                  prompt: cached.prompt,
+                                  did: source.did,
+                                  displayName: cached.displayName ?? source.displayName,
+                                  metadata: {
+                                      cacheStatus: 'browser-hit',
+                                      timings,
+                                      backendMetadata: cached.backendMetadata,
+                                  },
+                              };
+                          }
+
+                          const entry = await fillLearnerContextCache(
+                              learnCard,
+                              source,
+                              options,
+                              key,
+                              timings
+                          );
+                          timings.totalMs = performance.now() - startedAt;
+
+                          return {
+                              prompt: entry.prompt,
+                              did: source.did,
+                              displayName: entry.displayName ?? source.displayName,
+                              metadata: {
+                                  cacheStatus: 'browser-miss',
+                                  timings,
+                                  backendMetadata: entry.backendMetadata,
+                              },
+                          };
+                      }
                     : undefined,
+                getSyncStatus: async () => getPendingSyncStatus(await getConfiguredContractUri()),
             }),
         [
             isLoggedIn,
@@ -1199,9 +1624,35 @@ export function useLearnCardMessageHandlers({
             log,
             logError,
             launchConfig,
+            consentedContracts,
+            queryClient,
             getIntegrationForListing,
+            fetchLearnerContextSource,
+            fillLearnerContextCache,
+            normalizeLearnerContextOptions,
+            prewarmLearnerContext,
+            resolveLearnerContextCredentials,
         ]
     );
+
+    useEffect(() => {
+        if (isLoggedIn) return;
+
+        clearLearnerContextCache();
+        learnerContextCacheFills.clear();
+        prewarmedCacheKeys.clear();
+    }, [isLoggedIn]);
+
+    useEffect(() => {
+        if (!isLoggedIn || !appId || !embedOrigin) return;
+
+        void prewarmLearnerContext({
+            includeCredentials: true,
+            includePersonalData: false,
+            format: 'prompt',
+            detailLevel: 'compact',
+        });
+    }, [appId, embedOrigin, isLoggedIn, prewarmLearnerContext]);
 
     return handlers;
 }

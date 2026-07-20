@@ -1,5 +1,5 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
-import { Flipper, Flipped } from 'react-flip-toolkit';
+import { Flipper, Flipped as UntypedFlipped } from 'react-flip-toolkit';
 
 import { VCVerificationCheckWithSpinner } from '../VCVerificationCheck/VCVerificationCheck';
 import VC2FrontFaceInfo from './VC2FrontFaceInfo';
@@ -12,6 +12,7 @@ import RoundedX from '../svgs/RoundedX';
 import VCDisplayCardCategoryType from './VCDisplayCardCategoryType';
 import VCDisplayCardSkillsCount from './VCDisplayCardSkillsCount';
 import VCIDDisplayCard from './VCIDDIsplayCard';
+import { VerifierState } from '../CertificateDisplayCard/VerifierStateBadgeAndText';
 
 import { Profile, VC, VerificationItem, VerificationStatusEnum } from '@learncard/types';
 import {
@@ -28,6 +29,14 @@ import {
 import { CertificateDisplayCard } from '../CertificateDisplayCard';
 import { MeritBadgeDisplayCard } from '../MeritBadgeDisplayCard';
 import { KnownDIDRegistryType } from '../../types';
+
+type FlippedComponentProps = React.PropsWithChildren<{
+    flipId?: string;
+    inverseFlipId?: string;
+    scale?: boolean;
+}>;
+
+const Flipped = UntypedFlipped as unknown as React.FC<FlippedComponentProps>;
 
 export type CredentialIconType = {
     image?: React.ReactNode;
@@ -80,6 +89,10 @@ export type VCDisplayCard2Props = {
     customBodyContentSlot?: React.ReactNode;
     unknownVerifierTitle?: string;
     hideFrontFaceDetails?: boolean;
+    onVerifierClick?: (
+        event: React.MouseEvent<HTMLButtonElement>,
+        verifierState: VerifierState
+    ) => void;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -128,6 +141,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     customBodyContentSlot,
     unknownVerifierTitle,
     hideFrontFaceDetails,
+    onVerifierClick,
 }) => {
     const {
         title = '',
@@ -190,10 +204,10 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
     const _title = titleOverride || title;
 
-    if (
-        categoryType === LCCategoryEnum.meritBadge ||
-        credential?.display?.displayType === 'award'
-    ) {
+    const resolvedDisplayType =
+        credential?.display?.displayType ?? formattedDisplayType?.toLocaleLowerCase();
+
+    if (categoryType === LCCategoryEnum.meritBadge || resolvedDisplayType === 'award') {
         return (
             <MeritBadgeDisplayCard
                 credential={credential}
@@ -222,11 +236,12 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 customBodyContentSlot={customBodyContentSlot}
                 unknownVerifierTitle={unknownVerifierTitle}
                 hideFrontFaceDetails={hideFrontFaceDetails}
+                onVerifierClick={onVerifierClick}
             />
         );
     }
 
-    if (credential?.display?.displayType === 'certificate') {
+    if (resolvedDisplayType === 'certificate') {
         return (
             <CertificateDisplayCard
                 credential={credential}
@@ -255,9 +270,10 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 customBodyContentSlot={customBodyContentSlot}
                 unknownVerifierTitle={unknownVerifierTitle}
                 hideFrontFaceDetails={hideFrontFaceDetails}
+                onVerifierClick={onVerifierClick}
             />
         );
-    } else if (credential?.display?.displayType === 'id' || categoryType === 'ID') {
+    } else if (resolvedDisplayType === 'id' || categoryType === 'ID') {
         return (
             <div>
                 <VCIDDisplayCard
@@ -285,6 +301,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     hideGradientBackground={hideGradientBackground}
                     customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                     unknownVerifierTitle={unknownVerifierTitle}
+                    onVerifierClick={onVerifierClick}
                 />
             </div>
         );
@@ -394,6 +411,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                     knownDIDRegistry={knownDIDRegistry}
                                     customBodyContentSlot={customBodyContentSlot}
                                     unknownVerifierTitle={unknownVerifierTitle}
+                                    onVerifierClick={onVerifierClick}
                                 />
                             )}
                             {!isFront && (
@@ -437,7 +455,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                         <Flipped inverseFlipId="card">
                                             <button
                                                 type="button"
-                                                className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit select-none"
+                                                className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[24px] py-[8px] rounded-[40px] text-[16px] font-poppins font-medium leading-normal mt-[40px] w-fit select-none"
                                                 onClick={() => setIsFront(!isFront)}
                                             >
                                                 Details
@@ -448,7 +466,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                         <Flipped inverseFlipId="card">
                                             <button
                                                 type="button"
-                                                className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit select-none"
+                                                className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[24px] py-[8px] rounded-[40px] text-[16px] font-poppins font-medium leading-normal mt-[40px] w-fit select-none"
                                                 onClick={() => setIsFront(!isFront)}
                                             >
                                                 <span className="flex gap-[10px] items-center">

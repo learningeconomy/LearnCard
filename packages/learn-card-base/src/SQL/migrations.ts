@@ -44,6 +44,9 @@ export const MIGRATIONS: string[][] = [
     ['ALTER TABLE users ADD uid TEXT', 'ALTER TABLE users ADD phoneNumber TEXT'],
 ];
 
+import { getLogger } from '../logging/logger';
+const log = getLogger('migrations');
+
 export const performSqliteMigrations = async (
     sqlite: SQLiteConnection | SQLiteHook | null
 ): Promise<void> => {
@@ -64,7 +67,7 @@ export const performSqliteMigrations = async (
         // Plugin wrapper signature: (database, upgrade[])
         await sqlite.addUpgradeStatement('learncardDB', upgrades as any);
     } catch (e) {
-        console.debug(
+        log.debug(
             'performSqliteMigrations: addUpgradeStatement array API failed; falling back to legacy signature',
             e
         );

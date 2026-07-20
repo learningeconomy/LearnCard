@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('apps-landing-page');
 /**
  * AppsLandingPage - Landing page for Apps tab when no integration is selected
  *
@@ -18,6 +20,8 @@ import {
     Settings,
     ChevronRight,
 } from 'lucide-react';
+
+import * as m from '../../paraglide/messages.js';
 
 import { AppStoreHeader } from './components/AppStoreHeader';
 import { useDeveloperPortalContext } from './DeveloperPortalContext';
@@ -43,7 +47,7 @@ const AppsLandingPage: React.FC = () => {
             // Navigate to the new integration's apps page
             history.push(`/app-store/developer/integrations/${id}/apps`);
         } catch (error) {
-            console.error('Failed to create project:', error);
+            log.error('Failed to create project:', error);
         }
     };
 
@@ -55,13 +59,15 @@ const AppsLandingPage: React.FC = () => {
     if (isLoadingIntegrations) {
         return (
             <IonPage>
-                <AppStoreHeader title="Developer Portal" />
+                <AppStoreHeader title={m['developerPortal.shell.title']()} />
 
                 <IonContent className="ion-padding">
                     <div className="flex items-center justify-center min-h-[400px]">
                         <div className="text-center">
                             <Loader2 className="w-10 h-10 text-cyan-500 mx-auto animate-spin" />
-                            <p className="text-sm text-gray-500 mt-3">Loading projects...</p>
+                            <p className="text-sm text-gray-500 mt-3">
+                                {m['developerPortal.shell.loadingProjects']()}
+                            </p>
                         </div>
                     </div>
                 </IonContent>
@@ -73,7 +79,7 @@ const AppsLandingPage: React.FC = () => {
     if (integrations.length === 0) {
         return (
             <IonPage>
-                <AppStoreHeader title="Developer Portal" />
+                <AppStoreHeader title={m['developerPortal.shell.title']()} />
 
                 <IonContent className="ion-padding">
                     <div className="max-w-2xl mx-auto py-8">
@@ -86,15 +92,15 @@ const AppsLandingPage: React.FC = () => {
 
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium text-amber-800">
-                                        Developer Portal Beta
+                                        {m['developerPortal.shell.betaTitle']()}
                                     </p>
                                     <p className="text-xs text-amber-600">
-                                        Early access — features may change
+                                        {m['developerPortal.shell.betaDescription']()}
                                     </p>
                                 </div>
 
                                 <span className="flex-shrink-0 px-2 py-0.5 bg-amber-200 text-amber-800 text-xs font-semibold rounded-full uppercase">
-                                    Beta
+                                    {m['developerPortal.shell.betaBadge']()}
                                 </span>
                             </div>
                         </div>
@@ -105,18 +111,17 @@ const AppsLandingPage: React.FC = () => {
                             </div>
 
                             <h2 className="text-2xl font-semibold text-gray-800 mb-2">
-                                Publish Your App
+                                {m['developerPortal.shell.publishYourApp']()}
                             </h2>
 
                             <p className="text-gray-500 max-w-md mx-auto">
-                                Share your app with thousands of users. Create a project to get
-                                started.
+                                {m['developerPortal.shell.emptyStateDescription']()}
                             </p>
                         </div>
 
                         <div className="max-w-md mx-auto">
                             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
-                                Name your first project
+                                {m['developerPortal.shell.nameYourProject']()}
                             </label>
 
                             <div className={`${isMobile ? 'flex-col' : ''} flex gap-2`}>
@@ -125,7 +130,9 @@ const AppsLandingPage: React.FC = () => {
                                     value={newProjectName}
                                     onChange={e => setNewProjectName(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && handleCreateFirstProject()}
-                                    placeholder="e.g. My Awesome Project"
+                                    placeholder={m[
+                                        'developerPortal.shell.projectNamePlaceholder'
+                                    ]()}
                                     className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl text-base text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 shadow-sm"
                                     disabled={isCreatingIntegration}
                                 />
@@ -139,7 +146,7 @@ const AppsLandingPage: React.FC = () => {
                                         <Loader2 className="w-5 h-5 animate-spin" />
                                     ) : (
                                         <>
-                                            Get Started
+                                            {m['developerPortal.shell.getStarted']()}
                                             <ArrowRight className="w-4 h-4" />
                                         </>
                                     )}
@@ -147,7 +154,7 @@ const AppsLandingPage: React.FC = () => {
                             </div>
 
                             <p className="text-xs text-gray-400 mt-3 text-center">
-                                Free to publish • No coding required
+                                {m['developerPortal.shell.freeToPublish']()}
                             </p>
                         </div>
                     </div>
@@ -159,13 +166,17 @@ const AppsLandingPage: React.FC = () => {
     // Has integrations - show list to select
     return (
         <IonPage>
-            <AppStoreHeader title="Developer Portal" />
+            <AppStoreHeader title={m['developerPortal.shell.title']()} />
 
             <IonContent className="ion-padding">
                 <div className="max-w-3xl mx-auto py-6">
                     <div className="text-center mb-8">
-                        <h1 className="text-2xl font-semibold text-gray-800 mb-2">Your Projects</h1>
-                        <p className="text-gray-500">Select a project to manage its app listings</p>
+                        <h1 className="text-2xl font-semibold text-gray-800 mb-2">
+                            {m['developerPortal.shell.yourProjects']()}
+                        </h1>
+                        <p className="text-gray-500">
+                            {m['developerPortal.shell.selectProject']()}
+                        </p>
                     </div>
 
                     <div className="space-y-3">
@@ -197,8 +208,12 @@ const AppsLandingPage: React.FC = () => {
                                             {integration.name}
                                         </h3>
                                         <p className="text-sm text-gray-500">
-                                            {isActive ? 'Live' : 'In Setup'} •{' '}
-                                            {integration.guideType || 'No guide selected'}
+                                            {isActive
+                                                ? m['developerPortal.shell.statusLive']()
+                                                : m['developerPortal.shell.statusInSetup']()}{' '}
+                                            •{' '}
+                                            {integration.guideType ||
+                                                m['developerPortal.shell.noGuideSelected']()}
                                         </p>
                                     </div>
 
@@ -216,7 +231,7 @@ const AppsLandingPage: React.FC = () => {
                                 value={newProjectName}
                                 onChange={e => setNewProjectName(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && handleCreateFirstProject()}
-                                placeholder="New project name..."
+                                placeholder={m['developerPortal.shell.newProjectPlaceholder']()}
                                 className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                                 disabled={isCreatingIntegration}
                             />
@@ -233,7 +248,7 @@ const AppsLandingPage: React.FC = () => {
                                 ) : (
                                     <>
                                         <Code2 className="w-4 h-4" />
-                                        Create Project
+                                        {m['developerPortal.shell.createProject']()}
                                     </>
                                 )}
                             </button>

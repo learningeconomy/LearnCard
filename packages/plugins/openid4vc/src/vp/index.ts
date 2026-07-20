@@ -29,18 +29,9 @@ export type {
     VerificationMethod,
 } from './request-object';
 
-export {
-    selectCredentials,
-    buildPresentationSubmission,
-    inferCredentialFormat,
-} from './select';
+export { selectCredentials, buildPresentationSubmission, inferCredentialFormat } from './select';
 
-export {
-    evaluateField,
-    matchInputDescriptor,
-    queryJsonPath,
-    satisfiesFilter,
-} from './pex';
+export { evaluateField, matchInputDescriptor, queryJsonPath, satisfiesFilter } from './pex';
 
 export type {
     AuthorizationRequest,
@@ -83,6 +74,8 @@ export { signPresentation, VpSignError } from './sign';
 export type {
     VpToken,
     LdpVpSigner,
+    SdJwtDiscloseFrame,
+    SdJwtPresenter,
     SignPresentationOptions,
     SignPresentationHelpers,
     SignPresentationResult,

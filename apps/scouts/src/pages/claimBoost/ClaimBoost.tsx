@@ -34,7 +34,11 @@ import {
 } from 'learn-card-base';
 
 import { getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
-import { isTroopCredential, getRoleFromCred, getScoutsNounForRole } from '../../helpers/troop.helpers';
+import {
+    isTroopCredential,
+    getRoleFromCred,
+    getScoutsNounForRole,
+} from '../../helpers/troop.helpers';
 
 import { VC } from '@learncard/types';
 import {
@@ -42,6 +46,8 @@ import {
     getDefaultCategoryForCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { useHighlightedCredentials } from '../../hooks/useHighlightedCredentials';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('claim-boost');
 
 const ClaimBoostBodyPreviewOverride: React.FC<{ boostVC: VC }> = ({ boostVC }) => {
     const isLoggedIn = useIsLoggedIn();
@@ -157,8 +163,8 @@ export const ClaimBoostModal: React.FC<{
     });
 
     const { newModal: newLoaderModal, closeModal: closeLoaderModal } = useModal({
-        mobile: ModalTypes.Cancel,
-        desktop: ModalTypes.Cancel,
+        mobile: ModalTypes.FullScreen,
+        desktop: ModalTypes.FullScreen,
     });
 
     const openLoggedOutModal = () => {
@@ -190,7 +196,7 @@ export const ClaimBoostModal: React.FC<{
 
             setBoost(boostVC);
         } catch (error: any) {
-            console.error(error);
+            log.error(error);
         } finally {
             setLoading(false);
         }
@@ -249,6 +255,10 @@ export const ClaimBoostModal: React.FC<{
             setIsClaimLoading(false);
             closeLoaderModal();
 
+            const errorMsg = e instanceof Error ? e.message : String(e);
+            const isExpired =
+                errorMsg.includes('Challenge not found') || errorMsg.includes('expired');
+
             presentToast(`Unable to claim Credential`, {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -257,7 +267,9 @@ export const ClaimBoostModal: React.FC<{
             presentAlert({
                 backdropDismiss: false,
                 cssClass: 'boost-confirmation-alert',
-                header: `The boost claim link has expired or has reached the maximum number of times it can be claimed.`,
+                header: isExpired
+                    ? 'The boost claim link has expired or has reached the maximum number of times it can be claimed.'
+                    : 'Something went wrong while claiming this credential. Please try again.',
                 buttons: [
                     {
                         text: 'Okay',
@@ -270,7 +282,7 @@ export const ClaimBoostModal: React.FC<{
                 ],
             });
 
-            console.warn('claimBoostWithLink::error', e);
+            log.warn('claimBoostWithLink::error', e);
         }
     };
 
@@ -298,7 +310,7 @@ export const ClaimBoostModal: React.FC<{
         actionButtonText = 'Accept';
     }
 
-    const isTroopIdClaim = isTroopCredential(boost);
+    const isTroopIdClaim = boost ? isTroopCredential(boost) : false;
 
     const boostExists = !!boost && !loading;
 
@@ -382,27 +394,51 @@ export const ClaimBoostModal: React.FC<{
 };
 
 const ClaimBoost: React.FC = () => {
+    const history = useHistory();
+    const query = usePathQuery();
+    const isLoggedIn = useIsLoggedIn();
+
     const { newModal, closeAllModals } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
     });
 
-    const query = usePathQuery();
-    const uriParam = query.get('boostUri') || undefined;
-    const challengeParam = query.get('challenge') || undefined;
+    const boostUri = query.get('boostUri') || undefined;
+    const challenge = query.get('challenge') || undefined;
+    const redirectTo = `${history.location.pathname}${history.location.search}`;
 
     useEffect(() => {
+        redirectStore.set.lcnRedirect(redirectTo);
+    }, [redirectTo]);
+
+    useEffect(() => {
+        if (!isLoggedIn) return;
+
         // opens 2 modals for some reason, but looks fine...
         newModal(
             <ClaimBoostModal
-                uri={uriParam}
-                claimChallenge={challengeParam}
+                uri={boostUri}
+                claimChallenge={challenge}
                 dismissClaimModal={closeAllModals}
             />
         );
         // only open once per route load
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [isLoggedIn, boostUri, challenge]);
+
+    if (!isLoggedIn) {
+        return (
+            <ClaimBoostLoggedOutPrompt
+                handleCloseModal={() => history.push('/')}
+                handleRedirectTo={() => {
+                    const redirectTo = `${history.location.pathname}${history.location.search}`;
+
+                    redirectStore.set.lcnRedirect(redirectTo);
+                    history.push(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+                }}
+            />
+        );
+    }
 
     return <IonPage className="bg-grayscale-100" />;
 };

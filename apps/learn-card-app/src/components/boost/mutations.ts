@@ -1,3 +1,5 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('mutations');
 /*mutations related to boosts */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
@@ -94,7 +96,7 @@ export const useAddCredentialToWallet = () => {
                     eventBoostUri: input.eventBoostUri,
                 };
             } catch (error) {
-                console.log('///mutation error', error);
+                log.info('///mutation error', error);
                 return Promise.reject(new Error(error));
             }
         },
@@ -121,7 +123,7 @@ export const useAddCredentialToWallet = () => {
                 });
             } catch (err) {
                 // eslint-disable-next-line no-console
-                console.error('[useAddCredentialToWallet] failed to publish ingest event:', err);
+                log.error('[useAddCredentialToWallet] failed to publish ingest event:', err);
             }
 
             // didOverride === true means this is the parent profile because switchedDid is undefined in the case of the parent

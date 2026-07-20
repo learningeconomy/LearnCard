@@ -1,9 +1,9 @@
 {
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "name": "lca-api-service",
-    "sourceRoot": "services/lca-api/src",
+    "sourceRoot": "services/learn-card-network/lca-api/src",
     "projectType": "application",
-    "root": "services/lca-api",
+    "root": "services/learn-card-network/lca-api",
     "tags": [],
     "implicitDependencies": ["nx-run-command"],
     "namedInputs": {
@@ -30,7 +30,6 @@
         "start:docker": {
             "executor": "nx:run-script",
             "inputs": ["source"],
-            "dependsOn": ["^build"],
             "options": {
                 "script": "start:docker"
             }
@@ -61,8 +60,8 @@
         "test:watch": {
             "executor": "./tools/executors/workspace:run-command",
             "options": {
-                "command": "pnpm test:watch",
-                "cwd": "{root}/services/lca-api"
+                "command": "bun run test:watch",
+                "cwd": "{root}/services/learn-card-network/lca-api"
             }
         }
     }

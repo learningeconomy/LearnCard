@@ -49,14 +49,16 @@ export const RegExpTransformer: DataTransformer = {
 };
 
 /**
- * Determines if a credential uses VC 2.0 format by checking the @context array
+ * Determines if a credential uses VC 2.0 format by checking the context array
  */
 export const isVC2Format = (credential: UnsignedVC | VC): boolean => {
     if (!credential['@context'] || !Array.isArray(credential['@context'])) {
         return false;
     }
 
-    return credential['@context'].includes('https://www.w3.org/ns/credentials/v2');
+    return credential['@context'].some(
+        context => context === 'https://www.w3.org/ns/credentials/v2'
+    );
 };
 
 /** Unwraps a boost credential from a CertifiedBoostCredential, if it is one */
@@ -82,11 +84,16 @@ export * from './Utilities';
 
 // Export app install helpers
 export * from './app-install';
+export * from './credential-format';
+export * from './did';
+
+// ADR-0001 Phase 1: format-tagged credential storage projector
+export * from './credential-format';
 
 /**
  * Checks if a DID is an app-specific did:web
  *
- * App did:webs follow the pattern: did:web:learncard.app:app:<slug>
+ * App did:webs follow the pattern: `did:web:learncard.app:app:&lt;slug&gt;`
  *
  * @param did - The DID to check
  * @returns true if the DID is an app did:web, false otherwise

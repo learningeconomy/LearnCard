@@ -26,7 +26,10 @@ import {
 } from 'learn-card-base';
 import { useDeviceTypeByWidth } from 'learn-card-base/hooks/useDeviceTypeByWidth';
 import { LCR } from 'learn-card-base/types/credential-records';
-import { aiPassportApps, getAiPassportAppByContractUri } from '../../components/ai-passport-apps/aiPassport-apps.helpers';
+import {
+    aiPassportApps,
+    getAiPassportAppByContractUri,
+} from '../../components/ai-passport-apps/aiPassport-apps.helpers';
 import { useNewSessionForTopicMobile } from '../../components/new-ai-session/useNewSessionForTopic';
 import { chatBotStore } from '../../stores/chatBotStore';
 
@@ -35,6 +38,8 @@ import {
     AiSessionsFilterOptionsEnum,
     AiSessionsSortOptionsEnum,
 } from '../../components/ai-sessions/AiSessionsSearch/aiSessions-search.helpers';
+import * as m from '../../paraglide/messages.js';
+
 import useTheme from '../../theme/hooks/useTheme';
 
 type ViewMode = 'topics' | 'sessions' | 'topicDetail';
@@ -263,12 +268,9 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
     // open across a grouped topic — picking the first lets the modal open
     // and the user can refine grouped-pathway behavior later.
     const newSessionTopicUri =
-        selectedTopicUri ||
-        selectedGroupedTopic?.topics?.[0]?.topicBoost?.uri ||
-        '';
+        selectedTopicUri || selectedGroupedTopic?.topics?.[0]?.topicBoost?.uri || '';
     const newSessionTopicBoostUri =
-        selectedTopicData?.topicBoost?.uri ||
-        selectedGroupedTopic?.topics?.[0]?.topicBoost?.uri;
+        selectedTopicData?.topicBoost?.uri || selectedGroupedTopic?.topics?.[0]?.topicBoost?.uri;
     const newSessionApp = getAiPassportAppByContractUri(
         selectedTopicData?.topicRecord?.contractUri ??
             selectedGroupedTopic?.topics?.[0]?.topicRecord?.contractUri ??
@@ -287,7 +289,8 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
         });
     };
 
-    const searchPlaceholder = view === 'topics' ? 'Browse topics...' : 'Browse sessions...';
+    const searchPlaceholder =
+        view === 'topics' ? m['ai.browseTopicsPlaceholder']() : m['ai.browseTopics']();
 
     const resetFilters = () => {
         setSearchInput('');
@@ -309,7 +312,6 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                 <IonContent fullscreen color={backgroundSecondaryColor}>
                     <MainHeader
                         category={CredentialCategoryEnum.aiTopic}
-                        showBackButton={false}
                         subheaderType={SubheaderTypeEnum.AiSessions}
                         hidePlusBtn={true}
                         customClassName="bg-gradient-to-b from-white to-white/70 border-b border-white backdrop-blur-[5px] md:bg-white md:border-none md:bg-none md:backdrop-blur-none"
@@ -344,7 +346,9 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                                             }}
                                         >
                                             <SlimCaretLeft className="text-grayscale-600" />
-                                            <span className="text-[17px]">All Topics</span>
+                                            <span className="text-[17px]">
+                                                {m['ai.allTopics']()}
+                                            </span>
                                         </button>
                                     ) : (
                                         <div className="flex items-center gap-1 pl-1">
@@ -405,7 +409,7 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                                             </span>
                                             <span className="text-grayscale-500 mx-1">•</span>
                                             <span className="text-rose-500">
-                                                {selectedTopicUnfinished} Unfinished
+                                                {selectedTopicUnfinished} {m['ai.unfinished']()}
                                             </span>
                                         </p>
                                     </div>
@@ -413,7 +417,7 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
 
                                 {view === 'sessions' && unfinishedCount > 0 && (
                                     <p className="text-rose-500 font-poppins font-semibold text-[14px] mb-2">
-                                        {unfinishedCount} Unfinished Sessions
+                                        {unfinishedCount} {m['ai.unfinished']()}
                                     </p>
                                 )}
 
@@ -438,7 +442,7 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                                     <div className="mt-3 mb-3">
                                         <NewAiSessionButton
                                             type={NewAiSessionButtonEnum.mobile}
-                                            text="New Session"
+                                            text={m['ai.newSession']()}
                                             onClick={handleNewSessionForSelectedTopic}
                                             className="!bg-white !border-grayscale-200 shadow-soft-bottom !mt-0"
                                         />
@@ -450,7 +454,7 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                                         <>
                                             {isLoading ? (
                                                 <p className="text-grayscale-500 font-poppins text-sm mt-8">
-                                                    Loading topics...
+                                                    {m['common.loading']()}
                                                 </p>
                                             ) : filteredTopics.length ? (
                                                 filteredTopics.map((t, i) => (
@@ -501,7 +505,7 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                                                 ))
                                             ) : (
                                                 <p className="text-center text-grayscale-500 font-poppins text-sm mt-8">
-                                                    No topics yet
+                                                    {m['ai.noTopics']()}
                                                 </p>
                                             )}
                                         </>
@@ -511,7 +515,7 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                                         <>
                                             {selectedTopicLoading && view === 'topicDetail' ? (
                                                 <p className="text-grayscale-500 font-poppins text-sm mt-8">
-                                                    Loading sessions...
+                                                    {m['common.loading']()}
                                                 </p>
                                             ) : filteredSessions.length ? (
                                                 filteredSessions.map((session, index) => (
@@ -529,7 +533,7 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                                                 ))
                                             ) : (
                                                 <p className="text-center text-grayscale-500 font-poppins text-sm mt-8">
-                                                    No sessions found
+                                                    {m['ai.noSessionsFound']()}
                                                 </p>
                                             )}
                                         </>

@@ -4,6 +4,7 @@ import X from 'learn-card-base/svgs/X';
 
 import { useModal } from 'learn-card-base';
 import useTheme from '../../theme/hooks/useTheme';
+import * as m from '../../paraglide/messages.js';
 
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 
@@ -11,6 +12,7 @@ type ConsentFlowFooterProps = {
     actionButtonText?: string;
     onActionButtonClick?: () => void;
     actionButtonDisabled?: boolean;
+    actionButtonColorClass?: string;
     showCloseModalX?: boolean;
 
     secondaryButtonText?: string;
@@ -27,6 +29,7 @@ const ConsentFlowFooter: React.FC<ConsentFlowFooterProps> = ({
     actionButtonText,
     onActionButtonClick,
     actionButtonDisabled = false,
+    actionButtonColorClass,
     showCloseModalX,
     secondaryButtonText,
     onSecondaryButtonClick,
@@ -66,7 +69,7 @@ const ConsentFlowFooter: React.FC<ConsentFlowFooterProps> = ({
                         }`}
                     >
                         {showFullBackButton ? (
-                            'Back'
+                            m['common.back']()
                         ) : (
                             <SkinnyCaretRight className="text-grayscale-900 h-[45px] w-[45px] rotate-180" />
                         )}
@@ -92,7 +95,9 @@ const ConsentFlowFooter: React.FC<ConsentFlowFooterProps> = ({
                 {showActionButton && (
                     <button
                         type="button"
-                        className={`w-full py-[7px] px-[15px] text-[17px] bg-${primaryColor} rounded-[35px] font-notoSans text-white shadow-button-bottom disabled:opacity-60 h-[44px] leading-[24px] tracking-[0.25px] font-[600]`}
+                        className={`w-full py-[7px] px-[15px] text-[17px] ${
+                            actionButtonColorClass ?? `bg-${primaryColor}`
+                        } rounded-[35px] font-notoSans text-white shadow-button-bottom disabled:opacity-60 h-[44px] leading-[24px] tracking-[0.25px] font-[600]`}
                         onClick={onActionButtonClick}
                         disabled={actionButtonDisabled}
                     >

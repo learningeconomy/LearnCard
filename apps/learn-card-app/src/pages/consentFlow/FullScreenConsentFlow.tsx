@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('full-screen-consent-flow');
 
 import {
     useModal,
@@ -24,6 +26,7 @@ import ConsentFlowGetAnAdultPrompt from './ConsentFlowGetAnAdult';
 import AiPassportAppProfileConnectedView from '../../components/ai-passport-apps/AiPassportAppProfileConnectedView/AiPassportAppProfileConnectedView';
 
 import { ConsentFlowContractDetails, ConsentFlowTerms, LCNProfile } from '@learncard/types';
+import * as m from '../../paraglide/messages.js';
 
 enum ConsentFlowStep {
     getAnAdult = 'landing',
@@ -242,7 +245,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                 return;
             }
 
-            console.error(e);
+            log.error(e);
             presentToast(`Failed to accept contract: ${err.message}`, {
                 type: ToastTypeEnum.Error,
             });

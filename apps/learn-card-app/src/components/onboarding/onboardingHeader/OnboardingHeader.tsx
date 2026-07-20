@@ -1,10 +1,15 @@
 import React from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';
 
 import { BrandingEnum } from 'learn-card-base';
 
-const OnboardingHeader: React.FC<{ text: string; hideTitle?: boolean }> = ({ text, hideTitle }) => {
+const OnboardingHeader: React.FC<{
+    text: string;
+    hideTitle?: boolean;
+    secondaryText?: string;
+}> = ({ text, hideTitle, secondaryText }) => {
     return (
         <div className="flex flex-col gap-[20px]">
             {!hideTitle && (
@@ -13,7 +18,7 @@ const OnboardingHeader: React.FC<{ text: string; hideTitle?: boolean }> = ({ tex
                         className={`font-poppins select-none text-xl font-medium tracking-wider text-center text-black`}
                     >
                         <span className="font-poppins font-normal text-center text-grayscale-900 text-[24px] tracking-[0.75px]">
-                            Welcome to
+                            {m['onboarding.welcome']()}
                         </span>
                         <br />
                         <HeaderBranding
@@ -29,9 +34,16 @@ const OnboardingHeader: React.FC<{ text: string; hideTitle?: boolean }> = ({ tex
                     hideTitle ? 'mb-4' : ''
                 }`}
             >
-                <h1 className="text-center text-[18px] font-normal text-grayscale-600 font-poppins leading-[34px] tracking-[0.75px]">
-                    {text}
-                </h1>
+                <div className="flex flex-col items-center gap-2">
+                    <h1 className="text-center text-[18px] font-normal text-grayscale-600 font-poppins leading-[34px] tracking-[0.75px]">
+                        {text}
+                    </h1>
+                    {secondaryText && (
+                        <p className="max-w-[520px] text-sm font-poppins font-normal leading-5 text-grayscale-500">
+                            {secondaryText}
+                        </p>
+                    )}
+                </div>
             </div>
         </div>
     );

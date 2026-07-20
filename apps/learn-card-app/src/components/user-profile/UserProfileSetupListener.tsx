@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('user-profile-setup-listener');
 
 import { IonModal } from '@ionic/react';
 import NewJoinNetworkPrompt from '../network-prompts/NewJoinNetworkPrompt';
+import * as m from '../../paraglide/messages.js';
 
 import {
     SocialLoginTypes,
@@ -54,7 +57,7 @@ export const UserProfileSetupListener: React.FC<{ loading: boolean }> = ({ loadi
                     presentCenterModal();
                 }
 
-                console.log('getLCNeworkProfile::err', err);
+                log.info('getLCNeworkProfile::err', err);
             }
         };
 
@@ -69,9 +72,9 @@ export const UserProfileSetupListener: React.FC<{ loading: boolean }> = ({ loadi
             onDidDismiss={() => history.replace({ search: undefined })}
         >
             <NewJoinNetworkPrompt
-                title="Setup Your Profile"
+                title={m['profile.setupTitle']()}
                 handleCloseModal={() => setIsModalOpen(false)}
-                handleLogout={() => { }}
+                handleLogout={() => {}}
                 showCancelButton={false}
                 showDeleteAccountButton={false}
                 showNetworkModal

@@ -8,6 +8,7 @@ import BoostSideMenuMediaDetails from './BoostSideMenuMediaDetails';
 import BoostDisplayStyleSelector from './BoostDisplayStyleSelector';
 import EndorsementThumb from 'learn-card-base/svgs/EndorsmentThumb';
 import CredentialResultsBox from './CredentialResultsBox';
+import SdJwtVcClaimsBox from './SdJwtVcClaimsBox';
 import CredentialIssuerInformation from './CredentialIssuerInformation';
 import EndorsementCard from '../../../boost-endorsements/EndorsementCard';
 import BoostPreviewTabs from '../../../boost-preview-tabs/BoostPreviewTabs';
@@ -19,6 +20,7 @@ import AlignmentsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/A
 import TruncateTextBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/TruncateTextBox';
 import VerificationsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/VerificationsBox';
 import MediaAttachmentsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/MediaAttachmentBoxCerts';
+import PreviewVerificationBox from './PreviewVerificationBox';
 
 import { useGetVCInfo, boostPreviewStore, BoostPreviewTabsEnum } from 'learn-card-base';
 
@@ -42,6 +44,8 @@ type BoostDetailsSideMenuProps = {
     isEarnedBoost?: boolean;
     isClrChildCredential?: boolean;
     renderMethodCredential?: VC | UnsignedVC;
+    issuancesSummaryComponent?: React.ReactNode;
+    isPreview?: boolean;
 };
 const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     credential,
@@ -55,6 +59,8 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     isEarnedBoost,
     isClrChildCredential = false,
     renderMethodCredential,
+    issuancesSummaryComponent,
+    isPreview = false,
 }) => {
     const enableRenderMethod = useRenderMethodEnabled();
     const selectedTab = boostPreviewStore.useTracked.selectedTab();
@@ -149,6 +155,15 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
                         )}
                     </TruncateTextBox>
 
+                    {issuancesSummaryComponent && (
+                        <div className="p-[15px] bg-white flex flex-col items-start gap-[10px] rounded-[20px] w-full shadow-bottom-2-4">
+                            <h3 className="text-[22px] leading-[130%] tracking-[-0.25px] text-grayscale-900 font-notoSans">
+                                Issuances
+                            </h3>
+                            {issuancesSummaryComponent}
+                        </div>
+                    )}
+
                     {!isMediaDisplay && renderMethodCredential && enableRenderMethod && (
                         <BoostDisplayStyleSelector
                             credential={renderMethodCredential}
@@ -157,6 +172,8 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
                     )}
 
                     <CredentialResultsBox results={results} creditsEarned={creditsEarned} />
+
+                    <SdJwtVcClaimsBox credential={credential} />
 
                     {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
 
@@ -199,8 +216,13 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
 
                     {alignment && <AlignmentsBox alignment={alignment} style="Certificate" />}
 
-                    {verificationItems && verificationItems.length > 0 && (
-                        <VerificationsBox verificationItems={verificationItems} />
+                    {isPreview ? (
+                        <PreviewVerificationBox />
+                    ) : (
+                        verificationItems &&
+                        verificationItems.length > 0 && (
+                            <VerificationsBox verificationItems={verificationItems} />
+                        )
                     )}
                 </>
             );

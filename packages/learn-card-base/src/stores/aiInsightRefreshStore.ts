@@ -2,6 +2,9 @@ import { createStore } from '@udecode/zustood';
 
 export type AiInsightRefreshStatus = 'idle' | 'pending' | 'error';
 
+import { getLogger } from '../logging/logger';
+const log = getLogger('ai-insight-refresh-store');
+
 export type AiInsightRefreshState = {
     status: AiInsightRefreshStatus;
     requestedAt: number | null;
@@ -23,9 +26,9 @@ const logAiInsightRefreshStore = (message: string, data?: Record<string, unknown
 
     try {
         if (data) {
-            console.log(`[AiInsightRefresh] ${message}`, data);
+            log.debug(`[AiInsightRefresh] ${message}`, data);
         } else {
-            console.log(`[AiInsightRefresh] ${message}`);
+            log.debug(`[AiInsightRefresh] ${message}`);
         }
     } catch {
         // logging should never break refresh state transitions

@@ -36,19 +36,12 @@
  * `did:jwk` (inline) and `did:web` (over the caller's fetch). Callers
  * plug in their own resolver to support `did:key`, `did:ion`, etc.
  */
-import * as x509 from '@peculiar/x509';
+import type * as X509 from '@peculiar/x509';
 
 import { importJWK, importX509, jwtVerify, JWK } from 'jose';
 
-import {
-    AuthorizationRequest,
-    PresentationDefinition,
-    VpError,
-} from './types';
-import {
-    deriveClientIdPrefix,
-    type ClientIdPrefix,
-} from './client-id-prefix';
+import { AuthorizationRequest, PresentationDefinition, VpError } from './types';
+import { deriveClientIdPrefix, type ClientIdPrefix } from './client-id-prefix';
 import { parseDcqlQuery } from '../dcql/parse';
 import type { DcqlQuery } from '../dcql/types';
 
@@ -70,11 +63,7 @@ export type RequestObjectErrorCode =
 export class RequestObjectError extends Error {
     readonly code: RequestObjectErrorCode;
 
-    constructor(
-        code: RequestObjectErrorCode,
-        message: string,
-        options?: { cause?: unknown }
-    ) {
+    constructor(code: RequestObjectErrorCode, message: string, options?: { cause?: unknown }) {
         super(message);
         this.name = 'RequestObjectError';
         this.code = code;
@@ -83,6 +72,16 @@ export class RequestObjectError extends Error {
         }
     }
 }
+
+type X509Module = typeof import('@peculiar/x509');
+
+declare const require: ((id: string) => X509Module) | undefined;
+
+const loadX509 = async (): Promise<X509Module> => {
+    if (typeof require === 'function') return require('@peculiar/x509');
+
+    return import('@peculiar/x509');
+};
 
 /**
  * Minimal DID Document shape the resolver surface consumes. We avoid
@@ -112,6 +111,19 @@ export interface VerifyRequestObjectOptions {
 
     /** The inline `request=<jws>` parameter value. Mutually exclusive with `requestUri`. */
     inlineJwt?: string;
+
+    /**
+     * OID4VP 1.0 §5.10 — how to fetch `requestUri`. `get` (default) or `post`.
+     * When `post`, the wallet POSTs `wallet_nonce` (+ optional wallet_metadata)
+     * and validates the verifier echoes the nonce in the signed Request Object.
+     */
+    requestUriMethod?: 'get' | 'post';
+
+    /**
+     * OID4VP 1.0 §5.10 — the wallet nonce to send on a POST request_uri and
+     * require back in the signed Request Object's `wallet_nonce` claim.
+     */
+    walletNonce?: string;
 
     /**
      * `client_id` from the outer URL params. Some verifiers let the
@@ -184,7 +196,13 @@ export interface VerifyRequestObjectOptions {
 export const verifyAndDecodeRequestObject = async (
     opts: VerifyRequestObjectOptions
 ): Promise<AuthorizationRequest> => {
-    const jws = await loadJws(opts);
+    const payload = await loadRequestPayload(opts);
+
+    if (payload.kind === 'unsigned') {
+        return handleUnsignedRequestObject(payload.claims, opts);
+    }
+
+    const jws = payload.jws;
 
     const { header, claims } = decodeHeaderAndClaims(jws);
 
@@ -205,10 +223,7 @@ export const verifyAndDecodeRequestObject = async (
     // prefixes we don't handle is raised below where the trust
     // context is known, not in the parser.
     const legacyScheme = asString(claims.client_id_scheme) ?? opts.urlClientIdScheme;
-    const { prefix, value: prefixValue } = deriveClientIdPrefix(
-        clientId,
-        legacyScheme
-    );
+    const { prefix, value: prefixValue } = deriveClientIdPrefix(clientId, legacyScheme);
 
     // Defense-in-depth: the outer URL's client_id (when present) MUST
     // match the signed claim. Otherwise an attacker could wrap someone
@@ -229,7 +244,7 @@ export const verifyAndDecodeRequestObject = async (
     // the resolved AuthorizationRequest; we just skip the actual
     // crypto check below.
     if (opts.unsafeSkipRequestObjectSignatureVerification) {
-        return buildRequestFromClaims(clientId, prefix, claims);
+        return finalizeRequest(buildRequestFromClaims(clientId, prefix, claims), opts);
     }
 
     switch (prefix) {
@@ -254,6 +269,17 @@ export const verifyAndDecodeRequestObject = async (
                 header,
                 clientId: prefixValue,
                 opts,
+                x509Binding: 'san_dns',
+            });
+            break;
+
+        case 'x509_hash':
+            await verifyWithX509({
+                jws,
+                header,
+                clientId: prefixValue,
+                opts,
+                x509Binding: 'hash',
             });
             break;
 
@@ -268,10 +294,9 @@ export const verifyAndDecodeRequestObject = async (
 
         case 'https':
         case 'verifier_attestation':
-        case 'x509_hash':
             throw new RequestObjectError(
                 'unsupported_client_id_scheme',
-                `client-id prefix=${prefix} is not yet supported (supported: did, x509_san_dns, pre-registered)`
+                `client-id prefix=${prefix} is not yet supported (supported: did, x509_san_dns, x509_hash, pre-registered)`
             );
 
         default: {
@@ -286,14 +311,120 @@ export const verifyAndDecodeRequestObject = async (
         }
     }
 
-    return buildRequestFromClaims(clientId, prefix, claims);
+    return finalizeRequest(buildRequestFromClaims(clientId, prefix, claims), opts);
 };
 
 /* -------------------------------------------------------------------------- */
 /*                                  fetch                                     */
 /* -------------------------------------------------------------------------- */
 
-const loadJws = async (opts: VerifyRequestObjectOptions): Promise<string> => {
+/** Form body for a §5.10 POST request_uri: `wallet_nonce` when supplied. */
+const buildRequestUriPostBody = (walletNonce?: string): string => {
+    const params = new URLSearchParams();
+    if (typeof walletNonce === 'string' && walletNonce.length > 0) {
+        params.set('wallet_nonce', walletNonce);
+    }
+    return params.toString();
+};
+
+/**
+ * §5.10: when the wallet sent a `wallet_nonce` on a POST request_uri, the
+ * signed Request Object MUST echo it in a `wallet_nonce` claim; otherwise the
+ * wallet MUST terminate. No-op when no wallet_nonce was sent.
+ */
+const finalizeRequest = (
+    req: AuthorizationRequest,
+    opts: VerifyRequestObjectOptions
+): AuthorizationRequest => {
+    if (opts.walletNonce && req.wallet_nonce !== opts.walletNonce) {
+        throw new RequestObjectError(
+            'invalid_request_object',
+            'Signed Request Object did not echo the wallet_nonce sent on the POST request_uri (OID4VP 1.0 §5.10)'
+        );
+    }
+    return req;
+};
+
+type RequestObjectPayload =
+    | { kind: 'jws'; jws: string }
+    | { kind: 'unsigned'; claims: Record<string, unknown> };
+
+/**
+ * §5.10: unsigned Request Objects are only permitted for the
+ * `redirect_uri` client-id prefix — that prefix carries no key material,
+ * so a signature is impossible by construction and the request's
+ * integrity rests on the TLS channel to the verifier-controlled
+ * `request_uri` host. Any other prefix demands a verified JWS; accepting
+ * unsigned claims there would let an attacker impersonate the verifier.
+ */
+const handleUnsignedRequestObject = (
+    claims: Record<string, unknown>,
+    opts: VerifyRequestObjectOptions
+): AuthorizationRequest => {
+    const clientId = asString(claims.client_id);
+    if (!clientId) {
+        throw new RequestObjectError(
+            'invalid_request_object',
+            'Unsigned Request Object is missing client_id'
+        );
+    }
+
+    const legacyScheme = asString(claims.client_id_scheme) ?? opts.urlClientIdScheme;
+    const { prefix } = deriveClientIdPrefix(clientId, legacyScheme);
+
+    if (opts.urlClientId && opts.urlClientId !== clientId) {
+        throw new RequestObjectError(
+            'client_id_mismatch',
+            `Outer URL client_id (${opts.urlClientId}) does not match Request Object client_id (${clientId})`
+        );
+    }
+
+    if (prefix !== 'redirect_uri' && !opts.unsafeSkipRequestObjectSignatureVerification) {
+        throw new RequestObjectError(
+            'invalid_request_object',
+            `request_uri returned an unsigned Request Object, but client-id prefix=${prefix} requires a signed JWS (only redirect_uri permits unsigned requests)`
+        );
+    }
+
+    // OID4VP 1.0 §5.9.1: under the redirect_uri prefix the verifier's
+    // identity IS the response target, so a canonical `redirect_uri:<value>`
+    // client-id that doesn't equal it is a spoof (identity says one URL,
+    // the presentation goes to another). The legacy
+    // `client_id_scheme=redirect_uri` form only requires same-origin —
+    // deployed draft-22 verifiers use distinct paths. [pex-compat]
+    if (prefix === 'redirect_uri') {
+        const responseTarget = asString(claims.response_uri) ?? asString(claims.redirect_uri);
+        const { value } = deriveClientIdPrefix(clientId, legacyScheme);
+
+        if (clientId.startsWith('redirect_uri:')) {
+            if (value !== responseTarget) {
+                throw new RequestObjectError(
+                    'client_id_mismatch',
+                    `redirect_uri client-id "${value}" does not equal the request's response target "${responseTarget}" (OID4VP 1.0 §5.9.1)`
+                );
+            }
+        } else if (responseTarget && !isSameOriginUrl(value, responseTarget)) {
+            throw new RequestObjectError(
+                'client_id_mismatch',
+                `client_id_scheme=redirect_uri client-id "${value}" is not same-origin with the request's response target "${responseTarget}"`
+            );
+        }
+    }
+
+    return finalizeRequest(buildRequestFromClaims(clientId, prefix, claims), opts);
+};
+
+const isSameOriginUrl = (a: string, b: string): boolean => {
+    try {
+        return new URL(a).origin === new URL(b).origin;
+    } catch {
+        return false;
+    }
+};
+
+const loadRequestPayload = async (
+    opts: VerifyRequestObjectOptions
+): Promise<RequestObjectPayload> => {
     if (opts.inlineJwt) {
         if (!looksLikeJws(opts.inlineJwt)) {
             throw new RequestObjectError(
@@ -301,7 +432,7 @@ const loadJws = async (opts: VerifyRequestObjectOptions): Promise<string> => {
                 'Inline `request` parameter is not a compact JWS'
             );
         }
-        return opts.inlineJwt;
+        return { kind: 'jws', jws: opts.inlineJwt };
     }
 
     if (!opts.requestUri) {
@@ -319,9 +450,24 @@ const loadJws = async (opts: VerifyRequestObjectOptions): Promise<string> => {
         );
     }
 
+    // OID4VP 1.0 §5.10: `request_uri_method=post` — POST wallet_nonce (and
+    // optionally wallet_metadata) with an `application/oauth-authz-req+jwt`
+    // Accept header. Default (`get`) fetches the request object directly.
+    const usePost = opts.requestUriMethod === 'post';
+    const requestInit: RequestInit = usePost
+        ? {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                  Accept: 'application/oauth-authz-req+jwt',
+              },
+              body: buildRequestUriPostBody(opts.walletNonce),
+          }
+        : { method: 'GET', headers: { Accept: 'application/oauth-authz-req+jwt' } };
+
     let response: Response;
     try {
-        response = await fetchImpl(opts.requestUri, { method: 'GET' });
+        response = await fetchImpl(opts.requestUri, requestInit);
     } catch (e) {
         throw new RequestObjectError(
             'request_fetch_failed',
@@ -339,14 +485,26 @@ const loadJws = async (opts: VerifyRequestObjectOptions): Promise<string> => {
 
     const body = (await response.text()).trim();
 
-    if (!looksLikeJws(body)) {
-        throw new RequestObjectError(
-            'invalid_request_object',
-            'request_uri response is not a compact JWS'
-        );
-    }
+    if (looksLikeJws(body)) return { kind: 'jws', jws: body };
 
-    return body;
+    const unsignedClaims = tryParseJsonObject(body);
+    if (unsignedClaims) return { kind: 'unsigned', claims: unsignedClaims };
+
+    throw new RequestObjectError(
+        'invalid_request_object',
+        'request_uri response is neither a compact JWS nor a JSON Request Object'
+    );
+};
+
+const tryParseJsonObject = (body: string): Record<string, unknown> | undefined => {
+    if (!body.startsWith('{')) return undefined;
+
+    try {
+        const parsed = JSON.parse(body);
+        return isObject(parsed) ? parsed : undefined;
+    } catch {
+        return undefined;
+    }
 };
 
 /* -------------------------------------------------------------------------- */
@@ -383,6 +541,12 @@ interface VerifyCtx {
     header: Record<string, unknown>;
     clientId: string;
     opts: VerifyRequestObjectOptions;
+    /**
+     * How the X.509 leaf is bound to the `client_id` (§5.9.3):
+     * - `san_dns` — leaf SAN dNSName must cover the client_id host.
+     * - `hash` — client_id must equal base64url(SHA-256(DER leaf)).
+     */
+    x509Binding?: 'san_dns' | 'hash';
 }
 
 const verifyWithDid = async (ctx: VerifyCtx): Promise<void> => {
@@ -459,24 +623,17 @@ const verifyWithDid = async (ctx: VerifyCtx): Promise<void> => {
     }
 };
 
-const findVerificationMethod = (
-    doc: DidDocument,
-    kid: string
-): VerificationMethod | undefined => {
+const findVerificationMethod = (doc: DidDocument, kid: string): VerificationMethod | undefined => {
     const pool: VerificationMethod[] = [];
 
     for (const vm of doc.verificationMethod ?? []) pool.push(vm);
-    for (const ref of doc.authentication ?? [])
-        if (typeof ref === 'object') pool.push(ref);
-    for (const ref of doc.assertionMethod ?? [])
-        if (typeof ref === 'object') pool.push(ref);
+    for (const ref of doc.authentication ?? []) if (typeof ref === 'object') pool.push(ref);
+    for (const ref of doc.assertionMethod ?? []) if (typeof ref === 'object') pool.push(ref);
 
     // Match either the fully-qualified VM id or just the fragment.
     const fragment = kid.includes('#') ? kid.split('#').pop()! : kid;
 
-    return pool.find(
-        vm => vm.id === kid || vm.id.split('#').pop() === fragment
-    );
+    return pool.find(vm => vm.id === kid || vm.id.split('#').pop() === fragment);
 };
 
 /* -------------------------------------------------------------------------- */
@@ -485,19 +642,31 @@ const findVerificationMethod = (
 
 const verifyWithX509 = async (ctx: VerifyCtx): Promise<void> => {
     const { jws, header, clientId, opts } = ctx;
+    const binding = ctx.x509Binding ?? 'san_dns';
 
     const x5c = header.x5c;
     if (!Array.isArray(x5c) || x5c.length === 0) {
         throw new RequestObjectError(
             'invalid_request_object',
-            'Request Object JWS header is missing x5c (required for client_id_scheme=x509_san_dns)'
+            'Request Object JWS header is missing x5c (required for the x509 client-id prefixes)'
+        );
+    }
+
+    let x509: X509Module;
+    try {
+        x509 = await loadX509();
+    } catch (e) {
+        throw new RequestObjectError(
+            'invalid_request_object',
+            `Failed to load X.509 parser: ${describe(e)}`,
+            { cause: e }
         );
     }
 
     // Defensive DER → X509Certificate construction (cross-platform via @peculiar/x509).
-    let chain: x509.X509Certificate[];
+    let chain: X509.X509Certificate[];
     try {
-        chain = buildCertChain(x5c as string[]);
+        chain = buildCertChain(x5c as string[], x509);
     } catch (e) {
         throw new RequestObjectError(
             'invalid_request_object',
@@ -508,13 +677,45 @@ const verifyWithX509 = async (ctx: VerifyCtx): Promise<void> => {
 
     const leaf = chain[0]!;
 
-    // SAN DNS binding: client_id (as URL host) MUST appear in leaf SAN.
-    const expectedHost = hostFromClientId(clientId);
-    if (!leafCoversHost(leaf, expectedHost)) {
-        throw new RequestObjectError(
-            'client_id_mismatch',
-            `Leaf certificate SAN does not cover client_id host "${expectedHost}" (sanDnsNames=${listLeafSanDnsNames(leaf).join(',') || 'none'})`
-        );
+    if (binding === 'hash') {
+        // §5.9.3 x509_hash: client_id (value) MUST equal the base64url-encoded
+        // SHA-256 of the DER-encoded leaf certificate.
+        let actualHash: string;
+        try {
+            actualHash = await base64UrlSha256(b64Decode(x5c[0] as string));
+        } catch (e) {
+            throw new RequestObjectError(
+                'invalid_request_object',
+                `Failed to hash leaf certificate: ${describe(e)}`,
+                { cause: e }
+            );
+        }
+        if (actualHash !== clientId) {
+            throw new RequestObjectError(
+                'client_id_mismatch',
+                `Leaf certificate hash does not match client_id (expected ${clientId}, got ${actualHash})`
+            );
+        }
+    } else {
+        const expectedHost = hostFromClientId(clientId);
+        try {
+            if (!leafCoversHost(leaf, expectedHost, x509)) {
+                throw new RequestObjectError(
+                    'client_id_mismatch',
+                    `Leaf certificate SAN does not cover client_id host "${expectedHost}" (sanDnsNames=${
+                        listLeafSanDnsNames(leaf, x509).join(',') || 'none'
+                    })`
+                );
+            }
+        } catch (e) {
+            if (e instanceof RequestObjectError) throw e;
+
+            throw new RequestObjectError(
+                'invalid_request_object',
+                `Failed to inspect leaf certificate SAN: ${describe(e)}`,
+                { cause: e }
+            );
+        }
     }
 
     // Trust-anchor check.
@@ -529,7 +730,7 @@ const verifyWithX509 = async (ctx: VerifyCtx): Promise<void> => {
     }
 
     if (trusted.length > 0) {
-        await verifyChainToTrustedRoots(chain, trusted);
+        await verifyChainToTrustedRoots(chain, trusted, x509);
     }
 
     // JWS signature must verify against the leaf cert's public key.
@@ -557,9 +758,7 @@ const verifyWithX509 = async (ctx: VerifyCtx): Promise<void> => {
     }
 };
 
-const buildCertChain = (
-    x5c: string[]
-): x509.X509Certificate[] =>
+const buildCertChain = (x5c: string[], x509: X509Module): X509.X509Certificate[] =>
     // peculiar's constructor accepts base64/PEM strings or BufferSource.
     // x5c entries are base64-DER per RFC 7515 §4.1.6 (no PEM wrapper);
     // we wrap them so peculiar's base64 detection works reliably across
@@ -575,8 +774,9 @@ const buildCertChain = (
  * Web Crypto's `subtle.verify` (which is async by spec).
  */
 const verifyChainToTrustedRoots = async (
-    chain: x509.X509Certificate[],
-    trustedPems: readonly string[]
+    chain: X509.X509Certificate[],
+    trustedPems: readonly string[],
+    x509: X509Module
 ): Promise<void> => {
     const trusted = trustedPems.map(pem => new x509.X509Certificate(pem));
 
@@ -621,8 +821,8 @@ const verifyChainToTrustedRoots = async (
 // against algorithm mismatches that throw inside Web Crypto rather
 // than returning false.
 const safeVerify = async (
-    child: x509.X509Certificate,
-    parent: x509.X509Certificate
+    child: X509.X509Certificate,
+    parent: X509.X509Certificate
 ): Promise<boolean> => {
     try {
         return await child.verify({ publicKey: parent.publicKey });
@@ -631,7 +831,7 @@ const safeVerify = async (
     }
 };
 
-const fingerprintHex = async (cert: x509.X509Certificate): Promise<string> => {
+const fingerprintHex = async (cert: X509.X509Certificate): Promise<string> => {
     const buf = await cert.getThumbprint('SHA-256');
     const bytes = new Uint8Array(buf);
     let hex = '';
@@ -647,18 +847,15 @@ const fingerprintHex = async (cert: x509.X509Certificate): Promise<string> => {
  * Honours wildcard certs (`*.example.com` covers `foo.example.com`
  * but not `example.com` or `bar.foo.example.com`), per RFC 6125 §6.4.3.
  */
-const leafCoversHost = (
-    cert: x509.X509Certificate,
-    host: string
-): boolean => {
+const leafCoversHost = (cert: X509.X509Certificate, host: string, x509: X509Module): boolean => {
     const lower = host.toLowerCase();
-    for (const dns of listLeafSanDnsNames(cert)) {
+    for (const dns of listLeafSanDnsNames(cert, x509)) {
         if (matchesDnsName(dns, lower)) return true;
     }
     return false;
 };
 
-const listLeafSanDnsNames = (cert: x509.X509Certificate): string[] => {
+const listLeafSanDnsNames = (cert: X509.X509Certificate, x509: X509Module): string[] => {
     const ext = cert.getExtension(x509.SubjectAlternativeNameExtension);
     if (!ext) return [];
     return ext.names
@@ -676,6 +873,24 @@ const matchesDnsName = (pattern: string, host: string): boolean => {
     if (!host.endsWith(suffix)) return false;
     const left = host.slice(0, -suffix.length);
     return left.length > 0 && !left.includes('.');
+};
+
+/** base64url(SHA-256(bytes)) — the x509_hash thumbprint form (§5.9.3). */
+const base64UrlSha256 = async (bytes: Uint8Array): Promise<string> => {
+    const c = (globalThis as { crypto?: { subtle?: SubtleCrypto } }).crypto;
+    if (!c?.subtle) {
+        throw new RequestObjectError(
+            'invalid_request_object',
+            'Web Crypto API not available to hash the x509 certificate for x509_hash verification'
+        );
+    }
+
+    const digest = new Uint8Array(await c.subtle.digest('SHA-256', bytes));
+    let binary = '';
+    for (let i = 0; i < digest.length; i++) binary += String.fromCharCode(digest[i]!);
+    const b64 =
+        typeof Buffer !== 'undefined' ? Buffer.from(digest).toString('base64') : btoa(binary);
+    return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 };
 
 const b64Decode = (b64: string): Uint8Array => {
@@ -780,9 +995,7 @@ const hostFromClientId = (clientId: string): string => {
     // client_id can be a hostname, URL, or URL with path. Pull a DNS
     // name out in every reasonable shape.
     try {
-        const url = new URL(
-            clientId.includes('://') ? clientId : `https://${clientId}`
-        );
+        const url = new URL(clientId.includes('://') ? clientId : `https://${clientId}`);
         return url.hostname;
     } catch {
         return clientId;
@@ -811,7 +1024,10 @@ export const builtInDidResolver = (
         }
         throw new RequestObjectError(
             'did_resolution_failed',
-            `Built-in resolver does not support ${did.split(':').slice(0, 2).join(':')} — pass a custom didResolver`
+            `Built-in resolver does not support ${did
+                .split(':')
+                .slice(0, 2)
+                .join(':')} — pass a custom didResolver`
         );
     };
 };
@@ -919,10 +1135,9 @@ const buildRequestFromClaims = (
     clientIdPrefix: ClientIdPrefix,
     claims: Record<string, unknown>
 ): AuthorizationRequest => {
-    const presentationDefinition =
-        isObject(claims.presentation_definition)
-            ? (claims.presentation_definition as unknown as PresentationDefinition)
-            : undefined;
+    const presentationDefinition = isObject(claims.presentation_definition)
+        ? (claims.presentation_definition as unknown as PresentationDefinition)
+        : undefined;
 
     const presentationDefinitionUri = asString(claims.presentation_definition_uri);
 
@@ -944,9 +1159,54 @@ const buildRequestFromClaims = (
         dcqlQuery = parseDcqlQuery(claims.dcql_query);
     }
 
-    const clientMetadata =
-        isObject(claims.client_metadata)
-            ? (claims.client_metadata as Record<string, unknown>)
+    const clientMetadata = isObject(claims.client_metadata)
+        ? (claims.client_metadata as Record<string, unknown>)
+        : undefined;
+
+    // OID4VP 1.0 §5.2: `nonce` is REQUIRED. A signed Request Object without it
+    // is rejected rather than accepted with an empty nonce (which would defeat
+    // the replay binding of §14.1).
+    // VpError('missing_nonce') rather than RequestObjectError: this function
+    // serves both the signed-JWS and unsigned-JSON paths, and a missing nonce
+    // is a request-parameter violation (same as the URL-param parser), not a
+    // transport/signature failure.
+    const nonce = asString(claims.nonce);
+    if (!nonce) {
+        throw new VpError(
+            'missing_nonce',
+            'Request Object is missing the required `nonce` claim (OID4VP 1.0 §5.2)'
+        );
+    }
+
+    // OID4VP 1.0 §5.1/§8.5: `transaction_data` MUST be a non-empty array of
+    // base64url-encoded strings. Mirror the strict URL-parameter validation
+    // (see `parse.ts:parseTransactionData`) — silently coercing a malformed
+    // claim to `undefined` would let a request bypass the §8.4
+    // cannot-honor-transaction-data rejection downstream.
+    let transactionData: string[] | undefined;
+    if (claims.transaction_data !== undefined && claims.transaction_data !== null) {
+        if (
+            !Array.isArray(claims.transaction_data) ||
+            claims.transaction_data.length === 0 ||
+            !claims.transaction_data.every(x => typeof x === 'string')
+        ) {
+            throw new VpError(
+                'invalid_transaction_data',
+                'transaction_data MUST be a non-empty array of base64url-encoded strings'
+            );
+        }
+
+        transactionData = claims.transaction_data as string[];
+    }
+
+    const verifierInfo = Array.isArray(claims.verifier_info)
+        ? (claims.verifier_info as unknown[])
+        : undefined;
+
+    const requestUriMethodClaim = asString(claims.request_uri_method);
+    const requestUriMethod =
+        requestUriMethodClaim === 'get' || requestUriMethodClaim === 'post'
+            ? requestUriMethodClaim
             : undefined;
 
     return {
@@ -956,7 +1216,7 @@ const buildRequestFromClaims = (
         response_mode: asString(claims.response_mode),
         response_uri: asString(claims.response_uri),
         redirect_uri: asString(claims.redirect_uri),
-        nonce: asString(claims.nonce) ?? '',
+        nonce,
         state: asString(claims.state),
         presentation_definition: presentationDefinition,
         presentation_definition_uri: presentationDefinitionUri,
@@ -964,6 +1224,10 @@ const buildRequestFromClaims = (
         client_metadata: clientMetadata,
         client_metadata_uri: asString(claims.client_metadata_uri),
         scope: asString(claims.scope),
+        transaction_data: transactionData,
+        verifier_info: verifierInfo,
+        request_uri_method: requestUriMethod,
+        wallet_nonce: asString(claims.wallet_nonce),
     };
 };
 

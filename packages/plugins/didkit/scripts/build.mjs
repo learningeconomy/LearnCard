@@ -20,7 +20,7 @@ const configurations = [
         plugins: [],
         entryPoints: ['src/index.ts'],
         format: 'cjs',
-        outfile: 'dist/didkit-plugin.cjs.development.js',
+        outfile: 'dist/didkit-plugin.cjs.development.cjs',
         ...buildOptions,
     },
     {
@@ -32,7 +32,7 @@ const configurations = [
         entryPoints: ['src/index.ts'],
         minify: true,
         format: 'cjs',
-        outfile: 'dist/didkit-plugin.cjs.production.min.js',
+        outfile: 'dist/didkit-plugin.cjs.production.min.cjs',
         ...buildOptions,
     },
     {

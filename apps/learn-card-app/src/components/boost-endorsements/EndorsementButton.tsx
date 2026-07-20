@@ -6,6 +6,7 @@ import EndorsementRequestForm from './EndorsementRequestForm/EndorsementRequestF
 
 import { useGetVCInfo, CredentialCategoryEnum, useModal, ModalTypes } from 'learn-card-base';
 import { VC } from '@learncard/types';
+import * as m from '../../paraglide/messages.js';
 
 const EndorsementButton: React.FC<{
     credential: VC;
@@ -47,7 +48,8 @@ const EndorsementButton: React.FC<{
             }}
             className={`w-full text-[17px] flex items-center justify-center text-center font-semibold  py-[8px] px-4 rounded-[20px] text-white ${buttonStyles} ${className}`}
         >
-            <EndorsmentThumbWithCircle className={`mr-2 ${iconStyles}`} /> Request Endorsement
+            <EndorsmentThumbWithCircle className={`mr-2 ${iconStyles}`} />{' '}
+            {m['endorsement.button.request']()}
         </button>
     );
 };

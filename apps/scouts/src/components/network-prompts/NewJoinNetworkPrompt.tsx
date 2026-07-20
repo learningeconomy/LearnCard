@@ -12,7 +12,6 @@ import {
     useSQLiteStorage,
     useWallet,
     getNotificationsEndpoint,
-    BrandingEnum,
     useGetCurrentLCNUser,
     useIsCurrentUserLCNUser,
     useGetProfile,
@@ -20,18 +19,17 @@ import {
     ModalTypes,
 } from 'learn-card-base';
 
-import { IonCol, IonRow, IonInput, IonSpinner, IonPage, IonLoading } from '@ionic/react';
+import { IonCol, IonRow, IonInput, IonSpinner } from '@ionic/react';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
-import ModalLayout from '../../layout/ModalLayout';
-import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';
 
-import { useFilestack, UploadRes } from 'learn-card-base';
+import { useImageUpload, UploadRes } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import Pencil from '../svgs/Pencil';
 import ErrorLogout from './ErrorLogout';
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
-import { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('new-join-network-prompt');
 
 const StateValidator = z.object({
     name: z
@@ -65,17 +63,8 @@ type NewJoinNetworkPromptProps = {
     children?: any;
 };
 
-const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
-    title = 'My Account',
-    handleCloseModal,
-    handleLogout,
-    showCancelButton = true,
-    showDeleteAccountButton = true,
-    showNetworkModal = false,
-    showNotificationsModal = true,
-}) => {
+const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleCloseModal }) => {
     const { initWallet } = useWallet();
-    // const { newModal } = useModal();
     const { refetch } = useGetCurrentLCNUser();
     const { refetch: refetchIsCurrentUserLCNUser } = useIsCurrentUserLCNUser();
     const queryClient = useQueryClient();
@@ -100,9 +89,9 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
 
     const [uploadProgress, setUploadProgress] = useState<number | false>(false);
 
-    const { data: lcNetworkProfile, isLoading: profileLoading } = useGetProfile();
+    const { data: lcNetworkProfile } = useGetProfile();
 
-    const { newModal: newErrorLogoutModal, closeModal: closeErrorLogoutModal } = useModal({
+    const { newModal: newErrorLogoutModal } = useModal({
         mobile: ModalTypes.Cancel,
         desktop: ModalTypes.Cancel,
     });
@@ -131,7 +120,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
         setUploadProgress(false);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
@@ -207,7 +196,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                     setIsCreateLoading(false);
                 }
             } catch (err: any) {
-                console.log('createProfile::error', err);
+                log.debug('createProfile::error', err);
                 setError(err?.toString?.() || '');
                 setIsLoading(false);
                 setIsCreateLoading(false);
@@ -287,7 +276,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                     }
                 } catch (error) {
                     setIsLoading(false);
-                    console.log('updateProfile::error', error);
+                    log.debug('updateProfile::error', error);
                 }
             }
         }
@@ -300,24 +289,29 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
     };
 
     return (
-        <IonPage>
-            <ModalLayout handleOnClick={handleCloseModal} buttonText="Skip For Now" allowScroll>
-                <IonLoading mode="ios" message="Joining Network..." isOpen={createLoading} />
+        <>
+            {createLoading && (
+                <div className="absolute top-0 z-[10000] flex h-full w-full flex-col items-center justify-center gap-[5px] bg-white bg-opacity-70 backdrop-blur-[3px]">
+                    <IonSpinner color="dark" />
+                    <span className="text-grayscale-900">Joining Network...</span>
+                </div>
+            )}
 
-                <IonRow class="w-full">
+            <section className="relative pt-[32px] pb-[16px]">
+                <IonRow className="w-full">
                     <IonRow className="flex w-full flex-col items-center justify-center mb-2">
                         <div className="flex w-full items-center justify-center">
-                            <h6
+                            <h5
                                 className={`font-notoSans select-none text-xl font-medium tracking-wider text-center`}
                             >
-                                <span className="font-notoSans font-normal text-center">
+                                <span className="font-notoSans font-normal text-center text-grayscale-900">
                                     Welcome to
                                 </span>
                                 <br />
-                                <h6 className="tracking-[12px] text-lg font-bold text-black">
+                                <div className="tracking-[12px] text-lg font-bold text-grayscale-900">
                                     SCOUTPASS
-                                </h6>
-                            </h6>
+                                </div>
+                            </h5>
                         </div>
                         <div className="flex w-full items-center justify-center text-center">
                             <h1 className="text-center text-base mt-2 font-normal text-black">
@@ -355,7 +349,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                     </IonCol>
                 </IonRow>
 
-                <div className="flex flex-col items-center justify-center w-full px-6 mt-4">
+                <div className="flex flex-col items-center justify-center w-full px-6 mt-2">
                     {/* profile setup */}
                     <IonRow className="flex flex-col items-center justify-center w-full">
                         {lcNetworkProfile && lcNetworkProfile?.profileId && (
@@ -467,7 +461,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                         </IonRow>
                     )}
 
-                    <IonRow className="w-full flex items-center justify-center mt-8">
+                    <IonRow className="w-full flex items-center justify-center mt-4">
                         <button
                             onClick={handleClick}
                             type="button"
@@ -478,7 +472,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                     </IonRow>
                 </div>
 
-                <IonRow className="flex items-center justify-center mt-4 w-full">
+                <IonRow className="flex items-center justify-center mt-3 w-full">
                     <IonCol className="flex flex-col items-center justify-center text-center">
                         <p className="text-center text-sm font-normal px-16 text-grayscale-600">
                             You own your own data.
@@ -500,8 +494,8 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({
                         </button>
                     </IonCol>
                 </IonRow>
-            </ModalLayout>
-        </IonPage>
+            </section>
+        </>
     );
 };
 

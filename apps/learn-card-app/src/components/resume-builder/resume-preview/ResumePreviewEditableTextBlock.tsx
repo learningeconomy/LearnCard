@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 
 import TrashBin from '../../../components/svgs/TrashBin';
 
+import * as m from '../../../paraglide/messages.js';
+
 type ResumePreviewEditableTextBlockProps = {
     value: string;
     placeholder: string;
@@ -59,11 +61,6 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
 
         return (
             <div className="flex items-start justify-center gap-2 w-full my-1">
-                {!multiline && (
-                    <span className="text-xs text-grayscale-900 leading-relaxed shrink-0 mt-2">
-                        •
-                    </span>
-                )}
                 <div className="flex-1">
                     {showDecoration ? (
                         <div className="bg-indigo-50 rounded-lg overflow-hidden">
@@ -71,7 +68,7 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
                             <div className="flex justify-end px-2 pb-1.5">
                                 {isSelfAttested ? (
                                     <span className="text-grayscale-600 font-semibold text-xs">
-                                        Edited
+                                        {m['passport.resumeBuilder.editable.edited']()}
                                         {onRestoreDefault && (
                                             <>
                                                 <span className="mx-1 text-grayscale-600">•</span>
@@ -80,14 +77,16 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
                                                     className="text-indigo-600 font-semibold text-xs"
                                                     onClick={onRestoreDefault}
                                                 >
-                                                    Restore Default
+                                                    {m[
+                                                        'passport.resumeBuilder.editable.restoreDefault'
+                                                    ]()}
                                                 </button>
                                             </>
                                         )}
                                     </span>
                                 ) : (
                                     <span className="text-grayscale-600 font-semibold text-xs">
-                                        Default Summary
+                                        {m['passport.resumeBuilder.editable.defaultSummary']()}
                                     </span>
                                 )}
                             </div>
@@ -103,7 +102,7 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
                         <button
                             onClick={onRemove}
                             className="shrink-0 text-grayscale-700 bg-grayscale-100 rounded-[10px] p-1 leading-none"
-                            title="Remove"
+                            title={m['passport.resumeBuilder.remove']()}
                         >
                             <TrashBin className="w-[24px] h-[24px]" />
                         </button>
@@ -116,16 +115,13 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
     if (!value) return null;
 
     return (
-        <div className="flex items-start gap-1 w-full">
-            <span className="text-xs text-grayscale-600 leading-relaxed shrink-0">–</span>
-            <span
-                className={`text-xs text-left leading-relaxed flex-1 ${
-                    isSelfAttested ? 'text-grayscale-600' : 'text-grayscale-600'
-                }`}
-            >
-                {value}
-            </span>
-        </div>
+        <span
+            className={`block w-full text-xs text-left leading-relaxed ${
+                isSelfAttested ? 'text-grayscale-600' : 'text-grayscale-600'
+            }`}
+        >
+            {value}
+        </span>
     );
 };
 

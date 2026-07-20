@@ -1,10 +1,10 @@
 /**
- * Default Capacitor config — used as the source for `npx cap sync`.
+ * Default Capacitor config — used as the source for `bunx cap sync`.
  *
- * **Workflow order for tenant builds (enforced by `pnpm lc native`):**
+ * **Workflow order for tenant builds (enforced by `bun run lc native`):**
  *   1. `prepare-native-config.ts <tenant>` — populates public/ with tenant config + assets
  *   2. `vite build`                        — compiles web app with correct tenant data
- *   3. `npx cap sync`                      — copies fresh build/ into native projects
+ *   3. `bunx cap sync`                     — copies fresh build/ into native projects
  *   4. `prepare-native-config.ts <tenant>` — re-patches native files that cap sync
  *                                             overwrites (capacitor.config.json, etc.)
  *
@@ -62,7 +62,7 @@ const config: CapacitorConfig = {
             // Bump this value whenever you bump native binaries; do NOT add a parallel
             // tenant-level override — that's how channels drift and OTA updates land in
             // an empty channel (see PR #1063 incident).
-            defaultChannel: '1.0.7', // bumped here https://github.com/learningeconomy/LearnCard/pull/1203
+            defaultChannel: '1.0.8', // bumped here https://github.com/learningeconomy/LearnCard/pull/1313
         },
     },
 };

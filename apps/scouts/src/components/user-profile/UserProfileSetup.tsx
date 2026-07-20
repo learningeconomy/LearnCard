@@ -13,6 +13,8 @@ import PushNotificationsPrompt from '../push-notifications-prompt/PushNotificati
 import PushNotificationsSettings from '../push-notification-settings/PushNotificationsSettings';
 import ModalLayout from '../../layout/ModalLayout';
 import ChapiPrompt from '../chapi-prompt/ChapiPrompt';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('user-profile-setup');
 
 import {
     NetworkSettingsEnum,
@@ -92,7 +94,7 @@ const UserProfileSetup: React.FC<{
                     setLcNetworkProfile(profile);
                 }
             } catch (err) {
-                console.log('getLCNeworkProfile::err', err);
+                log.debug('getLCNeworkProfile::err', err);
             }
         };
 

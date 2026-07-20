@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useModal, useWallet, useFilestack } from 'learn-card-base';
+import { useModal, useWallet, useImageUpload } from 'learn-card-base';
 import { IonInput } from '@ionic/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 // oxlint-disable-next-line no-unused-vars
 import { SkillFrameworkType } from '@learncard/types';
 import UploadIcon from 'learn-card-base/svgs/UploadIcon';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('edit-framework-modal');
 
 type EditFrameworkModalProps = {
     frameworkId: string;
@@ -19,7 +21,7 @@ const EditFrameworkModal: React.FC<EditFrameworkModalProps> = ({ frameworkId }) 
     const [description, setDescription] = useState('');
     const [image, setImage] = useState<string | undefined>(undefined);
 
-    const { handleFileSelect, isLoading: isUploadingImage } = useFilestack({
+    const { handleFileSelect, isLoading: isUploadingImage } = useImageUpload({
         onUpload: url => setImage(url),
         fileType: 'image/*',
     });
@@ -62,7 +64,7 @@ const EditFrameworkModal: React.FC<EditFrameworkModalProps> = ({ frameworkId }) 
             closeModal();
         },
         onError: error => {
-            console.error('Failed to update framework:', error);
+            log.error('Failed to update framework:', error);
             alert('Failed to update framework. Please try again.');
         },
     });

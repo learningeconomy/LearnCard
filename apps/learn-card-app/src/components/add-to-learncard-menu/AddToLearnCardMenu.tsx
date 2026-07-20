@@ -1,6 +1,12 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('add-to-learn-card-menu');
+
+import { useHistory } from 'react-router-dom';
+
+import * as m from '../../paraglide/messages.js';
 
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
@@ -65,8 +71,9 @@ export type AddToLearnCardMenuItem = {
 
 export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className }) => {
     const flags = useFlags();
+    const history = useHistory();
     const { isDesktop } = useDeviceTypeByWidth();
-    const { newModal, closeModal } = useModal();
+    const { newModal, closeModal, closeAllModals } = useModal();
     const { gate } = useLCNGatedAction();
 
     const { data: topics, isLoading: topicsLoading } = useGetCredentialList('AI Topic');
@@ -74,7 +81,7 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
 
     useEffect(() => {
         void importPasteOrUploadClaimModal().catch(err => {
-            console.error('[ClaimLink] Failed to preload PasteOrUploadClaimModal chunk:', err);
+            log.error('[ClaimLink] Failed to preload PasteOrUploadClaimModal chunk:', err);
         });
     }, []);
 
@@ -107,6 +114,13 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
     const handleNewBoostModal = () => {
         closeModal();
         handlePresentBoostModal();
+    };
+
+    const handleSimpleSend = () => {
+        checkAndPromptRecovery(() => {
+            closeAllModals();
+            history.push('/issue');
+        });
     };
 
     const handleIssueManagedBoost = () => {
@@ -158,7 +172,7 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
     addToLearnCardMenuItems.push({
         type: AddToLearnCardMenuEnum.boostSomeone,
         Icon: BoostsTwoTonedIcon,
-        label: 'Boost Someone',
+        label: m['launchpad.actions.boostSomeone'](),
         onClick: () => {
             closeModal();
             checkAndPromptRecovery(() => {
@@ -181,7 +195,7 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
         addToLearnCardMenuItems.push({
             type: AddToLearnCardMenuEnum.newAiSession,
             Icon: AiWandIcon,
-            label: 'New AI Session',
+            label: m['sidemenu.newAiSession'](),
             onClick: () => handleNewSession(),
         });
     }
@@ -190,14 +204,18 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
         {
             type: AddToLearnCardMenuEnum.issueCredential,
             Icon: AddCredentialIcon,
-            label: 'Issue Credential',
+            label: m['launchpad.actions.issueCredential'](),
             onClick: () => handleIssueManagedBoost(),
         },
         {
             type: AddToLearnCardMenuEnum.createCredential,
             Icon: AddCredentialIcon,
-            label: 'Create Credential',
+            label: m['launchpad.actions.createCredential'](),
             onClick: () => {
+                if (flags?.enableSimpleSend) {
+                    handleSimpleSend();
+                    return;
+                }
                 closeModal();
                 checkAndPromptRecovery(() => {
                     handlePresentBoostModal();
@@ -207,7 +225,7 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
         {
             type: AddToLearnCardMenuEnum.uploadCredential,
             Icon: UploadIcon,
-            label: 'Upload Credential',
+            label: m['launchpad.actions.uploadCredential'](),
             onClick: () => handleCheckListButton(),
         }
     );
@@ -216,7 +234,7 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
         addToLearnCardMenuItems.push({
             type: AddToLearnCardMenuEnum.claimCredential,
             Icon: ScanIcon,
-            label: 'Scan a QR Code',
+            label: m['launchpad.actions.scanQrCode'](),
             onClick: () => handleClaimCredentialButton(),
         });
     }
@@ -224,7 +242,7 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
     addToLearnCardMenuItems.push({
         type: AddToLearnCardMenuEnum.useClaimLink,
         Icon: LinkOutlinedIcon,
-        label: 'Use a Claim Link',
+        label: m['launchpad.actions.useClaimLink'](),
         onClick: () => handleUseClaimLinkButton(),
     });
 

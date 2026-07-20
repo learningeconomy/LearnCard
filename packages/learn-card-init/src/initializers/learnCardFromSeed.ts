@@ -14,6 +14,7 @@ import { getVpqrPlugin } from '@learncard/vpqr-plugin';
 import { getCHAPIPlugin } from '@learncard/chapi-plugin';
 import { getLearnCardPlugin } from '@learncard/learn-card-plugin';
 import { getOpenID4VCPlugin } from '@learncard/openid4vc-plugin';
+import { getSdJwtVcPlugin } from '@learncard/sd-jwt-vc-plugin';
 
 import { LearnCardFromSeed } from '../types/LearnCard';
 import { defaultEthereumArgs } from '../defaults';
@@ -51,7 +52,9 @@ export const learnCardFromSeed = async ({
     };
 
     const didkitLc = await cryptoLc.addPlugin(
-        await (await getDidkit())(didkit === 'node' ? undefined : didkit, allowRemoteContexts)
+        await (
+            await getDidkit()
+        )(didkit === 'node' ? undefined : didkit, allowRemoteContexts)
     );
 
     const didkeyLc = await didkitLc.addPlugin(
@@ -82,7 +85,9 @@ export const learnCardFromSeed = async ({
 
     const chapiLc = await vpqrLc.addPlugin(await getCHAPIPlugin());
 
-    const lcLc = await chapiLc.addPlugin(getLearnCardPlugin(chapiLc));
+    const sdJwtVcLc = await chapiLc.addPlugin(getSdJwtVcPlugin(chapiLc));
+
+    const lcLc = await sdJwtVcLc.addPlugin(getLearnCardPlugin(sdJwtVcLc));
 
     return lcLc.addPlugin(getOpenID4VCPlugin(lcLc, openid4vc));
 };

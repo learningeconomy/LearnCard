@@ -15,6 +15,10 @@ import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { isWebAuthnSupported } from '@learncard/sss-key-manager';
+import * as m from '../../paraglide/messages.js';
+import { getLogger } from 'learn-card-base';
+
+const log = getLogger('recovery-setup-modal');
 
 export type RecoverySetupType = 'passkey' | 'phrase' | 'backup' | 'email';
 
@@ -52,7 +56,8 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     const isConfigured = (type: RecoverySetupType): boolean =>
         hasExistingMethod(type) || sessionConfigured.has(type);
 
-    const anyConfigured = existingMethods.some(m => m.type !== 'email') || sessionConfigured.size > 0;
+    const anyConfigured =
+        existingMethods.some(m => m.type !== 'email') || sessionConfigured.size > 0;
 
     // Default to the first unconfigured method in priority order:
     // email > phrase > backup > passkey
@@ -111,11 +116,11 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
         try {
             await onSetupPasskey();
             markConfigured('passkey');
-            setSuccess('Passkey recovery is set up!');
+            setSuccess(m['recovery.success.passkeySetup']());
             setShowUpdateForm(false);
         } catch (e) {
-            console.error('[RecoverySetupModal] handlePasskeySetup error:', e, typeof e);
-            setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+            log.error('handlePasskeySetup error', e);
+            setError(e instanceof Error ? e.message : m['recovery.somethingWrong']());
         } finally {
             setLoading(false);
         }
@@ -129,8 +134,8 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             const phrase = await onGeneratePhrase();
             setRecoveryPhrase(phrase);
         } catch (e) {
-            console.error('[RecoverySetupModal] handleGeneratePhrase error:', e, typeof e);
-            setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+            log.error('handleGeneratePhrase error', e);
+            setError(e instanceof Error ? e.message : m['recovery.somethingWrong']());
         } finally {
             setLoading(false);
         }
@@ -147,17 +152,17 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     const handleConfirmPhrase = () => {
         setPhraseConfirmed(true);
         markConfigured('phrase');
-        setSuccess('Recovery phrase saved! Keep it somewhere safe.');
+        setSuccess(m['recovery.success.phraseSaved']());
     };
 
     const handleBackupSetup = async () => {
         if (backupPassword.length < 8) {
-            setError('Password must be at least 8 characters.');
+            setError(m['recovery.somethingWrong']());
             return;
         }
 
         if (backupPassword !== confirmBackupPassword) {
-            setError('Passwords don\'t match.');
+            setError(m['recovery.passwordsDontMatch']());
             return;
         }
 
@@ -168,8 +173,8 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             const fileJson = await onSetupBackup(backupPassword);
             setBackupFileJson(fileJson);
         } catch (e) {
-            console.error('[RecoverySetupModal] handleBackupSetup error:', e, typeof e);
-            setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+            log.error('handleBackupSetup error', e);
+            setError(e instanceof Error ? e.message : m['recovery.somethingWrong']());
         } finally {
             setLoading(false);
         }
@@ -190,15 +195,15 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                 });
 
                 await Share.share({
-                    title: 'LearnCard Backup',
+                    title: m['recovery.learnCardBackup']({ brand: 'LearnCard' }),
                     url: result.uri,
-                    dialogTitle: 'Save your backup file',
+                    dialogTitle: m['recovery.saveBackupFile'](),
                 });
 
                 setBackupDownloaded(true);
             } catch (e) {
-                console.error('[RecoverySetupModal] Native file download failed:', e);
-                setError('Could not save the file. Please try again.');
+                log.error('Native file download failed', e);
+                setError(m['recovery.couldNotSave']());
             }
         } else {
             const blob = new Blob([backupFileJson], { type: 'application/json' });
@@ -219,7 +224,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     const handleConfirmBackup = () => {
         setBackupConfirmed(true);
         markConfigured('backup');
-        setSuccess('Backup file saved! Keep it and your password somewhere safe.');
+        setSuccess(m['recovery.success.backupSaved']());
         setBackupPassword('');
         setConfirmBackupPassword('');
         setShowUpdateForm(false);
@@ -227,7 +232,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
     const handleSendEmailCode = async () => {
         if (!emailInput.includes('@')) {
-            setError('Please enter a valid email address.');
+            setError(m['recovery.validEmail']());
             return;
         }
 
@@ -238,8 +243,8 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             await onAddRecoveryEmail(emailInput);
             setEmailCodeSent(true);
         } catch (e) {
-            console.error('[RecoverySetupModal] handleSendEmailCode error:', e, typeof e);
-            setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+            log.error('handleSendEmailCode error', e);
+            setError(e instanceof Error ? e.message : m['recovery.somethingWrong']());
         } finally {
             setLoading(false);
         }
@@ -247,7 +252,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
     const handleVerifyEmailCode = async () => {
         if (emailCode.length !== 6) {
-            setError('Please enter the 6-digit code.');
+            setError(m['recovery.somethingWrong']());
             return;
         }
 
@@ -259,8 +264,8 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             setEmailVerified(true);
             setEmailMasked(maskedEmail);
         } catch (e) {
-            console.error('[RecoverySetupModal] handleVerifyEmailCode error:', e, typeof e);
-            setError(e instanceof Error ? e.message : 'Incorrect code. Please try again.');
+            log.error('handleVerifyEmailCode error', e);
+            setError(e instanceof Error ? e.message : m['recovery.incorrectCode']());
         } finally {
             setLoading(false);
         }
@@ -274,21 +279,41 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             await onSetupEmailRecovery();
             setEmailShareSent(true);
             markConfigured('email');
-            setSuccess('Recovery key sent to your email!');
+            setSuccess(m['recovery.success.recoveryKeySent']());
             setShowUpdateForm(false);
         } catch (e) {
-            console.error('[RecoverySetupModal] handleSetupEmailRecovery error:', e, typeof e);
-            setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+            log.error('handleSetupEmailRecovery error', e);
+            setError(e instanceof Error ? e.message : m['recovery.somethingWrong']());
         } finally {
             setLoading(false);
         }
     };
 
     const allTabs = [
-        { id: 'email' as const, label: 'Email', icon: mailOutline, iconClass: 'text-sm' },
-        { id: 'phrase' as const, label: 'Phrase', icon: documentTextOutline, iconClass: 'text-sm' },
-        { id: 'backup' as const, label: 'Backup', icon: cloudDownloadOutline, iconClass: 'text-sm' },
-        { id: 'passkey' as const, label: 'Passkey', icon: fingerPrint, iconClass: 'text-sm' },
+        {
+            id: 'email' as const,
+            label: m['recovery.tab.email'](),
+            icon: mailOutline,
+            iconClass: 'text-sm',
+        },
+        {
+            id: 'phrase' as const,
+            label: m['recovery.tab.phrase'](),
+            icon: documentTextOutline,
+            iconClass: 'text-sm',
+        },
+        {
+            id: 'backup' as const,
+            label: m['recovery.tab.backup'](),
+            icon: cloudDownloadOutline,
+            iconClass: 'text-sm',
+        },
+        {
+            id: 'passkey' as const,
+            label: m['recovery.method.passkey'](),
+            icon: fingerPrint,
+            iconClass: 'text-sm',
+        },
     ];
 
     // Hide passkey tab entirely on native platforms (WebAuthn unavailable in WKWebView / Android WebView)
@@ -300,7 +325,10 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
     const updateWarning = (text: string) => (
         <div className="p-3 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-2.5">
-            <IonIcon icon={alertCircleOutline} className="text-amber-500 text-base mt-0.5 shrink-0" />
+            <IonIcon
+                icon={alertCircleOutline}
+                className="text-amber-500 text-base mt-0.5 shrink-0"
+            />
 
             <span className="text-xs text-amber-700 leading-relaxed">{text}</span>
         </div>
@@ -315,7 +343,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             }}
             className="w-full py-2.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
         >
-            Cancel
+            {m['common.cancel']()}
         </button>
     );
 
@@ -323,7 +351,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
         label: string,
         onClick: () => void,
         disabled: boolean,
-        loadingText: string,
+        loadingText: string
     ) => (
         <button
             onClick={onClick}
@@ -335,7 +363,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     {loadingText}
                 </span>
-            ) : label}
+            ) : (
+                label
+            )}
         </button>
     );
 
@@ -343,7 +373,10 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     const configuredRow = (statusText: string, onChangeClick: () => void) => (
         <div className="flex items-center justify-between py-3 px-4 rounded-2xl bg-grayscale-100/60">
             <div className="flex items-center gap-2.5">
-                <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-base shrink-0" />
+                <IonIcon
+                    icon={checkmarkCircleOutline}
+                    className="text-emerald-500 text-base shrink-0"
+                />
 
                 <span className="text-sm text-grayscale-900">{statusText}</span>
             </div>
@@ -352,7 +385,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                 onClick={onChangeClick}
                 className="text-xs font-medium text-grayscale-500 hover:text-grayscale-900 transition-colors"
             >
-                Change
+                {m['recovery.action.change']()}
             </button>
         </div>
     );
@@ -364,14 +397,21 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             {/* Dynamic Header */}
             <div className="text-center mb-5">
                 <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
-                    {anyConfigured ? 'Account Recovery' : 'Protect Your Account'}
+                    {anyConfigured
+                        ? m['recovery.accountRecovery']()
+                        : m['recovery.protectAccount']()}
                 </h2>
 
                 <p className="text-sm text-grayscale-600 leading-relaxed">
                     {anyConfigured
-                        ? `${configuredCount} recovery ${configuredCount === 1 ? 'method' : 'methods'} active`
-                        : 'Set up a recovery method so you can get back in if you lose access to this device.'
-                    }
+                        ? m['recovery.method.activeCount']({
+                              count: String(configuredCount),
+                              state:
+                                  configuredCount === 1
+                                      ? m['recovery.method.singular']()
+                                      : m['recovery.method.plural'](),
+                          })
+                        : m['recovery.setupRecovery']()}
                 </p>
             </div>
 
@@ -391,7 +431,10 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         {tab.label}
 
                         {isConfigured(tab.id) && (
-                            <IonIcon icon={checkmarkCircleOutline} className="text-emerald-400 text-sm" />
+                            <IonIcon
+                                icon={checkmarkCircleOutline}
+                                className="text-emerald-400 text-sm"
+                            />
                         )}
                     </button>
                 ))}
@@ -400,7 +443,10 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             {/* Error */}
             {error && (
                 <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
-                    <IonIcon icon={alertCircleOutline} className="text-red-400 text-lg mt-0.5 shrink-0" />
+                    <IonIcon
+                        icon={alertCircleOutline}
+                        className="text-red-400 text-lg mt-0.5 shrink-0"
+                    />
 
                     <span className="text-sm text-red-700 leading-relaxed">{error}</span>
                 </div>
@@ -409,7 +455,10 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             {/* Success */}
             {success && (
                 <div className="mb-5 p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-2.5">
-                    <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-lg mt-0.5 shrink-0" />
+                    <IonIcon
+                        icon={checkmarkCircleOutline}
+                        className="text-emerald-500 text-lg mt-0.5 shrink-0"
+                    />
 
                     <span className="text-sm text-emerald-700 leading-relaxed">{success}</span>
                 </div>
@@ -421,44 +470,56 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                     {!webAuthnSupported ? (
                         <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
                             <p className="text-sm text-amber-800 leading-relaxed">
-                                Passkeys aren't supported on this device or browser. Try using a recovery phrase or backup file instead.
+                                {m['recovery.passkeyNotSupported']()}
                             </p>
                         </div>
                     ) : isConfigured('passkey') && !showUpdateForm ? (
-                        configuredRow('Passkey is set up', () => setShowUpdateForm(true))
+                        configuredRow(m['recovery.method.passkeySetup'](), () =>
+                            setShowUpdateForm(true)
+                        )
                     ) : (
                         <>
-                            {isUpdate && updateWarning('This will replace your current passkey.')}
+                            {isUpdate && updateWarning(m['recovery.replacePasskey']())}
 
                             <p className="text-sm text-grayscale-600 leading-relaxed">
-                                Use Face ID, Touch ID, or Windows Hello as your recovery method. Nothing to remember.
+                                {m['recovery.passkeyUseFaceId']()}
                             </p>
 
                             <div className="p-3 bg-amber-50 border border-amber-100 rounded-2xl">
                                 <p className="text-xs text-amber-700 leading-relaxed">
-                                    Passkeys with encryption are currently supported on desktop Chrome and Edge only.
+                                    {m['recovery.passkeyDesktopOnly']()}
                                 </p>
                             </div>
 
                             <div className="p-5 bg-emerald-50 border border-emerald-100 rounded-2xl">
                                 <div className="space-y-2.5 text-sm text-emerald-800">
                                     <div className="flex items-start gap-2.5">
-                                        <IonIcon icon={fingerPrint} className="text-emerald-600 text-lg mt-0.5 shrink-0" />
-                                        <span>Uses your device's secure biometric authentication</span>
+                                        <IonIcon
+                                            icon={fingerPrint}
+                                            className="text-emerald-600 text-lg mt-0.5 shrink-0"
+                                        />
+                                        <span>{m['recovery.passkeyBiometric']()}</span>
                                     </div>
 
                                     <div className="flex items-start gap-2.5">
-                                        <IonIcon icon={checkmarkCircleOutline} className="text-emerald-600 text-lg mt-0.5 shrink-0" />
-                                        <span>No password to remember</span>
+                                        <IonIcon
+                                            icon={checkmarkCircleOutline}
+                                            className="text-emerald-600 text-lg mt-0.5 shrink-0"
+                                        />
+                                        <span>{m['recovery.passkeyNoPassword']()}</span>
                                     </div>
                                 </div>
                             </div>
 
                             {primaryButton(
-                                isUpdate ? 'Replace Passkey' : 'Set Up Passkey',
+                                isUpdate
+                                    ? m['recovery.action.replacePasskey']()
+                                    : m['recovery.action.setUpPasskey'](),
                                 handlePasskeySetup,
                                 loading,
-                                isUpdate ? 'Replacing...' : 'Setting up...',
+                                isUpdate
+                                    ? m['recovery.action.settingUp']()
+                                    : m['recovery.action.settingUp']()
                             )}
 
                             {isUpdate && cancelUpdateButton()}
@@ -471,36 +532,42 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             {activeTab === 'phrase' && (
                 <div className="space-y-4">
                     {isConfigured('phrase') && !showUpdateForm && !recoveryPhrase ? (
-                        configuredRow('Phrase is saved', () => setShowUpdateForm(true))
+                        configuredRow(m['recovery.method.phraseSaved'](), () =>
+                            setShowUpdateForm(true)
+                        )
                     ) : !recoveryPhrase ? (
                         <>
-                            {isUpdate && updateWarning('This will generate a new phrase. Your previous phrase will no longer work.')}
+                            {isUpdate && updateWarning(m['recovery.generateNewPhrase']())}
 
                             <p className="text-sm text-grayscale-600 leading-relaxed">
-                                Generate a 25-word phrase that can restore your account from anywhere. Write it down and keep it safe.
+                                {m['recovery.phraseDescription']()}
                             </p>
 
                             <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
-                                <p className="text-sm font-medium text-amber-800 mb-2">Keep it safe</p>
+                                <p className="text-sm font-medium text-amber-800 mb-2">
+                                    {m['recovery.phraseKeepSafe']()}
+                                </p>
 
                                 <ul className="text-sm text-amber-700 space-y-1.5">
                                     <li className="flex items-start gap-2">
                                         <span className="text-amber-500 mt-0.5">•</span>
-                                        <span>Write it on paper and store it securely</span>
+                                        <span>{m['recovery.phraseWriteOnPaper']()}</span>
                                     </li>
 
                                     <li className="flex items-start gap-2">
                                         <span className="text-amber-500 mt-0.5">•</span>
-                                        <span>Never share it — anyone with this phrase has full access</span>
+                                        <span>{m['recovery.phraseNeverShare']()}</span>
                                     </li>
                                 </ul>
                             </div>
 
                             {primaryButton(
-                                isUpdate ? 'Generate New Phrase' : 'Generate Recovery Phrase',
+                                isUpdate
+                                    ? m['recovery.action.generateNewPhrase']()
+                                    : m['recovery.action.generatePhrase'](),
                                 handleGeneratePhrase,
                                 loading,
-                                'Generating...',
+                                m['recovery.generating']()
                             )}
 
                             {isUpdate && cancelUpdateButton()}
@@ -508,7 +575,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                     ) : (
                         <>
                             <div className="p-4 bg-grayscale-900 rounded-2xl">
-                                <p className="text-xs text-grayscale-400 mb-2 font-medium">Your Recovery Phrase</p>
+                                <p className="text-xs text-grayscale-400 mb-2 font-medium">
+                                    {m['recovery.yourRecoveryPhrase']()}
+                                </p>
 
                                 <p className="font-mono text-sm text-white leading-relaxed break-words">
                                     {recoveryPhrase}
@@ -519,8 +588,13 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                 onClick={handleCopyPhrase}
                                 className="w-full py-2.5 px-4 bg-grayscale-100 hover:bg-grayscale-200 rounded-[20px] flex items-center justify-center gap-2 text-sm text-grayscale-700 font-medium transition-colors"
                             >
-                                <IonIcon icon={phraseCopied ? checkmarkOutline : copyOutline} className="text-base" />
-                                {phraseCopied ? 'Copied!' : 'Copy to Clipboard'}
+                                <IonIcon
+                                    icon={phraseCopied ? checkmarkOutline : copyOutline}
+                                    className="text-base"
+                                />
+                                {phraseCopied
+                                    ? m['recovery.copied']()
+                                    : m['recovery.copyToClipboard']()}
                             </button>
 
                             {!phraseConfirmed && (
@@ -528,7 +602,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                     onClick={handleConfirmPhrase}
                                     className="w-full py-3 px-4 rounded-[20px] bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors"
                                 >
-                                    I've Saved It Somewhere Safe
+                                    {m['recovery.savedSomewhereSafe']()}
                                 </button>
                             )}
                         </>
@@ -540,62 +614,74 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             {activeTab === 'backup' && (
                 <div className="space-y-4">
                     {isConfigured('backup') && !showUpdateForm && !backupFileJson ? (
-                        configuredRow('Backup file created', () => setShowUpdateForm(true))
+                        configuredRow(m['recovery.backupCreated'](), () => setShowUpdateForm(true))
                     ) : !backupFileJson ? (
                         <>
-                            {isUpdate && updateWarning('This will generate a new backup file. Your previous backup file will no longer work.')}
+                            {isUpdate && updateWarning(m['recovery.generateNewBackup']())}
 
                             <p className="text-sm text-grayscale-600 leading-relaxed">
-                                Generate an encrypted backup file protected by a password. Store it somewhere safe — you'll need both the file and the password to recover.
+                                {m['recovery.backupDescription']()}
                             </p>
 
                             <div>
-                                <label className="block text-xs font-medium text-grayscale-700 mb-1.5">Backup Password</label>
+                                <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                                    {m['recovery.backupPassword']()}
+                                </label>
 
                                 <input
                                     type="password"
                                     value={backupPassword}
                                     onChange={e => setBackupPassword(e.target.value)}
-                                    placeholder="At least 8 characters"
+                                    placeholder={m['recovery.placeholder.minLength']()}
                                     className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-medium text-grayscale-700 mb-1.5">Confirm Password</label>
+                                <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                                    {m['recovery.confirmPassword']()}
+                                </label>
 
                                 <input
                                     type="password"
                                     value={confirmBackupPassword}
                                     onChange={e => setConfirmBackupPassword(e.target.value)}
-                                    placeholder="Type it again"
+                                    placeholder={m['recovery.placeholder.typeAgain']()}
                                     className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                                 />
                             </div>
 
                             {primaryButton(
-                                isUpdate ? 'Generate New Backup' : 'Generate Backup File',
+                                isUpdate
+                                    ? m['recovery.action.generateNewBackup']()
+                                    : m['recovery.action.generateBackup'](),
                                 handleBackupSetup,
                                 loading || !backupPassword || !confirmBackupPassword,
-                                'Generating...',
+                                m['recovery.generating']()
                             )}
 
-                            {isUpdate && cancelUpdateButton(() => {
-                                setBackupPassword('');
-                                setConfirmBackupPassword('');
-                            })}
+                            {isUpdate &&
+                                cancelUpdateButton(() => {
+                                    setBackupPassword('');
+                                    setConfirmBackupPassword('');
+                                })}
                         </>
                     ) : (
                         <>
                             <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
                                 <div className="flex items-start gap-2.5">
-                                    <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-lg mt-0.5 shrink-0" />
+                                    <IonIcon
+                                        icon={checkmarkCircleOutline}
+                                        className="text-emerald-500 text-lg mt-0.5 shrink-0"
+                                    />
 
                                     <div>
-                                        <p className="text-sm font-medium text-emerald-800 mb-1">Backup file ready</p>
+                                        <p className="text-sm font-medium text-emerald-800 mb-1">
+                                            {m['recovery.backupReady']()}
+                                        </p>
 
                                         <p className="text-xs text-emerald-700 leading-relaxed">
-                                            Download this file and store it somewhere safe. You'll need it along with your backup password to recover.
+                                            {m['recovery.backupReadyDesc']()}
                                         </p>
                                     </div>
                                 </div>
@@ -606,7 +692,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                 className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                             >
                                 <IonIcon icon={cloudDownloadOutline} className="text-base" />
-                                {backupDownloaded ? 'Download Again' : 'Download Backup File'}
+                                {backupDownloaded
+                                    ? m['recovery.action.downloadAgain']()
+                                    : m['recovery.action.downloadBackup']()}
                             </button>
 
                             {backupDownloaded && !backupConfirmed && (
@@ -614,7 +702,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                     onClick={handleConfirmBackup}
                                     className="w-full py-3 px-4 rounded-[20px] bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 transition-colors"
                                 >
-                                    I've Saved It Somewhere Safe
+                                    {m['recovery.savedSomewhereSafe']()}
                                 </button>
                             )}
                         </>
@@ -627,7 +715,9 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                 <div className="space-y-4">
                     {isConfigured('email') && !showUpdateForm ? (
                         configuredRow(
-                            emailMasked ? `Recovery email: ${emailMasked}` : 'Email recovery is set up',
+                            emailMasked
+                                ? `Recovery email: ${emailMasked}`
+                                : m['recovery.method.emailSetup'](),
                             () => {
                                 setShowUpdateForm(true);
                                 // Reset email flow for re-setup
@@ -642,23 +732,25 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                     ) : !emailVerified ? (
                         // Step 1 & 2: Verify email
                         <>
-                            {isUpdate && updateWarning('This will replace your current recovery email.')}
+                            {isUpdate && updateWarning(m['recovery.replaceEmail']())}
 
                             {!anyConfigured && (
                                 <span className="inline-block text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full">
-                                    Recommended
+                                    {m['recovery.recommended']()}
                                 </span>
                             )}
 
                             <p className="text-sm text-grayscale-600 leading-relaxed">
-                                Add a personal email (different from your login) as a recovery destination. A recovery key will be sent there.
+                                {m['recovery.emailDescription']()}
                             </p>
 
                             {!emailCodeSent ? (
                                 // Step 1: Enter email
                                 <>
                                     <div>
-                                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">Recovery Email</label>
+                                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                                            {m['recovery.recoveryEmail']()}
+                                        </label>
 
                                         <input
                                             type="email"
@@ -670,45 +762,54 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                     </div>
 
                                     {primaryButton(
-                                        'Send Verification Code',
+                                        m['recovery.sendVerificationCode'](),
                                         handleSendEmailCode,
                                         loading || !emailInput.includes('@'),
-                                        'Sending...',
+                                        m['recovery.sending']()
                                     )}
 
-                                    {isUpdate && cancelUpdateButton(() => {
-                                        setEmailInput('');
-                                        setEmailCodeSent(false);
-                                    })}
+                                    {isUpdate &&
+                                        cancelUpdateButton(() => {
+                                            setEmailInput('');
+                                            setEmailCodeSent(false);
+                                        })}
                                 </>
                             ) : (
                                 // Step 2: Enter code
                                 <>
                                     <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl">
                                         <p className="text-sm text-emerald-700 leading-relaxed">
-                                            We sent a 6-digit code to <strong>{emailInput}</strong>. Check your inbox.
+                                            {m['recovery.emailCodeSent']()}{' '}
+                                            <strong>{emailInput}</strong>.{' '}
+                                            {m['recovery.checkInbox']()}
                                         </p>
                                     </div>
 
                                     <div>
-                                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">Verification Code</label>
+                                        <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
+                                            {m['recovery.verificationCode']()}
+                                        </label>
 
                                         <input
                                             type="text"
                                             inputMode="numeric"
                                             maxLength={6}
                                             value={emailCode}
-                                            onChange={e => setEmailCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                            onChange={e =>
+                                                setEmailCode(
+                                                    e.target.value.replace(/\D/g, '').slice(0, 6)
+                                                )
+                                            }
                                             placeholder="123456"
                                             className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white text-center tracking-[0.3em] font-mono"
                                         />
                                     </div>
 
                                     {primaryButton(
-                                        'Verify Code',
+                                        m['recovery.verifyCode'](),
                                         handleVerifyEmailCode,
                                         loading || emailCode.length !== 6,
-                                        'Verifying...',
+                                        m['common.verifying']()
                                     )}
 
                                     <button
@@ -718,7 +819,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                         }}
                                         className="w-full py-2.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
                                     >
-                                        Use a different email
+                                        {m['recovery.useDifferentEmail']()}
                                     </button>
                                 </>
                             )}
@@ -727,24 +828,29 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         // Step 3: Email verified, send recovery share
                         <>
                             <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-2.5">
-                                <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-lg mt-0.5 shrink-0" />
+                                <IonIcon
+                                    icon={checkmarkCircleOutline}
+                                    className="text-emerald-500 text-lg mt-0.5 shrink-0"
+                                />
 
                                 <div>
-                                    <p className="text-sm font-medium text-emerald-800">Email verified</p>
+                                    <p className="text-sm font-medium text-emerald-800">
+                                        {m['recovery.emailVerified']()}
+                                    </p>
 
                                     <p className="text-xs text-emerald-700 mt-0.5">{emailMasked}</p>
                                 </div>
                             </div>
 
                             <p className="text-sm text-grayscale-600 leading-relaxed">
-                                We'll send a recovery key to this email. If you ever lose access, just check your inbox and paste the key to recover.
+                                {m['recovery.emailKeyDescription']()}
                             </p>
 
                             {primaryButton(
-                                'Send Recovery Key',
+                                m['recovery.sendRecoveryKey'](),
                                 handleSetupEmailRecovery,
                                 loading,
-                                'Sending...',
+                                m['recovery.sending']()
                             )}
 
                             {isUpdate && cancelUpdateButton()}
@@ -753,13 +859,20 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         // Step 4: Done
                         <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
                             <div className="flex items-start gap-2.5">
-                                <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-lg mt-0.5 shrink-0" />
+                                <IonIcon
+                                    icon={checkmarkCircleOutline}
+                                    className="text-emerald-500 text-lg mt-0.5 shrink-0"
+                                />
 
                                 <div>
-                                    <p className="text-sm font-medium text-emerald-800 mb-1">Recovery key sent</p>
+                                    <p className="text-sm font-medium text-emerald-800 mb-1">
+                                        {m['recovery.recoveryKeySentTitle']()}
+                                    </p>
 
                                     <p className="text-xs text-emerald-700 leading-relaxed">
-                                        Check your inbox at {emailMasked}. Keep that email safe — you'll need the recovery key if you ever lose access.
+                                        {m['recovery.recoveryKeySentDesc']({
+                                            email: emailMasked ?? '',
+                                        })}
                                     </p>
                                 </div>
                             </div>
@@ -772,9 +885,8 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
             {anyConfigured && configuredCount < tabs.length && (
                 <p className="mt-4 text-center text-xs text-grayscale-500 leading-relaxed">
                     {configuredCount === 1
-                        ? 'We recommend setting up at least two recovery methods.'
-                        : 'Adding another method improves your security.'
-                    }
+                        ? m['recovery.recommendTwo']()
+                        : m['recovery.addingMethod']()}
                 </p>
             )}
 
@@ -784,7 +896,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                     onClick={onClose}
                     className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                 >
-                    {anyConfigured ? 'Done' : 'Skip for Now'}
+                    {anyConfigured ? m['common.done']() : m['common.skipForNow']()}
                 </button>
             </div>
         </div>

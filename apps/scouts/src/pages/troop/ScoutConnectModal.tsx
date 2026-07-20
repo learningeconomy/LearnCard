@@ -5,7 +5,7 @@ import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 
 import useDebounce from '../../hooks/useDebounce';
-import { useGetProfile, walletStore } from 'learn-card-base';
+import { useGetProfile } from 'learn-card-base';
 import { useWallet } from 'learn-card-base';
 import { ModalTypes, useModal } from 'learn-card-base';
 
@@ -20,6 +20,7 @@ import useBoost from '../../components/boost/hooks/useBoost';
 import { BoostCMSIssueTo, ShortBoostState } from '../../components/boost/boost';
 import { useHistory } from 'react-router';
 import { BoostIssuanceLoading } from '../../components/boost/boostLoader/BoostLoader';
+import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 
 import {
     useCountBoostRecipients,
@@ -31,6 +32,8 @@ import {
 } from 'learn-card-base';
 
 import { VC } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('scout-connect-modal');
 
 // Types
 interface ScoutConnectModalProps {
@@ -114,7 +117,7 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
             setState(INITIAL_STATE);
             closeAllModals();
         } catch (error) {
-            console.error('Error handling boost:', error);
+            log.error('Error handling boost:', error);
             presentToast('Failed to process boost', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -124,7 +127,6 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
 
     const generateBoostClaimLink = useDebounce(async () => {
         try {
-            walletStore.set.wallet(null);
             const wallet = await initWallet();
             const rsas = await wallet?.invoke?.getRegisteredSigningAuthorities();
 
@@ -139,7 +141,9 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                 );
 
                 setClaimLink(
-                    `https://pass.scout.org/claim/boost?claim=true&boostUri=${boostClaimLink?.boostUri}&challenge=${boostClaimLink?.challenge}`
+                    `${getAppBaseUrl()}/claim/boost?claim=true&boostUri=${
+                        boostClaimLink?.boostUri
+                    }&challenge=${boostClaimLink?.challenge}`
                 );
             } else {
                 // Handle new signing authority creation
@@ -166,12 +170,14 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                     );
 
                     setClaimLink(
-                        `https://pass.scout.org/claim/boost?claim=true&boostUri=${boostClaimLink?.boostUri}&challenge=${boostClaimLink?.challenge}`
+                        `${getAppBaseUrl()}/claim/boost?claim=true&boostUri=${
+                            boostClaimLink?.boostUri
+                        }&challenge=${boostClaimLink?.challenge}`
                     );
                 }
             }
         } catch (error) {
-            console.error('Error generating claim link:', error);
+            log.error('Error generating claim link:', error);
             presentToast('Failed to generate claim link', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -248,13 +254,13 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
                 {/* Copy to Clipboard */}
                 <IonItem lines="none" className="mt-2">
                     <div className="flex flex-row items-center p-5 gap-[10px] w-full h-[70px] bg-[#EFF0F5] rounded-[15px] flex-none order-0 flex-grow-0">
-                        <div className="flex flex-row items-center gap-[15px] w-[235px] h-[19px] flex-none order-0 flex-grow-1">
+                        <div className="flex flex-row items-center gap-[15px] h-[19px] flex-1 min-w-0 order-0">
                             {linkLoading ? (
-                                <p className="w-[235px] h-[19px] font-['Noto_Sans'] font-normal text-[14px] leading-[19px] flex items-center text-[#6F7590] flex-none order-0 self-stretch flex-grow-0">
+                                <p className="w-full min-w-0 h-[19px] font-['Noto_Sans'] font-normal text-[14px] leading-[19px] flex items-center text-[#6F7590] flex-none order-0 self-stretch truncate">
                                     Generating Link...
                                 </p>
                             ) : (
-                                <p className="w-[235px] h-[19px] font-['Noto_Sans'] font-normal text-[14px] leading-[19px] flex items-center text-[#6F7590] flex-none order-0 self-stretch flex-grow-0 truncate">
+                                <p className="w-full min-w-0 h-[19px] font-['Noto_Sans'] font-normal text-[14px] leading-[19px] flex items-center text-[#6F7590] flex-none order-0 self-stretch truncate">
                                     {!claimLink ? 'Failed to generate link' : claimLink}
                                 </p>
                             )}
@@ -262,7 +268,7 @@ const ScoutConnectModal: React.FC<ScoutConnectModalProps> = ({
 
                         <div
                             onClick={copyTroopLinkToClipBoard}
-                            className="w-[30px] h-[30px] flex-shrink-0 ml-auto cursor-pointer"
+                            className="w-[30px] h-[30px] flex-shrink-0 cursor-pointer"
                         >
                             <CopyStack className="w-full h-full text-[#18224E]" />
                         </div>

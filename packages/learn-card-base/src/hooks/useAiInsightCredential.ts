@@ -6,6 +6,7 @@ import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import {
     aiInsightRefreshStore,
     clearAiInsightRefreshState,
+    setAiInsightRefreshPending,
 } from 'learn-card-base/stores/aiInsightRefreshStore';
 
 import { CredentialCategoryEnum, categoryMetadata } from 'learn-card-base';
@@ -13,6 +14,13 @@ import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers
 
 import { LCR } from 'learn-card-base/types/credential-records';
 import { VCValidator, VC } from '@learncard/types';
+import { getLogger } from '../logging/logger';
+import { useAiFeatureGate } from './useAiFeatureGate';
+import { useGetCurrentLCNUser } from './useGetCurrentLCNUser';
+import { useConsentedContracts } from './useConsentedContracts';
+import { useGetCredentialsForSkills } from '../react-query/queries/vcQueries';
+import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from '../constants/aiPassport';
+const log = getLogger('use-ai-insight-credential');
 
 // Types for pathway data
 interface PathwayStep {
@@ -32,18 +40,77 @@ interface PathwayItem {
 }
 
 const queryKey = ['useAiInsightCredential'];
+const existingAiInsightCredentialQueryKey = ['useExistingAiInsightCredential'];
+const ONE_WEEK_MS = 1000 * 60 * 60 * 24 * 7;
 const AI_INSIGHT_REFRESH_POLL_INTERVAL_MS = 5000; // 5 seconds
 const AI_INSIGHT_REFRESH_MAX_WAIT_MS = 5 * 60 * 1000; // 5 minutes
 const ENABLE_AI_INSIGHT_CREDENTIAL_LOGS = false;
+const AI_INSIGHT_NO_CREDENTIALS_ERROR_MESSAGE =
+    'Add at least one credential before generating AI Insights.';
+const inFlightAiInsightCreations = new Map<string, Promise<VC | null>>();
+
+const clearAiInsightCredentialQueryData = (queryClient: QueryClient) => {
+    queryClient.setQueryData(queryKey, null);
+    queryClient.setQueryData(existingAiInsightCredentialQueryKey, null);
+};
+
+const syncAiInsightCredentialQueryData = (
+    queryClient: QueryClient,
+    aiInsightCredential: VC | null
+) => {
+    if (aiInsightCredential) {
+        queryClient.setQueryData(queryKey, aiInsightCredential);
+        queryClient.setQueryData(existingAiInsightCredentialQueryKey, aiInsightCredential);
+        return;
+    }
+
+    clearAiInsightCredentialQueryData(queryClient);
+};
+
+const clearAiInsightCredentialFromWallet = async (wallet: BespokeLearnCard): Promise<void> => {
+    const existingRecords = await wallet.index.LearnCloud.get({ id: '__ai_insight__' });
+    const existingRecord = existingRecords?.[0];
+
+    if (!existingRecord) return;
+
+    try {
+        const learnCloudStore = wallet.store?.LearnCloud as
+            | {
+                  delete?: (uri: string) => Promise<boolean>;
+              }
+            | undefined;
+        const deleted = await learnCloudStore?.delete?.(existingRecord.uri);
+
+        if (deleted) return;
+    } catch (error) {
+        logAiInsightCredentialError(
+            'Failed to delete AI insight credential from LearnCloud',
+            error,
+            {
+                credentialId: existingRecord.id,
+                credentialUri: existingRecord.uri,
+            }
+        );
+    }
+
+    try {
+        await wallet.index.LearnCloud.remove(existingRecord.id);
+    } catch (error) {
+        logAiInsightCredentialError('Failed to remove AI insight credential index record', error, {
+            credentialId: existingRecord.id,
+            credentialUri: existingRecord.uri,
+        });
+    }
+};
 
 const logAiInsightCredential = (message: string, data?: Record<string, unknown>) => {
     if (!ENABLE_AI_INSIGHT_CREDENTIAL_LOGS) return;
 
     try {
         if (data) {
-            console.log(`[AiInsightCredential] ${message}`, data);
+            log.debug(`[AiInsightCredential] ${message}`, data);
         } else {
-            console.log(`[AiInsightCredential] ${message}`);
+            log.debug(`[AiInsightCredential] ${message}`);
         }
     } catch {
         // logging should never break credential creation
@@ -58,13 +125,16 @@ const logAiInsightCredentialError = (
     if (!ENABLE_AI_INSIGHT_CREDENTIAL_LOGS) return;
 
     try {
-        console.error(`[AiInsightCredential] ${message}`, data ?? {}, err);
+        log.error(`[AiInsightCredential] ${message}`, data ?? {}, err);
     } catch {
         // logging should never break credential creation
     }
 };
 
-export const createAiInsightCredential = async (wallet: BespokeLearnCard) => {
+const createAiInsightCredentialInternal = async (
+    wallet: BespokeLearnCard,
+    queryClient?: QueryClient
+): Promise<VC | null> => {
     const did = wallet.id.did();
 
     logAiInsightCredential('Requesting AI insight credential', {
@@ -79,6 +149,20 @@ export const createAiInsightCredential = async (wallet: BespokeLearnCard) => {
             headers: { 'Content-Type': 'application/json' },
         }
     );
+
+    if (response.status === 204) {
+        await clearAiInsightCredentialFromWallet(wallet);
+
+        if (queryClient) {
+            clearAiInsightCredentialQueryData(queryClient);
+        }
+
+        logAiInsightCredential('AI insight request returned 204; cleared cached insight', {
+            did,
+        });
+
+        return null;
+    }
 
     const responseText = await response.text();
 
@@ -153,13 +237,40 @@ export const createAiInsightCredential = async (wallet: BespokeLearnCard) => {
     return parsedCredential;
 };
 
+export const createAiInsightCredential = async (
+    wallet: BespokeLearnCard,
+    queryClient?: QueryClient
+): Promise<VC | null> => {
+    const did = wallet.id.did();
+    const inFlightKey = `${did}|${networkStore.get.aiServiceUrl()}`;
+    const inFlightCreation = inFlightAiInsightCreations.get(inFlightKey);
+
+    if (inFlightCreation) {
+        if (!queryClient) return inFlightCreation;
+
+        return inFlightCreation.then(aiInsightCredential => {
+            syncAiInsightCredentialQueryData(queryClient, aiInsightCredential);
+
+            return aiInsightCredential;
+        });
+    }
+
+    const creation = createAiInsightCredentialInternal(wallet, queryClient).finally(() => {
+        inFlightAiInsightCreations.delete(inFlightKey);
+    });
+
+    inFlightAiInsightCreations.set(inFlightKey, creation);
+
+    return creation;
+};
+
 export const getOrCreateAiInsightCredential = async (
     wallet: BespokeLearnCard,
     queryClient: QueryClient,
     skipCache = false
-): Promise<VC> => {
+): Promise<VC | null> => {
     if (!skipCache) {
-        const cachedCredential = queryClient.getQueryData<VC>(queryKey);
+        const cachedCredential = queryClient.getQueryData<VC | null>(queryKey);
 
         if (cachedCredential) return cachedCredential;
     }
@@ -174,19 +285,48 @@ export const getOrCreateAiInsightCredential = async (
         return VCValidator.parseAsync(aiInsightCredential);
     }
 
-    const aiInsightCredential = await createAiInsightCredential(wallet);
+    const aiInsightCredential = await createAiInsightCredential(wallet, queryClient);
 
     if (!skipCache) queryClient.setQueryData(queryKey, aiInsightCredential);
 
     return aiInsightCredential;
 };
 
-export const useAiInsightCredential = () => {
+export const useAiInsightCredential = ({ enabled = true }: { enabled?: boolean } = {}) => {
     const queryClient = useQueryClient();
     const { initWallet } = useWallet();
+    const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
+    const { isAiEnabled, isLoading: aiFeatureGateLoading } = useAiFeatureGate();
+    const baseQueryEnabled =
+        enabled &&
+        !aiFeatureGateLoading &&
+        isAiEnabled &&
+        !currentLCNUserLoading &&
+        Boolean(currentLCNUser);
+
+    const { data: resolvedCredentials, isLoading: resolvedCredentialsLoading } =
+        useGetCredentialsForSkills(baseQueryEnabled);
+    const { data: consentedContracts = [], isLoading: consentedContractsLoading } =
+        useConsentedContracts();
+    const hasLearnCardAiConsent = consentedContracts.some(
+        (consent: { contract?: { uri?: string | null }; status?: string | null }) =>
+            consent?.contract?.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI &&
+            consent?.status !== 'withdrawn'
+    );
     const refreshStatus = aiInsightRefreshStore.use.status();
     const requestedAt = aiInsightRefreshStore.use.requestedAt();
     const baselineCredentialId = aiInsightRefreshStore.use.baselineCredentialId();
+
+    const hasCachedAiInsightCredential = Boolean(
+        queryClient.getQueryData<VC | null>(existingAiInsightCredentialQueryKey)
+    );
+    const canGenerateAiInsightCredential =
+        baseQueryEnabled &&
+        !resolvedCredentialsLoading &&
+        !consentedContractsLoading &&
+        (Number(resolvedCredentials?.length ?? 0) > 0 ||
+            hasLearnCardAiConsent ||
+            hasCachedAiInsightCredential);
 
     logAiInsightCredential('Hook state', {
         refreshStatus,
@@ -194,8 +334,9 @@ export const useAiInsightCredential = () => {
         baselineCredentialId,
     });
 
-    const query = useQuery({
+    const query = useQuery<VC | null>({
         queryKey: ['useAiInsightCredential'],
+        enabled: canGenerateAiInsightCredential,
         queryFn: async () => {
             const wallet = await initWallet();
 
@@ -216,7 +357,19 @@ export const useAiInsightCredential = () => {
                     }
                 );
 
-                const credential = await createAiInsightCredential(wallet);
+                const credential = await createAiInsightCredential(wallet, queryClient);
+
+                if (!credential) {
+                    logAiInsightCredential(
+                        'Query fetch complete via refresh path with no content',
+                        {
+                            requestedAt,
+                            baselineCredentialId,
+                        }
+                    );
+
+                    return null;
+                }
 
                 logAiInsightCredential('Query fetch complete via refresh path', {
                     credentialId: credential.id,
@@ -229,6 +382,15 @@ export const useAiInsightCredential = () => {
 
             const credential = await getOrCreateAiInsightCredential(wallet, queryClient, true);
 
+            if (!credential) {
+                logAiInsightCredential('Query fetch complete with no content', {
+                    requestedAt,
+                    baselineCredentialId,
+                });
+
+                return null;
+            }
+
             logAiInsightCredential('Query fetch complete', {
                 credentialId: credential.id,
                 issuanceDate: credential.issuanceDate,
@@ -237,6 +399,7 @@ export const useAiInsightCredential = () => {
             return credential;
         },
         staleTime: 1000 * 60 * 60 * 24 * 7, // 1 week
+        retry: false,
         refetchInterval: refreshStatus === 'pending' ? AI_INSIGHT_REFRESH_POLL_INTERVAL_MS : false,
     });
 
@@ -317,6 +480,40 @@ export const useAiInsightCredential = () => {
     return query;
 };
 
+/**
+ * Read-only lookup for an EXISTING AI insight credential.
+ *
+ * Unlike {@link useAiInsightCredential}, this hook NEVER triggers the
+ * get-or-create path: it only reads the `__ai_insight__` LearnCloud index
+ * record and resolves the stored credential. If no record exists it resolves
+ * to `undefined` instead of POSTing to the AI service to generate one.
+ *
+ * Use this on surfaces (e.g. the dashboard) that every user lands on, where
+ * we must not incur AI generation as a side effect of simply rendering.
+ */
+export const useExistingAiInsightCredential = ({ enabled = true }: { enabled?: boolean } = {}) => {
+    const { initWallet } = useWallet();
+
+    return useQuery<VC | null>({
+        queryKey: ['useExistingAiInsightCredential'],
+        enabled,
+        queryFn: async (): Promise<VC | null> => {
+            const wallet = await initWallet();
+
+            const record = await wallet.index.LearnCloud.get({ id: '__ai_insight__' });
+
+            if (!record?.length) return null;
+
+            const aiInsightCredential = await wallet.read.get(record[0].uri);
+
+            if (!aiInsightCredential) return null;
+
+            return VCValidator.parseAsync(aiInsightCredential);
+        },
+        staleTime: ONE_WEEK_MS,
+    });
+};
+
 export const useAiPathways = () => {
     const { data: aiInsightCredential } = useAiInsightCredential();
     const { initWallet, resolveCredential } = useWallet();
@@ -332,7 +529,7 @@ export const useAiPathways = () => {
                     try {
                         return await resolveCredential(uri);
                     } catch (e) {
-                        console.warn('Failed to resolve pathway credential:', uri, e);
+                        log.warn('Failed to resolve pathway credential:', uri, e);
                         return undefined;
                     }
                 })
@@ -360,7 +557,7 @@ export const useAiPathways = () => {
                             );
                             topicUri = topic?.uri;
                         } catch (e) {
-                            console.warn('Failed to fetch familial boosts for pathway', e);
+                            log.warn('Failed to fetch familial boosts for pathway', e);
                         }
                     }
 
@@ -388,14 +585,77 @@ export const useAiPathways = () => {
 export const useAiInsightCredentialMutation = () => {
     const queryClient = useQueryClient();
     const { initWallet } = useWallet();
+    const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
+    const { isAiEnabled, isLoading: aiFeatureGateLoading } = useAiFeatureGate();
+    const baseQueryEnabled =
+        !aiFeatureGateLoading && isAiEnabled && !currentLCNUserLoading && Boolean(currentLCNUser);
+    const { data: resolvedCredentials, isLoading: resolvedCredentialsLoading } =
+        useGetCredentialsForSkills(baseQueryEnabled);
+    const { data: consentedContracts = [], isLoading: consentedContractsLoading } =
+        useConsentedContracts();
+    const hasLearnCardAiConsent = consentedContracts.some(
+        (consent: { contract?: { uri?: string | null }; status?: string | null }) =>
+            consent?.contract?.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI &&
+            consent?.status !== 'withdrawn'
+    );
+    const hasWalletCredentials = Number(resolvedCredentials?.length ?? 0) > 0;
+    const hasCachedAiInsightCredential = Boolean(
+        queryClient.getQueryData<VC | null>(existingAiInsightCredentialQueryKey)
+    );
+    const setRefreshPending = () => {
+        const baselineCredentialId =
+            queryClient.getQueryData<VC | null>(existingAiInsightCredentialQueryKey)?.id ??
+            queryClient.getQueryData<VC | null>(queryKey)?.id ??
+            null;
+
+        setAiInsightRefreshPending({
+            requestedAt: Date.now(),
+            baselineCredentialId,
+        });
+    };
 
     return useMutation({
-        mutationFn: async () => createAiInsightCredential(await initWallet()),
+        mutationFn: async () => {
+            if (aiFeatureGateLoading) {
+                throw new Error('AI features are still loading.');
+            }
+
+            if (!isAiEnabled) {
+                throw new Error('AI features are not enabled for this account.');
+            }
+
+            if (currentLCNUserLoading) {
+                throw new Error('Your profile is still loading. Please try again.');
+            }
+
+            if (!currentLCNUser) {
+                throw new Error('Please create a profile first.');
+            }
+
+            if (resolvedCredentialsLoading || consentedContractsLoading) {
+                throw new Error('Your data is still loading. Please try again.');
+            }
+
+            if (!hasWalletCredentials && !hasLearnCardAiConsent && !hasCachedAiInsightCredential) {
+                throw new Error(AI_INSIGHT_NO_CREDENTIALS_ERROR_MESSAGE);
+            }
+
+            setRefreshPending();
+
+            const wallet = await initWallet();
+
+            return createAiInsightCredential(wallet, queryClient);
+        },
         onSuccess: aiInsightCredential => {
             clearAiInsightRefreshState();
             queryClient.setQueryData(queryKey, aiInsightCredential);
+            queryClient.setQueryData(existingAiInsightCredentialQueryKey, aiInsightCredential);
+            queryClient.invalidateQueries({ queryKey: existingAiInsightCredentialQueryKey });
             queryClient.invalidateQueries({ queryKey: ['useAiPathways'] });
             queryClient.invalidateQueries({ queryKey: ['training-programs'] });
+        },
+        onError: () => {
+            clearAiInsightRefreshState();
         },
     });
 };

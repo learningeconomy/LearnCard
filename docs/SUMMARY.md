@@ -15,6 +15,7 @@
 ## ✅ How-To Guides
 
 -   [Send Credentials](how-to-guides/send-credentials.md)
+-   [Export & Import Your Data](how-to-guides/export-and-import-your-data.md)
 -   [Create Signing Authority](how-to-guides/create-signing-authority.md)
 -   [Interoperate with LearnCard](how-to-guides/interoperate-with-learncard.md)
 -   [Verify My Issuer](how-to-guides/verify-my-issuer.md)
@@ -105,6 +106,7 @@
 -   [Partner Connect SDK](sdks/partner-connect.md)
 -   [Plugins](sdks/official-plugins/README.md)
 -   [LearnCard CLI](sdks/learncard-cli.md)
+    -   [Holder Continuity Export](sdks/learncard-cli.md#holder-continuity-export)
 
 ## 🧠 Core Concepts
 
@@ -117,11 +119,13 @@
     -   [Network Profiles](core-concepts/identities-and-keys/network-profiles.md)
     -   [Signing Authorities](core-concepts/identities-and-keys/signing-authorities.md)
     -   [Trust Registries](core-concepts/identities-and-keys/trust-registries.md)
+-   [Holder Continuity](core-concepts/holder-continuity.md)
 -   [Credentials & Data](core-concepts/credentials-and-data/README.md)
     -   [Verifiable Credentials (VCs)](core-concepts/credentials-and-data/verifiable-credentials-vcs.md)
     -   [Credential Lifecycle](core-concepts/credentials-and-data/credential-lifecycle.md)
     -   [Credential Status & Bitstring Status Lists](core-concepts/credentials-and-data/credential-status-and-bitstring-status-lists.md)
     -   [Schemas, Types, & Categories](core-concepts/credentials-and-data/achievement-types-and-categories.md)
+    -   [Display Hint Tags (`lc:` convention)](core-concepts/credentials-and-data/display-hint-tags.md)
     -   [Building Verifiable Credentials](core-concepts/credentials-and-data/building-verifiable-credentials.md)
     -   [Boost Credentials](core-concepts/credentials-and-data/boost-credentials.md)
     -   [Getting Started with Boosts](core-concepts/credentials-and-data/getting-started-with-boosts.md)
@@ -135,6 +139,7 @@
     -   [Consent Transactions](core-concepts/consent-and-permissions/consent-transactions.md)
     -   [Auto-Boosts](core-concepts/consent-and-permissions/auto-boosts.md)
     -   [Writing Consented Data](core-concepts/consent-and-permissions/writing-consented-data.md)
+    -   [Verifiable Data in ConsentFlow](core-concepts/consent-and-permissions/verifiable-data-in-consentflow.md)
     -   [Accessing Consented Data](core-concepts/consent-and-permissions/accessing-consented-data.md)
     -   [GameFlow Overview](core-concepts/consent-and-permissions/gameflow-overview.md)
 -   [Network & Interactions](core-concepts/network-and-interactions/README.md)

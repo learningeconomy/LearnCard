@@ -7,6 +7,7 @@ import OpenSyllabusMetaData from './OpenSyllabusMetaData';
 import BoostSideMenuMediaDetails from './BoostSideMenuMediaDetails';
 import BoostDisplayStyleSelector from './BoostDisplayStyleSelector';
 import CredentialResultsBox from './CredentialResultsBox';
+import SdJwtVcClaimsBox from './SdJwtVcClaimsBox';
 import CredentialIssuerInformation from './CredentialIssuerInformation';
 import EndorsementCard from '../../../boost-endorsements/EndorsementCard';
 import BoostPreviewTabs from '../../../boost-preview-tabs/BoostPreviewTabs';
@@ -18,6 +19,7 @@ import AlignmentsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/A
 import TruncateTextBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/TruncateTextBox';
 import VerificationsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/VerificationsBox';
 import MediaAttachmentsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/MediaAttachmentBoxCerts';
+import PreviewVerificationBox from './PreviewVerificationBox';
 
 import { useGetVCInfo, boostPreviewStore, BoostPreviewTabsEnum } from 'learn-card-base';
 
@@ -33,6 +35,7 @@ import {
 import { VC, VerificationItem } from '@learncard/types';
 import { UnsignedVC } from '@learncard/types';
 import moment from 'moment';
+import * as m from '../../../../paraglide/messages.js';
 
 type BoostDetailsSideBarProps = {
     credential: VC;
@@ -46,6 +49,8 @@ type BoostDetailsSideBarProps = {
     isEarnedBoost?: boolean;
     isClrChildCredential?: boolean;
     renderMethodCredential?: VC | UnsignedVC;
+    issuancesSummaryComponent?: React.ReactNode;
+    isPreview?: boolean;
 };
 const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     credential,
@@ -59,6 +64,8 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     isEarnedBoost,
     isClrChildCredential = false,
     renderMethodCredential,
+    issuancesSummaryComponent,
+    isPreview = false,
 }) => {
     const enableRenderMethod = useRenderMethodEnabled();
 
@@ -114,8 +121,8 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
             activeTabDetails = (
                 <>
                     <TruncateTextBox
-                        headerText="Details"
-                        subHeaderText={`${isMediaDisplay ? title : 'About'}`}
+                        headerText={m['common.details']()}
+                        subHeaderText={`${isMediaDisplay ? title : m['common.about']()}`}
                         text={description}
                         displayTextBelowChildren={isMediaDisplay}
                         subHeaderTextClassName="text-[17px] text-grayscale-900 font-semibold"
@@ -144,6 +151,15 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                         )}
                     </TruncateTextBox>
 
+                    {issuancesSummaryComponent && (
+                        <div className="p-[15px] bg-white flex flex-col items-start gap-[10px] rounded-[20px] w-full shadow-bottom-2-4">
+                            <h3 className="text-[22px] leading-[130%] tracking-[-0.25px] text-grayscale-900 font-notoSans">
+                                Issuances
+                            </h3>
+                            {issuancesSummaryComponent}
+                        </div>
+                    )}
+
                     {!isMediaDisplay && renderMethodCredential && enableRenderMethod && (
                         <BoostDisplayStyleSelector
                             credential={renderMethodCredential}
@@ -153,7 +169,14 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
 
                     <CredentialResultsBox results={results} creditsEarned={creditsEarned} />
 
-                    {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
+                    <SdJwtVcClaimsBox credential={credential} />
+
+                    {criteria && (
+                        <TruncateTextBox
+                            headerText={m['boost.cms.preview.criteria']()}
+                            text={criteria}
+                        />
+                    )}
 
                     <CredentialIssuerInformation credential={credential} />
 
@@ -192,10 +215,20 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                             />
                         )}
 
-                    {alignment && <AlignmentsBox alignment={alignment} style="Certificate" />}
+                    {alignment && (
+                        <AlignmentsBox
+                            alignment={alignment}
+                            style={m['boost.cms.preview.certificate']()}
+                        />
+                    )}
 
-                    {verificationItems && verificationItems?.length > 0 && (
-                        <VerificationsBox verificationItems={verificationItems} />
+                    {isPreview ? (
+                        <PreviewVerificationBox />
+                    ) : (
+                        verificationItems &&
+                        verificationItems?.length > 0 && (
+                            <VerificationsBox verificationItems={verificationItems} />
+                        )
                     )}
                 </>
             );

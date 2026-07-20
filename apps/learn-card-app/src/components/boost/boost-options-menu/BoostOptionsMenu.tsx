@@ -1,6 +1,8 @@
 import React from 'react';
 
+import * as m from '../../../paraglide/messages.js';
 import TrashBin from '../../svgs/TrashBin';
+import Settings from '../../svgs/Settings';
 import ShareBoostLink from './ShareBoostLink';
 import JsonPreviewModal from './JsonPreviewModal';
 import BracketsIcon from '../../svgs/BracketsIcon';
@@ -20,6 +22,13 @@ type BoostOptionsMenuProps = {
     record?: Partial<LCR>;
     menuType?: BoostMenuType;
     categoryType?: string;
+    handleManageIssuances?: () => void;
+    /**
+     * For managed boosts: whether the boost is a DRAFT. Deleting is only offered for drafts
+     * (a LIVE managed boost has issued credentials). When omitted, delete is left enabled to
+     * preserve existing behavior for non-status-aware callers.
+     */
+    isDraft?: boolean;
 };
 
 const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
@@ -30,6 +39,8 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
     record: _record,
     menuType,
     categoryType,
+    handleManageIssuances,
+    isDraft,
 }) => {
     const confirm = useConfirmation();
 
@@ -65,7 +76,7 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
 
     const selfBoostConfirmationAlert = async () => {
         await confirm({
-            text: 'Are you sure you want to delete this?',
+            text: m['boost.confirmDelete'](),
             onConfirm: async () => {
                 await handleDelete();
                 closeAllModals();
@@ -92,10 +103,24 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
         onClick?: () => void;
     }[] = [];
 
-    if (menuType === BoostMenuType.managed || record?.id) {
+    if (menuType === BoostMenuType.managed && handleManageIssuances) {
+        boostMenuOptions.push({
+            id: 0,
+            title: m['boost.menu.manageIssuances'](),
+            icon: <Settings className="text-grayscale-900 w-5 h-5" />,
+            onClick: () => handleManageIssuances(),
+        });
+    }
+
+    // Managed boosts: only offer Delete on DRAFTs (a LIVE managed boost has issued
+    // credentials). `isDraft === undefined` preserves prior always-on behavior for callers
+    // that don't pass status. Other menu types fall back to "has a record" as before.
+    const canDelete = menuType === BoostMenuType.managed ? isDraft !== false : Boolean(record?.id);
+
+    if (canDelete) {
         boostMenuOptions.push({
             id: 1,
-            title: 'Delete',
+            title: m['common.delete'](),
             icon: <TrashBin className="text-grayscale-900" />,
             onClick: () => selfBoostConfirmationAlert(),
         });
@@ -104,7 +129,7 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
     if (menuType === BoostMenuType.earned) {
         boostMenuOptions.push({
             id: 2,
-            title: 'Share',
+            title: m['common.share'](),
             icon: <ReplyIcon version="2" className="text-grayscale-900" />,
             onClick: () => handleShare(),
         });
@@ -112,7 +137,7 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
 
     boostMenuOptions.push({
         id: 3,
-        title: 'View Data',
+        title: m['boost.menu.viewData'](),
         icon: <BracketsIcon className="text-grayscale-900" />,
         onClick: () => presentViewJsonModal(),
     });
