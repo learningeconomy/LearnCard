@@ -27,6 +27,7 @@ export const useGetChecklistCredentialCounts = () => {
                 wallet.index.LearnCloud.get({ category: UploadTypesEnum.Certificate }),
                 wallet.index.LearnCloud.get({ category: UploadTypesEnum.Transcript }),
                 wallet.index.LearnCloud.get({ category: UploadTypesEnum.Diploma }),
+                // Imported credentials span many categories, so uploadType is their stable source tag.
                 wallet.index.LearnCloud.get({ uploadType: UploadTypesEnum.RawVC }),
             ]);
 
