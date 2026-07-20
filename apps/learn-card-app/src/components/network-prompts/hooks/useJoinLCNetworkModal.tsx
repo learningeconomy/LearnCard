@@ -6,7 +6,7 @@ import {
     shouldPromptProfileOnboarding,
     useModal,
 } from 'learn-card-base';
-import OnboardingContainer from '../../onboarding/OnboardingContainer';
+import OnboardingFlow from '../../onboarding/v2/OnboardingFlow';
 import redirectStore from 'learn-card-base/stores/redirectStore';
 import deletingAccountStore from 'learn-card-base/stores/deletingAccountStore';
 
@@ -30,11 +30,11 @@ export const useJoinLCNetworkModal = (onDismiss?: () => void) => {
     });
 
     const presentNetworkModal = (onSuccess?: () => void) => {
-        // OnboardingContainer unmount owns the `isOnboardingOpen(false)` reset.
+        // OnboardingFlow unmount owns the `isOnboardingOpen(false)` reset.
         redirectStore.set.isOnboardingOpen(true);
 
         newModal(
-            <OnboardingContainer onSuccess={onSuccess} />,
+            <OnboardingFlow onSuccess={onSuccess} />,
             {},
             {
                 desktop: ModalTypes.FullScreen,

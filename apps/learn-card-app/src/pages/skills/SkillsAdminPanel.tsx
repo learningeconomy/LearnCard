@@ -15,6 +15,7 @@ import {
     useListMySkillFrameworks,
 } from 'learn-card-base';
 import type { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
+import * as m from '../../paraglide/messages.js';
 
 type SkillsAdminPanelProps = {};
 
@@ -65,14 +66,14 @@ const SkillsAdminPanel: React.FC<SkillsAdminPanelProps> = () => {
                             className="flex items-center justify-center gap-[10px] pl-[20px] pr-[15px] py-[7px] rounded-[30px] bg-indigo-500 text-white text-[17px] font-notoSans font-[600] leading-[24px] tracking-[0.25px]"
                         >
                             <Plus className="w-[25px] h-[25px]" />
-                            Create Framework
+                            {m['skills.adminPanel.createFramework']()}
                         </button>
                         <button
                             onClick={openSelectFrameworkToManageModal}
                             className="flex items-center justify-center gap-[10px] pl-[20px] pr-[15px] py-[7px] rounded-[30px] bg-grayscale-900 text-white text-[17px] font-notoSans font-[600] leading-[24px] tracking-[0.25px]"
                         >
                             <Pencil className="w-[25px] h-[25px]" version={3} />
-                            Manage Skills
+                            {m['skills.adminPanel.manageSkills']()}
                         </button>
                     </div>
 

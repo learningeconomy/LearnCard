@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import * as m from '../../paraglide/messages.js';
 import { useParams, useHistory } from 'react-router-dom';
 import type { AppStoreListing } from '@learncard/types';
 import numeral from 'numeral';
@@ -164,12 +165,12 @@ const AppListingPage: React.FC = () => {
         if (isCheckingInstalled) return;
         if (!listing) return;
         if (installIntent?.listingId !== listingId) return;
-        // Wait for onboarding to finish — OnboardingContainer sets this flag
+        // Wait for onboarding to finish — OnboardingFlow sets this flag
         if (isOnboardingOpen) return;
 
-        // For new-user path: OnboardingContainer is opened via newModal() (a portal),
+        // For new-user path: OnboardingFlow is opened via newModal() (a portal),
         // so its useEffect fires *after* this one in the same render cycle.
-        // The 300ms delay gives OnboardingContainer time to mount, set isOnboardingOpen=true,
+        // The 300ms delay gives OnboardingFlow time to mount, set isOnboardingOpen=true,
         // and claim installIntent before we act on it.
         const timer = setTimeout(() => {
             // Re-check after delay using fresh store values (avoids stale-closure issues)
@@ -599,7 +600,7 @@ const AppListingPage: React.FC = () => {
                             className="flex items-center gap-1 hover:bg-amber-600 rounded-lg px-2 py-1 transition-colors"
                         >
                             <ArrowLeft className="w-4 h-4" />
-                            <span className="text-sm font-medium">Back</span>
+                            <span className="text-sm font-medium">{m['common.back']()}</span>
                         </button>
                         <div className="flex items-center gap-2">
                             <Eye className="w-4 h-4" />

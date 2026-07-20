@@ -6,6 +6,7 @@ import { DisplayTypeEnum, getAttachmentTypeIcon, BoostMediaOptionsEnum } from 'l
 import { VC } from '@learncard/types';
 import DotIcon from 'learn-card-base/svgs/DotIcon';
 import ClrTranscriptTitleDisplay from '../../../../components/clr-transcript/ClrTranscriptTitleDisplay';
+import { getLocalizedCategoryDisplayLabel } from '../../../../helpers/boostCategoryLabel';
 
 export const CustomBoostTitleDisplay: React.FC<{
     displayType?: DisplayTypeEnum;
@@ -67,7 +68,7 @@ export const CustomBoostTitleDisplay: React.FC<{
                 <span
                     className={`w-full text-center text-${textColor} text-[12px] font-[600] uppercase font-notoSans px-[7px] line-clamp-1`}
                 >
-                    {newItemIndicator} {formattedDisplayType}
+                    {newItemIndicator} {getLocalizedCategoryDisplayLabel(formattedDisplayType)}
                 </span>
                 {/* <div
                     className={`w-full flex items-center justify-center text-grayscale-800 text-[12px] font-[600] font-notoSans`}
@@ -95,7 +96,7 @@ export const CustomBoostTitleDisplay: React.FC<{
                 <span
                     className={`w-full text-center text-${textColor} text-[12px] font-[600] uppercase font-notoSans px-[7px] line-clamp-1`}
                 >
-                    {newItemIndicator} {formattedDisplayType}
+                    {newItemIndicator} {getLocalizedCategoryDisplayLabel(formattedDisplayType)}
                 </span>
             </div>
         );

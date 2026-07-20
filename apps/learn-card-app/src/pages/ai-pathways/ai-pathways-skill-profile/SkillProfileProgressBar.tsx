@@ -15,7 +15,10 @@ import {
     SkillProfileRoleExperienceData,
     SKILL_PROFILE_ROLE_EXPERIENCE_KEY,
 } from './SkillProfileStep1';
-import { SkillProfileWorkHistoryData, SKILL_PROFILE_WORK_HISTORY_KEY } from './SkillProfileStep2';
+import {
+    SkillProfileWorkHistoryData,
+    SKILL_PROFILE_WORK_HISTORY_KEY,
+} from './SkillProfileStep2.constants';
 import { SkillProfileSalaryData, SKILL_PROFILE_SALARY_KEY } from './SkillProfileStep3';
 import {
     SkillProfileWorkLifeBalanceData,

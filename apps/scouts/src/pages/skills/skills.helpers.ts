@@ -61,7 +61,7 @@ export const categorizeSkills = (skills: any) => {
     return categorizedSkills;
 };
 
-export const mapBoostsToSkills = (credentials = []) => {
+export const mapBoostsToSkills = (credentials: Array<VC | VC_WITH_URI> = []) => {
     if (!credentials || credentials.length === 0) return [];
 
     // filter boosts with skills

@@ -18,6 +18,8 @@ import {
     XCircle,
 } from 'lucide-react';
 
+import * as m from '../../../../../paraglide/messages.js';
+
 import { OBv3CredentialTemplate } from './types';
 import { templateToJson, jsonToTemplate, extractVariablesByType } from './utils';
 
@@ -155,7 +157,9 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
             <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-gray-50">
                 <div className="flex items-center gap-2">
                     <Code className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm font-medium text-gray-700">JSON Preview</span>
+                    <span className="text-sm font-medium text-gray-700">
+                        {m['developerPortal.credentialBuilder.jsonPreview.title']()}
+                    </span>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -172,12 +176,12 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
                             {editMode ? (
                                 <>
                                     <Eye className="w-3 h-3" />
-                                    View Mode
+                                    {m['developerPortal.credentialBuilder.jsonPreview.viewMode']()}
                                 </>
                             ) : (
                                 <>
                                     <Code className="w-3 h-3" />
-                                    Edit Mode
+                                    {m['developerPortal.credentialBuilder.jsonPreview.editMode']()}
                                 </>
                             )}
                         </button>
@@ -190,7 +194,7 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
                             className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
                         >
                             <RefreshCw className="w-3 h-3" />
-                            Reset
+                            {m['developerPortal.credentialBuilder.jsonPreview.reset']()}
                         </button>
                     )}
 
@@ -202,12 +206,12 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
                         {copied ? (
                             <>
                                 <Check className="w-3 h-3 text-emerald-600" />
-                                Copied!
+                                {m['developerPortal.credentialBuilder.jsonPreview.copied']()}
                             </>
                         ) : (
                             <>
                                 <Copy className="w-3 h-3" />
-                                Copy
+                                {m['developerPortal.credentialBuilder.jsonPreview.copy']()}
                             </>
                         )}
                     </button>
@@ -228,22 +232,22 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
                             {testIssueState === 'loading' ? (
                                 <>
                                     <Loader2 className="w-3 h-3 animate-spin" />
-                                    Testing...
+                                    {m['developerPortal.credentialBuilder.jsonPreview.testing']()}
                                 </>
                             ) : testIssueState === 'success' ? (
                                 <>
                                     <CheckCircle className="w-3 h-3" />
-                                    Valid!
+                                    {m['developerPortal.credentialBuilder.jsonPreview.valid']()}
                                 </>
                             ) : testIssueState === 'error' ? (
                                 <>
                                     <XCircle className="w-3 h-3" />
-                                    Failed
+                                    {m['developerPortal.credentialBuilder.jsonPreview.failed']()}
                                 </>
                             ) : (
                                 <>
                                     <PlayCircle className="w-3 h-3" />
-                                    Test Issue
+                                    {m['developerPortal.credentialBuilder.jsonPreview.testIssue']()}
                                 </>
                             )}
                         </button>
@@ -257,7 +261,9 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
                     <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
 
                     <div className="flex-1">
-                        <p className="text-xs font-medium text-red-700">Invalid JSON</p>
+                        <p className="text-xs font-medium text-red-700">
+                            {m['developerPortal.credentialBuilder.jsonPreview.invalidJson']()}
+                        </p>
                         <p className="text-xs text-red-600 mt-0.5">{parseError}</p>
                     </div>
                 </div>
@@ -269,7 +275,9 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
                     <XCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
 
                     <div className="flex-1">
-                        <p className="text-xs font-medium text-red-700">Issue Test Failed</p>
+                        <p className="text-xs font-medium text-red-700">
+                            {m['developerPortal.credentialBuilder.jsonPreview.issueTestFailed']()}
+                        </p>
                         <p className="text-xs text-red-600 mt-0.5">{testIssueError}</p>
                     </div>
                 </div>
@@ -282,9 +290,15 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
                     {dynamicVariables.length > 0 && (
                         <div>
                             <p className="text-xs font-medium text-violet-700 mb-1">
-                                Dynamic Variables ({dynamicVariables.length})
+                                {m[
+                                    'developerPortal.credentialBuilder.jsonPreview.dynamicVariables'
+                                ]()}{' '}
+                                ({dynamicVariables.length})
                                 <span className="font-normal text-gray-500 ml-1">
-                                    — provide at issuance
+                                    —{' '}
+                                    {m[
+                                        'developerPortal.credentialBuilder.jsonPreview.dynamicVariablesHint'
+                                    ]()}
                                 </span>
                             </p>
 
@@ -305,8 +319,16 @@ export const JsonPreview: React.FC<JsonPreviewProps> = ({
                     {systemVariables.length > 0 && (
                         <div>
                             <p className="text-xs font-medium text-gray-500 mb-1">
-                                System Variables ({systemVariables.length})
-                                <span className="font-normal ml-1">— auto-injected</span>
+                                {m[
+                                    'developerPortal.credentialBuilder.jsonPreview.systemVariables'
+                                ]()}{' '}
+                                ({systemVariables.length})
+                                <span className="font-normal ml-1">
+                                    —{' '}
+                                    {m[
+                                        'developerPortal.credentialBuilder.jsonPreview.systemVariablesHint'
+                                    ]()}
+                                </span>
                             </p>
 
                             <div className="flex flex-wrap gap-1">

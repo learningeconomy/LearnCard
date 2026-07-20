@@ -6,6 +6,7 @@ import AdminToolsModalFooter from './AdminToolsModalFooter';
 import AdminToolsLaunchDevDocs from './AdminToolsLaunchDevDocs';
 import GenericErrorBoundary from '../../../components/generic/GenericErrorBoundary';
 import { AdminToolOptionsEnum } from './admin-tools.helpers';
+import * as m from '../../../paraglide/messages.js';
 
 export const AdminToolsModal: React.FC<{ shortCircuitDevTool?: AdminToolOptionsEnum }> = ({
     shortCircuitDevTool,
@@ -20,7 +21,7 @@ export const AdminToolsModal: React.FC<{ shortCircuitDevTool?: AdminToolOptionsE
                     <AdminToolsLaunchDevDocs />
                 </GenericErrorBoundary>
             </section>
-            <AdminToolsModalFooter buttonTitle="Back" />
+            <AdminToolsModalFooter buttonTitle={m['common.back']()} />
         </div>
     );
 };

@@ -263,21 +263,61 @@ const asPlatform = (value?: string): Platform | undefined => {
     return undefined;
 };
 
-type DevMode = 'full' | 'app' | 'services';
+type DevPreset = 'docker' | 'local' | 'services';
 type Platform = 'ios' | 'android';
 
-const asDevMode = (value?: string): DevMode | undefined => {
+const DEV_PRESET_DETAILS: Record<
+    DevPreset,
+    {
+        option: string;
+        label: string;
+        shortcut: string;
+        defaultStage: string;
+    }
+> = {
+    docker: {
+        option: '1',
+        label: 'Docker Dev',
+        shortcut: 'bun run lc dev',
+        defaultStage: 'local',
+    },
+    local: {
+        option: '3',
+        label: 'Local dev server',
+        shortcut: 'bun run lc dev local',
+        defaultStage: 'local',
+    },
+    services: {
+        option: '4',
+        label: 'Local services',
+        shortcut: 'bun run lc dev services',
+        defaultStage: 'local',
+    },
+};
+
+const asDevPreset = (value?: string): DevPreset | undefined => {
     if (!value) {
         return undefined;
     }
 
-    const map: Record<string, DevMode> = {
-        full: 'full',
-        app: 'app',
+    const normalized = value.toLowerCase();
+    const map: Record<string, DevPreset> = {
+        '1': 'docker',
+        docker: 'docker',
+        'docker-dev': 'docker',
+        full: 'docker',
+        'full-stack': 'docker',
+        app: 'local',
+        '3': 'local',
+        local: 'local',
+        'local-dev': 'local',
+        'dev-server': 'local',
+        '4': 'services',
         services: 'services',
+        backend: 'services',
     };
 
-    return map[value.toLowerCase()];
+    return map[normalized];
 };
 
 const asNoBuild = (value?: string): boolean | undefined => {
@@ -311,78 +351,58 @@ const pickPlatform = async (): Promise<Platform> => {
     return choice === '2' ? 'android' : 'ios';
 };
 
-const startAppOnly = (stage?: string, shortcut?: string): void => {
-    const stageId = stage ?? 'production';
-    const resolvedShortcut =
-        shortcut ?? `bun run lc start${stageId === 'production' ? '' : ` ${stageId}`}`;
-
-    runCommand(
-        'vite --host',
-        `Starting Scouts frontend only (env: ${stageId})`,
-        resolvedShortcut,
-        APP_ROOT,
-        resolveStageEnv(stageId)
-    );
-};
-
-const startDev = async (devMode?: DevMode, noBuild?: boolean, stage?: string): Promise<void> => {
-    if (!devMode) {
-        log.info('');
-        log.info(bold('How do you want to run Scouts?'));
-        log.info('');
-        log.info(
-            `  ${cyan('1')}  ${bold('Full stack')} — Docker services + Vite dev server ${dim(
-                '(bun run dev)'
-            )}`
-        );
-        log.info(
-            `  ${cyan('2')}  ${bold('App only')} — Vite with Scouts runtime env ${dim(
-                '(bun run docker-start)'
-            )}`
-        );
-        log.info(
-            `  ${cyan('3')}  ${bold('Services only')} — Docker services, no app ${dim(
-                '(bun run dev:services)'
-            )}`
-        );
-        log.info('');
-
-        const choice = await ask(`Pick a mode [1-3] ${dim('(default: 1)')}: `);
-        devMode = choice === '2' ? 'app' : choice === '3' ? 'services' : 'full';
-    }
-
-    const usesDocker = devMode === 'full' || devMode === 'services';
-
-    if (usesDocker && noBuild === undefined) {
-        log.info('');
-        log.info(dim('  Tip: skip --build to start faster when nothing in Docker has changed.'));
-        const buildAnswer = await ask(`Rebuild Docker images? ${dim('(Y/n)')}: `);
-        noBuild = buildAnswer.trim().toLowerCase() === 'n';
-    }
-
-    // Full-stack and services flows default to the local stage — its env matches the docker stack.
-    // Frontend-only flows default to production so they point at the live backend by default.
-    // Pass a stage arg (e.g. `bun run lc dev app local`) to point elsewhere.
-    const stageId = stage ?? (devMode === 'app' ? 'production' : 'local');
+const startDevPreset = async (
+    preset: DevPreset,
+    noBuild?: boolean,
+    stage?: string
+): Promise<void> => {
+    const details = DEV_PRESET_DETAILS[preset];
+    const stageId = stage ?? details.defaultStage;
     const stageEnv = resolveStageEnv(stageId);
+    const shortcut =
+        preset === 'docker' && noBuild
+            ? 'bun run lc dev fast'
+            : preset === 'services' && noBuild
+            ? 'bun run lc dev services fast'
+            : details.shortcut;
+    const label = `[${details.option}] ${details.label}`;
 
-    if (devMode === 'app') {
+    if (preset === 'docker' && noBuild === undefined) {
+        log.info('');
+        log.info(dim('  Docker Dev can rebuild images before starting.'));
+
+        const rebuildAnswer = await ask(`Rebuild Docker images? ${dim('(y/N)')}: `);
+        noBuild = rebuildAnswer.trim().toLowerCase() !== 'y';
+    }
+
+    if (preset === 'docker') {
+        if (noBuild) {
+            runCommand(
+                'bun run dev-no-build',
+                `Starting ${label} (env: ${stageId}) — skipping rebuild`,
+                shortcut,
+                APP_ROOT,
+                stageEnv
+            );
+            return;
+        }
+
         runCommand(
-            'vite --host',
-            `Starting Scouts frontend only (env: ${stageId})`,
-            'bun run lc dev app',
+            'bun run dev',
+            `Starting ${label} (env: ${stageId})`,
+            shortcut,
             APP_ROOT,
             stageEnv
         );
         return;
     }
 
-    if (devMode === 'services') {
+    if (preset === 'services') {
         if (noBuild) {
             runCommand(
                 'docker compose -f compose-local.yaml up --scale app=0',
-                'Starting Scouts Docker services only — skipping rebuild',
-                'bun run lc dev services fast',
+                `Starting ${label} (env: ${stageId}) — skipping rebuild`,
+                shortcut,
                 APP_ROOT,
                 stageEnv
             );
@@ -391,31 +411,28 @@ const startDev = async (devMode?: DevMode, noBuild?: boolean, stage?: string): P
 
         runCommand(
             'bun run dev:services',
-            'Starting Scouts Docker services only',
-            'bun run lc dev services',
+            `Starting ${label} (env: ${stageId})`,
+            shortcut,
             APP_ROOT,
             stageEnv
         );
         return;
     }
 
-    if (noBuild) {
-        runCommand(
-            'bun run dev-no-build',
-            `Starting Scouts full stack (env: ${stageId}) — skipping rebuild`,
-            'bun run lc dev fast',
-            APP_ROOT,
-            stageEnv
-        );
-        return;
-    }
+    runCommand('vite --host', `Starting ${label} (env: ${stageId})`, shortcut, APP_ROOT, stageEnv);
+};
+
+const startAppOnly = (stage?: string, shortcut?: string): void => {
+    const stageId = stage ?? 'production';
+    const resolvedShortcut =
+        shortcut ?? `bun run lc app${stageId === 'production' ? '' : ` ${stageId}`}`;
 
     runCommand(
-        'bun run dev',
-        `Starting Scouts full stack (env: ${stageId})`,
-        'bun run lc dev',
+        'vite --host',
+        `Starting [2] App + prod backend (env: ${stageId})`,
+        resolvedShortcut,
         APP_ROOT,
-        stageEnv
+        resolveStageEnv(stageId)
     );
 };
 
@@ -510,16 +527,16 @@ const printHelp = (): void => {
     log.info(bold('  ⚡ Start'));
     log.info('');
     log.info(
-        `  ${cyan('bun run lc dev [full|app|services] [fast|no-build] [stage]')} ${dim(
-            'Interactive dev launcher'
+        `  ${cyan('bun run lc dev [docker|app|local|services] [fast|build] [stage]')} ${dim(
+            'Docker Dev by default; bun run lc app is option 2, bun run lc dev app is option 3, fast skips rebuild, and build forces it'
         )}`
     );
     log.info(
-        `  ${cyan('bun run lc start [stage]')}                ${dim(
-            'Frontend only (production by default)'
+        `  ${cyan('bun run lc app [stage]')}                 ${dim(
+            'App + prod backend (production by default)'
         )}`
     );
-    log.info(`  ${cyan('bun run lc services')}                     ${dim('Docker services only')}`);
+    log.info(`  ${cyan('bun run lc services')}                    ${dim('Docker services only')}`);
     log.info(
         `  ${cyan('bun run lc docker-start [stage]')}         ${dim(
             'Vite dev server with app-specific runtime env'
@@ -542,7 +559,7 @@ const printHelp = (): void => {
         dim(
             `  Currently available: ${discoverStages().join(
                 ', '
-            )} — full-stack dev defaults to 'local', while frontend-only start defaults to 'production'.`
+            )} — Docker Dev defaults to 'local' and prompts for rebuild, while app defaults to 'production'.`
         )
     );
     log.info(dim(`  LCA API env file: ${getEnvFileLabel()}`));
@@ -566,6 +583,11 @@ const printHelp = (): void => {
         `  ${cyan('bun run lc ship [ios|android]')}           ${dim('Build and open a native app')}`
     );
     log.info('');
+    log.info(
+        dim(
+            '  Dev presets: 1=docker, 2=app, 3=local, 4=services. `bun run lc dev` runs 1 by default.'
+        )
+    );
     log.info(dim('  Available package scripts: apps/scouts/package.json'));
     log.info('');
     rl.close();
@@ -614,12 +636,10 @@ const handleShortcuts = async (): Promise<boolean> => {
             printHelp();
             return true;
 
-        case 'start': {
-            const stageId = asStage(args[1]);
-
-            startAppOnly(stageId);
+        case 'app':
+        case 'start':
+            startAppOnly(args[1]);
             return true;
-        }
 
         case 'services':
             runCommand(
@@ -671,21 +691,18 @@ const handleShortcuts = async (): Promise<boolean> => {
         case 'dev': {
             const devArgs = [args[1], args[2], args[3]];
 
-            const devMode = devArgs.reduce<DevMode | undefined>((found, value) => {
-                if (found) {
-                    return found;
-                }
+            const preset =
+                devArgs.reduce<DevPreset | undefined>((found, value) => {
+                    if (found) {
+                        return found;
+                    }
 
-                return asDevMode(value);
-            }, undefined);
+                    return asDevPreset(value);
+                }, undefined) ?? 'docker';
 
-            const noBuild = devArgs.reduce<boolean | undefined>((found, value) => {
-                if (found !== undefined) {
-                    return found;
-                }
-
-                return asNoBuild(value);
-            }, undefined);
+            const explicitBuildArg = devArgs.find(value => asNoBuild(value) !== undefined);
+            const noBuild =
+                explicitBuildArg === undefined ? undefined : asNoBuild(explicitBuildArg);
 
             const stage = devArgs.reduce<string | undefined>((found, value) => {
                 if (found) {
@@ -695,7 +712,7 @@ const handleShortcuts = async (): Promise<boolean> => {
                 return asStage(value);
             }, undefined);
 
-            await startDev(devMode, noBuild, stage);
+            await startDevPreset(preset, noBuild, stage);
             return true;
         }
 
@@ -712,14 +729,26 @@ const main = async (): Promise<void> => {
     log.info('');
     log.info(bold('🛡️ Scouts Developer Tools'));
     log.info('');
-    log.info(`  ${cyan('1')}  ${bold('Docker dev')}        ${dim('— full stack')}`);
-    log.info(`  ${cyan('2')}  ${bold('Local app + prod backend')} ${dim('— frontend only')}`);
+    log.info(
+        `  ${cyan('1')}  ${bold('Docker dev')}        ${dim('— full stack')} ${dim(
+            '(bun run lc dev)'
+        )}`
+    );
+    log.info(
+        `  ${cyan('2')}  ${bold('App + prod backend')} ${dim('— frontend only')} ${dim(
+            '(bun run lc app)'
+        )}`
+    );
     log.info(
         `  ${cyan('3')}  ${bold('Local dev server')}  ${dim(
             '— local frontend, run local services separately'
+        )} ${dim('(bun run lc dev app)')}`
+    );
+    log.info(
+        `  ${cyan('4')}  ${bold('Local services')}    ${dim('— backend services only')} ${dim(
+            '(bun run lc dev services)'
         )}`
     );
-    log.info(`  ${cyan('4')}  ${bold('Local services')}    ${dim('— backend services only')}`);
     log.info(`  ${cyan('5')}  ${bold('Native menu')}       ${dim('— sync, open, run, package')}`);
     log.info(`  ${cyan('6')}  ${bold('Build web app')}     ${dim('— vite build')}`);
     log.info(`  ${cyan('h')}  ${dim('Help & shortcuts')}`);
@@ -729,16 +758,16 @@ const main = async (): Promise<void> => {
 
     switch (choice) {
         case '1':
-            await startDev('full');
+            await startDevPreset('docker');
             break;
         case '2':
             startAppOnly();
             break;
         case '3':
-            startAppOnly('local');
+            await startDevPreset('local');
             break;
         case '4':
-            await startDev('services');
+            await startDevPreset('services');
             break;
         case '5':
             await nativeMenu();

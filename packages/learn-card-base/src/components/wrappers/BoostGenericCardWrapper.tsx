@@ -48,6 +48,7 @@ type BoostGenericCardWrapperProps = {
     relativeDate?: boolean;
     compact?: boolean;
     isCLR?: boolean;
+    trustedVerifierOnly?: boolean;
 };
 
 export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = ({
@@ -84,6 +85,7 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
     relativeDate,
     compact,
     isCLR,
+    trustedVerifierOnly,
 }) => {
     if (boostPageViewMode === BoostPageViewMode.List) {
         return (
@@ -104,6 +106,7 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
                 unknownVerifierTitle={unknownVerifierTitle}
                 relativeDate={relativeDate}
                 compact={compact}
+                trustedVerifierOnly={trustedVerifierOnly}
             />
         );
     }
@@ -136,6 +139,7 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
                         iconClassName="!w-[15px] !h-[15px]"
                         showText={!!unknownVerifierTitle}
                         unknownVerifierTitle={unknownVerifierTitle}
+                        trustedOnly={trustedVerifierOnly}
                     />
                 )
             }

@@ -197,7 +197,9 @@ const decodeDidJwk = (did: string): JWK => {
         return JSON.parse(Buffer.from(padded, 'base64').toString('utf8')) as JWK;
     } catch (e) {
         throw new Error(
-            `Failed to decode did:jwk identifier "${did}": ${e instanceof Error ? e.message : String(e)}`
+            `Failed to decode did:jwk identifier "${did}": ${
+                e instanceof Error ? e.message : String(e)
+            }`
         );
     }
 };
@@ -243,9 +245,7 @@ export const startSphereonVerifier = async (
     // across all JARM sessions on this verifier (matches how a real
     // verifier deployment would publish a stable enc key in its
     // client_metadata).
-    let jarmKeyMaterial:
-        | { publicJwk: JWK; privateKey: KeyLike }
-        | undefined;
+    let jarmKeyMaterial: { publicJwk: JWK; privateKey: KeyLike } | undefined;
     if (opts.jarm) {
         const { privateKey, publicKey } = await generateKeyPair('ECDH-ES', {
             crv: 'P-256',
@@ -276,9 +276,7 @@ export const startSphereonVerifier = async (
         const submission = JSON.parse(submissionStr);
 
         if (vpToken.split('.').length !== 3) {
-            throw new Error(
-                `expected compact JWT-VP, got: ${vpToken.slice(0, 40)}…`
-            );
+            throw new Error(`expected compact JWT-VP, got: ${vpToken.slice(0, 40)}…`);
         }
 
         const header = decodeProtectedHeader(vpToken);
@@ -296,9 +294,7 @@ export const startSphereonVerifier = async (
         }
 
         const pexResult = pex.evaluatePresentation(
-            session.presentationDefinition as unknown as Parameters<
-                PEX['evaluatePresentation']
-            >[0],
+            session.presentationDefinition as unknown as Parameters<PEX['evaluatePresentation']>[0],
             vpToken as unknown as Parameters<PEX['evaluatePresentation']>[1],
             {
                 presentationSubmission: submission,
@@ -307,9 +303,7 @@ export const startSphereonVerifier = async (
         );
 
         if (pexResult.errors && pexResult.errors.length > 0) {
-            throw new Error(
-                `PEX evaluation rejected the VP: ${JSON.stringify(pexResult.errors)}`
-            );
+            throw new Error(`PEX evaluation rejected the VP: ${JSON.stringify(pexResult.errors)}`);
         }
 
         // Inner VC signature verification — proves the wallet didn't
@@ -334,7 +328,9 @@ export const startSphereonVerifier = async (
             parsedVpToken = JSON.parse(vpToken);
         } catch (e) {
             throw new Error(
-                `DCQL vp_token must be a JSON-encoded object: ${e instanceof Error ? e.message : String(e)}`
+                `DCQL vp_token must be a JSON-encoded object: ${
+                    e instanceof Error ? e.message : String(e)
+                }`
             );
         }
 
@@ -351,10 +347,21 @@ export const startSphereonVerifier = async (
         // presentation shape DCQL needs to match against.
         const dcqlPresentation: Record<string, unknown> = {};
 
-        for (const [queryId, presentation] of Object.entries(parsedVpToken)) {
+        for (const [queryId, entry] of Object.entries(parsedVpToken)) {
+            // OID4VP 1.0 §8.1: each query id maps to an ARRAY of one or
+            // more presentations. Scalars are tolerated for draft-22
+            // compat but the plugin now emits arrays.
+            const entryPresentations = Array.isArray(entry) ? entry : [entry];
+
+            if (entryPresentations.length === 0) {
+                throw new Error(`DCQL entry "${queryId}" is an empty presentation array`);
+            }
+
+            const presentation = entryPresentations[0];
+
             if (typeof presentation !== 'string' || presentation.split('.').length !== 3) {
                 throw new Error(
-                    `DCQL entry "${queryId}" must be a compact JWT-VP string in this harness`
+                    `DCQL entry "${queryId}" must contain compact JWT-VP strings in this harness`
                 );
             }
 
@@ -406,7 +413,9 @@ export const startSphereonVerifier = async (
 
         if (!result.can_be_satisfied) {
             throw new Error(
-                `DCQL evaluation rejected the presentation: ${JSON.stringify(result.credential_matches)}`
+                `DCQL evaluation rejected the presentation: ${JSON.stringify(
+                    result.credential_matches
+                )}`
             );
         }
     };
@@ -432,14 +441,18 @@ export const startSphereonVerifier = async (
 
         if (payload.nonce !== session.nonce) {
             throw new Error(
-                `nonce mismatch: VP carries nonce="${String(payload.nonce)}" but session "${session.state}" issued nonce="${session.nonce}"`
+                `nonce mismatch: VP carries nonce="${String(payload.nonce)}" but session "${
+                    session.state
+                }" issued nonce="${session.nonce}"`
             );
         }
 
         const aud = Array.isArray(payload.aud) ? payload.aud[0] : payload.aud;
         if (aud !== session.clientId) {
             throw new Error(
-                `audience mismatch: VP carries aud="${String(aud)}" but session expects "${session.clientId}"`
+                `audience mismatch: VP carries aud="${String(aud)}" but session expects "${
+                    session.clientId
+                }"`
             );
         }
     };
@@ -450,9 +463,7 @@ export const startSphereonVerifier = async (
             if (typeof vcEntry !== 'string') continue;
 
             if (vcEntry.split('.').length !== 3) {
-                throw new Error(
-                    `inner VC entry is not a compact JWT: ${vcEntry.slice(0, 40)}…`
-                );
+                throw new Error(`inner VC entry is not a compact JWT: ${vcEntry.slice(0, 40)}…`);
             }
 
             const vcHeader = decodeProtectedHeader(vcEntry);
@@ -516,7 +527,9 @@ export const startSphereonVerifier = async (
 
         if (protectedHeader.apv !== expectedApv) {
             throw new Error(
-                `JARM apv mismatch: header carries apv="${String(protectedHeader.apv)}" but session nonce produces "${expectedApv}"`
+                `JARM apv mismatch: header carries apv="${String(
+                    protectedHeader.apv
+                )}" but session nonce produces "${expectedApv}"`
             );
         }
 
@@ -551,10 +564,7 @@ export const startSphereonVerifier = async (
 
             const holderDid = kid.split('#')[0]!;
             const holderJwk = decodeDidJwk(holderDid);
-            const holderKey = await importJWK(
-                holderJwk,
-                innerHeader.alg ?? 'EdDSA'
-            );
+            const holderKey = await importJWK(holderJwk, innerHeader.alg ?? 'EdDSA');
             await jwtVerify(decoded, holderKey);
 
             responseObject = decodeJwt(decoded) as Record<string, unknown>;
@@ -570,14 +580,8 @@ export const startSphereonVerifier = async (
             submissionStr: responseObject.presentation_submission
                 ? JSON.stringify(responseObject.presentation_submission)
                 : null,
-            state:
-                typeof responseObject.state === 'string'
-                    ? responseObject.state
-                    : '',
-            idToken:
-                typeof responseObject.id_token === 'string'
-                    ? responseObject.id_token
-                    : null,
+            state: typeof responseObject.state === 'string' ? responseObject.state : '',
+            idToken: typeof responseObject.id_token === 'string' ? responseObject.id_token : null,
         };
     };
 
@@ -624,9 +628,7 @@ export const startSphereonVerifier = async (
                 });
 
                 if (!candidate) {
-                    throw new Error(
-                        `JARM apv does not match any active session nonce`
-                    );
+                    throw new Error(`JARM apv does not match any active session nonce`);
                 }
 
                 stateForErrorPath = candidate.state;
@@ -771,8 +773,7 @@ export const startSphereonVerifier = async (
                 };
 
                 if (input.jarmSignAlg) {
-                    clientMetadata.authorization_signed_response_alg =
-                        input.jarmSignAlg;
+                    clientMetadata.authorization_signed_response_alg = input.jarmSignAlg;
                 }
 
                 params.client_metadata = JSON.stringify(clientMetadata);

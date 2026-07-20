@@ -1,3 +1,4 @@
+import * as m from '../../paraglide/messages.js';
 import React from 'react';
 
 import { IonFooter, IonToolbar, useIonModal } from '@ionic/react';
@@ -49,13 +50,13 @@ export const LearnCardIDCMSFooter: React.FC<{
                             }
                             className="bg-white text-grayscale-900 text-lg rounded-full py-[12px] w-full mr-2 shadow-soft-bottom"
                         >
-                            Preview
+                            {m['common.preview']()}
                         </button>
                         <button
                             onClick={handleSave}
                             className={`text-white text-lg font-bold rounded-full py-[12px] w-full ${actionButtonColor}`}
                         >
-                            Save
+                            {m['common.save']()}
                         </button>
                     </div>
                 </div>

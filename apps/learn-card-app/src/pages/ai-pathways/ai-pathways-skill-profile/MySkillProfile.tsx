@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { formatLocaleDate } from '../../../i18n/formatters';
 
 import { Capacitor } from '@capacitor/core';
 
+import * as m from '../../../paraglide/messages.js';
 import { ProfilePicture } from 'learn-card-base';
 import X from 'src/components/svgs/X';
 import Pencil from 'src/components/svgs/Pencil';
@@ -37,7 +39,7 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({ className = '' }) => {
     }, [isFetched, percentage]);
 
     const formattedEditDate = lastEditedDate
-        ? new Date(lastEditedDate).toLocaleDateString('en-US', {
+        ? formatLocaleDate(new Date(lastEditedDate), {
               month: 'short',
               day: 'numeric',
               year: 'numeric',
@@ -69,7 +71,13 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({ className = '' }) => {
 
     return (
         <div className={`w-full flex items-center justify-center text-left ${className}`}>
-            <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-4-4 px-[15px] py-[18px] rounded-[15px]">
+            <div
+                className={`w-full bg-white items-center flex flex-col shadow-bottom-4-4 px-[15px] py-[18px] rounded-[15px] min-h-0 ${
+                    isExpanded
+                        ? 'justify-start h-[calc(100dvh-32px)] overflow-hidden'
+                        : 'justify-center'
+                }`}
+            >
                 <div className="flex flex-col w-full gap-[10px]">
                     <div className="flex gap-[10px] items-center justify-start w-full">
                         <ProfilePicture
@@ -79,10 +87,10 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({ className = '' }) => {
                             customImageClass="h-full w-full object-cover"
                         />
                         <h2 className="text-[16px] font-poppins text-grayscale-900 font-bold leading-[20px] flex flex-col gap-[3px] text-left">
-                            My Skill Profile
+                            {m['skillProfile.header']()}
                             {!isExpanded && (
                                 <span className="text-[14px] font-poppins text-grayscale-700 leading-[130%] font-normal text-left">
-                                    Personalize your pathways.
+                                    {m['skillProfile.personalizeSubtitle']()}
                                 </span>
                             )}
                         </h2>
@@ -110,20 +118,21 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({ className = '' }) => {
                     {isExpanded ? (
                         <div className="flex items-center w-full">
                             <span className="text-grayscale-600 font-poppins font-[500] text-[14px] leading-[18px]">
-                                {currentStep} of 5
+                                {m['skillProfile.stepOf']({ current: currentStep, total: 5 })}
                             </span>
                             <button
                                 onClick={() => setCurrentStep(prev => (prev < 5 ? prev + 1 : prev))}
                                 className="ml-auto text-grayscale-600 font-poppins font-[700] text-[14px] leading-[18px]"
                             >
-                                Skip
+                                {m['skillProfile.skip']()}
                             </button>
                         </div>
                     ) : (
                         <div className="flex items-center w-full">
                             <span className="text-grayscale-600 font-poppins font-[500] text-[14px] leading-[18px]">
-                                {percentage}% optimized
-                                {formattedEditDate && ` • Edited on ${formattedEditDate}`}
+                                {m['skillProfile.percentOptimized']({ percent: percentage })}
+                                {formattedEditDate &&
+                                    ` • ${m['skillProfile.editedOn']({ date: formattedEditDate })}`}
                             </span>
                         </div>
                     )}
@@ -131,12 +140,12 @@ const MySkillProfile: React.FC<MySkillProfileProps> = ({ className = '' }) => {
 
                 {isNativePlatform && (
                     <div
-                        className={`grid w-full transition-[grid-template-rows] duration-300 ease-in-out ${
+                        className={`grid w-full flex-1 min-h-0 transition-[grid-template-rows] duration-300 ease-in-out ${
                             isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
                         }`}
                     >
-                        <div className="overflow-hidden min-h-0">
-                            <div className="pt-[20px] border-t border-grayscale-200 w-full mt-[10px]">
+                        <div className="overflow-hidden min-h-0 flex flex-col">
+                            <div className="pt-[20px] border-t border-grayscale-200 w-full mt-[10px] flex flex-col flex-1 min-h-0">
                                 {steps[currentStep] ?? null}
                             </div>
                         </div>

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 
+import * as m from '../../../paraglide/messages.js';
+
 export const ResumeDownloadButton: React.FC<{ onDownload?: () => void | Promise<void> }> = ({
     onDownload,
 }) => {
@@ -25,10 +27,10 @@ export const ResumeDownloadButton: React.FC<{ onDownload?: () => void | Promise<
                 {loading ? (
                     <>
                         <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                        Generating PDF…
+                        {m['passport.resumeBuilder.generatingPdf']()}
                     </>
                 ) : (
-                    'Download Resume'
+                    m['passport.resumeBuilder.downloadResume']()
                 )}
             </button>
         </div>

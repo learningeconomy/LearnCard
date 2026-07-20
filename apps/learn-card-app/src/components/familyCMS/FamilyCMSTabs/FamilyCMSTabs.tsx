@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { IonLabel, IonRow, IonSegment, IonSegmentButton } from '@ionic/react';
+import { m } from '../../../paraglide/messages.js';
 
 export enum FamilyCMSTabsEnum {
     content = 'content',
@@ -30,7 +31,7 @@ const FamilyCMSTabs: React.FC<{
                     }}
                 >
                     <IonLabel className="font-normal text-[17px] text-grayscale-800 font-poppins">
-                        Content
+                        {m['family.editor.tabContent']()}
                     </IonLabel>
                 </IonSegmentButton>
                 <IonSegmentButton
@@ -42,7 +43,7 @@ const FamilyCMSTabs: React.FC<{
                     }}
                 >
                     <IonLabel className="font-normal text-[17px] text-grayscale-800 font-poppins">
-                        Appearance
+                        {m['family.editor.tabAppearance']()}
                     </IonLabel>
                 </IonSegmentButton>
             </IonSegment>

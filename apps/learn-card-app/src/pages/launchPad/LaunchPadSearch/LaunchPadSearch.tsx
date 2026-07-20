@@ -5,6 +5,7 @@ import Search from 'learn-card-base/svgs/Search';
 import LaunchPadPopOverButton from './LaunchPadPopOverButton';
 
 import { LaunchPadFilterOptionsEnum, LaunchPadSortOptionsEnum } from './launchpad-search.helpers';
+import * as m from '../../../paraglide/messages.js';
 
 type LaunchPadSearchProps = {
     searchInput: string;
@@ -37,7 +38,7 @@ export const LaunchPadSearch: React.FC<LaunchPadSearchProps> = ({
                     <IonInput
                         type="text"
                         value={searchInput}
-                        placeholder="Search apps..."
+                        placeholder={m['launchpad.searchApps']()}
                         onIonInput={e => setSearchInput(e.detail.value ?? '')}
                         onIonFocus={onFocus}
                         onIonBlur={onBlur}

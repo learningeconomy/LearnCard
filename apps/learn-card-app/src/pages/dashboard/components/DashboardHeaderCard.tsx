@@ -1,6 +1,9 @@
 import React from 'react';
+import { User } from 'lucide-react';
 
-import { getTimeOfDayGreeting } from '../helpers/greeting';
+import * as m from '../../../paraglide/messages.js';
+
+import { getTimeOfDay } from '../helpers/greeting';
 
 type DashboardHeaderCardProps = {
     brandName: string;
@@ -11,6 +14,8 @@ type DashboardHeaderCardProps = {
     shortBio?: string;
     professionalTitle?: string;
     onAvatarClick?: () => void;
+    onNotificationsClick?: () => void;
+    unreadCount?: number;
     topRightAction?: React.ReactNode;
     roleSwitcher?: React.ReactNode;
 };
@@ -48,25 +53,52 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
     shortBio,
     professionalTitle,
     onAvatarClick,
+    onNotificationsClick,
+    unreadCount = 0,
     topRightAction,
     roleSwitcher,
 }) => {
     const initials = getInitials(displayName);
-    const greeting = getTimeOfDayGreeting();
+    const timeOfDay = getTimeOfDay();
+    const greeting =
+        timeOfDay === 'morning'
+            ? m['dashboard.header.greetMorn']()
+            : timeOfDay === 'afternoon'
+            ? m['dashboard.header.greetAft']()
+            : m['dashboard.header.greetEve']();
+    const hasUnread = (unreadCount ?? 0) > 0 && Boolean(onNotificationsClick);
     const descriptor = resolveDescriptor(professionalTitle, shortBio);
     const roleFallback = profileRole?.trim() ? capitalize(profileRole) : null;
 
-    const avatar = profileImage ? (
-        <img
-            src={profileImage}
-            alt={displayName || 'Profile'}
-            className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-soft-bottom"
-        />
-    ) : (
+    const [imageFailed, setImageFailed] = React.useState(false);
+
+    React.useEffect(() => {
+        setImageFailed(false);
+    }, [profileImage]);
+
+    const hasName = displayName.trim().length > 0;
+
+    const initialsAvatar = (
         <div className="w-16 h-16 rounded-full bg-grayscale-100 border-2 border-white shadow-soft-bottom flex items-center justify-center text-grayscale-700 font-semibold text-lg">
-            {initials}
+            {hasName ? (
+                initials
+            ) : (
+                <User className="w-7 h-7 text-grayscale-400" strokeWidth={1.75} />
+            )}
         </div>
     );
+
+    const avatar =
+        profileImage && !imageFailed ? (
+            <img
+                src={profileImage}
+                alt={displayName || m['dashboard.header.profileAlt']()}
+                onError={() => setImageFailed(true)}
+                className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-soft-bottom bg-grayscale-100"
+            />
+        ) : (
+            initialsAvatar
+        );
 
     return (
         <section className="relative bg-white rounded-[20px] shadow-soft-bottom border border-grayscale-200 animate-fade-in-up overflow-hidden">
@@ -85,12 +117,12 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
 
             <div className="relative p-5">
                 <div className="flex items-center gap-4">
-                    <div className="shrink-0">
+                    <div className="shrink-0 relative">
                         {onAvatarClick ? (
                             <button
                                 type="button"
                                 onClick={onAvatarClick}
-                                aria-label={`Open your ${brandName}`}
+                                aria-label={m['dashboard.header.avatarAria']({ brand: brandName })}
                                 className="rounded-full active:scale-[0.97] transition-transform"
                             >
                                 {avatar}
@@ -98,12 +130,30 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
                         ) : (
                             avatar
                         )}
+
+                        {hasUnread && (
+                            <button
+                                type="button"
+                                onClick={onNotificationsClick}
+                                aria-label={
+                                    unreadCount === 1
+                                        ? m['dashboard.header.alertOne']({ count: unreadCount })
+                                        : m['dashboard.header.alertMany']({
+                                              count: unreadCount > 99 ? '99+' : unreadCount,
+                                          })
+                                }
+                                className="absolute top-0 right-0 flex items-center justify-center active:scale-90 transition-transform"
+                            >
+                                <span className="absolute inline-flex h-3.5 w-3.5 rounded-full bg-red-500 opacity-60 animate-ping" />
+                                <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-red-500 border-2 border-white shadow-soft-bottom" />
+                            </button>
+                        )}
                     </div>
 
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm text-grayscale-500 leading-tight">{greeting},</p>
+                        <p className="text-sm text-grayscale-500 leading-tight">{greeting}</p>
                         <h1 className="text-xl font-semibold text-grayscale-900 leading-tight truncate">
-                            {displayName || 'Welcome'}
+                            {displayName || m['dashboard.header.welcome']()}
                         </h1>
                         {(descriptor || roleSwitcher || roleFallback) && (
                             <div className="mt-1 flex items-center gap-2 min-w-0">

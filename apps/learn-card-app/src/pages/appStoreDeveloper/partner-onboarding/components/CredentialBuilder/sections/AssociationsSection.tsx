@@ -8,6 +8,8 @@
 import React from 'react';
 import { Link2, Plus, X, ChevronDown } from 'lucide-react';
 
+import * as m from '../../../../../../paraglide/messages.js';
+
 import {
     OBv3CredentialTemplate,
     AssociationTemplate,
@@ -71,20 +73,20 @@ export const AssociationsSection: React.FC<AssociationsSectionProps> = ({
 
     return (
         <CollapsibleSection
-            title="Associations"
+            title={m['developerPortal.credentialBuilder.sectionTitles.associations']()}
             icon={<Link2 className="w-4 h-4 text-purple-600" />}
             isExpanded={isExpanded}
             onToggle={onToggle}
             badge={associations.length > 0 ? `${associations.length}` : undefined}
         >
             <p className="text-xs text-gray-500 mb-3">
-                Define relationships between achievements (e.g., a course is a child of a program)
+                {m['developerPortal.credentialBuilder.associations.description']()}
             </p>
 
             {hasErrors && (
                 <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg">
                     <p className="text-xs text-red-600">
-                        Some associations have invalid references
+                        {m['developerPortal.credentialBuilder.associations.someErrors']()}
                     </p>
                 </div>
             )}
@@ -92,20 +94,32 @@ export const AssociationsSection: React.FC<AssociationsSectionProps> = ({
             {achievements.length < 2 && (
                 <div className="mb-3 p-2 bg-gray-50 border border-gray-200 rounded-lg">
                     <p className="text-xs text-gray-500">
-                        Add at least two achievements to create associations between them.
+                        {m['developerPortal.credentialBuilder.associations.needMoreAchievements']()}
                     </p>
                 </div>
             )}
 
             {associations.length === 0 ? (
-                <p className="text-xs text-gray-400 italic pl-3">No associations added</p>
+                <p className="text-xs text-gray-400 italic pl-3">
+                    {m['developerPortal.credentialBuilder.associations.noAssociations']()}
+                </p>
             ) : (
                 <div className="space-y-3">
                     {associations.map((assoc, index) => {
-                        const sourceAch = achievements.find(a => a.id === assoc.sourceAchievementId);
-                        const targetAch = achievements.find(a => a.id === assoc.targetAchievementId);
-                        const sourceError = getFieldError(validationErrors, `associations.${index}.source`);
-                        const targetError = getFieldError(validationErrors, `associations.${index}.target`);
+                        const sourceAch = achievements.find(
+                            a => a.id === assoc.sourceAchievementId
+                        );
+                        const targetAch = achievements.find(
+                            a => a.id === assoc.targetAchievementId
+                        );
+                        const sourceError = getFieldError(
+                            validationErrors,
+                            `associations.${index}.source`
+                        );
+                        const targetError = getFieldError(
+                            validationErrors,
+                            `associations.${index}.target`
+                        );
 
                         return (
                             <div
@@ -114,7 +128,9 @@ export const AssociationsSection: React.FC<AssociationsSectionProps> = ({
                             >
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-medium text-purple-700">
-                                        Association {index + 1}
+                                        {m[
+                                            'developerPortal.credentialBuilder.associations.associationNumber'
+                                        ]({ n: index + 1 })}
                                     </span>
                                     <button
                                         type="button"
@@ -128,7 +144,9 @@ export const AssociationsSection: React.FC<AssociationsSectionProps> = ({
                                 {/* Source Achievement */}
                                 <div>
                                     <label className="block text-xs text-gray-500 mb-1">
-                                        Source Achievement
+                                        {m[
+                                            'developerPortal.credentialBuilder.associations.sourceAchievement'
+                                        ]()}
                                     </label>
                                     <div className="relative">
                                         <select
@@ -142,10 +160,15 @@ export const AssociationsSection: React.FC<AssociationsSectionProps> = ({
                                                 sourceError ? 'border-red-300' : 'border-gray-200'
                                             }`}
                                         >
-                                            <option value="">Select achievement...</option>
+                                            <option value="">
+                                                {m[
+                                                    'developerPortal.credentialBuilder.associations.selectAchievement'
+                                                ]()}
+                                            </option>
                                             {achievements.map(a => (
                                                 <option key={a.id} value={a.id}>
-                                                    {a.achievement.name.value || 'Untitled Achievement'}
+                                                    {a.achievement.name.value ||
+                                                        'Untitled Achievement'}
                                                 </option>
                                             ))}
                                         </select>
@@ -159,7 +182,9 @@ export const AssociationsSection: React.FC<AssociationsSectionProps> = ({
                                 {/* Association Type */}
                                 <div>
                                     <label className="block text-xs text-gray-500 mb-1">
-                                        Relationship Type
+                                        {m[
+                                            'developerPortal.credentialBuilder.associations.relationshipType'
+                                        ]()}
                                     </label>
                                     <div className="relative">
                                         <select
@@ -184,7 +209,9 @@ export const AssociationsSection: React.FC<AssociationsSectionProps> = ({
                                 {/* Target Achievement */}
                                 <div>
                                     <label className="block text-xs text-gray-500 mb-1">
-                                        Target Achievement
+                                        {m[
+                                            'developerPortal.credentialBuilder.associations.targetAchievement'
+                                        ]()}
                                     </label>
                                     <div className="relative">
                                         <select
@@ -198,10 +225,15 @@ export const AssociationsSection: React.FC<AssociationsSectionProps> = ({
                                                 targetError ? 'border-red-300' : 'border-gray-200'
                                             }`}
                                         >
-                                            <option value="">Select achievement...</option>
+                                            <option value="">
+                                                {m[
+                                                    'developerPortal.credentialBuilder.associations.selectAchievement'
+                                                ]()}
+                                            </option>
                                             {achievements.map(a => (
                                                 <option key={a.id} value={a.id}>
-                                                    {a.achievement.name.value || 'Untitled Achievement'}
+                                                    {a.achievement.name.value ||
+                                                        'Untitled Achievement'}
                                                 </option>
                                             ))}
                                         </select>
@@ -217,12 +249,13 @@ export const AssociationsSection: React.FC<AssociationsSectionProps> = ({
                                     <div className="p-2 bg-purple-50 border border-purple-200 rounded text-xs text-purple-700">
                                         <span className="font-medium">
                                             {sourceAch.achievement.name.value || 'Source'}
-                                        </span>
-                                        {' '}
+                                        </span>{' '}
                                         <span className="text-purple-500">
-                                            {assoc.associationType.value.replace(/([A-Z])/g, ' $1').trim().toLowerCase()}
-                                        </span>
-                                        {' '}
+                                            {assoc.associationType.value
+                                                .replace(/([A-Z])/g, ' $1')
+                                                .trim()
+                                                .toLowerCase()}
+                                        </span>{' '}
                                         <span className="font-medium">
                                             {targetAch.achievement.name.value || 'Target'}
                                         </span>
@@ -241,7 +274,7 @@ export const AssociationsSection: React.FC<AssociationsSectionProps> = ({
                 className="mt-3 flex items-center gap-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 <Plus className="w-3 h-3" />
-                Add Association
+                {m['developerPortal.credentialBuilder.associations.addAssociation']()}
             </button>
         </CollapsibleSection>
     );

@@ -62,6 +62,8 @@ export type DashboardHeaderViewModel = {
     professionalTitle?: string;
     onAvatarClick: () => void;
     onScanQrTopRight: () => void;
+    onNotificationsClick: () => void;
+    unreadCount: number;
     roleSwitcher?: React.ReactNode;
 };
 

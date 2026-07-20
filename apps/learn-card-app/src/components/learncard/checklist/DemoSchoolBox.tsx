@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import './DemoSchoolBox.css';
+import * as m from '../../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('demo-school-box');
 
@@ -134,12 +135,12 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
             await fetchNewContractCredentials();
             resetCache();
 
-            presentToast('You have successfully connected to the demo school.', {
+            presentToast(m['passport.buildMyLearnCard.demoSchool.connectSuccess'](), {
                 hasDismissButton: true,
             });
             closeAllModals();
         } catch (error) {
-            presentToast('Unable to connect to the demo school. Please try again.', {
+            presentToast(m['passport.buildMyLearnCard.demoSchool.connectError'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -158,7 +159,7 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
         }
 
         if (!demoSchoolDataExists) {
-            presentToast('No Demo credentials found. Please try again.', {
+            presentToast(m['passport.buildMyLearnCard.demoSchool.noCredentials'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -182,9 +183,12 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
                 const deleteResult = await deleteCredentialRecord({
                     ...contractCred,
                     skipPostDeleteCleanup: true,
+                    ignoreMissingRemoteRecord: true,
                 });
 
-                deleteResult.deletedUris.forEach(uri => deletedUris.add(uri));
+                const deletedCredentialUris =
+                    deleteResult?.deletedUris ?? (contractCred.uri ? [contractCred.uri] : []);
+                deletedCredentialUris.forEach(uri => deletedUris.add(uri));
             }
 
             // clear creds from newCredsStore
@@ -214,9 +218,14 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
                 queryClient,
             });
 
-            presentToast(`Deleted ${contractCredentials?.length ?? 0} Demo credentials`, {
-                hasDismissButton: true,
-            });
+            presentToast(
+                m['passport.buildMyLearnCard.demoSchool.deletedCount']({
+                    count: contractCredentials?.length ?? 0,
+                }),
+                {
+                    hasDismissButton: true,
+                }
+            );
             log.debug('Demo School cleanup completed', {
                 deletedUriCount: deletedUrisList.length,
                 contractsWithdrawn: consentedDemoContracts.length,
@@ -226,7 +235,7 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
             resetCache();
             closeAllModals();
         } catch (error) {
-            presentToast('Unable to delete the demo school. Please try again.', {
+            presentToast(m['passport.buildMyLearnCard.demoSchool.delError'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -238,9 +247,9 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
 
     const handleStartDemoClick = async () => {
         const confirmed = await confirm({
-            text: 'Are you sure you want to sync with the demo school? This will import multiple sample credentials, but you can easily delete them later.',
-            confirmText: 'Yes',
-            cancelText: 'No',
+            text: m['passport.buildMyLearnCard.demoSchool.confirmSync'](),
+            confirmText: m['common.yes'](),
+            cancelText: m['common.no'](),
         });
 
         // ^^ await confirmation
@@ -251,9 +260,9 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
 
     const handleEndDemoClick = async () => {
         const confirmed = await confirm({
-            text: 'Are you sure you want to delete all demo content? This action can’t be undone, but you can reload the demo content later if needed.',
-            confirmText: 'Yes',
-            cancelText: 'No',
+            text: m['passport.buildMyLearnCard.demoSchool.confirmDelete'](),
+            confirmText: m['common.yes'](),
+            cancelText: m['common.no'](),
         });
 
         // await confirmation
@@ -287,14 +296,15 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
         <div className="flex flex-col gap-[20px] items-center justify-center p-[15px] rounded-[15px] bg-white shadow-bottom-2-4 mt-4">
             <div className="flex flex-col gap-[5px]">
                 <h2 className="text-grayscale-900 font-notoSans text-[20px] flex items-center">
-                    Demo School{' '}
+                    {m['passport.buildMyLearnCard.demoSchool.title']()}{' '}
                     {demoSchoolDataExists && (
                         <CircleCheckmark className="h-[32px] w-[32px] ml-auto" />
                     )}
                 </h2>
                 <p className="text-grayscale-600 font-notoSans text-[14px]">
-                    Connect to a sample school, sync demo badges and credentials, and explore how{' '}
-                    {brandingConfig?.name} works.
+                    {m['passport.buildMyLearnCard.demoSchool.description']({
+                        brand: brandingConfig?.name ?? '',
+                    })}
                 </p>
             </div>
 
@@ -304,18 +314,18 @@ const DemoSchoolBox: React.FC<DemoSchoolBoxProps> = ({}) => {
                 disabled={isDemoSchoolButtonDisabled}
             >
                 {isDemoSchoolLookupLoading
-                    ? 'Checking Demo School...'
+                    ? m['passport.buildMyLearnCard.demoSchool.checking']()
                     : isSyncLoading
                     ? demoSchoolStatus === 'connecting'
-                        ? 'Connecting to Demo School...'
-                        : 'Syncing Credentials...'
+                        ? m['passport.buildMyLearnCard.demoSchool.connecting']()
+                        : m['passport.buildMyLearnCard.demoSchool.syncing']()
                     : isDeleteLoading
                     ? demoSchoolStatus === 'disconnecting'
-                        ? 'Disconnecting From Demo School...'
-                        : 'Deleting Demo Credentials...'
+                        ? m['passport.buildMyLearnCard.demoSchool.disconnect']()
+                        : m['passport.buildMyLearnCard.demoSchool.deleting']()
                     : demoSchoolDataExists
-                    ? 'Delete Demo School'
-                    : 'Sync Demo School'}
+                    ? m['passport.buildMyLearnCard.demoSchool.delete']()
+                    : m['passport.buildMyLearnCard.demoSchool.sync']()}
                 {isDemoSchoolLookupLoading ? (
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : isSyncLoading ? (

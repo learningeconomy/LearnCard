@@ -3,6 +3,7 @@ import { UploadTypesEnum } from 'learn-card-base';
 import { useTheme } from '../../../../theme/hooks/useTheme';
 import CredentialEditView from './CredentialEditView';
 import { getWalletCategory, getCategoryDisplayLabel } from './AchievementTypeSelectorModal';
+import * as m from '../../../../paraglide/messages.js';
 
 export type ParsedCredential = { vc: any; metadata?: { name?: string; category?: string } };
 
@@ -44,9 +45,7 @@ export const CheckListCredentialReviewStep: React.FC<Props> = ({
     isLoading = false,
     onEditCredential,
 }) => {
-    const [selected, setSelected] = useState<Set<number>>(
-        new Set(credentials.map((_, i) => i))
-    );
+    const [selected, setSelected] = useState<Set<number>>(new Set(credentials.map((_, i) => i)));
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -97,19 +96,21 @@ export const CheckListCredentialReviewStep: React.FC<Props> = ({
             <div className="w-full bg-white shadow-button-bottom px-6 pt-4 pb-4 mt-4 rounded-[15px]">
                 <div className="flex items-center justify-between mb-3">
                     <h4 className="text-lg text-grayscale-900 font-notoSans font-semibold">
-                        Review Extracted Credentials
+                        {m['passport.buildMyLearnCard.review.title']()}
                     </h4>
                     <button
                         onClick={toggleAll}
                         className={`text-sm font-semibold text-${primaryColor}`}
                     >
-                        {allSelected ? 'Deselect All' : 'Select All'}
+                        {allSelected
+                            ? m['passport.buildMyLearnCard.review.deselectAll']()
+                            : m['passport.buildMyLearnCard.review.selectAll']()}
                     </button>
                 </div>
                 <p className="text-sm text-grayscale-600 font-notoSans mb-4">
                     {credentials.length === 0
-                        ? 'No credentials were extracted from this file.'
-                        : `Select the credentials you'd like to add to your LearnCard.`}
+                        ? m['passport.buildMyLearnCard.misc.noCredentialsExtracted']()
+                        : m['passport.buildMyLearnCard.review.subtitle']()}
                 </p>
 
                 <ul className="w-full flex flex-col gap-2">
@@ -199,14 +200,18 @@ export const CheckListCredentialReviewStep: React.FC<Props> = ({
                     onClick={onBack}
                     className="flex-1 py-3 rounded-[30px] font-semibold text-grayscale-900 bg-grayscale-200"
                 >
-                    Back
+                    {m['common.back']()}
                 </button>
                 <button
                     onClick={handleConfirm}
                     disabled={isLoading}
                     className={`flex-1 py-3 rounded-[30px] font-semibold text-white bg-${primaryColor} disabled:opacity-50`}
                 >
-                    {isLoading ? 'Saving...' : `Save${selected.size > 0 ? ` (${selected.size})` : ''}`}
+                    {isLoading
+                        ? m['passport.buildMyLearnCard.misc.saving']()
+                        : selected.size > 0
+                        ? m['passport.buildMyLearnCard.review.save']({ count: selected.size })
+                        : m['passport.buildMyLearnCard.misc.save']()}
                 </button>
             </div>
         </div>
