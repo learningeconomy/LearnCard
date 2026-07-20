@@ -226,6 +226,7 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
     );
 
     useEffect(() => {
+        if (!showClaimLink) return;
         let cancelled = false;
         void tryReadClipboardForClaim().then(text => {
             if (!cancelled && text) setPasted(text);
@@ -233,7 +234,7 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [showClaimLink]);
 
     const dragHandlers = useMemo(
         () => ({
