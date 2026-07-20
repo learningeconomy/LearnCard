@@ -17,6 +17,7 @@ import {
     SKILLS_TO_SUBSKILLS,
 } from './boostSkills';
 import { useModal, ModalTypes } from 'learn-card-base';
+import * as m from '../../../../../paraglide/messages.js';
 
 export enum BoostCMSSkillsAttachmentFormModeEnum {
     view = 'view',
@@ -233,12 +234,24 @@ export const BoostCMSSkillsAttachmentForm: React.FC<{
             <BoostCMSSkillOptions
                 state={_state as any}
                 setState={_setState as any}
-                title={<p className="text-left text-2xl font-notoSans text-grayscale-900">Add Skills</p>}
+                title={
+                    <p className="text-left text-2xl font-notoSans text-grayscale-900">
+                        {m['boostCMS.addSkills']()}
+                    </p>
+                }
                 showCloseButton={true}
-                handleAddSkill={(skill: any) => handleAddSkill(skill, BoostCMSSkillsAttachmentFormModeEnum.edit)}
-                handleRemoveSkill={(skill: any) => handleRemoveSkill(skill, BoostCMSSkillsAttachmentFormModeEnum.edit)}
-                handleAddSubSkill={(skill: any, subskill: any) => handleAddSubSkill(skill, subskill, BoostCMSSkillsAttachmentFormModeEnum.edit)}
-                handleRemoveSubSkill={(skill: any, subskill: any) => handleRemoveSubSkill(skill, subskill, BoostCMSSkillsAttachmentFormModeEnum.edit)}
+                handleAddSkill={(skill: any) =>
+                    handleAddSkill(skill, BoostCMSSkillsAttachmentFormModeEnum.edit)
+                }
+                handleRemoveSkill={(skill: any) =>
+                    handleRemoveSkill(skill, BoostCMSSkillsAttachmentFormModeEnum.edit)
+                }
+                handleAddSubSkill={(skill: any, subskill: any) =>
+                    handleAddSubSkill(skill, subskill, BoostCMSSkillsAttachmentFormModeEnum.edit)
+                }
+                handleRemoveSubSkill={(skill: any, subskill: any) =>
+                    handleRemoveSubSkill(skill, subskill, BoostCMSSkillsAttachmentFormModeEnum.edit)
+                }
                 handleCloseModal={() => closeCenterModal()}
                 handleSaveSkills={() => {
                     handleSaveSkills();
@@ -254,12 +267,24 @@ export const BoostCMSSkillsAttachmentForm: React.FC<{
             <BoostCMSSkillOptions
                 state={_state as any}
                 setState={_setState as any}
-                title={<p className="text-left text-2xl font-notoSans text-grayscale-900">Add Skills</p>}
+                title={
+                    <p className="text-left text-2xl font-notoSans text-grayscale-900">
+                        {m['boostCMS.addSkills']()}
+                    </p>
+                }
                 showCloseButton={false}
-                handleAddSkill={(skill: any) => handleAddSkill(skill, BoostCMSSkillsAttachmentFormModeEnum.edit)}
-                handleRemoveSkill={(skill: any) => handleRemoveSkill(skill, BoostCMSSkillsAttachmentFormModeEnum.edit)}
-                handleAddSubSkill={(skill: any, subskill: any) => handleAddSubSkill(skill, subskill, BoostCMSSkillsAttachmentFormModeEnum.edit)}
-                handleRemoveSubSkill={(skill: any, subskill: any) => handleRemoveSubSkill(skill, subskill, BoostCMSSkillsAttachmentFormModeEnum.edit)}
+                handleAddSkill={(skill: any) =>
+                    handleAddSkill(skill, BoostCMSSkillsAttachmentFormModeEnum.edit)
+                }
+                handleRemoveSkill={(skill: any) =>
+                    handleRemoveSkill(skill, BoostCMSSkillsAttachmentFormModeEnum.edit)
+                }
+                handleAddSubSkill={(skill: any, subskill: any) =>
+                    handleAddSubSkill(skill, subskill, BoostCMSSkillsAttachmentFormModeEnum.edit)
+                }
+                handleRemoveSubSkill={(skill: any, subskill: any) =>
+                    handleRemoveSubSkill(skill, subskill, BoostCMSSkillsAttachmentFormModeEnum.edit)
+                }
                 handleCloseModal={() => closeSheetModal()}
                 handleSaveSkills={() => {
                     handleSaveSkills();
@@ -288,8 +313,8 @@ export const BoostCMSSkillsAttachmentForm: React.FC<{
                     }}
                 >
                     <h1 className="text-black text-xl p-0 m-0 flex items-center justify-center font-notoSans">
-                        <PuzzlePiece className="h-[30px] w-[30px] mr-1 text-sp-purple-base" /> Skill
-                        Attachments
+                        <PuzzlePiece className="h-[30px] w-[30px] mr-1 text-sp-purple-base" />{' '}
+                        {m['boostCMS.skillAttachments']()}
                     </h1>
 
                     <div className="flex items-center justify-center text-grayscale-800 rounded-full bg-white w-12 h-12 shadow-3xl modal-btn-desktop">

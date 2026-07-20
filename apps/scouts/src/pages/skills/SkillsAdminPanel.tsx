@@ -8,13 +8,9 @@ import SkillsAdminPanelFramework from './SkillsAdminPanelFramework';
 import SelectFrameworkToManageModal from '../SkillFrameworks/SelectFrameworkToManageModal';
 import { IonSpinner } from '@ionic/react';
 
-import {
-    useModal,
-    ModalTypes,
-    conditionalPluralize,
-    useListMySkillFrameworks,
-} from 'learn-card-base';
+import { useModal, ModalTypes, useListMySkillFrameworks } from 'learn-card-base';
 import { SetState } from 'packages/shared-types/dist';
+import * as m from '../../paraglide/messages.js';
 import { SkillFramework } from '../../components/boost/boost';
 
 type SkillsAdminPanelProps = { setFrameworkToBrowse: SetState<SkillFramework | null> };
@@ -56,7 +52,9 @@ const SkillsAdminPanel: React.FC<SkillsAdminPanelProps> = ({ setFrameworkToBrows
             {!isLoadingFrameworks && (
                 <>
                     <h2 className="text-left text-grayscale-900 text-[20px] font-poppins">
-                        {conditionalPluralize(frameworks?.length, 'Competency Framework')}
+                        {frameworks?.length === 1
+                            ? m['skills.compFwOne']()
+                            : m['skills.compFwOther']({ count: frameworks?.length ?? 0 })}
                     </h2>
 
                     <div className="flex flex-col gap-[10px]">
@@ -65,7 +63,7 @@ const SkillsAdminPanel: React.FC<SkillsAdminPanelProps> = ({ setFrameworkToBrows
                             className="flex items-center justify-center gap-[10px] pl-[20px] pr-[15px] py-[7px] rounded-[30px] bg-indigo-500 text-white text-[17px] font-notoSans font-[600] leading-[24px] tracking-[0.25px]"
                         >
                             <Plus className="w-[25px] h-[25px]" />
-                            Create Framework
+                            {m['skillFrameworks.createFw']()}
                         </button>
                         {frameworksExist && (
                             <button
@@ -74,7 +72,7 @@ const SkillsAdminPanel: React.FC<SkillsAdminPanelProps> = ({ setFrameworkToBrows
                             >
                                 <Pencil className="w-[25px] h-[25px]" version={3} />
                                 {/* <PuzzlePiece version="with-plus" className="w-[25px] h-[25px]" /> */}
-                                Manage Competencies
+                                {m['skillFrameworks.mgComps']()}
                             </button>
                         )}
                     </div>

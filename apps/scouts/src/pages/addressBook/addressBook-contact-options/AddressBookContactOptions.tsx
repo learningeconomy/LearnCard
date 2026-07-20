@@ -17,6 +17,7 @@ import { useWallet } from 'learn-card-base';
 import Search from 'learn-card-base/svgs/Search';
 import ModalLayout from '../../../layout/ModalLayout';
 import { getAppBaseUrl } from '../../../config/bootstrapTenantConfig';
+import * as m from '../../../paraglide/messages.js';
 
 const AddressBookContactOptions: React.FC<{
     handleCloseModal: () => void;
@@ -94,12 +95,12 @@ const AddressBookContactOptions: React.FC<{
             await Clipboard.write({
                 string: `${getAppBaseUrl()}/connect?did=${walletDid}`,
             });
-            presentToast('Contact link copied to clipboard', {
+            presentToast(m['addressBook.toasts.contactLinkCopied'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy Contact link to clipboard', {
+            presentToast(m['addressBook.toasts.unableToCopyContactLink'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -130,7 +131,9 @@ const AddressBookContactOptions: React.FC<{
         <div className="py-[20px]">
             <div className="flex w-full flex-col items-center justify-center mb-4">
                 <div className="flex w-full items-center justify-center">
-                    <h6 className={`m-0 p-0 text-2xl font-medium font-rubik`}>Add Contact</h6>
+                    <h6 className={`m-0 p-0 text-2xl font-medium font-rubik`}>
+                        {m['addressBook.addContact']()}
+                    </h6>
                 </div>
             </div>
             <div className="w-full flex items-center justify-center px-4">
@@ -138,7 +141,8 @@ const AddressBookContactOptions: React.FC<{
                     onClick={() => openQRCodeModal()}
                     className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] font-medium text-white text-2xl w-full shadow-lg"
                 >
-                    <QRCodeScanner className="ml-[5px] h-[30px] w-[30px] mr-2" /> Show Code
+                    <QRCodeScanner className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                    {m['addressBook.showCode']()}
                 </button>
             </div>
 
@@ -148,7 +152,8 @@ const AddressBookContactOptions: React.FC<{
                         onClick={handleScan}
                         className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg modal-btn-mobile"
                     >
-                        <Camera className="ml-[5px] h-[30px] w-[30px] mr-2" /> Scan Code
+                        <Camera className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                        {m['addressBook.scanCode']()}
                     </button>
                 </div>
             )}
@@ -158,7 +163,8 @@ const AddressBookContactOptions: React.FC<{
                     onClick={handleShare}
                     className="flex items-center justify-center font-medium bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg"
                 >
-                    <LinkChain className="ml-[5px] h-[30px] w-[30px] mr-2" /> Share Code
+                    <LinkChain className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                    {m['addressBook.shareCode']()}
                 </button>
             </div>
 
@@ -168,7 +174,8 @@ const AddressBookContactOptions: React.FC<{
                         onClick={onSearchClick}
                         className="flex items-center justify-center font-medium bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg"
                     >
-                        <Search className="ml-[5px] h-[24px] w-[25px] mr-2" /> Search
+                        <Search className="ml-[5px] h-[24px] w-[25px] mr-2" />{' '}
+                        {m['common.search']()}
                     </button>
                 </div>
             )}

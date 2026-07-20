@@ -20,6 +20,7 @@ import {
 } from 'learn-card-base';
 
 import { usePathQuery } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 
@@ -155,7 +156,7 @@ const LearningHistoryPage: React.FC = () => {
                                     alt="learning history"
                                     className="w-[250px] h-[250px] m-auto"
                                 />
-                                <strong>No learning history yet</strong>
+                                <strong>{m['learningHistory.noHistory']()}</strong>
                             </section>
                         )}
 
@@ -196,7 +197,7 @@ const LearningHistoryPage: React.FC = () => {
                                     alt="learning history"
                                     className="w-[250px] h-[250px] m-auto"
                                 />
-                                <strong>No boosts to manage yet</strong>
+                                <strong>{m['achievements.noBoosts']()}</strong>
                             </section>
                         )}
 

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 import TrashBin from '../../../svgs/TrashBin';
 import { IonInput } from '@ionic/react';
+import * as m from '../../../../paraglide/messages.js';
 
 import { BoostCMSIssueTo, conditionalPluralize, UserProfilePicture } from 'learn-card-base';
 import { TroopsCMSState } from '../../troopCMSState';
@@ -110,7 +111,7 @@ export const TroopIDUsersList: React.FC<TroopIDUsersListProps> = ({
             {scoutsAndLeadersListCount > 0 && (
                 <div className="w-full flex items-start justify-center flex-col">
                     <h3 className="font-notoSans text-xl font-normal mb-2 text-grayscale-900">
-                        {conditionalPluralize(scoutsAndLeadersListCount, 'Member')}
+                        {conditionalPluralize(scoutsAndLeadersListCount, m['troops.memberOne']())}
                     </h3>
                     {isInTroopViewMode && scoutsListCount > 0 && leadersListCount > 0 && (
                         <div className="flex mb-2">
@@ -122,7 +123,7 @@ export const TroopIDUsersList: React.FC<TroopIDUsersListProps> = ({
                                         : 'text-grayscale-700'
                                 }`}
                             >
-                                All
+                                {m['boostCMS.all']()}
                             </button>
                             {scoutsListCount > 0 && (
                                 <button
@@ -133,7 +134,8 @@ export const TroopIDUsersList: React.FC<TroopIDUsersListProps> = ({
                                             : 'text-grayscale-700'
                                     }`}
                                 >
-                                    {scoutsListCount} {scoutsListCount === 1 ? 'Scout' : 'Scouts'}
+                                    {scoutsListCount}{' '}
+                                    {conditionalPluralize(scoutsListCount, m['troops.scoutOne']())}
                                 </button>
                             )}
 
@@ -147,14 +149,17 @@ export const TroopIDUsersList: React.FC<TroopIDUsersListProps> = ({
                                     }`}
                                 >
                                     {leadersListCount}{' '}
-                                    {leadersListCount === 1 ? 'Troop Leader' : 'Troop Leaders'}
+                                    {conditionalPluralize(
+                                        leadersListCount,
+                                        m['troops.leaderOne']()
+                                    )}
                                 </button>
                             )}
                         </div>
                     )}
                     <IonInput
                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-notoSans text-[17px] w-full troops-cms-placeholder"
-                        placeholder="Search..."
+                        placeholder={m['boost.searchPlaceholder']()}
                         value={search}
                         onIonInput={e => setSearch(e.detail.value ?? '')}
                     />
@@ -165,7 +170,8 @@ export const TroopIDUsersList: React.FC<TroopIDUsersListProps> = ({
 
             {filteredList?.length > 0 &&
                 filteredList.map((user, index) => {
-                    const typeTitle = user?.type === 'scout' ? 'Scout' : 'Troop Leader';
+                    const typeTitle =
+                        user?.type === 'scout' ? m['troops.scoutOne']() : m['troops.leaderOne']();
                     const deleteKey = user?.type === 'scout' ? 'issueTo' : 'admins';
 
                     return (

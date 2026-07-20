@@ -1,6 +1,7 @@
 import { IonLoading, IonRow, IonCol } from '@ionic/react';
 import useLogout from '../../hooks/useLogout';
 import { BrandingEnum } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 const ErrorLogout: React.FC = () => {
     const { handleLogout, isLoggingOut } = useLogout();
@@ -17,14 +18,13 @@ const ErrorLogout: React.FC = () => {
                 >
                     <div className="w-full overflow-y-scroll">
                         <p className="font-medium mb-[30px]">
-                            There was a sign-in error. Please log out and log back into the app to
-                            fix this error.
+                            {m['networkPrompts.errorLogout.msg']()}
                         </p>
                         <button
                             onClick={_handleLogout}
                             className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-sp-purple-base text-2xl w-full shadow-lg"
                         >
-                            Logout
+                            {m['networkPrompts.errorLogout.logoutBtn']()}
                         </button>
                     </div>
                 </div>

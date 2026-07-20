@@ -18,6 +18,7 @@ import {
     constructCustomBoostType,
 } from 'learn-card-base';
 import X from 'learn-card-base/svgs/X';
+import * as m from '../../../../paraglide/messages.js';
 
 const StateValidator = z.object({
     customType: z
@@ -182,7 +183,7 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
                                             setCustomBoostType(e.detail.value);
                                             setErrors({});
                                         }}
-                                        placeholder="Custom Type..."
+                                        placeholder={m['boost.customTypePlaceholder']()}
                                         type="text"
                                         className={`bg-white text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base ${
                                             errors?.customType ? 'border-red-500 border-2' : ''
@@ -216,7 +217,9 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
                                 <div className="flex items-center justify-center w-full">
                                     <div className="flex items-center justify-center w-full px-5 max-w-[95%]">
                                         <h2 className="divider-with-text-dynamic border-white border-solid border-b-[1px]">
-                                            <span className={`bg-${subColor} text-white`}>or</span>
+                                            <span className={`bg-${subColor} text-white`}>
+                                                {m['boost.or']()}
+                                            </span>
                                         </h2>
                                     </div>
                                 </div>
@@ -236,7 +239,7 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
                                 }}
                                 className="text-white text-center text-sm"
                             >
-                                Cancel
+                                {m['common.cancel']()}
                             </button>
                         </div>
                     </IonRow>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
+import * as m from '../../../../../paraglide/messages.js';
 import {
     useImageUpload,
     UploadRes,
@@ -160,7 +161,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                 onClick={handleOpenCategoryModal}
                 className="rounded-full p-0 text-base font-semibold bg-white text-grayscale-800 px-3 py-2 flex items-center justify-center border border-gray-300 w-[180px] relative"
             >
-                <span>All</span>
+                <span>{m['boostCMS.all']()}</span>
                 <CaretLeft className="h-auto w-[5px] text-grayscale-800 rotate-[-90deg] absolute right-3" />
             </button>
         );
@@ -194,13 +195,13 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                                 style={{ width: '100%', height: '100%' }}
                             />
                         </div>
-                        <p className="mt-2 font-mouse text-3xl">Loading...</p>
+                        <p className="mt-2 font-mouse text-3xl">{m['common.loading']()}</p>
                     </div>
                 ) : (
                     <div className="w-full max-w-3xl mx-auto px-4 flex flex-wrap items-start justify-center">
                         <div className="w-full flex items-center justify-between bg-white px-4 py-3 mb-4 rounded-lg shadow-sm">
                             <p className="text-grayscale-900 font-semibold text-base whitespace-nowrap mr-2">
-                                Style Pack
+                                {m['boostCMS.stylePack']()}
                             </p>
                             {categoryButton}
                         </div>
@@ -208,7 +209,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                         {(!flags?.disableCmsCustomization || isAdmin) && (
                             <button onClick={handleImageSelect} className="boost-cms-badge">
                                 <Camera className="boost-cms-camera-icon text-white" />
-                                <span className="upload-text">Upload</span>
+                                <span className="upload-text">{m['common.upload']()}</span>
                             </button>
                         )}
                         {photo && !isDefaultImage && (

@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../paraglide/messages.js';
 import { QRCodeSVG } from 'qrcode.react';
 
 import { VC } from '../../../../../../LearnCard/packages/learn-card-types/dist';
@@ -51,7 +52,7 @@ const QRCodeModalContent: React.FC<QRCodeModalContentProps> = ({
                     className="shrink-0 w-full py-2 h-full flex items-center justify-center text-grayscale-900 text-lg bg-purple-800 rounded-[20px] shadow-bottom font-notoSans"
                 >
                     <span className="mx-auto w-[90px] font-notoSans font-normal text-lg text-white">
-                        Share Link
+                        {m['scanner.shareLink']()}
                     </span>
                 </button>
             </div>

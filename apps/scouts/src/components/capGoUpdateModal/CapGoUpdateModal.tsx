@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 
+import * as m from '../../paraglide/messages.js';
 import { IonRow } from '@ionic/react';
 import ModalLayout from '../../layout/ModalLayout';
 import AppIcon from '../../assets/images/app-icon.png';
@@ -47,7 +48,7 @@ export const CapGoUpdateModal: React.FC<{
                 {currentVersion?.toString?.() !== 'builtin' &&
                     currentVersion?.toString?.() !== '' && (
                         <p className="text-[17px] text-grayscale-900 mt-2 font-medium">
-                            Current Version: {currentVersion}
+                            {m['auth.curVersion']({ version: currentVersion })}
                         </p>
                     )}
 
@@ -55,7 +56,7 @@ export const CapGoUpdateModal: React.FC<{
                     onClick={handleManualUpdate}
                     className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-emerald-700  text-2xl w-full shadow-lg max-w-[320px] mt-4"
                 >
-                    Update to {updateVersion}
+                    {m['auth.updateVer']({ version: updateVersion })}
                 </button>
             </div>
         </IonRow>

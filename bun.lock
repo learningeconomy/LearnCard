@@ -260,6 +260,7 @@
         "@capacitor/camera": "^8.2.0",
         "@capacitor/clipboard": "^8.0.1",
         "@capacitor/core": "8.3.1",
+        "@capacitor/device": "^8.0.0",
         "@capacitor/haptics": "^8.0.2",
         "@capacitor/ios": "^8.3.1",
         "@capacitor/keyboard": "^8.0.3",
@@ -347,6 +348,7 @@
       "devDependencies": {
         "@capacitor/cli": "^8.3.1",
         "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
+        "@inlang/paraglide-js": "^2.18.1",
         "@ionic/cli": "^7.2.1",
         "@playwright/test": "^1.51.0",
         "@tailwindcss/line-clamp": "^0.4.4",
@@ -355,6 +357,7 @@
         "@vitejs/plugin-basic-ssl": "^1.2.0",
         "@vitejs/plugin-react-swc": "^3.8.0",
         "autoprefixer": "^10.4.20",
+        "eslint-plugin-i18next": "^6.1.4",
         "jeep-sqlite": "2.5.8",
         "node-stdlib-browser": "1.2.1",
         "postcss": "^8.5.10",

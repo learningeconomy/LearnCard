@@ -38,6 +38,8 @@ import GoogleIcon from 'learn-card-base/assets/images/google-G-logo.svg';
 
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('login-page');
 
@@ -222,20 +224,23 @@ const LoginPage: React.FC = () => {
                                 </div>
 
                                 <h2 className="text-xl font-semibold text-grayscale-900 mb-2">
-                                    You're all set!
+                                    {m['login.youreAllSetTitle']()}
                                 </h2>
 
                                 <p className="text-sm text-grayscale-600 leading-relaxed mb-6">
                                     {accountHint ? (
-                                        <>
-                                            Sign in with{' '}
-                                            <span className="font-medium text-grayscale-900">
-                                                {accountHint}
-                                            </span>{' '}
-                                            to access your account.
-                                        </>
+                                        <TransP
+                                            m={m['login.signInWithAccess']}
+                                            values={{ name: accountHint }}
+                                            components={[
+                                                <span
+                                                    className="font-medium text-grayscale-900"
+                                                    key="name"
+                                                />,
+                                            ]}
+                                        />
                                     ) : (
-                                        'Now just sign in below to access your account.'
+                                        m['login.signInBelowAccess']()
                                     )}
                                 </p>
 
@@ -247,7 +252,7 @@ const LoginPage: React.FC = () => {
                                     }}
                                     className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                                 >
-                                    Continue to Sign In
+                                    {m['login.continueToSignIn']()}
                                 </button>
                             </div>
                         </IonRow>
@@ -272,15 +277,18 @@ const LoginPage: React.FC = () => {
 
                                         <span className="text-sm text-emerald-700 font-medium">
                                             {accountHint ? (
-                                                <>
-                                                    Sign in with{' '}
-                                                    <span className="font-semibold">
-                                                        {accountHint}
-                                                    </span>{' '}
-                                                    to finish
-                                                </>
+                                                <TransP
+                                                    m={m['login.signInWithFinish']}
+                                                    values={{ name: accountHint }}
+                                                    components={[
+                                                        <span
+                                                            className="font-semibold"
+                                                            key="name"
+                                                        />,
+                                                    ]}
+                                                />
                                             ) : (
-                                                'Device linked — sign in to finish'
+                                                m['login.deviceLinkedFinish']()
                                             )}
                                         </span>
                                     </div>
@@ -357,7 +365,7 @@ const LoginPage: React.FC = () => {
                                         onClick={() => setShowQrLogin(true)}
                                         className="text-sm text-grayscale-500 hover:text-grayscale-700 underline transition-colors"
                                     >
-                                        Sign in from another device
+                                        {m['login.signInFromDevice']()}
                                     </button>
                                 </IonRow>
                             )}

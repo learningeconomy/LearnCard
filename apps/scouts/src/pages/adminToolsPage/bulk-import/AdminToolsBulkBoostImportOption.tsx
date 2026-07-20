@@ -1,4 +1,5 @@
 import React, { useRef, useState, useMemo } from 'react';
+import * as m from '../../../paraglide/messages.js';
 import Papa from 'papaparse';
 import JSZip from 'jszip';
 import { useHistory } from 'react-router-dom';
@@ -244,7 +245,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
     const handleZipUpload = async event => {
         const file = event.target.files[0];
         if (!file || !file.name.endsWith('.zip')) {
-            presentToast('Please upload a valid ZIP file', {
+            presentToast(m['adminTools.toasts.validZip'](), {
                 type: ToastTypeEnum.Error,
             });
             return;
@@ -291,12 +292,12 @@ const AdminToolsBulkBoostImportOption: React.FC<{
             await uploadZipImages(imageMap);
 
             setZipUploaded(true);
-            presentToast(`Successfully processed ${imageMap.size} images from ZIP file`, {
+            presentToast(m['adminTools.toasts.imagesProcessed']({ count: imageMap.size }), {
                 type: ToastTypeEnum.Success,
             });
         } catch (error) {
             log.error('Error extracting ZIP file:', error);
-            presentToast('Error extracting ZIP file', {
+            presentToast(m['adminTools.toasts.zipExtractError'](), {
                 type: ToastTypeEnum.Error,
             });
         } finally {
@@ -435,7 +436,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
     const confirmImport = async () => {
         // Check for missing images
         if (hasMissingImages) {
-            presentToast('Please upload all required images before publishing', {
+            presentToast(m['adminTools.toasts.uploadAllImages'](), {
                 type: ToastTypeEnum.Error,
                 duration: 5000,
             });
@@ -443,10 +444,10 @@ const AdminToolsBulkBoostImportOption: React.FC<{
         }
 
         await confirm({
-            text: `Are you sure you want to upload ${conditionalPluralize(
-                csvData.length,
-                'Boost'
-            )}?`,
+            text: m['adminTools.bulkImport.confirmUploadSimple']({
+                count: csvData.length,
+                boosts: 'Boost',
+            }),
             onConfirm: handleBulkImport,
         });
     };
@@ -520,7 +521,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
 
             closeAllModals();
 
-            presentToast('Boosts imported successfully!', {
+            presentToast(m['adminTools.toasts.importSuccess'](), {
                 duration: 5000,
                 hasDismissButton: true,
                 type: ToastTypeEnum.Success,
@@ -528,7 +529,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
         } catch (e) {
             log.error('Failed to bulk import boosts: ', e?.message);
 
-            presentToast(`Bulk boost import failed! ${e?.message}`, {
+            presentToast(m['adminTools.toasts.importFailed']({ message: e?.message ?? '' }), {
                 duration: 5000,
                 hasDismissButton: true,
                 type: ToastTypeEnum.Error,
@@ -583,7 +584,10 @@ const AdminToolsBulkBoostImportOption: React.FC<{
         setImageTracking(prev => deleteIndexAndReindex(prev, rowIndex));
     };
 
-    const loadingText = `Importing boosts (${numBoostsCreated}/${csvData.length})...`;
+    const loadingText = m['adminTools.bulkImport.importingBoosts']({
+        created: numBoostsCreated,
+        total: csvData.length,
+    });
 
     const showLoader = isLoading || isUploadingImages;
 

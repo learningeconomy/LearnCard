@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../paraglide/messages.js';
 import { useModal, ModalTypes, useWallet } from 'learn-card-base';
 import { useQuery } from '@tanstack/react-query';
 import { IonSpinner } from '@ionic/react';
@@ -50,10 +51,10 @@ const SkillFrameworks: React.FC = () => {
             <div className="bg-white max-w-[800px] w-full rounded-[15px] p-[15px] shadow-box-bottom flex flex-col gap-[20px]">
                 <div className="flex flex-col gap-[5px]">
                     <h4 className="text-[20px] text-grayscale-900 text-left font-notoSans">
-                        Manage Skill Frameworks
+                        {m['skillFrameworks.manageFw']()}
                     </h4>
                     <p className="text-[14px] text-grayscale-600 font-notoSans">
-                        Manage and import skill frameworks.
+                        {m['skillFrameworks.manageFwDesc']()}
                     </p>
                 </div>
 
@@ -63,7 +64,7 @@ const SkillFrameworks: React.FC = () => {
                         className="bg-indigo-500 text-white pl-[20px] pr-[15px] py-[7px] rounded-[30px] flex gap-[10px] items-center justify-center text-[17px] font-[600] font-notoSans leading-[24px] tracking-[0.25px]"
                     >
                         <Plus className="w-[25px] h-[25px]" />
-                        Create Framework
+                        {m['skillFrameworks.createFw']()}
                     </button>
 
                     <button
@@ -71,7 +72,7 @@ const SkillFrameworks: React.FC = () => {
                         className="bg-grayscale-900 text-white pl-[20px] pr-[15px] py-[7px] rounded-[30px] flex gap-[10px] items-center justify-center text-[17px] font-[600] font-notoSans leading-[24px] tracking-[0.25px]"
                     >
                         <UploadIcon className="w-[25px] h-[25px]" strokeWidth="2" />
-                        Import Skills
+                        {m['skillFrameworks.importSkills']()}
                     </button>
                 </div>
 
@@ -82,7 +83,9 @@ const SkillFrameworks: React.FC = () => {
 
             <div className="bg-white max-w-[800px] w-full rounded-[15px] p-[15px] shadow-box-bottom flex flex-col gap-[20px]">
                 <h4 className="text-[20px] text-grayscale-900 text-left font-notoSans">
-                    {frameworks.length} Skill Framework{frameworks.length !== 1 ? 's' : ''}
+                    {frameworks.length === 1
+                        ? m['skillFrameworks.fwCountOne']({ count: frameworks.length })
+                        : m['skillFrameworks.fwCountOther']({ count: frameworks.length })}
                 </h4>
 
                 {isLoading ? (
@@ -92,13 +95,13 @@ const SkillFrameworks: React.FC = () => {
                 ) : isError ? (
                     <div className="text-center py-[40px]">
                         <p className="text-red-600 font-notoSans text-[14px]">
-                            Failed to load frameworks. Please try again.
+                            {m['skillFrameworks.failLoadFw']()}
                         </p>
                     </div>
                 ) : frameworks.length === 0 ? (
                     <div className="text-center py-[40px]">
                         <p className="text-grayscale-600 font-notoSans text-[14px]">
-                            No frameworks yet. Create one to get started!
+                            {m['skillFrameworks.noFwYet']()}
                         </p>
                     </div>
                 ) : (
@@ -110,7 +113,7 @@ const SkillFrameworks: React.FC = () => {
                                       month: 'long',
                                       day: 'numeric',
                                   })
-                                : 'Unknown date';
+                                : m['skillFrameworks.unknown']();
 
                             return (
                                 <div
@@ -126,7 +129,7 @@ const SkillFrameworks: React.FC = () => {
                                     )}
                                     <div className="flex flex-col flex-1">
                                         <p className="text-[14px] font-[600] line-clamp-2 font-notoSans">
-                                            {framework.name || 'Untitled Framework'}
+                                            {framework.name || m['skillFrameworks.untitledFw']()}
                                         </p>
                                         {framework.description && (
                                             <p className="text-[12px] text-grayscale-600 font-notoSans line-clamp-1 mt-[2px]">
@@ -134,7 +137,7 @@ const SkillFrameworks: React.FC = () => {
                                             </p>
                                         )}
                                         <p className="text-[12px] text-grayscale-500 font-notoSans mt-[4px]">
-                                            Created {createdDate}
+                                            {m['skillFrameworks.createdFw']({ date: createdDate })}
                                         </p>
                                     </div>
                                     <button

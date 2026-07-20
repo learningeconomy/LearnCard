@@ -66,6 +66,12 @@ jobs:
             - name: Check for missing i18n message keys
               run: node apps/learn-card-app/scripts/check-i18n-keys.mjs
 
+            - name: Check ScoutPass i18n keys, imports, and parity
+              run: |
+                  node apps/scouts/scripts/check-i18n-keys.mjs
+                  node apps/scouts/scripts/check-i18n-imports.mjs
+                  node apps/scouts/scripts/check-i18n-parity.mjs
+
             # Interpolation integrity: every es/fr/ar value must carry the same
             # {{vars}} and <n> markup as its en source. Renamed/hallucinated vars
             # and markup drift fail hard; correct linguistic drops are allowlisted
@@ -73,12 +79,18 @@ jobs:
             - name: Check i18n interpolation markers
               run: node apps/learn-card-app/scripts/check-i18n-markers.mjs --strict
 
+            - name: Check ScoutPass i18n interpolation markers
+              run: node apps/scouts/scripts/check-i18n-markers.mjs --strict
+
             # English-fallback guard: no es/fr/ar value may be a verbatim copy of
             # the English source (renders English under a non-English UI). Verified
             # legitimate cognates/brand/code are baselined in
             # scripts/i18n-untranslated-allowlist.json.
             - name: Check for untranslated (English-fallback) i18n values
               run: node apps/learn-card-app/scripts/check-i18n-untranslated.mjs --strict
+
+            - name: Check ScoutPass untranslated i18n values
+              run: node apps/scouts/scripts/check-i18n-untranslated.mjs --strict
 
     # Separate job: unlike I18nKeys (pure-Node, no install), this one needs eslint
     # + @typescript-eslint/parser, so it pays for the dependency install.
@@ -101,3 +113,9 @@ jobs:
             - name: Run frozen-memo guard
               working-directory: apps/learn-card-app
               run: bun run i18n:check-memos
+
+            - name: Run ScoutPass i18n AST guards
+              working-directory: apps/scouts
+              run: |
+                  bun run i18n:check-memos
+                  bun run i18n:check-ast

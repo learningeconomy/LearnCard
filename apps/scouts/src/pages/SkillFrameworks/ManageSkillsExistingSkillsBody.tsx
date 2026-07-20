@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import * as m from '../../paraglide/messages.js';
 
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';
 import FileExportIcon from 'learn-card-base/svgs/FileExportIcon';
@@ -91,7 +92,7 @@ const ManageSkillsExistingSkillsBody: React.FC<ManageSkillsExistingSkillsBodyPro
                 >
                     <div className="flex flex-col">
                         <h4 className="text-[19px] text-grayscale-900 font-poppins font-[500]">
-                            Review & Edit Framework
+                            {m['skillFrameworks.reviewEditFw']()}
                         </h4>
 
                         <FrameworkSkillsCount
@@ -110,11 +111,11 @@ const ManageSkillsExistingSkillsBody: React.FC<ManageSkillsExistingSkillsBodyPro
 
             <div className="bg-white max-w-[800px] w-full rounded-[20px] p-[15px] shadow-box-bottom flex flex-col gap-[15px]">
                 <h4 className="text-[19px] text-grayscale-900 font-poppins font-[500]">
-                    Edit JSON
+                    {m['skillFrameworks.editJson']()}
                 </h4>
 
                 <p className="text-[14px] text-grayscale-90 font-poppins">
-                    Export your current framework, make changes and re-upload.
+                    {m['skillFrameworks.exportFwDesc']()}
                 </p>
 
                 <ManageSkillsFileInfoDisplay
@@ -132,17 +133,19 @@ const ManageSkillsExistingSkillsBody: React.FC<ManageSkillsExistingSkillsBodyPro
                     className="bg-grayscale-100 text-grayscale-900 pl-[20px] pr-[15px] py-[7px] rounded-[30px] flex gap-[10px] items-center justify-center text-[17px] font-[600] font-notoSans leading-[24px] tracking-[0.25px] disabled:opacity-70"
                 >
                     <FileExportIcon className="w-[25px] h-[25px]" color="currentColor" />
-                    {isExporting ? 'Exporting...' : 'Export Framework'}
+                    {isExporting
+                        ? m['skillFrameworks.exporting']()
+                        : m['skillFrameworks.exportFw']()}
                 </button>
             </div>
 
             <div className="bg-white max-w-[800px] w-full rounded-[20px] p-[15px] shadow-box-bottom flex flex-col gap-[15px]">
                 <h4 className="text-[19px] text-grayscale-900 font-poppins font-[500]">
-                    Replace Framework
+                    {m['skillFrameworks.replaceFw']()}
                 </h4>
 
                 <p className="text-[14px] text-grayscale-90 font-poppins">
-                    To replace your current framework, you can upload a new JSON file.
+                    {m['skillFrameworks.replaceFwDesc']()}
                 </p>
 
                 {/* <p className="text-[14px] text-grayscale-90 font-poppins">

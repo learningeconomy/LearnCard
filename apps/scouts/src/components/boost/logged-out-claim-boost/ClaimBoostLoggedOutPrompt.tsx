@@ -25,6 +25,7 @@ import SocialLogins from '../../../components/social-logins/SocialLogins';
 import useFirebase from '../../../hooks/useFirebase';
 import { VC } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 
 const log = getLogger('claim-boost-logged-out-prompt');
 
@@ -33,22 +34,22 @@ const getBoostHeadline = (boost?: VC): string => {
     const boostName =
         (boost as any)?.name ??
         (boost as any)?.credentialSubject?.achievement?.name ??
-        'this boost';
+        m['claimBoost.thisBoost']();
 
     switch (boostCategory) {
         case BoostCategoryOptionsEnum.globalAdminId:
         case BoostCategoryOptionsEnum.nationalNetworkAdminId:
-            return `You've been invited to be an admin of ${boostName}`;
+            return m['claimBoost.invitedAdmin']({ name: boostName });
         case BoostCategoryOptionsEnum.troopLeaderId:
-            return `You've been invited to be a leader of ${boostName}`;
+            return m['claimBoost.invitedLeader']({ name: boostName });
         case BoostCategoryOptionsEnum.scoutId:
-            return `You've been invited to join ${boostName}`;
+            return m['claimBoost.invitedJoin']({ name: boostName });
         case BoostCategoryOptionsEnum.meritBadge:
-            return `You've been sent a Merit Badge`;
+            return m['claimBoost.sentMeritBadge']();
         case BoostCategoryOptionsEnum.socialBadge:
-            return `You've been sent a Social Boost`;
+            return m['claimBoost.sentSocialBoost']();
         default:
-            return 'Someone sent you a credential';
+            return m['claimBoost.sentCredential']();
     }
 };
 
@@ -60,12 +61,12 @@ const getBoostActionLabel = (boost?: VC): string => {
         case BoostCategoryOptionsEnum.nationalNetworkAdminId:
         case BoostCategoryOptionsEnum.troopLeaderId:
         case BoostCategoryOptionsEnum.scoutId:
-            return 'Sign in to Accept';
+            return m['claimBoost.signInAccept']();
         case BoostCategoryOptionsEnum.meritBadge:
         case BoostCategoryOptionsEnum.socialBadge:
-            return 'Sign in to Claim';
+            return m['claimBoost.signInClaim']();
         default:
-            return 'Sign In to View and Claim';
+            return m['claimBoost.signInViewClaim']();
     }
 };
 
@@ -133,7 +134,7 @@ export const ClaimBoostLoggedOutPrompt: React.FC<{
                                 <div className="flex flex-col items-center justify-center gap-4">
                                     <span className="w-10 h-10 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                     <p className="text-sm font-medium text-white/90">
-                                        Loading boost...
+                                        {m['claimBoost.loadingBoost']()}
                                     </p>
                                 </div>
                             </IonCol>
@@ -352,13 +353,13 @@ const ClaimBoostLoggedOutPromptMobile: React.FC<{
 
                 <div className="mt-[24px] flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] font-semibold text-white/80">
                     <button onClick={openLCwebsite} className="transition-colors hover:text-white">
-                        Learn More
+                        {m['common.learnMore']()}
                     </button>
                     <button onClick={openToS} className="transition-colors hover:text-white">
-                        Terms of Service
+                        {m['common.termsOfService']()}
                     </button>
                     <button onClick={openPP} className="transition-colors hover:text-white">
-                        Privacy Policy
+                        {m['common.privacyPolicy']()}
                     </button>
                 </div>
             </div>

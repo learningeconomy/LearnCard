@@ -102,6 +102,7 @@ import {
 } from '../components/debug/authDebugEvents';
 
 import { RecoveryFlowModal } from '../components/recovery/RecoveryFlowModal';
+import * as m from '../paraglide/messages.js';
 import { RecoverySetupModal } from '../components/recovery/RecoverySetupModal';
 import ReAuthOverlay from '../components/auth/ReAuthOverlay';
 
@@ -133,7 +134,7 @@ const ScoutsDeviceLinkOverlay: React.FC<{
                 if (cancelled) return;
 
                 if (!share) {
-                    setError('No device key found.');
+                    setError(m['auth.noDeviceKey']());
                     setLoading(false);
                     return;
                 }
@@ -151,7 +152,7 @@ const ScoutsDeviceLinkOverlay: React.FC<{
             } catch (e) {
                 if (cancelled) return;
 
-                setError(e instanceof Error ? e.message : 'Failed to retrieve device key');
+                setError(e instanceof Error ? e.message : m['auth.keyFail']());
                 setLoading(false);
             }
         };
@@ -168,7 +169,7 @@ const ScoutsDeviceLinkOverlay: React.FC<{
             <Overlay>
                 <div className="p-6 flex flex-col items-center">
                     <div className="w-8 h-8 border-2 border-gray-200 border-t-purple-600 rounded-full animate-spin mb-3" />
-                    <p className="text-sm text-gray-500">Preparing secure link...</p>
+                    <p className="text-sm text-gray-500">{m['auth.prepLink']()}</p>
                 </div>
             </Overlay>
         );
@@ -178,15 +179,13 @@ const ScoutsDeviceLinkOverlay: React.FC<{
         return (
             <Overlay>
                 <div className="p-6 text-center">
-                    <p className="text-sm text-red-600 mb-4">
-                        {error ?? 'No device key available'}
-                    </p>
+                    <p className="text-sm text-red-600 mb-4">{error ?? m['auth.noDeviceKey']()}</p>
 
                     <button
                         onClick={onClose}
                         className="py-2.5 px-4 rounded-lg border border-gray-300 text-gray-700 font-medium text-sm"
                     >
-                        Close
+                        {m['common.close']()}
                     </button>
                 </div>
             </Overlay>
@@ -1224,11 +1223,11 @@ const AuthSessionManager: React.FC<{
 
                         <div className="space-y-2">
                             <h2 className="text-xl font-semibold text-grayscale-900">
-                                Upgrading Account
+                                {m['auth.upgradeAcct']()}
                             </h2>
 
                             <p className="text-sm text-grayscale-600 leading-relaxed">
-                                We're upgrading your account security. This may take a moment.
+                                {m['auth.upgradeDesc']()}
                             </p>
                         </div>
                     </div>
@@ -1275,7 +1274,7 @@ const AuthSessionManager: React.FC<{
                                 <div className="p-8 flex flex-col items-center">
                                     <div className="w-8 h-8 border-2 border-grayscale-200 border-t-emerald-600 rounded-full animate-spin mb-3" />
                                     <p className="text-sm text-grayscale-500">
-                                        Verifying session...
+                                        {m['auth.verifySess']()}
                                     </p>
                                 </div>
                             </Overlay>

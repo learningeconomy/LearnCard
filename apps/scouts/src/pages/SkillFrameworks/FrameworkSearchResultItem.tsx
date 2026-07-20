@@ -2,6 +2,7 @@ import React from 'react';
 import { middleTruncate, useGetSkillPath } from 'learn-card-base';
 
 import { IonSpinner } from '@ionic/react';
+import * as m from '../../paraglide/messages.js';
 import TierIcon from './TierIcon';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
 import SlimCaretRight from '../../components/svgs/SlimCaretRight';
@@ -100,7 +101,7 @@ const FrameworkSearchResultItem: React.FC<FrameworkSearchResultItemProps> = ({
                             {node.targetName}
                         </span>
                         <span className="flex font-poppins text-[12px] text-grayscale-700 font-[700]">
-                            Framework Tier •{' '}
+                            {m['skillFrameworks.fwTierResult']()}{' '}
                             <FrameworkSkillsCount
                                 frameworkId={frameworkInfo.id}
                                 skillId={node.id}

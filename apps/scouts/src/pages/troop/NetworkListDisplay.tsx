@@ -17,6 +17,7 @@ import TroopListItemCard from './TroopListItemCard';
 import { OrangeScoutsNetworkTent } from 'learn-card-base/svgs/ScoutsNetworkTent';
 import { IonRow, IonCol, IonInput, IonSpinner } from '@ionic/react';
 
+import * as m from '../../paraglide/messages.js';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { TroopsCMSViewModeEnum } from '../../components/troopsCMS/troopCMSState';
 
@@ -105,7 +106,7 @@ const NetworkListDisplay: React.FC<NetworkListDisplayProps> = ({
                             <IonCol className="flex w-full items-center justify-start ion-no-padding gap-[10px]">
                                 <IonInput
                                     autocapitalize="on"
-                                    placeholder="Search network titles..."
+                                    placeholder={m['troops.membersList.startPlaceholder']()}
                                     value={search}
                                     className="bg-white text-grayscale-800 !px-4 !py-1 rounded-[15px] text-[17px] font-notoSans"
                                     onIonInput={e => setSearch(e?.detail?.value as string)}

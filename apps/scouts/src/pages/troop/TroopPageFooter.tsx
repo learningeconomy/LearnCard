@@ -21,6 +21,7 @@ import TroopActionMenu from './TroopActionMenu';
 import ScoutConnectModal from './ScoutConnectModal';
 import InviteSelectionModal from './InviteSelectionModal';
 
+import * as m from '../../paraglide/messages.js';
 import { getScoutsRole, getScoutsRoleLabelForCred } from '../../helpers/troop.helpers';
 import { VC, Boost } from '@learncard/types';
 
@@ -194,14 +195,14 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
                             onClick={showIdDetails ? handleDetails : closeTroopPage}
                             className="bg-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom"
                         >
-                            Back
+                            {m['common.back']()}
                         </button>
 
                         <button
                             onClick={openEditTroopOrNetworkModal}
                             className="bg-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom"
                         >
-                            Edit
+                            {m['common.edit']()}
                         </button>
 
                         <button
@@ -225,7 +226,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
                             onClick={closeTroopPage}
                             className="bg-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom"
                         >
-                            Back
+                            {m['common.back']()}
                         </button>
 
                         {!isRevoked && (
@@ -246,7 +247,7 @@ const TroopPageFooter: React.FC<TroopPageFooterProps> = ({
                             }}
                             className="bg-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom"
                         >
-                            Back
+                            {m['common.back']()}
                         </button>
 
                         {!isRevoked && (

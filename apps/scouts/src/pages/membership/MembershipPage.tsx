@@ -30,6 +30,7 @@ const TroopsModalWrapper = lazyWithRetry(
 );
 
 import { openExternalLink } from '../../helpers/externalLinkHelpers';
+import * as m from '../../paraglide/messages.js';
 import {
     SubheaderContentType,
     SubheaderTypeEnum,
@@ -51,7 +52,7 @@ export const SignUpForWaitList: React.FC = () => {
                 onClick={handleClick}
                 className="text-white text-2xl font-medium bg-sp-purple-base rounded-full shadow-bottom py-[10px] px-[20px] text-black mt-[10px]"
             >
-                Join Waiting List
+                {m['membership.joinWait']()}
             </button>
         </div>
     );
@@ -77,7 +78,7 @@ const MembershipPage: React.FC = () => {
     } = useGetCredentialList(CredentialCategoryEnum.membership);
 
     // logic to show the plus button
-const canCreateGlobalIDs = flags?.canCreateGlobalAdminId ?? false;
+    const canCreateGlobalIDs = flags?.canCreateGlobalAdminId ?? false;
     const { data: earnedBoostIDs, isLoading: earnedBoostIDsLoading } = useGetIDs();
     // oxlint-disable-next-line no-unused-vars
     const { data: troopIds, isLoading: troopIdsLoading } = useGetCurrentUserTroopIdsResolved();
@@ -128,9 +129,9 @@ const canCreateGlobalIDs = flags?.canCreateGlobalAdminId ?? false;
         defaultImg: imgSrc,
         viewMode: BoostPageViewMode.Card,
         category: BoostCategoryOptionsEnum.membership,
-        title: 'Troops',
+        title: m['membership.troops'](),
         bgFillerColor: '!sp-green-forest-light',
-        emptyMessage: "You don't have any Troops yet.",
+        emptyMessage: m['membership.empty'](),
         emptyMessageColor: 'text-[#0F631D]',
     };
 

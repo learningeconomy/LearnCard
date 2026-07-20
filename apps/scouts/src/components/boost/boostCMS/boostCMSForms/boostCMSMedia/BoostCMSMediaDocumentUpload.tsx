@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Keyboard } from '@capacitor/keyboard';
+import * as m from '../../../../../paraglide/messages.js';
 import { useImageUpload, UploadRes } from 'learn-card-base';
 import { VIEWER_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { IonCol, IonRow, IonInput } from '@ionic/react';
@@ -76,7 +77,7 @@ const BoostCMSMediaDocumentUpload: React.FC<{
                 <IonInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium text-base font-notoSans`}
-                    placeholder="Title"
+                    placeholder={m['boostCMS.titleField']()}
                     type="text"
                     value={state?.documents?.[currentIndex]?.title}
                     onIonInput={e => {
@@ -110,7 +111,7 @@ const BoostCMSMediaDocumentUpload: React.FC<{
 
                     {uploadProgress !== false && (
                         <p className="font-medium text-[#FF3636]">
-                            {uploadProgress?.toString?.()}% uploaded
+                            {m['boostCMS.uploadProgress']({ progress: uploadProgress as number })}
                         </p>
                     )}
                 </div>
@@ -129,7 +130,7 @@ const BoostCMSMediaDocumentUpload: React.FC<{
                 }}
                 className={`flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg font-notoSans`}
             >
-                Save
+                {m['common.save']()}
             </button>
 
             {documentSrc && (
@@ -137,7 +138,7 @@ const BoostCMSMediaDocumentUpload: React.FC<{
                     onClick={handleDocumentSelect}
                     className="flex items-center mt-[20px] justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg font-notoSans"
                 >
-                    Change Document
+                    {m['boostCMS.changeDocument']()}
                 </button>
             )}
 
@@ -152,7 +153,7 @@ const BoostCMSMediaDocumentUpload: React.FC<{
                     }}
                     className="text-grayscale-900 text-center text-sm font-notoSans"
                 >
-                    Cancel
+                    {m['common.cancel']()}
                 </button>
             </div>
         </>

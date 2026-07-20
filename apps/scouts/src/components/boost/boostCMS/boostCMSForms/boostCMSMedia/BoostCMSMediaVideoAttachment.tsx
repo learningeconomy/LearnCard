@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Keyboard } from '@capacitor/keyboard';
+import * as m from '../../../../../paraglide/messages.js';
 import { IonCol, IonRow, IonInput } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import { Updater } from 'use-immer';
@@ -64,7 +65,7 @@ const BoostCMSMediaVideoAttachment: React.FC<{
                 <IonInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base font-notoSans`}
-                    placeholder="Title"
+                    placeholder={m['boostCMS.titleField']()}
                     type="text"
                     value={state.videos?.[currentIndex]?.title || newLinkTitle}
                     onIonInput={e => {
@@ -85,7 +86,7 @@ const BoostCMSMediaVideoAttachment: React.FC<{
                 <IonInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base font-notoSans`}
-                    placeholder="Paste link..."
+                    placeholder={m['boostCMS.pasteLink']()}
                     type="text"
                     value={state.videos?.[currentIndex]?.url || newLinkUrl}
                     onIonInput={e => {
@@ -123,7 +124,7 @@ const BoostCMSMediaVideoAttachment: React.FC<{
                 }}
                 className={`flex items-center justify-center rounded-full px-[18px] py-[12px] text-white text-2xl w-full shadow-lg bg-grayscale-900 font-notoSans`}
             >
-                Save
+                {m['common.save']()}
             </button>
             <div className="w-full flex items-center justify-center mt-[20px]">
                 <button
@@ -136,7 +137,7 @@ const BoostCMSMediaVideoAttachment: React.FC<{
                     }}
                     className="text-grayscale-900 text-center text-sm"
                 >
-                    Cancel
+                    {m['common.cancel']()}
                 </button>
             </div>
         </>

@@ -3,6 +3,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { isLocalhost } from 'learn-card-base';
 import SpilledCup from '../svgs/SpilledCup';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 const log = getLogger('generic-error-boundary');
 
 type ErrorFallbackProps = {
@@ -17,15 +18,15 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({ error, resetErrorBoundary
         <div className="text-grayscale-900 h-full w-full flex flex-col gap-[50px] items-center justify-center p-4">
             <div className="text-[17px] text-black font-poppins flex flex-col gap-[10px] items-center leading-[130%] tracking-[-0.25px] w-full mx-[20px]">
                 <SpilledCup />
-                Something went wrong.
+                {m['boost.somethingWentWrong']()}
                 {showError && (
                     <div className="bg-red-50 p-4 rounded-lg mb-4 w-full max-w-md">
-                        <p className="text-red-800 font-medium">Error:</p>
+                        <p className="text-red-800 font-medium">{m['errorDebug.detailsLabel']()}</p>
                         <p className="text-red-700 text-sm mt-1 break-words">{error.message}</p>
                         {error.stack && (
                             <details className="mt-2">
                                 <summary className="text-sm text-red-600 cursor-pointer">
-                                    View stack trace
+                                    {m['errorDebug.viewStackTrace']()}
                                 </summary>
                                 <pre className="bg-black/5 p-2 rounded text-xs mt-1 overflow-auto max-h-40">
                                     {error.stack}
@@ -42,13 +43,13 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({ error, resetErrorBoundary
                         resetErrorBoundary ? resetErrorBoundary : () => window.location.reload()
                     }
                 >
-                    Try Again
+                    {m['error.retry']()}
                 </button>
                 <button
                     className="bg-sp-purple-base py-[7px] px-[15px] rounded-[30px] text-[14px] text-white font-[600] leading-[24px] tracking-[0.25px] shadow-button-bottom font-poppins"
                     onClick={() => (window.location.href = '/')}
                 >
-                    Go Home
+                    {m['error.goHome']()}
                 </button>
             </div>
         </div>

@@ -2,6 +2,7 @@ import React from 'react';
 
 import { IonPage } from '@ionic/react';
 import ModalLayout from '../../layout/ModalLayout';
+import * as m from '../../paraglide/messages.js';
 
 import CategoryDescriptor from '../../components/category-descriptor/CategoryDescriptor';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
@@ -63,7 +64,7 @@ const CategoryDescriptorModal: React.FC<CategoryDescriptorModalProps> = ({
                 <div className="w-full max-w-[400px] mx-auto p-[30px]">
                     <ImageComponent className="h-[100px] w-[100px] m-auto" />
                     <p className="text-center text-[22px] font-poppins font-normal leading-[130%] text-grayscale-900">
-                        About {title}
+                        {m['credsBundle.aboutTitle']({ title })}
                     </p>
                     <CategoryDescriptor category={category} className="text-left mt-[10px]" />
                 </div>

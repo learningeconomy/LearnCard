@@ -1,3 +1,4 @@
+import * as m from '../../paraglide/messages.js';
 import React, { useState } from 'react';
 import Lottie from 'react-lottie-player';
 
@@ -76,7 +77,7 @@ const LocationSearch: React.FC<{
                                 <div className="flex items-center justify-start w-full mt-4">
                                     <IonInput
                                         autocapitalize="on"
-                                        placeholder="Enter your location..."
+                                        placeholder={m['auth.locPlace']()}
                                         value={locationSearch}
                                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base"
                                         onIonInput={e => {
@@ -133,14 +134,14 @@ const LocationSearch: React.FC<{
                                     />
                                 </div>
                                 <p className="font-bold text-grayscale-800 mt-[20px]">
-                                    No search results yet
+                                    {m['auth.noResults']()}
                                 </p>
                             </section>
                         )}
                     </ul>
                 </section>
                 <div className="absolute bottom-[5px] right-[15px] flex items-center justify-center text-grayscale-500">
-                    powered by <img src={GoogleLogo} className="ml-1 h-[20px]" />
+                    {m['auth.poweredBy']()} <img src={GoogleLogo} className="ml-1 h-[20px]" />
                 </div>
             </IonContent>
         </IonPage>

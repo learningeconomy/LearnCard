@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 // import AdminToolsAccountSwitcherButton from '../AdminToolsAccountSwitcher/AdminToolsAccountSwitcherButton';
 import WrenchIcon from 'learn-card-base/svgs/WrenchIcon';
@@ -11,7 +12,7 @@ export const AdminToolsModalHeader: React.FC = () => {
                     <WrenchIcon className="w-[40px] h-[40px] text-white" />
                 </div>
                 <h2 className="text-[22px] text-grayscale-800 font-semibold font-notoSans text-center">
-                    Advanced Tools
+                    {m['adminTools.advancedTools']()}
                 </h2>
             </div>
             {/* <AdminToolsAccountSwitcherButton /> */}

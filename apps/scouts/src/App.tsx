@@ -17,6 +17,7 @@ import firstStartupStore, {
     useIntroSlidesCompleted,
 } from 'learn-card-base/stores/firstStartupStore';
 import IntroSlides from './components/intro-slides/IntroSlides';
+import { useEnforceVisibleLocale } from './i18n/useLanguageSelectorConfig';
 
 import LoginLoadingPage from './pages/login/LoginPageLoader/LoginLoader';
 
@@ -56,6 +57,10 @@ networkStore.set.cloudUrl(SCOUTCLOUD_URL);
 networkStore.set.apiEndpoint(SCOUTPASS_API_ENDPOINT);
 
 const App: React.FC = () => {
+    // Keep the active locale within the LaunchDarkly-allowed set (falls a hidden
+    // locale back to a visible one). Must run unconditionally, above the
+    // intro-slides early return, since hooks can't sit behind a conditional.
+    useEnforceVisibleLocale();
     useIntroSlidesCompleted();
     const introSlidesCompleted = firstStartupStore.get.introSlidesCompleted();
     const isLoggedIn = useIsLoggedIn();

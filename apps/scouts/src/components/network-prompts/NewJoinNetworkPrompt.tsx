@@ -29,6 +29,7 @@ import ErrorLogout from './ErrorLogout';
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 const log = getLogger('new-join-network-prompt');
 
 const StateValidator = z.object({
@@ -293,7 +294,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
             {createLoading && (
                 <div className="absolute top-0 z-[10000] flex h-full w-full flex-col items-center justify-center gap-[5px] bg-white bg-opacity-70 backdrop-blur-[3px]">
                     <IonSpinner color="dark" />
-                    <span className="text-grayscale-900">Joining Network...</span>
+                    <span className="text-grayscale-900">{m['networkPrompts.joiningNet']()}</span>
                 </div>
             )}
 
@@ -305,7 +306,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                                 className={`font-notoSans select-none text-xl font-medium tracking-wider text-center`}
                             >
                                 <span className="font-notoSans font-normal text-center text-grayscale-900">
-                                    Welcome to
+                                    {m['networkPrompts.welcomeTo']()}
                                 </span>
                                 <br />
                                 <div className="tracking-[12px] text-lg font-bold text-grayscale-900">
@@ -315,7 +316,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                         </div>
                         <div className="flex w-full items-center justify-center text-center">
                             <h1 className="text-center text-base mt-2 font-normal text-black">
-                                Set up your profile to get started!
+                                {m['networkPrompts.setupProf']()}
                             </h1>
                         </div>
                     </IonRow>
@@ -364,7 +365,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                         )}
                         <div className="flex flex-col items-center justify-center w-full mb-4">
                             <p className="text-grayscale-600  text-[13px] w-full text-left font-notoSans mt-2">
-                                <strong>Full Name</strong>
+                                <strong>{m['userProfile.fullName']()}</strong>
                             </p>
                             <IonInput
                                 autocapitalize="on"
@@ -375,7 +376,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                                     setName(e.detail.value);
                                 }}
                                 value={name}
-                                placeholder="Full Name"
+                                placeholder={m['userProfile.fullName']()}
                                 type="text"
                             />
                             {errors.name && (
@@ -390,19 +391,18 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                     <IonRow className="w-full flex flex-col items-center justify-center">
                         <div className="w-full flex items-center justify-between">
                             <p className="text-grayscale-900 text-base font-medium w-10/12 text-left pr-2 font-notoSans">
-                                Join the ScoutPass Network
+                                {m['networkPrompts.join.joinNet']()}
                             </p>
                         </div>
                         {networkToggle && (
                             <>
                                 <p className="text-grayscale-600 font-normal text-[13px] w-full text-left font-notoSans mt-2">
-                                    The ScoutPass Network allows you to exchange credentials and
-                                    badges with other members.
+                                    {m['networkPrompts.join.desc']()}
                                     {/* disable editing access settings till supported */}
                                     {/* <span className="font-bold text-indigo-500">Edit Access</span> */}
                                 </p>
                                 <p className="text-grayscale-600  text-[13px] w-full text-left font-notoSans mt-2">
-                                    <strong>Create a new username</strong>
+                                    <strong>{m['networkPrompts.createUser']()}</strong>
                                 </p>
                             </>
                         )}
@@ -430,7 +430,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                                             }
                                         }}
                                         value={profileId}
-                                        placeholder="username"
+                                        placeholder={m['networkPrompts.usernamePlh']()}
                                         type="text"
                                     />
                                 </div>
@@ -452,11 +452,10 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                     {!networkToggle && (
                         <IonRow className="w-full flex flex-col items-center justify-center mt-4">
                             <p className="text-grayscale-900 font-normal text-base w-full text-left font-notoSans">
-                                You can still use ScoutPass without joining the network.
+                                {m['networkPrompts.optOut.joinLater']()}
                             </p>
                             <p className="text-grayscale-600 font-normal text-[14px] w-full text-left font-notoSans mt-2">
-                                You won't be able to send Boosts or connect with others, but you can
-                                still sync credentials. You can join later anytime.
+                                {m['networkPrompts.optOut.limit']()}
                             </p>
                         </IonRow>
                     )}
@@ -467,7 +466,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                             type="button"
                             className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-sp-purple-base text-2xl w-full shadow-lg"
                         >
-                            {isLoading ? 'Loading...' : "Let's Go!"}
+                            {isLoading ? m['common.loading']() : m['networkPrompts.letsGo']()}
                         </button>
                     </IonRow>
                 </div>
@@ -475,22 +474,26 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                 <IonRow className="flex items-center justify-center mt-3 w-full">
                     <IonCol className="flex flex-col items-center justify-center text-center">
                         <p className="text-center text-sm font-normal px-16 text-grayscale-600">
-                            You own your own data.
+                            {m['networkPrompts.dataOwn']()}
                             <br />
-                            All connections are encrypted.
+                            {m['networkPrompts.encrypted']()}
                         </p>
-                        <button className="text-indigo-500 font-bold">Learn More</button>
+                        <button className="text-indigo-500 font-bold">
+                            {m['common.learnMore']()}
+                        </button>
                     </IonCol>
                 </IonRow>
 
                 <IonRow className="flex items-center justify-center w-full">
                     <IonCol className="flex items-center justify-center">
                         <button onClick={openPP} className="text-indigo-500 font-bold text-sm">
-                            Privacy Policy
+                            {m['login.privacyPolicy']()}
                         </button>
-                        <span className="text-indigo-500 font-bold text-sm">&nbsp;•&nbsp;</span>
+                        <span className="text-indigo-500 font-bold text-sm">
+                            &nbsp;{m['networkPrompts.separator']()}&nbsp;
+                        </span>
                         <button onClick={openToS} className="text-indigo-500 font-bold text-sm">
-                            Terms of Service
+                            {m['login.termsOfService']()}
                         </button>
                     </IonCol>
                 </IonRow>

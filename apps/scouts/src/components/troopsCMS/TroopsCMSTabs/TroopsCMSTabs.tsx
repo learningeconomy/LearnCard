@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { IonLabel, IonRow, IonSegment, IonSegmentButton } from '@ionic/react';
+import * as m from '../../../paraglide/messages.js';
 
 export enum TroopsCMSTabsEnum {
     content = 'content',
@@ -30,7 +31,7 @@ const TroopsCMSTabs: React.FC<{
                     }}
                 >
                     <IonLabel className="font-normal text-[17px] text-grayscale-800">
-                        Content
+                        {m['troops.contentTab']()}
                     </IonLabel>
                 </IonSegmentButton>
                 <IonSegmentButton
@@ -42,7 +43,7 @@ const TroopsCMSTabs: React.FC<{
                     }}
                 >
                     <IonLabel className="font-normal text-[17px] text-grayscale-800">
-                        Appearance
+                        {m['boostCMS.appearance']()}
                     </IonLabel>
                 </IonSegmentButton>
             </IonSegment>

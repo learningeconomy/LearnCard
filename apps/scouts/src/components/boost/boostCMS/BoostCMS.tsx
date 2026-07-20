@@ -1,3 +1,4 @@
+import * as m from '../../../paraglide/messages.js';
 // oxlint-disable-next-line no-unused-vars
 import React, { useEffect, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
@@ -468,7 +469,7 @@ const BoostCMS: React.FC<{
         } catch (e) {
             setIsPublishLoading(false);
             log.debug('error::boosting::someone', e);
-            presentToast('Error issuing boost', {
+            presentToast(m['boostCMS.issueErr'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -565,7 +566,7 @@ const BoostCMS: React.FC<{
         } catch (e) {
             setIsLoading(false);
             log.debug('error::boosting::someone', e);
-            presentToast('Error issuing boost', {
+            presentToast(m['boostCMS.issueErr'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -649,7 +650,9 @@ const BoostCMS: React.FC<{
 
     const handleConfirmationModal = () => {
         const buttonText =
-            currentStep === BoostCMSStepsEnum.issueTo ? 'Continue Issuing' : 'Continue Editing';
+            currentStep === BoostCMSStepsEnum.issueTo
+                ? m['boostCMS.continueIssue']()
+                : m['boostCMS.continueEdit']();
         newModal(
             <BoostCMSConfirmationPrompt
                 state={state}
@@ -732,7 +735,7 @@ const BoostCMS: React.FC<{
                     boostUri={publishedBoostUri}
                     collectionPropName="admins"
                     showContactOptions={false}
-                    title="Assign Admins"
+                    title={m['boostCMS.assignAdmins']()}
                     hideBoostShareableCode
                 />
             </>
@@ -771,13 +774,13 @@ const BoostCMS: React.FC<{
 
     let loadingText = '';
     if (isLoading) {
-        loadingText = 'Sending...';
+        loadingText = m['boost.sending']();
     } else if (isPublishLoading) {
-        loadingText = 'Sending...';
+        loadingText = m['boost.sending']();
     } else if (isSaveLoading) {
-        loadingText = 'Saving...';
+        loadingText = m['common.saving']();
     } else if (stylePackLoading) {
-        loadingText = 'Loading...';
+        loadingText = m['common.loading']();
     }
 
     return (
@@ -807,7 +810,7 @@ const BoostCMS: React.FC<{
                     <IonRow className="w-full flex items-center justify-center pb-[200px]">
                         <IonCol className="w-full flex items-center justify-center">
                             <button onClick={handleConfirmationModal} className="mt-4 pb-4">
-                                Quit
+                                {m['boostCMS.quit']()}
                             </button>
                         </IonCol>
                     </IonRow>

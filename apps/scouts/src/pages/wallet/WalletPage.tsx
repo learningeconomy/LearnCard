@@ -25,6 +25,7 @@ import {
 } from 'learn-card-base';
 
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import * as m from '../../paraglide/messages.js';
 import BoostOutline2 from 'learn-card-base/svgs/BoostOutline2';
 import MeritBadgesIcon from 'learn-card-base/svgs/MeritBadgesIcon';
 import ScoutsPledge2 from 'learn-card-base/svgs/ScoutsPledge2';
@@ -180,7 +181,7 @@ const WalletPage: React.FC = () => {
                 <IonRow className="px-[20px] flex items-center justify-center">
                     <div className="w-full max-w-[380px] mx-auto">
                         <h2 className="text-grayscale-900 font-medium text-2xl tracking-[0.01rem]">
-                            Wallet
+                            {m['wallet.title']()}
                         </h2>
                         {/* <div className="wallet-header-menu-options items-center flex">
                             {flags?.boostBundleMenu && (

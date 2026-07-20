@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 import AdminToolOptionsList from './AdminToolsOptionsList';
 import AdminToolsModalHeader from './AdminToolsModalHeader';
@@ -20,7 +21,7 @@ export const AdminToolsModal: React.FC<{ shortCircuitDevTool?: AdminToolOptionsE
                     <AdminToolsLaunchDevDocs />
                 </GenericErrorBoundary>
             </section>
-            <AdminToolsModalFooter buttonTitle="Back" />
+            <AdminToolsModalFooter />
         </div>
     );
 };

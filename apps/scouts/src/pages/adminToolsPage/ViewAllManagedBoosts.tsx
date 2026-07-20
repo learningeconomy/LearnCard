@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../paraglide/messages.js';
 
 import AdminPageStructure from './AdminPageStructure';
 import AdminManagedBoostsSection from './AdminManagedBoostsSection';
@@ -8,7 +9,7 @@ import { BoostCategoryOptionsEnum } from 'learn-card-base';
 
 const ViewAllManagedBoosts: React.FC = () => {
     return (
-        <AdminPageStructure title="All Managed Boosts and Badges">
+        <AdminPageStructure title={m['adminTools.allManagedBoostsTitle']()}>
             <section className="flex flex-col gap-[20px]">
                 <AdminManagedBoostsSection category={BoostCategoryOptionsEnum.socialBadge} />
                 <AdminManagedBoostsSection category={BoostCategoryOptionsEnum.meritBadge} />

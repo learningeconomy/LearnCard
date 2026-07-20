@@ -5,6 +5,7 @@ import { IonContent, IonButton, IonPage, useIonAlert, IonHeader, IonToolbar } fr
 import { initLearnCard } from '@learncard/init';
 import { VC, VP } from '@learncard/types';
 import { SyncCredentialsVCs } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
@@ -126,7 +127,7 @@ const ViewCredsBundle: React.FC = () => {
                         </div>
 
                         <IonButton className="text-grayscale-600 mr-[20px]" onClick={openWebsite}>
-                            Learn More
+                            {m['common.learnMore']()}
                         </IonButton>
                     </div>
                 </IonToolbar>

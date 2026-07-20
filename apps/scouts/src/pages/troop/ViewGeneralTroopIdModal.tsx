@@ -19,6 +19,7 @@ import BulkyAddUser from 'learn-card-base/svgs/BulkyAddUser';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import X from 'learn-card-base/svgs/X';
 
+import * as m from '../../paraglide/messages.js';
 import {
     getRoleFromCred,
     getScoutDefaultsForRole,
@@ -74,8 +75,12 @@ const ViewGeneralTroopIdModal: React.FC<ViewGeneralTroopIdModalProps> = ({
                     <ViewTroopIdTemplate
                         idThumb={credential?.boostID?.idThumbnail}
                         idMainText={`${roleName}`}
-                        idSubText={`Issued to ${recipientCount} ${recipientCount === 1 ? 'person' : 'people'
-                            }`}
+                        idSubText={m['troops.membersList.issuedSub']({
+                            count: recipientCount ?? 0,
+                            person: m[
+                                recipientCount === 1 ? 'boost.person_one' : 'boost.person_other'
+                            ](),
+                        })}
                         idExtraInfo={
                             <div className="flex">
                                 {recipients.slice(0, 5)?.map((r, index) => (
@@ -130,14 +135,14 @@ const ViewGeneralTroopIdModal: React.FC<ViewGeneralTroopIdModalProps> = ({
                         onClick={() => setShowDetails(!showDetails)}
                         className="bg-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom"
                     >
-                        {showDetails ? 'Back' : 'Details'}
+                        {showDetails ? m['common.back']() : m['common.details']()}
                     </button>
                     {canEdit && (
                         <button
                             onClick={openEditIdModal}
                             className="bg-white py-[9px] px-[15px] rounded-[30px] font-notoSans text-[17px] text-grayscale-900 w-full shadow-button-bottom"
                         >
-                            Edit
+                            {m['common.edit']()}
                         </button>
                     )}
                     <button className="bg-white rounded-full text-grayscale-80 py-[10px] px-[12px] shadow-button-bottom">

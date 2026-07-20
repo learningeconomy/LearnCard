@@ -23,6 +23,7 @@ import RightArrow from '../svgs/RightArrow';
 import SharedBoostVerificationItem from './SharedBoostVerificationItem';
 
 import { VC, VerificationItem, VerificationStatusEnum } from '@learncard/types';
+import * as m from '../../paraglide/messages.js';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
 
 export const getColorForVerificationStatus = (
@@ -72,12 +73,12 @@ const SharedBoostVerificationBlock: React.FC<{
             await Clipboard.write({
                 string: jsonPrettyPrint,
             });
-            presentToast('JSON copied to clipboard', {
+            presentToast(m['boost.toasts.jsonCopied'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy JSON to clipboard', {
+            presentToast(m['boost.toasts.unableToCopyJson'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -124,11 +125,11 @@ const SharedBoostVerificationBlock: React.FC<{
                 <div className="w-full flex items-center justify-center">
                     <div className="flex items-center justify-between w-[40%] min-w-[360px] mb-[10px] bg-white px-4 py-2 rounded-[12px]">
                         <div>
-                            Credential Status:{' '}
+                            {m['credsBundle.credStatus']()}{' '}
                             {worstVerificationStatus === VerificationStatusEnum.Success && (
                                 <span className="flex items-center justify-start text-emerald-600 font-medium text-lg capitalize">
                                     <Checkmark className="text-emerald-600 w-[20px] h-[20px] mr-2" />{' '}
-                                    verified
+                                    {m['credsBundle.verified']()}
                                 </span>
                             )}
                             {(worstVerificationStatus === VerificationStatusEnum.Failed ||
@@ -159,11 +160,11 @@ const SharedBoostVerificationBlock: React.FC<{
                                     <LeftArrow className="text-black w-[20px] h-[20px]" />
                                 </button>
                                 <h1 className="text-grayscale-900 text-lg font-medium">
-                                    Credential Status:{' '}
+                                    {m['credsBundle.credStatus']()}{' '}
                                     {worstVerificationStatus === VerificationStatusEnum.Success && (
                                         <span className="flex items-center justify-start text-emerald-600 font-medium text-lg capitalize">
                                             <Checkmark className="text-emerald-600 w-[20px] h-[20px] mr-2" />{' '}
-                                            verified
+                                            {m['credsBundle.verified']()}
                                         </span>
                                     )}
                                     {(worstVerificationStatus === VerificationStatusEnum.Failed ||
@@ -184,7 +185,9 @@ const SharedBoostVerificationBlock: React.FC<{
                         <div className={innerContainerStyles}>
                             <div className="w-full ion-padding bg-white rounded-[12px] pt-6 pb-8 shadow-bottom">
                                 <button className="w-full flex items-center justify-between mb-2">
-                                    <p className="text-grayscale-900">Credential Verifications </p>
+                                    <p className="text-grayscale-900">
+                                        {m['sdk.verification.title']()}
+                                    </p>
 
                                     <button type="button">
                                         <InfoIcon
@@ -213,7 +216,9 @@ const SharedBoostVerificationBlock: React.FC<{
                                             className="w-full rounded-[12px] text-left mt-2 text-[#2F99F0] font-notoSans font-[400] mb-2"
                                             onClick={() => setViewJson(!viewJson)}
                                         >
-                                            {viewJson ? 'Hide' : 'View'} json
+                                            {viewJson
+                                                ? m['verification.hideJson']()
+                                                : m['verification.viewJson']()}
                                         </button>
                                         <button onClick={copyToClipBoard} type="button">
                                             <CopyStack className="text-[#2F99F0] w-[24px] h-[24px]" />
@@ -241,10 +246,11 @@ const SharedBoostVerificationBlock: React.FC<{
         >
             <IonHeader>
                 <IonToolbar>
-                    <IonTitle>JSON View</IonTitle>
+                    <IonTitle>{m['boost.jsonView']()}</IonTitle>
                     <IonButtons slot="end">
                         <IonButton onClick={() => setIsJsonModalOpen(false)}>
-                            <X className="text-red-600 w-[20px] h-[20px] mr-2" /> Close
+                            <X className="text-red-600 w-[20px] h-[20px] mr-2" />{' '}
+                            {m['common.close']()}
                         </IonButton>
                     </IonButtons>
                 </IonToolbar>
@@ -253,7 +259,7 @@ const SharedBoostVerificationBlock: React.FC<{
                 <div className="w-full flex items-center justify-end mb-4">
                     <button onClick={copyToClipBoard} type="button" className="flex items-center">
                         <CopyStack className="text-[#2F99F0] w-[24px] h-[24px] mr-2" />
-                        Copy JSON
+                        {m['boost.copyJson']()}
                     </button>
                 </div>
                 {boost && (
@@ -270,11 +276,11 @@ const SharedBoostVerificationBlock: React.FC<{
             <div className={innerContainerStyles}>
                 <div className="w-full flex items-center justify-start mb-2">
                     <h1 className="text-grayscale-900 text-2xl font-medium">
-                        Credential Status:{' '}
+                        {m['credsBundle.credStatus']()}{' '}
                         {worstVerificationStatus === VerificationStatusEnum.Success && (
                             <span className="flex items-center justify-start text-emerald-600 font-medium text-2xl capitalize">
                                 <Checkmark className="text-emerald-600 w-[20px] h-[20px] mr-2" />{' '}
-                                verified
+                                {m['credsBundle.verified']()}
                             </span>
                         )}
                         {(worstVerificationStatus === VerificationStatusEnum.Failed ||
@@ -288,7 +294,7 @@ const SharedBoostVerificationBlock: React.FC<{
                 </div>
 
                 <button className="w-full flex items-center justify-between mb-2">
-                    <p className="text-grayscale-900">Credential Verifications </p>
+                    <p className="text-grayscale-900">{m['sdk.verification.title']()}</p>
 
                     <button type="button">
                         <InfoIcon fill="#A8ACBD" className="text-white w-[25px] h-[25px]" />
@@ -315,7 +321,7 @@ const SharedBoostVerificationBlock: React.FC<{
                             onClick={() => boost && setIsJsonModalOpen(true)}
                             disabled={!boost}
                         >
-                            View JSON
+                            {m['boost.viewJson']()}
                         </button>
                         <button onClick={copyToClipBoard} type="button" disabled={!boost}>
                             <CopyStack

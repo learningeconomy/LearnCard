@@ -9,6 +9,7 @@ import AddressBookContactOptions from '../addressBook-contact-options/AddressBoo
 import AddUser from 'apps/scouts/src/components/svgs/AddUser';
 
 import { AddressBookTabsEnum } from '../addressBookHelpers';
+import * as m from '../../../paraglide/messages.js';
 
 export const AddressBookHeader: React.FC<{
     activeTab: AddressBookTabsEnum;
@@ -66,10 +67,10 @@ export const AddressBookHeader: React.FC<{
                             onClick={() => {
                                 history.goBack();
                             }}
-                            aria-label="Back button"
+                            aria-label={m['addressBook.backBtnAria']()}
                         >
                             <LeftArrow className="w-[30px] mr-[10px] h-auto font text-grayscale-800 desktop:hidden" />{' '}
-                            Contacts
+                            {m['addressBook.contactsLabel']()}
                         </button>
                     </IonCol>
                     <button
@@ -83,7 +84,7 @@ export const AddressBookHeader: React.FC<{
                         className="flex rounded-[40px] bg-sp-purple-base shadow-md shadow-black/25 py-[7px] px-[20px] text-white text-[15px] font-semibold font-notoSans"
                     >
                         <AddUser className="mr-[5px]" fill="#9FED8F" />
-                        New
+                        {m['addressBook.newLabel']()}
                     </button>
                 </IonRow>
                 {children}

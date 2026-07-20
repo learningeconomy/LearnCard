@@ -4,6 +4,7 @@ import VerificationRow from './VerificationRow';
 import InfoBox from './InfoBox';
 import InfoIcon from 'learn-card-base/svgs/InfoIcon';
 
+import * as m from '../../../paraglide/messages.js';
 import { VerificationItem } from '@learncard/types';
 
 type VerificationsBoxProps = {
@@ -16,7 +17,7 @@ const VerificationsBox: React.FC<VerificationsBoxProps> = ({ verificationItems }
     return (
         <div className="verifications-box bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full relative">
             <h3 className="text-[17px] font-notoSans text-grayscale-900">
-                Credential Verifications
+                {m['troops.verify.title']()}
             </h3>
             <button
                 className="absolute top-[17px] right-[17px]"
@@ -31,7 +32,7 @@ const VerificationsBox: React.FC<VerificationsBoxProps> = ({ verificationItems }
             </button>
             {showInfo && (
                 <InfoBox
-                    text="Credential verifications check the cryptographic proof of digital credentials to ensure their authenticity and accuracy."
+                    text={m['troops.verify.infoText']()}
                     handleClose={() => setShowInfo(false)}
                 />
             )}

@@ -1,4 +1,7 @@
 import React from 'react';
+
+import * as m from '../../paraglide/messages.js';
+
 import Lottie from 'react-lottie-player';
 
 import { IonRow, IonCol } from '@ionic/react';
@@ -190,7 +193,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                         handleEditOnClick();
                     }}
                 >
-                    Edit Draft
+                    {m['scoutsId.editDraft']()}
                 </button>
             );
         }
@@ -267,7 +270,8 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                                 }}
                                 className="flex items-center justify-center bg-white rounded-full pl-[2.5px] pr-[10px] py-[4px] text-grayscale-800 text-base font-medium shadow-bottom"
                             >
-                                <RibbonAwardIcon className="ml-[5px] h-[23px] w-[23px] mr-1" /> Send
+                                <RibbonAwardIcon className="ml-[5px] h-[23px] w-[23px] mr-1" />{' '}
+                                {m['scoutsId.send']()}
                             </button>
                         )}
                     </IonCol>

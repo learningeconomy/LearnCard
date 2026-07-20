@@ -19,6 +19,7 @@ import {
 } from 'learn-card-base';
 import { useCheckIfUserInNetwork } from 'apps/scouts/src/components/network-prompts/hooks/useCheckIfUserInNetwork';
 import useBoostModal from '../../../components/boost/hooks/useBoostModal';
+import * as m from '../../../paraglide/messages.js';
 
 export const AddressBookFooter: React.FC<{
     showSearch?: boolean;
@@ -93,7 +94,8 @@ export const AddressBookFooter: React.FC<{
                                 }}
                                 className="flex items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-1/2 shadow-lg font-medium"
                             >
-                                <User className="ml-[5px] h-[30px] w-[30px] mr-2" /> Connect
+                                <User className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                                {m['common.connect']()}
                             </button>
                             <button
                                 onClick={() => {
@@ -103,7 +105,8 @@ export const AddressBookFooter: React.FC<{
                                 }}
                                 className="modal-btn-desktop flex items-center justify-center bg-sp-purple-base rounded-full font-medium px-[18px] py-[12px] text-white text-2xl w-1/2 ml-3 shadow-lg"
                             >
-                                <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" /> Send
+                                <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                                {m['boost.send']()}
                             </button>
                             <button
                                 onClick={() => {
@@ -113,7 +116,8 @@ export const AddressBookFooter: React.FC<{
                                 }}
                                 className="modal-btn-mobile flex items-center justify-center bg-sp-purple-base rounded-full px-[18px] py-[12px] text-white text-2xl font-medium w-1/2 ml-3 shadow-lg"
                             >
-                                <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" /> Send
+                                <RibbonAwardIcon className="ml-[5px] h-[30px] w-[30px] mr-2" />{' '}
+                                {m['boost.send']()}
                             </button>
                         </IonCol>
                     </IonRow>

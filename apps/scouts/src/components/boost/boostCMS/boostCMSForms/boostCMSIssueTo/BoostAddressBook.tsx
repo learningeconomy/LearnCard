@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import moment from 'moment';
+import { formatLocaleDate, formatLocaleTime } from '../../../../../i18n/formatters';
 
 import useTroopMembers from '../../../../../hooks/useTroopMembers';
 import useNetworkMembers from '../../../../../hooks/useNetworkMembers';
@@ -47,6 +47,7 @@ import { LCNProfile, BoostRecipientInfo } from '@learncard/types';
 import { ScoutsRoleEnum } from '../../../../../stores/troopPageStore';
 import { MemberTabsEnum } from '../../../../../pages/troop/TroopPageMembersBox';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../../../../paraglide/messages.js';
 const log = getLogger('boost-address-book');
 
 export enum BoostAddressBookEditMode {
@@ -105,7 +106,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
 
     showContactOptions = true,
     collectionPropName = 'issueTo',
-    title = 'Send To',
+    title = m['boostCMS.sendTo'](),
     hideBoostShareableCode = false,
 }) => {
     const { initWallet } = useWallet();
@@ -181,7 +182,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                 showCloseButton={!isSheet}
                 title={
                     <p className="flex items-center justify-center text-2xl w-full h-full text-grayscale-900">
-                        Select Recipient
+                        {m['boostCMS.selectRecipient']()}
                     </p>
                 }
                 search={search}
@@ -273,9 +274,9 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
         contactCount = networkMembers?.length ?? 0;
     }
 
-    let noConnectionsString = 'No connections yet';
-    let headerText = conditionalPluralize(contactCount ?? 0, 'Contact');
-    let searchPlaceholder = 'Search ScoutPass Network...';
+    let noConnectionsString = m['boostCMS.noConnections']();
+    let headerText = conditionalPluralize(contactCount ?? 0, m['boostCMS.contact']());
+    let searchPlaceholder = m['boostCMS.searchNetwork']();
     let connectionsToShow = connections;
 
     if (viewMode === BoostAddressBookViewMode.full) {
@@ -296,9 +297,11 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
             showSearchResults = false; // Again, doesn't use network profile search
             showNoSearchResults =
                 !scoutsLoading && scouts?.length === 0 && (search?.length ?? 0) > 0;
-            noConnectionsString = 'No troop members';
-            headerText = conditionalPluralize(scouts?.length ?? 0, 'Scout');
-            searchPlaceholder = `Search ${contextCredential?.name ?? 'Troop'}...`;
+            noConnectionsString = m['boostCMS.noTroopMembers']();
+            headerText = conditionalPluralize(scouts?.length ?? 0, m['boostCMS.scout']());
+            searchPlaceholder = m['boostCMS.searchTroop']({
+                name: contextCredential?.name ?? 'Troop',
+            });
             connectionsToShow = scouts ?? [];
         }
         if (isNetworkAdmin) {
@@ -309,9 +312,14 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
             showSearchResults = false; // Again, doesn't use network profile search
             showNoSearchResults =
                 !networkLoading && networkMembers?.length === 0 && (search?.length ?? 0) > 0;
-            noConnectionsString = 'No network members';
-            headerText = conditionalPluralize(networkMembers?.length ?? 0, 'Network Member');
-            searchPlaceholder = `Search ${contextCredential?.name ?? 'Network'}...`;
+            noConnectionsString = m['boostCMS.noNetworkMembers']();
+            headerText = conditionalPluralize(
+                networkMembers?.length ?? 0,
+                m['boostCMS.networkMember']()
+            );
+            searchPlaceholder = m['boostCMS.searchNetworkSpecific']({
+                name: contextCredential?.name ?? 'Network',
+            });
             connectionsToShow = networkMembers;
         }
         return (
@@ -358,7 +366,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                     {showLoadingSpinner && (
                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
                             <IonSpinner color="black" />
-                            <p className="mt-2 font-bold text-lg">Loading...</p>
+                            <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                         </section>
                     )}
                     {showConnectionsList && (
@@ -401,7 +409,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                     {showNoSearchResults && (
                         <section className="relative flex flex-col pt-[10px] px-[20px] text-center justify-center">
                             <img src={MiniGhost} alt="ghost" className="max-w-[250px] m-auto" />
-                            <strong>No search results</strong>
+                            <strong>{m['boostCMS.noSearchResults']()}</strong>
                         </section>
                     )}
                 </IonContent>
@@ -417,7 +425,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                         onClick={handleSaveContacts}
                                         className="relative flex flex-1 items-center justify-center bg-emerald-700 rounded-full px-[18px] py-[8px] text-white text-2xl w-full shadow-lg text-center"
                                     >
-                                        Save
+                                        {m['common.save']()}
                                     </button>
                                 </IonCol>
                             </div>
@@ -471,7 +479,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                         </div>
                         {collectionPropName === 'admins' && (
                             <p className="px-[16px] pb-6 text-black text-base font-notoSans">
-                                Admins are granted permission to send and edit this Boost.
+                                {m['boostCMS.adminsDesc']()}
                             </p>
                         )}
 
@@ -500,7 +508,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                         <IonCol size="12" className="w-full bg-white rounded-[20px]">
                             <div className="flex items-center justify-between w-full ion-padding">
                                 <h1 className="text-black text-2xl p-0 m-0 font-medium">
-                                    Issue Log
+                                    {m['boostCMS.issueLog']()}
                                 </h1>
                             </div>
 
@@ -530,13 +538,16 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                                             recipient?.to?.profileId}
                                                     </p>
                                                     <p className="text-grayscale-600 font-normal">
-                                                        {moment(recipient?.received).format(
-                                                            'DD MMMM YYYY'
-                                                        )}{' '}
+                                                        {formatLocaleDate(recipient?.received, {
+                                                            day: '2-digit',
+                                                            month: 'long',
+                                                            year: 'numeric',
+                                                        })}{' '}
                                                         &bull;{' '}
-                                                        {moment(recipient?.received).format(
-                                                            'h:mm A'
-                                                        )}
+                                                        {formatLocaleTime(recipient?.received, {
+                                                            hour: 'numeric',
+                                                            minute: '2-digit',
+                                                        })}
                                                     </p>
                                                 </div>
                                             </div>

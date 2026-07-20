@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 import { IonContent } from '@ionic/react';
+import * as m from '../../../paraglide/messages.js';
 import { conditionalPluralize, useGetSearchProfiles, useModal, ModalTypes } from 'learn-card-base';
 
 import Pencil from '../../svgs/Pencil';
@@ -144,10 +145,10 @@ export const TroopIDTypeButton: React.FC<TroopIDTypeButtonProps> = ({
                             )}
                         </div>
                         <p className="flex flex-col justify-center items-start font-notoSans text-[17px] text-grayscale-900">
-                            Scout ID
+                            {m['troops.scoutId']()}
                             {scoutsListLength > 0 && (
                                 <span className="text-[14px] text-grayscale-500 font-notoSans font-[500] leading-normal">
-                                    {conditionalPluralize(scoutsListLength, 'Scout')}
+                                    {conditionalPluralize(scoutsListLength, m['troops.scoutOne']())}
                                 </span>
                             )}
                         </p>
@@ -188,10 +189,13 @@ export const TroopIDTypeButton: React.FC<TroopIDTypeButtonProps> = ({
                             )}
                         </div>
                         <p className="flex flex-col justify-center items-start font-notoSans text-[17px] text-grayscale-900">
-                            Troop Leader ID
+                            {m['troops.leaderId']()}
                             {leadersListLength > 0 && (
                                 <span className="text-[14px] text-grayscale-500 font-notoSans font-[500] leading-normal">
-                                    {conditionalPluralize(leadersListLength, 'Troop Leader')}
+                                    {conditionalPluralize(
+                                        leadersListLength,
+                                        m['troops.leaderOne']()
+                                    )}
                                 </span>
                             )}
                         </p>
@@ -237,7 +241,7 @@ export const TroopIDTypeButton: React.FC<TroopIDTypeButtonProps> = ({
                     {title}
                     {leadersListLength > 0 && (
                         <span className="text-[14px] text-grayscale-500 font-notoSans font-[500]">
-                            {conditionalPluralize(leadersListLength, 'Admin')}
+                            {conditionalPluralize(leadersListLength, m['troops.adminOne']())}
                         </span>
                     )}
                 </p>

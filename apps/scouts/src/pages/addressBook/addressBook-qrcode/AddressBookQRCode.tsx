@@ -12,6 +12,7 @@ import { IonCol, IonRow, IonPage } from '@ionic/react';
 import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import ModalLayout from '../../../layout/ModalLayout';
+import * as m from '../../../paraglide/messages.js';
 
 const AddressBookQRCode: React.FC<{
     handleCloseModal: () => void;
@@ -40,12 +41,12 @@ const AddressBookQRCode: React.FC<{
             await Clipboard.write({
                 string: `${getAppBaseUrl()}/connect?did=${wallet?.id?.did()}`,
             });
-            presentToast('Contact link copied to clipboard', {
+            presentToast(m['addressBook.toasts.contactLinkCopied'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy Contact link to clipboard', {
+            presentToast(m['addressBook.toasts.unableToCopyContactLink'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -72,8 +73,10 @@ const AddressBookQRCode: React.FC<{
             <ModalLayout handleOnClick={handleCloseModal} allowScroll>
                 <div className="flex w-full flex-col items-center justify-center">
                     <div className="flex flex-col w-full items-center justify-center">
-                        <h6 className={`m-0 p-0 text-2xl font-medium font-rubik`}>Add Contact</h6>
-                        <p className="m-0 p-0">Have your contact scan this code.</p>
+                        <h6 className={`m-0 p-0 text-2xl font-medium font-rubik`}>
+                            {m['addressBook.addContact']()}
+                        </h6>
+                        <p className="m-0 p-0">{m['addressBook.scanCodeDesc']()}</p>
                     </div>
                 </div>
                 <IonRow className="flex items-center justify-center w-full">
@@ -105,7 +108,7 @@ const AddressBookQRCode: React.FC<{
                 <div className="flex items-center justify-center w-full mt-3">
                     <div className="flex items-center justify-center w-full px-5">
                         <h2 className="divider-with-text">
-                            <span>or</span>
+                            <span>{m['addressBook.orDivider']()}</span>
                         </h2>
                     </div>
                 </div>
@@ -115,7 +118,7 @@ const AddressBookQRCode: React.FC<{
                         className="flex items-center font-medium justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white text-2xl w-[90%] shadow-lg max-w-[320px] font-rubik"
                     >
                         <QRCodeScanner className="ml-[5px] h-[30px] w-[30px] mr-2" />
-                        Share Code
+                        {m['addressBook.shareCode']()}
                     </button>
                 </IonCol>
             </ModalLayout>

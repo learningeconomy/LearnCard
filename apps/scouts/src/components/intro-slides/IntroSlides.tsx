@@ -11,6 +11,7 @@ import ScoutsGlobe from 'learn-card-base/svgs/ScoutsGlobe';
 import ScoutPassTextLogo from '../../assets/images/scoutpass-text-logo.svg';
 import ScoutPassLogo from '../../assets/images/scoutpass-logo.svg';
 import SlimCaretRight from '../svgs/SlimCaretRight';
+import * as m from '../../paraglide/messages.js';
 
 import 'swiper/css';
 import 'swiper/css/keyboard';
@@ -156,7 +157,7 @@ const ScoutSlide1: React.FC<ScoutSlideProps> = ({
                 )}
                 {!showDesktopNav && (
                     <p className="text-white  font-rubik px-[15px] py-[8px]">
-                        Swipe right to Continue
+                        {m['introSlides.swipeToContinue']()}
                     </p>
                 )}
             </section>
@@ -174,10 +175,10 @@ const ScoutSlide2: React.FC<ScoutSlideProps> = ({
             <section className="font-medium font-rubik flex flex-col items-center justify-center blue-gradient">
                 <ScoutsPledge className="ml-[5px] h-[70px] w-[70px] text-white" />
                 <h1 className="text-2xl text-white font-normal font-rubik mt-[10px]">
-                    Earn & Send Badges
+                    {m['introSlides.earnBadges']()}
                 </h1>
                 <p className="text-small text-white font-rubik mt-[15px] px-[20px]">
-                    Badges help to recognize values, talents, participation and contributions.
+                    {m['introSlides.badgesDesc']()}
                 </p>
             </section>
             <section className="absolute bottom-[50px]">
@@ -189,7 +190,7 @@ const ScoutSlide2: React.FC<ScoutSlideProps> = ({
                 )}
                 {!showDesktopNav && (
                     <p className="text-white  font-rubik px-[15px] py-[8px]">
-                        Swipe right to Continue
+                        {m['introSlides.swipeToContinue']()}
                     </p>
                 )}
             </section>
@@ -207,10 +208,10 @@ const ScoutSlide3: React.FC<ScoutSlideProps> = ({
             <section className="font-medium font-rubik flex flex-col items-center justify-center green-gradient">
                 <ScoutsGlobe className="ml-[5px] h-[70px] w-[70px] text-white" />
                 <h1 className="text-2xl text-white font-normal font-rubik mt-[10px]">
-                    Organize into Troops
+                    {m['introSlides.organizeTroops']()}
                 </h1>
                 <p className="text-small text-white font-rubik mt-[15px] px-[20px]">
-                    Soon local troops can self organize and issue official scout badges.
+                    {m['introSlides.organizeTroopsDesc']()}
                 </p>
             </section>
             <section className="absolute bottom-[50px]">
@@ -222,7 +223,7 @@ const ScoutSlide3: React.FC<ScoutSlideProps> = ({
                 )}
                 {!showDesktopNav && (
                     <p className="text-white  font-rubik px-[15px] py-[8px]">
-                        Swipe right to Continue
+                        {m['introSlides.swipeToContinue']()}
                     </p>
                 )}
             </section>

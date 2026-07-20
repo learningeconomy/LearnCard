@@ -1,12 +1,7 @@
 import React from 'react';
 
-import {
-    IonCol,
-    IonContent,
-    IonRow,
-    IonGrid,
-    IonPage,
-} from '@ionic/react';
+import { IonCol, IonContent, IonRow, IonGrid, IonPage } from '@ionic/react';
+import * as m from '../../paraglide/messages.js';
 
 const SubHeaderActionMenu: React.FC<{
     handleCloseModal: () => void;
@@ -14,17 +9,16 @@ const SubHeaderActionMenu: React.FC<{
     title?: string | React.ReactNode;
     handleSelfIssue: () => void;
     handleShareCreds: () => void;
-}> = ({ handleCloseModal, handleSelfIssue, handleShareCreds}) => {
-
+}> = ({ handleCloseModal, handleSelfIssue, handleShareCreds }) => {
     const handleSelfIssueCredential = () => {
         handleCloseModal?.();
         handleSelfIssue?.();
-    }
+    };
 
     const handleCreateCredBundle = () => {
         handleCloseModal?.();
         handleShareCreds?.();
-    }
+    };
 
     return (
         <IonPage>
@@ -35,7 +29,7 @@ const SubHeaderActionMenu: React.FC<{
                             onClick={handleCreateCredBundle}
                             className="flex items-center justify-center bg-indigo-500 rounded-full px-[18px] py-[12px] text-white font-mouse text-3xl w-full shadow-lg uppercase tracking-wide"
                         >
-                           Share
+                            {m['common.share']()}
                         </button>
                     </IonCol>
                     <IonCol className="w-full flex items-center justify-center mt-1">
@@ -43,7 +37,7 @@ const SubHeaderActionMenu: React.FC<{
                             onClick={handleSelfIssueCredential}
                             className="flex items-center justify-center bg-indigo-500 rounded-full px-[18px] py-[12px] text-white font-mouse text-3xl w-full shadow-lg uppercase tracking-wide"
                         >
-                            View Shared Boosts
+                            {m['sidemenu.viewSharedBoosts']()}
                         </button>
                     </IonCol>
                     <div className="w-full flex items-center justify-center mt-8">
@@ -51,7 +45,7 @@ const SubHeaderActionMenu: React.FC<{
                             onClick={() => handleCloseModal()}
                             className="text-grayscale-900 text-center text-sm"
                         >
-                            Cancel
+                            {m['common.cancel']()}
                         </button>
                     </div>
                 </IonGrid>

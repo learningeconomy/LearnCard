@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { auth } from '../../firebase/firebase';
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 
 import useFirebase from '../../hooks/useFirebase';
 import { authStore, SocialLoginTypes, useWallet, useModal, useCurrentUser } from 'learn-card-base';
@@ -93,7 +95,7 @@ const DeleteUserConfirmationPrompt: React.FC<{
                     setIsLoading(false);
                 } else {
                     if (userDeleted.message === 'auth/requires-recent-login') {
-                        setError(`A recent login is required!`);
+                        setError(m['userProfile.errors.recentLoginRequired']());
                     } else {
                         setError(userDeleted.message);
                     }
@@ -118,21 +120,24 @@ const DeleteUserConfirmationPrompt: React.FC<{
                 </IonRow>
                 <IonRow className="flex flex-col items-center justify-center bg-white text-black">
                     <h3 className="ion-text-center mt-2 bg-white text-2xl font-bold tracking-wider">
-                        Delete Account?
+                        {m['userProfile.deleteAccountTitle']()}
                     </h3>
                 </IonRow>
             </IonRow>
 
             <IonRow className="flex flex-col items-center justify-center bg-white text-black">
                 <p className="ion-text-center mt-2 font-normal text-sm tracking-wider bg-white px-2 delete-user-prompt-text max-w-[400px]">
-                    Deleting your account will permanently delete your identity on ScoutPass and all
-                    of your credentials. <b>Warning, this action cannot be undone!</b>
+                    <TransP m={m['userProfile.deleteWarning']} components={[<b key="b" />]} />
                 </p>
-                <h2 className="ion-text-center text-lg font-semibold mt-4">Confirm by typing</h2>
+                <h2 className="ion-text-center text-lg font-semibold mt-4">
+                    {m['userProfile.confirmByTyping']()}
+                </h2>
                 <p className="ion-text-center text-base font-bold">
-                    <span className="text-rose-500">{phrase} </span>
-                    <br />
-                    below.
+                    <TransP
+                        m={m['userProfile.confirmBelow']}
+                        values={{ phrase }}
+                        components={[<br key="br" />]}
+                    />
                 </p>
             </IonRow>
             <IonRow className="flex flex-col items-center justify-center w-full ion-padding mt-3">
@@ -153,7 +158,7 @@ const DeleteUserConfirmationPrompt: React.FC<{
                             onClick={handleReAuthenticateRedirect}
                             className="text-mv_blue-700 font-bold mt-2"
                         >
-                            Reauthenticate here
+                            {m['userProfile.reauthenticateHere']()}
                         </button>
                     </p>
                 )}
@@ -170,7 +175,7 @@ const DeleteUserConfirmationPrompt: React.FC<{
                             canDelete ? 'bg-rose-500' : 'bg-grayscale-400'
                         }`}
                     >
-                        {isLoading ? 'Loading... ' : 'Delete Forever'}
+                        {isLoading ? m['common.loading']() + ' ' : m['userProfile.deleteForever']()}
                     </button>
                 </IonCol>
             </IonRow>

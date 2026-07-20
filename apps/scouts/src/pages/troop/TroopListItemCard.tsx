@@ -20,6 +20,7 @@ import BoostRecipients from 'learn-card-base/components/boost/BoostRecipients';
 import ScoutConnectModal from './ScoutConnectModal';
 import InviteSelectionModal from './InviteSelectionModal';
 
+import * as m from '../../paraglide/messages.js';
 import { Boost, VC } from '@learncard/types';
 import { pluralize } from 'learn-card-base';
 import { useCanInviteTroop } from './useCanInviteTroop';
@@ -242,7 +243,9 @@ const TroopListItemCardItem: React.FC<TroopListItemCardItemProps> = ({
                     </span>
                 )}
                 {recipients?.length === 0 && (
-                    <span className="font-medium text-grayscale-700">0 People</span>
+                    <span className="font-medium text-grayscale-700">
+                        {m['troops.list.zeroPeople']()}
+                    </span>
                 )}
                 <span className="h-[30px]">
                     <BoostRecipients

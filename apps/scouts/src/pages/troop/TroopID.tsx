@@ -5,6 +5,7 @@ import { useGetCredentialWithEdits } from 'learn-card-base';
 import { ScoutsRoleEnum } from '../../stores/troopPageStore';
 import troopPageStore from '../../stores/troopPageStore';
 import useGetTroopNetwork from '../../hooks/useGetTroopNetwork';
+import * as m from '../../paraglide/messages.js';
 import {
     getDefaultBadgeThumbForCredential,
     getIdBackgroundStyles,
@@ -124,7 +125,9 @@ const TroopID: React.FC<TroopIDProps> = ({
                 </span>
                 {issuedDateOverride || (
                     <span className="font-notoSans font-[600] text-[12px]">
-                        Issued {issueDate || 'Unknown'}
+                        {issueDate
+                            ? m['troops.id.issued']({ date: issueDate })
+                            : m['common.unknown']()}
                     </span>
                 )}
             </div>

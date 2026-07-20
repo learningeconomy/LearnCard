@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useWallet , useToast, ToastTypeEnum } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
+import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 import { IonSpinner } from '@ionic/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Plus from 'apps/scouts/src/components/svgs/Plus';
@@ -49,8 +50,8 @@ export const FrameworkCRUD: React.FC = () => {
             const wallet = await initWallet();
             const boosts = await wallet.invoke.getPaginatedBoosts({ limit: 100 });
             // Filter for membership/ID boosts (networks)
-            return boosts.records.filter((b: any) => 
-                b.category === 'membership' || b.category === 'id'
+            return boosts.records.filter(
+                (b: any) => b.category === 'membership' || b.category === 'id'
             );
         },
     });
@@ -60,18 +61,20 @@ export const FrameworkCRUD: React.FC = () => {
         mutationFn: async (data: { name: string; description: string }) => {
             const wallet = await initWallet();
             const frameworkId = `fw-${Date.now()}`;
-            
+
             await wallet.invoke.createManagedSkillFrameworks({
-                frameworks: [{
-                    id: frameworkId,
-                    name: data.name,
-                    description: data.description,
-                    sourceURI: 'internal://scouts-admin',
-                    status: 'active' as const,
-                    skills: [], // Start with empty, add skills later
-                }],
+                frameworks: [
+                    {
+                        id: frameworkId,
+                        name: data.name,
+                        description: data.description,
+                        sourceURI: 'internal://scouts-admin',
+                        status: 'active' as const,
+                        skills: [], // Start with empty, add skills later
+                    },
+                ],
             });
-            
+
             return frameworkId;
         },
         onSuccess: () => {
@@ -92,7 +95,13 @@ export const FrameworkCRUD: React.FC = () => {
 
     // Attach framework to network
     const attachToNetworkMutation = useMutation({
-        mutationFn: async ({ frameworkId, networkUri }: { frameworkId: string; networkUri: string }) => {
+        mutationFn: async ({
+            frameworkId,
+            networkUri,
+        }: {
+            frameworkId: string;
+            networkUri: string;
+        }) => {
             const wallet = await initWallet();
             return await wallet.invoke.attachFrameworkToBoost(networkUri, frameworkId);
         },
@@ -121,26 +130,26 @@ export const FrameworkCRUD: React.FC = () => {
             {/* Header */}
             <div className="flex justify-between items-center">
                 <div>
-                    <h2 className="text-2xl font-bold text-grayscale-900">Skill Frameworks</h2>
-                    <p className="text-sm text-grayscale-600">
-                        Manage frameworks and attach them to networks
-                    </p>
+                    <h2 className="text-2xl font-bold text-grayscale-900">
+                        {m['skillFrameworks.pageTitle']()}
+                    </h2>
+                    <p className="text-sm text-grayscale-600">{m['skillFrameworks.pageDesc']()}</p>
                 </div>
                 <button
                     onClick={() => setShowCreateForm(true)}
                     className="bg-indigo-500 text-white px-4 py-2 rounded-full flex items-center gap-2 hover:bg-indigo-600"
                 >
                     <Plus className="w-5 h-5" />
-                    Create Framework
+                    {m['skillFrameworks.createFw']()}
                 </button>
             </div>
 
             {/* Create Form */}
             {showCreateForm && (
                 <div className="bg-white p-6 rounded-lg shadow-lg border-2 border-indigo-500">
-                    <h3 className="text-lg font-bold mb-4">Create New Framework</h3>
+                    <h3 className="text-lg font-bold mb-4">{m['skillFrameworks.createNewFw']()}</h3>
                     <form
-                        onSubmit={(e) => {
+                        onSubmit={e => {
                             e.preventDefault();
                             const formData = new FormData(e.currentTarget);
                             createFrameworkMutation.mutate({
@@ -152,7 +161,7 @@ export const FrameworkCRUD: React.FC = () => {
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-grayscale-700 mb-1">
-                                    Framework Name *
+                                    {m['skillFrameworks.fwNameLabel']()}
                                 </label>
                                 <input
                                     type="text"
@@ -164,7 +173,7 @@ export const FrameworkCRUD: React.FC = () => {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-grayscale-700 mb-1">
-                                    Description
+                                    {m['skillFrameworks.descLabel']()}
                                 </label>
                                 <textarea
                                     name="description"
@@ -186,7 +195,7 @@ export const FrameworkCRUD: React.FC = () => {
                                     onClick={() => setShowCreateForm(false)}
                                     className="bg-grayscale-200 text-grayscale-700 px-4 py-2 rounded-lg hover:bg-grayscale-300"
                                 >
-                                    Cancel
+                                    {m['common.cancel']()}
                                 </button>
                             </div>
                         </div>
@@ -206,12 +215,10 @@ export const FrameworkCRUD: React.FC = () => {
                 <div className="space-y-4">
                     {frameworks.length === 0 ? (
                         <div className="bg-grayscale-100 p-8 rounded-lg text-center">
-                            <p className="text-grayscale-600">
-                                No frameworks yet. Create one to get started!
-                            </p>
+                            <p className="text-grayscale-600">{m['skillFrameworks.noFwYet']()}</p>
                         </div>
                     ) : (
-                        frameworks.map((framework) => (
+                        frameworks.map(framework => (
                             <div
                                 key={framework.id}
                                 className="bg-white p-6 rounded-lg shadow border border-grayscale-200"
@@ -227,7 +234,9 @@ export const FrameworkCRUD: React.FC = () => {
                                             </p>
                                         )}
                                         <p className="text-xs text-grayscale-500 mt-2">
-                                            ID: {framework.id}
+                                            <>
+                                                {'ID'}: {framework.id}
+                                            </>
                                         </p>
                                     </div>
                                     <div className="flex gap-2">
@@ -238,19 +247,19 @@ export const FrameworkCRUD: React.FC = () => {
                                             }}
                                             className="bg-emerald-500 text-white px-3 py-2 rounded-lg text-sm hover:bg-emerald-600"
                                         >
-                                            Attach to Network
+                                            {m['skillFrameworks.attachToNet']()}
                                         </button>
                                         <button
                                             className="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600"
-                                            title="Edit Skills"
+                                            title={m['skillFrameworks.editSkills']()}
                                         >
                                             <Pencil className="w-4 h-4" />
                                         </button>
                                         <button
                                             className="bg-red-500 text-white px-3 py-2 rounded-lg hover:bg-red-600 text-sm"
-                                            title="Delete Framework"
+                                            title={m['skillFrameworks.delFwOpt']()}
                                         >
-                                            Delete
+                                            {m['common.delete']()}
                                         </button>
                                     </div>
                                 </div>
@@ -265,16 +274,16 @@ export const FrameworkCRUD: React.FC = () => {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-y-auto">
                         <h3 className="text-lg font-bold mb-4">
-                            Attach "{selectedFramework.name}" to Network
+                            {m['skillFrameworks.attachTitle']({ name: selectedFramework.name })}
                         </h3>
-                        
+
                         {loadingNetworks ? (
                             <div className="flex justify-center py-4">
                                 <IonSpinner name="crescent" />
                             </div>
                         ) : networks && networks.length > 0 ? (
                             <div className="space-y-2">
-                                {networks.map((network) => (
+                                {networks.map(network => (
                                     <button
                                         key={network.uri}
                                         onClick={() => {
@@ -299,10 +308,10 @@ export const FrameworkCRUD: React.FC = () => {
                             </div>
                         ) : (
                             <p className="text-grayscale-600 text-center py-4">
-                                No networks found. Create a network (membership/ID boost) first.
+                                {m['skillFrameworks.noNetsFoundC']()}
                             </p>
                         )}
-                        
+
                         <button
                             onClick={() => {
                                 setShowNetworkAttach(false);
@@ -310,7 +319,7 @@ export const FrameworkCRUD: React.FC = () => {
                             }}
                             className="mt-4 w-full bg-grayscale-200 text-grayscale-700 px-4 py-2 rounded-lg hover:bg-grayscale-300"
                         >
-                            Close
+                            {m['common.close']()}
                         </button>
                     </div>
                 </div>

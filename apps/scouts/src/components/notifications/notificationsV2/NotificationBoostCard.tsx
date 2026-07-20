@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 
 import X from 'learn-card-base/svgs/X';
+import * as m from '../../../paraglide/messages.js';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import NotificationSkeleton from './NotificationSkeleton';
 // @ts-ignore
@@ -82,12 +83,12 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
 
     const { data, isLoading } = useGetResolvedCredential(notification?.data?.vcUris?.[0]);
     const { mutate, isLoading: acceptCredentialLoading } = useAcceptCredentialMutation();
-    const {
-        mutate: updateNotification,
-    } = useUpdateNotification();
+    const { mutate: updateNotification } = useUpdateNotification();
     const boostVc = data;
     const unwrappedCred = data && unwrapBoostCredential(boostVc);
-    const credCategory = boostVc && (getDefaultCategoryForCredential(unwrappedCred as any) as CredentialCategoryEnum);
+    const credCategory =
+        boostVc &&
+        (getDefaultCategoryForCredential(unwrappedCred as any) as CredentialCategoryEnum);
     const credImgUrl = boostVc && getImageUrlFromCredential(unwrappedCred as any);
     const notificationCategoryFromCredCategory =
         credCategory && CATEGORY_TO_NOTIFICATION_ENUM[credCategory];
@@ -102,12 +103,8 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
         });
     };
 
-    const {
-        textStyles,
-        claimedButtonStyles,
-        unclaimedButtonStyles,
-        typeText,
-    } = NotificationTypeStyles[notificationCategoryFromCredCategory ?? 'loading'];
+    const { textStyles, claimedButtonStyles, unclaimedButtonStyles, typeText } =
+        NotificationTypeStyles[notificationCategoryFromCredCategory ?? 'loading'];
 
     const claimButtonStyles = isClaimed ? claimedButtonStyles : unclaimedButtonStyles;
 
@@ -187,9 +184,9 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     let buttonText: string = '';
 
     if (isClaimed) {
-        buttonText = 'Claimed';
+        buttonText = m['notifications.claimed']();
     } else if (!isClaimed) {
-        buttonText = 'Claim';
+        buttonText = m['common.claim']();
     }
 
     const handleCardClick = () => {
@@ -293,7 +290,8 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                                 className="text-grayscale-600 normal-case font-normal text-[12px] notification-card-type-issue-date"
                                 data-testid="notification-cred-issue-date"
                             >
-                                • {issueDate}
+                                {'• '}
+                                {issueDate}
                             </span>
                         )}
                     </p>
@@ -304,7 +302,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                             onClick={handleButtonClick}
                             name="notification-claim-button"
                         >
-                            {isLoading ? 'Loading...' : buttonText}
+                            {isLoading ? m['common.loading']() : buttonText}
                             {isClaimed && <Checkmark className="h-[24px] p-0 m-0" />}{' '}
                         </button>
 
@@ -319,7 +317,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                             {isArchived && (
                                 <img
                                     src={ArrowArcLeft ?? ''}
-                                    alt="Cancel"
+                                    alt={m['common.cancel']()}
                                     className="notification-card-x"
                                 />
                             )}

@@ -37,6 +37,7 @@ import {
     SkillFrameworkNodeWithSearchInfo,
 } from '../../components/boost/boost';
 import { SetState } from 'packages/shared-types/dist';
+import * as m from '../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('browse-framework-page');
 
@@ -601,7 +602,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
 
             newModal(
                 <ManageSkillsConfirmationModal
-                    mainText="Update Framework?"
+                    mainText={m['skillFrameworks.updFwQ']()}
                     changeCounts={{
                         skillsCreated: addedSkills,
                         tiersCreated: addedTiers,
@@ -610,7 +611,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
                         skillsDeleted: deletedSkills,
                         tiersDeleted: deletedTiers,
                     }}
-                    confirmationButtonText="Yes, Update"
+                    confirmationButtonText={m['skillFrameworks.yesUpd']()}
                     onConfirm={async () => {
                         try {
                             // Add skills
@@ -702,8 +703,8 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
 
                             setIsEdit(false);
                         } catch (error) {
-                            presentToast(`Error updating skills: ${error}`, {
-                                title: 'Update Failed',
+                            presentToast(`${m['skillFrameworks.toasts.errorUpdate']()} ${error}`, {
+                                title: m['skillFrameworks.toasts.updateFailed'](),
                                 hasDismissButton: true,
                                 type: ToastTypeEnum.Error,
                                 duration: 10000,
@@ -726,7 +727,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
         if (changesExist) {
             newModal(
                 <ManageSkillsCancelUpdateModal
-                    confirmationText="Yes, Discard Changes"
+                    confirmationText={m['skillFrameworks.yesDiscard']()}
                     onCancel={() => {
                         closeModal();
                         setTimeout(() => {
@@ -790,7 +791,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
         if (changesExist) {
             newModal(
                 <ManageSkillsCancelUpdateModal
-                    confirmationText="Yes, Cancel & Exit"
+                    confirmationText={m['skillFrameworks.yesCancel']()}
                     onCancel={() => {
                         closeModal();
                         setTimeout(() => {
