@@ -1,16 +1,12 @@
 {
-    "_comment": "Staging overrides for ScoutPass. Points at dedicated ScoutPass staging backend services; Firebase remains scoutpass-9a67e.",
+    "_comment": "Staging overrides for ScoutPass. Points at dedicated ScoutPass staging backend services; Firebase remains scoutpass-9a67e. Only fields mapped by configToEnv in scripts/lc.ts affect builds — keyDerivation and notificationsEndpoint are derived at runtime in bootstrapTenantConfig.ts, so they are intentionally not listed here.",
     "domain": "staging.pass.scout.org",
     "apis": {
         "brainService": "https://staging.scoutnetwork.org/trpc",
         "brainServiceApi": "https://staging.scoutnetwork.org/api",
         "cloudService": "https://staging.cloud.scoutnetwork.org/trpc",
         "lcaApi": "https://staging.api.scoutnetwork.org/trpc",
-        "xapi": "https://staging.cloud.scoutnetwork.org/xapi",
-        "notificationsEndpoint": "https://staging.api.scoutnetwork.org/api/notifications/send"
-    },
-    "auth": {
-        "keyDerivation": "web3auth"
+        "xapi": "https://staging.cloud.scoutnetwork.org/xapi"
     },
     "features": {
         "analytics": false
