@@ -9,11 +9,18 @@ import AnimatedPlusToXIcon from './helpers/AnimatedPlusToXIcon';
 export const AIPassportPersonalizationAnswer: React.FC<{
     question: PersonalizedQuestionType;
     answer: string;
+    /**
+     * Translated text to show for predefined answers (e.g. Q1 options). When
+     * provided this is rendered for display while `answer` (the English data
+     * value) stays the stable identifier used for state + the QA credential.
+     */
+    displayAnswer?: string;
     answers: string[];
     handleSetAnswer?: (questionType: PersonalizedQuestionEnum, answer: string) => void;
     handleRemoveAnswer?: (questionType: PersonalizedQuestionEnum, answer: string) => void;
-}> = ({ question, answer, answers, handleSetAnswer, handleRemoveAnswer }) => {
+}> = ({ question, answer, displayAnswer, answers, handleSetAnswer, handleRemoveAnswer }) => {
     const questionType = question?.type;
+    const displayText = displayAnswer ?? answer;
 
     const isPredefinedAnswer = question.predefinedAnswers.includes(answer);
     const answerExists = answers.includes(answer);
@@ -34,7 +41,7 @@ export const AIPassportPersonalizationAnswer: React.FC<{
                 }}
                 className={`text-left flex items-center justify-between rounded-full py-[5px] px-[16px] font-semibold text-[17px] font-notoSans mt-2 mr-2 ${buttonStyles}`}
             >
-                {answer}
+                {displayText}
                 <AnimatedPlusToXIcon
                     isPlus={!answerExists}
                     className="text-grayscale-500 h-[24px] w-auto ml-[10px]"
@@ -50,7 +57,7 @@ export const AIPassportPersonalizationAnswer: React.FC<{
             }}
             className="flex items-center justify-between rounded-full py-[5px] px-[16px] font-semibold text-[17px] font-notoSans mt-2 mr-2 bg-cyan-50 text-grayscale-900"
         >
-            {answer}
+            {displayText}
             <AnimatedPlusToXIcon
                 isPlus={false}
                 className="text-grayscale-500 h-[24px] w-auto ml-[10px]"

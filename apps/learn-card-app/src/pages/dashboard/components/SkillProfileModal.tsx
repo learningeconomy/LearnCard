@@ -4,6 +4,8 @@ import { useBrandingConfig } from 'learn-card-base';
 
 import X from 'src/components/svgs/X';
 
+import * as m from '../../../paraglide/messages.js';
+
 import SkillProfileStep1 from '../../ai-pathways/ai-pathways-skill-profile/SkillProfileStep1';
 import SkillProfileStep2 from '../../ai-pathways/ai-pathways-skill-profile/SkillProfileStep2';
 import SkillProfileStep3 from '../../ai-pathways/ai-pathways-skill-profile/SkillProfileStep3';
@@ -43,22 +45,22 @@ const SkillProfileModal: React.FC<SkillProfileModalProps> = ({ onClose }) => {
 
     return (
         <div
-            className="font-poppins flex flex-col bg-white min-h-full px-5 pb-5 desktop:px-6 desktop:pb-6"
+            className="font-poppins flex flex-col bg-white h-full min-h-0 px-5 pb-5 desktop:px-6 desktop:pb-6"
             style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1.5rem)' }}
         >
             <div className="flex items-center justify-between mb-4">
                 <div className="flex flex-col">
                     <p className="text-[11px] font-medium tracking-[0.14em] text-grayscale-500 uppercase">
-                        Make {brandName} yours
+                        {m['dashboard.skillProfile.eyebrow']({ brand: brandName })}
                     </p>
                     <h2 className="mt-0.5 text-lg desktop:text-xl font-semibold text-grayscale-900 leading-tight">
-                        Fill out your skills profile
+                        {m['dashboard.skillProfile.title']()}
                     </h2>
                 </div>
                 <button
                     type="button"
                     onClick={onClose}
-                    aria-label="Close"
+                    aria-label={m['common.close']()}
                     className="shrink-0 w-8 h-8 rounded-full hover:bg-grayscale-100 transition-colors flex items-center justify-center text-grayscale-500 hover:text-grayscale-700"
                 >
                     <X className="h-5 w-5" />
@@ -73,7 +75,10 @@ const SkillProfileModal: React.FC<SkillProfileModalProps> = ({ onClose }) => {
 
             <div className="mt-3 flex items-center w-full mb-4">
                 <span className="text-grayscale-600 font-poppins font-medium text-[14px] leading-[18px]">
-                    Step {currentStep} of {TOTAL_STEPS}
+                    {m['dashboard.skillProfile.stepOf']({
+                        current: currentStep,
+                        total: TOTAL_STEPS,
+                    })}
                 </span>
                 {currentStep < TOTAL_STEPS && (
                     <button
@@ -81,12 +86,12 @@ const SkillProfileModal: React.FC<SkillProfileModalProps> = ({ onClose }) => {
                         onClick={() => setCurrentStep(prev => Math.min(prev + 1, TOTAL_STEPS))}
                         className="ml-auto text-grayscale-600 font-poppins font-bold text-[14px] leading-[18px] hover:text-grayscale-900 transition-colors"
                     >
-                        Skip
+                        {m['dashboard.skillProfile.skip']()}
                     </button>
                 )}
             </div>
 
-            <div className="pt-4 border-t border-grayscale-200 w-full">
+            <div className="pt-4 border-t border-grayscale-200 w-full flex flex-col flex-1 min-h-0 overflow-hidden">
                 {steps[currentStep] ?? null}
             </div>
         </div>

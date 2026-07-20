@@ -6,6 +6,7 @@ import UploadIcon from 'learn-card-base/svgs/UploadIcon';
 import CheckListUploadRawVC from './checklist-steps/CheckListUploadRawVC';
 
 import { useTheme } from '../../../theme/hooks/useTheme';
+import * as m from '../../../paraglide/messages.js';
 
 type UploadJsonVcBoxProps = {};
 
@@ -26,11 +27,10 @@ const UploadJsonVcBox: React.FC<UploadJsonVcBoxProps> = ({}) => {
         <div className="flex flex-col gap-[20px] items-center justify-center p-[15px] rounded-[15px] bg-white shadow-bottom-2-4 mt-4">
             <div className="flex flex-col gap-[5px]">
                 <h2 className="text-grayscale-900 font-notoSans text-[20px] flex items-center">
-                    Add Verifiable Credentials
+                    {m['passport.buildMyLearnCard.addVCs.title']()}
                 </h2>
                 <p className="text-grayscale-600 font-notoSans text-[14px]">
-                    If you have raw JSON credentials, you can add them to your wallet here.
-                    {/* Upload raw JSON credentials to add them to your wallet. */}
+                    {m['passport.buildMyLearnCard.addVCs.description']()}
                 </p>
             </div>
 
@@ -39,7 +39,7 @@ const UploadJsonVcBox: React.FC<UploadJsonVcBoxProps> = ({}) => {
                 onClick={openUploadJsonVcModal}
             >
                 <UploadIcon className="w-[25px] h-[26px] text-white" strokeWidth="2" />
-                Upload
+                {m['common.upload']()}
             </button>
         </div>
     );

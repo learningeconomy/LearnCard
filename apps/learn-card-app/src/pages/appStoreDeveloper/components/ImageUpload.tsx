@@ -1,7 +1,8 @@
 import React from 'react';
 import { Upload, Loader2, X, Image as ImageIcon } from 'lucide-react';
 
-import { useFilestack } from 'learn-card-base';
+import { useImageUpload } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 
 interface ImageUploadProps {
     value?: string;
@@ -20,7 +21,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     className = '',
     previewClassName = 'w-24 h-24',
 }) => {
-    const { handleFileSelect, isLoading } = useFilestack({
+    const { handleFileSelect, isLoading } = useImageUpload({
         onUpload: (url: string) => {
             onChange(url);
         },
@@ -49,13 +50,15 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                     <div className="flex flex-col items-center gap-2">
                         <Loader2 className="w-6 h-6 text-cyan-500 animate-spin" />
 
-                        <span className="text-xs text-gray-500">Uploading...</span>
+                        <span className="text-xs text-gray-500">
+                            {m['developerPortal.components.imageUpload.uploading']()}
+                        </span>
                     </div>
                 ) : value ? (
                     <>
                         <img
                             src={value}
-                            alt="Uploaded"
+                            alt={m['developerPortal.components.imageUpload.uploaded']()}
                             className="w-full h-full object-cover"
                         />
 
@@ -73,7 +76,10 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                     <div className="flex flex-col items-center gap-2 p-4 text-center">
                         <ImageIcon className="w-6 h-6 text-gray-400" />
 
-                        <span className="text-xs text-gray-500">{placeholder}</span>
+                        <span className="text-xs text-gray-500">
+                            {placeholder ||
+                                m['developerPortal.components.imageUpload.clickToUpload']()}
+                        </span>
                     </div>
                 )}
             </div>
@@ -94,7 +100,7 @@ export const ScreenshotUpload: React.FC<ScreenshotUploadProps> = ({
     onRemove,
     index,
 }) => {
-    const { handleFileSelect, isLoading } = useFilestack({
+    const { handleFileSelect, isLoading } = useImageUpload({
         onUpload: (url: string) => {
             onChange(url);
         },

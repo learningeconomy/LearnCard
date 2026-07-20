@@ -118,6 +118,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import BoostCMSMediaOptions from './boostCMSForms/boostCMSMedia/BoostCMSMediaOptions';
 import { extractSkillIdsFromAlignments } from '../alignmentHelpers';
+import * as m from '../../../paraglide/messages.js';
 
 const FamilyCMS = lazyWithRetry(() => import('../../familyCMS/FamilyCMS'));
 
@@ -368,11 +369,10 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                     <div className="flex flex-col items-center justify-center w-full">
                         <div className="w-full flex flex-col items-center justify-center px-4 text-grayscale-900">
                             <h6 className="font-semibold text-black font-poppins text-xl mb-2">
-                                Leave This Page?
+                                {m['boost.cms.leavePage.title']()}
                             </h6>
                             <p className="text-center text-grayscale-600 font-poppins text-sm mb-4">
-                                You have unsaved changes. Your progress will be saved locally and
-                                you can continue editing later.
+                                {m['boost.cms.leavePage.body']()}
                             </p>
                             <button
                                 onClick={() => {
@@ -382,13 +382,13 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                                 }}
                                 className="flex items-center justify-center text-white rounded-full px-[64px] py-[10px] bg-rose-600 font-poppins font-medium text-xl w-full shadow-lg"
                             >
-                                Leave Page
+                                {m['boost.cms.leavePage.leave']()}
                             </button>
                             <button
                                 onClick={() => closeModalRef.current()}
                                 className="flex items-center justify-center text-white rounded-full px-[50px] py-[10px] bg-grayscale-900 font-poppins font-medium text-xl w-full shadow-lg mt-4"
                             >
-                                Stay & Continue Editing
+                                {m['boost.cms.leavePage.stay']()}
                             </button>
                         </div>
                     </div>
@@ -716,7 +716,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
     // oxlint-disable-next-line no-unused-vars
     const handleSaveAndQuit = async (goBack: boolean = false) => {
         if (!wallet) {
-            presentToast(`Wallet is not initialized`, {
+            presentToast(m['toasts.boost.walletNotInitialized'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -760,7 +760,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                 clearLocalSave();
 
                 setIsSaveLoading(false);
-                presentToast(`Boost saved successfully`, {
+                presentToast(m['toasts.boost.boostSavedSuccess'](), {
                     duration: 3000,
                     type: ToastTypeEnum.Success,
                 });
@@ -781,7 +781,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         } catch (e) {
             setIsSaveLoading(false);
             log.info('error::savingBoost', e);
-            presentToast(`Unable to save boost`, {
+            presentToast(m['toasts.boost.boostSaveFailed'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -790,7 +790,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
     const handlePublishBoost = async () => {
         if (!wallet) {
-            presentToast(`Wallet is not initialized`, {
+            presentToast(m['toasts.boost.walletNotInitialized'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -848,7 +848,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         } catch (e) {
             setIsPublishLoading(false);
             log.info('error::boosting::someone', e);
-            presentToast(`Error issuing boost`, {
+            presentToast(m['toasts.boost.boostIssuedError'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -857,7 +857,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
     const handleSaveAndIssue = async (boostUri?: string | null) => {
         if (!wallet) {
-            presentToast(`Wallet is not initialized`, {
+            presentToast(m['toasts.boost.walletNotInitialized'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -932,7 +932,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                 if (uris.length > 0) {
                     setIsLoading(false);
                     clearLocalSave();
-                    presentToast(`Boost issued successfully`, {
+                    presentToast(m['toasts.boost.boostIssuedSuccess'](), {
                         duration: 3000,
                         type: ToastTypeEnum.Success,
                     });
@@ -944,7 +944,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                 if (finalBoostUri) {
                     setIsSaveLoading(false);
                     clearLocalSave();
-                    presentToast(`Boost saved successfully`, {
+                    presentToast(m['toasts.boost.boostSavedSuccess'](), {
                         duration: 3000,
                         type: ToastTypeEnum.Success,
                     });
@@ -954,7 +954,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         } catch (e) {
             setIsLoading(false);
             log.info('error::boosting::someone', e);
-            presentToast(`Error issuing boost`, {
+            presentToast(m['toasts.boost.boostIssuedError'](), {
                 duration: 3000,
                 type: ToastTypeEnum.Error,
             });
@@ -984,7 +984,9 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
     const handleConfirmationModal = () => {
         const buttonText =
-            currentStep === BoostCMSStepsEnum.issueTo ? 'Continue Issuing' : 'Continue Editing';
+            currentStep === BoostCMSStepsEnum.issueTo
+                ? m['boost.cms.continueIssuing']()
+                : m['boost.cms.continueEditing']();
 
         newModal(
             <BoostCMSConfirmationPrompt
@@ -1087,7 +1089,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                     boostUri={publishedBoostUri}
                     collectionPropName="admins"
                     showContactOptions={false}
-                    title="Assign Admins"
+                    title={m['boost.cms.issueTo.assignAdmins']()}
                     hideBoostShareableCode
                 />
             </>
@@ -1125,15 +1127,17 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
 
     let loadingText = '';
     if (isLoading) {
-        loadingText = 'Issuing boost...';
+        loadingText = m['boost.cms.loading.issuing']();
     } else if (isPublishLoading) {
-        loadingText = skippedPublishStep ? 'Creating boost...' : 'Publishing boost...';
+        loadingText = skippedPublishStep
+            ? m['boost.cms.loading.creating']()
+            : m['boost.cms.loading.publishing']();
     } else if (isSaveLoading) {
-        loadingText = 'Saving boost...';
+        loadingText = m['boost.cms.loading.saving']();
     } else if (isAutosaving) {
-        loadingText = 'Auto-saving...';
+        loadingText = m['boost.cms.loading.autoSaving']();
     } else if (stylePackLoading) {
-        loadingText = 'Loading boost...';
+        loadingText = m['boost.cms.loading.loading']();
     }
 
     return (
@@ -1165,7 +1169,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                     <IonRow className="w-full flex items-center justify-center pb-[200px]">
                         <IonCol className="w-full flex items-center justify-center">
                             <button onClick={handleConfirmationModal} className="mt-4 pb-4">
-                                Quit
+                                {m['boost.cms.quit']()}
                             </button>
                         </IonCol>
                     </IonRow>

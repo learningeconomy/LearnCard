@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 
+import { m } from '../../../paraglide/messages.js';
+
 import { IonItem, IonList } from '@ionic/react';
 import { Checkmark } from '@learncard/react';
 
@@ -53,7 +55,7 @@ export const LaunchPadFilterSortingOptionsModal: React.FC<{
                             ) : (
                                 <div className="w-[24px] h-[24px] mr-1" />
                             )}
-                            Sort by {option.title}
+                            {m['ai.sortBy']()} {option.title}
                         </IonItem>
                     );
                 })}
@@ -89,7 +91,7 @@ export const LaunchPadFilterSortingOptionsModal: React.FC<{
                     type="button"
                     className="shrink-0 w-full py-2 h-full font-notoSans flex items-center justify-center text-xl bg-grayscale-900 rounded-[20px] shadow-bottom text-white"
                 >
-                    Set
+                    {m['ai.set']()}
                 </button>
             </div>
         </>

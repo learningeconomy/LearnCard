@@ -173,6 +173,7 @@ describe('DemoSchoolBox legacy demo contract cleanup', () => {
         expect(mocks.deleteCredentialRecord).toHaveBeenCalledWith({
             ...legacyCredential,
             skipPostDeleteCleanup: true,
+            ignoreMissingRemoteRecord: true,
         });
         expect(mocks.deleteCredentialRecord).toHaveBeenCalledTimes(1);
         expect(mocks.removeCreds).toHaveBeenCalledWith([legacyCredentialUri]);

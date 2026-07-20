@@ -6,6 +6,8 @@ import { LinkedInIcon } from '../../svgs/LinkedInIcon';
 import { PersonalDetails, UserInfoEnum, getLinkedInHandle } from '../resume-builder.helpers';
 import { formatPhoneForDisplay } from './resume-preview.helpers';
 
+import * as m from '../../../paraglide/messages.js';
+
 export const ResumePreviewInfoChip: React.FC<{
     detailKey: keyof PersonalDetails;
     placeholder?: string;
@@ -41,7 +43,7 @@ export const ResumePreviewInfoChip: React.FC<{
                     data-pdf-hide
                     className="text-grayscale-500 hover:text-grayscale-800 leading-none"
                     onClick={() => onRemove(detailKey)}
-                    aria-label={`Remove ${detailKey}`}
+                    aria-label={m['passport.resumeBuilder.remove']()}
                 >
                     <X className="w-4 h-4 text-grayscale-800" />
                 </button>

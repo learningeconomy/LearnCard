@@ -5,6 +5,7 @@ import {
     type ResultDescriptionTemplate,
     type TemplateFieldValue,
 } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
+import * as m from '../../../paraglide/messages.js';
 
 export type ResultType = 'LetterGrade' | 'Percent' | 'GradePointAverage' | 'RawScore' | 'Status';
 
@@ -21,6 +22,28 @@ export const RESULT_TYPE_OPTIONS: ResultTypeOption[] = [
     { value: 'RawScore', label: 'Points', placeholder: 'e.g. 720' },
     { value: 'Status', label: 'Status', placeholder: '' },
 ];
+
+/**
+ * Resolve a paraglide message by dotted key, falling back to English when the
+ * key is absent from the active locale bundle. Display strings on the data
+ * above are keyed by their stable `value`/enum so translations stay stable.
+ */
+const msg = (key: string, fallback: string): string => {
+    const fn = (m as Record<string, unknown>)[key];
+    return typeof fn === 'function' ? (fn as () => string)() : fallback;
+};
+
+/** Translated grade-type label, keyed by the stable result-type value. */
+export const resultTypeLabel = (option: ResultTypeOption): string =>
+    msg(`issueFlow.result.${option.value}.label`, option.label);
+
+/** Translated grade-type input placeholder (the "e.g. …" example). */
+export const resultTypePlaceholder = (option: ResultTypeOption): string =>
+    msg(`issueFlow.result.${option.value}.eg`, option.placeholder);
+
+/** Translated status option label, keyed by the stable status enum value. */
+export const resultStatusLabel = (status: string): string =>
+    msg(`issueFlow.result.status.${status}`, status.replace(/([A-Z])/g, ' $1').trim());
 
 export const RESULT_STATUS_VALUES = [
     'Completed',

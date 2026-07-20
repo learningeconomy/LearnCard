@@ -36,6 +36,7 @@ import {
 
 import { UnsignedVC, VC } from '@learncard/types';
 import { getEmojiFromDidString } from 'learn-card-base/helpers/walletHelpers';
+import * as m from '../../../paraglide/messages.js';
 
 type ShareBoostLinkProps = {
     handleClose?: () => void;
@@ -113,7 +114,11 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     } = useGetProfile();
 
     if (isLCNetworkUrlIssuer) {
-        issuerName = profile ? profile?.displayName : isLoading ? 'Loading...' : 'Unknown';
+        issuerName = profile
+            ? profile?.displayName
+            : isLoading
+            ? m['common.loading']()
+            : m['common.unknown']();
     } else {
         issuerName = getIssuerNameNonBoost(cred);
     }
@@ -122,14 +127,8 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
         issueeName = myProfile
             ? myProfile?.displayName
             : myProfileLoading
-            ? 'Loading...'
-            : 'Unknown';
-
-        issueeName = myProfile
-            ? myProfile?.displayName
-            : myProfileLoading
-            ? 'Loading...'
-            : 'Unknown';
+            ? m['common.loading']()
+            : m['common.unknown']();
     } else {
         issueeName = cred?.credentialSubject?.id;
     }
@@ -186,11 +185,11 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
             await Clipboard.write({
                 string: shareLink,
             });
-            presentToast('Share link copied to clipboard', {
+            presentToast(m['toasts.boost.shareLinkCopied'](), {
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy share link to clipboard', {
+            presentToast(m['toasts.boost.shareLinkCopyFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -271,7 +270,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                     </button>
                                 )}
                             </div>
-                            <p className="font-poppins text-xl text-white">Share</p>
+                            <p className="font-poppins text-xl text-white">{m['common.share']()}</p>
                             <button onClick={handleClose}>
                                 <X className="text-white h-8 w-8" />
                             </button>

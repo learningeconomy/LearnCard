@@ -1,5 +1,42 @@
 # Changelog
 
+## 1.97.4
+
+### Patch Changes
+
+-   [#1407](https://github.com/learningeconomy/LearnCard/pull/1407) [`0f2e8faa0e70de1917cfc7d1ab12494cb048136a`](https://github.com/learningeconomy/LearnCard/commit/0f2e8faa0e70de1917cfc7d1ab12494cb048136a) Thanks [@Custard7](https://github.com/Custard7)! - Fix selector
+
+-   [#1394](https://github.com/learningeconomy/LearnCard/pull/1394) [`147d2a5fda49ba33f20077400ac3aae633bddb05`](https://github.com/learningeconomy/LearnCard/commit/147d2a5fda49ba33f20077400ac3aae633bddb05) Thanks [@goblincore](https://github.com/goblincore)! - perf: eliminate duplicate wallet construction during app boot. getBespokeLearnCard/getSigningLearnCard now cache in-flight promises so concurrent boot callers share one build; getWalletOrFallback checks secure storage before falling back to the dummy wallet; useGetProofOfLoginVp reuses the logged-in user's wallet instead of building a throwaway 'aaa'-seed wallet (the server route ignores the caller DID).
+
+-   [#1412](https://github.com/learningeconomy/LearnCard/pull/1412) [`7e101e35f8faf1c43f5c37120dda63393a4ffe1b`](https://github.com/learningeconomy/LearnCard/commit/7e101e35f8faf1c43f5c37120dda63393a4ffe1b) Thanks [@Custard7](https://github.com/Custard7)! - fix: Badge Summit Bugs
+
+-   [#1413](https://github.com/learningeconomy/LearnCard/pull/1413) [`24bd3cd36c5aa9a3a013288909d389e0aa43dd5d`](https://github.com/learningeconomy/LearnCard/commit/24bd3cd36c5aa9a3a013288909d389e0aa43dd5d) Thanks [@Custard7](https://github.com/Custard7)! - feat: Onboarding 2.0
+
+-   [#1410](https://github.com/learningeconomy/LearnCard/pull/1410) [`daf64d05972682d6bd87b4afc7005eb0f19b0361`](https://github.com/learningeconomy/LearnCard/commit/daf64d05972682d6bd87b4afc7005eb0f19b0361) Thanks [@Custard7](https://github.com/Custard7)! - fix: Query Param Merging
+
+-   [#1410](https://github.com/learningeconomy/LearnCard/pull/1410) [`daf64d05972682d6bd87b4afc7005eb0f19b0361`](https://github.com/learningeconomy/LearnCard/commit/daf64d05972682d6bd87b4afc7005eb0f19b0361) Thanks [@Custard7](https://github.com/Custard7)! - fix: Query Param Merging
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.2.20
+    -   @learncard/credential-library@1.0.13
+    -   @learncard/react@2.10.7
+
+## 1.97.3
+
+### Patch Changes
+
+-   [#1401](https://github.com/learningeconomy/LearnCard/pull/1401) [`86557d270445ebc7cdb192adf2256306e6ab84fe`](https://github.com/learningeconomy/LearnCard/commit/86557d270445ebc7cdb192adf2256306e6ab84fe) Thanks [@Custard7](https://github.com/Custard7)! - feat: Rich Tags
+
+-   [#1398](https://github.com/learningeconomy/LearnCard/pull/1398) [`b9ee9b1d331257b4bbd088e11d4fe0f55d98ae91`](https://github.com/learningeconomy/LearnCard/commit/b9ee9b1d331257b4bbd088e11d4fe0f55d98ae91) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: Always show edge cards on swiper carousel
+
+-   [#1404](https://github.com/learningeconomy/LearnCard/pull/1404) [`6417de04cfb15ab10eb85ba3a934b09ff7835c52`](https://github.com/learningeconomy/LearnCard/commit/6417de04cfb15ab10eb85ba3a934b09ff7835c52) Thanks [@smurflo2](https://github.com/smurflo2)! - Speed up Self Assigned Skills save
+
+-   [#1387](https://github.com/learningeconomy/LearnCard/pull/1387) [`8a14a233d2faee61151c552c3eeddc87cfbade2d`](https://github.com/learningeconomy/LearnCard/commit/8a14a233d2faee61151c552c3eeddc87cfbade2d) Thanks [@smurflo2](https://github.com/smurflo2)! - Fix pruning credentials from contracts + bug fest fixes
+
+-   [#1403](https://github.com/learningeconomy/LearnCard/pull/1403) [`948100f45b11a76c961eadf2eb3224646bd38d09`](https://github.com/learningeconomy/LearnCard/commit/948100f45b11a76c961eadf2eb3224646bd38d09) Thanks [@smurflo2](https://github.com/smurflo2)! - Fix new credential indicators
+
+-   [#1406](https://github.com/learningeconomy/LearnCard/pull/1406) [`98584bb0af8525961d2196d4d372772480b241c3`](https://github.com/learningeconomy/LearnCard/commit/98584bb0af8525961d2196d4d372772480b241c3) Thanks [@Custard7](https://github.com/Custard7)! - feat: Peer Badges
+
 ## 1.97.2
 
 ### Patch Changes

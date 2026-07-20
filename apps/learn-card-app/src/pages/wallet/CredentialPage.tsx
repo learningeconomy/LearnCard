@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useHistory } from 'react-router-dom';
 import { IonContent, IonPage } from '@ionic/react';
+import * as m from '../../paraglide/messages.js';
 
 import useBoostModal from '../../components/boost/hooks/useBoostModal';
 import { useLoadingLine } from '../../stores/loadingStore';
@@ -40,12 +41,14 @@ interface CategoryConfig {
     tabBackgroundColor: string;
 }
 
-const categoryToConfig: Record<string, CategoryConfig> = {
+// A function (not a module-level const) so the translated `title`s resolve at
+// render time — a const would freeze them in the import-time locale.
+const getCategoryToConfig = (): Record<string, CategoryConfig> => ({
     [CredentialCategoryEnum.socialBadge]: {
         boostCategory: CredentialCategoryEnum.socialBadge, // category
         subheaderType: SubheaderTypeEnum.SocialBadge, // header type
 
-        title: 'Badges',
+        title: m['wallet.categories.socialBadges'](),
         iconColor: 'text-blue-700',
         dividerLineColor: 'blue-400',
         searchInputColor: 'blue-400',
@@ -55,7 +58,7 @@ const categoryToConfig: Record<string, CategoryConfig> = {
         boostCategory: CredentialCategoryEnum.workHistory, // category
         subheaderType: SubheaderTypeEnum.Job, // header type
 
-        title: 'Experiences',
+        title: m['wallet.categories.experiences'](),
         iconColor: 'text-cyan-701',
         dividerLineColor: 'cyan-401',
         searchInputColor: 'cyan-300',
@@ -65,7 +68,7 @@ const categoryToConfig: Record<string, CategoryConfig> = {
         boostCategory: CredentialCategoryEnum.learningHistory, // category
         subheaderType: SubheaderTypeEnum.Learning, // header type
 
-        title: 'Studies',
+        title: m['wallet.categories.studies'](),
         iconColor: 'text-emerald-701',
         dividerLineColor: 'emerald-401',
         searchInputColor: 'emerald-500',
@@ -75,7 +78,7 @@ const categoryToConfig: Record<string, CategoryConfig> = {
         boostCategory: CredentialCategoryEnum.accommodation, // category
         subheaderType: SubheaderTypeEnum.Accommodation, // header type
 
-        title: 'Assistance',
+        title: m['wallet.categories.assistance'](),
         iconColor: 'text-violet-700',
         dividerLineColor: 'violet-400',
         searchInputColor: 'violet-300',
@@ -85,7 +88,7 @@ const categoryToConfig: Record<string, CategoryConfig> = {
         boostCategory: CredentialCategoryEnum.accomplishment, // category
         subheaderType: SubheaderTypeEnum.Accomplishment, // header type
 
-        title: 'Portfolio',
+        title: m['wallet.categories.portfolio'](),
         iconColor: 'text-yellow-700',
         dividerLineColor: 'yellow-400',
         searchInputColor: 'yellow-300',
@@ -95,7 +98,7 @@ const categoryToConfig: Record<string, CategoryConfig> = {
         boostCategory: CredentialCategoryEnum.achievement, // category
         subheaderType: SubheaderTypeEnum.Achievement, // header type
 
-        title: 'Achievements',
+        title: m['wallet.categories.achievements'](),
         iconColor: 'text-pink-700',
         dividerLineColor: 'pink-400',
         searchInputColor: 'pink-500',
@@ -105,13 +108,13 @@ const categoryToConfig: Record<string, CategoryConfig> = {
         boostCategory: CredentialCategoryEnum.id, // category
         subheaderType: SubheaderTypeEnum.ID, // header type
 
-        title: 'IDs',
+        title: m['wallet.categories.ids'](),
         iconColor: 'text-blue-700',
         dividerLineColor: 'blue-400',
         searchInputColor: 'blue-300',
         tabBackgroundColor: 'blue-300',
     },
-};
+});
 
 type CredentialPageProps = {
     category: keyof typeof CredentialCategoryEnum;
@@ -128,8 +131,16 @@ const CredentialPage: React.FC<CredentialPageProps> = ({ category }) => {
 
     const { data: currentLCNUser } = useIsCurrentUserLCNUser();
 
+    const categoryToConfig = getCategoryToConfig();
     const config =
         categoryToConfig[category] ?? categoryToConfig[CredentialCategoryEnum.workHistory];
+
+    useEffect(
+        () => () => {
+            newCredsStore.set.clearNewCreds(config.boostCategory);
+        },
+        [config.boostCategory]
+    );
 
     const _activeTab = query.get('managed')
         ? CredentialListTabEnum.Managed

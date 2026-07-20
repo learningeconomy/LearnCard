@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../../paraglide/messages.js';
 import { useHistory, useLocation } from 'react-router-dom';
 import { IonHeader, IonToolbar } from '@ionic/react';
 import { Shield, Code2, Hammer } from 'lucide-react';
@@ -12,7 +13,7 @@ interface AppStoreHeaderProps {
     rightContent?: React.ReactNode;
 }
 
-export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title = 'App Store Portal', rightContent }) => {
+export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title, rightContent }) => {
     const history = useHistory();
     const location = useLocation();
     const { useIsAdmin } = useDeveloperPortal();
@@ -22,13 +23,14 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title = 'App Sto
     const { currentIntegrationId, goToIntegrationHub } = useDeveloperPortalContext();
 
     const isOnAdminPage = location.pathname.includes('/app-store/admin');
-    
+
     // Apps page: /app-store/developer or /integrations/:id/apps
-    const isOnAppsPage = location.pathname === '/app-store/developer' || 
-        location.pathname.includes('/apps');
-    
+    const isOnAppsPage =
+        location.pathname === '/app-store/developer' || location.pathname.includes('/apps');
+
     // Build page: /integrations/:id (dashboard) or /integrations/:id/guides or /guides
-    const isOnBuildPage = (location.pathname.includes('/integrations') && !location.pathname.includes('/apps')) ||
+    const isOnBuildPage =
+        (location.pathname.includes('/integrations') && !location.pathname.includes('/apps')) ||
         location.pathname.includes('/guides');
 
     const handlePortalToggle = () => {
@@ -53,7 +55,13 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title = 'App Sto
                             className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg"
                         />
 
-                        <span className={`text-lg font-semibold text-gray-700 ${rightContent ? 'hidden sm:block' : ''}`}>{title}</span>
+                        <span
+                            className={`text-lg font-semibold text-gray-700 ${
+                                rightContent ? 'hidden sm:block' : ''
+                            }`}
+                        >
+                            {title || m['developerPortal.components.appStoreHeader.title']()}
+                        </span>
                     </button>
 
                     <div className="flex items-center gap-1.5 sm:gap-3 overflow-visible">
@@ -65,7 +73,9 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title = 'App Sto
                                 onClick={() => {
                                     // Retain integration context when switching to Apps
                                     if (currentIntegrationId) {
-                                        history.push(`/app-store/developer/integrations/${currentIntegrationId}/apps`);
+                                        history.push(
+                                            `/app-store/developer/integrations/${currentIntegrationId}/apps`
+                                        );
                                     } else {
                                         history.push('/app-store/developer');
                                     }
@@ -77,7 +87,7 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title = 'App Sto
                                 }`}
                             >
                                 <Code2 className="w-4 h-4" />
-                                Apps
+                                {m['developerPortal.components.appStoreHeader.apps']()}
                             </button>
 
                             <button
@@ -89,7 +99,7 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title = 'App Sto
                                 }`}
                             >
                                 <Hammer className="w-4 h-4" />
-                                Build
+                                {m['developerPortal.components.appStoreHeader.build']()}
                             </button>
                         </div>
 
@@ -99,7 +109,9 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title = 'App Sto
                                 if (isOnBuildPage) {
                                     // Retain integration context when switching to Apps
                                     if (currentIntegrationId) {
-                                        history.push(`/app-store/developer/integrations/${currentIntegrationId}/apps`);
+                                        history.push(
+                                            `/app-store/developer/integrations/${currentIntegrationId}/apps`
+                                        );
                                     } else {
                                         history.push('/app-store/developer');
                                     }
@@ -124,12 +136,18 @@ export const AppStoreHeader: React.FC<AppStoreHeaderProps> = ({ title = 'App Sto
                                 {isOnAdminPage ? (
                                     <>
                                         <Code2 className="w-4 h-4" />
-                                        <span className="hidden sm:inline">Developer</span>
+                                        <span className="hidden sm:inline">
+                                            {m[
+                                                'developerPortal.components.appStoreHeader.developer'
+                                            ]()}
+                                        </span>
                                     </>
                                 ) : (
                                     <>
                                         <Shield className="w-4 h-4" />
-                                        <span className="hidden sm:inline">Admin</span>
+                                        <span className="hidden sm:inline">
+                                            {m['developerPortal.components.appStoreHeader.admin']()}
+                                        </span>
                                     </>
                                 )}
                             </button>

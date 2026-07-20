@@ -1,5 +1,7 @@
 import React, { useEffect } from 'react';
 
+import * as m from '../../../paraglide/messages.js';
+
 import CustomSpinner from '../../svgs/CustomSpinner';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import SlimCaretRight from '../../svgs/SlimCaretRight';
@@ -14,6 +16,18 @@ import {
 } from 'learn-card-base';
 
 import useTheme from '../../../theme/hooks/useTheme';
+
+// Translation keys for checklist item titles. The titles originate as static
+// English in learn-card-base (`checklistItems`), which has no Paraglide access,
+// so we translate at the app render layer keyed by the item's ChecklistEnum
+// type. Types without a key (e.g. addSkills, connectSchool) fall back to the
+// base title.
+const CHECKLIST_TITLE_KEYS: Partial<Record<ChecklistEnum, string>> = {
+    [ChecklistEnum.uploadResume]: 'passport.buildMyLearnCard.steps.addResume',
+    [ChecklistEnum.uploadCertificates]: 'passport.buildMyLearnCard.steps.addCertificates',
+    [ChecklistEnum.uploadTranscripts]: 'passport.buildMyLearnCard.steps.addTranscript',
+    [ChecklistEnum.uploadDiplomas]: 'passport.buildMyLearnCard.steps.addDiploma',
+};
 
 export const CheckListItem: React.FC<{
     checkListItem: ChecklistItem;
@@ -42,10 +56,8 @@ export const CheckListItem: React.FC<{
         rawVC: isParsingRawVC,
     } = checklistStore.useTracked.isParsing();
 
-    const {
-        resume: pendingResumeReview,
-        transcript: pendingTranscriptReview,
-    } = checklistStore.useTracked.pendingReview();
+    const { resume: pendingResumeReview, transcript: pendingTranscriptReview } =
+        checklistStore.useTracked.pendingReview();
 
     const handleCheckListItemClick = () => {
         newModal(
@@ -55,7 +67,12 @@ export const CheckListItem: React.FC<{
         );
     };
 
-    let text = checkListItem?.title;
+    const titleKey = checkListItem?.type ? CHECKLIST_TITLE_KEYS[checkListItem.type] : undefined;
+    const titleMessage = titleKey ? (m as Record<string, unknown>)[titleKey] : undefined;
+    let text =
+        typeof titleMessage === 'function'
+            ? (titleMessage as () => string)()
+            : checkListItem?.title;
     let icon = <span />;
     let styles = `bg-emerald-50 border-emerald-700 border-solid border-[1px]`;
 
@@ -66,23 +83,23 @@ export const CheckListItem: React.FC<{
         icon = <Checkmark className="text-white h-[20px] w-[20px]" />;
         styles = 'bg-emerald-700';
     } else if (checkListItem?.type === ChecklistEnum.uploadResume && isParsingResume) {
-        text = 'Processing Resume...';
+        text = m['passport.buildMyLearnCard.steps.processingResume']();
         styles = processingStyles;
         icon = processingIcon;
     } else if (checkListItem?.type === ChecklistEnum.uploadCertificates && isParsingCertificate) {
-        text = 'Processing Certificate...';
+        text = m['passport.buildMyLearnCard.steps.processingCertificate']();
         styles = processingStyles;
         icon = processingIcon;
     } else if (checkListItem?.type === ChecklistEnum.uploadTranscripts && isParsingTranscript) {
-        text = 'Processing Transcript...';
+        text = m['passport.buildMyLearnCard.steps.processingTranscript']();
         styles = processingStyles;
         icon = processingIcon;
     } else if (checkListItem?.type === ChecklistEnum.uploadDiplomas && isParsingDiploma) {
-        text = 'Processing Diploma...';
+        text = m['passport.buildMyLearnCard.steps.processingDiploma']();
         styles = processingStyles;
         icon = processingIcon;
     } else if (checkListItem?.type === ChecklistEnum.uploadRawVC && isParsingRawVC) {
-        text = 'Processing Raw VC...';
+        text = m['passport.buildMyLearnCard.steps.processingRawVC']();
         styles = processingStyles;
         icon = processingIcon;
     } else if (
@@ -90,7 +107,7 @@ export const CheckListItem: React.FC<{
         pendingResumeReview &&
         pendingResumeReview.credentials.length > 0
     ) {
-        text = 'Review Resume';
+        text = m['passport.buildMyLearnCard.steps.reviewResume']();
         styles = 'bg-amber-500';
         icon = (
             <span className="text-white text-[11px] font-bold">
@@ -102,7 +119,7 @@ export const CheckListItem: React.FC<{
         pendingTranscriptReview &&
         pendingTranscriptReview.credentials.length > 0
     ) {
-        text = 'Review Transcripts';
+        text = m['passport.buildMyLearnCard.steps.reviewTranscripts']();
         styles = 'bg-amber-500';
         icon = (
             <span className="text-white text-[11px] font-bold">
