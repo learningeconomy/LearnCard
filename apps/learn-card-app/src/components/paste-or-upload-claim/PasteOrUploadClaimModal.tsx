@@ -13,6 +13,7 @@ import ClaimBoost from '../../pages/claimBoost/ClaimBoost';
 import AddContactView, {
     AddContactViewMode,
 } from '../../pages/addressBook/addContactView/AddContactView';
+import * as m from '../../paraglide/messages.js';
 
 const unrecognizedCopyFor = (reason: UnrecognizedReason, source: ClaimInputSource): string => {
     const isQrImage = source === 'image_upload';
@@ -20,26 +21,26 @@ const unrecognizedCopyFor = (reason: UnrecognizedReason, source: ClaimInputSourc
     switch (reason) {
         case 'empty':
             return isQrImage
-                ? 'Choose an image with a credential QR code to continue.'
-                : 'Paste a claim link to continue.';
+                ? m['claim.paste.unrecognized.emptyQr']()
+                : m['claim.paste.unrecognized.emptyLink']();
         case 'malformed_url':
             return isQrImage
-                ? "We found a QR code, but its link isn't valid. Try a different image."
-                : "That doesn't look like a claim link. Copy the whole link and try again.";
+                ? m['claim.paste.unrecognized.malformedUrlQr']()
+                : m['claim.paste.unrecognized.malformedUrlLink']();
         case 'unknown_scheme':
             return isQrImage
-                ? "We found a QR code, but it doesn't use a supported credential format."
-                : "We don't recognize this kind of claim link yet.";
+                ? m['claim.paste.unrecognized.unknownSchemeQr']()
+                : m['claim.paste.unrecognized.unknownSchemeLink']();
         case 'invalid_vc':
-            return "That looks like a credential, but we couldn't read it. Ask the issuer for a fresh copy.";
+            return m['claim.paste.unrecognized.invalidVc']();
         case 'interaction_unavailable':
             return isQrImage
-                ? 'We found the QR code, but its credential is unavailable or expired.'
-                : 'We could not open that claim link. It may be unavailable or expired.';
+                ? m['claim.paste.unrecognized.interactionUnavailableQr']()
+                : m['claim.paste.unrecognized.interactionUnavailableLink']();
         case 'unknown_format':
             return isQrImage
-                ? "We found a QR code, but it doesn't contain a supported credential claim."
-                : "We couldn't use that claim link. Check that you copied the full link and try again.";
+                ? m['claim.paste.unrecognized.unknownFormatQr']()
+                : m['claim.paste.unrecognized.unknownFormatLink']();
     }
 };
 
@@ -115,13 +116,13 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
     const route = useClaimInputRouter({ defaultSource: 'paste' });
     const showClaimLink = mode !== 'qr-code';
     const showQrUpload = mode !== 'claim-link';
-    const title = mode === 'qr-code' ? 'Upload a QR Code' : 'Use a Claim Link';
+    const title = mode === 'qr-code' ? m['claim.paste.titleQr']() : m['claim.paste.title']();
     const subtitle =
         mode === 'qr-code'
-            ? 'Upload an image with a credential QR code'
+            ? m['claim.paste.subtitleQr']()
             : mode === 'claim-link'
-            ? 'Paste a LearnCard or wallet claim link'
-            : 'Paste a link or upload a QR';
+            ? m['claim.paste.subtitleLink']()
+            : m['claim.paste.subtitle']();
 
     let footerBottom = safeArea.bottom;
     if (Capacitor.isNativePlatform()) footerBottom = 20 + safeArea.bottom;
@@ -183,7 +184,12 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
                 return true;
             } catch (err) {
                 presentToast(
-                    `Oops! ${err instanceof Error ? err.message : 'Something went wrong.'}`,
+                    m['claim.paste.oops']({
+                        message:
+                            err instanceof Error
+                                ? err.message
+                                : m['claim.paste.somethingWentWrong'](),
+                    }),
                     { type: ToastTypeEnum.Error, hasDismissButton: true }
                 );
                 return false;
@@ -208,16 +214,12 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
                 });
                 const decoded = typeof scanResult === 'string' ? scanResult : scanResult.data;
                 if (!decoded) {
-                    setErrorCopy(
-                        "We couldn't find a QR code in that image. Make sure the QR fills most of the photo and isn't blurry."
-                    );
+                    setErrorCopy(m['claim.paste.qrNotFound']());
                     return;
                 }
                 await dispatch(decoded, 'image_upload');
             } catch {
-                setErrorCopy(
-                    "We couldn't read a QR code from that image. Try a clearer photo, or paste the link instead."
-                );
+                setErrorCopy(m['claim.paste.qrReadFailed']());
             }
         },
         [dispatch]
@@ -309,10 +311,10 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
                     <div className="w-full bg-white flex flex-col gap-[15px] shadow-bottom-2-4 p-[15px] mt-4 rounded-[15px]">
                         <div className="flex flex-col items-start justify-center gap-[5px]">
                             <h4 className="text-[20px] text-grayscale-900 font-notoSans text-left">
-                                Got a credential link?
+                                {m['claim.paste.linkHeading']()}
                             </h4>
                             <p className="text-[14px] text-grayscale-600 font-notoSans text-left">
-                                Paste a LearnCard or external wallet claim link below.
+                                {m['claim.paste.linkDesc']()}
                             </p>
                         </div>
 
@@ -338,10 +340,10 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
                             {isProcessing ? (
                                 <span className="flex items-center justify-center gap-2">
                                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    Checking…
+                                    {m['claim.paste.checking']()}
                                 </span>
                             ) : (
-                                'Continue'
+                                m['common.continue']()
                             )}
                         </button>
                     </div>
@@ -351,10 +353,10 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
                     <div className="w-full bg-white flex flex-col gap-[15px] shadow-bottom-2-4 p-[15px] mt-4 rounded-[15px]">
                         <div className="flex flex-col items-start justify-center gap-[5px]">
                             <h4 className="text-[20px] text-grayscale-900 font-notoSans text-left">
-                                Got a QR code?
+                                {m['claim.paste.qrHeading']()}
                             </h4>
                             <p className="text-[14px] text-grayscale-600 font-notoSans text-left">
-                                Drop an image, or pick one from your device.
+                                {m['claim.paste.qrDesc']()}
                             </p>
                         </div>
 
@@ -377,14 +379,18 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
                                     isDragging ? 'text-emerald-700' : 'text-grayscale-700'
                                 }`}
                             >
-                                {isDragging ? 'Drop it!' : 'Choose an image'}
+                                {isDragging
+                                    ? m['claim.paste.dropIt']()
+                                    : m['claim.paste.chooseImage']()}
                             </p>
                             <p
                                 className={`text-xs mt-1 ${
                                     isDragging ? 'text-emerald-600' : 'text-grayscale-500'
                                 }`}
                             >
-                                {isDragging ? 'Release to upload' : 'or drop it here'}
+                                {isDragging
+                                    ? m['claim.paste.releaseToUpload']()
+                                    : m['claim.paste.orDropHere']()}
                             </p>
                         </button>
                         <input
@@ -418,7 +424,7 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
                             onClick={closeModal}
                             className="py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] justify-center"
                         >
-                            Back
+                            {m['common.back']()}
                         </button>
                     </div>
                 </div>

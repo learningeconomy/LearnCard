@@ -9,6 +9,7 @@ import SkillFrameworkInfoBox from './SkillFrameworkInfoBox';
 import { IonFooter } from '@ionic/react';
 
 import { VC } from '@learncard/types';
+import * as m from '../../paraglide/messages.js';
 
 type SkillInfoModalProps = {
     frameworkId: string;
@@ -80,7 +81,7 @@ const SkillInfoModal: React.FC<SkillInfoModalProps> = ({ frameworkId, skillId, c
                             onClick={closeModal}
                             className="p-[11px] bg-white rounded-full text-grayscale-900 shadow-button-bottom flex-1 font-poppins text-[17px]"
                         >
-                            Close
+                            {m['common.close']()}
                         </button>
                     </div>
                 </IonFooter>

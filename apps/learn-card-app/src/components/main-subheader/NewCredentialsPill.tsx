@@ -1,5 +1,7 @@
 import React from 'react';
 
+import * as m from '../../paraglide/messages.js';
+
 export interface NewCredentialsPillProps {
     count: number;
     label?: string;
@@ -9,7 +11,7 @@ export interface NewCredentialsPillProps {
 
 export const NewCredentialsPill: React.FC<NewCredentialsPillProps> = ({
     count,
-    label = 'New',
+    label = m['passport.wallet.new'](),
     tone = 'light',
     className = '',
 }) => {

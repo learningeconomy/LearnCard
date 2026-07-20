@@ -1,5 +1,9 @@
 import React from 'react';
 import { IonHeader, IonToolbar } from '@ionic/react';
+
+import * as m from '../../../../paraglide/messages.js';
+import { TransP } from '../../../../i18n/TransP';
+
 import BuildColorBlocksIcon from 'learn-card-base/svgs/BuildColorBlocksIcon';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
@@ -19,10 +23,14 @@ export const CheckListManagerHeader: React.FC<{}> = ({}) => {
                         </div>
                         <div className="flex flex-col items-start justify-center">
                             <h5 className="text-[22px] font-semibold text-grayscale-900 font-poppins">
-                                Build My {brandingConfig.name}
+                                <TransP
+                                    m={m['passport.buildMyLearnCard.titleMarkup']}
+                                    values={{ brand: brandingConfig.name }}
+                                    components={[<span key="brand" />]}
+                                />
                             </h5>
                             <p className="text-sm text-grayscale-600 font-notoSans leading-[24px] tracking-[0.25px]">
-                                Add the document that fits best.
+                                {m['passport.buildMyLearnCard.managerDescription']()}
                             </p>
                         </div>
                     </div>

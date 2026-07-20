@@ -2,6 +2,8 @@ import React, { lazy, Suspense } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { IonSpinner } from '@ionic/react';
 
+import * as m from '../../../paraglide/messages.js';
+
 import { ModalTypes, QRCodeScannerStore, useDeviceTypeByWidth, useModal } from 'learn-card-base';
 
 import SlimCaretRight from '../../svgs/SlimCaretRight';
@@ -62,30 +64,30 @@ export const CredentialIntakeOptions: React.FC = () => {
     return (
         <section className="w-full bg-white flex flex-col shadow-2xl p-5 mt-4 rounded-[20px]">
             <h4 className="text-xl font-semibold text-grayscale-900 leading-tight">
-                Add something you received
+                {m['passport.buildMyLearnCard.intake.title']()}
             </h4>
             <p className="mt-1 text-sm text-grayscale-600 leading-relaxed">
-                Use a QR code or claim link from an issuer or another wallet.
+                {m['passport.buildMyLearnCard.intake.description']()}
             </p>
 
             <div className="mt-5 flex flex-col">
                 {canScanWithCamera && (
                     <IntakeOption
-                        title="Scan QR Code"
-                        description="Open your camera to scan a credential QR code."
+                        title={m['passport.buildMyLearnCard.intake.scanTitle']()}
+                        description={m['passport.buildMyLearnCard.intake.scanDescription']()}
                         onClick={openCameraScanner}
                     />
                 )}
                 {isDesktop && (
                     <IntakeOption
-                        title="Upload QR Code"
-                        description="Upload an image of a credential QR code from your computer."
+                        title={m['passport.buildMyLearnCard.intake.uploadTitle']()}
+                        description={m['passport.buildMyLearnCard.intake.uploadDescription']()}
                         onClick={() => openClaimInput('qr-code')}
                     />
                 )}
                 <IntakeOption
-                    title="Use a Claim Link"
-                    description="Paste a LearnCard or external wallet claim link to continue."
+                    title={m['passport.buildMyLearnCard.intake.linkTitle']()}
+                    description={m['passport.buildMyLearnCard.intake.linkDescription']()}
                     onClick={() => openClaimInput('claim-link')}
                 />
             </div>

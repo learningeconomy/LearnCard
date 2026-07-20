@@ -7,6 +7,7 @@ import AchievementTypeSelectorModal, {
     formatAchievementType,
     getWalletCategory,
 } from './AchievementTypeSelectorModal';
+import * as m from '../../../../paraglide/messages.js';
 
 type Props = {
     credential: ParsedCredential;
@@ -80,12 +81,18 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
             {/* Header */}
             <div className="flex items-center gap-3 mb-4">
                 <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-grayscale-100">
-                    <svg className="w-5 h-5 text-grayscale-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg
+                        className="w-5 h-5 text-grayscale-700"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                    >
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                     </svg>
                 </button>
                 <h4 className="text-lg text-grayscale-900 font-notoSans font-semibold truncate">
-                    {name || 'Edit Credential'}
+                    {name || m['passport.buildMyLearnCard.misc.editCredential']()}
                 </h4>
             </div>
 
@@ -94,14 +101,16 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
                 {/* Credential Name */}
                 <div>
                     <label className="block text-sm font-semibold text-grayscale-700 mb-1">
-                        Credential Name
+                        {m['passport.buildMyLearnCard.editView.credentialName']()}
                     </label>
                     <input
                         type="text"
                         maxLength={100}
                         value={getField(vc, 'credentialSubject.achievement.name')}
-                        onChange={e => updateField('credentialSubject.achievement.name', e.target.value)}
-                        placeholder="e.g. Software Engineer at Acme Corp"
+                        onChange={e =>
+                            updateField('credentialSubject.achievement.name', e.target.value)
+                        }
+                        placeholder={m['passport.buildMyLearnCard.editView.namePlaceholder']()}
                         className="w-full px-3 py-2 border border-grayscale-200 rounded-[10px] text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:border-grayscale-400"
                     />
                 </div>
@@ -110,7 +119,7 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
                 <div>
                     <div className="flex items-center justify-between mb-1">
                         <label className="block text-sm font-semibold text-grayscale-700">
-                            Description
+                            {m['passport.buildMyLearnCard.editView.description']()}
                         </label>
                         <span className="text-xs text-grayscale-400">
                             {getField(vc, 'credentialSubject.achievement.description').length}/500
@@ -120,8 +129,12 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
                         rows={3}
                         maxLength={500}
                         value={getField(vc, 'credentialSubject.achievement.description')}
-                        onChange={e => updateField('credentialSubject.achievement.description', e.target.value)}
-                        placeholder="Add a description..."
+                        onChange={e =>
+                            updateField('credentialSubject.achievement.description', e.target.value)
+                        }
+                        placeholder={m[
+                            'passport.buildMyLearnCard.editView.descriptionPlaceholder'
+                        ]()}
                         className="w-full px-3 py-2 border border-grayscale-200 rounded-[10px] text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:border-grayscale-400 resize-y"
                     />
                 </div>
@@ -129,10 +142,13 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
                 {/* Achievement Type */}
                 <div>
                     <label className="block text-sm font-semibold text-grayscale-700 mb-1">
-                        Achievement Type
+                        {m['passport.buildMyLearnCard.editView.achievementType']()}
                     </label>
                     {(() => {
-                        const currentType = getField(vc, 'credentialSubject.achievement.achievementType');
+                        const currentType = getField(
+                            vc,
+                            'credentialSubject.achievement.achievementType'
+                        );
                         const category = currentType ? getWalletCategory(currentType) : '';
                         return (
                             <>
@@ -143,7 +159,10 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
                                             <AchievementTypeSelectorModal
                                                 selected={currentType}
                                                 onSelect={type => {
-                                                    updateField('credentialSubject.achievement.achievementType', type);
+                                                    updateField(
+                                                        'credentialSubject.achievement.achievementType',
+                                                        type
+                                                    );
                                                     closeModal();
                                                 }}
                                             />,
@@ -159,16 +178,35 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
                                     }}
                                     className="w-full flex items-center justify-between px-3 py-2 border border-grayscale-200 rounded-[10px] text-sm bg-white"
                                 >
-                                    <span className={currentType ? 'text-grayscale-900' : 'text-grayscale-400'}>
-                                        {currentType ? formatAchievementType(currentType) : 'Select type...'}
+                                    <span
+                                        className={
+                                            currentType
+                                                ? 'text-grayscale-900'
+                                                : 'text-grayscale-400'
+                                        }
+                                    >
+                                        {currentType
+                                            ? formatAchievementType(currentType)
+                                            : m['passport.buildMyLearnCard.misc.selectType']()}
                                     </span>
-                                    <svg className="w-4 h-4 text-grayscale-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                                    <svg
+                                        className="w-4 h-4 text-grayscale-400"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        strokeWidth={2}
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            d="M19 9l-7 7-7-7"
+                                        />
                                     </svg>
                                 </button>
                                 {category && (
                                     <p className="text-xs text-grayscale-500 mt-1">
-                                        Wallet category: <span className="font-medium">{category}</span>
+                                        {m['passport.buildMyLearnCard.editView.walletCategory']()}{' '}
+                                        <span className="font-medium">{category}</span>
                                     </p>
                                 )}
                             </>
@@ -180,18 +218,27 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
                 <div>
                     <div className="flex items-center justify-between mb-1">
                         <label className="block text-sm font-semibold text-grayscale-700">
-                            Criteria
+                            {m['passport.buildMyLearnCard.editView.criteria']()}
                         </label>
                         <span className="text-xs text-grayscale-400">
-                            {getField(vc, 'credentialSubject.achievement.criteria.narrative').length}/500
+                            {
+                                getField(vc, 'credentialSubject.achievement.criteria.narrative')
+                                    .length
+                            }
+                            /500
                         </span>
                     </div>
                     <textarea
                         rows={5}
                         maxLength={500}
                         value={getField(vc, 'credentialSubject.achievement.criteria.narrative')}
-                        onChange={e => updateField('credentialSubject.achievement.criteria.narrative', e.target.value)}
-                        placeholder="Criteria for earning this credential..."
+                        onChange={e =>
+                            updateField(
+                                'credentialSubject.achievement.criteria.narrative',
+                                e.target.value
+                            )
+                        }
+                        placeholder={m['passport.buildMyLearnCard.editView.criteriaPlaceholder']()}
                         className="w-full px-3 py-2 border border-grayscale-200 rounded-[10px] text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:border-grayscale-400 resize-y"
                     />
                 </div>
@@ -200,26 +247,48 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
                 <div className="flex flex-col sm:flex-row gap-3">
                     <div className="flex-1">
                         <label className="block text-sm font-semibold text-grayscale-700 mb-1">
-                            Start Date
+                            {m['passport.buildMyLearnCard.editView.startDate']()}
                         </label>
                         <DatePickerInput
-                            value={toDateInputValue(getField(vc, 'credentialSubject.activityStartDate'))}
-                            onChange={date => updateField('credentialSubject.activityStartDate', fromDateInputValue(date))}
+                            value={toDateInputValue(
+                                getField(vc, 'credentialSubject.activityStartDate')
+                            )}
+                            onChange={date =>
+                                updateField(
+                                    'credentialSubject.activityStartDate',
+                                    fromDateInputValue(date)
+                                )
+                            }
                             isMobile={isMobile}
-                            label="Start Date"
-                            maxDate={toDateInputValue(getField(vc, 'credentialSubject.activityEndDate')) || undefined}
+                            label={m['passport.buildMyLearnCard.editView.startDate']()}
+                            maxDate={
+                                toDateInputValue(
+                                    getField(vc, 'credentialSubject.activityEndDate')
+                                ) || undefined
+                            }
                         />
                     </div>
                     <div className="flex-1">
                         <label className="block text-sm font-semibold text-grayscale-700 mb-1">
-                            End Date
+                            {m['passport.buildMyLearnCard.editView.endDate']()}
                         </label>
                         <DatePickerInput
-                            value={toDateInputValue(getField(vc, 'credentialSubject.activityEndDate'))}
-                            onChange={date => updateField('credentialSubject.activityEndDate', fromDateInputValue(date))}
+                            value={toDateInputValue(
+                                getField(vc, 'credentialSubject.activityEndDate')
+                            )}
+                            onChange={date =>
+                                updateField(
+                                    'credentialSubject.activityEndDate',
+                                    fromDateInputValue(date)
+                                )
+                            }
                             isMobile={isMobile}
-                            label="End Date"
-                            minDate={toDateInputValue(getField(vc, 'credentialSubject.activityStartDate')) || undefined}
+                            label={m['passport.buildMyLearnCard.editView.endDate']()}
+                            minDate={
+                                toDateInputValue(
+                                    getField(vc, 'credentialSubject.activityStartDate')
+                                ) || undefined
+                            }
                         />
                     </div>
                 </div>
@@ -230,7 +299,7 @@ export const CredentialEditView: React.FC<Props> = ({ credential, onSave, onBack
                 onClick={() => onSave(vc)}
                 className={`w-full mt-4 py-3 rounded-[30px] font-semibold text-white bg-${primaryColor}`}
             >
-                Save Changes
+                {m['passport.buildMyLearnCard.editView.saveChanges']()}
             </button>
         </div>
     );

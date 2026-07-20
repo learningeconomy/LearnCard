@@ -4,6 +4,8 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('my-learn-card-modal');
 
+import * as m from '../../paraglide/messages.js';
+
 import CaretListItem from './CaretListItem';
 import LearnCardIdView from './LearnCardIdView';
 import LearnCardFooter from './LearnCardFooter';
@@ -163,6 +165,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     const rows: {
         Icon: React.FC;
         title: string;
+        iconVersion?: string;
         caretText?: string;
         onClick?: () => void;
         hide?: boolean;
@@ -171,14 +174,14 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     if (viewMode === MyLearnCardModalViewModeEnum.guardian) {
         rows.push(
             {
-                title: 'Account Settings',
+                title: m['profile.menu.settings'](),
                 Icon: OrangeProfileIcon,
                 caretText: '',
                 onClick: async () => {
                     newModal(
                         <div className="h-full">
                             <UserProfileSetup
-                                title="Account Settings"
+                                title={m['profile.menu.settings']()}
                                 handleCloseModal={closeModal}
                                 handleLogout={() => handleLogout({ overrideRedirectUrl: '/login' })}
                                 showNetworkSettings={true}
@@ -191,7 +194,8 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 },
             },
             {
-                title: 'Email Addresses',
+                title: m['profile.menu.emailAddresses'](),
+                iconVersion: '2',
                 Icon: EmailIcon,
                 caretText: '',
                 onClick: async () => {
@@ -211,7 +215,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
     if (!hideEdit) {
         rows.push({
-            title: 'Edit Contact Card',
+            title: m['profile.menu.editContactCard'](),
             Icon: BluePaintBrush,
             caretText: '',
             onClick: () => {
@@ -266,7 +270,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
     if (viewMode === MyLearnCardModalViewModeEnum.guardian) {
         rows.push(
             {
-                title: 'Data Sharing',
+                title: m['dataSharing.title'](),
                 Icon: PrivacyLock,
                 caretText: '',
                 onClick: () => {
@@ -275,7 +279,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 },
             },
             {
-                title: 'Admin Tools',
+                title: m['profile.menu.adminTools'](),
                 Icon: WrenchColorFillIcon,
                 caretText: '',
                 onClick: async () => {
@@ -292,7 +296,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
         if (capabilities.recovery) {
             rows.push({
-                title: 'Account Recovery',
+                title: m['profile.menu.accountRecovery'](),
                 Icon: ShieldCheck,
                 caretText: '',
                 onClick: async () => {
@@ -534,7 +538,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
 
         if (capabilities.deviceLinking) {
             rows.push({
-                title: 'Link a Device',
+                title: m['profile.menu.linkADevice'](),
                 Icon: QRCodeScanner,
                 caretText: '',
                 onClick: () => {
@@ -669,17 +673,17 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                 }}
                                 className="bg-grayscale-800 text-white font-notoSans text-[17px] font-semibold px-[20px] py-[7px] rounded-[10px] mb-[10px]"
                             >
-                                Complete Profile
+                                {m['profile.menu.completeProfile']()}
                             </button>
                         )}
 
                         <div>
                             {rows.map((r, index) => {
-                                const { title, Icon, caretText, onClick, hide } = r;
+                                const { title, Icon, iconVersion, caretText, onClick, hide } = r;
 
                                 if (hide) return undefined;
 
-                                const version = title === 'Email Addresses' ? '2' : '1';
+                                const version = iconVersion ?? '1';
 
                                 const icon = (
                                     <Icon className="h-[30px] w-[30px]" version={version} />
@@ -704,7 +708,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                                 disabled={isLoggingOut}
                             >
                                 <SignOutIcon />
-                                Logout
+                                {m['sidemenu.footer.logout']()}
                             </button>
                         )}
                     </div>

@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
 
+import { m } from '../../paraglide/messages.js';
+
 import { toTitleCase, type OccupationDetailsResponse } from 'learn-card-base';
 
 import type { SkillProfileSalaryData } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep3';
@@ -175,9 +177,11 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
         return (
             <div className="w-full rounded-[18px] border border-grayscale-200 bg-grayscale-10 px-4 py-4 font-poppins">
                 <h3 className="text-[18px] font-semibold text-grayscale-900">
-                    Your Market Comparison
+                    {m['aiInsights.yourMarketComparison']()}
                 </h3>
-                <p className="mt-2 text-sm text-grayscale-600">Finding market data...</p>
+                <p className="mt-2 text-sm text-grayscale-600">
+                    {m['aiInsights.findingMarketData']()}
+                </p>
             </div>
         );
     }
@@ -186,10 +190,10 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
         return (
             <div className="w-full rounded-[18px] border border-grayscale-200 bg-grayscale-10 px-4 py-4 font-poppins">
                 <h3 className="text-[18px] font-semibold text-grayscale-900">
-                    Your Market Comparison
+                    {m['aiInsights.yourMarketComparison']()}
                 </h3>
                 <p className="mt-2 text-sm text-grayscale-600">
-                    Add your salary to see how you compare against the market.
+                    {m['aiInsights.addSalaryToCompare']()}
                 </p>
             </div>
         );
@@ -199,11 +203,13 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
         <div className="w-full font-poppins flex flex-col gap-4">
             <div className="flex flex-col gap-[10px]">
                 <h3 className="text-[17px] font-bold text-grayscale-900 leading-[24px] text-left">
-                    Your Market Comparison
+                    {m['aiInsights.yourMarketComparison']()}
                 </h3>
                 <p className="text-[14px] text-grayscale-600 leading-[18px] text-left">
-                    It looks like you make more than {comparisonPercentLabel ?? 0}% of other{' '}
-                    {toTitleCase(titlePlural)} in the market.
+                    {m['aiInsights.makeMoreThan']({
+                        percent: comparisonPercentLabel ?? 0,
+                        title: toTitleCase(titlePlural),
+                    })}
                 </p>
             </div>
 
@@ -264,7 +270,7 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
             <div className="grid grid-cols-3 gap-3 text-center">
                 <div className="flex flex-col items-center">
                     <p className="text-[12px] font-semibold leading-[14px] text-grayscale-600">
-                        MARKET LOW
+                        {m['aiInsights.marketLow']()}
                     </p>
                     <p className="text-[12px] font-bold text-grayscale-900 leading-[16px] tracking-[0.72px]">
                         {marketLowLabel}
@@ -272,7 +278,7 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
                 </div>
                 <div className="flex flex-col items-center">
                     <p className="text-[12px] font-semibold leading-[14px] text-grayscale-600">
-                        MARKET AVG
+                        {m['aiInsights.marketAvg']()}
                     </p>
                     <p className="text-[12px] font-bold text-grayscale-900 leading-[16px] tracking-[0.72px]">
                         {marketAvgLabel}
@@ -280,7 +286,7 @@ const AiInsightsMarketComparisonBox: React.FC<AiInsightsMarketComparisonBoxProps
                 </div>
                 <div className="flex flex-col items-center">
                     <p className="text-[12px] font-semibold leading-[14px] text-grayscale-600">
-                        MARKET HIGH
+                        {m['aiInsights.marketHigh']()}
                     </p>
                     <p className="text-[12px] font-bold text-grayscale-900 leading-[16px] tracking-[0.72px]">
                         {marketHighLabel}

@@ -9,6 +9,7 @@ import {
     useWallet,
     contractCategoryNameToCategoryMetadata,
 } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 import { useQuery } from '@tanstack/react-query';
 
 import FullScreenConsentFlow from '../../consentFlow/FullScreenConsentFlow';
@@ -66,7 +67,9 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
     return (
         <div>
             <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-medium text-gray-600">Consent Flow Contract</h3>
+                <h3 className="text-sm font-medium text-gray-600">
+                    {m['appStoreAdmin.listing.contractTitle']()}
+                </h3>
 
                 {selectedContract && (
                     <button
@@ -74,7 +77,7 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-100 text-cyan-700 rounded-lg text-xs font-medium hover:bg-cyan-200 transition-colors"
                     >
                         <Eye className="w-3.5 h-3.5" />
-                        Preview Contract
+                        {m['appStoreAdmin.listing.previewContract']()}
                     </button>
                 )}
             </div>
@@ -82,7 +85,9 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
             {isLoadingContract ? (
                 <div className="p-4 bg-gray-50 rounded-lg flex items-center justify-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                    <span className="text-sm text-gray-500">Loading contract...</span>
+                    <span className="text-sm text-gray-500">
+                        {m['appStoreAdmin.listing.loadingContract']()}
+                    </span>
                 </div>
             ) : selectedContract ? (
                 <div className="space-y-3">
@@ -114,7 +119,9 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
                     <div className="bg-cyan-50 border border-cyan-100 rounded-lg p-3">
                         <div className="flex items-center gap-2 mb-2">
                             <BookOpen className="w-4 h-4 text-cyan-600" />
-                            <span className="text-xs font-medium text-cyan-700">Read Access</span>
+                            <span className="text-xs font-medium text-cyan-700">
+                                {m['appStoreAdmin.listing.readAccess']()}
+                            </span>
                         </div>
 
                         {hasReadCategories ? (
@@ -138,7 +145,7 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
                             </div>
                         ) : (
                             <p className="text-xs text-cyan-600 italic">
-                                No read permissions requested
+                                {m['appInstall.noReadRequested']()}
                             </p>
                         )}
                     </div>
@@ -148,7 +155,7 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
                         <div className="flex items-center gap-2 mb-2">
                             <PenTool className="w-4 h-4 text-emerald-600" />
                             <span className="text-xs font-medium text-emerald-700">
-                                Write Access
+                                {m['appStoreAdmin.listing.writeAccess']()}
                             </span>
                         </div>
 
@@ -173,7 +180,7 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
                             </div>
                         ) : (
                             <p className="text-xs text-emerald-600 italic">
-                                No write permissions requested
+                                {m['appInstall.noWriteRequested']()}
                             </p>
                         )}
                     </div>
@@ -182,7 +189,7 @@ export const ConsentContractPreview: React.FC<ConsentContractPreviewProps> = ({ 
                 <div className="p-3 bg-gray-100 rounded-lg">
                     <p className="text-xs text-gray-500 font-mono break-all">{contractUri}</p>
                     <p className="text-xs text-gray-400 mt-1 italic">
-                        Contract details not available
+                        {m['appStoreAdmin.listing.contractNotAvailable']()}
                     </p>
                 </div>
             )}

@@ -1,6 +1,8 @@
 import React from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
+import * as m from '../../../paraglide/messages.js';
+
 import CustomSpinner from '../../svgs/CustomSpinner';
 import SlimCaretRight from '../../svgs/SlimCaretRight';
 import CheckListContainer from '../checklist/CheckListContainer';
@@ -50,7 +52,7 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
 
     if (!flags?.enableOnboardingChecklist) return null;
 
-    const helperCopy = 'Add a resume, certificate, transcript, or diploma.';
+    const helperCopy = m['passport.buildMyLearnCard.helper']();
 
     if (mode === 'sidemenu') {
         // Theme color family (e.g. `indigo` / `blue`) drives the card tint per the LC-1921
@@ -78,13 +80,15 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                 <div className="flex flex-col gap-[5px] flex-1 min-w-0">
                     <div className="flex flex-col">
                         <span className="text-[15px] font-poppins text-grayscale-900 leading-[normal] text-left">
-                            Build My {brandingConfig.name}
+                            {m['passport.buildMyLearnCard.title']({ brand: brandingConfig.name })}
                         </span>
                         <span className="text-[11px] font-poppins font-medium text-grayscale-600 leading-[normal]">
                             {isParsing
-                                ? 'Processing documents...'
+                                ? m['passport.buildMyLearnCard.processing']()
                                 : hasPendingReview
-                                ? `${pendingReviewCount} ready for review`
+                                ? m['passport.buildMyLearnCard.pendingReview']({
+                                      count: pendingReviewCount,
+                                  })
                                 : helperCopy}
                         </span>
                     </div>
@@ -132,7 +136,7 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                         featuredCardTextColor ?? 'text-grayscale-900'
                     }`}
                 >
-                    Build My {brandingConfig.name}
+                    {m['passport.buildMyLearnCard.title']({ brand: brandingConfig.name })}
                 </h5>
 
                 {isParsing ? (
@@ -141,12 +145,13 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                             featuredCardTextColor ? 'text-white/70' : 'text-grayscale-700'
                         }`}
                     >
-                        Processing documents...
+                        {m['passport.buildMyLearnCard.processing']()}
                     </p>
                 ) : hasPendingReview ? (
                     <p className="mt-2 text-[13px] leading-[130%] text-amber-600 font-poppins font-semibold text-center">
-                        {pendingReviewCount} credential{pendingReviewCount !== 1 ? 's' : ''} ready
-                        for review
+                        {m['passport.buildMyLearnCard.pendingReview']({
+                            count: pendingReviewCount,
+                        })}
                     </p>
                 ) : (
                     <p
@@ -194,7 +199,7 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                             featuredCardTextColor ?? 'text-grayscale-900'
                         }`}
                     >
-                        Build My {brandingConfig.name}
+                        {m['passport.buildMyLearnCard.title']({ brand: brandingConfig.name })}
                     </h5>
                     {isParsing ? (
                         <p
@@ -202,12 +207,13 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                                 featuredCardTextColor ?? 'text-grayscale-900'
                             }`}
                         >
-                            Processing documents...
+                            {m['passport.buildMyLearnCard.processing']()}
                         </p>
                     ) : hasPendingReview ? (
                         <p className="text-[14px] text-amber-600 font-poppins font-semibold">
-                            {pendingReviewCount} credential{pendingReviewCount !== 1 ? 's' : ''}{' '}
-                            ready for review
+                            {m['passport.buildMyLearnCard.pendingReview']({
+                                count: pendingReviewCount,
+                            })}
                         </p>
                     ) : (
                         <p

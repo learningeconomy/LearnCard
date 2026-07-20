@@ -24,6 +24,9 @@ import { AnalyticsEvents, useAnalytics } from '@analytics';
 import type { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
 import ConsentFlowPrivacyAndData from '../../pages/consentFlow/ConsentFlowPrivacyAndData';
 import { getMinimumTermsForContract } from '../../helpers/contract.helpers';
+import * as m from '../../paraglide/messages.js';
+import TransP from '../../i18n/TransP';
+import { localizeCategoryTitle } from '../../i18n/categoryTitle';
 
 // Permission types matching the app-store-portal
 type AppPermission =
@@ -35,35 +38,25 @@ type AppPermission =
     | 'request_consent'
     | 'template_issuance';
 
-const PERMISSION_INFO: Record<AppPermission, { label: string; description: string }> = {
-    request_identity: {
-        label: 'Request Identity',
-        description: 'View your profile information and verify your identity',
-    },
-    send_credential: {
-        label: 'Send Credentials',
-        description: 'Send verifiable credentials to your wallet',
-    },
-    launch_feature: {
-        label: 'Launch Features',
-        description: 'Open wallet features programmatically',
-    },
-    credential_search: {
-        label: 'Search Credentials',
-        description: 'Search through your stored credentials',
-    },
-    credential_by_id: {
-        label: 'Access Credentials',
-        description: 'Retrieve specific credentials by their ID',
-    },
-    request_consent: {
-        label: 'Request Consent',
-        description: 'Ask for your consent to access or share data',
-    },
-    template_issuance: {
-        label: 'Issue Credentials',
-        description: 'Create and issue credentials from templates',
-    },
+// AppPermission → appInstall.permission.<key> message suffix. Labels and
+// descriptions resolve through the app catalog at render via getPermissionInfo.
+const PERMISSION_KEY: Record<AppPermission, string> = {
+    request_identity: 'requestIdentity',
+    send_credential: 'sendCredential',
+    launch_feature: 'launchFeature',
+    credential_search: 'credentialSearch',
+    credential_by_id: 'credentialById',
+    request_consent: 'requestConsent',
+    template_issuance: 'templateIssuance',
+};
+
+const getPermissionInfo = (permission: AppPermission): { label: string; description: string } => {
+    const key = PERMISSION_KEY[permission];
+    const msg = m as Record<string, () => string>;
+    return {
+        label: msg[`appInstall.permission.${key}.label`](),
+        description: msg[`appInstall.permission.${key}.description`](),
+    };
 };
 
 type AppInstallConsentModalProps = {
@@ -106,7 +99,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
     });
 
     // Filter to only known permissions
-    const validPermissions = permissions.filter((p): p is AppPermission => p in PERMISSION_INFO);
+    const validPermissions = permissions.filter((p): p is AppPermission => p in PERMISSION_KEY);
 
     // Fetch contract details if contractUri is provided
     const { data: contractDetails, isLoading: isLoadingContract } =
@@ -268,7 +261,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                         status: 'error',
                     });
                     setIsConsenting(false);
-                    presentToast('Unable to install app, please try again.', {
+                    presentToast(m['appInstall.installFailed'](), {
                         type: ToastTypeEnum.Error,
                         hasDismissButton: true,
                     });
@@ -318,7 +311,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
             case 'require_dob':
                 // DOB entry should have been handled before reaching this modal
                 // If we get here, show an error
-                presentToast('Please set your date of birth before installing this app.', {
+                presentToast(m['appInstall.setDobFirst'](), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
@@ -385,11 +378,15 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                     {/* App Info */}
                     <div>
                         <p className="text-lg font-semibold text-grayscale-900 mb-1">
-                            Install <span className="font-bold">{appName}</span>?
+                            <TransP
+                                m={m['appInstall.installApp']}
+                                values={{ name: appName }}
+                                components={[<span className="font-bold" />]}
+                            />
                         </p>
 
                         <p className="text-sm text-grayscale-600">
-                            This app is requesting the following permissions
+                            {m['appInstall.requestingPermissions']()}
                         </p>
                     </div>
 
@@ -397,12 +394,12 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                     {validPermissions.length > 0 ? (
                         <div className="bg-grayscale-50 rounded-lg p-4 w-full text-left">
                             <p className="text-sm font-semibold text-grayscale-900 mb-3">
-                                This app will be able to:
+                                {m['appInstall.willBeAbleTo']()}
                             </p>
 
                             <ul className="space-y-3">
                                 {validPermissions.map(permission => {
-                                    const info = PERMISSION_INFO[permission];
+                                    const info = getPermissionInfo(permission);
 
                                     return (
                                         <li key={permission} className="flex items-start text-sm">
@@ -451,7 +448,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                                     />
                                 </svg>
 
-                                <span>This app doesn't require any special permissions.</span>
+                                <span>{m['appInstall.noSpecialPermissions']()}</span>
                             </div>
                         </div>
                     ) : null}
@@ -463,14 +460,14 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                                 <div className="bg-grayscale-50 rounded-lg p-4 flex items-center justify-center gap-2">
                                     <Loader2 className="w-4 h-4 animate-spin text-grayscale-400" />
                                     <span className="text-sm text-grayscale-500">
-                                        Loading data permissions...
+                                        {m['appInstall.loadingDataPermissions']()}
                                     </span>
                                 </div>
                             ) : contractDetails ? (
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
                                         <p className="text-sm font-semibold text-grayscale-900">
-                                            Data Access Permissions
+                                            {m['dataSharing.dataAccessPermissions']()}
                                         </p>
 
                                         <button
@@ -479,7 +476,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                                             className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 font-medium disabled:opacity-50"
                                         >
                                             <Settings className="w-3.5 h-3.5" />
-                                            Edit
+                                            {m['common.edit']()}
                                         </button>
                                     </div>
 
@@ -488,7 +485,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                                         <div className="flex items-center gap-2 mb-2">
                                             <BookOpen className="w-4 h-4 text-cyan-600" />
                                             <span className="text-xs font-medium text-cyan-700">
-                                                Read Access
+                                                {m['dataSharing.readAccess']()}
                                             </span>
                                         </div>
 
@@ -507,14 +504,16 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                                                             {metadata?.IconWithShape && (
                                                                 <metadata.IconWithShape className="w-3.5 h-3.5" />
                                                             )}
-                                                            {metadata?.title || category}
+                                                            {localizeCategoryTitle(
+                                                                metadata?.title
+                                                            ) || category}
                                                         </span>
                                                     );
                                                 })}
                                             </div>
                                         ) : (
                                             <p className="text-xs text-cyan-600 italic">
-                                                No read permissions requested
+                                                {m['appInstall.noReadRequested']()}
                                             </p>
                                         )}
                                     </div>
@@ -524,7 +523,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                                         <div className="flex items-center gap-2 mb-2">
                                             <PenTool className="w-4 h-4 text-emerald-600" />
                                             <span className="text-xs font-medium text-emerald-700">
-                                                Write Access
+                                                {m['dataSharing.writeAccess']()}
                                             </span>
                                         </div>
 
@@ -543,14 +542,16 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                                                             {metadata?.IconWithShape && (
                                                                 <metadata.IconWithShape className="w-3.5 h-3.5" />
                                                             )}
-                                                            {metadata?.title || category}
+                                                            {localizeCategoryTitle(
+                                                                metadata?.title
+                                                            ) || category}
                                                         </span>
                                                     );
                                                 })}
                                             </div>
                                         ) : (
                                             <p className="text-xs text-emerald-600 italic">
-                                                No write permissions requested
+                                                {m['appInstall.noWriteRequested']()}
                                             </p>
                                         )}
                                     </div>
@@ -558,7 +559,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                             ) : (
                                 <div className="bg-amber-50 rounded-lg p-3 text-left">
                                     <p className="text-xs text-amber-700">
-                                        Unable to load data permissions for this app.
+                                        {m['appInstall.unableToLoadPermissions']()}
                                     </p>
                                 </div>
                             )}
@@ -567,7 +568,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
 
                     {/* Privacy Note */}
                     <p className="text-xs text-grayscale-500 italic">
-                        You can uninstall this app at any time from your installed apps.
+                        {m['appInstall.uninstallNote']()}
                     </p>
                 </div>
             </div>
@@ -586,7 +587,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                     disabled={isConsenting}
                     className="px-8 py-3 text-lg font-semibold text-grayscale-700 bg-grayscale-100 rounded-full hover:bg-grayscale-200 transition-colors disabled:opacity-50"
                 >
-                    Cancel
+                    {m['common.cancel']()}
                 </button>
 
                 <button
@@ -597,10 +598,14 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
                             ? 'bg-gray-400 cursor-not-allowed'
                             : 'bg-indigo-600 hover:bg-indigo-700'
                     }`}
-                    title={isPreview ? 'Install is disabled in preview mode' : undefined}
+                    title={isPreview ? m['appInstall.previewDisabled']() : undefined}
                 >
                     {isConsenting && <Loader2 className="w-5 h-5 animate-spin" />}
-                    {isPreview ? 'Preview Only' : isConsenting ? 'Connecting...' : 'Install'}
+                    {isPreview
+                        ? m['appInstall.previewOnly']()
+                        : isConsenting
+                        ? m['appInstall.connecting']()
+                        : m['appInstall.install']()}
                 </button>
             </div>
         </div>

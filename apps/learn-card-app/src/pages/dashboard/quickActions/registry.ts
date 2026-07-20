@@ -1,3 +1,5 @@
+import * as m from '../../../paraglide/messages.js';
+
 import type { ActionDescriptor } from './types';
 
 export const DEFAULT_REGISTRY: ActionDescriptor[] = [
@@ -8,8 +10,8 @@ export const DEFAULT_REGISTRY: ActionDescriptor[] = [
         weight: () => 100,
         build: (state, { handlers, icons }) => ({
             Icon: icons.collect,
-            label: `Build Your ${state.brandName}`,
-            caption: 'Add your first credential',
+            label: m['dashboard.quickActions.connectNewLabel']({ brand: state.brandName }),
+            caption: m['dashboard.quickActions.connectNewCaption'](),
             onClick: handlers.goToAddCredential,
         }),
     },
@@ -20,8 +22,8 @@ export const DEFAULT_REGISTRY: ActionDescriptor[] = [
         weight: () => 90,
         build: (_state, { handlers, icons }) => ({
             Icon: icons.collect,
-            label: 'Add to Passport',
-            caption: 'Scan, paste, or upload',
+            label: m['dashboard.quickActions.addToPassportLabel'](),
+            caption: m['dashboard.quickActions.addToPassportCaption'](),
             onClick: handlers.openAddToPassport,
         }),
     },
@@ -32,10 +34,15 @@ export const DEFAULT_REGISTRY: ActionDescriptor[] = [
         weight: () => 80,
         build: (state, { handlers, icons }) => ({
             Icon: icons.collect,
-            label: 'See Passport',
-            caption: `${state.credentialsCount} credential${
-                state.credentialsCount === 1 ? '' : 's'
-            }`,
+            label: m['dashboard.quickActions.connectActiveLabel'](),
+            caption:
+                state.credentialsCount === 1
+                    ? m['dashboard.quickActions.connectActiveCaptionOne']({
+                          count: state.credentialsCount,
+                      })
+                    : m['dashboard.quickActions.connectActiveCaptionMany']({
+                          count: state.credentialsCount,
+                      }),
             onClick: handlers.goToWallet,
         }),
     },
@@ -47,8 +54,8 @@ export const DEFAULT_REGISTRY: ActionDescriptor[] = [
         weight: () => 100,
         build: (_state, { handlers, icons }) => ({
             Icon: icons.understand,
-            label: 'Create Skill Profile',
-            caption: 'Tell us about your skills',
+            label: m['dashboard.quickActions.understandNewLabel'](),
+            caption: m['dashboard.quickActions.understandNewCaption'](),
             onClick: handlers.openSkillProfile,
         }),
     },
@@ -61,14 +68,14 @@ export const DEFAULT_REGISTRY: ActionDescriptor[] = [
             state.showAiInsights
                 ? {
                       Icon: icons.understand,
-                      label: 'See Insights',
-                      caption: 'AI summary of your record',
+                      label: m['dashboard.quickActions.insightsLabel'](),
+                      caption: m['dashboard.quickActions.insightsCaption'](),
                       onClick: handlers.goToInsights,
                   }
                 : {
                       Icon: icons.understand,
-                      label: 'See Skills',
-                      caption: 'Skills you\u2019ve collected',
+                      label: m['dashboard.quickActions.skillsLabel'](),
+                      caption: m['dashboard.quickActions.skillsCaption'](),
                       onClick: handlers.goToSkills,
                   },
     },
@@ -80,8 +87,8 @@ export const DEFAULT_REGISTRY: ActionDescriptor[] = [
         weight: () => 100,
         build: (_state, { handlers, icons }) => ({
             Icon: icons.navigate,
-            label: 'Set a Goal',
-            caption: 'Get a personal path',
+            label: m['dashboard.quickActions.setGoalLabel'](),
+            caption: m['dashboard.quickActions.setGoalCaption'](),
             onClick: handlers.goToSetGoal,
         }),
     },
@@ -92,8 +99,8 @@ export const DEFAULT_REGISTRY: ActionDescriptor[] = [
         weight: () => 100,
         build: (_state, { handlers, icons }) => ({
             Icon: icons.navigate,
-            label: 'See Pathways',
-            caption: 'Open your pathways',
+            label: m['dashboard.quickActions.pathwaysLabel'](),
+            caption: m['dashboard.quickActions.pathwaysCaption'](),
             onClick: handlers.goToPathway,
         }),
     },
@@ -104,8 +111,8 @@ export const DEFAULT_REGISTRY: ActionDescriptor[] = [
         weight: () => 10,
         build: (_state, { handlers, icons }) => ({
             Icon: icons.navigate,
-            label: 'Browse Pathways',
-            caption: 'Explore available paths',
+            label: m['dashboard.quickActions.browsePathwaysLabel'](),
+            caption: m['dashboard.quickActions.browsePathwaysCaption'](),
             onClick: handlers.goToBrowsePathways,
         }),
     },
@@ -116,8 +123,8 @@ export const DEFAULT_REGISTRY: ActionDescriptor[] = [
         weight: () => 10,
         build: (_state, { handlers, icons }) => ({
             Icon: icons.navigate,
-            label: 'Discover Apps',
-            caption: 'Find apps to get started',
+            label: m['dashboard.quickActions.discoverAppsLabel'](),
+            caption: m['dashboard.quickActions.discoverAppsCaption'](),
             onClick: handlers.goToBrowseAppStore,
         }),
     },

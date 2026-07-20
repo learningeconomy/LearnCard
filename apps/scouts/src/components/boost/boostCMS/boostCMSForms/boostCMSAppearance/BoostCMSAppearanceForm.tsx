@@ -3,7 +3,7 @@ import { HexColorPicker } from 'react-colorful';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import {
-    useFilestack,
+    useImageUpload,
     UploadRes,
     BoostCategoryOptionsEnum,
     isCustomBoostType,
@@ -60,9 +60,7 @@ const BoostCMSAppearanceForm: React.FC<{
     const isAdmin = credentials.some(cred => {
         const subject = cred?.credentialSubject;
         if (!subject || Array.isArray(subject)) return false;
-        return ['ext:GlobalID', 'ext:NetworkID'].includes(
-            subject?.achievement?.achievementType
-        );
+        return ['ext:GlobalID', 'ext:NetworkID'].includes(subject?.achievement?.achievementType);
     });
 
     const categoryMetadata = boostCategoryOptions[activeCategoryType];
@@ -140,7 +138,7 @@ const BoostCMSAppearanceForm: React.FC<{
         handleStateChange('backgroundImage', data?.url);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
@@ -162,9 +160,8 @@ const BoostCMSAppearanceForm: React.FC<{
 
     let formBackgroundColor: string = '';
 
-    const {
-        subColor: _subColor,
-    } = boostCategoryOptions[state?.basicInfo?.type as BoostCategoryOptionsEnum];
+    const { subColor: _subColor } =
+        boostCategoryOptions[state?.basicInfo?.type as BoostCategoryOptionsEnum];
     formBackgroundColor = state?.appearance?.backgroundColor
         ? state?.appearance?.backgroundColor
         : '#353E64';

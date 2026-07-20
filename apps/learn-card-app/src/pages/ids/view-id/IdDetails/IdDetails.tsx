@@ -13,6 +13,7 @@ import { getScoutsRole } from '../../../../scouts/src/helpers/troop.helpers';
 import { ScoutsRoleEnum } from '../../../../scouts/src/stores/troopPageStore';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { VC, VerificationItem } from '@learncard/types';
+import { m } from '../../../../paraglide/messages.js';
 
 type IdDetailsProps = {
     credential: VC;
@@ -62,10 +63,10 @@ export const IdDetails: React.FC<IdDetailsProps> = ({
             scoutNoun = 'Troop Leader';
             break;
         case ScoutsRoleEnum.national:
-            scoutNoun = 'National Network Admin';
+            scoutNoun = m['membership.nationalNetworkAdmin']();
             break;
         case ScoutsRoleEnum.global:
-            scoutNoun = 'Global Netowork Admin';
+            scoutNoun = m['membership.globalNetworkAdmin']();
             break;
     }
 
@@ -90,8 +91,8 @@ export const IdDetails: React.FC<IdDetailsProps> = ({
                                     <span className="text-grayscale-700 font-notoSans">
                                         {isGeneralView
                                             ? `on ${moment(credential.issuanceDate).format(
-                                                'MMMM dd, yyyy'
-                                            )}`
+                                                  'MMMM dd, yyyy'
+                                              )}`
                                             : troopName}
                                     </span>
                                 </div>

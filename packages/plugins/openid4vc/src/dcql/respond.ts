@@ -81,12 +81,13 @@ export interface DcqlSignedPresentation {
 
 export interface DcqlResponse {
     /**
-     * The OID4VP §6.4 `vp_token` object — keys are `credential_query_id`
-     * strings, values are signed presentations. Submission code POSTs
-     * this verbatim. Compatible with {@link VpToken}'s
-     * `Record<string, string | VP>` arm.
+     * The OID4VP 1.0 §8.1 `vp_token` object — keys are
+     * `credential_query_id` strings, values are ARRAYS of signed
+     * presentations ("the value is an array of one or more
+     * Presentations"; a single match is a one-element array).
+     * Submission code POSTs this verbatim.
      */
-    vpToken: Record<string, DcqlInnerVpToken>;
+    vpToken: Record<string, DcqlInnerVpToken[]>;
 
     /**
      * Per-query signed-presentation breakdown. Same data as `vpToken`
@@ -223,16 +224,17 @@ export const buildDcqlResponse = async (
  * declaration order. Some verifiers iterate query entries in declared
  * order during validation, so this preserves that locality.
  *
- * `multiple: true` queries are not supported in this slice — each
- * query id maps to a single VP. When we add support, the value type
- * widens to `VpToken | VpToken[]`.
+ * Values are arrays per OID4VP 1.0 §8.1 — "an array of one or more
+ * Presentations"; without `multiple: true` each array holds exactly
+ * one. Multiple signed presentations for the same query id aggregate
+ * into that query's array.
  */
 export const assembleDcqlVpToken = (
     presentations: readonly DcqlSignedPresentation[]
-): Record<string, DcqlInnerVpToken> => {
-    const out: Record<string, DcqlInnerVpToken> = {};
+): Record<string, DcqlInnerVpToken[]> => {
+    const out: Record<string, DcqlInnerVpToken[]> = {};
     for (const p of presentations) {
-        out[p.credentialQueryId] = p.vpToken;
+        (out[p.credentialQueryId] ??= []).push(p.vpToken);
     }
     return out;
 };

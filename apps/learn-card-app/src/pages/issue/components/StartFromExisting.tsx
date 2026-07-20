@@ -6,6 +6,7 @@ import { useModal, ModalTypes } from 'learn-card-base';
 import { ImportSheet } from '../import/ImportSheet';
 import { ReuseExisting } from '../import/ReuseExisting';
 import type { NormalizedImport } from '../import/normalizeToObv3';
+import * as m from '../../../paraglide/messages.js';
 
 interface StartFromExistingProps {
     onImport: (result: NormalizedImport) => void;
@@ -25,7 +26,7 @@ export const StartFromExisting: React.FC<StartFromExistingProps> = ({ onImport }
     return (
         <div className="mt-4 pt-4 border-t border-grayscale-100 space-y-2">
             <span className="block text-xs font-medium text-grayscale-400">
-                Already have something?
+                {m['issueFlow.alreadyHave']()}
             </span>
             <button
                 type="button"
@@ -35,7 +36,7 @@ export const StartFromExisting: React.FC<StartFromExistingProps> = ({ onImport }
                 className="flex items-center gap-2 text-sm font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
             >
                 <Wand2 className="w-4 h-4 shrink-0 text-grayscale-400" />
-                Start from a link, file, or ID
+                {m['issueFlow.startFromLink']()}
             </button>
             <button
                 type="button"
@@ -45,7 +46,7 @@ export const StartFromExisting: React.FC<StartFromExistingProps> = ({ onImport }
                 className="flex items-center gap-2 text-sm font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
             >
                 <Send className="w-4 h-4 shrink-0 text-grayscale-400" />
-                Send one you've made
+                {m['issueFlow.sendExisting']()}
             </button>
         </div>
     );

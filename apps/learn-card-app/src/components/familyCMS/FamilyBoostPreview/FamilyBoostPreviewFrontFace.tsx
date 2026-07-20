@@ -7,6 +7,7 @@ import VerifiedBadge from 'learn-card-base/svgs/VerifiedBadge';
 
 import FamilyPinWrapper, { FamilyPinViewModeEnum } from './FamilyPin/FamilyPinWrapper';
 import { LCNProfile, VC } from '@learncard/types';
+import { m } from '../../../paraglide/messages.js';
 import {
     authStore,
     ModalTypes,
@@ -150,7 +151,7 @@ export const FamilyBoostPreviewFrontFace: React.FC<{
             >
                 {/* needs to be the header font color */}
                 <p className="text-grayscale-900 mt-4 leading-[.75rem] font-semibold font-poppins text-sm">
-                    {totalMembersCount} Members
+                    {m['family.members.count']({ count: totalMembersCount })}
                 </p>
                 <FamilyBoostMembersList credential={credential} showMinified />
             </FamilyCrest>
@@ -160,13 +161,13 @@ export const FamilyBoostPreviewFrontFace: React.FC<{
                 {!hasSwitedProfiles && (
                     <FamilyPinButton
                         onClick={presentPinModal}
-                        title={hasPin ? 'Edit Pin' : 'Create Pin'}
+                        title={hasPin ? m['family.pin.editPin']() : m['family.pin.createPin']()}
                         pinExists={hasPin}
                     />
                 )}
 
                 <h3 className="flex items-center justify-center font-poppins uppercase text-xs text-blue-light font-medium mt-2">
-                    <VerifiedBadge className="mr-1" /> Trusted
+                    <VerifiedBadge className="mr-1" /> {m['family.preview.trusted']()}
                 </h3>
             </div>
 

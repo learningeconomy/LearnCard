@@ -1,5 +1,7 @@
 import React, { useEffect } from 'react';
 
+import * as m from '../../../paraglide/messages.js';
+
 import {
     ModalTypes,
     useModal,
@@ -40,10 +42,10 @@ export const CheckList: React.FC<{ activeChecklistStep?: ChecklistEnum }> = ({
         <div className="w-full bg-white items-center justify-center flex flex-col shadow-2xl p-5 mt-4 rounded-[20px]">
             <div className="w-full flex flex-col items-start justify-start">
                 <h4 className="text-xl font-semibold text-grayscale-900 leading-tight">
-                    Choose what to add next
+                    {m['passport.buildMyLearnCard.actionsTitle']()}
                 </h4>
                 <p className="mt-1 text-sm text-grayscale-600 leading-relaxed">
-                    Pick the document that fits best, then we’ll open the right upload flow.
+                    {m['passport.buildMyLearnCard.actionsDescription']()}
                 </p>
             </div>
 

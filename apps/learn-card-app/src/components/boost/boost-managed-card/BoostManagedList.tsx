@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 
+import * as m from '../../../paraglide/messages.js';
 import { useHistory } from 'react-router-dom';
 import { useLoadingLine } from '../../../stores/loadingStore';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
@@ -16,7 +17,6 @@ import {
     BoostPageViewMode,
     useGetPaginatedManagedBoosts,
     searchManagedBoostsFromCache,
-    pluralize,
 } from 'learn-card-base';
 import {
     credentialCategoryToSubheaderType,
@@ -79,7 +79,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
     const noSearchResults = searchResults?.length === 0;
     const searchResultsCount = searchResults?.length;
 
-    const { bgColor: noResultsLineColor, title: categoryTitle } =
+    const { bgColor: noResultsLineColor } =
         SubheaderContentType[credentialCategoryToSubheaderType(category)];
 
     const { handlePresentBoostModal } = useBoostModal(history, category);
@@ -121,14 +121,15 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
     const searchResultsElement = (
         <div className={`flex flex-col gap-[10px] mt-[6px] ${isCardView ? 'px-[12px]' : ''}`}>
             <span className="font-notoSans text-grayscale-900 text-[14px] font-[700]">
-                {searchString?.trim?.() === '' && `Search ${searchResultsCount} managed boosts`}
-                {noSearchResults && `No managed ${categoryTitle} titled "${searchString}"`}
+                {searchString?.trim?.() === '' &&
+                    m['boost.search.searchManaged']({ count: searchResultsCount })}
+                {noSearchResults && m['boost.search.noResultsTitled']({ query: searchString })}
                 {searchResultsCount > 0 &&
                     searchString?.trim?.() !== '' &&
-                    `Found ${searchResultsCount} ${pluralize(
-                        'result',
-                        searchResultsCount
-                    )} for "${searchString}" `}
+                    m['boost.search.foundResults']({
+                        count: searchResultsCount,
+                        query: searchString,
+                    })}
             </span>
             <div className={`h-[1px] bg-sp-blue-ocean mb-[5px] ${noResultsLineColor}`} />
         </div>

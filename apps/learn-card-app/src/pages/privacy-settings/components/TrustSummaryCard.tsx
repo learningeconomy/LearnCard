@@ -5,6 +5,7 @@ import {
     summarizeConsent,
     type ConsentedContract,
 } from '../../../components/data-sharing/consentSummary';
+import * as m from '../../../paraglide/messages.js';
 
 const MAX_PROOF_AVATARS = 5;
 
@@ -99,10 +100,10 @@ const TrustSummaryCard: React.FC<TrustSummaryCardProps> = ({ contracts, delay = 
 
                     <div className="min-w-0">
                         <p className="text-xs font-medium tracking-wider text-grayscale-500 uppercase">
-                            Your data
+                            {m['dataShareCenter.trust.eyebrow']()}
                         </p>
                         <h2 className="mt-0.5 text-[22px] desktop:text-[26px] font-semibold text-grayscale-900 leading-tight">
-                            Your data is yours
+                            {m['dataShareCenter.trust.title']()}
                         </h2>
                         <p
                             className="mt-2 text-sm text-grayscale-600 leading-relaxed"
@@ -111,20 +112,28 @@ const TrustSummaryCard: React.FC<TrustSummaryCardProps> = ({ contracts, delay = 
                             {isEmpty ? (
                                 <>
                                     <span className="font-medium text-grayscale-900">
-                                        Nothing is shared yet.
+                                        {m['dataShareCenter.trust.nothingShared']()}
                                     </span>{' '}
-                                    When an app or school asks for your data, you decide — every
-                                    time.
+                                    {m['dataShareCenter.trust.emptyDetail']()}
                                 </>
                             ) : (
                                 <>
                                     <span className="font-medium text-grayscale-900">
-                                        Sharing with {placesCount}{' '}
-                                        {places === 1 ? 'place' : 'places'}.
+                                        {m['dataShareCenter.trust.sharingWith']({
+                                            count: placesCount,
+                                            unit:
+                                                places === 1
+                                                    ? m['dataShareCenter.trust.place']()
+                                                    : m['dataShareCenter.trust.places'](),
+                                        })}
                                     </span>{' '}
-                                    {readCount} can read
-                                    {canWrite > 0 ? `, ${writeCount} can also write` : ''}. You can
-                                    stop anytime.
+                                    {m['dataShareCenter.trust.canRead']({ count: readCount })}
+                                    {canWrite > 0
+                                        ? m['dataShareCenter.trust.canWriteSuffix']({
+                                              count: writeCount,
+                                          })
+                                        : ''}
+                                    {m['dataShareCenter.trust.stopAnytime']()}
                                 </>
                             )}
                         </p>

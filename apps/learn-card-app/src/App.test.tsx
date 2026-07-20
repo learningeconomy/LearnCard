@@ -35,6 +35,10 @@ vi.mock('./components/intro-slides/IntroSlides', () => ({
     default: () => <div data-testid="intro-slides" />,
 }));
 
+vi.mock('./i18n/useLanguageSelectorConfig', () => ({
+    useEnforceVisibleLocale: () => undefined,
+}));
+
 import App from './App';
 
 describe('App', () => {

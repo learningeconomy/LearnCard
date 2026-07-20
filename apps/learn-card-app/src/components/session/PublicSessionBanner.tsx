@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import { shieldCheckmarkOutline, closeOutline } from 'ionicons/icons';
 
+import { m } from '../../paraglide/messages.js';
+
 import { isPublicComputerMode } from '@learncard/sss-key-manager';
 
 interface PublicSessionBannerProps {
@@ -49,17 +51,21 @@ const PublicSessionBanner: React.FC<PublicSessionBannerProps> = ({
                 onClick={onSetupRecovery}
                 className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
-                <IonIcon icon={shieldCheckmarkOutline} className="text-amber-600 text-base shrink-0" />
+                <IonIcon
+                    icon={shieldCheckmarkOutline}
+                    className="text-amber-600 text-base shrink-0"
+                />
 
                 <span className="text-xs text-amber-800 font-medium">
-                    Temporary session — <span className="underline">set up a recovery method</span> so you can sign back in later.
+                    Temporary session — <span className="underline">set up a recovery method</span>{' '}
+                    so you can sign back in later.
                 </span>
             </button>
 
             <button
                 onClick={() => setDismissed(true)}
                 className="p-0.5 rounded hover:bg-amber-100 transition-colors shrink-0"
-                title="Dismiss"
+                title={m['ai.dismiss']()}
             >
                 <IonIcon icon={closeOutline} className="text-amber-400 text-sm" />
             </button>

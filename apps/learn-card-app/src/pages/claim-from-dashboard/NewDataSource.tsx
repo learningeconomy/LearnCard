@@ -13,6 +13,7 @@ import useRegistry from 'learn-card-base/hooks/useRegistry';
 import { useRegistryEntryState } from '../../hooks/useRegistryEntryState';
 
 import useTheme from '../../theme/hooks/useTheme';
+import * as m from '../../paraglide/messages.js';
 
 export type NewDataSourceProps = {
     handleCloseModal: () => void;
@@ -33,7 +34,7 @@ const NewDataSource: React.FC<NewDataSourceProps> = ({ handleCloseModal, entryId
     useEffect(() => {
         if (state === 'Synced') {
             handleCloseModal();
-            presentToast(`Successfully synced Data Source!`, {
+            presentToast(m['toasts.dataSource.syncedSuccess'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });

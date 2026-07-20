@@ -1,6 +1,8 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
 
+import { m } from '../../../paraglide/messages.js';
+
 import { IonSpinner } from '@ionic/react';
 import SlimCaretLeft from '../../svgs/SlimCaretLeft';
 import AiSessionsHeaderSkeleton from './AiSessionsHeaderSkeleton';
@@ -99,7 +101,7 @@ export const AiSessionsSubHeader: React.FC<{
                     className="bg-white text-grayscale-700 flex items-center justify-center p-3 py-[5px] rounded-[15px] font-semibold text-[14px] mr-4 border-[1px] border-solid border-grayscale-200"
                 >
                     <UnicornIcon className="w-[35px] h-auto mr-2" />
-                    Personalize
+                    {m['ai.personalize']()}
                 </button>
             )}
         </div>
