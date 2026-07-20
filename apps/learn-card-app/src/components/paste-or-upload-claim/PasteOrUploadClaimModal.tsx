@@ -101,6 +101,7 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
     const [pasted, setPasted] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [errorCopy, setErrorCopy] = useState<string | null>(null);
+    const [websiteUrl, setWebsiteUrl] = useState<string | null>(null);
     const [isDragging, setIsDragging] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -173,8 +174,7 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
                         { hideButton: true }
                     );
                 } else if (result.kind === 'open_website') {
-                    closeModal();
-                    window.open(result.url, '_blank');
+                    setWebsiteUrl(result.url);
                 } else if (result.kind === 'routed') {
                     closeModal();
                 }
@@ -306,7 +306,28 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
             </IonHeader>
 
             <section className="h-full bg-grayscale-100 ion-padding overflow-y-scroll pb-[200px]">
-                {showClaimLink && (
+                {websiteUrl && (
+                    <div className="w-full bg-white flex flex-col gap-[15px] shadow-bottom-2-4 p-[15px] mt-4 rounded-[15px]">
+                        <div className="flex flex-col items-start justify-center gap-[5px]">
+                            <h4 className="text-[20px] text-grayscale-900 font-notoSans text-left">
+                                {m['claim.redirect.heading']()}
+                            </h4>
+                            <p className="text-[14px] text-grayscale-600 font-notoSans text-left">
+                                {m['claim.redirect.description']()}
+                            </p>
+                        </div>
+                        <a
+                            href={websiteUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={closeModal}
+                            className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm text-center hover:opacity-90 transition-opacity"
+                        >
+                            {m['common.continue']()}
+                        </a>
+                    </div>
+                )}
+                {!websiteUrl && showClaimLink && (
                     <div className="w-full bg-white flex flex-col gap-[15px] shadow-bottom-2-4 p-[15px] mt-4 rounded-[15px]">
                         <div className="flex flex-col items-start justify-center gap-[5px]">
                             <h4 className="text-[20px] text-grayscale-900 font-notoSans text-left">
@@ -348,7 +369,7 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
                     </div>
                 )}
 
-                {showQrUpload && (
+                {!websiteUrl && showQrUpload && (
                     <div className="w-full bg-white flex flex-col gap-[15px] shadow-bottom-2-4 p-[15px] mt-4 rounded-[15px]">
                         <div className="flex flex-col items-start justify-center gap-[5px]">
                             <h4 className="text-[20px] text-grayscale-900 font-notoSans text-left">

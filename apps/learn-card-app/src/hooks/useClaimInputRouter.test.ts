@@ -252,6 +252,25 @@ describe('useClaimInputRouter', () => {
             expect(pushMock).not.toHaveBeenCalled();
         });
 
+        it.each(['javascript:alert(document.domain)', '/relative-path'])(
+            'rejects unsafe website protocol URL %s',
+            async website => {
+                fetchMock.mockResolvedValue({
+                    json: async () => ({
+                        protocols: { website },
+                    }),
+                });
+                const result = renderRouter();
+                const outcome = await result.current('https://example.com/interact?iuv=1', 'paste');
+
+                expect(outcome).toMatchObject({
+                    kind: 'unrecognized',
+                    reason: 'interaction_unavailable',
+                });
+                expect(pushMock).not.toHaveBeenCalled();
+            }
+        );
+
         it('returns interaction_unavailable when an interaction returns 404', async () => {
             fetchMock.mockResolvedValue({ ok: false, status: 404 });
             const result = renderRouter();

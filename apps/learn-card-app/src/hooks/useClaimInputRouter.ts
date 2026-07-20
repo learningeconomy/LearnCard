@@ -45,6 +45,17 @@ const getSameOriginInteractionPath = (url: string): string | null => {
     }
 };
 
+const getSafeWebsiteUrl = (value: unknown): string | null => {
+    if (typeof value !== 'string') return null;
+
+    try {
+        const url = new URL(value);
+        return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null;
+    } catch {
+        return null;
+    }
+};
+
 const fetchWithTimeout = async (
     url: string,
     init: RequestInit,
@@ -62,9 +73,9 @@ const fetchWithTimeout = async (
 /**
  * The structured outcome of routing a claim input. Returned by the
  * function `useClaimInputRouter()` produces. Consumers branch on
- * `kind`: 'routed' / 'open_contact' / 'open_claim' / 'open_website'
- * are success states; 'unrecognized' is the only failure path the
- * caller has to surface.
+ * `kind`: 'routed' / 'open_contact' / 'open_claim_boost' /
+ * 'open_claim_vc' / 'open_website' are success states;
+ * 'unrecognized' is the only failure path the caller has to surface.
  */
 export type ClaimRouteResult =
     | { kind: 'routed'; surface: ClaimSurface; path: string }
@@ -235,10 +246,11 @@ export const useClaimInputRouter = ({
                             path,
                         });
                     }
-                    if (interactionData?.protocols?.website) {
+                    const websiteUrl = getSafeWebsiteUrl(interactionData?.protocols?.website);
+                    if (websiteUrl) {
                         return emit({
                             kind: 'open_website',
-                            url: interactionData.protocols.website,
+                            url: websiteUrl,
                         });
                     }
                 } catch {
