@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.97.5
+
+### Patch Changes
+
+-   [#1420](https://github.com/learningeconomy/LearnCard/pull/1420) [`f19ca34c0ad6425f669304981b720619abdf0559`](https://github.com/learningeconomy/LearnCard/commit/f19ca34c0ad6425f669304981b720619abdf0559) Thanks [@Custard7](https://github.com/Custard7)! - feat: Live Notifications
+
+-   [#1266](https://github.com/learningeconomy/LearnCard/pull/1266) [`cf779d0e7d3d02d2b2c2d993986e3e1878b9cbaf`](https://github.com/learningeconomy/LearnCard/commit/cf779d0e7d3d02d2b2c2d993986e3e1878b9cbaf) Thanks [@goblincore](https://github.com/goblincore)! - feat: [LC-1898] Paraglide i18n LCA implementation and translations
+
+-   [#1266](https://github.com/learningeconomy/LearnCard/pull/1266) [`cf779d0e7d3d02d2b2c2d993986e3e1878b9cbaf`](https://github.com/learningeconomy/LearnCard/commit/cf779d0e7d3d02d2b2c2d993986e3e1878b9cbaf) Thanks [@goblincore](https://github.com/goblincore)! - i18n [LC-1989]: complete es/fr/ar App Store + Developer Portal translations + i18n guards
+
+-   [#1315](https://github.com/learningeconomy/LearnCard/pull/1315) [`9b853ae7aace370a527ac11ba2ae46ae025f22dd`](https://github.com/learningeconomy/LearnCard/commit/9b853ae7aace370a527ac11ba2ae46ae025f22dd) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add tenant-configured image upload providers and replace Filestack-specific upload hook usage with `useImageUpload`.
+
+-   Updated dependencies [[`2e5f5dba1b8b95a0fbdc24cd431d8826dc180852`](https://github.com/learningeconomy/LearnCard/commit/2e5f5dba1b8b95a0fbdc24cd431d8826dc180852)]:
+    -   @learncard/react@2.10.8
+    -   @learncard/credential-library@1.0.13
+    -   @learncard/lca-api-plugin@1.2.21
+
 ## 1.97.4
 
 ### Patch Changes
