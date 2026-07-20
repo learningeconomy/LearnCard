@@ -159,12 +159,11 @@ describe('acceptCredentialOffer', () => {
         ]);
     });
 
-    it('sends credential_definition from issuer metadata (NOT credential_identifier) in the credential request', async () => {
-        // Regression: WaltID demo rejected us with "No matching issuance
-        // request found for this session" because we were sending
-        // `credential_identifier: <config id>` alongside `format`. Per
-        // Draft 13 §7.2, those are mutually exclusive and credential_identifier
-        // is only valid when returned via authorization_details.
+    it('sends credential_configuration_id + proofs array (NOT credential_identifier) in the credential request', async () => {
+        // Regression: credential_identifier and credential_configuration_id are
+        // mutually exclusive (OID4VCI 1.0 Final §8.2); credential_identifier is
+        // only valid when returned via authorization_details. The Draft 13
+        // `format` + `credential_definition` request shape is no longer sent.
         const fetchMock = makeFetch([
             mockResponse(issuerMetadata),
             mockResponse(asMetadata),
@@ -182,11 +181,12 @@ describe('acceptCredentialOffer', () => {
         const credentialCall = (fetchMock as unknown as jest.Mock).mock.calls[3];
         const body = JSON.parse(credentialCall[1].body);
 
-        expect(body.format).toBe('jwt_vc_json');
-        expect(body.credential_definition).toEqual({
-            type: ['VerifiableCredential', 'UniversityDegree'],
-        });
-        expect(body.proof).toEqual({ proof_type: 'jwt', jwt: 'proof.jwt.sig' });
+        expect(body.credential_configuration_id).toBe('UniversityDegree_jwt_vc_json');
+        expect(body.proofs).toEqual({ jwt: ['proof.jwt.sig'] });
+        // Draft 13 fields MUST NOT be present.
+        expect(body.format).toBeUndefined();
+        expect(body.credential_definition).toBeUndefined();
+        expect(body.proof).toBeUndefined();
         // Must NOT be present — we didn't get an authorization_details identifier.
         expect(body.credential_identifier).toBeUndefined();
     });
@@ -224,11 +224,11 @@ describe('acceptCredentialOffer', () => {
         const call2Body = JSON.parse((fetchMock as unknown as jest.Mock).mock.calls[4][1].body);
 
         expect(call1Body.credential_identifier).toBe('issuer-scoped-id-1');
-        expect(call1Body.format).toBeUndefined();
+        expect(call1Body.credential_configuration_id).toBeUndefined();
         expect(call1Body.credential_definition).toBeUndefined();
 
         expect(call2Body.credential_identifier).toBe('issuer-scoped-id-2');
-        expect(call2Body.format).toBeUndefined();
+        expect(call2Body.credential_configuration_id).toBeUndefined();
     });
 
     it('throws unsupported_grant when offer lacks pre-authorized_code grant', async () => {
@@ -356,5 +356,82 @@ describe('acceptCredentialOffer', () => {
                 fetchImpl: jest.fn() as unknown as typeof fetch,
             })
         ).rejects.toMatchObject({ code: 'unsupported_format' });
+    });
+});
+
+describe('acceptCredentialOffer di_vp key proofs', () => {
+    const diVpIssuerMetadata = {
+        credential_issuer: 'https://issuer.example.com',
+        credential_endpoint: 'https://issuer.example.com/credential',
+        credential_configurations_supported: {
+            UniversityDegree_jwt_vc_json: {
+                format: 'jwt_vc_json',
+                proof_types_supported: {
+                    di_vp: { proof_signing_alg_values_supported: ['eddsa-rdfc-2022'] },
+                },
+            },
+        },
+    };
+
+    const diVpSigner = {
+        holder: 'did:key:z6Mkholder',
+        signPresentation: jest.fn(async (vp: Record<string, unknown>, opts: unknown) => ({
+            ...vp,
+            proof: {
+                type: 'DataIntegrityProof',
+                proofPurpose: 'authentication',
+                ...(opts as Record<string, unknown>),
+            },
+        })),
+    };
+
+    beforeEach(() => {
+        diVpSigner.signPresentation.mockClear();
+        (fakeSigner.sign as jest.Mock).mockClear();
+    });
+
+    it('sends a di_vp key proof when the issuer only advertises di_vp', async () => {
+        const fetchMock = makeFetch([
+            mockResponse(diVpIssuerMetadata),
+            mockResponse(asMetadata),
+            mockResponse(tokenResponse),
+            mockResponse(credentialResponse),
+        ]);
+
+        const result = await acceptCredentialOffer({
+            offer: baseOffer,
+            signer: fakeSigner,
+            diVpSigner,
+            fetchImpl: fetchMock,
+        });
+
+        expect(result.credentials).toHaveLength(1);
+        expect(fakeSigner.sign).not.toHaveBeenCalled();
+        expect(diVpSigner.signPresentation).toHaveBeenCalledWith(
+            expect.objectContaining({ holder: 'did:key:z6Mkholder' }),
+            {
+                domain: 'https://issuer.example.com',
+                challenge: 'nonce-xyz',
+                cryptosuite: 'eddsa-rdfc-2022',
+            }
+        );
+
+        const credentialCall = (fetchMock as unknown as jest.Mock).mock.calls[3];
+        const body = JSON.parse(credentialCall[1].body);
+        expect(body.proofs.di_vp).toHaveLength(1);
+        expect(body.proofs.di_vp[0].proof.type).toBe('DataIntegrityProof');
+        expect(body.proofs.jwt).toBeUndefined();
+    });
+
+    it('fails fast when di_vp is required but no di_vp signer is available', async () => {
+        const fetchMock = makeFetch([
+            mockResponse(diVpIssuerMetadata),
+            mockResponse(asMetadata),
+            mockResponse(tokenResponse),
+        ]);
+
+        await expect(
+            acceptCredentialOffer({ offer: baseOffer, signer: fakeSigner, fetchImpl: fetchMock })
+        ).rejects.toMatchObject({ code: 'proof_signing_failed' });
     });
 });

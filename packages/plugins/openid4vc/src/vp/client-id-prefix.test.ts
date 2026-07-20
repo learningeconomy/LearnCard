@@ -15,10 +15,7 @@
  */
 import { describe, it, expect } from '@jest/globals';
 
-import {
-    deriveClientIdPrefix,
-    KNOWN_CLIENT_ID_PREFIXES,
-} from './client-id-prefix';
+import { deriveClientIdPrefix, KNOWN_CLIENT_ID_PREFIXES } from './client-id-prefix';
 
 describe('deriveClientIdPrefix — explicit prefix form (OID4VP 1.0)', () => {
     it('strips x509_san_dns prefix and returns the host as value', () => {
@@ -31,9 +28,7 @@ describe('deriveClientIdPrefix — explicit prefix form (OID4VP 1.0)', () => {
     });
 
     it('strips x509_hash prefix and returns the hash as value', () => {
-        const result = deriveClientIdPrefix(
-            'x509_hash:c4ca4238a0b923820dcc509a6f75849b'
-        );
+        const result = deriveClientIdPrefix('x509_hash:c4ca4238a0b923820dcc509a6f75849b');
         expect(result).toEqual({
             prefix: 'x509_hash',
             value: 'c4ca4238a0b923820dcc509a6f75849b',
@@ -42,9 +37,7 @@ describe('deriveClientIdPrefix — explicit prefix form (OID4VP 1.0)', () => {
     });
 
     it('strips redirect_uri prefix and returns the URL as value', () => {
-        const result = deriveClientIdPrefix(
-            'redirect_uri:https://wallet.example/cb'
-        );
+        const result = deriveClientIdPrefix('redirect_uri:https://wallet.example/cb');
         expect(result).toEqual({
             prefix: 'redirect_uri',
             value: 'https://wallet.example/cb',
@@ -185,12 +178,16 @@ describe('deriveClientIdPrefix — fallback', () => {
         // The function is contract-pure but defensive — callers that
         // forget to validate their input upstream still get a stable
         // response.
-        expect(
-            deriveClientIdPrefix(undefined as unknown as string)
-        ).toEqual({ prefix: 'pre-registered', value: '', inferred: true });
-        expect(
-            deriveClientIdPrefix(123 as unknown as string)
-        ).toEqual({ prefix: 'pre-registered', value: '', inferred: true });
+        expect(deriveClientIdPrefix(undefined as unknown as string)).toEqual({
+            prefix: 'pre-registered',
+            value: '',
+            inferred: true,
+        });
+        expect(deriveClientIdPrefix(123 as unknown as string)).toEqual({
+            prefix: 'pre-registered',
+            value: '',
+            inferred: true,
+        });
     });
 
     it('does not match a non-canonical did-ish string (e.g. trailing colon missing)', () => {
@@ -201,6 +198,27 @@ describe('deriveClientIdPrefix — fallback', () => {
         // and produce a confusing resolution error).
         const result = deriveClientIdPrefix('did:not-quite');
         expect(result.prefix).toBe('pre-registered');
+    });
+});
+
+describe('deriveClientIdPrefix — decentralized_identifier (OID4VP 1.0 §5.9.3)', () => {
+    it('normalizes the explicit `decentralized_identifier:` prefix to `did` with the bare DID as value', () => {
+        const result = deriveClientIdPrefix('decentralized_identifier:did:example:123');
+        expect(result.prefix).toBe('did');
+        expect(result.value).toBe('did:example:123');
+        expect(result.inferred).toBe(false);
+    });
+
+    it('normalizes a legacy `client_id_scheme=decentralized_identifier` to `did`', () => {
+        const result = deriveClientIdPrefix('did:example:123', 'decentralized_identifier');
+        expect(result.prefix).toBe('did');
+        expect(result.value).toBe('did:example:123');
+    });
+
+    it('still handles the bare `did:` URI form', () => {
+        const result = deriveClientIdPrefix('did:web:verifier.example.com');
+        expect(result.prefix).toBe('did');
+        expect(result.value).toBe('did:web:verifier.example.com');
     });
 });
 
