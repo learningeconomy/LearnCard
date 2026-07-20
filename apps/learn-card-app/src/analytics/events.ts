@@ -217,6 +217,15 @@ export const AnalyticsEvents = {
     CREDENTIAL_CLAIM_FAILED: 'credential_claim_failed',
     CREDENTIAL_CLAIM_CANCELLED: 'credential_claim_cancelled',
 
+    // Issuance lifecycle for the Issue page (successor to the deprecated
+    // Boost CMS send flow). Legacy outcome events (SELF_BOOST, SEND_BOOST,
+    // GENERATE_CLAIM_LINK) still fire alongside these with
+    // `method: 'Issue Page'` so pre-existing dashboards keep a continuous
+    // series and CMS→IssuePage migration is visible via the method split.
+    CREDENTIAL_ISSUE_STARTED: 'credential_issue_started',
+    CREDENTIAL_ISSUE_SUCCEEDED: 'credential_issue_succeeded',
+    CREDENTIAL_ISSUE_FAILED: 'credential_issue_failed',
+
     // OID4VC/VP exchange lifecycle. `exchange_id` equals the resilience
     // orchestrator's `exchange_run_id` where one exists so these join
     // against OPENID_RESILIENCE_* events.
@@ -881,6 +890,36 @@ export interface AnalyticsEventPayloads {
         credential_type?: string;
         category?: string;
         partner_id?: string;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_ISSUE_STARTED]: {
+        flow_id: string;
+        recipient_mode: 'self' | 'people' | 'link';
+        credential_type?: string;
+        category?: string;
+        recipient_count?: number;
+        has_skills?: boolean;
+        used_dynamic_variables?: boolean;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_ISSUE_SUCCEEDED]: {
+        flow_id: string;
+        recipient_mode: 'self' | 'people' | 'link';
+        credential_type?: string;
+        category?: string;
+        recipient_count?: number;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_ISSUE_FAILED]: {
+        flow_id: string;
+        recipient_mode: 'self' | 'people' | 'link';
+        /** Pre-flight validation rejections vs technical issuance failures. */
+        step_id: 'jsonld_validation' | 'issuance';
+        error_code?: string;
+        credential_type?: string;
+        category?: string;
         duration_ms?: number;
     };
 

@@ -48,6 +48,15 @@ import { useCredentialIdentity } from './components/useCredentialIdentity';
 import { mergeSkillAlignments, type ResolvedSkill } from './components/skillAlignment';
 import type { SelectedSkill } from '../skills/skillTypes';
 import { IssueCredentialView } from './IssueCredentialView';
+import {
+    ACCOUNT_CREATED_AT_KEY,
+    AnalyticsEvents,
+    newFlowId,
+    ProfileBuildMethod,
+    SESSION_START_KEY,
+    useAnalytics,
+    useProfileSnapshotCapture,
+} from '../../analytics';
 import * as m from '../../paraglide/messages.js';
 
 const log = getLogger('issue-page');
@@ -124,6 +133,9 @@ const IssueCredentialPage: React.FC = () => {
     const { getRegisteredSigningAuthority, getRegisteredSigningAuthorities } =
         useSigningAuthority();
     const [presentAlert] = useIonAlert();
+    const { track } = useAnalytics();
+    const { capture: captureProfileSnapshot, snapshotRef: profileSnapshotRef } =
+        useProfileSnapshotCapture();
 
     const initialSnapshot = useMemo(() => readSuccessSnapshot(), []);
 
@@ -484,13 +496,40 @@ const IssueCredentialPage: React.FC = () => {
         if (!template || !canIssue) return;
         setError(null);
         setIsSubmitting(true);
+
+        const issueFlowId = newFlowId();
+        const issueStartedAt = Date.now();
+        const templateJson = templateToJson(template);
+        const analyticsCredentialType = ach?.achievementType?.value;
+        const analyticsCategory =
+            getDefaultCategoryForCredential(templateJson as UnsignedVC) || undefined;
+        const analyticsRecipientCount = recipientMode === 'people' ? recipients.length : undefined;
+
+        track(AnalyticsEvents.CREDENTIAL_ISSUE_STARTED, {
+            flow_id: issueFlowId,
+            recipient_mode: recipientMode,
+            credential_type: analyticsCredentialType,
+            category: analyticsCategory,
+            recipient_count: analyticsRecipientCount,
+            has_skills: resolvedSkills.length > 0,
+            used_dynamic_variables: dynamicVars.length > 0,
+        });
+
         try {
             const wallet = await initWallet();
-            const jsonLd = await validateCredentialJsonLd(templateToJson(template), {
+            const jsonLd = await validateCredentialJsonLd(templateJson, {
                 allowRemoteContexts: true,
             });
             if (!jsonLd.valid) {
                 log.warn('issue.validation_failed', { errors: jsonLd.errors });
+                track(AnalyticsEvents.CREDENTIAL_ISSUE_FAILED, {
+                    flow_id: issueFlowId,
+                    recipient_mode: recipientMode,
+                    step_id: 'jsonld_validation',
+                    credential_type: analyticsCredentialType,
+                    category: analyticsCategory,
+                    duration_ms: Date.now() - issueStartedAt,
+                });
                 setError({
                     message:
                         "Some details on this credential aren't valid yet. Please review and try again.",
@@ -529,6 +568,8 @@ const IssueCredentialPage: React.FC = () => {
             } else if (hasEmailRecipient) {
                 await getRegisteredSigningAuthority(wallet);
             }
+
+            captureProfileSnapshot();
 
             const result = await withTransientRetry(() =>
                 issueViaBoost(wallet, template, {
@@ -572,8 +613,62 @@ const IssueCredentialPage: React.FC = () => {
             if (result.claimLink) {
                 setClaimLink(result.claimLink);
             }
+
+            track(AnalyticsEvents.CREDENTIAL_ISSUE_SUCCEEDED, {
+                flow_id: issueFlowId,
+                recipient_mode: recipientMode,
+                credential_type: analyticsCredentialType,
+                category: analyticsCategory,
+                recipient_count: analyticsRecipientCount,
+                duration_ms: Date.now() - issueStartedAt,
+            });
+
+            if (recipientMode === 'self') {
+                track(AnalyticsEvents.SELF_BOOST, {
+                    category: analyticsCategory,
+                    boostType: analyticsCredentialType,
+                    method: 'Issue Page',
+                    msSinceMethodStarted: Date.now() - issueStartedAt,
+                });
+
+                const now = Date.now();
+                track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                    method: ProfileBuildMethod.SelfIssue,
+                    itemType: 'credential',
+                    itemCount: 1,
+                    totalItemsAfter: profileSnapshotRef.current.credentialCount + 1,
+                    msSinceAccountCreated:
+                        now - Number(localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now),
+                    msSinceSessionStart:
+                        now - Number(localStorage.getItem(SESSION_START_KEY) ?? now),
+                });
+            } else if (recipientMode === 'people') {
+                track(AnalyticsEvents.SEND_BOOST, {
+                    category: analyticsCategory,
+                    boostType: analyticsCredentialType,
+                    method: 'Issue Page',
+                    msSinceMethodStarted: Date.now() - issueStartedAt,
+                });
+            } else if (recipientMode === 'link') {
+                track(AnalyticsEvents.GENERATE_CLAIM_LINK, {
+                    category: analyticsCategory,
+                    boostType: analyticsCredentialType,
+                    method: 'Issue Page',
+                });
+            }
         } catch (e) {
             log.error('issue.failed', e);
+            track(AnalyticsEvents.CREDENTIAL_ISSUE_FAILED, {
+                flow_id: issueFlowId,
+                recipient_mode: recipientMode,
+                step_id: 'issuance',
+                error_code:
+                    (e as { code?: string })?.code ??
+                    (e instanceof Error && e.name !== 'Error' ? e.name : undefined),
+                credential_type: analyticsCredentialType,
+                category: analyticsCategory,
+                duration_ms: Date.now() - issueStartedAt,
+            });
             setError(getFriendlyIssueError(e, recipientMode));
         } finally {
             setIsSubmitting(false);
@@ -593,6 +688,12 @@ const IssueCredentialPage: React.FC = () => {
         getRegisteredSigningAuthority,
         // addVCtoWallet, // not memoized, so this would recreate handleIssue on every render
         queryClient,
+        track,
+        ach,
+        resolvedSkills,
+        dynamicVars,
+        captureProfileSnapshot,
+        profileSnapshotRef,
     ]);
 
     useEffect(() => {
