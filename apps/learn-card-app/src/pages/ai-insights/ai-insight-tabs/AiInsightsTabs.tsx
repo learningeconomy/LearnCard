@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 
-import { AiInsightsTabsEnum, aiInsightsTabs } from './ai-insights-tabs.helpers';
+import { m } from '../../../paraglide/messages.js';
+
+import { AiInsightsTabsEnum, getAiInsightsTabs } from './ai-insights-tabs.helpers';
 
 import { useGetCurrentUserRole, useContractSentRequests, useGetContracts } from 'learn-card-base';
 import { LearnCardRolesEnum } from 'apps/learn-card-app/src/components/onboarding/onboarding.helpers';
@@ -50,7 +52,7 @@ export const AiInsightsTabs: React.FC<{
         <div
             className={`${className} flex items-center gap-[10px] overflow-x-auto scrollbar-hide flex-nowrap`}
         >
-            {aiInsightsTabs.map(tab => {
+            {getAiInsightsTabs().map(tab => {
                 if (
                     tab.value === AiInsightsTabsEnum.LearnerInsights &&
                     currentUserRole !== LearnCardRolesEnum.teacher
@@ -84,7 +86,7 @@ export const AiInsightsTabs: React.FC<{
                             newInsightsCount > 0 && (
                                 <span className="text-sm text-emerald-700 font-bold">
                                     {' '}
-                                    • {newInsightsCount} New
+                                    • {m['aiInsights.tabs.newCount']({ count: newInsightsCount })}
                                 </span>
                             )}
                     </button>

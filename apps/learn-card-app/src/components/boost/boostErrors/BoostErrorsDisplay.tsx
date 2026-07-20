@@ -5,6 +5,8 @@ import ArrowCircle from 'learn-card-base/svgs/ArrowCircle';
 
 import { useErrorBoundary } from 'react-error-boundary';
 
+import { m } from '../../../paraglide/messages.js';
+
 import { CredentialCategoryEnum } from 'learn-card-base';
 
 import useTheme from '../../../theme/hooks/useTheme';
@@ -26,7 +28,7 @@ const BoostErrorsDisplay: React.FC<{
         await refetch?.();
     };
 
-    const message = errorMessage ? errorMessage : 'Oops, there was an error.';
+    const message = errorMessage ? errorMessage : m['error.generic']();
 
     return (
         <section className="mt-[-60px] relative z-10 boost-error-container w-full h-full flex flex-col items-center justify-center">
@@ -41,7 +43,7 @@ const BoostErrorsDisplay: React.FC<{
                 className="font-poppins flex items-center mt-[20px] justify-center max-w-[200px] bg-[#FFFFFF] rounded-full w-full px-[18px] py-[12px] text-grayscale-900 text-[17px] font-semibold"
                 onClick={handleRefetch}
             >
-                Try again
+                {m['error.retry']()}
                 <ArrowCircle className="ml-[5px]" />
             </button>
         </section>
@@ -60,13 +62,13 @@ export const ErrorBoundaryFallback: React.FC<{
 
     return (
         <div role="alert">
-            <p className="font-semibold text-black">Something went wrong:</p>
+            <p className="font-semibold text-black">{m['error.generic']()}:</p>
             <pre style={{ color: 'red' }}>{error?.message || 'There was an error'}</pre>
             <button
                 className={`font-poppins flex items-center mt-[20px] justify-center max-w-[200px] bg-${primaryColor} rounded-full w-full px-[18px] py-[12px] text-white text-[28px]`}
                 onClick={resetBoundary}
             >
-                Try again!
+                {m['error.retry']()}!
             </button>
         </div>
     );

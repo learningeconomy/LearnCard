@@ -7,6 +7,7 @@ import { IonContent, IonPage, IonFooter, IonLoading } from '@ionic/react';
 import { Gift, Check, AlertCircle, Home, HelpCircle } from 'lucide-react';
 
 import { getLogger } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 const log = getLogger('exchange-accept-credentials');
 
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
@@ -124,7 +125,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
     const handleClaim = async () => {
         if (selectedCredentials.length === 0) {
-            presentToast('Please select at least one credential to claim.', {
+            presentToast(m['toasts.selectCredential'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -203,7 +204,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
             setIsClaimed(true);
 
-            presentToast(`Successfully claimed ${selectedCredentials.length} credential(s)!`, {
+            presentToast(m['claim.accept.success']({ count: selectedCredentials.length }), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
@@ -212,12 +213,12 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
         } catch (e) {
             log.error('Error claiming credential(s)', e);
             if (e instanceof Error && e?.message?.includes('exists')) {
-                presentToast(`You have already claimed this credential.`, {
+                presentToast(m['claim.accept.exists'](), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
             } else {
-                presentToast(`Oops, we couldn't claim the credential(s).`, {
+                presentToast(m['claim.accept.failed'](), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
@@ -289,12 +290,11 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                     </div>
 
                     <h1 className="text-xl font-semibold text-grayscale-900 mb-2">
-                        {credentials.length} credentials ready to claim
+                        {m['claim.accept.readyCount']({ count: credentials.length })}
                     </h1>
 
                     <p className="text-grayscale-600 text-sm max-w-md mx-auto leading-relaxed">
-                        Tap each credential to select or deselect it. Only selected credentials will
-                        be added to your account.
+                        {m['claim.accept.tapHint']()}
                     </p>
                 </div>
 
@@ -344,14 +344,21 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
                             <div>
                                 <p className="font-medium text-grayscale-900 text-sm">
-                                    {selectedCredentials.length} of {credentials.length} credential
-                                    {credentials.length !== 1 ? 's' : ''} selected
+                                    {credentials.length === 1
+                                        ? m['claim.accept.selCount.one']({
+                                              selected: selectedCredentials.length,
+                                              total: credentials.length,
+                                          })
+                                        : m['claim.accept.selCount.other']({
+                                              selected: selectedCredentials.length,
+                                              total: credentials.length,
+                                          })}
                                 </p>
 
                                 <p className="text-sm text-grayscale-500">
                                     {selectedCredentials.length === 0
-                                        ? 'Select at least one to continue'
-                                        : 'These will be added to your account'}
+                                        ? m['claim.accept.selectOne']()
+                                        : m['claim.accept.willAdd']()}
                                 </p>
                             </div>
                         </div>
@@ -368,8 +375,8 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                             className="text-sm text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
                         >
                             {selectedCredentials.length === credentials.length
-                                ? 'Deselect all'
-                                : 'Select all'}
+                                ? m['claim.accept.deselAll']()
+                                : m['claim.accept.selAll']()}
                         </button>
                     </div>
                 </div>
@@ -390,11 +397,11 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                                 </div>
 
                                 <h1 className="text-xl font-semibold text-grayscale-900 mb-2">
-                                    No credentials found
+                                    {m['claim.accept.noneTitle']()}
                                 </h1>
 
                                 <p className="text-grayscale-500 text-sm">
-                                    This link doesn't contain any credentials
+                                    {m['claim.accept.noneSub']()}
                                 </p>
                             </div>
 
@@ -402,34 +409,32 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                             <div className="p-6">
                                 <div className="space-y-5 mb-6">
                                     <p className="text-grayscale-600 text-center text-sm leading-relaxed">
-                                        The credential link you followed doesn't have any
-                                        credentials to claim. This could happen if:
+                                        {m['claim.accept.noneDesc']()}
                                     </p>
 
                                     <ul className="text-sm text-grayscale-600 space-y-2 pl-4">
                                         <li className="flex items-start gap-2">
                                             <span className="text-amber-500 mt-0.5">•</span>
-                                            The credential has already been claimed
+                                            {m['claim.accept.reason1']()}
                                         </li>
                                         <li className="flex items-start gap-2">
                                             <span className="text-amber-500 mt-0.5">•</span>
-                                            The link has expired
+                                            {m['claim.accept.reason2']()}
                                         </li>
                                         <li className="flex items-start gap-2">
                                             <span className="text-amber-500 mt-0.5">•</span>
-                                            The sender removed the credential
+                                            {m['claim.accept.reason3']()}
                                         </li>
                                     </ul>
 
                                     {/* Suggestion box */}
                                     <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5">
                                         <p className="text-xs font-medium text-amber-700 uppercase tracking-wide mb-2">
-                                            What to do
+                                            {m['claim.accept.whatToDo']()}
                                         </p>
 
                                         <p className="text-sm text-amber-800 leading-relaxed">
-                                            Contact the person or organization that sent you this
-                                            link to request a new one.
+                                            {m['claim.accept.noneHelp']()}
                                         </p>
                                     </div>
                                 </div>
@@ -441,7 +446,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                                         className="w-full py-3 px-4 bg-grayscale-900 text-white font-medium text-sm rounded-[20px] hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                                     >
                                         <Home className="w-4 h-4" />
-                                        Go to home
+                                        {m['claim.accept.goHome']()}
                                     </button>
 
                                     <button
@@ -451,7 +456,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                                         className="w-full py-3 px-4 text-sm text-grayscale-600 font-medium rounded-[20px] hover:text-grayscale-900 hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
                                     >
                                         <HelpCircle className="w-4 h-4" />
-                                        Contact support
+                                        {m['claim.accept.support']()}
                                     </button>
                                 </div>
                             </div>
@@ -462,7 +467,11 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
         );
     }
 
-    const claimBtnText = isClaimed ? 'Claimed' : claiming ? 'Loading...' : 'Accept';
+    const claimBtnText = isClaimed
+        ? m['claim.accept.claimed']()
+        : claiming
+        ? m['common.loading']()
+        : m['common.accept']();
 
     // Single-credential claim — full credential view, matching ClaimBoost:
     // themed background, edge-to-edge scroll area (no phantom padding / inset
@@ -472,7 +481,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
         return (
             <IonPage>
-                <IonLoading isOpen={claiming} message={'Claiming Credential(s)...'} />
+                <IonLoading isOpen={claiming} message={m['claim.accept.claiming']()} />
                 <div className="flex h-full bg-grayscale-100">
                     <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0 bg-grayscale-100">
                         <section

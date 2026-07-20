@@ -1,6 +1,8 @@
 import React from 'react';
 import { Shield, ChevronRight } from 'lucide-react';
 
+import * as m from '../../../paraglide/messages.js';
+
 import type {
     DashboardDataTrustViewModel,
     DashboardDataTrustProofItem,
@@ -41,22 +43,24 @@ const DataTrustCard: React.FC<{ vm: DashboardDataTrustViewModel }> = ({ vm }) =>
     const overflow = proof.length - shownProof.length;
 
     const statusText = isEmpty
-        ? 'Nothing is shared yet.'
-        : `Sharing with ${places} ${places === 1 ? 'place' : 'places'}.`;
+        ? m['dashboard.dataTrust.emptyStatus']()
+        : places === 1
+        ? m['dashboard.dataTrust.sharingWithOne']({ count: places })
+        : m['dashboard.dataTrust.sharingWithMany']({ count: places });
 
     const detailText = isEmpty
-        ? 'When an app or school asks for your data, you decide — every time.'
+        ? m['dashboard.dataTrust.emptyDetail']()
         : isLots
-        ? `${canRead} can read${
-              canWrite > 0 ? `, ${canWrite} can also write` : ''
-          }. You're in control.`
-        : 'You can stop anytime.';
+        ? canWrite > 0
+            ? m['dashboard.dataTrust.detailReadWrite']({ read: canRead, write: canWrite })
+            : m['dashboard.dataTrust.detailReadOnly']({ read: canRead })
+        : m['dashboard.dataTrust.detailFew']();
 
     return (
         <button
             type="button"
             onClick={onManage}
-            aria-label="Manage data sharing"
+            aria-label={m['dashboard.dataTrust.manage']()}
             className="group w-full text-left bg-white rounded-[20px] p-5 desktop:p-6 shadow-soft-bottom border border-grayscale-200 hover:border-grayscale-300 transition-colors animate-fade-in-up"
         >
             <div className="flex items-start gap-4">
@@ -73,10 +77,10 @@ const DataTrustCard: React.FC<{ vm: DashboardDataTrustViewModel }> = ({ vm }) =>
 
                 <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium tracking-wider text-grayscale-500 uppercase">
-                        Your data
+                        {m['dashboard.dataTrust.label']()}
                     </p>
                     <h2 className="mt-0.5 text-lg font-semibold text-grayscale-900">
-                        Your data is yours
+                        {m['dashboard.dataTrust.title']()}
                     </h2>
                     <p className="mt-1 text-sm text-grayscale-600 leading-relaxed">
                         <span className="font-medium text-grayscale-900">{statusText}</span>{' '}
@@ -99,7 +103,7 @@ const DataTrustCard: React.FC<{ vm: DashboardDataTrustViewModel }> = ({ vm }) =>
                     )}
 
                     <span className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-grayscale-600 group-hover:text-grayscale-900 transition-colors">
-                        Manage data sharing
+                        {m['dashboard.dataTrust.manage']()}
                         <ChevronRight className="w-3.5 h-3.5" />
                     </span>
                 </div>

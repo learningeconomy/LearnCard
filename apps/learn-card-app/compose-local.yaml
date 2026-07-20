@@ -42,7 +42,7 @@ services:
             - ./index.template.html:/app/apps/learn-card-app/index.template.html
             - ./package.json:/app/apps/learn-card-app/package.json
             - ./capacitor.config.ts:/app/apps/learn-card-app/capacitor.config.ts
-            - ./vite.config.ts:/app/apps/learn-card-app/vite.config.ts
+            - ./vite.config.mts:/app/apps/learn-card-app/vite.config.mts
             - ./postcss.config.js:/app/apps/learn-card-app/postcss.config.js
             - ./tailwind.config.js:/app/apps/learn-card-app/tailwind.config.js
             - ./tsconfig.json:/app/apps/learn-card-app/tsconfig.json

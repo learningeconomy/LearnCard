@@ -16,6 +16,7 @@ import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credent
 import { VC, VP } from '@learncard/types';
 
 import { BoostEarnedCard } from '../../components/boost/boost-earned-card/BoostEarnedCard';
+import * as m from '../../paraglide/messages.js';
 import {
     markModalMounted,
     markCredentialResolved,
@@ -138,7 +139,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                 }
             } catch (err) {
                 log.error('Failed to resolve credential:', err);
-                if (!cancelled) setError('Unable to load credential');
+                if (!cancelled) setError(m['claim.modal.loadError']());
                 void flushSendCredentialFlowOnError({
                     phase: 'credential_resolve',
                     message: err instanceof Error ? err.message : String(err),
@@ -226,7 +227,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
             setClaimed(true);
             void markClaimCompleted();
 
-            presentToast('Successfully claimed Credential!', {
+            presentToast(m['toasts.credentialClaimed'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
@@ -237,7 +238,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                 message: err instanceof Error ? err.message : String(err),
             });
 
-            presentToast('Unable to claim Credential', {
+            presentToast(m['toasts.credentialClaimFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -257,18 +258,18 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                         </div>
 
                         <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                            Credential Claimed!
+                            {m['claim.modal.claimedTitle']()}
                         </h3>
 
                         <p className="text-gray-500 text-sm mb-6">
-                            The credential has been added to your wallet.
+                            {m['claim.modal.claimedBody']()}
                         </p>
 
                         <button
                             onClick={onDismiss}
                             className="w-full px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                         >
-                            Continue
+                            {m['common.continue']()}
                         </button>
                     </div>
                 </div>
@@ -284,7 +285,9 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                     <div className="flex flex-col items-center justify-center">
                         <IonSpinner name="crescent" className="w-12 h-12 text-cyan-500" />
 
-                        <p className="mt-4 text-gray-600 font-medium">Loading credential...</p>
+                        <p className="mt-4 text-gray-600 font-medium">
+                            {m['claim.modal.loadingCredential']()}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -302,11 +305,11 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                         </div>
 
                         <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                            Unable to Load Credential
+                            {m['claim.modal.loadErrorTitle']()}
                         </h3>
 
                         <p className="text-gray-500 text-sm mb-6">
-                            {error || 'The credential could not be found.'}
+                            {error || m['claim.modal.notFoundBody']()}
                         </p>
 
                         <button
@@ -316,7 +319,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                             }}
                             className="w-full px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                         >
-                            Close
+                            {m['common.close']()}
                         </button>
                     </div>
                 </div>
@@ -335,9 +338,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
     // enriched credential lands in state, this resolves to the real name and the
     // shimmer disappears.
     const showCredentialNameShimmer = isEnrichingFromFastPath && !resolvedCredentialName;
-    const credentialName = resolvedCredentialName || 'Credential';
-
-    const actionButtonText = isClaiming ? 'Claiming...' : claimed ? 'Claimed' : 'Accept';
+    const credentialName = resolvedCredentialName || m['claim.modal.credentialFallback']();
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
@@ -353,13 +354,13 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
 
                 {/* Header */}
                 <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-4 text-white text-center flex-shrink-0">
-                    <h3 className="text-lg font-semibold">You've Earned a Credential!</h3>
+                    <h3 className="text-lg font-semibold">{m['claim.modal.earnedTitle']()}</h3>
 
                     <p className="text-white/80 text-sm mt-1 min-h-[20px]">
                         {showCredentialNameShimmer ? (
                             <span
                                 className="inline-block h-[14px] w-32 bg-white/30 rounded animate-pulse align-middle"
-                                aria-label="Loading credential name"
+                                aria-label={m['claim.modal.loadingNameAria']()}
                             />
                         ) : (
                             credentialName
@@ -401,17 +402,17 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                         {isClaiming ? (
                             <>
                                 <Loader2 className="w-5 h-5 animate-spin" />
-                                Claiming...
+                                {m['claim.claiming']()}
                             </>
                         ) : !walletReady ? (
                             <>
                                 <Loader2 className="w-5 h-5 animate-spin" />
-                                Preparing...
+                                {m['claim.modal.preparing']()}
                             </>
                         ) : (
                             <>
                                 <Check className="w-5 h-5" />
-                                Accept Credential
+                                {m['claim.modal.acceptCredential']()}
                             </>
                         )}
                     </button>
@@ -421,7 +422,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                         disabled={isClaiming}
                         className="w-full px-4 py-2 text-gray-500 text-sm hover:text-gray-700 transition-colors disabled:opacity-50"
                     >
-                        Maybe Later
+                        {m['claim.modal.maybeLater']()}
                     </button>
                 </div>
             </div>

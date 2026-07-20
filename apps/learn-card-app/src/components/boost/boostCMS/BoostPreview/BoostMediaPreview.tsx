@@ -26,20 +26,7 @@ import {
     convertEvidenceToAttachments,
     getExistingAttachmentsOrEvidence,
 } from 'learn-card-base/helpers/credentialHelpers';
-
-export function getFilestackPreviewUrl(fileUrl: string): string {
-    try {
-        const url = new URL(fileUrl);
-        const handle = url.pathname.split('/').filter(Boolean).pop();
-
-        if (!handle) throw new Error('Invalid Filestack URL: No file handle found');
-
-        return `https://cdn.filestackcontent.com/preview/${handle}`;
-    } catch (e) {
-        log.error('Failed to generate Filestack preview URL:', e);
-        return '';
-    }
-}
+import { getFilestackPreviewUrl } from 'learn-card-base/filestack/images/images.helpers';
 
 export const BoostMediaPreview: React.FC<{
     credential: VC;

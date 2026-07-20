@@ -12,6 +12,7 @@ import {
     newPersonalizedQACredential,
     transformPersonalizedAnswersForVC,
 } from './personalizedQuestionCredential.helpers';
+import * as m from '../../paraglide/messages.js';
 
 const LearnCardFooter: React.FC<{ personalizedAnswers: PersonalizedAnswersState; uri: string }> = ({
     personalizedAnswers,
@@ -62,7 +63,7 @@ const LearnCardFooter: React.FC<{ personalizedAnswers: PersonalizedAnswersState;
                         onClick={closeModal}
                         className=" py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] justify-center mr-2"
                     >
-                        Back
+                        {m['common.back']()}
                     </button>
 
                     <button
@@ -70,7 +71,7 @@ const LearnCardFooter: React.FC<{ personalizedAnswers: PersonalizedAnswersState;
                         onClick={handleIssueQACredential}
                         className="bg-grayscale-800 py-[9px] pl-[20px] pr-[15px] rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white w-full shadow-button-bottom flex gap-[5px] items-center justify-center"
                     >
-                        {isLoading ? 'Saving...' : 'Save'}
+                        {isLoading ? m['common.saving']() : m['common.save']()}
                     </button>
                 </div>
             </div>

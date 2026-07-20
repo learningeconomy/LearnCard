@@ -24,6 +24,8 @@ import PrivacyAndDataHeader from './PrivacyAndDataHeader';
 import ConsentFlowVerifiableDataSharingItem from './ConsentFlowVerifiableDataSharingItem';
 
 import { curriedStateSlice } from '@learncard/helpers';
+import * as m from '../../paraglide/messages.js';
+import TransP from '../../i18n/TransP';
 import {
     getPersonalEntry,
     getAllCredentialUrisForCategory,
@@ -330,7 +332,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
 
     const { name, image, appStyles } = getPrivacyAndDataInfo(contractDetails, app);
 
-    const saveWord = updatingTerms ? 'Saving...' : 'Save';
+    const saveWord = updatingTerms ? m['consentFlow.saving']() : m['common.save']();
 
     return (
         <div className={embedded ? 'relative h-full overflow-hidden' : 'h-full'}>
@@ -353,8 +355,12 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                 <div className="text-grayscale-900 text-[14px] rounded-[15px] bg-white w-full p-[15px] flex flex-col gap-[20px] shadow-box-bottom">
                     <h4 className="text-grayscale-900 text-[20px] font-notoSans">
                         {contractCategoryReadDataExists
-                            ? `Share Your ${brandingConfig?.name} Data`
-                            : `This app is not able to read any credentials from your ${brandingConfig?.name}.`}
+                            ? m['consentFlow.privacyData.shareData']({
+                                  brand: brandingConfig?.name ?? '',
+                              })
+                            : m['consentFlow.privacyData.cannotRead']({
+                                  brand: brandingConfig?.name ?? '',
+                              })}
                     </h4>
 
                     {contractCategoryReadDataExists && (
@@ -369,10 +375,12 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                                     : 'text-grayscale-500'
                                             }`}
                                         >
-                                            {allReadToggle ? 'Active' : 'Off'}
+                                            {allReadToggle
+                                                ? m['consentFlow.status.active']()
+                                                : m['consentFlow.status.off']()}
                                         </output>
                                         <p className="font-notoSans text-grayscale-900 text-[20px]">
-                                            Live Sync All
+                                            {m['consentFlow.liveSyncAll']()}
                                         </p>
                                     </label>
 
@@ -386,11 +394,10 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                 </div>
 
                                 <p className="text-grayscale-600 text-[14px] font-notoSans">
-                                    Turning on{' '}
-                                    <span className="font-[600] font-notoSans">Live Sync</span> will
-                                    automatically share all credentials as you get them. If it's
-                                    turned off, you can selectively share specific wallet categories
-                                    and credentials at any time
+                                    <TransP
+                                        m={m['consentFlow.privacyData.liveSyncDescription']}
+                                        components={[<span className="font-[600] font-notoSans" />]}
+                                    />
                                 </p>
                             </div>
 
@@ -413,7 +420,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                 {contractPersonalReadDataExists && (
                     <div className="text-grayscale-900 text-[14px] rounded-[15px] bg-white w-full p-[15px] flex flex-col gap-[20px] shadow-box-bottom">
                         <h4 className="text-grayscale-900 text-[20px] font-notoSans">
-                            Share Your Personal Data
+                            {m['consentFlow.privacyData.sharePersonalData']()}
                         </h4>
 
                         <div className="flex flex-col">
@@ -426,10 +433,12 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                                 : 'text-grayscale-500'
                                         }`}
                                     >
-                                        {readTerms.anonymize ? 'On' : 'Off'}
+                                        {readTerms.anonymize
+                                            ? m['consentFlow.status.on']()
+                                            : m['consentFlow.status.off']()}
                                     </output>
                                     <p className="font-notoSans text-grayscale-900 text-[20px]">
-                                        Anonymize
+                                        {m['consentFlow.anonymize']()}
                                     </p>
                                 </label>
 
@@ -443,9 +452,10 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                             </div>
 
                             <p className="text-grayscale-600 text-[14px] font-notoSans">
-                                Turning on{' '}
-                                <span className="font-[600] font-notoSans">Anonymize</span> will
-                                hide your name, profile picture, and email when sharing to this app.
+                                <TransP
+                                    m={m['consentFlow.privacyData.anonymizeDescription']}
+                                    components={[<span className="font-[600] font-notoSans" />]}
+                                />
                             </p>
                         </div>
 
@@ -464,8 +474,13 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                 <div className="text-grayscale-900 text-[14px] rounded-[15px] bg-white w-full p-[15px] flex flex-col gap-[20px] shadow-box-bottom">
                     <h4 className="text-grayscale-900 text-[20px] font-notoSans">
                         {contractCategoryWriteDataExists
-                            ? `Allow ${name} to Add Data to Your ${brandingConfig?.name}`
-                            : `This app is not able to write any data to your ${brandingConfig?.name}.`}
+                            ? m['consentFlow.privacyData.allowAddData']({
+                                  name,
+                                  brand: brandingConfig?.name ?? '',
+                              })
+                            : m['consentFlow.privacyData.cannotWrite']({
+                                  brand: brandingConfig?.name ?? '',
+                              })}
                     </h4>
 
                     {contractCategoryWriteDataExists && (
@@ -480,10 +495,12 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                                     : 'text-grayscale-500'
                                             }`}
                                         >
-                                            {allWriteToggle ? 'Active' : 'Off'}
+                                            {allWriteToggle
+                                                ? m['consentFlow.status.active']()
+                                                : m['consentFlow.status.off']()}
                                         </output>
                                         <p className="font-notoSans text-grayscale-900 text-[20px]">
-                                            Allow All
+                                            {m['consentFlow.allowAll']()}
                                         </p>
                                     </label>
 
@@ -497,11 +514,11 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                                 </div>
 
                                 <p className="text-grayscale-600 text-[14px] font-notoSans">
-                                    Turning on{' '}
-                                    <span className="font-[600] font-notoSans">Allow All</span> will
-                                    let the app issue credentials and add them to your{' '}
-                                    {brandingConfig?.name}. If turned off, you can selectively
-                                    choose which wallet categories that the app can add to.
+                                    <TransP
+                                        m={m['consentFlow.privacyData.writeDescription']}
+                                        values={{ brand: brandingConfig?.name ?? '' }}
+                                        components={[<span className="font-[600] font-notoSans" />]}
+                                    />
                                 </p>
                             </div>
 
@@ -538,7 +555,7 @@ const ConsentFlowPrivacyAndData: React.FC<ConsentFlowPrivacyAndDataProps> = ({
                         }
                     }
                 }}
-                secondaryButtonText={isPostConsent ? 'Cancel' : 'Back'}
+                secondaryButtonText={isPostConsent ? m['common.cancel']() : m['common.back']()}
                 onSecondaryButtonClick={async () => {
                     saveTerms?.(terms);
                     if (embedded) onCancel?.();

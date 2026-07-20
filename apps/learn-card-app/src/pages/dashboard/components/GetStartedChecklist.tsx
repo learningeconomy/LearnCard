@@ -1,5 +1,7 @@
 import React from 'react';
 
+import * as m from '../../../paraglide/messages.js';
+
 type ChecklistItem = {
     key: string;
     label: string;
@@ -45,19 +47,19 @@ const GetStartedChecklist: React.FC<GetStartedChecklistProps> = ({
                 <div className="relative flex items-start justify-between gap-3 mb-3">
                     <div className="flex-1 min-w-0">
                         <p className="text-[11px] font-medium tracking-[0.14em] text-indigo-200/90 uppercase">
-                            Get started
+                            {m['dashboard.getStarted.label']()}
                         </p>
                         <h2 className="mt-1 text-2xl desktop:text-3xl font-semibold leading-tight">
-                            Make {brandName} yours
+                            {m['dashboard.getStarted.heroTitle']({ brand: brandName })}
                         </h2>
                         <p className="mt-1 text-sm text-white/75 leading-relaxed">
-                            Three quick steps to set up your passport.
+                            {m['dashboard.getStarted.heroSubtitle']()}
                         </p>
                     </div>
                     <button
                         type="button"
                         onClick={onDismiss}
-                        aria-label="Dismiss"
+                        aria-label={m['dashboard.getStarted.dismiss']()}
                         className="shrink-0 w-8 h-8 rounded-full hover:bg-white/15 transition-colors flex items-center justify-center text-white/70 hover:text-white text-lg leading-none"
                     >
                         ×
@@ -72,7 +74,7 @@ const GetStartedChecklist: React.FC<GetStartedChecklistProps> = ({
                         />
                     </div>
                     <span className="text-xs text-white/75 font-medium">
-                        {completed} of {total}
+                        {m['dashboard.getStarted.progress']({ completed, total })}
                     </span>
                 </div>
 
@@ -131,16 +133,16 @@ const GetStartedChecklist: React.FC<GetStartedChecklistProps> = ({
             <div className="flex items-start justify-between mb-3 gap-3">
                 <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium tracking-wider text-grayscale-500 uppercase">
-                        Get started
+                        {m['dashboard.getStarted.label']()}
                     </p>
                     <h2 className="mt-1 text-lg font-semibold text-grayscale-900 leading-tight">
-                        Make {brandName} yours in 3 steps
+                        {m['dashboard.getStarted.title']({ brand: brandName })}
                     </h2>
                 </div>
                 <button
                     type="button"
                     onClick={onDismiss}
-                    aria-label="Dismiss"
+                    aria-label={m['dashboard.getStarted.dismiss']()}
                     className="shrink-0 w-7 h-7 rounded-full hover:bg-grayscale-100 transition-colors flex items-center justify-center text-grayscale-500 hover:text-grayscale-700"
                 >
                     ×
@@ -155,7 +157,7 @@ const GetStartedChecklist: React.FC<GetStartedChecklistProps> = ({
                     />
                 </div>
                 <span className="text-xs text-grayscale-600 font-medium">
-                    {completed} of {total}
+                    {m['dashboard.getStarted.progress']({ completed, total })}
                 </span>
             </div>
 

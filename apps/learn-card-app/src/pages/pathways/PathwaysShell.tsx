@@ -7,6 +7,7 @@
  */
 
 import React, { Suspense } from 'react';
+import * as m from '../../paraglide/messages.js';
 
 import { IonContent, IonPage } from '@ionic/react';
 import { Redirect, Route, Switch, useRouteMatch } from 'react-router-dom';
@@ -29,9 +30,7 @@ installPathwaysDevGlobals();
 
 const PathwaysErrorFallback: React.FC = () => (
     <div className="max-w-md mx-auto px-4 py-12 font-poppins text-center">
-        <h2 className="text-lg font-semibold text-grayscale-900 mb-2">
-            Something went wrong
-        </h2>
+        <h2 className="text-lg font-semibold text-grayscale-900 mb-2">Something went wrong</h2>
         <p className="text-sm text-grayscale-600 leading-relaxed">
             Pathways hit an unexpected error. Please try again.
         </p>
@@ -121,7 +120,7 @@ const PathwaysShell: React.FC = () => {
                         */}
                         {!isOnOnboard && (
                             <PathwaysHeader
-                                title={activePathway?.title ?? 'Pathways'}
+                                title={activePathway?.title ?? m['pathways.title']()}
                                 subtitle={activePathway?.goal}
                             />
                         )}
@@ -193,7 +192,11 @@ const PathwaysShell: React.FC = () => {
                                         )}
                                     </Route>
                                     <Route exact path="/pathways/build" component={BuildMode} />
-                                    <Route exact path="/pathways/onboard" component={OnboardRoute} />
+                                    <Route
+                                        exact
+                                        path="/pathways/onboard"
+                                        component={OnboardRoute}
+                                    />
                                     <Route
                                         exact
                                         path="/pathways/proposals"

@@ -1,4 +1,6 @@
 import './constants/sentry';
+import { LocaleProvider } from './i18n';
+import { setTenantDefaultLocaleCache, setTenantSupportedLanguagesCache } from './i18n/detectLocale';
 import { createRoot } from 'react-dom/client';
 import { Buffer } from 'buffer';
 import { SplashScreen } from '@capacitor/splash-screen';
@@ -21,6 +23,13 @@ import * as Sentry from '@sentry/browser';
     // Resolve and bootstrap TenantConfig before anything else.
     // This sets up Firebase, auth config, network store, Sentry, and Userflow.
     const tenantConfig = await bootstrapTenantConfig();
+
+    // Seed the locale-detection cache so the LocaleProvider's sync initializer
+    // can fall through to the tenant default when no localStorage entry exists
+    // and `navigator.language` isn't a supported locale. Must run BEFORE the
+    // React tree mounts (resolveInitialLocale runs in useState init).
+    setTenantDefaultLocaleCache(tenantConfig?.i18n?.defaultLanguage);
+    setTenantSupportedLanguagesCache(tenantConfig?.i18n?.supportedLanguages);
 
     if (Capacitor.isNativePlatform()) {
         try {
@@ -73,9 +82,11 @@ import * as Sentry from '@sentry/browser';
         const root = createRoot(container);
         root.render(
             <TenantConfigProvider config={tenantConfig}>
-                <LDProvider>
-                    <App />
-                </LDProvider>
+                <LocaleProvider>
+                    <LDProvider>
+                        <App />
+                    </LDProvider>
+                </LocaleProvider>
             </TenantConfigProvider>
         );
     }

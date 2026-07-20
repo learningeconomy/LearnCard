@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { m } from '../../../paraglide/messages.js';
+
 export enum AiInsightsTabsEnum {
     MyInsights = 'my-insights',
     LearnerInsights = 'learner-insights',
@@ -8,28 +10,27 @@ export enum AiInsightsTabsEnum {
     AgentDebug = 'agent-debug',
 }
 
-export const aiInsightsTabs: {
-    label: string;
-    value: AiInsightsTabsEnum;
-}[] = [
-    {
-        label: 'My insights',
-        value: AiInsightsTabsEnum.MyInsights,
-    },
-    {
-        label: 'Learner insights',
-        value: AiInsightsTabsEnum.LearnerInsights,
-    },
-    {
-        label: 'Shared insights',
-        value: AiInsightsTabsEnum.SharedInsights,
-    },
-    {
-        label: 'Child insights',
-        value: AiInsightsTabsEnum.ChildInsights,
-    },
-    {
-        label: 'Agent Debug',
-        value: AiInsightsTabsEnum.AgentDebug,
-    },
-];
+export const getAiInsightsTabs = () => {
+    return [
+        {
+            label: m['aiInsights.tabs.myInsights'](),
+            value: AiInsightsTabsEnum.MyInsights,
+        },
+        {
+            label: m['aiInsights.tabs.learnerInsights'](),
+            value: AiInsightsTabsEnum.LearnerInsights,
+        },
+        {
+            label: m['aiInsights.tabs.sharedInsights'](),
+            value: AiInsightsTabsEnum.SharedInsights,
+        },
+        {
+            label: m['aiInsights.tabs.childInsights'](),
+            value: AiInsightsTabsEnum.ChildInsights,
+        },
+        {
+            label: 'Agent Debug',
+            value: AiInsightsTabsEnum.AgentDebug,
+        },
+    ] as const;
+};

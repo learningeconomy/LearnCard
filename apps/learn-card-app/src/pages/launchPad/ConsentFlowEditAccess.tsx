@@ -21,6 +21,7 @@ import {
 } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { getPersonalEntry, isSupportedPersonalField } from '../../helpers/contract.helpers';
+import * as m from '../../paraglide/messages.js';
 
 export enum ConsentFlowEditAccessViewModes {
     editAccess = 'edit-access',

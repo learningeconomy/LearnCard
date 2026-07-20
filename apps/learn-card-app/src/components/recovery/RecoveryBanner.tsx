@@ -3,6 +3,7 @@ import { IonIcon } from '@ionic/react';
 import { shieldOutline, closeOutline } from 'ionicons/icons';
 
 import { isPublicComputerMode } from '@learncard/sss-key-manager';
+import * as m from '../../paraglide/messages.js';
 
 const DISMISS_KEY = 'lc_recovery_banner_dismissed';
 
@@ -11,10 +12,7 @@ interface RecoveryBannerProps {
     onSetup: () => void;
 }
 
-export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
-    recoveryMethodCount,
-    onSetup,
-}) => {
+export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({ recoveryMethodCount, onSetup }) => {
     const isPublic = isPublicComputerMode();
     const [dismissed, setDismissed] = useState(true); // start hidden to avoid flash
 
@@ -54,13 +52,13 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
 
             <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-grayscale-900 leading-tight">
-                    {isPublic ? 'Set up recovery before you leave' : 'Protect your account'}
+                    {isPublic ? m['recovery.setupBefore']() : m['recovery.protectAccount']()}
                 </p>
 
                 <p className="text-xs text-grayscale-600 leading-snug mt-0.5">
                     {isPublic
-                        ? 'This is a temporary session. Closing the tab will sign you out permanently unless you set up a recovery method.'
-                        : 'Set up recovery so you can get back in if you lose this device.'}
+                        ? m['recovery.temporarySession']()
+                        : m['recovery.setupRecoveryDevice']()}
                 </p>
             </div>
 
@@ -78,7 +76,7 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
                     }
                 }}
                 className="p-1 rounded-full hover:bg-amber-200 transition-colors shrink-0"
-                aria-label="Dismiss"
+                aria-label={m['common.cancel']()}
             >
                 <IonIcon icon={closeOutline} className="text-grayscale-500 text-lg" />
             </div>

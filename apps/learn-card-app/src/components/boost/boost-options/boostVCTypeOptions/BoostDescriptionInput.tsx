@@ -17,6 +17,8 @@ import {
 
 import MiniGhost from 'learn-card-base/assets/images/ghostboost.png';
 
+import * as m from '../../../../paraglide/messages.js';
+
 import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-description-input');
 
@@ -51,7 +53,7 @@ const BoostDescriptionInput: React.FC<BoostDescriptionInputProps> = ({
                 await onSubmit(description.trim());
             } catch (error) {
                 log.error('Error generating boost details:', error);
-                setErrorMessage('An unexpected error occurred. Please try again.');
+                setErrorMessage(m['boost.wizard.unexpectedError']());
                 setShowErrorToast(true);
             } finally {
                 setIsLoading(false);
@@ -98,7 +100,7 @@ const BoostDescriptionInput: React.FC<BoostDescriptionInputProps> = ({
                     <IonTextarea
                         value={description}
                         onIonInput={e => setDescription(e.detail.value!)}
-                        placeholder="Describe the boost you want to make."
+                        placeholder={m['boost.wizard.describePlaceholder']()}
                         rows={6}
                         className="ion-padding bg-indigo-800 text-white rounded-md"
                         style={{ '--min-width': '385px', '--max-width': '385px' }} // Ionic's custom properties
@@ -109,16 +111,21 @@ const BoostDescriptionInput: React.FC<BoostDescriptionInputProps> = ({
                         disabled={!description.trim() || isLoading}
                         className="mt-4"
                     >
-                        {isLoading ? 'Generating...' : 'Generate Boost'}
+                        {isLoading
+                            ? m['boost.wizard.generating']()
+                            : m['boost.wizard.generateBoost']()}
                     </IonButton>
                     <IonButton
                         expand="block"
                         onClick={onCancel}
                         className="mt-2 bg-indigo-800 text-white"
                     >
-                        Go Back
+                        {m['boost.wizard.goBack']()}
                     </IonButton>
-                    <IonLoading isOpen={isLoading} message="Generating boost details..." />
+                    <IonLoading
+                        isOpen={isLoading}
+                        message={m['boost.wizard.generatingDetails']()}
+                    />
                     <IonToast
                         isOpen={showErrorToast}
                         onDidDismiss={() => setShowErrorToast(false)}

@@ -1,5 +1,16 @@
 # learn-card-base
 
+## 0.3.4
+
+### Patch Changes
+
+-   [#1394](https://github.com/learningeconomy/LearnCard/pull/1394) [`147d2a5fda49ba33f20077400ac3aae633bddb05`](https://github.com/learningeconomy/LearnCard/commit/147d2a5fda49ba33f20077400ac3aae633bddb05) Thanks [@goblincore](https://github.com/goblincore)! - perf: eliminate duplicate wallet construction during app boot. getBespokeLearnCard/getSigningLearnCard now cache in-flight promises so concurrent boot callers share one build; getWalletOrFallback checks secure storage before falling back to the dummy wallet; useGetProofOfLoginVp reuses the logged-in user's wallet instead of building a throwaway 'aaa'-seed wallet (the server route ignores the caller DID).
+
+-   [#1410](https://github.com/learningeconomy/LearnCard/pull/1410) [`daf64d05972682d6bd87b4afc7005eb0f19b0361`](https://github.com/learningeconomy/LearnCard/commit/daf64d05972682d6bd87b4afc7005eb0f19b0361) Thanks [@Custard7](https://github.com/Custard7)! - fix: Query Param Merging
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.2.20
+
 ## 0.3.3
 
 ### Patch Changes

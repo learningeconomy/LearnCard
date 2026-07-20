@@ -23,6 +23,7 @@ import { addAdmin, addBoostSomeone } from '../../../boost/boostHelpers';
 import { updateAdminList, useWallet } from 'learn-card-base';
 
 import useTheme from '../../../../theme/hooks/useTheme';
+import { m } from '../../../../paraglide/messages.js';
 
 const FamilyGuardianIssueToList: React.FC<{
     state: ShortBoostState;
@@ -95,7 +96,7 @@ const FamilyGuardianIssueToList: React.FC<{
                 <IonCol className="w-full flex items-center justify-center">
                     <div className="boost-issue-container w-full flex items-center justify-between mx-[20px] max-w-[600px]">
                         <p className="boost-issue-to-text font-poppins text-2xl text-grayscale-900">
-                            Invite Guardians
+                            {m['family.guardianInvite.inviteGuardians']()}
                         </p>
                         <div
                             className="flex-shrink-0 cursor-pointer"
@@ -121,7 +122,7 @@ const FamilyGuardianIssueToList: React.FC<{
                                 onClick={handleCancel}
                                 className="flex flex-1 items-center font-medium justify-center bg-grayscale-200 rounded-full my-[20px] px-[18px] py-[12px] text-grayscale-900 font-poppins text-xl w-full shadow-lg normal tracking-wide disabled:opacity-[50%] mr-2"
                             >
-                                Cancel
+                                {m['common.cancel']()}
                             </button>
                             <button
                                 onClick={handleInviteGuardians}
@@ -131,7 +132,7 @@ const FamilyGuardianIssueToList: React.FC<{
                                 disabled={state?.issueTo?.length === 0}
                             >
                                 {' '}
-                                {isLoading ? 'Loading...' : 'Invite'}
+                                {isLoading ? m['common.loading']() : m['common.invite']()}
                             </button>
                         </div>
                     </IonRow>

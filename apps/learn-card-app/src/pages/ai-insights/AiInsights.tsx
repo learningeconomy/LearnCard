@@ -18,6 +18,7 @@ import RequestInsightsCard from './request-insights/RequestInsightsCard';
 import AiFeatureLinks from '../../components/ai-feature-links/AiFeatureLinks';
 import AiInsightsUserRequestsToast from './toasts/AiInsightsUserRequestsToast';
 import AiInsightsPromptBoxContainer from './ai-inisghts-prompt/AiInsightsPromptBoxContainer';
+import { m } from '../../paraglide/messages.js';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import AiAgentDebug from './agent-debug/AiAgentDebug';
 
@@ -266,7 +267,9 @@ const AiInsights: React.FC = () => {
                         disabled={createAiInsightCredentialLoading || !canGenerateAiInsights}
                         onClick={generateAiInsights}
                     >
-                        {createAiInsightCredentialLoading ? 'Generating...' : 'Generate Insights'}
+                        {createAiInsightCredentialLoading
+                            ? m['aiInsights.generating']()
+                            : m['aiInsights.generateAiInsights']()}
                     </button>
                 )}
             </div>

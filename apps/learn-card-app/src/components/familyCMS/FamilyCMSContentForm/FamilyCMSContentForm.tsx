@@ -8,6 +8,7 @@ import X from '../../svgs/X';
 
 import { FamilyCMSState } from '../familyCMSState';
 import { ModalTypes, useModal } from 'learn-card-base';
+import { m } from '../../../paraglide/messages.js';
 
 type FamilyCMSContentFormProps = {
     state: FamilyCMSState;
@@ -90,7 +91,7 @@ export const FamilyCMSContentForm: React.FC<FamilyCMSContentFormProps> = ({
         <div className="bg-white w-full flex items-center justify-center flex-col z-9999">
             <div className="w-full mb-2 mt-4">
                 <h3 className="text-grayscale-900 text-left w-full font-poppins text-[20px] mb-2">
-                    Family name
+                    {m['family.editor.familyNameLabel']()}
                 </h3>
 
                 <div className="relative">
@@ -106,7 +107,7 @@ export const FamilyCMSContentForm: React.FC<FamilyCMSContentFormProps> = ({
                         className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] !pr-4 flex ion-padding font-normal font-poppins text-[17px] w-full troops-cms-placeholder ${
                             errors?.name ? 'border-red-300 border-2' : ''
                         }`}
-                        placeholder="Family Name"
+                        placeholder={m['family.editor.familyNamePlaceholder']()}
                         // clearInput
                         type="text"
                     />
@@ -131,7 +132,7 @@ export const FamilyCMSContentForm: React.FC<FamilyCMSContentFormProps> = ({
 
             <div className="w-full flex items-center justify-between py-[8px] mb-2">
                 <div className="text-grayscale-900 text-lg flex items-center justify-start w-[80%]">
-                    Add a Family Emoji
+                    {m['family.editor.addEmoji']()}
                 </div>
                 <IonToggle
                     mode="ios"
@@ -156,7 +157,7 @@ export const FamilyCMSContentForm: React.FC<FamilyCMSContentFormProps> = ({
 
             <div className="w-full mb-2 mt-4">
                 <h3 className="text-grayscale-900 text-left w-full font-poppins text-[20px] mb-2">
-                    Family Motto
+                    {m['family.editor.mottoLabel']()}
                 </h3>
 
                 <div className="relative">
@@ -172,7 +173,7 @@ export const FamilyCMSContentForm: React.FC<FamilyCMSContentFormProps> = ({
 
                             setErrors?.({});
                         }}
-                        placeholder="About my family..."
+                        placeholder={m['family.editor.mottoPlaceholder']()}
                         className={`bg-grayscale-100 text-grayscale-900 rounded-[15px] font-normal text-[17px] font-poppins p-4 troops-cms-placeholder ${
                             errors?.description ? 'border-red-300 border-2' : ''
                         }`}

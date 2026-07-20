@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import numeral from 'numeral';
 import PreloadingLink from '../generic/PreloadingLink';
 
+import * as m from '../../paraglide/messages.js';
+
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import {
     currentUserStore,
@@ -14,6 +16,10 @@ import {
     walletStore,
     WalletSyncState,
 } from 'learn-card-base';
+import {
+    SideMenuLinksEnum,
+    getSideMenuLinkLabel,
+} from 'learn-card-base/components/sidemenu/sidemenuHelpers';
 import CustomSpinner from '../svgs/CustomSpinner';
 
 import { IonMenuToggle, IonList } from '@ionic/react';
@@ -56,8 +62,9 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
     const isSyncing = isWalletSyncing.status === WalletSyncState.Syncing;
     const isCompleted = isWalletSyncing.status === WalletSyncState.Completed;
 
-    let walletText = 'Passport';
-    if (isSyncing || isCompleted) walletText = isWalletSyncing?.text ?? 'Passport';
+    let walletText: string = m['sidemenu.links.passport']();
+    if (isSyncing || isCompleted)
+        walletText = isWalletSyncing?.text ?? m['sidemenu.links.passport']();
 
     let walletTextStyles = '';
     if (isSyncing) walletTextStyles = `${colors.syncingColor}`;
@@ -151,7 +158,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
     let rootLinks: any = null;
 
     rootLinks = walletLink?.map(link => {
-        if (link.label === 'Admin Tools' && !hasAdminAccess) return null;
+        if (link.id === SideMenuLinksEnum.adminTools && !hasAdminAccess) return null;
         if (link.path === '/ai/assistant' && !learnCardAssistantEnabled) return null;
         if (link.path === '/dashboard' && !dashboardAsHome) return null;
         // Alerts lives in the header island on desktop; only show it in the
@@ -160,7 +167,8 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
 
         const IconComponent = iconSet[link.id as keyof typeof iconSet] as React.FC<any>;
         const linkPath = link.path;
-        const linkLabel = linkPath === '/ai/assistant' ? assistantLabel : link.label;
+        const linkLabel =
+            linkPath === '/ai/assistant' ? assistantLabel : getSideMenuLinkLabel(m, link);
 
         const iconStyles = getIconStyles(linkPath);
         const textStyles = getTextStyles(linkPath);
@@ -194,7 +202,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
             </PreloadingLink>
         );
 
-        if (link.label === 'Personalize') {
+        if (link.id === SideMenuLinksEnum.personalize) {
             linkEl = (
                 <button
                     type="button"
@@ -231,7 +239,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
                         )}
                     </div>
 
-                    {link.label}
+                    {getSideMenuLinkLabel(m, link)}
                 </button>
             );
         }
