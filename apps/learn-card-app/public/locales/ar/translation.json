@@ -131,13 +131,13 @@
             "titleMarkup": "إنشاء <0>{{brand}}</0> الخاص بي",
             "intake": {
                 "title": "أضف شيئًا استلمته",
-                "description": "استخدم رمز QR أو رابط مطالبة من جهة إصدار أو محفظة أخرى.",
+                "description": "استخدم رمز QR أو رابط مطالبة من جهة إصدار أو تطبيق آخر.",
                 "scanTitle": "مسح رمز QR",
                 "scanDescription": "افتح الكاميرا لمسح رمز QR لبيانات اعتماد.",
                 "uploadTitle": "رفع رمز QR",
                 "uploadDescription": "ارفع صورة لرمز QR لبيانات اعتماد من جهازك.",
                 "linkTitle": "استخدام رابط مطالبة",
-                "linkDescription": "الصق رابط مطالبة من LearnCard أو محفظة خارجية للمتابعة."
+                "linkDescription": "الصق رابط مطالبة من LearnCard أو رابط مطالبة خارجي للمتابعة."
             },
             "uploadError": {
                 "title": "فشل الرفع",

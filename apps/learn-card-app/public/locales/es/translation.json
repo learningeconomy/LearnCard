@@ -131,13 +131,13 @@
             "titleMarkup": "Construye tu <0>{{brand}}</0>",
             "intake": {
                 "title": "Agrega algo que recibiste",
-                "description": "Usa un código QR o un enlace de reclamación de un emisor u otra billetera.",
+                "description": "Usa un código QR o un enlace de reclamación de un emisor u otra aplicación.",
                 "scanTitle": "Escanear código QR",
                 "scanDescription": "Abre la cámara para escanear el código QR de una credencial.",
                 "uploadTitle": "Subir código QR",
                 "uploadDescription": "Sube desde tu dispositivo una imagen del código QR de una credencial.",
                 "linkTitle": "Usar un enlace de reclamación",
-                "linkDescription": "Pega un enlace de reclamación de LearnCard o de una billetera externa para continuar."
+                "linkDescription": "Pega un enlace de reclamación de LearnCard o un enlace de reclamación externo para continuar."
             },
             "uploadError": {
                 "title": "Error de carga",

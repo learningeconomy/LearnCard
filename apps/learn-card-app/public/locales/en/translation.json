@@ -131,13 +131,13 @@
             "titleMarkup": "Build My <0>{{brand}}</0>",
             "intake": {
                 "title": "Add something you received",
-                "description": "Use a QR code or claim link from an issuer or another wallet.",
+                "description": "Use a QR code or claim link from an issuer or another app.",
                 "scanTitle": "Scan QR Code",
                 "scanDescription": "Open your camera to scan a credential QR code.",
                 "uploadTitle": "Upload QR Code",
                 "uploadDescription": "Upload an image of a credential QR code from your device.",
                 "linkTitle": "Use a Claim Link",
-                "linkDescription": "Paste a LearnCard or external wallet claim link to continue."
+                "linkDescription": "Paste a LearnCard or external claim link to continue."
             },
             "uploadError": {
                 "title": "Upload Failed",
