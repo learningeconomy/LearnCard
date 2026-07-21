@@ -6,6 +6,7 @@ import {
     LCNNotificationTypeEnumValidator,
     SendNotificationEventValidator,
 } from '@learncard/types';
+import type { ConsentRequest, NormalizedConsentScopes } from '@learncard/partner-connect-core';
 import type { JWE, UnsignedVC, VC } from '@learncard/types';
 import { isVC2Format, checkAppInstallEligibility, calculateAgeFromDob } from '@learncard/helpers';
 import type { ProfileType } from 'types/profile';
@@ -16,18 +17,26 @@ import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-
 import type { CredentialIssuer } from '../types/issuer';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { PerfTracker } from '@helpers/perf';
+import {
+    buildConsentFlowContractFromScopes,
+    buildScopedConsentContractName,
+    computeConsentScopeHash,
+    normalizeConsentScopes,
+} from '@helpers/consent-scopes.helpers';
 import cache from '@cache';
 import {
     getBoostForListingCached,
+    getConsentContractForListingByScopeHashCached,
     readAppStoreListingByIdCached,
     getIntegrationForListingCached,
     getOwnerProfileForIntegrationCached,
     getPrimarySigningAuthorityForListingCached,
     getPrimarySigningAuthorityForIntegrationCached,
+    invalidateConsentContractForListingByScopeHashCache,
 } from '@cache/app-store.caches';
 import { logCredentialSent } from '@helpers/activity.helpers';
 import { getCredentialUri } from '@helpers/credential.helpers';
-import { resolveUri } from '@helpers/uri.helpers';
+import { constructUri, resolveUri } from '@helpers/uri.helpers';
 import { inflateObject } from '@helpers/objects.helpers';
 import { getAvailableAppSlug } from '@helpers/slug.helpers';
 import {
@@ -57,6 +66,7 @@ import {
     associateListingWithSubmitter,
     installAppForProfile,
     associateBoostWithListing,
+    associateConsentContractWithListing,
 } from '@accesslayer/app-store-listing/relationships/create';
 import {
     uninstallAppForProfile,
@@ -103,8 +113,15 @@ import {
     appendTemplateEvidenceToCredential,
 } from '@helpers/boost.helpers';
 import { createBoostForListing } from '@accesslayer/boost/create';
+import { createConsentFlowContract } from '@accesslayer/consentflowcontract/create';
 import { setBoostAsParent } from '@accesslayer/boost/relationships/create';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
+import {
+    ensureManagedSigningAuthorityForListing,
+    getInlineTemplateVersion,
+    upsertInlineTemplateBoostForListing,
+    validateInlineTemplateDataOrThrow,
+} from '@helpers/inline-template.helpers';
 import {
     renderBoostTemplate,
     parseRenderedTemplate,
@@ -124,6 +141,7 @@ import {
     getContractTermsForProfile,
     getContractDetailsByUri,
 } from '@accesslayer/consentflowcontract/relationships/read';
+import { setCreatorForContract } from '@accesslayer/consentflowcontract/relationships/create';
 import { getBoostPermissions, getBoostRecipients } from '@accesslayer/boost/relationships/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import type { BoostInstance } from '@models';
@@ -175,8 +193,14 @@ const isAllowedImageUrl = (url: string): boolean => {
 const isValidIframeUrl = (url: string): boolean => {
     try {
         const parsed = new URL(url);
-        // Only allow https URLs for iframes
-        if (parsed.protocol !== 'https:') return false;
+        // Only allow https URLs for iframes (except for local preview of draft listings)
+        if (parsed.protocol !== 'https:') {
+            const isLocalhost =
+                parsed.hostname === 'localhost' ||
+                parsed.hostname === '127.0.0.1' ||
+                parsed.hostname === '[::1]';
+            if (!isLocalhost) return false;
+        }
         // Block javascript:, data:, and vbscript: schemes (already handled by URL parsing, but be explicit)
         const lowerUrl = url.toLowerCase();
         if (
@@ -288,7 +312,14 @@ const iframeUrlRefinement = (
             if (config.iframeUrl && !isValidIframeUrl(config.iframeUrl)) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
-                    message: 'Iframe URL must be a valid HTTPS URL',
+                    message: 'Iframe URL must be a valid HTTPS URL (or localhost for testing)',
+                    path: ['launch_config_json'],
+                });
+            }
+            if (config.url && !isValidIframeUrl(config.url)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: 'URL must be a valid HTTPS URL (or localhost for testing)',
                     path: ['launch_config_json'],
                 });
             }
@@ -554,12 +585,18 @@ export const handleSendCredentialEvent = async (
 ): Promise<Record<string, unknown>> => {
     const perf = perfTracker ?? new PerfTracker('handleSendCredentialEvent');
 
-    const templateAlias = event.templateAlias as string | undefined;
+    const templateAlias =
+        (event.templateAlias as string | undefined) ?? (event.alias as string | undefined);
+    const inlineTemplate = event.template as
+        | import('@learncard/partner-connect-core').InlineCredentialTemplate
+        | undefined;
     const templateData = event.templateData as Record<string, unknown> | undefined;
     const preventDuplicateClaim = Boolean(event.preventDuplicateClaim);
+    const isInlineTemplateEvent = Boolean(inlineTemplate);
+    let templateVersion: number | undefined = undefined;
 
     if (!templateAlias) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'templateAlias required' });
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'templateAlias or alias required' });
     }
 
     // LC-1644 Phase 1b: Fire the four input-only lookups in parallel. All depend only on
@@ -568,17 +605,16 @@ export const handleSendCredentialEvent = async (
     // parallel batching + 30s LRU cache on the first three below compounds to ~50-150ms
     // saved on warm lambda invocations. targetProfile is keyed by the requester's
     // profileId (varies per user) so it's not cached.
-    const [boostResult, listing, integration, targetProfile] = await Promise.all([
-        getBoostForListingCached(listingId, templateAlias, ctx.domain),
+    const [cachedBoostResult, listing, integration, targetProfile] = await Promise.all([
+        isInlineTemplateEvent
+            ? Promise.resolve(null)
+            : getBoostForListingCached(listingId, templateAlias, ctx.domain),
         readAppStoreListingByIdCached(listingId),
         getIntegrationForListingCached(listingId),
         getProfilesByProfileIds([profile.profileId]),
     ]);
     perf.mark('parallelReads');
 
-    if (!boostResult) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found for this app' });
-    }
     if (!listing) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'App Store Listing not found' });
     }
@@ -590,7 +626,30 @@ export const handleSendCredentialEvent = async (
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Profile not found' });
     }
 
+    const boostResult = isInlineTemplateEvent
+        ? await upsertInlineTemplateBoostForListing({
+              listing,
+              integration,
+              templateAlias,
+              template: inlineTemplate!,
+              domain: ctx.domain,
+          })
+        : cachedBoostResult;
+
+    if (!boostResult) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found for this app' });
+    }
+
+    if (isInlineTemplateEvent) {
+        const inlineBoostResult = boostResult as Awaited<
+            ReturnType<typeof upsertInlineTemplateBoostForListing>
+        >;
+        validateInlineTemplateDataOrThrow(inlineBoostResult.manifest, templateData);
+        templateVersion = inlineBoostResult.templateVersion;
+    }
+
     const { boost, boostUri } = boostResult;
+    templateVersion ??= getInlineTemplateVersion(boost);
 
     // NOTE: This is best-effort duplicate prevention, not a guarantee.
     // There is a race condition window between checking and creating the credential
@@ -614,6 +673,7 @@ export const handleSendCredentialEvent = async (
                 receivedDate: existingCredential.receivedDate ?? existingCredential.sentDate,
                 status: existingCredential.status,
                 boostUri,
+                ...(templateVersion !== undefined ? { templateVersion } : {}),
                 // credential not included — frontend skips modal when alreadyClaimed=true
             };
         }
@@ -648,16 +708,18 @@ export const handleSendCredentialEvent = async (
         listingSa || integrationSa
             ? undefined
             : await getPrimarySigningAuthorityForUser(integrationOwner);
-    const sa = listingSa ?? integrationSa ?? ownerSa;
+    const sa =
+        listingSa ??
+        integrationSa ??
+        ownerSa ??
+        (await ensureManagedSigningAuthorityForListing(
+            listing,
+            integration,
+            integrationOwner,
+            ctx.domain
+        ));
 
     perf.mark('saResolve');
-
-    if (!sa) {
-        throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'No signing authority configured for this app',
-        });
-    }
 
     // Build unsigned credential from boost template
     let unsignedVc: UnsignedVC;
@@ -832,10 +894,77 @@ export const handleSendCredentialEvent = async (
     return {
         credentialUri,
         boostUri,
+        ...(templateVersion !== undefined ? { templateVersion } : {}),
         // LC-1644: pre-resolved (enriched) credential so the frontend modal
         // can render the proper title + issuer info without shimmer or
         // background re-fetch. See enrichment block above for details.
         credential: responseCredential,
+    };
+};
+
+const normalizeConsentRequestOrThrow = (scopes: ConsentRequest): NormalizedConsentScopes => {
+    try {
+        return normalizeConsentScopes(scopes);
+    } catch (error) {
+        const message = error instanceof Error ? error.message : 'Invalid consent scopes';
+
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `CONSENT_SCOPES_INVALID: ${message}`,
+        });
+    }
+};
+
+const handleUpsertConsentContractEvent = async (
+    ctx: { domain: string },
+    listing: AppStoreListingType,
+    listingId: string,
+    event: Record<string, unknown>
+): Promise<{ contractUri: string; created: boolean }> => {
+    const rawScopes = event.scopes as ConsentRequest;
+    const normalizedScopes = normalizeConsentRequestOrThrow(rawScopes);
+    const scopeHash = computeConsentScopeHash(normalizedScopes);
+    const existingContract = await getConsentContractForListingByScopeHashCached(
+        listingId,
+        scopeHash
+    );
+
+    if (existingContract) {
+        return {
+            contractUri: constructUri('contract', existingContract.id, ctx.domain),
+            created: false,
+        };
+    }
+
+    const integration = await getIntegrationForListingCached(listingId);
+
+    if (!integration) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
+    }
+
+    const ownerProfile = await getOwnerProfileForIntegrationCached(integration.id);
+
+    if (!ownerProfile) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration owner not found' });
+    }
+
+    const createdContract = await createConsentFlowContract({
+        contract: buildConsentFlowContractFromScopes(normalizedScopes),
+        name: buildScopedConsentContractName(listing.display_name),
+        description: listing.tagline,
+        reasonForAccessing:
+            typeof rawScopes.reason === 'string' && rawScopes.reason.trim().length > 0
+                ? rawScopes.reason
+                : undefined,
+    });
+
+    await setCreatorForContract(createdContract, ownerProfile);
+    await associateConsentContractWithListing(listingId, createdContract.id, scopeHash);
+    invalidateConsentContractForListingByScopeHashCache(listingId, scopeHash);
+
+    return {
+        contractUri: constructUri('contract', createdContract.id, ctx.domain),
+        created: true,
     };
 };
 
@@ -2004,6 +2133,31 @@ export const appStoreRouter = t.router({
                 });
             }
 
+            // Prevent submitting localhost URLs for review
+            if (listing.launch_type === 'EMBEDDED_IFRAME' && listing.launch_config_json) {
+                try {
+                    const config = JSON.parse(listing.launch_config_json);
+                    const urlToCheck = config.url || config.iframeUrl;
+                    if (urlToCheck) {
+                        const parsed = new URL(urlToCheck);
+                        const isLocalhost =
+                            parsed.hostname === 'localhost' ||
+                            parsed.hostname === '127.0.0.1' ||
+                            parsed.hostname === '[::1]';
+                        if (isLocalhost || parsed.protocol !== 'https:') {
+                            throw new TRPCError({
+                                code: 'BAD_REQUEST',
+                                message:
+                                    'Cannot submit an app for review with a localhost or non-HTTPS URL. Please update the launch configuration with your production URL.',
+                            });
+                        }
+                    }
+                } catch (e) {
+                    if (e instanceof TRPCError) throw e;
+                    // Ignore JSON parse errors here, they should be caught by validation
+                }
+            }
+
             const submittedAt = new Date().toISOString();
 
             // Update status on the listing node
@@ -2813,6 +2967,10 @@ export const appStoreRouter = t.router({
                     event,
                     listing
                 );
+            }
+
+            if (eventType === 'upsert-consent-contract') {
+                return handleUpsertConsentContractEvent(ctx, listing, resolvedListingId, event);
             }
 
             if (eventType === 'send-ai-session-credential') {

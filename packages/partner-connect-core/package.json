@@ -1,25 +1,25 @@
 {
-    "name": "@learncard/partner-connect",
-    "version": "0.4.0",
+    "name": "@learncard/partner-connect-core",
+    "version": "0.1.0",
     "repository": {
         "type": "git",
         "url": "https://github.com/learningeconomy/LearnCard"
     },
-    "description": "LearnCard Partner Connect SDK - Promise-based cross-origin messaging for partner apps",
-    "main": "dist/partner-connect.js",
-    "module": "dist/partner-connect.esm.js",
+    "description": "Zero-dependency inline credential template compiler and validator for LearnCard Partner Connect",
+    "main": "dist/partner-connect-core.js",
+    "module": "dist/partner-connect-core.esm.js",
     "types": "dist/index.d.ts",
     "exports": {
         ".": {
             "development": "./src/index.ts",
             "types": "./dist/index.d.ts",
             "node": {
-                "import": "./dist/partner-connect.mjs",
-                "require": "./dist/partner-connect.js"
+                "import": "./dist/partner-connect-core.mjs",
+                "require": "./dist/partner-connect-core.js"
             },
-            "import": "./dist/partner-connect.esm.js",
-            "require": "./dist/partner-connect.js",
-            "default": "./dist/partner-connect.js"
+            "import": "./dist/partner-connect-core.esm.js",
+            "require": "./dist/partner-connect-core.js",
+            "default": "./dist/partner-connect-core.js"
         }
     },
     "sideEffects": false,
@@ -34,17 +34,13 @@
         "learncard",
         "partner",
         "connect",
-        "postmessage",
-        "iframe",
         "credentials",
-        "sso"
+        "template",
+        "openbadges"
     ],
     "license": "MIT",
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
-    "dependencies": {
-        "@learncard/partner-connect-core": "workspace:*",
-        "@learncard/types": "workspace:*"
-    },
+    "dependencies": {},
     "devDependencies": {
         "@rollup/plugin-commonjs": "^22.0.2",
         "@rollup/plugin-node-resolve": "^13.3.0",

@@ -1,4 +1,8 @@
 import { LCNIntegration } from '@learncard/types';
+import type { ConsentRequest } from '@learncard/partner-connect-core';
+import { getLogger } from 'learn-card-base';
+
+const log = getLogger('post-message-handlers');
 import {
     ActionHandler,
     ActionHandlers,
@@ -35,6 +39,13 @@ type LearnerContextResponseData = {
     };
 };
 
+export type IntegrationHint = {
+    type: 'consent-not-configured';
+    title: string;
+    description: string;
+    snippet: string;
+};
+
 // Re-export types for convenience
 export type { ActionHandler, ActionHandlers };
 
@@ -69,7 +80,7 @@ export const createRequestIdentityHandler = (dependencies: {
 
         try {
             // Check if user has consented to share identity with this origin
-            const consented = await showLoginConsentModal(origin, payload.appName);
+            const consented = await showLoginConsentModal(origin, payload?.appName);
 
             if (!consented) {
                 return {
@@ -82,7 +93,7 @@ export const createRequestIdentityHandler = (dependencies: {
             }
 
             // Mint a short-lived JWT token
-            const token = await mintDelegatedToken(payload.challenge);
+            const token = await mintDelegatedToken(payload?.challenge);
             const user = await getUserInfo();
 
             return {
@@ -94,12 +105,20 @@ export const createRequestIdentityHandler = (dependencies: {
                 },
             };
         } catch (error) {
+            // didkit/wasm rejections are often plain strings — surface them
+            // instead of a generic message so failures are self-diagnosing.
+            log.error('REQUEST_IDENTITY failed', error, { origin });
+
+            const message =
+                error instanceof Error
+                    ? error.message
+                    : typeof error === 'string' && error.length > 0
+                    ? `Failed to mint token: ${error}`
+                    : 'Failed to mint token';
+
             return {
                 success: false,
-                error: {
-                    code: 'UNKNOWN_ERROR',
-                    message: error instanceof Error ? error.message : 'Failed to mint token',
-                },
+                error: { code: 'UNKNOWN_ERROR', message },
             };
         }
     };
@@ -121,29 +140,51 @@ export const createRequestConsentHandler = (dependencies: {
         contractUri: string,
         options?: { redirect?: boolean }
     ) => Promise<ConsentModalResult>;
+    upsertScopedContract?: (scopes: ConsentRequest) => Promise<string | undefined>;
     getContractUri?: () => string | undefined;
     getIntegrationContractUri?: () => Promise<string | undefined>;
     prewarmLearnerContext?: (options: LearnerContextRequestOptions) => void | Promise<void>;
+    onIntegrationHint?: (hint: IntegrationHint) => void;
 }): ActionHandler<'REQUEST_CONSENT'> => {
     return async ({ payload }) => {
         const {
             showConsentModal,
+            upsertScopedContract,
             getContractUri,
             getIntegrationContractUri,
             prewarmLearnerContext,
+            onIntegrationHint,
         } = dependencies;
 
-        // Use payload contractUri first, then launch config, then guideState fallback
+        // Use payload contractUri first, then declarative scopes, then launch config,
+        // then guideState fallback.
         const contractUri =
-            payload.contractUri || getContractUri?.() || (await getIntegrationContractUri?.());
+            payload.contractUri ||
+            (payload.scopes ? await upsertScopedContract?.(payload.scopes) : undefined) ||
+            getContractUri?.() ||
+            (await getIntegrationContractUri?.());
 
         if (!contractUri) {
+            onIntegrationHint?.({
+                type: 'consent-not-configured',
+                title: 'Make consent work',
+                description:
+                    'Pass scopes to requestConsent and LearnCard will create a contract automatically.',
+                snippet: `const { granted } = await learnCard.requestConsent({
+    read: {
+        credentialCategories: ['Achievement'],
+        personalFields: ['name'],
+    },
+    reason: 'Personalize your experience',
+});`,
+            });
+
             return {
                 success: false,
                 error: {
-                    code: 'INVALID_PAYLOAD',
+                    code: 'CONSENT_NOT_CONFIGURED',
                     message:
-                        'No contract URI provided and no contract configured for this app listing',
+                        "This app hasn't configured a consent flow. Easiest fix: pass scopes and LearnCard creates one automatically — learnCard.requestConsent({ read: { credentialCategories: ['Achievement'], personalFields: ['name'] }, reason: 'Personalize your experience' }). Alternatively set a contract in your App Store listing.",
                 },
             };
         }
@@ -619,6 +660,7 @@ export function createActionHandlers(dependencies: {
         contractUri: string,
         options?: { redirect?: boolean }
     ) => Promise<ConsentModalResult>;
+    upsertScopedContract?: (scopes: ConsentRequest) => Promise<string | undefined>;
     getContractUri?: () => string | undefined;
     getIntegrationContractUri?: () => Promise<string | undefined>;
     getIntegrationForListing?: (listingId: string) => Promise<LCNIntegration | undefined>;
@@ -661,6 +703,7 @@ export function createActionHandlers(dependencies: {
         eta?: number;
         lastError?: string;
     }>;
+    onIntegrationHint?: (hint: IntegrationHint) => void;
 }): ActionHandlers {
     const handlers: ActionHandlers = {
         REQUEST_IDENTITY: createRequestIdentityHandler(dependencies),

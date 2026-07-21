@@ -1,6 +1,7 @@
 import React, { useMemo, useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useHistory } from 'react-router-dom';
+import type { ConsentRequest } from '@learncard/partner-connect-core';
 import {
     useIsLoggedIn,
     useWallet,
@@ -20,7 +21,7 @@ import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContrac
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
 import { ActionHandlers, AppEvent } from './useLearnCardPostMessage';
-import { createActionHandlers } from './useLearnCardPostMessage.handlers';
+import { createActionHandlers, IntegrationHint } from './useLearnCardPostMessage.handlers';
 import FullScreenConsentFlow from '../../pages/consentFlow/FullScreenConsentFlow';
 import sdkActivityStore from '../../stores/sdkActivityStore';
 import { publishWalletEvent } from '../../pages/pathways/events/walletEventBus';
@@ -61,6 +62,7 @@ interface UseLearnCardMessageHandlersOptions {
         priority?: string;
     }) => void;
     debug?: boolean;
+    onIntegrationHint?: (hint: IntegrationHint) => void;
 }
 
 import { getLogger } from 'learn-card-base';
@@ -186,6 +188,7 @@ export function useLearnCardMessageHandlers({
     onCredentialIssued,
     onAppNotification,
     debug = false,
+    onIntegrationHint,
 }: UseLearnCardMessageHandlersOptions): ActionHandlers {
     const isLoggedIn = useIsLoggedIn();
     const { initWallet, storeAndAddVCToWallet } = useWallet();
@@ -385,6 +388,46 @@ export function useLearnCardMessageHandlers({
                 ?.contractUri || guideState?.config?.consentFlowConfig?.contractUri
         );
     };
+
+    const upsertScopedContract = useCallback(
+        async (scopes: ConsentRequest): Promise<string | undefined> => {
+            if (!appId) {
+                log('Scoped consent contract upsert skipped: appId not available');
+                return undefined;
+            }
+
+            const learnCard = await initWallet();
+
+            if (!learnCard) {
+                logError('Scoped consent contract upsert failed: wallet not initialized');
+                return undefined;
+            }
+
+            if (!learnCard.invoke.sendAppEvent) {
+                logError('Scoped consent contract upsert failed: sendAppEvent not available');
+                return undefined;
+            }
+
+            try {
+                const result = await learnCard.invoke.sendAppEvent(appId, {
+                    type: 'upsert-consent-contract',
+                    scopes,
+                });
+                const contractUri =
+                    typeof result.contractUri === 'string' ? result.contractUri : undefined;
+
+                if (!contractUri) {
+                    logError('Scoped consent contract upsert returned no contractUri', result);
+                }
+
+                return contractUri;
+            } catch (error) {
+                logError('Failed to upsert scoped consent contract:', error);
+                return undefined;
+            }
+        },
+        [appId, initWallet, log, logError]
+    );
 
     const normalizeLearnerContextOptions = useCallback(
         (options: LearnerContextRequestOptions = {}): LearnerContextRequestOptions => ({
@@ -751,11 +794,13 @@ export function useLearnCardMessageHandlers({
                     log('Consent requested for contract:', contractUri, options);
                     return showConsentFlow(contractUri, options);
                 },
+                upsertScopedContract,
                 getContractUri: () => launchConfig?.contractUri as string | undefined,
                 getIntegrationContractUri: async () => {
                     return getConfiguredContractUri();
                 },
                 prewarmLearnerContext,
+                onIntegrationHint,
 
                 // Credential handlers
                 showCredentialAcceptanceModal: async (credential: any) => {
@@ -1606,7 +1651,21 @@ export function useLearnCardMessageHandlers({
                           };
                       }
                     : undefined,
-                getSyncStatus: async () => getPendingSyncStatus(await getConfiguredContractUri()),
+                // The SDK's host-presence probe (ambiguous localhost parents) gives
+                // GET_SYNC_STATUS only ~1500ms before falling back to mock mode, so
+                // this must answer fast: race the contract lookup (network fetch on
+                // cold cache) against a short deadline and fall back to the global
+                // sync view rather than blocking the response.
+                getSyncStatus: async () => {
+                    const contractUri = await Promise.race([
+                        getConfiguredContractUri().catch(() => undefined),
+                        new Promise<undefined>(resolve =>
+                            setTimeout(() => resolve(undefined), 300)
+                        ),
+                    ]);
+
+                    return getPendingSyncStatus(contractUri);
+                },
             }),
         [
             isLoggedIn,
@@ -1632,6 +1691,7 @@ export function useLearnCardMessageHandlers({
             normalizeLearnerContextOptions,
             prewarmLearnerContext,
             resolveLearnerContextCredentials,
+            upsertScopedContract,
         ]
     );
 
