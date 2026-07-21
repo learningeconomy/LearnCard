@@ -109,30 +109,6 @@ jobs:
                     echo "is_release=false" >> $GITHUB_OUTPUT
                   fi
 
-            - name: Determine Deployment Environments
-              id: set-env
-              run: |
-                  if [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'scouts' ]]; then
-                    echo "frontend_env=scout-app-production" >> "$GITHUB_OUTPUT"
-                    echo 'service_deployment_matrix={"include":[{"name":"ScoutPass Production","brain_env":"scout-network-api-production","cloud_env":"scout-storage-api-production","lca_api_env":"scout-app-api-production"}]}' >> "$GITHUB_OUTPUT"
-                  elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'scouts-staging' ]]; then
-                    echo "frontend_env=scout-app-staging" >> "$GITHUB_OUTPUT"
-                    echo 'service_deployment_matrix={"include":[{"name":"ScoutPass Staging","brain_env":"scout-network-api-staging","cloud_env":"scout-storage-api-staging","lca_api_env":"scout-app-api-staging"}]}' >> "$GITHUB_OUTPUT"
-                  elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'production' ]]; then
-                    echo "frontend_env=learn-card-app-production" >> "$GITHUB_OUTPUT"
-                    echo 'service_deployment_matrix={"include":[{"name":"LearnCard Production","brain_env":"learn-cloud-network-api-production","cloud_env":"learn-cloud-storage-api-production","lca_api_env":"learn-card-app-api-production"}]}' >> "$GITHUB_OUTPUT"
-                  elif [[ "${{ steps.check_release.outputs.is_release }}" == 'true' ]]; then
-                    echo "frontend_env=learn-card-app-production" >> "$GITHUB_OUTPUT"
-                    echo 'service_deployment_matrix={"include":[{"name":"LearnCard Production","brain_env":"learn-cloud-network-api-production","cloud_env":"learn-cloud-storage-api-production","lca_api_env":"learn-card-app-api-production"},{"name":"ScoutPass Production","brain_env":"scout-network-api-production","cloud_env":"scout-storage-api-production","lca_api_env":"scout-app-api-production"}]}' >> "$GITHUB_OUTPUT"
-                  else
-                    echo "frontend_env=learn-card-app-staging" >> "$GITHUB_OUTPUT"
-                    if [[ "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
-                      echo 'service_deployment_matrix={"include":[{"name":"LearnCard Staging","brain_env":"learn-cloud-network-api-staging","cloud_env":"learn-cloud-storage-api-staging","lca_api_env":"learn-card-app-api-staging"}]}' >> "$GITHUB_OUTPUT"
-                    else
-                      echo 'service_deployment_matrix={"include":[{"name":"LearnCard Staging","brain_env":"learn-cloud-network-api-staging","cloud_env":"learn-cloud-storage-api-staging","lca_api_env":"learn-card-app-api-staging"},{"name":"ScoutPass Staging","brain_env":"scout-network-api-staging","cloud_env":"scout-storage-api-staging","lca_api_env":"scout-app-api-staging"}]}' >> "$GITHUB_OUTPUT"
-                    fi
-                  fi
-
             # Skip heavy steps for manual dispatch - we already know what to deploy
             - name: Checkout Repo
               if: github.event_name != 'workflow_dispatch'
@@ -197,6 +173,39 @@ jobs:
                     echo "Native DIDKit plugin changed - will wait for prebuilds"
                   else
                     echo "native_plugin_changed=false" >> $GITHUB_OUTPUT
+                  fi
+
+            - name: Determine Deployment Environments
+              id: set-env
+              run: |
+                  LC_STAGING='{"name":"LearnCard Staging","brain_env":"learn-cloud-network-api-staging","cloud_env":"learn-cloud-storage-api-staging","lca_api_env":"learn-card-app-api-staging"}'
+                  LC_PRODUCTION='{"name":"LearnCard Production","brain_env":"learn-cloud-network-api-production","cloud_env":"learn-cloud-storage-api-production","lca_api_env":"learn-card-app-api-production"}'
+                  SCOUTS_STAGING='{"name":"ScoutPass Staging","brain_env":"scout-network-api-staging","cloud_env":"scout-storage-api-staging","lca_api_env":"scout-app-api-staging"}'
+                  SCOUTS_PRODUCTION='{"name":"ScoutPass Production","brain_env":"scout-network-api-production","cloud_env":"scout-storage-api-production","lca_api_env":"scout-app-api-production"}'
+
+                  set_outputs() {
+                    local frontend_env="$1"
+                    shift
+                    local legs
+                    legs=$(IFS=,; echo "$*")
+                    echo "frontend_env=${frontend_env}" >> "$GITHUB_OUTPUT"
+                    echo "service_deployment_matrix={\"include\":[${legs}]}" >> "$GITHUB_OUTPUT"
+                  }
+
+                  if [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'scouts' ]]; then
+                    set_outputs scout-app-production "$SCOUTS_PRODUCTION"
+                  elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'scouts-staging' ]]; then
+                    set_outputs scout-app-staging "$SCOUTS_STAGING"
+                  elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'production' ]]; then
+                    set_outputs learn-card-app-production "$LC_PRODUCTION"
+                  elif [[ "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
+                    set_outputs learn-card-app-staging "$LC_STAGING"
+                  elif [[ "${{ steps.check_release.outputs.is_release }}" == 'true' ]]; then
+                    # ScoutPass production is deliberately excluded from release
+                    # pushes — it deploys only via the manual 'scouts' dispatch.
+                    set_outputs learn-card-app-production "$LC_PRODUCTION"
+                  else
+                    set_outputs learn-card-app-staging "$LC_STAGING" "$SCOUTS_STAGING"
                   fi
 
     # ============================================================================
@@ -624,6 +633,7 @@ jobs:
                   SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
                   GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
 
+    # ============================================================================
     # SDK GENERATION (after brain-service deploy, only on staging)
     # ============================================================================
     generate-sdk:
