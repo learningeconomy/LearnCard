@@ -200,6 +200,7 @@ export default defineConfig(async ({ mode, command }) => {
         },
         define: {
             __PACKAGE_VERSION__: JSON.stringify(process.env.npm_package_version),
+            __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
             __BUILD_SHA__: JSON.stringify(resolveBuildSha()),
             __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
             __CAPGO_DEFAULT_CHANNEL__: JSON.stringify(
