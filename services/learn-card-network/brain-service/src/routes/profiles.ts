@@ -92,6 +92,7 @@ import { getContactMethodByValue } from '@accesslayer/contact-method/read';
 import { verifyContactMethod } from '@accesslayer/contact-method/update';
 import { createProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/create';
 import { deleteAllProfileContactMethodRelationshipsExceptForProfileId } from '@accesslayer/contact-method/relationships/delete';
+import { trace, traceDb, traceCrypto, traceInternal } from '@tracing';
 
 const UpdateProfileInputValidator = z.object({
     profileId: z.string().optional(),
@@ -137,76 +138,103 @@ export const profilesRouter = t.router({
         )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
-            const { authToken, ...profileInput } = input;
+            return trace('route', 'createProfile', async () => {
+                const { authToken, ...profileInput } = input;
 
-            const profileExists = await checkIfProfileExists({
-                ...profileInput,
-                isServiceProfile: false,
-                did: ctx.user.did,
-            });
+                const profileExists = await traceDb('checkIfProfileExists', () =>
+                    checkIfProfileExists({
+                        ...profileInput,
+                        isServiceProfile: false,
+                        did: ctx.user.did,
+                    })
+                );
 
-            if (profileExists) {
-                throw new TRPCError({
-                    code: 'CONFLICT',
-                    message: 'Profile already exists!',
-                });
-            }
-
-            const profile = await createProfile({ ...profileInput, did: ctx.user.did });
-
-            if (profile) {
-                // Auto-verify email if authToken provided
-                if (authToken) {
-                    try {
-                        const claims = await verifyAuthToken(authToken);
-                        if (claims?.email && claims.emailVerified !== false) {
-                            let cm = await getContactMethodByValue('email', claims.email);
-                            if (!cm) {
-                                cm = await createContactMethod({
-                                    type: 'email',
-                                    value: claims.email,
-                                    isVerified: false,
-                                    isPrimary: false,
-                                });
-                            }
-                            await createProfileContactMethodRelationship(
-                                profile.profileId,
-                                cm.id
-                            );
-                            await deleteAllProfileContactMethodRelationshipsExceptForProfileId(
-                                profile.profileId,
-                                cm.id
-                            );
-                            await verifyContactMethod(cm.id);
-
-                            // NOTE: Do NOT call finalizeInboxCredentialsForProfile here.
-                            // Finalization marks credentials as ISSUED in Neo4j, but the
-                            // VCs must be uploaded to the user's cloud wallet — which only
-                            // the client-side useFinalizeInboxCredentials hook can do.
-                            // Server-side fire-and-forget would race the hook and leave
-                            // credentials marked ISSUED but never stored in the wallet.
-
-                            // Auto-establish guardian MANAGES relationships for any
-                            // previously-approved credentials linked to this email.
-                            // Safe server-side — only creates relationships, no credential
-                            // state changes or wallet interactions.
-                            try {
-                                await claimPendingGuardianLinksForProfile(profile);
-                            } catch (err) {
-                                console.error('[createProfile] Auto-claim guardian links failed (non-fatal):', err);
-                            }
-                        }
-                    } catch (e) {
-                        console.error('Auto-verify email failed (non-fatal):', e);
-                    }
+                if (profileExists) {
+                    throw new TRPCError({
+                        code: 'CONFLICT',
+                        message: 'Profile already exists!',
+                    });
                 }
 
-                return getDidWeb(ctx.domain, profile.profileId);
-            }
+                const profile = await traceDb('createProfile', () =>
+                    createProfile({ ...profileInput, did: ctx.user.did })
+                );
 
-            throw new TRPCError({
-                code: 'INTERNAL_SERVER_ERROR',
-                message: 'An unexpected error occured, please try again later.',
+                if (profile) {
+                    // Auto-verify email if authToken provided
+                    if (authToken) {
+                        try {
+                            const claims = await traceCrypto('verifyAuthToken', () =>
+                                verifyAuthToken(authToken)
+                            );
+                            const verifiedEmail =
+                                claims?.email && claims.emailVerified !== false
+                                    ? claims.email
+                                    : undefined;
+                            if (verifiedEmail) {
+                                let cm = await traceDb('getContactMethodByValue', () =>
+                                    getContactMethodByValue('email', verifiedEmail)
+                                );
+                                if (!cm) {
+                                    cm = await traceDb('createContactMethod', () =>
+                                        createContactMethod({
+                                            type: 'email',
+                                            value: verifiedEmail,
+                                            isVerified: false,
+                                            isPrimary: false,
+                                        })
+                                    );
+                                }
+                                const contactMethodId = cm.id;
+                                // These three writes touch independent relationships /
+                                // properties, so they can run concurrently
+                                await traceDb('linkAndVerifyContactMethod', () =>
+                                    Promise.all([
+                                        createProfileContactMethodRelationship(
+                                            profile.profileId,
+                                            contactMethodId
+                                        ),
+                                        deleteAllProfileContactMethodRelationshipsExceptForProfileId(
+                                            profile.profileId,
+                                            contactMethodId
+                                        ),
+                                        verifyContactMethod(contactMethodId),
+                                    ])
+                                );
+
+                                // NOTE: Do NOT call finalizeInboxCredentialsForProfile here.
+                                // Finalization marks credentials as ISSUED in Neo4j, but the
+                                // VCs must be uploaded to the user's cloud wallet — which only
+                                // the client-side useFinalizeInboxCredentials hook can do.
+                                // Server-side fire-and-forget would race the hook and leave
+                                // credentials marked ISSUED but never stored in the wallet.
+
+                                // Auto-establish guardian MANAGES relationships for any
+                                // previously-approved credentials linked to this email.
+                                // Best-effort and non-blocking: the client also calls
+                                // claimPendingGuardianLinks explicitly after profile
+                                // creation, so any links missed here are picked up there.
+                                void traceInternal('claimPendingGuardianLinks', () =>
+                                    claimPendingGuardianLinksForProfile(profile)
+                                ).catch(err => {
+                                    console.error(
+                                        '[createProfile] Auto-claim guardian links failed (non-fatal):',
+                                        err
+                                    );
+                                });
+                            }
+                        } catch (e) {
+                            console.error('Auto-verify email failed (non-fatal):', e);
+                        }
+                    }
+
+                    return getDidWeb(ctx.domain, profile.profileId);
+                }
+
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'An unexpected error occured, please try again later.',
+                });
             });
         }),
 
@@ -347,7 +375,10 @@ export const profilesRouter = t.router({
             const profile = updateDidForProfile(ctx.domain, otherProfile);
             const tier = await resolveProfileTier(selfProfile, profile);
 
-            if (tier === ProfileAccessTierEnum.unauthenticated && isPrivateToUnauthenticated(profile)) {
+            if (
+                tier === ProfileAccessTierEnum.unauthenticated &&
+                isPrivateToUnauthenticated(profile)
+            ) {
                 return undefined;
             }
 
@@ -474,7 +505,7 @@ export const profilesRouter = t.router({
             } = input;
 
             const _selfProfile = ctx.user?.did ? await getProfileByDid(ctx.user.did) : null;
-            const selfProfile = includeSelf ? null : (_selfProfile ?? null);
+            const selfProfile = includeSelf ? null : _selfProfile ?? null;
 
             const blacklist =
                 (_selfProfile && (await getBlockedAndBlockedByIds(_selfProfile))) || [];
@@ -606,8 +637,7 @@ export const profilesRouter = t.router({
             }
             if (typeof profileVisibility === 'string') {
                 actualUpdates.profileVisibility = profileVisibility;
-                actualUpdates.isPrivate =
-                    profileVisibility === ProfileVisibilityEnum.enum.private;
+                actualUpdates.isPrivate = profileVisibility === ProfileVisibilityEnum.enum.private;
             }
             if (typeof showEmail === 'boolean') actualUpdates.showEmail = showEmail;
             if (typeof allowConnectionRequests === 'string')
@@ -685,7 +715,8 @@ export const profilesRouter = t.router({
             }
 
             if (
-                (targetProfile.allowConnectionRequests ?? AllowConnectionRequestsEnum.enum.anyone) ===
+                (targetProfile.allowConnectionRequests ??
+                    AllowConnectionRequestsEnum.enum.anyone) ===
                 AllowConnectionRequestsEnum.enum.invite_only
             ) {
                 throw new TRPCError({
@@ -731,7 +762,8 @@ export const profilesRouter = t.router({
             }
 
             if (
-                (targetProfile.allowConnectionRequests ?? AllowConnectionRequestsEnum.enum.anyone) ===
+                (targetProfile.allowConnectionRequests ??
+                    AllowConnectionRequestsEnum.enum.anyone) ===
                 AllowConnectionRequestsEnum.enum.invite_only
             ) {
                 throw new TRPCError({

@@ -187,10 +187,13 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                 });
 
                 if (didWeb) {
-                    await refetchIsCurrentUserLCNUser();
-                    await wallet.invoke.resetLCAClient();
+                    await Promise.all([
+                        refetchIsCurrentUserLCNUser(),
+                        wallet.invoke.resetLCAClient(),
+                    ]);
+                    // resetQueries refetches all active queries (including
+                    // useGetCurrentLCNUser), so no manual refetch is needed
                     await queryClient.resetQueries();
-                    await refetch(); // refetch to sync -> useGetCurrentLCNUser hook
                     handleCloseModal();
                     setIsLoading(false);
                     setIsCreateLoading(false);

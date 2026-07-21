@@ -356,109 +356,147 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
         setError(null);
         setIsCreating(true);
 
-        try {
-            const wallet = await initWallet();
-
-            let fbAuthToken: string | undefined;
+        // Phase timing telemetry — measures each stage of profile creation so we
+        // can quantify before/after for performance work.
+        const timings: Record<string, number> = {};
+        const timePhase = async <T,>(label: string, fn: () => Promise<T>): Promise<T> => {
+            const start = performance.now();
             try {
-                if (Capacitor.isNativePlatform()) {
-                    const res = await FirebaseAuthentication.getIdToken({ forceRefresh: false });
-                    fbAuthToken = res?.token;
-                } else {
-                    const user = auth()?.currentUser;
-                    fbAuthToken = user ? await user.getIdToken(false) : undefined;
-                }
-            } catch (e) {
-                log.warn('Could not get Firebase ID token (non-fatal):', e);
+                return await fn();
+            } finally {
+                timings[label] = Math.round(performance.now() - start);
             }
+        };
+        const flowStart = performance.now();
 
-            const didWeb = await wallet.invoke.createProfile({
-                profileId,
-                displayName: name,
-                shortBio: '',
-                bio: '',
-                image: photo,
-                notificationsWebhook: getNotificationsEndpoint(),
-                role,
-                dob,
-                country,
-                ...(euParentalConsentRequested ? { approved: false } : {}),
-                authToken: fbAuthToken,
-            });
+        try {
+            // Wallet init and Firebase token fetch are independent — run in parallel
+            const [wallet, fbAuthToken] = await Promise.all([
+                timePhase('initWallet', () => initWallet()),
+                timePhase('getFirebaseToken', async (): Promise<string | undefined> => {
+                    try {
+                        if (Capacitor.isNativePlatform()) {
+                            const res = await FirebaseAuthentication.getIdToken({
+                                forceRefresh: false,
+                            });
+                            return res?.token;
+                        }
+                        const user = auth()?.currentUser;
+                        return user ? await user.getIdToken(false) : undefined;
+                    } catch (e) {
+                        log.warn('Could not get Firebase ID token (non-fatal):', e);
+                        return undefined;
+                    }
+                }),
+            ]);
+
+            const didWeb = await timePhase('createProfile', () =>
+                wallet.invoke.createProfile({
+                    profileId,
+                    displayName: name,
+                    shortBio: '',
+                    bio: '',
+                    image: photo,
+                    notificationsWebhook: getNotificationsEndpoint(),
+                    role,
+                    dob,
+                    country,
+                    ...(euParentalConsentRequested ? { approved: false } : {}),
+                    authToken: fbAuthToken,
+                })
+            );
 
             if (didWeb) {
-                if (euParentalConsentRequested && guardianEmail) {
-                    try {
-                        await wallet.invoke.sendGuardianApprovalEmail({ guardianEmail });
-                    } catch (err) {
-                        log.error('Failed to send guardian approval email:', err);
-                    }
-                }
-
                 const selectedPrivacyPreferences =
                     privacyPreferences ?? getDefaultPrivacyPreferences(dob, country);
                 const aiEnabled = selectedPrivacyPreferences.isMinor
                     ? false
                     : selectedPrivacyPreferences.aiEnabled;
                 let preferencesInitialized = false;
+                let claimedChildren: Awaited<
+                    ReturnType<NonNullable<typeof wallet.invoke.claimPendingGuardianLinks>>
+                > = [];
 
-                await updatePreferences({
-                    ...selectedPrivacyPreferences,
-                    aiEnabled,
-                    aiAutoDisabled: selectedPrivacyPreferences.isMinor,
-                    analyticsAutoDisabled: false,
-                })
-                    .then(() => {
-                        preferencesInitialized = true;
-                    })
-                    .catch(err => log.error('Failed to persist privacy preferences:', err));
+                // These post-create operations are mutually independent — run in parallel
+                await timePhase('postCreateBatch', () =>
+                    Promise.allSettled([
+                        euParentalConsentRequested && guardianEmail
+                            ? wallet.invoke
+                                  .sendGuardianApprovalEmail({ guardianEmail })
+                                  .catch(err =>
+                                      log.error('Failed to send guardian approval email:', err)
+                                  )
+                            : Promise.resolve(),
+                        updatePreferences({
+                            ...selectedPrivacyPreferences,
+                            aiEnabled,
+                            aiAutoDisabled: selectedPrivacyPreferences.isMinor,
+                            analyticsAutoDisabled: false,
+                        })
+                            .then(() => {
+                                preferencesInitialized = true;
+                            })
+                            .catch(err => log.error('Failed to persist privacy preferences:', err)),
+                        (async () => {
+                            try {
+                                claimedChildren =
+                                    (await wallet.invoke.claimPendingGuardianLinks?.()) ?? [];
+                            } catch (err) {
+                                log.error('claimPendingGuardianLinks failed:', err);
+                            }
+                        })(),
+                        (async () => {
+                            if (authToken === 'dummy') return;
+                            try {
+                                const fbUser = auth()?.currentUser;
+                                if (fbUser) {
+                                    await updateProfile(fbUser, {
+                                        displayName: name,
+                                        photoURL: photo,
+                                    });
+                                }
+                            } catch (e) {
+                                log.error('Firebase updateProfile error:', e);
+                            }
+                        })(),
+                        (async () => {
+                            if (!currentUser?.privateKey) return;
+                            await updateCurrentUser(currentUser.uid, {
+                                name,
+                                profileImage: photo,
+                            });
+                            currentUserStore.set.currentUser({
+                                ...currentUser,
+                                name,
+                                profileImage: photo,
+                            });
+                        })(),
+                    ])
+                );
+
+                localStorage.setItem(NEW_SIGNUP_FLAG_KEY, '1');
+                localStorage.removeItem(ONBOARDING_STARTED_AT_KEY);
+
+                handleLockedRef.current = true;
+                await timePhase('cacheReset', async () => {
+                    await Promise.all([
+                        refetchIsCurrentUserLCNUser(),
+                        wallet.invoke.resetLCAClient(),
+                    ]);
+                    // resetQueries triggers refetch of all active queries, making a
+                    // manual refetch() afterwards redundant
+                    await queryClient.resetQueries();
+                });
+
+                timings.total = Math.round(performance.now() - flowStart);
+                log.info('createProfile.timing', timings);
 
                 track(AnalyticsEvents.ONBOARDING_COMPLETED, {
                     role,
                     country,
                     msSinceMethodStarted: Date.now() - flowStartedAt.current,
+                    profileCreationTimings: timings,
                 });
-
-                localStorage.setItem(NEW_SIGNUP_FLAG_KEY, '1');
-                localStorage.removeItem(ONBOARDING_STARTED_AT_KEY);
-
-                let claimedChildren: Awaited<
-                    ReturnType<NonNullable<typeof wallet.invoke.claimPendingGuardianLinks>>
-                > = [];
-                try {
-                    claimedChildren = (await wallet.invoke.claimPendingGuardianLinks?.()) ?? [];
-                } catch (err) {
-                    log.error('claimPendingGuardianLinks failed:', err);
-                }
-
-                if (authToken !== 'dummy') {
-                    try {
-                        const fbUser = auth()?.currentUser;
-                        if (fbUser) {
-                            await updateProfile(fbUser, {
-                                displayName: name,
-                                photoURL: photo,
-                            });
-                        }
-                    } catch (e) {
-                        log.error('Firebase updateProfile error:', e);
-                    }
-                }
-
-                if (currentUser?.privateKey) {
-                    await updateCurrentUser(currentUser.uid, { name, profileImage: photo });
-                    currentUserStore.set.currentUser({
-                        ...currentUser,
-                        name,
-                        profileImage: photo,
-                    });
-                }
-
-                handleLockedRef.current = true;
-                await refetchIsCurrentUserLCNUser();
-                await wallet.invoke.resetLCAClient();
-                await queryClient.resetQueries();
-                await refetch();
 
                 window.setTimeout(async () => {
                     try {
