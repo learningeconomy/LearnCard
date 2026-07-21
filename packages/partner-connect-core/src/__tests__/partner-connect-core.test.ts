@@ -251,6 +251,37 @@ describe('@learncard/partner-connect-core', () => {
         });
     });
 
+    it('does not classify variables as numeric when a colon precedes them inside a string value', () => {
+        const json =
+            '{"name":"Demo Achievement: {{courseName}}","note":"score: {{grade}}, done","count":{{earnedCredits}}}';
+
+        const manifest = buildVariableManifest(json);
+
+        expect(manifest.variables.courseName.type).toBe('string');
+        expect(manifest.variables.grade.type).toBe('string');
+        expect(manifest.variables.earnedCredits.type).toBe('number');
+
+        expect(
+            validateTemplateData(manifest, {
+                courseName: 'LearnCard 101',
+                grade: 'A',
+                earnedCredits: 3,
+            })
+        ).toEqual([]);
+    });
+
+    it('classifies colon-adjacent string variables correctly through the full compile pipeline', () => {
+        const compiled = compileInlineTemplate({
+            name: 'Demo Achievement: {{courseName}}',
+            description: 'Completed {{courseName}}',
+        });
+
+        expect(compiled.variableManifest.variables.courseName.type).toBe('string');
+        expect(
+            validateTemplateData(compiled.variableManifest, { courseName: 'LearnCard 101' })
+        ).toEqual([]);
+    });
+
     it('validates runtime template data with missing, unused, reserved, type, and evidence exceptions', () => {
         const manifest = {
             variables: {

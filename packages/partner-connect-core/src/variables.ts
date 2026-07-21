@@ -45,10 +45,63 @@ const getStringVariablePaths = (
     }
 };
 
+interface UnquotedVariableSpan {
+    name: string;
+    start: number;
+    end: number;
+}
+
+/**
+ * Finds `{{variable}}` tokens that sit OUTSIDE JSON string literals — i.e. the
+ * unquoted numeric placeholders the compiler emits. A colon-based regex is not
+ * enough here: string values like "Demo Achievement: {{courseName}}" contain
+ * a literal `: {{...}}` and must NOT be classified as numeric, so this walks
+ * the string tracking quote state (with escape handling) instead.
+ */
+const findUnquotedVariableSpans = (json: string): UnquotedVariableSpan[] => {
+    const spans: UnquotedVariableSpan[] = [];
+    let inString = false;
+
+    for (let index = 0; index < json.length; index += 1) {
+        const char = json[index];
+
+        if (inString) {
+            if (char === '\\') index += 1;
+            else if (char === '"') inString = false;
+            continue;
+        }
+
+        if (char === '"') {
+            inString = true;
+            continue;
+        }
+
+        if (char === '{' && json[index + 1] === '{') {
+            const match = /^\{\{(\w+)\}\}/.exec(json.slice(index));
+
+            if (match) {
+                spans.push({ name: match[1], start: index, end: index + match[0].length });
+                index += match[0].length - 1;
+            }
+        }
+    }
+
+    return spans;
+};
+
 const replaceUnquotedVariablesForParsing = (json: string): string => {
-    return json.replace(/:\s*\{\{(\w+)\}\}/g, (_match: string, variableName: string) => {
-        return `:"${VARIABLE_SENTINEL_PREFIX}${variableName}"`;
-    });
+    const spans = findUnquotedVariableSpans(json);
+    let result = json;
+
+    for (let index = spans.length - 1; index >= 0; index -= 1) {
+        const span = spans[index];
+
+        result = `${result.slice(0, span.start)}"${VARIABLE_SENTINEL_PREFIX}${
+            span.name
+        }"${result.slice(span.end)}`;
+    }
+
+    return result;
 };
 
 /**
@@ -76,12 +129,10 @@ export const buildVariableManifest = (credentialTemplateJson: string): VariableM
     const numericVariables = new Set<string>();
     const stringPaths: Record<string, string[]> = {};
 
-    credentialTemplateJson.replace(/:\s*\{\{(\w+)\}\}/g, (_match: string, variableName: string) => {
-        if (!isReservedTemplateVariable(variableName)) {
-            numericVariables.add(variableName);
+    findUnquotedVariableSpans(credentialTemplateJson).forEach(span => {
+        if (!isReservedTemplateVariable(span.name)) {
+            numericVariables.add(span.name);
         }
-
-        return _match;
     });
 
     let parsed: unknown = undefined;
