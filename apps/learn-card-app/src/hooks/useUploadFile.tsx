@@ -457,7 +457,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             return { vc, credentialUri };
         } catch (error) {
             setIsSaving(false);
-            log.info('saveFile::error', error);
+            log.error('saveFile::error', error);
         }
     };
 
