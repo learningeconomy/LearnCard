@@ -1,15 +1,12 @@
 import React from 'react';
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-const { filestackUploadMock, initWalletMock, logErrorMock, presentToastMock, refetchQueriesMock } =
-    vi.hoisted(() => ({
-        filestackUploadMock: vi.fn(),
-        initWalletMock: vi.fn(),
-        logErrorMock: vi.fn(),
-        presentToastMock: vi.fn(),
-        refetchQueriesMock: vi.fn(),
-    }));
+const { initWalletMock, logErrorMock, presentToastMock, refetchQueriesMock } = vi.hoisted(() => ({
+    initWalletMock: vi.fn(),
+    logErrorMock: vi.fn(),
+    presentToastMock: vi.fn(),
+    refetchQueriesMock: vi.fn(),
+}));
 
 vi.mock('@tanstack/react-query', () => ({
     useQueryClient: () => ({ refetchQueries: refetchQueriesMock }),
@@ -41,7 +38,6 @@ vi.mock('learn-card-base', () => ({
     },
     categoryMetadata: {},
     checklistStore: { set: { updateIsParsing: vi.fn() } },
-    getImageUploadProvider: () => ({ upload: filestackUploadMock }),
     getCategoryForCredential: vi.fn(),
     getLogger: () => ({ debug: vi.fn(), error: logErrorMock, info: vi.fn(), warn: vi.fn() }),
     newCredsStore: { set: { addNewCreds: vi.fn() } },
@@ -69,7 +65,8 @@ vi.mock('./useUploadVcFromText', () => ({
     useUploadVcFromText: () => ({ uploadVcFromText: vi.fn() }),
 }));
 
-import { addCertificateAttachment, getFileInfo, useUploadFile } from './useUploadFile';
+import { createRawArtifactVC, getFileInfo, useUploadFile } from './useUploadFile';
+import { addCertificateAttachment } from './certificateAttachment';
 import { UploadTypesEnum } from 'learn-card-base';
 
 const createChangeEvent = (files: File[]): React.ChangeEvent<HTMLInputElement> =>
@@ -87,7 +84,6 @@ describe('getFileInfo', () => {
 
 describe('useUploadFile certificate uploads', () => {
     beforeEach(() => {
-        filestackUploadMock.mockReset();
         initWalletMock.mockReset();
         logErrorMock.mockReset();
         presentToastMock.mockReset();
@@ -95,32 +91,31 @@ describe('useUploadFile certificate uploads', () => {
         initWalletMock.mockResolvedValue({ id: { did: () => 'did:key:test' } });
     });
 
-    it('surfaces a failed upload and clears the failed file state', async () => {
-        filestackUploadMock.mockRejectedValueOnce(new Error('offline'));
+    it('keeps certificate bytes in the raw artifact instead of uploading them externally', async () => {
         const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
-        const event = createChangeEvent([new File(['certificate'], 'certificate.pdf')]);
+        const event = createChangeEvent([
+            new File(['certificate'], 'certificate.pdf', { type: 'application/pdf' }),
+        ]);
 
         await act(async () => {
             await result.current.getFile(event, UploadTypesEnum.Certificate);
         });
 
         expect(result.current.isUploading).toBe(false);
-        expect(result.current.file).toBeNull();
-        expect(result.current.rawArtifactCredential).toBeNull();
-        expect(presentToastMock).toHaveBeenCalledWith(
-            'Single upload failed',
-            expect.objectContaining({ title: 'Upload Failed', type: 'error' })
-        );
+        expect(result.current.rawArtifactCredential.rawArtifact).toMatchObject({
+            data: 'data:application/pdf;base64,Y2VydGlmaWNhdGU=',
+            fileName: 'certificate.pdf',
+            type: UploadTypesEnum.Certificate,
+        });
+        expect(result.current.rawArtifactCredential.rawArtifact).not.toHaveProperty('url');
+        expect(presentToastMock).not.toHaveBeenCalled();
     });
 
-    it('keeps successful files when one upload in a batch fails', async () => {
-        filestackUploadMock
-            .mockRejectedValueOnce(new Error('first upload failed'))
-            .mockResolvedValueOnce({ url: 'https://cdn.example.com/success' });
+    it('embeds every certificate in a batch as base64', async () => {
         const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
         const event = createChangeEvent([
-            new File(['bad'], 'bad.pdf'),
-            new File(['good'], 'good.pdf'),
+            new File(['first'], 'first.pdf', { type: 'application/pdf' }),
+            new File(['second'], 'second.pdf', { type: 'application/pdf' }),
         ]);
 
         await act(async () => {
@@ -128,103 +123,171 @@ describe('useUploadFile certificate uploads', () => {
         });
 
         expect(result.current.files).toEqual([
-            expect.objectContaining({ name: 'good.pdf', type: 'PDF' }),
+            expect.objectContaining({ name: 'first.pdf', type: 'PDF' }),
+            expect.objectContaining({ name: 'second.pdf', type: 'PDF' }),
         ]);
-        expect(result.current.rawArtifactCredentials).toHaveLength(1);
-        expect(result.current.rawArtifactCredentials[0].rawArtifact.url).toBe(
-            'https://cdn.example.com/success'
+        expect(
+            result.current.rawArtifactCredentials.map(credential => credential.rawArtifact.data)
+        ).toEqual(['data:application/pdf;base64,Zmlyc3Q=', 'data:application/pdf;base64,c2Vjb25k']);
+        expect(
+            result.current.rawArtifactCredentials.every(
+                credential => !('url' in credential.rawArtifact)
+            )
+        ).toBe(true);
+    });
+
+    it('never adds a raw artifact URL when creating a certificate credential', async () => {
+        const credential = await createRawArtifactVC(
+            new File(['certificate'], 'certificate.pdf', { type: 'application/pdf' }),
+            'did:key:test',
+            UploadTypesEnum.Certificate
         );
-        expect(presentToastMock).toHaveBeenCalledWith(
-            'One upload failed; continue with the rest',
-            expect.objectContaining({ title: 'Some Files Failed', type: 'error' })
-        );
+
+        expect(credential.rawArtifact.data).toBe('data:application/pdf;base64,Y2VydGlmaWNhdGU=');
+        expect(credential.rawArtifact).not.toHaveProperty('url');
+        expect(JSON.stringify(credential['@context'])).not.toContain('rawArtifactUrl');
     });
 });
 
 describe('addCertificateAttachment', () => {
-    it('uses LearnCard attachment IRIs instead of placeholder domains', () => {
-        const credential = addCertificateAttachment(
-            { '@context': ['https://www.w3.org/2018/credentials/v1'] },
-            {
-                rawArtifact: {
-                    type: UploadTypesEnum.Certificate,
-                    fileName: 'certificate.pdf',
-                    fileSize: '1 KB',
-                    fileType: 'PDF',
-                    url: 'https://cdn.example.com/certificate',
-                },
-            }
-        );
-        const serializedContext = JSON.stringify(credential['@context']);
+    const rawArtifactCredential = {
+        rawArtifact: {
+            type: UploadTypesEnum.Certificate,
+            fileName: 'certificate.pdf',
+            fileSize: '1 KB',
+            fileType: 'PDF',
+            data: 'data:application/pdf;base64,Y2VydGlmaWNhdGU=',
+        },
+    };
 
-        expect(serializedContext).toContain('https://docs.learncard.com/definitions#');
-        expect(serializedContext).not.toContain('example.org');
-    });
-
-    it('does not duplicate the attachment context when enriching a credential twice', () => {
-        const rawArtifactCredential = {
-            rawArtifact: {
-                type: UploadTypesEnum.Certificate,
-                fileName: 'certificate.pdf',
-                fileSize: '1 KB',
-                fileType: 'PDF',
-                url: 'https://cdn.example.com/certificate',
-            },
-        };
+    it('embeds base64 data using canonical boost attachment terms', () => {
         const credential = addCertificateAttachment(
             { '@context': ['https://www.w3.org/2018/credentials/v1'] },
             rawArtifactCredential
         );
-        const enrichedAgain = addCertificateAttachment(credential, rawArtifactCredential);
-        const attachmentContexts = enrichedAgain['@context'].filter(
+        const attachmentContexts = credential['@context'].filter(
             (context: unknown) =>
                 typeof context === 'object' &&
                 context !== null &&
                 'attachments' in context &&
                 typeof context.attachments === 'object' &&
-                context.attachments !== null &&
-                '@id' in context.attachments &&
-                context.attachments['@id'] === 'lcn:boostAttachments'
+                context.attachments !== null
+        );
+
+        expect(credential.attachments[0]).toMatchObject({
+            title: 'certificate.pdf',
+            fileName: 'certificate.pdf',
+            fileSize: '1 KB',
+            fileType: 'PDF',
+            type: 'document',
+            data: 'data:application/pdf;base64,Y2VydGlmaWNhdGU=',
+        });
+        expect(credential.attachments[0]).not.toHaveProperty('url');
+        expect(attachmentContexts).toHaveLength(1);
+        expect(attachmentContexts[0]).toMatchObject({
+            attachments: {
+                '@id': 'lcn:boostAttachments',
+                '@container': '@set',
+                '@context': {
+                    title: {
+                        '@id': 'lcn:boostAttachmentTitle',
+                        '@type': 'xsd:string',
+                    },
+                    type: {
+                        '@id': 'lcn:boostAttachmentType',
+                        '@type': 'xsd:string',
+                    },
+                    url: {
+                        '@id': 'lcn:boostAttachmentUrl',
+                        '@type': 'xsd:string',
+                    },
+                    data: {
+                        '@id': 'lcn:boostAttachmentData',
+                        '@type': 'xsd:string',
+                    },
+                    fileName: {
+                        '@id': 'lcn:boostAttachmentFileName',
+                        '@type': 'xsd:string',
+                    },
+                    fileSize: {
+                        '@id': 'lcn:boostAttachmentFileSize',
+                        '@type': 'xsd:string',
+                    },
+                    fileType: {
+                        '@id': 'lcn:boostAttachmentFileType',
+                        '@type': 'xsd:string',
+                    },
+                },
+            },
+        });
+    });
+
+    it('does not duplicate the canonical context or attachment', () => {
+        const credential = addCertificateAttachment(
+            {
+                '@context': [
+                    'https://www.w3.org/2018/credentials/v1',
+                    'https://ctx.learncard.com/boosts/1.0.3.json',
+                ],
+            },
+            rawArtifactCredential
+        );
+        const enrichedAgain = addCertificateAttachment(credential, rawArtifactCredential);
+        const attachmentContexts = enrichedAgain['@context'].filter(
+            (context: unknown) =>
+                typeof context === 'object' && context !== null && 'attachments' in context
         );
 
         expect(attachmentContexts).toHaveLength(1);
         expect(enrichedAgain.attachments).toHaveLength(1);
     });
 
-    it('appends the canonical context when a matching attachment term is incomplete', () => {
-        const partialContext = {
+    it('deduplicates an existing attachment with the same file identity', () => {
+        const credential = addCertificateAttachment(
+            {
+                attachments: [
+                    {
+                        fileName: 'certificate.pdf',
+                        fileSize: '1 KB',
+                        fileType: 'PDF',
+                        data: 'data:application/pdf;base64,b2xk',
+                    },
+                ],
+            },
+            rawArtifactCredential
+        );
+
+        expect(credential.attachments).toHaveLength(1);
+        expect(credential.attachments[0]).toMatchObject({
+            data: 'data:application/pdf;base64,Y2VydGlmaWNhdGU=',
+        });
+    });
+
+    it('replaces a legacy competing attachment mapping', () => {
+        const legacyContext = {
             lcn: 'https://docs.learncard.com/definitions#',
             xsd: 'https://www.w3.org/2001/XMLSchema#',
             attachments: {
                 '@id': 'lcn:boostAttachments',
                 '@container': '@set',
-                '@context': {},
+                '@context': {
+                    title: {
+                        '@id': 'lcn:attachmentTitle',
+                        '@type': 'xsd:string',
+                    },
+                },
             },
         };
         const credential = addCertificateAttachment(
             {
-                '@context': ['https://www.w3.org/2018/credentials/v1', partialContext],
+                '@context': ['https://www.w3.org/2018/credentials/v1', legacyContext],
             },
-            {
-                rawArtifact: {
-                    type: UploadTypesEnum.Certificate,
-                    fileName: 'certificate.pdf',
-                    fileSize: '1 KB',
-                    fileType: 'PDF',
-                    url: 'https://cdn.example.com/certificate',
-                },
-            }
+            rawArtifactCredential
         );
-        const canonicalContext = credential['@context'].at(-1);
+        const serializedContext = JSON.stringify(credential['@context']);
 
-        expect(credential['@context']).toHaveLength(3);
-        expect(canonicalContext.attachments['@context'].title).toEqual({
-            '@id': 'lcn:attachmentTitle',
-            '@type': 'xsd:string',
-        });
-        expect(canonicalContext.attachments['@context'].fileType).toEqual({
-            '@id': 'lcn:attachmentFileType',
-            '@type': 'xsd:string',
-        });
+        expect(serializedContext).not.toContain('lcn:attachmentTitle');
+        expect(serializedContext).toContain('lcn:boostAttachmentTitle');
+        expect(serializedContext).toContain('lcn:boostAttachmentData');
     });
 });

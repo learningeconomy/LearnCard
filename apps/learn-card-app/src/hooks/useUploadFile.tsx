@@ -20,14 +20,13 @@ import {
     useModal,
     ToastTypeEnum,
     getCategoryForCredential,
-    useSyncAllCredentialsToContractsMutation,
     categoryMetadata,
-    getImageUploadProvider,
-    BoostMediaOptionsEnum,
+    useSyncAllCredentialsToContractsMutation,
 } from 'learn-card-base';
 import { useAiInsightCredentialMutation } from 'learn-card-base/hooks/useAiInsightCredential';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { useUploadVcFromText } from './useUploadVcFromText';
+import { addCertificateAttachment } from './certificateAttachment';
 
 export type RawArtifactType = {
     id: string;
@@ -35,112 +34,6 @@ export type RawArtifactType = {
     fileSize: string;
     fileType: string;
     type: string;
-};
-
-const ATTACHMENTS_CONTEXT = {
-    lcn: 'https://docs.learncard.com/definitions#',
-    xsd: 'https://www.w3.org/2001/XMLSchema#',
-    attachments: {
-        '@id': 'lcn:boostAttachments',
-        '@container': '@set',
-        '@context': {
-            title: {
-                '@id': 'lcn:attachmentTitle',
-                '@type': 'xsd:string',
-            },
-            type: {
-                '@id': 'lcn:attachmentType',
-                '@type': 'xsd:string',
-            },
-            url: {
-                '@id': 'lcn:attachmentUrl',
-                '@type': 'xsd:string',
-            },
-            fileName: {
-                '@id': 'lcn:attachmentFileName',
-                '@type': 'xsd:string',
-            },
-            fileSize: {
-                '@id': 'lcn:attachmentFileSize',
-                '@type': 'xsd:string',
-            },
-            fileType: {
-                '@id': 'lcn:attachmentFileType',
-                '@type': 'xsd:string',
-            },
-        },
-    },
-};
-
-type AttachmentTerm = keyof (typeof ATTACHMENTS_CONTEXT.attachments)['@context'];
-
-const ATTACHMENT_TERMS = Object.keys(
-    ATTACHMENTS_CONTEXT.attachments['@context']
-) as AttachmentTerm[];
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-    typeof value === 'object' && value !== null;
-
-const hasAttachmentsContext = (context: unknown): boolean => {
-    if (!isRecord(context) || !isRecord(context.attachments)) return false;
-
-    const attachments = context.attachments;
-    const terms = attachments['@context'];
-
-    if (!isRecord(terms)) return false;
-
-    return (
-        context.lcn === ATTACHMENTS_CONTEXT.lcn &&
-        context.xsd === ATTACHMENTS_CONTEXT.xsd &&
-        attachments['@id'] === ATTACHMENTS_CONTEXT.attachments['@id'] &&
-        attachments['@container'] === ATTACHMENTS_CONTEXT.attachments['@container'] &&
-        ATTACHMENT_TERMS.every(term => {
-            const mapping = terms[term];
-            const canonicalMapping = ATTACHMENTS_CONTEXT.attachments['@context'][term];
-
-            return (
-                isRecord(mapping) &&
-                mapping['@id'] === canonicalMapping['@id'] &&
-                mapping['@type'] === canonicalMapping['@type']
-            );
-        })
-    );
-};
-
-export const addCertificateAttachment = (vc: any, rawArtifactVc: any): any => {
-    const artifact = rawArtifactVc?.rawArtifact;
-    if (!artifact?.url || artifact?.type !== UploadTypesEnum.Certificate) return vc;
-
-    const attachment = {
-        title: artifact.fileName,
-        fileName: artifact.fileName,
-        fileSize: artifact.fileSize,
-        fileType: artifact.fileType,
-        url: artifact.url,
-        type: ['PNG', 'JPG', 'JPEG', 'WEBP'].includes(artifact.fileType)
-            ? BoostMediaOptionsEnum.photo
-            : BoostMediaOptionsEnum.document,
-    };
-    const existingAttachments = Array.isArray(vc?.attachments) ? vc.attachments : [];
-    const contexts = Array.isArray(vc?.['@context'])
-        ? vc['@context']
-        : vc?.['@context']
-        ? [vc['@context']]
-        : [];
-    const attachmentContexts = contexts.some(hasAttachmentsContext)
-        ? contexts
-        : [...contexts, ATTACHMENTS_CONTEXT];
-
-    return {
-        ...vc,
-        '@context': attachmentContexts,
-        attachments: [
-            attachment,
-            ...existingAttachments.filter(
-                (existing: { url?: string }) => existing?.url !== attachment.url
-            ),
-        ],
-    };
 };
 
 // Helper function to get formatted file size string (e.g., "1.5 MB")
@@ -201,16 +94,6 @@ const TOAST_PAUSE_MS = 100;
 // details are logged, never rendered.
 const FRIENDLY_FILE_ERROR =
     'We could not add that credential. Please check the file and try again.';
-
-const uploadCertificateFile = async (file: File): Promise<string> => {
-    const uploadResult = await getImageUploadProvider().upload(file);
-
-    if (!uploadResult.url) {
-        throw new Error('Certificate upload did not return a URL');
-    }
-
-    return uploadResult.url;
-};
 
 export const getFileInfo = (file: File) => {
     const match = file.name.match(/\.([0-9a-z]+)(?:[?#].*)?$/i);
@@ -296,16 +179,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
             const fileInfo = getFileInfo(file);
 
-            const artifactUrl =
-                uploadType === UploadTypesEnum.Certificate
-                    ? await uploadCertificateFile(file)
-                    : undefined;
-            const rawArtifactCredential = await createRawArtifactVC(
-                file,
-                walletDid,
-                uploadType,
-                artifactUrl
-            );
+            const rawArtifactCredential = await createRawArtifactVC(file, walletDid, uploadType);
             setFile(fileInfo);
             setBase64Data(rawArtifactCredential.rawArtifact.data);
             setRawArtifactCredential(rawArtifactCredential);
@@ -343,15 +217,10 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             const uploadResults = await Promise.all(
                 fileArray.map(async file => {
                     try {
-                        const artifactUrl =
-                            uploadType === UploadTypesEnum.Certificate
-                                ? await uploadCertificateFile(file)
-                                : undefined;
                         const rawArtifactCredential = await createRawArtifactVC(
                             file,
                             walletDid,
-                            uploadType,
-                            artifactUrl
+                            uploadType
                         );
 
                         return {
@@ -1020,12 +889,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
     };
 };
 
-export const createRawArtifactVC = async (
-    file: File,
-    did: string,
-    uploadType: string,
-    artifactUrl?: string
-) => {
+export const createRawArtifactVC = async (file: File, did: string, uploadType: string) => {
     const { name, type, size } = getFileInfo(file);
     const base64Data = await toBase64(file);
 
@@ -1048,7 +912,6 @@ export const createRawArtifactVC = async (
                         fileName: { '@id': 'lcn:rawArtifactFileName', '@type': 'xsd:string' },
                         fileSize: { '@id': 'lcn:rawArtifactFileSize', '@type': 'xsd:string' },
                         fileType: { '@id': 'lcn:rawArtifactFileType', '@type': 'xsd:string' },
-                        url: { '@id': 'lcn:rawArtifactUrl', '@type': 'xsd:string' },
                     },
                 },
             },
@@ -1066,7 +929,6 @@ export const createRawArtifactVC = async (
             fileType: type,
             fileSize: size,
             data: base64Data,
-            ...(artifactUrl ? { url: artifactUrl } : {}),
         },
     };
 };
