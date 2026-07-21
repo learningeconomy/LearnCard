@@ -22,11 +22,10 @@ import {
 } from 'learn-card-base';
 import { VC } from '@learncard/types';
 import { VideoMetadata } from 'learn-card-base';
-import {
-    convertEvidenceToAttachments,
-    getExistingAttachmentsOrEvidence,
-} from 'learn-card-base/helpers/credentialHelpers';
+import { getExistingAttachmentsOrEvidence } from 'learn-card-base/helpers/credentialHelpers';
+import { getAttachmentSource } from 'learn-card-base/helpers/attachment.helpers';
 import { getFilestackPreviewUrl } from 'learn-card-base/filestack/images/images.helpers';
+import { resolvePdfDocumentResource } from '../../../../pages/ids/view-id/IdDetails/helpers/pdfDocumentResource.helpers';
 
 export const BoostMediaPreview: React.FC<{
     credential: VC;
@@ -58,7 +57,7 @@ export const BoostMediaPreview: React.FC<{
     const attachments = getExistingAttachmentsOrEvidence(
         credential?.attachments || [],
         credential?.evidence || []
-    );
+    ).map(item => ({ ...item, url: getAttachmentSource(item) }));
     const attachment = attachments?.[0];
 
     useEffect(() => {
@@ -82,25 +81,60 @@ export const BoostMediaPreview: React.FC<{
         }
     };
 
-    const handleGetDocumentUrl = async () => {
-        try {
-            setIsMediaLoading(true);
-            const url = getFilestackPreviewUrl(attachment?.url || '');
-            setDocumentUrl(url);
-        } catch (error) {
-            log.error('Failed to get document metadata:', error);
-        } finally {
-            setIsMediaLoading(false);
-        }
-    };
+    useEffect(() => {
+        if (attachment?.type !== 'video') return;
+
+        handleGetVideoMetadata();
+    }, [attachment?.type, attachment?.url]);
 
     useEffect(() => {
-        if (attachment?.type === 'video') {
-            handleGetVideoMetadata();
-        } else if (attachment?.type === 'document') {
-            handleGetDocumentUrl();
+        if (attachment?.type !== 'document') {
+            setDocumentUrl(null);
+            return;
         }
-    }, [attachment?.url]);
+
+        const source = attachment.url;
+        if (!source) {
+            setDocumentUrl(null);
+            return;
+        }
+
+        let active = true;
+        let revokeDocumentUrl: (() => void) | undefined;
+
+        setDocumentUrl(null);
+        setIsMediaLoading(true);
+
+        const resolveDocumentUrl = async (): Promise<void> => {
+            try {
+                const resolvedPdf = await resolvePdfDocumentResource(
+                    source,
+                    attachment.fileName || attachment.title
+                );
+                const nextDocumentUrl =
+                    resolvedPdf?.resource.previewUrl ?? getFilestackPreviewUrl(source);
+
+                revokeDocumentUrl = resolvedPdf?.resource.revokeUrls;
+
+                if (active) {
+                    setDocumentUrl(nextDocumentUrl);
+                } else {
+                    revokeDocumentUrl?.();
+                }
+            } catch (error) {
+                log.error('Failed to get document metadata:', error);
+            } finally {
+                if (active) setIsMediaLoading(false);
+            }
+        };
+
+        void resolveDocumentUrl();
+
+        return () => {
+            active = false;
+            revokeDocumentUrl?.();
+        };
+    }, [attachment?.fileName, attachment?.title, attachment?.type, attachment?.url]);
 
     let mediaContent = null;
 
