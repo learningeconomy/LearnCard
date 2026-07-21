@@ -271,7 +271,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                             {m['issueFlow.success.issueAnother']()}
                         </button>
 
-                        <SentimentStrip surface="issue_success" className="pt-1" />
+                        <SentimentStrip surface="issue_success" className="pt-3" />
                     </div>
                 </div>
             ) : recipientMode === 'people' ? (
@@ -304,7 +304,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                             {m['issueFlow.success.issueAnother']()}
                         </button>
 
-                        <SentimentStrip surface="issue_success" className="pt-1" />
+                        <SentimentStrip surface="issue_success" className="pt-3" />
                     </div>
                 </div>
             ) : (
@@ -335,7 +335,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                             {m['issueFlow.success.issueAnother']()}
                         </button>
 
-                        <SentimentStrip surface="issue_success" className="pt-1" />
+                        <SentimentStrip surface="issue_success" className="pt-3" />
                     </div>
                 </div>
             )}

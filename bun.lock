@@ -64,7 +64,7 @@
     },
     "apps/learn-card-app": {
       "name": "learn-card-app",
-      "version": "1.97.4",
+      "version": "1.97.5",
       "dependencies": {
         "@capacitor-community/media": "9.1.0",
         "@capacitor-community/sqlite": "8.1.0",
@@ -248,7 +248,7 @@
     },
     "apps/scouts": {
       "name": "scoutpass-app",
-      "version": "1.90.23",
+      "version": "1.90.24",
       "dependencies": {
         "@capacitor-community/sqlite": "8.1.0",
         "@capacitor-firebase/analytics": "8.2.0",
@@ -367,7 +367,7 @@
     },
     "examples/app-store-apps/1-basic-launchpad-app": {
       "name": "@learncard/app-store-demo-basic-launchpad",
-      "version": "0.0.34",
+      "version": "0.0.35",
       "dependencies": {
         "@astrojs/netlify": "^7.0.13",
         "@learncard/init": "workspace:*",
@@ -382,7 +382,7 @@
     },
     "examples/app-store-apps/2-lore-card-app": {
       "name": "@learncard/app-store-demo-lore-card",
-      "version": "0.0.35",
+      "version": "0.0.36",
       "dependencies": {
         "@astrojs/netlify": "^7.0.13",
         "@learncard/init": "workspace:*",
@@ -395,7 +395,7 @@
     },
     "examples/app-store-apps/3-mozilla-social-badges-app": {
       "name": "@learncard/app-store-demo-mozilla-social-badges",
-      "version": "0.0.35",
+      "version": "0.0.36",
       "dependencies": {
         "@astrojs/netlify": "^7.0.13",
         "@learncard/init": "workspace:*",
@@ -408,7 +408,7 @@
     },
     "examples/app-store-apps/4-request-learner-context-app": {
       "name": "@learncard/app-store-demo-request-learner-context",
-      "version": "1.0.13",
+      "version": "1.0.14",
       "dependencies": {
         "@learncard/partner-connect": "workspace:*",
         "astro": "^6.4.8",
@@ -420,7 +420,7 @@
     },
     "examples/app-store-apps/5-northstar-learning": {
       "name": "@learncard/app-store-demo-northstar-learning",
-      "version": "0.0.12",
+      "version": "0.0.13",
       "dependencies": {
         "@astrojs/netlify": "^7.0.13",
         "@learncard/init": "workspace:*",
@@ -433,7 +433,7 @@
     },
     "examples/app-store-apps/6-basic-sync-app": {
       "name": "@learncard/app-store-demo-basic-sync",
-      "version": "1.0.4",
+      "version": "1.0.5",
       "dependencies": {
         "@astrojs/netlify": "^7.0.13",
         "@learncard/init": "workspace:*",
@@ -447,7 +447,7 @@
     },
     "examples/chapi-example": {
       "name": "@learncard/chapi-example",
-      "version": "1.1.37",
+      "version": "1.1.38",
       "dependencies": {
         "@astrojs/react": "^5.0.7",
         "@astrojs/tailwind": "^6.0.2",
@@ -473,7 +473,7 @@
     },
     "examples/consent-flow-test": {
       "name": "consent-flow-test",
-      "version": "1.0.23",
+      "version": "1.0.24",
       "dependencies": {
         "@learncard/init": "workspace:*",
         "@learncard/network-brain-client": "workspace:*",
@@ -482,7 +482,7 @@
     },
     "examples/credential-viewer": {
       "name": "@learncard/credential-viewer",
-      "version": "0.0.17",
+      "version": "0.0.18",
       "dependencies": {
         "@learncard/credential-library": "workspace:*",
         "@learncard/init": "workspace:*",
@@ -540,7 +540,7 @@
     },
     "examples/snap-chapi-example": {
       "name": "@learncard/snap-chapi-example",
-      "version": "1.1.37",
+      "version": "1.1.38",
       "dependencies": {
         "@astrojs/react": "^5.0.7",
         "@astrojs/tailwind": "^6.0.2",
@@ -624,7 +624,7 @@
     },
     "packages/holder-continuity-bundle": {
       "name": "@learncard/holder-continuity",
-      "version": "0.2.9",
+      "version": "0.2.10",
       "dependencies": {
         "@learncard/init": "workspace:*",
         "@learncard/sss-key-manager": "workspace:*",
@@ -659,7 +659,7 @@
     },
     "packages/learn-card-base": {
       "name": "learn-card-base",
-      "version": "0.3.4",
+      "version": "0.3.5",
       "dependencies": {
         "@capacitor-community/sqlite": "8.1.0",
         "@capacitor/app": "^8.1.0",
@@ -731,7 +731,7 @@
     },
     "packages/learn-card-bridge-http": {
       "name": "@learncard/create-http-bridge",
-      "version": "1.1.246",
+      "version": "1.1.247",
       "bin": "dist/index.js",
       "dependencies": {
         "@learncard/init": "workspace:*",
@@ -776,7 +776,7 @@
     },
     "packages/learn-card-cli": {
       "name": "@learncard/cli",
-      "version": "3.4.9",
+      "version": "3.4.10",
       "bin": "dist/index.js",
       "dependencies": {
         "@learncard/core": "workspace:*",
@@ -877,7 +877,7 @@
     },
     "packages/learn-card-init": {
       "name": "@learncard/init",
-      "version": "2.4.7",
+      "version": "2.4.8",
       "dependencies": {
         "@learncard/chapi-plugin": "workspace:*",
         "@learncard/core": "workspace:*",
@@ -967,7 +967,7 @@
     },
     "packages/learn-card-partner-connect-sdk": {
       "name": "@learncard/partner-connect",
-      "version": "0.3.10",
+      "version": "0.4.0",
       "dependencies": {
         "@learncard/types": "workspace:*",
       },
@@ -1268,7 +1268,7 @@
     },
     "packages/plugins/lca-api-plugin": {
       "name": "@learncard/lca-api-plugin",
-      "version": "1.2.20",
+      "version": "1.2.21",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
@@ -1432,7 +1432,7 @@
     },
     "packages/plugins/openid4vc": {
       "name": "@learncard/openid4vc-plugin",
-      "version": "0.2.5",
+      "version": "0.3.0",
       "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
@@ -1609,7 +1609,7 @@
     },
     "packages/react-learn-card": {
       "name": "@learncard/react",
-      "version": "2.10.7",
+      "version": "2.10.8",
       "dependencies": {
         "@learncard/init": "workspace:*",
         "date-fns": "^2.28.0",
@@ -1737,7 +1737,7 @@
     },
     "services/learn-card-discord-bot": {
       "name": "learn-card-discord-bot",
-      "version": "1.1.234",
+      "version": "1.1.235",
       "bin": "dist/index.js",
       "dependencies": {
         "@learncard/init": "workspace:*",
@@ -1853,7 +1853,7 @@
     },
     "services/learn-card-network/lca-api": {
       "name": "@learncard/lca-api-service",
-      "version": "1.2.20",
+      "version": "1.2.21",
       "dependencies": {
         "@fastify/cors": "^11.2.0",
         "@fastify/static": "^9.0.0",

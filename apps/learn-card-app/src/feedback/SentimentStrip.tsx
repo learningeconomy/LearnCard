@@ -30,19 +30,19 @@ const SENTIMENT_OPTIONS: {
         sentiment: 'negative',
         Icon: Frown,
         labelKey: 'feedback.bad',
-        hoverClass: 'hover:text-red-500 hover:bg-red-50',
+        hoverClass: 'hover:text-red-500 hover:bg-red-50 active:text-red-500',
     },
     {
         sentiment: 'neutral',
         Icon: Meh,
         labelKey: 'feedback.okay',
-        hoverClass: 'hover:text-amber-500 hover:bg-amber-50',
+        hoverClass: 'hover:text-amber-500 hover:bg-amber-50 active:text-amber-500',
     },
     {
         sentiment: 'positive',
         Icon: Smile,
         labelKey: 'feedback.great',
-        hoverClass: 'hover:text-emerald-600 hover:bg-emerald-50',
+        hoverClass: 'hover:text-emerald-600 hover:bg-emerald-50 active:text-emerald-600',
     },
 ];
 
@@ -125,7 +125,7 @@ export const SentimentStrip: React.FC<SentimentStripProps> = ({
                 </p>
             ) : (
                 <>
-                    <span className="text-sm text-grayscale-600">{m['feedback.howWasThat']()}</span>
+                    <span className="text-sm text-grayscale-500">{m['feedback.howWasThat']()}</span>
 
                     <div className="flex items-center gap-1">
                         {SENTIMENT_OPTIONS.map(({ sentiment, Icon, labelKey, hoverClass }) => (
@@ -135,7 +135,7 @@ export const SentimentStrip: React.FC<SentimentStripProps> = ({
                                 aria-label={m[labelKey]()}
                                 title={m[labelKey]()}
                                 onClick={() => handleSelect(sentiment)}
-                                className={`p-1.5 rounded-full text-grayscale-400 transition-colors ${hoverClass}`}
+                                className={`p-2.5 rounded-full text-grayscale-400 transition-all active:scale-90 ${hoverClass}`}
                                 data-testid={`sentiment-${sentiment}`}
                             >
                                 <Icon className="w-5 h-5" />
