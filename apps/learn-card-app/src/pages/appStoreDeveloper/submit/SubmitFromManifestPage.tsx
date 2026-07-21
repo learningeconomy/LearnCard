@@ -13,6 +13,12 @@ import {
     copyOutline,
     checkmarkOutline,
     closeOutline,
+    personOutline,
+    ribbonOutline,
+    sparklesOutline,
+    notificationsOutline,
+    rocketOutline,
+    statsChartOutline,
 } from 'ionicons/icons';
 import { AppStoreHeader } from '../components/AppStoreHeader';
 import { useDeveloperPortal } from '../useDeveloperPortal';
@@ -24,7 +30,10 @@ import { applyCapturedAction } from '@learncard/partner-connect-core';
 import type { CapturedAppManifest } from '@learncard/partner-connect-core';
 import type { IntegrationHint } from '../../hooks/post-message/useLearnCardPostMessage.handlers';
 import { useWallet } from 'learn-card-base';
-import { normalizeConsentRequest } from '@learncard/partner-connect-core';
+import {
+    normalizeConsentRequest,
+    canonicalConsentScopeString,
+} from '@learncard/partner-connect-core';
 import type { ConsentRequest } from '@learncard/partner-connect-core';
 import { ConsentDesignerCard } from './ConsentDesignerCard';
 
@@ -89,6 +98,15 @@ const toFriendlyError = (err: unknown, fallback: string): string => {
     return message.length < 200 && !message.startsWith('[') ? message : fallback;
 };
 
+const PERSONAL_FIELD_LABELS: Record<string, string> = {
+    'name': 'Name',
+    'email': 'Email',
+    'phone': 'Phone',
+    'birthDate': 'Birth date',
+    'country': 'Country',
+    'avatar': 'Profile photo',
+};
+
 export const SubmitFromManifestPage: React.FC = () => {
     const history = useHistory();
     const location = useLocation();
@@ -110,7 +128,9 @@ export const SubmitFromManifestPage: React.FC = () => {
     const [isLive, setIsLive] = useState(false);
     const [productionUrl, setProductionUrl] = useState('');
     const [isLocalhost, setIsLocalhost] = useState(false);
-    const [iconUrl, setIconUrl] = useState<string | undefined>(undefined);
+    const [uploadedIconUrl, setUploadedIconUrl] = useState<string | undefined>(undefined);
+    const [displayIconUrl, setDisplayIconUrl] = useState<string | undefined>(undefined);
+    const [isIconImported, setIsIconImported] = useState(false);
     const [recentlyCaptured, setRecentlyCaptured] = useState<Set<string>>(new Set());
     const [integrationHints, setIntegrationHints] = useState<IntegrationHint[]>([]);
     const [copiedHint, setCopiedHint] = useState<string | null>(null);
@@ -119,6 +139,8 @@ export const SubmitFromManifestPage: React.FC = () => {
     const [currentLaunchConfig, setCurrentLaunchConfig] = useState<PreviewLaunchConfig | null>(
         null
     );
+    const [designerConsentKey, setDesignerConsentKey] = useState<string | null>(null);
+    const [designerConsentScopes, setDesignerConsentScopes] = useState<ConsentRequest | null>(null);
     const { initWallet } = useWallet();
 
     const handleIntegrationHint = useCallback((hint: IntegrationHint) => {
@@ -140,12 +162,17 @@ export const SubmitFromManifestPage: React.FC = () => {
 
     const createListing = useCreateListing();
 
-    const { handleFileSelect: handleIconUpload, isLoading: isIconUploading } = useImageUpload({
+    const {
+        handleFileSelect: handleIconUpload,
+        isLoading: isIconUploading,
+        uploadImageFromUrl,
+    } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => {
             if (data?.url) {
                 if (data.url.startsWith('https://')) {
-                    setIconUrl(data.url);
+                    setUploadedIconUrl(data.url);
+                    setDisplayIconUrl(data.url);
                 } else {
                     setFormError('Uploaded icon URL must be HTTPS.');
                 }
@@ -207,14 +234,55 @@ export const SubmitFromManifestPage: React.FC = () => {
                 setManifest(decoded);
                 sessionStorage.setItem('lc-submit-manifest', JSON.stringify(decoded));
             }
-            setIconUrl(
-                isAllowedIconUrl(decoded.suggestedIconUrl) ? decoded.suggestedIconUrl : undefined
-            );
+            const suggestedIcon = decoded.suggestedIconUrl;
+            if (isAllowedIconUrl(suggestedIcon)) {
+                setUploadedIconUrl(suggestedIcon);
+                setDisplayIconUrl(suggestedIcon);
+            } else if (suggestedIcon) {
+                setDisplayIconUrl(suggestedIcon);
+            }
+
+            const sessionDesignerKey = sessionStorage.getItem('lc-submit-designer-key');
+            const sessionDesignerScopes = sessionStorage.getItem('lc-submit-designer-scopes');
+            if (sessionDesignerKey) setDesignerConsentKey(sessionDesignerKey);
+            if (sessionDesignerScopes) {
+                try {
+                    setDesignerConsentScopes(JSON.parse(sessionDesignerScopes));
+                } catch {}
+            }
             setAppName(decoded.suggestedName || '');
         } catch (err) {
             setError('This publish link is invalid or expired.');
         }
     }, [location.search]);
+
+    useEffect(() => {
+        if (
+            manifest &&
+            manifest.suggestedIconUrl &&
+            !isAllowedIconUrl(manifest.suggestedIconUrl) &&
+            !uploadedIconUrl
+        ) {
+            let isMounted = true;
+            const importIcon = async () => {
+                try {
+                    const url = await uploadImageFromUrl(manifest.suggestedIconUrl!);
+                    if (url && isMounted) {
+                        setIsIconImported(true);
+                        setTimeout(() => {
+                            if (isMounted) setIsIconImported(false);
+                        }, 3000);
+                    }
+                } catch (e) {
+                    // silent no-op
+                }
+            };
+            importIcon();
+            return () => {
+                isMounted = false;
+            };
+        }
+    }, [manifest?.suggestedIconUrl]);
 
     const ensureProvisioned = async () => {
         if (!manifest) throw new Error('No manifest');
@@ -241,7 +309,9 @@ export const SubmitFromManifestPage: React.FC = () => {
                     full_description:
                         tagline ||
                         `${displayName} — draft listing created from a LearnCard app preview.`,
-                    icon_url: isAllowedIconUrl(iconUrl) ? iconUrl : DEFAULT_APP_ICON_URL,
+                    icon_url: isAllowedIconUrl(uploadedIconUrl)
+                        ? uploadedIconUrl
+                        : DEFAULT_APP_ICON_URL,
                     launch_type: 'EMBEDDED_IFRAME',
                     launch_config_json: JSON.stringify(
                         currentLaunchConfig || {
@@ -280,6 +350,7 @@ export const SubmitFromManifestPage: React.FC = () => {
                         }
                         isInstalled={true}
                         onIntegrationHint={handleIntegrationHint}
+                        launchFeaturesInNewTab={true}
                     />,
                     {
                         hideButton: true,
@@ -318,22 +389,46 @@ export const SubmitFromManifestPage: React.FC = () => {
                 contractUri: newContractUri,
             });
 
+            const normalizedScopes = normalizeConsentRequest(scopes);
+            const newKey = canonicalConsentScopeString(normalizedScopes);
+
             setManifest(prev => {
                 if (!prev) return prev;
+
+                let nextRequests = prev.consentRequests.filter(
+                    req => canonicalConsentScopeString(req.scopes) !== designerConsentKey
+                );
+
+                const existingIndex = nextRequests.findIndex(
+                    req => canonicalConsentScopeString(req.scopes) === newKey
+                );
+
+                if (existingIndex >= 0) {
+                    nextRequests[existingIndex] = {
+                        ...nextRequests[existingIndex],
+                        lastUsedAt: new Date().toISOString(),
+                        reason: scopes.reason || nextRequests[existingIndex].reason,
+                    };
+                } else {
+                    nextRequests.push({
+                        scopes: normalizedScopes,
+                        reason: scopes.reason,
+                        lastUsedAt: new Date().toISOString(),
+                    });
+                }
+
                 const next = {
                     ...prev,
-                    consentRequests: [
-                        ...prev.consentRequests,
-                        {
-                            scopes: normalizeConsentRequest(scopes),
-                            reason: scopes.reason,
-                            lastUsedAt: new Date().toISOString(),
-                        },
-                    ],
+                    consentRequests: nextRequests,
                 };
                 sessionStorage.setItem('lc-submit-manifest', JSON.stringify(next));
                 return next;
             });
+
+            setDesignerConsentKey(newKey);
+            setDesignerConsentScopes(scopes);
+            sessionStorage.setItem('lc-submit-designer-key', newKey);
+            sessionStorage.setItem('lc-submit-designer-scopes', JSON.stringify(scopes));
         } catch (err) {
             throw err;
         }
@@ -465,7 +560,9 @@ export const SubmitFromManifestPage: React.FC = () => {
                     listing: {
                         display_name: appName,
                         tagline: tagline,
-                        icon_url: iconUrl,
+                        icon_url: isAllowedIconUrl(uploadedIconUrl)
+                            ? uploadedIconUrl
+                            : DEFAULT_APP_ICON_URL,
                         launch_type: 'EMBEDDED_IFRAME',
                         launch_config_json: JSON.stringify({
                             url: finalUrl,
@@ -485,6 +582,125 @@ export const SubmitFromManifestPage: React.FC = () => {
             setIsPreparing(false);
         }
     };
+
+    const capabilityRows = React.useMemo(() => {
+        if (!manifest) return [];
+        const rows = [];
+
+        if (manifest.permissions.includes('request_identity')) {
+            rows.push({
+                id: 'identity',
+                icon: personOutline,
+                text: 'Signs users in with LearnCard',
+                highlight: recentlyCaptured.has('permissions'),
+            });
+        }
+
+        const latestConsent =
+            designerConsentScopes ||
+            manifest.consentRequests[manifest.consentRequests.length - 1]?.scopes;
+        if (latestConsent) {
+            const readItems = [
+                ...(latestConsent.read?.credentialCategories || []),
+                ...(latestConsent.read?.personalFields?.map(f => PERSONAL_FIELD_LABELS[f] || f) ||
+                    []),
+            ];
+            const writeItems = latestConsent.write?.credentialCategories || [];
+
+            let text = 'Asks permission to read ';
+            if (readItems.length > 0) {
+                if (readItems.length <= 2) {
+                    text += readItems.join(' and ');
+                } else {
+                    text += `${readItems.slice(0, 2).join(', ')} and ${readItems.length - 2} more`;
+                }
+            } else {
+                text += 'data';
+            }
+
+            if (writeItems.length > 0) {
+                text += ' and add credentials';
+            }
+
+            rows.push({
+                id: 'consent',
+                icon: shieldCheckmarkOutline,
+                text,
+                highlight: recentlyCaptured.has('consentRequests'),
+            });
+        }
+
+        if (manifest.templates.length > 0) {
+            const names = manifest.templates.map(t =>
+                'name' in t.template ? t.template.name : t.alias
+            );
+            let text = `Sends ${manifest.templates.length} credential${
+                manifest.templates.length === 1 ? '' : 's'
+            }: `;
+            if (names.length <= 2) {
+                text += names.join(', ');
+            } else {
+                text += `${names.slice(0, 2).join(', ')}, and ${names.length - 2} more`;
+            }
+            rows.push({
+                id: 'templates',
+                icon: ribbonOutline,
+                text,
+                highlight: recentlyCaptured.has('templates'),
+            });
+        }
+
+        if (manifest.usedLearnerContext) {
+            rows.push({
+                id: 'context',
+                icon: sparklesOutline,
+                text: "Personalizes with the user's learning data",
+                highlight: false,
+            });
+        }
+
+        if (manifest.usedNotifications) {
+            rows.push({
+                id: 'notifications',
+                icon: notificationsOutline,
+                text: 'Sends notifications',
+                highlight: false,
+            });
+        }
+
+        if (manifest.featuresLaunched.length > 0) {
+            rows.push({
+                id: 'features',
+                icon: rocketOutline,
+                text: 'Opens LearnCard features',
+                title: manifest.featuresLaunched.join(', '),
+                highlight: recentlyCaptured.has('featuresLaunched'),
+            });
+        }
+
+        if (manifest.counterKeys.length > 0) {
+            rows.push({
+                id: 'counters',
+                icon: statsChartOutline,
+                text: 'Tracks progress',
+                subNode: (
+                    <div className="flex flex-wrap gap-1.5 mt-1.5">
+                        {manifest.counterKeys.map(k => (
+                            <code
+                                key={k}
+                                className="px-1.5 py-0.5 bg-grayscale-100 text-grayscale-700 rounded text-[10px] font-mono"
+                            >
+                                {k}
+                            </code>
+                        ))}
+                    </div>
+                ),
+                highlight: recentlyCaptured.has('counterKeys'),
+            });
+        }
+
+        return rows;
+    }, [manifest, designerConsentScopes, recentlyCaptured]);
 
     if (error) {
         return (
@@ -581,29 +797,49 @@ export const SubmitFromManifestPage: React.FC = () => {
 
             <div className="bg-white rounded-2xl border border-grayscale-300 p-6 mb-6 shadow-sm">
                 <div className="flex items-start gap-5 mb-6">
-                    <div className="relative group cursor-pointer" onClick={handleIconUpload}>
-                        {isIconUploading ? (
-                            <div className="w-16 h-16 rounded-2xl bg-grayscale-100 border border-grayscale-200 flex items-center justify-center">
-                                <IonSpinner
-                                    name="crescent"
-                                    className="w-6 h-6 text-grayscale-500"
+                    <div className="flex flex-col items-center gap-1.5 w-20 shrink-0">
+                        <div
+                            className="relative group cursor-pointer w-16 h-16"
+                            onClick={handleIconUpload}
+                        >
+                            {isIconUploading ? (
+                                <div className="w-16 h-16 rounded-2xl bg-grayscale-100 border border-grayscale-200 flex items-center justify-center">
+                                    <IonSpinner
+                                        name="crescent"
+                                        className="w-6 h-6 text-grayscale-500"
+                                    />
+                                </div>
+                            ) : displayIconUrl ? (
+                                <img
+                                    src={displayIconUrl}
+                                    alt="App Icon"
+                                    className="w-16 h-16 rounded-2xl object-cover border border-grayscale-200"
                                 />
+                            ) : (
+                                <div className="w-16 h-16 rounded-2xl bg-grayscale-100 border border-grayscale-200 flex items-center justify-center text-2xl font-semibold text-grayscale-700">
+                                    {appName.charAt(0).toUpperCase() || '?'}
+                                </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
+                                <IonIcon icon={cameraOutline} className="w-5 h-5 mb-0.5" />
+                                <span className="text-[10px] font-medium">Change</span>
                             </div>
-                        ) : iconUrl ? (
-                            <img
-                                src={iconUrl}
-                                alt="App Icon"
-                                className="w-16 h-16 rounded-2xl object-cover border border-grayscale-200"
-                            />
-                        ) : (
-                            <div className="w-16 h-16 rounded-2xl bg-grayscale-100 border border-grayscale-200 flex items-center justify-center text-2xl font-semibold text-grayscale-700">
-                                {appName.charAt(0).toUpperCase() || '?'}
-                            </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
-                            <IonIcon icon={cameraOutline} className="w-5 h-5 mb-0.5" />
-                            <span className="text-[10px] font-medium">Change</span>
+                            {isIconImported && (
+                                <div className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white rounded-full p-0.5 shadow-sm animate-fade-in-up">
+                                    <IonIcon icon={checkmarkOutline} className="w-3 h-3 block" />
+                                </div>
+                            )}
                         </div>
+                        {!uploadedIconUrl && !isIconImported && (
+                            <span className="text-[10px] text-grayscale-500 text-center leading-tight">
+                                Tap to upload your icon
+                            </span>
+                        )}
+                        {isIconImported && (
+                            <span className="text-[10px] text-emerald-600 font-medium animate-fade-in-up text-center leading-tight">
+                                Icon imported
+                            </span>
+                        )}
                     </div>
                     <div className="flex-1">
                         <label className="block text-xs font-medium text-grayscale-700 mb-1.5">
@@ -701,6 +937,7 @@ export const SubmitFromManifestPage: React.FC = () => {
                                         appName={appName}
                                         onEnable={handleEnableConsent}
                                         onDismiss={() => dismissHint(hint.type)}
+                                        enabledScopes={designerConsentScopes}
                                     />
                                 );
                             }
@@ -766,14 +1003,21 @@ export const SubmitFromManifestPage: React.FC = () => {
 
                 <div className="space-y-4">
                     {manifest.permissions.includes('request_consent') &&
-                        manifest.consentRequests.length === 0 &&
+                        (manifest.consentRequests.length === 0 || designerConsentScopes) &&
                         !integrationHints.some(h => h.type === 'consent-not-configured') && (
                             <div className="mb-4">
-                                {showConsentDesigner ? (
+                                {showConsentDesigner || designerConsentScopes ? (
                                     <ConsentDesignerCard
                                         appName={appName}
                                         onEnable={handleEnableConsent}
-                                        onDismiss={() => setShowConsentDesigner(false)}
+                                        onDismiss={() => {
+                                            setShowConsentDesigner(false);
+                                            setDesignerConsentScopes(null);
+                                            setDesignerConsentKey(null);
+                                            sessionStorage.removeItem('lc-submit-designer-key');
+                                            sessionStorage.removeItem('lc-submit-designer-scopes');
+                                        }}
+                                        enabledScopes={designerConsentScopes}
                                     />
                                 ) : (
                                     <div className="bg-white rounded-2xl border border-grayscale-300 p-5 flex items-center justify-between shadow-sm">
@@ -920,32 +1164,41 @@ export const SubmitFromManifestPage: React.FC = () => {
                         </div>
                     )}
 
-                    <div
-                        className={`bg-white rounded-2xl border p-5 flex items-center justify-between text-sm transition-colors duration-500 ${
-                            recentlyCaptured.has('featuresLaunched') ||
-                            recentlyCaptured.has('counterKeys')
-                                ? 'border-emerald-400 ring-1 ring-emerald-400'
-                                : 'border-grayscale-300'
-                        }`}
-                    >
-                        <span className="text-grayscale-700">
-                            Features used:{' '}
-                            <strong className="text-grayscale-900">
-                                {manifest.featuresLaunched.length}
-                            </strong>
-                        </span>
-                        <span className="text-grayscale-700">
-                            Counters:{' '}
-                            <strong className="text-grayscale-900">
-                                {manifest.counterKeys.length}
-                            </strong>
-                        </span>
-                        <span className="text-grayscale-700">
-                            Context:{' '}
-                            <strong className="text-grayscale-900">
-                                {manifest.usedLearnerContext ? 'Yes' : 'No'}
-                            </strong>
-                        </span>
+                    <div className="bg-white rounded-2xl border border-grayscale-300 p-5 shadow-sm">
+                        <h4 className="text-xs font-medium text-grayscale-700 mb-4 uppercase tracking-wider">
+                            What your app does
+                        </h4>
+                        {capabilityRows.length === 0 ? (
+                            <p className="text-sm text-grayscale-600">
+                                Run your app in the preview and we'll list what it does here.
+                            </p>
+                        ) : (
+                            <div className="space-y-4">
+                                {capabilityRows.map(row => (
+                                    <div
+                                        key={row.id}
+                                        className="flex items-start gap-3"
+                                        title={row.title}
+                                    >
+                                        <div
+                                            className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors duration-500 ${
+                                                row.highlight
+                                                    ? 'bg-emerald-50 text-emerald-600'
+                                                    : 'bg-grayscale-100 text-grayscale-700'
+                                            }`}
+                                        >
+                                            <IonIcon icon={row.icon} className="w-4 h-4" />
+                                        </div>
+                                        <div className="pt-1.5">
+                                            <div className="text-sm text-grayscale-800 leading-tight">
+                                                {row.text}
+                                            </div>
+                                            {row.subNode}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -1018,6 +1271,7 @@ export const SubmitFromManifestPage: React.FC = () => {
                                 isInstalled={true}
                                 inline={true}
                                 onIntegrationHint={handleIntegrationHint}
+                                launchFeaturesInNewTab={true}
                             />
                         </div>
                     ) : (

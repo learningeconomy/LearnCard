@@ -63,6 +63,12 @@ interface UseLearnCardMessageHandlersOptions {
     }) => void;
     debug?: boolean;
     onIntegrationHint?: (hint: IntegrationHint) => void;
+    /**
+     * When true, LAUNCH_FEATURE opens the feature in a new tab instead of
+     * navigating the host SPA away. Used by dev/preview surfaces (e.g. the
+     * publish workspace) where navigation would destroy the builder session.
+     */
+    launchFeaturesInNewTab?: boolean;
 }
 
 import { getLogger } from 'learn-card-base';
@@ -189,6 +195,7 @@ export function useLearnCardMessageHandlers({
     onAppNotification,
     debug = false,
     onIntegrationHint,
+    launchFeaturesInNewTab = false,
 }: UseLearnCardMessageHandlersOptions): ActionHandlers {
     const isLoggedIn = useIsLoggedIn();
     const { initWallet, storeAndAddVCToWallet } = useWallet();
@@ -1268,6 +1275,31 @@ export function useLearnCardMessageHandlers({
                 navigate: (path: string, params?: Record<string, string>) => {
                     log('Navigating to:', path, params);
                     const queryParams = params ? '?' + new URLSearchParams(params).toString() : '';
+
+                    if (launchFeaturesInNewTab) {
+                        // No 'noopener' feature: window.open returns null for
+                        // noopener windows EVEN ON SUCCESS (spec), which made the
+                        // popup-blocked fallback below also navigate in place.
+                        // The target is our own same-origin app, so omitting it is
+                        // safe and restores accurate block detection.
+                        const opened = window.open(
+                            `${window.location.origin}${path}${queryParams}`,
+                            '_blank'
+                        );
+
+                        // Iframe clicks don't grant the host user-activation, so
+                        // popup blockers may return null; fall back to in-place
+                        // navigation rather than silently doing nothing.
+                        if (!opened) {
+                            log('Popup blocked for feature launch; navigating in place:', path);
+                            history.push(path + queryParams);
+                            onNavigate?.();
+                        }
+
+                        sdkActivityStore.set.endActivity();
+                        return;
+                    }
+
                     history.push(path + queryParams);
 
                     // Call optional onNavigate callback (e.g., to close modal)
@@ -1692,6 +1724,7 @@ export function useLearnCardMessageHandlers({
             prewarmLearnerContext,
             resolveLearnerContextCredentials,
             upsertScopedContract,
+            launchFeaturesInNewTab,
         ]
     );
 

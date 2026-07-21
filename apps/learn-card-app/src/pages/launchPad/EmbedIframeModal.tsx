@@ -38,6 +38,7 @@ interface EmbedIframeModalProps {
     hideFullScreenButton?: boolean;
     inline?: boolean;
     onIntegrationHint?: (hint: IntegrationHint) => void;
+    launchFeaturesInNewTab?: boolean;
 }
 
 export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
@@ -49,6 +50,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
     hideFullScreenButton = false,
     inline = false,
     onIntegrationHint,
+    launchFeaturesInNewTab = false,
 }) => {
     const { closeModal } = useModal();
     const history = useHistory();
@@ -182,6 +184,7 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
         onCredentialIssued: handleCredentialIssued,
         onAppNotification: handleAppNotification,
         onIntegrationHint,
+        launchFeaturesInNewTab,
     });
 
     // Initialize the PostMessage listener with trusted origins

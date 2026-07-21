@@ -565,8 +565,26 @@ export const createAppEventHandler = (dependencies: {
             };
         }
 
+        // The SDK posts the event object AS the payload; older senders wrapped
+        // it as { event }. Accept both so neither side can produce a TypeError.
+        const rawEvent = (payload as { event?: unknown } | undefined)?.event ?? payload;
+
+        if (
+            !rawEvent ||
+            typeof rawEvent !== 'object' ||
+            typeof (rawEvent as { type?: unknown }).type !== 'string'
+        ) {
+            return {
+                success: false,
+                error: {
+                    code: 'INVALID_PAYLOAD',
+                    message: 'APP_EVENT payload must be an event object with a string "type"',
+                },
+            };
+        }
+
         try {
-            const result = await sendAppEvent(listingId, payload.event);
+            const result = await sendAppEvent(listingId, rawEvent as AppEvent);
             return { success: true, data: result };
         } catch (error) {
             return {
