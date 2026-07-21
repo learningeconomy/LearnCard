@@ -83,9 +83,7 @@ jobs:
             native_plugin_changed: ${{ steps.check_versions.outputs.native_plugin_changed }}
             # Dynamic environment names
             target_frontend_env: ${{ steps.set-env.outputs.frontend_env }}
-            target_brain_service_env: ${{ steps.set-env.outputs.brain_env }}
-            target_learn_cloud_env: ${{ steps.set-env.outputs.cloud_env }}
-            target_lca_api_env: ${{ steps.set-env.outputs.lca_api_env }}
+            service_deployment_matrix: ${{ steps.set-env.outputs.service_deployment_matrix }}
         steps:
             # Check these first - no dependencies needed
             - name: Check if this is a manual dispatch
@@ -109,36 +107,6 @@ jobs:
                     echo "This is a release commit"
                   else
                     echo "is_release=false" >> $GITHUB_OUTPUT
-                  fi
-
-            - name: Determine Deployment Environments
-              id: set-env
-              run: |
-                  if [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'scouts' ]]; then
-                    echo "frontend_env=scout-app-production" >> "$GITHUB_OUTPUT"
-                    echo "brain_env=scout-network-api-production" >> "$GITHUB_OUTPUT"
-                    echo "cloud_env=scout-storage-api-production" >> "$GITHUB_OUTPUT"
-                    echo "lca_api_env=scout-app-api-production" >> "$GITHUB_OUTPUT"
-                  elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'scouts-staging' ]]; then
-                    echo "frontend_env=scout-app-staging" >> "$GITHUB_OUTPUT"
-                    echo "brain_env=scout-network-api-staging" >> "$GITHUB_OUTPUT"
-                    echo "cloud_env=scout-storage-api-staging" >> "$GITHUB_OUTPUT"
-                    echo "lca_api_env=scout-app-api-staging" >> "$GITHUB_OUTPUT"
-                  elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'production' ]]; then
-                    echo "frontend_env=learn-card-app-production" >> "$GITHUB_OUTPUT"
-                    echo "brain_env=learn-cloud-network-api-production" >> "$GITHUB_OUTPUT"
-                    echo "cloud_env=learn-cloud-storage-api-production" >> "$GITHUB_OUTPUT"
-                    echo "lca_api_env=learn-card-app-api-production" >> "$GITHUB_OUTPUT"
-                  elif [[ "${{ steps.check_release.outputs.is_release }}" == 'true' ]]; then
-                    echo "frontend_env=learn-card-app-production" >> "$GITHUB_OUTPUT"
-                    echo "brain_env=learn-cloud-network-api-production" >> "$GITHUB_OUTPUT"
-                    echo "cloud_env=learn-cloud-storage-api-production" >> "$GITHUB_OUTPUT"
-                    echo "lca_api_env=learn-card-app-api-production" >> "$GITHUB_OUTPUT"
-                  else
-                    echo "frontend_env=learn-card-app-staging" >> "$GITHUB_OUTPUT"
-                    echo "brain_env=learn-cloud-network-api-staging" >> "$GITHUB_OUTPUT"
-                    echo "cloud_env=learn-cloud-storage-api-staging" >> "$GITHUB_OUTPUT"
-                    echo "lca_api_env=learn-card-app-api-staging" >> "$GITHUB_OUTPUT"
                   fi
 
             # Skip heavy steps for manual dispatch - we already know what to deploy
@@ -205,6 +173,39 @@ jobs:
                     echo "Native DIDKit plugin changed - will wait for prebuilds"
                   else
                     echo "native_plugin_changed=false" >> $GITHUB_OUTPUT
+                  fi
+
+            - name: Determine Deployment Environments
+              id: set-env
+              run: |
+                  LC_STAGING='{"name":"LearnCard Staging","brain_env":"learn-cloud-network-api-staging","cloud_env":"learn-cloud-storage-api-staging","lca_api_env":"learn-card-app-api-staging"}'
+                  LC_PRODUCTION='{"name":"LearnCard Production","brain_env":"learn-cloud-network-api-production","cloud_env":"learn-cloud-storage-api-production","lca_api_env":"learn-card-app-api-production"}'
+                  SCOUTS_STAGING='{"name":"ScoutPass Staging","brain_env":"scout-network-api-staging","cloud_env":"scout-storage-api-staging","lca_api_env":"scout-app-api-staging"}'
+                  SCOUTS_PRODUCTION='{"name":"ScoutPass Production","brain_env":"scout-network-api-production","cloud_env":"scout-storage-api-production","lca_api_env":"scout-app-api-production"}'
+
+                  set_outputs() {
+                    local frontend_env="$1"
+                    shift
+                    local legs
+                    legs=$(IFS=,; echo "$*")
+                    echo "frontend_env=${frontend_env}" >> "$GITHUB_OUTPUT"
+                    echo "service_deployment_matrix={\"include\":[${legs}]}" >> "$GITHUB_OUTPUT"
+                  }
+
+                  if [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'scouts' ]]; then
+                    set_outputs scout-app-production "$SCOUTS_PRODUCTION"
+                  elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'scouts-staging' ]]; then
+                    set_outputs scout-app-staging "$SCOUTS_STAGING"
+                  elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'production' ]]; then
+                    set_outputs learn-card-app-production "$LC_PRODUCTION"
+                  elif [[ "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
+                    set_outputs learn-card-app-staging "$LC_STAGING"
+                  elif [[ "${{ steps.check_release.outputs.is_release }}" == 'true' ]]; then
+                    # ScoutPass production is deliberately excluded from release
+                    # pushes — it deploys only via the manual 'scouts' dispatch.
+                    set_outputs learn-card-app-production "$LC_PRODUCTION"
+                  else
+                    set_outputs learn-card-app-staging "$LC_STAGING" "$SCOUTS_STAGING"
                   fi
 
     # ============================================================================
@@ -312,7 +313,7 @@ jobs:
     #   - Manual: Deploy to selected environment if selected
     # ============================================================================
     deploy-brain-service:
-        name: Deploy Brain Service (Network API)
+        name: Deploy Brain Service (${{ matrix.name }})
         needs: [determine-affected, test-affected, build-native-plugin]
         if: |
             always() &&
@@ -323,7 +324,10 @@ jobs:
               (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'network-brain-service'))
             )
         runs-on: ubuntu-latest
-        environment: ${{ needs.determine-affected.outputs.target_brain_service_env }}
+        strategy:
+            fail-fast: false
+            matrix: ${{ fromJSON(needs.determine-affected.outputs.service_deployment_matrix) }}
+        environment: ${{ matrix.brain_env }}
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v7
@@ -345,7 +349,7 @@ jobs:
                   echo "========================================"
                   echo "DEPLOYMENT TARGET VALIDATION"
                   echo "========================================"
-                  echo "GitHub Environment: ${{ needs.determine-affected.outputs.target_brain_service_env }}"
+                  echo "GitHub Environment: ${{ matrix.brain_env }}"
                   echo "Service Name:       ${{ vars.SERVERLESS_SERVICE_NAME }}"
                   echo "Domain:             ${{ vars.SERVERLESS_DOMAIN_NAME }}"
                   echo "Hosted Zone:        ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}"
@@ -356,23 +360,23 @@ jobs:
                   FAILED=false
 
                   if [[ -z "${{ vars.SERVERLESS_SERVICE_NAME }}" ]]; then
-                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
+                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment '${{ matrix.brain_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_DOMAIN_NAME }}" ]]; then
-                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
+                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ matrix.brain_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}" ]]; then
-                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
+                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment '${{ matrix.brain_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_STAGE }}" ]]; then
-                    echo "::error::SERVERLESS_STAGE is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
+                    echo "::error::SERVERLESS_STAGE is not set in environment '${{ matrix.brain_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_REGION }}" ]]; then
-                    echo "::error::SERVERLESS_REGION is not set in environment '${{ needs.determine-affected.outputs.target_brain_service_env }}'!"
+                    echo "::error::SERVERLESS_REGION is not set in environment '${{ matrix.brain_env }}'!"
                     FAILED=true
                   fi
 
@@ -427,7 +431,7 @@ jobs:
                   GIT_SHA: ${{ github.sha }}
 
     deploy-learn-cloud:
-        name: Deploy LearnCloud (Storage API)
+        name: Deploy LearnCloud (${{ matrix.name }})
         needs: [determine-affected, test-affected, build-native-plugin]
         if: |
             always() &&
@@ -438,7 +442,10 @@ jobs:
                 (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'learn-cloud-service'))
             )
         runs-on: ubuntu-latest
-        environment: ${{ needs.determine-affected.outputs.target_learn_cloud_env }}
+        strategy:
+            fail-fast: false
+            matrix: ${{ fromJSON(needs.determine-affected.outputs.service_deployment_matrix) }}
+        environment: ${{ matrix.cloud_env }}
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v7
@@ -460,7 +467,7 @@ jobs:
                   echo "========================================"
                   echo "DEPLOYMENT TARGET VALIDATION"
                   echo "========================================"
-                  echo "GitHub Environment: ${{ needs.determine-affected.outputs.target_learn_cloud_env }}"
+                  echo "GitHub Environment: ${{ matrix.cloud_env }}"
                   echo "Service Name:       ${{ vars.SERVERLESS_SERVICE_NAME }}"
                   echo "Domain:             ${{ vars.SERVERLESS_DOMAIN_NAME }}"
                   echo "Hosted Zone:        ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}"
@@ -471,23 +478,23 @@ jobs:
                   FAILED=false
 
                   if [[ -z "${{ vars.SERVERLESS_SERVICE_NAME }}" ]]; then
-                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
+                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment '${{ matrix.cloud_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_DOMAIN_NAME }}" ]]; then
-                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
+                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ matrix.cloud_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}" ]]; then
-                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
+                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment '${{ matrix.cloud_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_STAGE }}" ]]; then
-                    echo "::error::SERVERLESS_STAGE is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
+                    echo "::error::SERVERLESS_STAGE is not set in environment '${{ matrix.cloud_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_REGION }}" ]]; then
-                    echo "::error::SERVERLESS_REGION is not set in environment '${{ needs.determine-affected.outputs.target_learn_cloud_env }}'!"
+                    echo "::error::SERVERLESS_REGION is not set in environment '${{ matrix.cloud_env }}'!"
                     FAILED=true
                   fi
 
@@ -522,7 +529,7 @@ jobs:
                   SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
 
     deploy-lca-api:
-        name: Deploy LCA API Service
+        name: Deploy LCA API (${{ matrix.name }})
         needs: [determine-affected, test-affected, build-native-plugin]
         if: |
             always() &&
@@ -533,7 +540,10 @@ jobs:
                 (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success' && contains(needs.determine-affected.outputs.affected, 'lca-api-service'))
             )
         runs-on: ubuntu-latest
-        environment: ${{ needs.determine-affected.outputs.target_lca_api_env }}
+        strategy:
+            fail-fast: false
+            matrix: ${{ fromJSON(needs.determine-affected.outputs.service_deployment_matrix) }}
+        environment: ${{ matrix.lca_api_env }}
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v7
@@ -555,7 +565,7 @@ jobs:
                   echo "========================================"
                   echo "DEPLOYMENT TARGET VALIDATION"
                   echo "========================================"
-                  echo "GitHub Environment: ${{ needs.determine-affected.outputs.target_lca_api_env }}"
+                  echo "GitHub Environment: ${{ matrix.lca_api_env }}"
                   echo "Service Name:       ${{ vars.SERVERLESS_SERVICE_NAME }}"
                   echo "Domain:             ${{ vars.SERVERLESS_DOMAIN_NAME }}"
                   echo "Hosted Zone:        ${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}"
@@ -566,23 +576,23 @@ jobs:
                   FAILED=false
 
                   if [[ -z "${{ vars.SERVERLESS_SERVICE_NAME }}" ]]; then
-                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
+                    echo "::error::SERVERLESS_SERVICE_NAME is not set in environment '${{ matrix.lca_api_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_DOMAIN_NAME }}" ]]; then
-                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
+                    echo "::error::SERVERLESS_DOMAIN_NAME is not set in environment '${{ matrix.lca_api_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_HOSTED_ZONE_NAMES }}" ]]; then
-                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
+                    echo "::error::SERVERLESS_HOSTED_ZONE_NAMES is not set in environment '${{ matrix.lca_api_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_STAGE }}" ]]; then
-                    echo "::error::SERVERLESS_STAGE is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
+                    echo "::error::SERVERLESS_STAGE is not set in environment '${{ matrix.lca_api_env }}'!"
                     FAILED=true
                   fi
                   if [[ -z "${{ vars.SERVERLESS_REGION }}" ]]; then
-                    echo "::error::SERVERLESS_REGION is not set in environment '${{ needs.determine-affected.outputs.target_lca_api_env }}'!"
+                    echo "::error::SERVERLESS_REGION is not set in environment '${{ matrix.lca_api_env }}'!"
                     FAILED=true
                   fi
 
@@ -651,7 +661,7 @@ jobs:
             (
                 (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-frontend == 'true') ||
                 (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.lca_app_changed == 'true') ||
-                (needs.determine-affected.outputs.is_manual == 'true' && (github.event.inputs.target-environment == 'scouts' || github.event.inputs.target-environment == 'scouts-staging'))
+                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.target-environment == 'scouts')
             ) &&
             !contains(needs.deploy-brain-service.result, 'failure') &&
             !contains(needs.deploy-learn-cloud.result, 'failure') &&
@@ -693,7 +703,7 @@ jobs:
             - name: Push to production branch
               if: |
                   needs.determine-affected.outputs.is_release == 'true' ||
-                  (github.event_name == 'workflow_dispatch' && (github.event.inputs.target-environment == 'production' || github.event.inputs.target-environment == 'scouts' || github.event.inputs.target-environment == 'scouts-staging'))
+                  (github.event_name == 'workflow_dispatch' && (github.event.inputs.target-environment == 'production' || github.event.inputs.target-environment == 'scouts'))
               run: |
                   BRANCH="${{ steps.vars.outputs.netlify_branch }}"
                   git fetch origin "$BRANCH" || true
