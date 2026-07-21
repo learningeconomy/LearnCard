@@ -1,5 +1,11 @@
 # @learncard/partner-connect
 
+## 0.4.0
+
+### Minor Changes
+
+-   [#1414](https://github.com/learningeconomy/LearnCard/pull/1414) [`f31566902ac5f458312800c4cadcd615d6ca949f`](https://github.com/learningeconomy/LearnCard/commit/f31566902ac5f458312800c4cadcd615d6ca949f) Thanks [@Custard7](https://github.com/Custard7)! - feat: @partner-connect SDK Mock Mode
+
 ## 0.3.10
 
 ### Patch Changes
