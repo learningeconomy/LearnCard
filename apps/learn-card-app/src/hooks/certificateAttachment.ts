@@ -37,6 +37,15 @@ const ATTACHMENTS_CONTEXT = {
     },
 } as const;
 
+const BOOST_CONTEXT_URL = 'https://ctx.learncard.com/boosts/1.0.3.json';
+
+const ATTACHMENT_DATA_CONTEXT = {
+    data: {
+        '@id': 'https://docs.learncard.com/definitions#boostAttachmentData',
+        '@type': 'https://www.w3.org/2001/XMLSchema#string',
+    },
+} as const;
+
 type CredentialRecord = Record<string, unknown>;
 
 type CredentialWithAttachments<Credential extends CredentialRecord> = Credential & {
@@ -110,14 +119,6 @@ export const addCertificateAttachment = <Credential extends CredentialRecord>(
         return vc;
     }
 
-    const attachment = {
-        title: artifact.fileName,
-        fileName: artifact.fileName,
-        fileSize: artifact.fileSize,
-        fileType: artifact.fileType,
-        data: artifact.data,
-        type: ['PNG', 'JPG', 'JPEG', 'WEBP'].includes(artifact.fileType) ? 'photo' : 'document',
-    };
     const existingAttachments = Array.isArray(vc.attachments) ? vc.attachments : [];
     const credentialContext = vc['@context'];
     const contexts = Array.isArray(credentialContext)
@@ -125,12 +126,33 @@ export const addCertificateAttachment = <Credential extends CredentialRecord>(
         : credentialContext
         ? [credentialContext]
         : [];
+    const credentialType = vc.type;
+    const credentialTypes = Array.isArray(credentialType)
+        ? credentialType
+        : credentialType
+        ? [credentialType]
+        : [];
+    const usesPublishedBoostAttachments =
+        contexts.includes(BOOST_CONTEXT_URL) && credentialTypes.includes('BoostCredential');
     const normalizedContexts = contexts
         .map(removeLegacyAttachmentsContext)
         .filter(context => context !== null);
-    const attachmentContexts = normalizedContexts.some(hasCanonicalAttachmentsContext)
-        ? normalizedContexts
-        : [...normalizedContexts, ATTACHMENTS_CONTEXT];
+    const compatibleContexts = usesPublishedBoostAttachments
+        ? normalizedContexts.filter(context => !hasCanonicalAttachmentsContext(context))
+        : normalizedContexts;
+    const attachmentContexts =
+        usesPublishedBoostAttachments || compatibleContexts.some(hasCanonicalAttachmentsContext)
+            ? compatibleContexts
+            : [...compatibleContexts, ATTACHMENTS_CONTEXT];
+    const attachment = {
+        ...(usesPublishedBoostAttachments ? { '@context': ATTACHMENT_DATA_CONTEXT } : {}),
+        title: artifact.fileName,
+        fileName: artifact.fileName,
+        fileSize: artifact.fileSize,
+        fileType: artifact.fileType,
+        data: artifact.data,
+        type: ['PNG', 'JPG', 'JPEG', 'WEBP'].includes(artifact.fileType) ? 'photo' : 'document',
+    };
 
     return {
         ...vc,
