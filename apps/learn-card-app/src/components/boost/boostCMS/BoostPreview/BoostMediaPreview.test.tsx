@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { VC } from '@learncard/types';
 
@@ -37,9 +37,24 @@ vi.mock('learn-card-base', () => ({
 }));
 
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
-    convertEvidenceToAttachments: vi.fn(),
-    getExistingAttachmentsOrEvidence: (attachments: unknown[], evidence: unknown[]) =>
-        attachments.length > 0 ? attachments : evidence,
+    getExistingAttachmentsOrEvidence: (
+        attachments: unknown[],
+        evidence: unknown[],
+        rawArtifact?: Record<string, string>
+    ) => {
+        if (attachments.length > 0) return attachments;
+        if (evidence.length > 0) return evidence;
+        if (!rawArtifact?.data) return [];
+
+        return [
+            {
+                ...rawArtifact,
+                title: rawArtifact.fileName,
+                type: 'document',
+                url: rawArtifact.data,
+            },
+        ];
+    },
 }));
 
 vi.mock('learn-card-base/filestack/images/images.helpers', () => ({
@@ -74,8 +89,22 @@ const credential = {
     ],
 } as unknown as VC;
 
+const rawArtifactCredential = {
+    rawArtifact: {
+        type: 'certificate',
+        fileName: 'legacy-certificate.pdf',
+        fileSize: '1 KB',
+        fileType: 'PDF',
+        data: CERTIFICATE_DATA,
+    },
+} as unknown as VC;
+
 describe('BoostMediaPreview', () => {
-    it('previews an embedded PDF attachment without sending it to Filestack', async () => {
+    beforeEach(() => {
+        getFilestackPreviewUrlMock.mockReset();
+        resolvePdfDocumentResourceMock.mockReset();
+        revokeUrlsMock.mockReset();
+
         resolvePdfDocumentResourceMock.mockResolvedValue({
             metadata: { type: 'application/pdf' },
             resource: {
@@ -85,6 +114,9 @@ describe('BoostMediaPreview', () => {
                 revokeUrls: revokeUrlsMock,
             },
         });
+    });
+    it('previews an embedded PDF attachment without sending it to Filestack', async () => {
+        // Resolver behavior is shared by attachment and raw-artifact sources.
 
         const { container, unmount } = render(
             <BoostMediaPreview
@@ -111,5 +143,29 @@ describe('BoostMediaPreview', () => {
 
         unmount();
         expect(revokeUrlsMock).toHaveBeenCalledOnce();
+    });
+
+    it('falls back to an embedded raw artifact when there are no attachments', async () => {
+        const { container } = render(
+            <BoostMediaPreview
+                credential={rawArtifactCredential}
+                openDetailsSideModal={vi.fn()}
+                handleShareBoost={vi.fn()}
+                onDotsClick={vi.fn()}
+                verifications={[]}
+            />
+        );
+
+        await waitFor(() => {
+            expect(container.querySelector('iframe')).toHaveAttribute(
+                'src',
+                'blob:certificate-preview'
+            );
+        });
+
+        expect(resolvePdfDocumentResourceMock).toHaveBeenCalledWith(
+            CERTIFICATE_DATA,
+            'legacy-certificate.pdf'
+        );
     });
 });

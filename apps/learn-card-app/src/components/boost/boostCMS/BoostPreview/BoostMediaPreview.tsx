@@ -54,9 +54,11 @@ export const BoostMediaPreview: React.FC<{
 
     const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
 
+    const rawArtifact = (credential as VC & { rawArtifact?: unknown }).rawArtifact;
     const attachments = getExistingAttachmentsOrEvidence(
         credential?.attachments || [],
-        credential?.evidence || []
+        credential?.evidence || [],
+        rawArtifact
     ).map(item => ({ ...item, url: getAttachmentSource(item) }));
     const attachment = attachments?.[0];
 
