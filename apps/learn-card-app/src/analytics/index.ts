@@ -5,7 +5,7 @@ export { useAnalyticsAgeGate } from './useAnalyticsAgeGate';
 export { AnalyticsEvents } from './events';
 export type { AnalyticsEventName, AnalyticsEventPayloads, EventPayload } from './events';
 export { ProfileBuildMethod } from './events';
-export type { ProfileSnapshot } from './events';
+export type { ProfileSnapshot, FeedbackSurface, FeedbackSentiment } from './events';
 export {
     useProfileSnapshot,
     useProfileSnapshotCapture,
