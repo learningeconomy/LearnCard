@@ -1,14 +1,4 @@
-import { useState, useEffect } from 'react';
-
-import {
-    UploadTypesEnum,
-    useGetChecklistCredentialCounts,
-    useGetCertCredential,
-    useGetDiplomaCredential,
-    useGetRawVCsCredential,
-    useGetResumeCredential,
-    useGetTranscriptCredential,
-} from '../react-query/queries/checklist';
+import { UploadTypesEnum, useGetChecklistCredentialCounts } from '../react-query/queries/checklist';
 
 export enum ChecklistEnum {
     uploadResume = 'uploadResume',
@@ -87,101 +77,13 @@ export const checklistItems: ChecklistItem[] = [
 ];
 
 export const useGetCheckListStatus = () => {
-    const { data: resumeCredential, refetch: refetchResumeCredential } = useGetResumeCredential();
-    const { data: certCredential, refetch: refetchCertCredential } = useGetCertCredential();
-    const { data: transcriptCredential, refetch: refetchTranscriptCredential } =
-        useGetTranscriptCredential();
-    const { data: diplomaCredential, refetch: refetchDiplomaCredential } =
-        useGetDiplomaCredential();
-    const { data: rawVCsCredential, refetch: refetchRawVCsCredential } = useGetRawVCsCredential();
-    const { data: checklistItemCounts, refetch: refetchChecklistCredentialCounts } =
-        useGetChecklistCredentialCounts();
+    const { refetch: refetchChecklistCredentialCounts } = useGetChecklistCredentialCounts();
 
-    const [checklistItemsWithStatus, setChecklistItemsWithStatus] = useState(checklistItems);
-    const [completedItems, setCompletedItems] = useState<number>(0);
-
-    useEffect(() => {
-        getCheckListStatus();
-    }, [
-        resumeCredential,
-        certCredential,
-        transcriptCredential,
-        diplomaCredential,
-        rawVCsCredential,
-    ]);
-
-    const getCheckListStatus = () => {
-        const _checklistItemsWithStatus = checklistItems.map(item => {
-            switch (item.type) {
-                case ChecklistEnum.uploadResume:
-                    return {
-                        ...item,
-                        isCompleted: !!resumeCredential,
-                    };
-                case ChecklistEnum.connectLinkedIn:
-                    return {
-                        ...item,
-                        isCompleted: false,
-                    };
-                case ChecklistEnum.connectSchool:
-                    return {
-                        ...item,
-                        isCompleted: true,
-                    };
-                case ChecklistEnum.uploadCertificates:
-                    return {
-                        ...item,
-                        isCompleted: !!certCredential,
-                    };
-                case ChecklistEnum.addSkills:
-                    return {
-                        ...item,
-                        isCompleted: true,
-                    };
-                case ChecklistEnum.uploadTranscripts:
-                    return {
-                        ...item,
-                        isCompleted: !!transcriptCredential,
-                    };
-                case ChecklistEnum.uploadDiplomas:
-                    return {
-                        ...item,
-                        isCompleted: !!diplomaCredential,
-                    };
-                case ChecklistEnum.uploadRawVC:
-                    return {
-                        ...item,
-                        isCompleted: !!rawVCsCredential,
-                    };
-                default:
-                    return item;
-            }
-        });
-
-        setChecklistItemsWithStatus(_checklistItemsWithStatus);
-
-        const _completedItems = _checklistItemsWithStatus.filter(item => item.isCompleted).length;
-        setCompletedItems(_completedItems);
-    };
-
-    const refetchCheckListStatus = async () => {
-        await refetchResumeCredential();
-        await refetchCertCredential();
-        await refetchTranscriptCredential();
-        await refetchDiplomaCredential();
-        await refetchRawVCsCredential();
+    const refetchCheckListStatus = async (): Promise<void> => {
         await refetchChecklistCredentialCounts();
     };
 
-    const numStepsRemaining = checklistItems.length - completedItems;
-
-    return {
-        checklistItemsWithStatus,
-        completedItems,
-        numStepsRemaining,
-        checklistItemCounts,
-        refetchCheckListStatus,
-    };
+    return { refetchCheckListStatus };
 };
 
 export default useGetCheckListStatus;

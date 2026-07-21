@@ -120,9 +120,7 @@
                 "description": "Si tienes credenciales en formato JSON, puedes agregarlas a tu cartera aquí."
             },
             "title": "Construye tu {{brand}}",
-            "progress": "{{percent}}% optimizado",
             "processing": "Procesando documentos…",
-            "stepsCompleted": "<0>{{completed}}</0> de <1>{{total}}</1> pasos completados",
             "pendingReview": "{{count}} credencial(es) listas para revisión",
             "helper": "Agrega un currículum, certificado, expediente académico o diploma.",
             "actionsTitle": "Elige qué agregar a continuación",
@@ -1366,7 +1364,6 @@
             "linkADevice": "Vincular un dispositivo",
             "switchAccount": "Cambiar de cuenta",
             "buildMyLearnCard": "Construye mi {{brand}}",
-            "stepsCompleted": "{{completed}} de {{total}}",
             "completeProfile": "Completar Perfil",
             "settings": "Configuración de la Cuenta"
         },

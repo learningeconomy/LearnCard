@@ -120,9 +120,7 @@
                 "description": "إذا كان لديك بيانات اعتماد بصيغة JSON، يمكنك إضافتها إلى محفظتك هنا."
             },
             "title": "إنشاء {{brand}} الخاص بي",
-            "progress": "{{percent}}% محسّن",
             "processing": "جاري معالجة المستندات…",
-            "stepsCompleted": "<0>{{completed}}</0> من <1>{{total}}</1> خطوات مكتملة",
             "pendingReview": "{{count}} شهادة(شهادات) جاهزة للمراجعة",
             "helper": "أضف سيرة ذاتية أو شهادة أو كشف درجات أو دبلوم.",
             "actionsTitle": "اختر ما تريد إضافته بعد ذلك",
@@ -1366,7 +1364,6 @@
             "linkADevice": "ربط جهاز",
             "switchAccount": "تبديل الحساب",
             "buildMyLearnCard": "ابنِ {{brand}} الخاص بي",
-            "stepsCompleted": "{{completed}} من {{total}}",
             "completeProfile": "إكمال الملف الشخصي",
             "settings": "إعدادات الحساب"
         },

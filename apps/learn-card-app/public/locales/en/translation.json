@@ -120,9 +120,7 @@
                 "description": "If you have raw JSON credentials, you can add them to your wallet here."
             },
             "title": "Build My {{brand}}",
-            "progress": "{{percent}}% optimized",
             "processing": "Processing documents…",
-            "stepsCompleted": "<0>{{completed}}</0> of <1>{{total}}</1> Steps Completed",
             "pendingReview": "{{count}} credential(s) ready for review",
             "helper": "Add a resume, certificate, transcript, or diploma.",
             "actionsTitle": "Choose what to add next",
@@ -1336,7 +1334,6 @@
             "linkADevice": "Link a Device",
             "switchAccount": "Switch Account",
             "buildMyLearnCard": "Build My {{brand}}",
-            "stepsCompleted": "{{completed}} of {{total}}",
             "completeProfile": "Complete Profile",
             "settings": "Account Settings"
         },

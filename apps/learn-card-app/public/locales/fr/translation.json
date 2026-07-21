@@ -120,9 +120,7 @@
                 "description": "Si vous avez des justificatifs au format JSON brut, vous pouvez les ajouter à votre portefeuille ici."
             },
             "title": "Construire mon {{brand}}",
-            "progress": "{{percent}}% optimisé",
             "processing": "Traitement des documents…",
-            "stepsCompleted": "<0>{{completed}}</0> sur <1>{{total}}</1> étapes terminées",
             "pendingReview": "{{count}} titre(s) prêt(s) pour vérification",
             "helper": "Ajoutez un CV, un certificat, un relevé de notes ou un diplôme.",
             "actionsTitle": "Choisissez le prochain élément à ajouter",
@@ -1366,7 +1364,6 @@
             "linkADevice": "Associer un appareil",
             "switchAccount": "Changer de compte",
             "buildMyLearnCard": "Construire mon {{brand}}",
-            "stepsCompleted": "{{completed}} sur {{total}}",
             "completeProfile": "Compléter le profil",
             "settings": "Paramètres du compte"
         },
