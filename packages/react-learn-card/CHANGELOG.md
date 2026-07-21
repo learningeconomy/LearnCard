@@ -1,5 +1,14 @@
 # @welibraryos/react-learn-card
 
+## 2.10.8
+
+### Patch Changes
+
+-   [#1419](https://github.com/learningeconomy/LearnCard/pull/1419) [`2e5f5dba1b8b95a0fbdc24cd431d8826dc180852`](https://github.com/learningeconomy/LearnCard/commit/2e5f5dba1b8b95a0fbdc24cd431d8826dc180852) Thanks [@smurflo2](https://github.com/smurflo2)! - Implement logged out claim flow for Scouts, fix network join prompt, and various Scouts bugs
+
+-   Updated dependencies []:
+    -   @learncard/init@2.4.8
+
 ## 2.10.7
 
 ### Patch Changes
