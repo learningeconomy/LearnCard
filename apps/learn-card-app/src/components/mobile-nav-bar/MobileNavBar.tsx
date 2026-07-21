@@ -29,6 +29,9 @@ import useTheme from '../../theme/hooks/useTheme';
 import { IconSetEnum, NavbarIcons } from '../../theme/icons';
 import { ColorSetEnum } from '../../theme/colors';
 
+import * as m from '../../paraglide/messages.js';
+import { getNavBarLinkLabel } from './mobileNavBarI18n';
+
 export enum MobileNavBarLinks {
     dashboard = 'dashboard',
     wallet = 'wallet',
@@ -73,8 +76,9 @@ const MobileNavBar: React.FC = () => {
     const isSyncing = isWalletSyncing.status === WalletSyncState.Syncing;
     const isCompleted = isWalletSyncing.status === WalletSyncState.Completed;
 
-    let walletText = 'Passport';
-    if (isSyncing || isCompleted) walletText = isWalletSyncing?.text ?? 'Passport';
+    let walletText: string = m['sidemenu.links.passport']();
+    if (isSyncing || isCompleted)
+        walletText = isWalletSyncing?.text ?? m['sidemenu.links.passport']();
 
     let walletTextStyles = 'mt-[3px]';
     if (isSyncing) walletTextStyles = `${colors?.syncingColor} mt-[3px] pb-[2px]`;
@@ -128,7 +132,7 @@ const MobileNavBar: React.FC = () => {
                                                     : colors?.inactiveColor
                                             }`}
                                         >
-                                            {link.label}
+                                            {getNavBarLinkLabel(link)}
                                         </IonLabel>
                                     </IonTabButton>
                                 );
@@ -187,7 +191,7 @@ const MobileNavBar: React.FC = () => {
                                                     : colors?.inactiveColor
                                             }`}
                                         >
-                                            {link.label}
+                                            {getNavBarLinkLabel(link)}
                                         </IonLabel>
                                     </IonTabButton>
                                 );

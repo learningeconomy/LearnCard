@@ -1,5 +1,6 @@
 import React from 'react';
 import { useModal } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 
 type ConsentFlowSelectiveSharingWarningProps = {
     onContinue: () => void;
@@ -33,7 +34,7 @@ const ConsentFlowSelectiveSharingWarning: React.FC<ConsentFlowSelectiveSharingWa
                     closeModal();
                 }}
             >
-                Continue
+                {m['common.continue']()}
             </button>
 
             <button
@@ -41,7 +42,7 @@ const ConsentFlowSelectiveSharingWarning: React.FC<ConsentFlowSelectiveSharingWa
                 type="button"
                 onClick={closeModal}
             >
-                Cancel
+                {m['common.cancel']()}
             </button>
         </section>
     );

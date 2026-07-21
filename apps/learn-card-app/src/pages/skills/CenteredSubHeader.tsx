@@ -9,6 +9,7 @@ import { AiInsightsIconWithShape } from 'learn-card-base/svgs/wallet/AiInsightsI
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
 import { mapBoostsToSkills, RawCategorizedEntry } from './skills.helpers';
 import { SkillsIconWithShape } from 'learn-card-base/svgs/wallet/SkillsIcon';
+import * as m from '../../paraglide/messages.js';
 
 export const CenteredSubHeader: React.FC<{ subheaderType: SubheaderTypeEnum }> = ({
     subheaderType,
@@ -34,10 +35,10 @@ export const CenteredSubHeader: React.FC<{ subheaderType: SubheaderTypeEnum }> =
 
     if (subheaderType === SubheaderTypeEnum.Skill) {
         icon = <SkillsIconWithShape />;
-        title = 'Skills Hub';
+        title = m['aiFeatureLinks.skillsHub']();
     } else if (subheaderType === SubheaderTypeEnum.AiInsights) {
         icon = <AiInsightsIconWithShape />;
-        title = 'Insights';
+        title = m['wallet.categories.aiInsights']();
     }
 
     return (

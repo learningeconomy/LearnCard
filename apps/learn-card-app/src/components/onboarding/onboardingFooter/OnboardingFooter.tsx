@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 import { IonFooter, IonToolbar } from '@ionic/react';
 
@@ -73,7 +74,7 @@ export const OnboardingFooter: React.FC<{
                             onClick={closeModal}
                             className=" py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] leading-[24px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] justify-center mr-2"
                         >
-                            Close
+                            {m['common.close']()}
                         </button>
                     </div>
                 </div>
@@ -92,7 +93,7 @@ export const OnboardingFooter: React.FC<{
                                     onClick={handleGoBack}
                                     className=" py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] leading-[24px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] justify-center mr-2"
                                 >
-                                    Back
+                                    {m['onboarding.back']()}
                                 </button>
                             )}
 
@@ -123,7 +124,7 @@ export const OnboardingFooter: React.FC<{
                                 className="text-grayscale-500 my-4 font-poppins text-base"
                                 onClick={overrideSkip ? overrideSkip : closeModal}
                             >
-                                Skip For Now
+                                {m['onboarding.skipForNow']()}
                             </button>
                         )}
                     </div>

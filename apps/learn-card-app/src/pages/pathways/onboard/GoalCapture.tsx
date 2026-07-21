@@ -12,6 +12,7 @@
  */
 
 import React, { useState } from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 interface GoalCaptureProps {
     initial?: string;
@@ -45,17 +46,14 @@ const GoalCapture: React.FC<GoalCaptureProps> = ({ initial = '', onContinue, onS
                 </h2>
 
                 <p className="text-sm text-grayscale-600 leading-relaxed">
-                    A goal you're chasing, a question you're sitting with, something you want to
-                    do today, or a field you're curious about — any of it works. One sentence is
+                    A goal you're chasing, a question you're sitting with, something you want to do
+                    today, or a field you're curious about — any of it works. One sentence is
                     plenty.
                 </p>
             </div>
 
             <div className="space-y-1.5">
-                <label
-                    htmlFor="pathways-goal"
-                    className="text-xs font-medium text-grayscale-700"
-                >
+                <label htmlFor="pathways-goal" className="text-xs font-medium text-grayscale-700">
                     In your own words
                 </label>
 
@@ -71,9 +69,7 @@ const GoalCapture: React.FC<GoalCaptureProps> = ({ initial = '', onContinue, onS
                     maxLength={280}
                 />
 
-                <p className="text-xs text-grayscale-400 text-right">
-                    {text.length} / 280
-                </p>
+                <p className="text-xs text-grayscale-400 text-right">{text.length} / 280</p>
             </div>
 
             <div className="space-y-3">
@@ -92,7 +88,7 @@ const GoalCapture: React.FC<GoalCaptureProps> = ({ initial = '', onContinue, onS
                     onClick={onSkip}
                     className="w-full text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
                 >
-                    Skip for now
+                    {m['common.skipForNow']()}
                 </button>
             </div>
         </div>

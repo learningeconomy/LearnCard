@@ -16,6 +16,7 @@ import {
     NetworkSettingsState,
 } from '../network-settings/networkSettings.helpers';
 
+// i18n: no user-facing strings — composition/state component
 export enum UserProfileFormStateEnum {
     Account = 'account',
     Permissions = 'permissions',

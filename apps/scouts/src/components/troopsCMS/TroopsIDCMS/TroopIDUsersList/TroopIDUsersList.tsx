@@ -116,20 +116,22 @@ export const TroopIDUsersList: React.FC<TroopIDUsersListProps> = ({
                         <div className="flex mb-2">
                             <button
                                 onClick={() => setActiveTab(TroopIDUserListTabsEnum.all)}
-                                className={`text-sm font-notoSans font-semibold mr-2 ${activeTab === TroopIDUserListTabsEnum.all
+                                className={`text-sm font-notoSans font-semibold mr-2 ${
+                                    activeTab === TroopIDUserListTabsEnum.all
                                         ? 'text-sp-blue-ocean'
                                         : 'text-grayscale-700'
-                                    }`}
+                                }`}
                             >
                                 All
                             </button>
                             {scoutsListCount > 0 && (
                                 <button
                                     onClick={() => setActiveTab(TroopIDUserListTabsEnum.scouts)}
-                                    className={`text-sm font-notoSans font-semibold mr-2 text-grayscale-700 ${activeTab === TroopIDUserListTabsEnum.scouts
+                                    className={`text-sm font-notoSans font-semibold mr-2 text-grayscale-700 ${
+                                        activeTab === TroopIDUserListTabsEnum.scouts
                                             ? 'text-sp-blue-ocean'
                                             : 'text-grayscale-700'
-                                        }`}
+                                    }`}
                                 >
                                     {scoutsListCount} {scoutsListCount === 1 ? 'Scout' : 'Scouts'}
                                 </button>
@@ -138,13 +140,14 @@ export const TroopIDUsersList: React.FC<TroopIDUsersListProps> = ({
                             {leadersListCount > 0 && (
                                 <button
                                     onClick={() => setActiveTab(TroopIDUserListTabsEnum.leaders)}
-                                    className={`text-sm font-notoSans font-semibold mr-2 text-grayscale-700 ${activeTab === TroopIDUserListTabsEnum.leaders
+                                    className={`text-sm font-notoSans font-semibold mr-2 text-grayscale-700 ${
+                                        activeTab === TroopIDUserListTabsEnum.leaders
                                             ? 'text-sp-blue-ocean'
                                             : 'text-grayscale-700'
-                                        }`}
+                                    }`}
                                 >
                                     {leadersListCount}{' '}
-                                    {leadersListCount === 1 ? 'Leader' : 'Leaders'}
+                                    {leadersListCount === 1 ? 'Troop Leader' : 'Troop Leaders'}
                                 </button>
                             )}
                         </div>
@@ -153,7 +156,7 @@ export const TroopIDUsersList: React.FC<TroopIDUsersListProps> = ({
                         className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal font-notoSans text-[17px] w-full troops-cms-placeholder"
                         placeholder="Search..."
                         value={search}
-                        onIonInput={e => setSearch(e.detail.value)}
+                        onIonInput={e => setSearch(e.detail.value ?? '')}
                     />
                 </div>
             )}
@@ -162,7 +165,7 @@ export const TroopIDUsersList: React.FC<TroopIDUsersListProps> = ({
 
             {filteredList?.length > 0 &&
                 filteredList.map((user, index) => {
-                    const typeTitle = user?.type === 'scout' ? 'Scout' : 'Leader';
+                    const typeTitle = user?.type === 'scout' ? 'Scout' : 'Troop Leader';
                     const deleteKey = user?.type === 'scout' ? 'issueTo' : 'admins';
 
                     return (

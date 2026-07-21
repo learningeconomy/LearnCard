@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+
+import { m } from '../../../paraglide/messages.js';
+
 import { useHistory } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useStore } from '@nanostores/react';
@@ -208,7 +211,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                 <button
                                     onClick={() => setShowPathwaySelection(false)}
                                     className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
-                                    aria-label="Close"
+                                    aria-label={m['common.close']()}
                                 >
                                     ×
                                 </button>

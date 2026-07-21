@@ -12,6 +12,7 @@ import {
     EndorsementState,
     relationshipOptions,
 } from './endorsement-state.helpers';
+import * as m from '../../../paraglide/messages.js';
 
 const otherRelationSchema = zod.object({
     other: zod.string().min(1, 'Relationship is required'),
@@ -23,6 +24,24 @@ const EndorsementRelationshipSelector: React.FC<{
 }> = ({ endorsement, setEndorsement }) => {
     const { closeModal } = useModal();
     const sectionPortal = document.getElementById('section-cancel-portal');
+
+    // Map relationship type -> localized display label. The English label is
+    // still stored into endorsement state (data integrity for the VC); only the
+    // picker UI is localized. Resolved at render (locale-freeze safe).
+    const relationshipLabel = (type: EndorsementRelationshipOptionsEnum | string | null) => {
+        switch (type) {
+            case EndorsementRelationshipOptionsEnum.Friend:
+                return m['endorsement.form.relationship.friend']();
+            case EndorsementRelationshipOptionsEnum.ProfessionalColleague:
+                return m['endorsement.form.relationship.professionalColleague']();
+            case EndorsementRelationshipOptionsEnum.VolunteeredTogether:
+                return m['endorsement.form.relationship.volunteeredTogether']();
+            case EndorsementRelationshipOptionsEnum.College:
+                return m['endorsement.form.relationship.college']();
+            default:
+                return m['endorsement.form.relationship.other']();
+        }
+    };
 
     const [other, setOther] = useState<string>('');
     const [errors, setErrors] = useState<Record<string, string[]>>({});
@@ -81,7 +100,7 @@ const EndorsementRelationshipSelector: React.FC<{
     return (
         <section className="p-[20px] w-full flex flex-col items-center justify-start">
             <h1 className="font-semibold mb-[10px] font-notoSans text-[22px] text-grayscale-900">
-                Select Relationship
+                {m['endorsement.form.relationship.selectTitle']()}
             </h1>
             {relationshipOptions.map((option, index) => {
                 if (option.type === EndorsementRelationshipOptionsEnum.Other) return null;
@@ -92,7 +111,7 @@ const EndorsementRelationshipSelector: React.FC<{
                         onClick={() => handleSelectRelationship(option.type)}
                         className="w-full flex items-center justify-between ion-padding text-grayscale-800 rounded-[15px]  tracking-widest text-lg mb-[10px] text-left"
                     >
-                        {option.label}
+                        {relationshipLabel(option.type)}
                         {isSelected ? <Checkmark className="w-7 h-auto text-emerald-700" /> : null}
                     </button>
                 );
@@ -105,7 +124,7 @@ const EndorsementRelationshipSelector: React.FC<{
                     type="text"
                     onIonInput={e => setOther(e.detail.value)}
                     value={other}
-                    placeholder="Other..."
+                    placeholder={m['endorsement.form.relationship.otherPlaceholder']()}
                 />
                 {errors?.other && <p className="text-red-500">{errors?.other}</p>}
             </div>
@@ -116,14 +135,14 @@ const EndorsementRelationshipSelector: React.FC<{
                             onClick={closeModal}
                             className="bg-white text-grayscale-900 text-[17px] py-2 rounded-[20px] w-full h-full shadow-bottom mt-[10px]"
                         >
-                            Close
+                            {m['common.close']()}
                         </button>
                         {other.length > 0 ? (
                             <button
                                 onClick={handleSaveOtherRelationship}
                                 className="bg-emerald-700 text-white text-[17px] py-2 rounded-[20px] w-full h-full shadow-bottom mt-[10px]"
                             >
-                                Save
+                                {m['common.save']()}
                             </button>
                         ) : null}
                     </div>,

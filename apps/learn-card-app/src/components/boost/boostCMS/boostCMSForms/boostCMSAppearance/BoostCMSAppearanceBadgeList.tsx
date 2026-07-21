@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 import {
-    useFilestack,
+    useImageUpload,
     UploadRes,
     LCAStylesPackRegistryEntry,
     getBoostMetadata,
@@ -25,6 +25,7 @@ import BoostVCTypeOptionButton from '../../../boost-options/boostVCTypeOptions/B
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { BoostCMSActiveAppearanceForm } from './BoostCMSAppearanceFormHeader';
 import { SetState } from 'packages/shared-types/dist';
+import * as m from '../../../../../paraglide/messages.js';
 
 export enum StylePackCategories {
     all = BoostCategoryOptionsEnum.all,
@@ -105,7 +106,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
         setActiveForm(BoostCMSActiveAppearanceForm.appearanceForm);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
@@ -165,7 +166,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
                             <div
                                 className={`flex items-center justify-center absolute h-[35px] w-[35px] left-1 rounded-full`}
                             ></div>
-                            All
+                            {m['boost.cms.appearance.all']()}
                             {activeStylePackCategory === StylePackCategories.all && (
                                 <div
                                     className={`flex items-center justify-center absolute h-[35px] w-[35px] right-1 rounded-full`}
@@ -211,7 +212,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
                             onClick={() => setShowStylePackCategoryList(false)}
                             className="text-grayscale-900 text-center text-sm"
                         >
-                            Cancel
+                            {m['common.cancel']()}
                         </button>
                     </div>
                 </IonRow>
@@ -251,12 +252,14 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
         activeStep = (
             <>
                 <div className="w-full flex items-center justify-between bg-white ion-padding max-w-[90%]">
-                    <p className="text-grayscale-900 font-semibold text-base">Style Pack</p>
+                    <p className="text-grayscale-900 font-semibold text-base">
+                        {m['boost.cms.appearance.stylePack']()}
+                    </p>
                     {categoryButton}
                 </div>
                 <button onClick={handleImageSelect} className="boost-cms-badge">
                     <Camera className="boost-cms-camera-icon text-white" />
-                    <span className="upload-text">Upload</span>
+                    <span className="upload-text">{m['common.upload']()}</span>
                 </button>
                 {photo && !isDefaultImage && (
                     <div className="boost-cms-badge">
@@ -335,7 +338,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
                                 style={{ width: '100%', height: '100%' }}
                             />
                         </div>
-                        <p className="mt-2 font-poppins text-xl">Loading...</p>
+                        <p className="mt-2 font-poppins text-xl">{m['common.loading']()}</p>
                     </div>
                 ) : (
                     activeStep

@@ -48,6 +48,7 @@ import { useCredentialIdentity } from './components/useCredentialIdentity';
 import { mergeSkillAlignments, type ResolvedSkill } from './components/skillAlignment';
 import type { SelectedSkill } from '../skills/skillTypes';
 import { IssueCredentialView } from './IssueCredentialView';
+import * as m from '../../paraglide/messages.js';
 
 const log = getLogger('issue-page');
 
@@ -274,17 +275,17 @@ const IssueCredentialPage: React.FC = () => {
         : provenance.label || 'an external source';
 
     const missingHint = !template
-        ? 'Pick a type to begin'
+        ? m['issueFlow.gate.pickType']()
         : jsonError
-        ? 'Fix the JSON to continue'
+        ? m['issueFlow.gate.fixJson']()
         : viewingJson && identity.status === 'invalid'
         ? identity.reason
         : !jsonOnly && !nameValid
-        ? 'Add a name to continue'
+        ? m['issueFlow.gate.addName']()
         : !allVariablesFilled
         ? `Fill in ${unfilledCount} detail${unfilledCount === 1 ? '' : 's'} to continue`
         : !recipientValid
-        ? 'Add a recipient to continue'
+        ? m['issueFlow.gate.addRecip']()
         : null;
 
     const handleSelectType = useCallback((entry: CredentialTypeEntry) => {
@@ -543,9 +544,7 @@ const IssueCredentialPage: React.FC = () => {
 
             if (recipientMode === 'self') {
                 if (!result.credentialUri) {
-                    throw new Error(
-                        'Credential was issued, but it could not be saved to your account.'
-                    );
+                    throw new Error(m['issueFlow.saveFailed']());
                 }
 
                 await addVCtoWallet({ uri: result.credentialUri });
@@ -565,7 +564,7 @@ const IssueCredentialPage: React.FC = () => {
                 });
             }
 
-            presentToast('Credential issued.', {
+            presentToast(m['issueFlow.toastIssued'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
@@ -652,12 +651,16 @@ const IssueCredentialPage: React.FC = () => {
     const handleIssueAnother = useCallback(() => {
         if (claimLink && !linkConsumed) {
             presentAlert({
-                header: 'Discard this link?',
+                header: m['issueFlow.discard.title'](),
                 message:
                     "You haven't copied or shared this claim link yet. If you start over, it'll be cleared.",
                 buttons: [
-                    { text: 'Keep', role: 'cancel' },
-                    { text: 'Discard', role: 'destructive', handler: () => reset() },
+                    { text: m['issueFlow.discard.keep'](), role: 'cancel' },
+                    {
+                        text: m['issueFlow.discard.discard'](),
+                        role: 'destructive',
+                        handler: () => reset(),
+                    },
                 ],
             });
             return;

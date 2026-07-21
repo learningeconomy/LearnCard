@@ -1,3 +1,4 @@
+import * as m from '../../../../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('connections-tab');
 /**
@@ -95,18 +96,21 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
         return (
             <div className="space-y-6">
                 <div>
-                    <h2 className="text-lg font-semibold text-gray-800">Connected Users</h2>
+                    <h2 className="text-lg font-semibold text-gray-800">
+                        {m['developerPortal.dashboards.tabs.connections.title']()}
+                    </h2>
                     <p className="text-sm text-gray-500">
-                        Users who have consented to share data with you
+                        {m['developerPortal.dashboards.tabs.connections.description']()}
                     </p>
                 </div>
 
                 <div className="text-center py-12 border border-dashed border-gray-300 rounded-xl">
                     <Shield className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                    <p className="text-gray-500 font-medium">No contract configured</p>
+                    <p className="text-gray-500 font-medium">
+                        {m['developerPortal.dashboards.tabs.connections.noContractTitle']()}
+                    </p>
                     <p className="text-sm text-gray-400 mt-1 max-w-md mx-auto">
-                        Complete the Build guide to create a consent flow contract first. Consent
-                        records will appear here once users start granting consent.
+                        {m['developerPortal.dashboards.tabs.connections.noContractDesc']()}
                     </p>
                 </div>
             </div>
@@ -127,9 +131,11 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
         return (
             <div className="space-y-6">
                 <div>
-                    <h2 className="text-lg font-semibold text-gray-800">Connected Users</h2>
+                    <h2 className="text-lg font-semibold text-gray-800">
+                        {m['developerPortal.dashboards.tabs.connections.title']()}
+                    </h2>
                     <p className="text-sm text-gray-500">
-                        Users who have consented to share data with you
+                        {m['developerPortal.dashboards.tabs.connections.description']()}
                     </p>
                 </div>
 
@@ -137,10 +143,12 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
                     <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                     <div>
                         <p className="font-medium text-red-800 text-sm">
-                            Failed to load consent data
+                            {m['developerPortal.dashboards.tabs.connections.errorTitle']()}
                         </p>
                         <p className="text-xs text-red-700 mt-1">
-                            {error instanceof Error ? error.message : 'Unknown error'}
+                            {error instanceof Error
+                                ? error.message
+                                : m['developerPortal.dashboards.tabs.connections.errorUnknown']()}
                         </p>
 
                         <button
@@ -148,7 +156,7 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
                             className="mt-2 inline-flex items-center gap-1 text-xs text-red-700 hover:text-red-900 font-medium"
                         >
                             <RefreshCw className="w-3 h-3" />
-                            Retry
+                            {m['developerPortal.dashboards.tabs.connections.errorRetry']()}
                         </button>
                     </div>
                 </div>
@@ -160,11 +168,15 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-lg font-semibold text-gray-800">Connected Users</h2>
+                    <h2 className="text-lg font-semibold text-gray-800">
+                        {m['developerPortal.dashboards.tabs.connections.title']()}
+                    </h2>
                     <p className="text-sm text-gray-500">
                         {records.length > 0
-                            ? `${records.length} consent record${records.length !== 1 ? 's' : ''}`
-                            : 'Users who have consented to share data with you'}
+                            ? m['developerPortal.dashboards.tabs.connections.recordCount']({
+                                  count: records.length,
+                              })
+                            : m['developerPortal.dashboards.tabs.connections.description']()}
                     </p>
                 </div>
 
@@ -174,7 +186,7 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
                     className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
                 >
                     <RefreshCw className={`w-4 h-4 ${isRefetching ? 'animate-spin' : ''}`} />
-                    Refresh
+                    {m['developerPortal.dashboards.tabs.connections.refresh']()}
                 </button>
             </div>
 
@@ -182,7 +194,9 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
             <div className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-xl">
                 <FileText className="w-4 h-4 text-gray-500" />
                 <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-500">Contract URI</p>
+                    <p className="text-xs text-gray-500">
+                        {m['developerPortal.dashboards.tabs.connections.contractUri']()}
+                    </p>
                     <code className="text-xs text-gray-700 truncate block">{contractUri}</code>
                 </div>
             </div>
@@ -190,10 +204,11 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
             {records.length === 0 ? (
                 <div className="text-center py-12 border border-dashed border-gray-300 rounded-xl">
                     <Users className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                    <p className="text-gray-500 font-medium">No consent records yet</p>
+                    <p className="text-gray-500 font-medium">
+                        {m['developerPortal.dashboards.tabs.connections.noRecordsTitle']()}
+                    </p>
                     <p className="text-sm text-gray-400 mt-1 max-w-md mx-auto">
-                        Users who grant consent via your redirect flow will appear here. Try the
-                        consent flow from the Testing tab first.
+                        {m['developerPortal.dashboards.tabs.connections.noRecordsDesc']()}
                     </p>
                 </div>
             ) : (
@@ -220,7 +235,9 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
                                     <div className="flex-1 text-left">
                                         <p className="text-sm font-medium text-gray-800">
                                             {getConsentRecordDisplayName(record.personal || {}) ||
-                                                `Consent Record #${records.length - idx}`}
+                                                m[
+                                                    'developerPortal.dashboards.tabs.connections.consentRecord'
+                                                ]({ number: records.length - idx })}
                                         </p>
 
                                         <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
@@ -233,8 +250,9 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
                                             {personalKeys.length > 0 && (
                                                 <span className="flex items-center gap-1">
                                                     <Database className="w-3 h-3" />
-                                                    {personalKeys.length} field
-                                                    {personalKeys.length !== 1 ? 's' : ''} shared
+                                                    {m[
+                                                        'developerPortal.dashboards.tabs.connections.fieldsShared'
+                                                    ]({ count: personalKeys.length })}
                                                 </span>
                                             )}
                                         </div>
@@ -253,7 +271,9 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
                                         {personalKeys.length > 0 && (
                                             <div className="mt-3">
                                                 <p className="text-xs font-medium text-gray-600 mb-2">
-                                                    Shared Personal Data
+                                                    {m[
+                                                        'developerPortal.dashboards.tabs.connections.sharedPersonalData'
+                                                    ]()}
                                                 </p>
 
                                                 <div className="space-y-1">
@@ -278,7 +298,9 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
                                         {credCategories.length > 0 && (
                                             <div>
                                                 <p className="text-xs font-medium text-gray-600 mb-2">
-                                                    Shared Credential Categories
+                                                    {m[
+                                                        'developerPortal.dashboards.tabs.connections.sharedCategories'
+                                                    ]()}
                                                 </p>
 
                                                 <div className="flex flex-wrap gap-2">
@@ -306,7 +328,9 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
                                         {personalKeys.length === 0 &&
                                             credCategories.length === 0 && (
                                                 <p className="mt-3 text-xs text-gray-400 italic">
-                                                    Consent granted with no additional data shared
+                                                    {m[
+                                                        'developerPortal.dashboards.tabs.connections.noDataShared'
+                                                    ]()}
                                                 </p>
                                             )}
                                     </div>
@@ -321,7 +345,9 @@ export const ConnectionsTab: React.FC<ConnectionsTabProps> = ({ integration }) =
             <div className="border border-gray-200 rounded-xl p-4 space-y-3">
                 <div className="flex items-center gap-2">
                     <Info className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm font-medium text-gray-700">Query via API</span>
+                    <span className="text-sm font-medium text-gray-700">
+                        {m['developerPortal.dashboards.tabs.connections.queryApi']()}
+                    </span>
                 </div>
 
                 <CodeOutputPanel

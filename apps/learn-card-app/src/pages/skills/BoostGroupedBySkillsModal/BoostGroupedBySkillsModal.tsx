@@ -14,6 +14,7 @@ import { groupCredentialsByCategorySkillsAndSubskills } from '../skills.helpers'
 import { GroupedSkillsDisplayType } from './GroupedCredentialsBySkillsList';
 
 import { useModal } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 
 type BoostGroupedBySkillsModalProps = {
     credentials: VC[] | VC_WITH_URI[];
@@ -47,7 +48,9 @@ const BoostGroupedBySkillsModal: React.FC<BoostGroupedBySkillsModalProps> = ({
             <div className="px-[12px] overflow-y-auto flex-1 w-full pb-[100px]">
                 {credentials?.length === 0 && (
                     <div className="flex flex-col w-full h-full items-center justify-center">
-                        <p className="mt-2 font-poppins text-xl">No Boosts yet!</p>
+                        <p className="mt-2 font-poppins text-xl">
+                            {m['skills.boostsBySkill.noBoosts']()}
+                        </p>
                     </div>
                 )}
 
@@ -80,7 +83,7 @@ const BoostGroupedBySkillsModal: React.FC<BoostGroupedBySkillsModalProps> = ({
                             onClick={closeModal}
                             className=" py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] justify-center mr-2"
                         >
-                            Close
+                            {m['common.close']()}
                         </button>
                     </div>
                 </div>

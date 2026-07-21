@@ -8,6 +8,7 @@ import UserEmailContactItem from './UserEmailContactItem';
 import { EMAIL_REGEX, useGetMyContactMethods, useAddContactMethod } from 'learn-card-base';
 
 import useTheme from '../../../theme/hooks/useTheme';
+import * as m from '../../../paraglide/messages.js';
 import { IconSetEnum } from '../../../theme/icons';
 
 type ContactMethodType =
@@ -116,7 +117,7 @@ export const UserEmailContacts: React.FC = () => {
                                     setErrors({});
                                 }}
                                 value={email}
-                                placeholder="Email"
+                                placeholder={m['profile.email.placeholder']()}
                                 type="text"
                             />
                         </div>
@@ -157,7 +158,7 @@ export const UserEmailContacts: React.FC = () => {
                     <section className="w-full flex flex-col items-center justify-center my-[30px]">
                         <FloatingBottleIcon />
                         <p className="font-poppins text-[17px] font-normal text-grayscale-900 mt-[10px]">
-                            No emails added yet.
+                            {m['profile.email.noEmails']()}
                         </p>
                     </section>
                 )}

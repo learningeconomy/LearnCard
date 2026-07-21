@@ -32,7 +32,7 @@ const ClaimsBoxHeader: React.FC = () => (
     </div>
 );
 
-export const SdJwtVcClaimsBox: React.FC<SdJwtVcClaimsBoxProps> = ({ credential }) => {
+const SdJwtVcClaimsBoxContent: React.FC<SdJwtVcClaimsBoxProps> = ({ credential }) => {
     const format = useCredentialFormat(credential);
     const isSdJwt = format === 'dc+sd-jwt' || format === 'vc+sd-jwt';
 
@@ -187,5 +187,10 @@ export const SdJwtVcClaimsBox: React.FC<SdJwtVcClaimsBoxProps> = ({ credential }
         </ClaimsBoxShell>
     );
 };
+
+// The claim deep-link (`/notifications?uri=...&claim=true`) opens the claim modal
+// before the credential has resolved, so guard against a not-yet-loaded credential.
+export const SdJwtVcClaimsBox: React.FC<{ credential?: VC }> = ({ credential }) =>
+    credential ? <SdJwtVcClaimsBoxContent credential={credential} /> : null;
 
 export default SdJwtVcClaimsBox;

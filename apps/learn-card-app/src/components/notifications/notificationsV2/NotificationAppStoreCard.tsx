@@ -5,6 +5,7 @@ import { ErrorBoundary } from '@sentry/react';
 import { useModal } from 'learn-card-base';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import { CheckCircle, XCircle, Send, Store } from 'lucide-react';
+import * as m from '../../../paraglide/messages.js';
 import { notificationCardStyles } from './types';
 
 type NotificationAppStoreCardProps = {
@@ -18,19 +19,19 @@ const VARIANT_CONFIG = {
         chipColor: 'bg-emerald-50 text-emerald-600',
         labelColor: 'text-emerald-600',
         Icon: CheckCircle,
-        label: 'App Approved',
+        getLabel: () => m['alerts.appApproved'](),
     },
     rejected: {
         chipColor: 'bg-amber-50 text-amber-600',
         labelColor: 'text-amber-600',
         Icon: XCircle,
-        label: 'Review Required',
+        getLabel: () => m['alerts.reviewRequired'](),
     },
     submitted: {
         chipColor: 'bg-indigo-50 text-indigo-600',
         labelColor: 'text-indigo-600',
         Icon: Send,
-        label: 'New Submission',
+        getLabel: () => m['alerts.newSubmission'](),
     },
 };
 
@@ -45,7 +46,7 @@ const NotificationAppStoreCard: React.FC<NotificationAppStoreCardProps> = ({
     const formattedDate = moment(transactionDate).format('MMM D, YYYY h:mma');
 
     const config = VARIANT_CONFIG[variant];
-    const { Icon, chipColor, labelColor, label } = config;
+    const { Icon, chipColor, labelColor, getLabel } = config;
 
     const listingId = notification.data?.metadata?.listingId as string | undefined;
 
@@ -92,7 +93,7 @@ const NotificationAppStoreCard: React.FC<NotificationAppStoreCardProps> = ({
                         data-testid="notification-type"
                     >
                         <Store className="w-3 h-3 inline-block mr-1" />
-                        {label}
+                        {getLabel()}
                         {transactionDate && (
                             <span className={`${notificationCardStyles.date} ml-1`}>
                                 • {formattedDate}

@@ -14,6 +14,7 @@ import { BoostEarnedCard } from '../../../components/boost/boost-earned-card/Boo
 import type { SimpleCredentialType } from '../../../components/simple-send/simpleSend.helpers';
 import { Confetti } from './Confetti';
 import type { LinkOptions, Recipient, RecipientMode } from './recipientTypes';
+import * as m from '../../../paraglide/messages.js';
 
 const log = getLogger('issue-success');
 
@@ -34,10 +35,11 @@ const recipientName = (recipient: Recipient): string =>
 
 const summarizeRecipients = (recipients: Recipient[]): string => {
     const names = recipients.map(recipientName).filter(Boolean);
-    if (names.length === 0) return 'the recipient';
+    if (names.length === 0) return m['issueFlow.success.theRecipient']();
     if (names.length === 1) return names[0];
-    if (names.length === 2) return `${names[0]} and ${names[1]}`;
-    return `${names[0]} and ${names.length - 1} others`;
+    if (names.length === 2)
+        return m['issueFlow.success.twoNames']({ first: names[0], second: names[1] });
+    return m['issueFlow.success.andOthers']({ name: names[0], count: names.length - 1 });
 };
 
 export const IssueSuccess: React.FC<IssueSuccessProps> = ({
@@ -61,7 +63,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
             await navigator.clipboard.writeText(claimLink);
             setCopied(true);
             onLinkConsumed?.();
-            presentToast('Link copied.', {
+            presentToast(m['issueFlow.success.linkCopied'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
@@ -76,7 +78,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
         if (typeof navigator !== 'undefined' && navigator.share) {
             try {
                 await navigator.share({
-                    title: 'A credential for you',
+                    title: m['issueFlow.success.shareTitle'](),
                     url: claimLink,
                 });
                 onLinkConsumed?.();
@@ -101,7 +103,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
             document.body.removeChild(link);
         } catch (e) {
             log.error('issue-success.download_qr_failed', e);
-            presentToast('Failed to download QR code.', {
+            presentToast(m['issueFlow.success.qrDownloadFail'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -143,7 +145,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
             parts.push(
                 <span key="expires" className="flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5" />
-                    Expires {dateStr}
+                    {m['issueFlow.success.expires']({ date: dateStr })}
                 </span>
             );
         }
@@ -152,7 +154,9 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
             parts.push(
                 <span key="claims" className="flex items-center gap-1">
                     <Users className="w-3.5 h-3.5" />
-                    {claims} claim{claims === 1 ? '' : 's'} limit
+                    {claims === 1
+                        ? m['issueFlow.success.claimLimitOne']({ count: claims })
+                        : m['issueFlow.success.claimLimitOther']({ count: claims })}
                 </span>
             );
         }
@@ -183,10 +187,10 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                         {renderCard()}
                         <div className="animate-fade-in-up">
                             <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
-                                Your link is ready
+                                {m['issueFlow.success.linkReady']()}
                             </h2>
                             <p className="text-sm text-grayscale-600 leading-relaxed">
-                                Anyone with this link or QR code can claim it.
+                                {m['issueFlow.success.linkDesc']()}
                             </p>
                             {renderLimits()}
                         </div>
@@ -234,7 +238,9 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                                 ) : (
                                     <Copy className="w-4 h-4" />
                                 )}
-                                {copied ? 'Copied' : 'Copy link'}
+                                {copied
+                                    ? m['issueFlow.success.copied']()
+                                    : m['issueFlow.success.copyLink']()}
                             </button>
                             <div className="flex gap-3">
                                 <button
@@ -243,7 +249,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                                     className="flex-1 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
                                 >
                                     <Share2 className="w-4 h-4" />
-                                    Share
+                                    {m['common.share']()}
                                 </button>
                                 <button
                                     type="button"
@@ -251,7 +257,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                                     className="flex-1 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors flex items-center justify-center gap-2"
                                 >
                                     <Download className="w-4 h-4" />
-                                    Download QR
+                                    {m['issueFlow.success.downloadQr']()}
                                 </button>
                             </div>
                         </div>
@@ -261,7 +267,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                             onClick={onIssueAnother}
                             className="w-full text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
                         >
-                            Issue Another
+                            {m['issueFlow.success.issueAnother']()}
                         </button>
                     </div>
                 </div>
@@ -269,9 +275,13 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                 <div className="relative w-full max-w-[420px] text-center space-y-6">
                     {renderCard()}
                     <div className="animate-fade-in-up">
-                        <h2 className="text-xl font-semibold text-grayscale-900 mb-1">Sent!</h2>
+                        <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
+                            {m['issueFlow.success.sent']()}
+                        </h2>
                         <p className="text-sm text-grayscale-600 leading-relaxed">
-                            Delivered to {summarizeRecipients(recipients)}.
+                            {m['issueFlow.success.deliveredTo']({
+                                recipients: summarizeRecipients(recipients),
+                            })}
                         </p>
                     </div>
 
@@ -281,14 +291,14 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                             onClick={onViewWallet}
                             className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                         >
-                            Done
+                            {m['common.done']()}
                         </button>
                         <button
                             type="button"
                             onClick={onIssueAnother}
                             className="w-full text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
                         >
-                            Issue Another
+                            {m['issueFlow.success.issueAnother']()}
                         </button>
                     </div>
                 </div>
@@ -297,10 +307,10 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                     {renderCard()}
                     <div className="animate-fade-in-up">
                         <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
-                            You made it!
+                            {m['issueFlow.success.youMadeIt']()}
                         </h2>
                         <p className="text-sm text-grayscale-600 leading-relaxed">
-                            Your credential is signed and saved to your wallet.
+                            {m['issueFlow.success.savedToWallet']()}
                         </p>
                     </div>
 
@@ -310,14 +320,14 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                             onClick={onViewWallet}
                             className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
                         >
-                            View in Wallet
+                            {m['issueFlow.success.viewInWallet']()}
                         </button>
                         <button
                             type="button"
                             onClick={onIssueAnother}
                             className="w-full text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
                         >
-                            Issue Another
+                            {m['issueFlow.success.issueAnother']()}
                         </button>
                     </div>
                 </div>

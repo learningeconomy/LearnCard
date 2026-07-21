@@ -3,6 +3,8 @@ import React from 'react';
 import X from 'learn-card-base/svgs/X';
 import ResumeBuilderIcon from '../../../assets/images/resume-builder-icon.png';
 
+import * as m from '../../../paraglide/messages.js';
+
 import { useModal } from 'learn-card-base';
 
 export const ResumeConfigPanelHeader: React.FC<{
@@ -23,8 +25,14 @@ export const ResumeConfigPanelHeader: React.FC<{
     return (
         <div className="sticky top-0 z-10 bg-white rounded-b-[30px] shadow-md overflow-hidden px-4 py-4 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
-                <img src={ResumeBuilderIcon} alt="Resume Builder" className="w-[50px] h-[50px]" />
-                <h2 className="text-2xl font-semibold text-grayscale-900">Resume Builder</h2>
+                <img
+                    src={ResumeBuilderIcon}
+                    alt={m['passport.resumeBuilder.title']()}
+                    className="w-[50px] h-[50px]"
+                />
+                <h2 className="text-2xl font-semibold text-grayscale-900">
+                    {m['passport.resumeBuilder.title']()}
+                </h2>
             </div>
 
             <button

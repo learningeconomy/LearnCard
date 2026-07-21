@@ -1,7 +1,9 @@
 import React from 'react';
 import { User } from 'lucide-react';
 
-import { getTimeOfDayGreeting } from '../helpers/greeting';
+import * as m from '../../../paraglide/messages.js';
+
+import { getTimeOfDay } from '../helpers/greeting';
 
 type DashboardHeaderCardProps = {
     brandName: string;
@@ -57,7 +59,13 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
     roleSwitcher,
 }) => {
     const initials = getInitials(displayName);
-    const greeting = getTimeOfDayGreeting();
+    const timeOfDay = getTimeOfDay();
+    const greeting =
+        timeOfDay === 'morning'
+            ? m['dashboard.header.greetMorn']()
+            : timeOfDay === 'afternoon'
+            ? m['dashboard.header.greetAft']()
+            : m['dashboard.header.greetEve']();
     const hasUnread = (unreadCount ?? 0) > 0 && Boolean(onNotificationsClick);
     const descriptor = resolveDescriptor(professionalTitle, shortBio);
     const roleFallback = profileRole?.trim() ? capitalize(profileRole) : null;
@@ -84,7 +92,7 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
         profileImage && !imageFailed ? (
             <img
                 src={profileImage}
-                alt={displayName || 'Profile'}
+                alt={displayName || m['dashboard.header.profileAlt']()}
                 onError={() => setImageFailed(true)}
                 className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-soft-bottom bg-grayscale-100"
             />
@@ -114,7 +122,7 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
                             <button
                                 type="button"
                                 onClick={onAvatarClick}
-                                aria-label={`Open your ${brandName}`}
+                                aria-label={m['dashboard.header.avatarAria']({ brand: brandName })}
                                 className="rounded-full active:scale-[0.97] transition-transform"
                             >
                                 {avatar}
@@ -127,9 +135,13 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
                             <button
                                 type="button"
                                 onClick={onNotificationsClick}
-                                aria-label={`You have ${
-                                    unreadCount > 99 ? '99+' : unreadCount
-                                } unread ${unreadCount === 1 ? 'alert' : 'alerts'}. Open alerts`}
+                                aria-label={
+                                    unreadCount === 1
+                                        ? m['dashboard.header.alertOne']({ count: unreadCount })
+                                        : m['dashboard.header.alertMany']({
+                                              count: unreadCount > 99 ? '99+' : unreadCount,
+                                          })
+                                }
                                 className="absolute top-0 right-0 flex items-center justify-center active:scale-90 transition-transform"
                             >
                                 <span className="absolute inline-flex h-3.5 w-3.5 rounded-full bg-red-500 opacity-60 animate-ping" />
@@ -139,9 +151,9 @@ const DashboardHeaderCard: React.FC<DashboardHeaderCardProps> = ({
                     </div>
 
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm text-grayscale-500 leading-tight">{greeting},</p>
+                        <p className="text-sm text-grayscale-500 leading-tight">{greeting}</p>
                         <h1 className="text-xl font-semibold text-grayscale-900 leading-tight truncate">
-                            {displayName || 'Welcome'}
+                            {displayName || m['dashboard.header.welcome']()}
                         </h1>
                         {(descriptor || roleSwitcher || roleFallback) && (
                             <div className="mt-1 flex items-center gap-2 min-w-0">

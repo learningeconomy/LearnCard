@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Loader2, CheckCircle, XCircle, RotateCcw } from 'lucide-react';
 
 import type { AppListingStatus } from '../../appStoreDeveloper/types';
+import * as m from '../../../paraglide/messages.js';
 
 interface ListingActionsProps {
     status: AppListingStatus;
@@ -58,7 +59,7 @@ export const ListingActions: React.FC<ListingActionsProps> = ({
                     ) : (
                         <XCircle className="w-4 h-4" />
                     )}
-                    Unlist App
+                    {m['appStoreAdmin.listing.actions.unlist']()}
                 </button>
             </div>
         );
@@ -78,7 +79,7 @@ export const ListingActions: React.FC<ListingActionsProps> = ({
                         ) : (
                             <XCircle className="w-4 h-4" />
                         )}
-                        Reject
+                        {m['appStoreAdmin.listing.actions.reject']()}
                     </button>
 
                     <button
@@ -91,7 +92,7 @@ export const ListingActions: React.FC<ListingActionsProps> = ({
                         ) : (
                             <CheckCircle className="w-4 h-4" />
                         )}
-                        Approve
+                        {m['appStoreAdmin.listing.actions.approve']()}
                     </button>
                 </div>
             </div>
@@ -102,7 +103,7 @@ export const ListingActions: React.FC<ListingActionsProps> = ({
         return (
             <div className="p-5 border-t border-gray-200 bg-gray-50">
                 <p className="text-sm text-gray-500 text-center mb-3">
-                    This listing was rejected. Send it back as a draft for revision.
+                    {m['appStoreAdmin.listing.actions.rejectedMsg']()}
                 </p>
 
                 <button
@@ -115,7 +116,7 @@ export const ListingActions: React.FC<ListingActionsProps> = ({
                     ) : (
                         <RotateCcw className="w-4 h-4" />
                     )}
-                    Send Back to Draft
+                    {m['appStoreAdmin.listing.actions.sendToDraft']()}
                 </button>
             </div>
         );
