@@ -68,6 +68,11 @@ services/*/*/node_modules/**
 !**/pages/pathways/build
 !**/pages/pathways/build/**
 
+# Git worktrees — Claude Code (.claude/worktrees) and manual (.worktrees)
+# accumulate full source checkouts and can add gigabytes to the build context.
+.claude
+.worktrees
+
 # Common exclusions
 *.log
 .git
@@ -90,3 +95,13 @@ examples
 # Native build artifacts
 **/*.node
 **/native/target
+
+# Native mobile projects (Capacitor iOS/Android) — never used by the server/web
+# Docker builds, but their untracked DerivedData/Pods/.gradle caches (multiple GB)
+# otherwise get pulled into the build context.
+apps/*/ios
+apps/*/android
+
+# Stray local dir not covered by .gitignore (Docker context is not git-aware,
+# so it must be listed explicitly).
+~
