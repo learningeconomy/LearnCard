@@ -20,13 +20,10 @@ import {
     searchManagedBoostsFromCache,
     pluralize,
     BoostCategoryOptionsEnum,
-    useModal,
-    ModalTypes,
 } from 'learn-card-base';
 import { BoostQuery } from '@learncard/types';
 
 import Lottie from 'react-lottie-player';
-import NewBoostSelectMenu from '../boost-select-menu/NewBoostSelectMenuOld';
 import NewBoostSelectMenuCustomTypeButton from '../boost-select-menu/NewBoostSelectMenuCustomTypeButton';
 import {
     credentialCategoryToSubheaderType,
@@ -67,7 +64,7 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
     const history = useHistory();
     /*
         * start **
-        Managed boosts query + pagination 
+        Managed boosts query + pagination
     */
     const managedBoostInfiniteScrollRef = useRef<HTMLDivElement>(null);
 
@@ -98,15 +95,6 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
         managedBoosts?.pages?.[0]?.records?.length,
     ]);
 
-    const { newModal, closeModal } = useModal({
-        desktop: ModalTypes.Cancel,
-        mobile: ModalTypes.Cancel,
-    });
-
-    const openNewBoostSelector = () => {
-        newModal(<NewBoostSelectMenu handleCloseModal={() => closeModal()} category={category} />);
-    };
-
     useEffect(() => {
         if (managedBoostsOnScreen && managedBoostsHasNextPage) managedBoostsFetchNextPage();
     }, [
@@ -116,7 +104,7 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
         managedBoostInfiniteScrollRef,
     ]);
     /*
-        Managed boosts query + pagination 
+        Managed boosts query + pagination
          * end **
     */
 
