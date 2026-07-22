@@ -2,6 +2,16 @@ import { getCoverImageUrl, isYoutubeUrl } from './youtube.helpers';
 import { isKnownImageUploadUrl } from '../storage/image-upload';
 import { getMetadata } from '../filestack/images/images.helpers';
 
+export const getAttachmentSource = (attachment: unknown): string | undefined => {
+    if (!attachment || typeof attachment !== 'object') return undefined;
+
+    const { url, data } = attachment as Record<string, unknown>;
+    if (typeof url === 'string' && url.length > 0) return url;
+    if (typeof data === 'string' && data.length > 0) return data;
+
+    return undefined;
+};
+
 export const getFileMetadata = async (url: string) => {
     if (!isKnownImageUploadUrl(url)) return;
 
