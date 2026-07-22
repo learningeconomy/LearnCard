@@ -19,10 +19,11 @@
  *   - All failures are swallowed (best-effort): a transient network error or
  *     missing wallet must NEVER block the UI or throw into a render path.
  *
- * Why not live inside `LocaleProvider`? `LocaleProvider` sits above the
- * auth/query providers, so `useGetProfile()`/`useWallet()` aren't available
- * there. This hook must be mounted inside the authenticated subtree
- * (e.g. `AppRouter`), where those providers are present.
+ * Why not live inside `LocaleProvider`? `LocaleProvider` is mounted at the app
+ * root (`src/index.tsx`), above the auth/query providers, so
+ * `useGetProfile()`/`useWallet()` aren't available there. This hook must be
+ * mounted inside the authenticated subtree (e.g. `AppRouter`), where those
+ * providers are present.
  */
 import React, { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -31,6 +32,7 @@ import { getLogger, useGetProfile, useIsLoggedIn, useWallet } from 'learn-card-b
 
 import { useLocale, useChangeLocale, SUPPORTED_LANGUAGES } from './index';
 import type { SupportedLanguage } from './index';
+import { getEffectiveSupportedLanguages } from './detectLocale';
 import { decideLocaleSync } from './localeSync';
 
 const log = getLogger('i18n.sync-locale-to-profile');
@@ -63,6 +65,17 @@ export const useSyncLocaleToProfile = (): void => {
             : undefined;
     })();
 
+    // Tenant scoping (added to `LocaleProvider` after this branch was cut): a
+    // tenant may offer a narrower language set than the compiled catalog. A
+    // saved profile locale outside that set must be left alone — not restored
+    // into a UI that hides it, and not overwritten (the profile locale is
+    // global across tenants).
+    const tenantSupportsProfileLocale =
+        !profileLocale ||
+        (getEffectiveSupportedLanguages(SUPPORTED_LANGUAGES) as readonly string[]).includes(
+            profileLocale
+        );
+
     useEffect(() => {
         if (!isFetched) return;
         if (!profile?.profileId) return; // not an LCN user (or not loaded)
@@ -74,7 +87,12 @@ export const useSyncLocaleToProfile = (): void => {
         const hasManualChoice =
             typeof localStorage !== 'undefined' && !!localStorage.getItem('i18n.language');
 
-        const decision = decideLocaleSync(locale, profileLocale, hasManualChoice);
+        const decision = decideLocaleSync(
+            locale,
+            profileLocale,
+            hasManualChoice,
+            tenantSupportsProfileLocale
+        );
 
         if (decision.action === 'none') return;
 
@@ -124,17 +142,17 @@ export const useSyncLocaleToProfile = (): void => {
         initWallet,
         queryClient,
         changeLocale,
+        tenantSupportsProfileLocale,
     ]);
 };
 
 /**
  * Thin render-less wrapper around {@link useSyncLocaleToProfile}.
  *
- * `useLocale()` requires `LocaleProvider`, which `AppRouter` mounts in its
- * returned JSX (NOT around itself). So the hook cannot be called in
- * `AppRouter`'s body — it must be mounted as a child inside `LocaleProvider`.
- * This component is the intended mount point: drop it anywhere inside the
- * authenticated + locale-provided subtree (e.g. directly under
+ * `useLocale()` requires `LocaleProvider` (mounted at the app root in
+ * `src/index.tsx`) and `useGetProfile()`/`useWallet()` require the auth/query
+ * providers below it. This component is the intended mount point: drop it
+ * anywhere inside the authenticated subtree (currently directly under
  * `SharedI18nProvider` in `AppRouter`).
  */
 export const LocaleProfileSync: React.FC = () => {
