@@ -9,7 +9,7 @@ services:
             - 3000
         ports:
             - '3000:3000'
-        command: ['sh', '-c', 'bun run --cwd apps/learn-card-app docker-start']
+        command: ['sh', '-c', 'bun run --cwd apps/learn-card-app docker-start:tenant']
         depends_on:
             - brain
             - cloud
@@ -28,6 +28,9 @@ services:
             CLOUD_URL: http://localhost:4100/trpc
             LEARN_CLOUD_XAPI_URL: http://localhost:4100/xapi
             API_URL: http://localhost:5100/trpc
+            TENANT: ${TENANT:-learncard}
+            STAGE: ${STAGE:-local}
+            LOCAL_AIP: ${LOCAL_AIP:-}
             SKIP_DIDKIT_NAPI: '1'
             # Enable polling for Vite file watching in Docker
             CHOKIDAR_USEPOLLING: 'true'

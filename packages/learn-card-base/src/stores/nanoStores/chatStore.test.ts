@@ -282,7 +282,6 @@ describe('chat session startup', () => {
     it.each([
         { event: 'session_start_error', requestId: 'request-error' },
         { error: 'provider failed', requestId: 'request-error' },
-        { error: 'legacy provider failed' },
     ])('terminates loading for startup error frame %#', async errorFrame => {
         const start = startTopic('Algebra');
         const socket = await openLatestSocket();
@@ -301,6 +300,67 @@ describe('chat session startup', () => {
         expect(mocks.showErrorModal).toHaveBeenCalledWith(
             'Something went wrong',
             'Please try starting the session again.'
+        );
+    });
+
+    it('terminates loading for a legacy startup error before request acceptance', async () => {
+        const start = startTopic('Algebra');
+        const socket = await openLatestSocket();
+        await start;
+        socket.receive({ error: 'legacy provider failed' });
+
+        expect(isLoading.get()).toBe(false);
+        expect(isTyping.get()).toBe(false);
+        expect(mocks.showErrorModal).toHaveBeenCalledWith(
+            'Something went wrong',
+            'Please try starting the session again.'
+        );
+    });
+
+    it('ignores untagged startup frames after a request is accepted', async () => {
+        const start = startTopic('Algebra');
+        const socket = await openLatestSocket();
+        await start;
+        socket.receive({ event: 'session_start_accepted', requestId: 'request-current' });
+        socket.receive({ error: 'stale provider failed' });
+
+        expect(isLoading.get()).toBe(true);
+        expect(isTyping.get()).toBe(true);
+        expect(mocks.showErrorModal).not.toHaveBeenCalled();
+    });
+
+    it('ignores completion frames for another browser session', async () => {
+        connectWebSocket();
+        const socket = await openLatestSocket();
+        currentThreadId.set('current-thread');
+
+        socket.receive({
+            event: 'conversation_summary',
+            threadId: 'other-thread',
+            credentialUri: 'lc:summary:other',
+            summary: {},
+        });
+        socket.receive({ event: 'no_conversation_summary', threadId: 'other-thread' });
+        socket.receive({ event: 'session_completed', threadId: 'other-thread' });
+
+        expect(sessionEnded.get()).toBe(false);
+
+        socket.receive({ event: 'no_conversation_summary', threadId: 'current-thread' });
+
+        expect(sessionEnded.get()).toBe(true);
+    });
+
+    it('shows the app error modal when the AI backend is offline', async () => {
+        const start = startTopic('Offline topic');
+
+        await vi.advanceTimersByTimeAsync(5_000);
+        await start;
+
+        expect(isLoading.get()).toBe(false);
+        expect(isTyping.get()).toBe(false);
+        expect(mocks.showErrorModal).toHaveBeenCalledWith(
+            'Connection Error',
+            'Could not connect to the chat service. Please try again later.'
         );
     });
 

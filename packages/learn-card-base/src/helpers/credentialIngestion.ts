@@ -25,7 +25,7 @@ export type CredentialIngestionResponse = {
 };
 
 type CachedIngestionRequest = {
-    requestedAt: number;
+    expiresAt?: number;
     request: Promise<CredentialIngestionResponse>;
 };
 
@@ -41,7 +41,8 @@ export const ensureCredentialIngestion = (
 ): Promise<CredentialIngestionResponse> => {
     const cached = ingestionRequests.get(did);
 
-    if (cached && Date.now() - cached.requestedAt < REQUEST_DEDUPLICATION_MS) return cached.request;
+    if (cached && (cached.expiresAt === undefined || Date.now() < cached.expiresAt))
+        return cached.request;
 
     const request = fetch(`${networkStore.get.aiServiceUrl()}/credentials/ingestion`, {
         method: 'POST',
@@ -54,11 +55,24 @@ export const ensureCredentialIngestion = (
         return (await response.json()) as CredentialIngestionResponse;
     });
 
-    ingestionRequests.set(did, { requestedAt: Date.now(), request });
+    ingestionRequests.set(did, { request });
 
-    void request.catch(() => {
-        if (ingestionRequests.get(did)?.request === request) ingestionRequests.delete(did);
-    });
+    void request.then(
+        () => {
+            if (ingestionRequests.get(did)?.request !== request) return;
+
+            ingestionRequests.set(did, {
+                expiresAt: Date.now() + REQUEST_DEDUPLICATION_MS,
+                request,
+            });
+            setTimeout(() => {
+                if (ingestionRequests.get(did)?.request === request) ingestionRequests.delete(did);
+            }, REQUEST_DEDUPLICATION_MS);
+        },
+        () => {
+            if (ingestionRequests.get(did)?.request === request) ingestionRequests.delete(did);
+        }
+    );
 
     return request;
 };

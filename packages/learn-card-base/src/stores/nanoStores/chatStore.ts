@@ -192,8 +192,10 @@ let startupWatchdog: number | undefined;
 let currentSessionStartRequestId: string | null = null;
 
 const isCurrentSessionStartFrame = (requestId: unknown) =>
-    requestId === undefined ||
+    (requestId === undefined && currentSessionStartRequestId === null) ||
     (typeof requestId === 'string' && requestId === currentSessionStartRequestId);
+const isCurrentThreadFrame = (threadId: unknown) =>
+    typeof threadId !== 'string' || threadId === currentThreadId.get();
 
 const clearSessionStartWatchdog = () => {
     if (startupWatchdog === undefined) return;
@@ -407,6 +409,7 @@ export function connectWebSocket() {
             }
 
             if (data.event === 'no_conversation_summary') {
+                if (!isCurrentThreadFrame(data.threadId)) return;
                 isTyping.set(false);
                 sessionEnded.set(true);
                 return;
@@ -587,6 +590,7 @@ export function connectWebSocket() {
             /* -------------------------------------------------- */
 
             if (data.event === 'conversation_summary') {
+                if (!isCurrentThreadFrame(data.threadId)) return;
                 isTyping.set(false);
                 sessionEnded.set(true);
 
@@ -621,6 +625,7 @@ export function connectWebSocket() {
 
             // Handle session completed event
             if (data.event === 'session_completed') {
+                if (!isCurrentThreadFrame(data.threadId)) return;
                 log.debug('Session already completed for this thread');
                 sessionEnded.set(true);
                 isTyping.set(false);
@@ -983,11 +988,8 @@ export async function startTopicWithUri(topicUri: string) {
     // Ensure WebSocket connection is established
     if (!ws || ws.readyState !== WebSocket.OPEN) {
         try {
-            await new Promise<void>((resolve, reject) => {
-                connectWebSocket(); // Attempt to connect or reconnect
-                onReady(resolve);
-                setTimeout(() => reject(new Error('WebSocket connection timeout')), 5000);
-            });
+            connectWebSocket();
+            await waitForSocketConnection();
         } catch (error) {
             log.error('WebSocket connection failed, cannot start topic with URI:', error);
             isTyping.set(false);
@@ -1012,6 +1014,23 @@ export async function startTopicWithUri(topicUri: string) {
     sendWhenReady(messageToSend);
 }
 
+const waitForSocketConnection = (): Promise<void> => {
+    const { promise, resolve, reject } = Promise.withResolvers<void>();
+    let unsubscribe = () => {};
+    const timeout = window.setTimeout(() => {
+        unsubscribe();
+        reject(new Error('WebSocket connection timeout'));
+    }, 5000);
+
+    unsubscribe = onReady(() => {
+        window.clearTimeout(timeout);
+        unsubscribe();
+        resolve();
+    });
+
+    return promise;
+};
+
 // Function to start a new learning pathway with topic and pathway URIs
 export async function startLearningPathway(topicUri: string, pathwayUri: string) {
     resetChatSessionStores();
@@ -1035,17 +1054,15 @@ export async function startLearningPathway(topicUri: string, pathwayUri: string)
     }
 
     // Reset WebSocket and clear current thread to avoid restoring old session
+
     disconnectWebSocket();
     currentThreadId.set(null);
 
     // Ensure WebSocket connection is established
     if (!ws || ws.readyState !== WebSocket.OPEN) {
         try {
-            await new Promise<void>((resolve, reject) => {
-                connectWebSocket(); // Attempt to connect or reconnect
-                onReady(resolve);
-                setTimeout(() => reject(new Error('WebSocket connection timeout')), 5000);
-            });
+            connectWebSocket();
+            await waitForSocketConnection();
         } catch (error) {
             log.error('WebSocket connection failed, cannot start learning pathway:', error);
             isTyping.set(false);
@@ -1092,18 +1109,16 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
     // Ensure WebSocket is connected before sending message
     if (!ws || ws.readyState !== WebSocket.OPEN) {
         try {
-            connectWebSocket(); // Attempt to connect or reconnect
-            await new Promise<void>((resolve, reject) => {
-                onReady(resolve); // Wait for WebSocket to be ready
-                // Add a timeout in case connection fails indefinitely
-                setTimeout(() => reject(new Error('WebSocket connection timeout')), 5000);
-            });
+            connectWebSocket();
+            await waitForSocketConnection();
         } catch (error) {
             log.error('WebSocket connection failed, cannot start topic:', error);
             isTyping.set(false);
             isLoading.set(false);
-            // Optionally, show an error message to the user
-            alert('Could not connect to the chat service. Please try again later.');
+            showErrorModal(
+                'Connection Error',
+                'Could not connect to the chat service. Please try again later.'
+            );
             return;
         }
     }
@@ -1152,11 +1167,8 @@ export async function startInsightsSession(topic: string, initialText?: string) 
     // Ensure WS connected
     if (!ws || ws.readyState !== WebSocket.OPEN) {
         try {
-            await new Promise<void>((resolve, reject) => {
-                connectWebSocket();
-                onReady(resolve);
-                setTimeout(() => reject(new Error('WebSocket connection timeout')), 5000);
-            });
+            connectWebSocket();
+            await waitForSocketConnection();
         } catch (err) {
             log.error('WS connect failed:', err);
             isTyping.set(false);
