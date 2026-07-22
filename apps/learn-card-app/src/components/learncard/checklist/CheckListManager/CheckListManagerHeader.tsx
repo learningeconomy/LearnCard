@@ -4,19 +4,16 @@ import { IonHeader, IonToolbar } from '@ionic/react';
 import * as m from '../../../../paraglide/messages.js';
 import { TransP } from '../../../../i18n/TransP';
 
-import WrenchIcon from 'learn-card-base/svgs/WrenchIcon';
 import BuildColorBlocksIcon from 'learn-card-base/svgs/BuildColorBlocksIcon';
-import { useGetCheckListStatus, checklistItems } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 export const CheckListManagerHeader: React.FC<{}> = ({}) => {
-    const { completedItems } = useGetCheckListStatus();
     const brandingConfig = useBrandingConfig();
 
     return (
         <IonHeader
             color="light"
-            className="rounded-b-[30px] safe-area-top-margin overflow-hidden shadow-md "
+            className="rounded-b-[30px] safe-area-top-margin overflow-hidden shadow-md"
         >
             <IonToolbar color="light" className="text-white px-4 !py-4">
                 <div className="flex items-center justify-normal p-2">
@@ -29,21 +26,11 @@ export const CheckListManagerHeader: React.FC<{}> = ({}) => {
                                 <TransP
                                     m={m['passport.buildMyLearnCard.titleMarkup']}
                                     values={{ brand: brandingConfig.name }}
-                                    components={[<span />]}
+                                    components={[<span key="brand" />]}
                                 />
                             </h5>
-                            <p className="text-[17px] text-grayscale-900 font-notoSans leading-[24px] tracking-[0.25px]">
-                                <TransP
-                                    m={m['passport.buildMyLearnCard.stepsCompleted']}
-                                    values={{
-                                        completed: completedItems,
-                                        total: checklistItems.length,
-                                    }}
-                                    components={[
-                                        <span className="font-semibold" />,
-                                        <span className="font-semibold" />,
-                                    ]}
-                                />
+                            <p className="text-sm text-grayscale-600 font-notoSans leading-[24px] tracking-[0.25px]">
+                                {m['passport.buildMyLearnCard.managerDescription']()}
                             </p>
                         </div>
                     </div>
