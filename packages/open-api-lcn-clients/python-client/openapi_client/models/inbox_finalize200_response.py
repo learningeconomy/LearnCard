@@ -22,6 +22,7 @@ from typing import Any, ClassVar, Dict, List, Optional, Union
 from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of1 import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf1
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class InboxFinalize200Response(BaseModel):
     """
@@ -30,12 +31,14 @@ class InboxFinalize200Response(BaseModel):
     processed: Optional[Union[StrictFloat, StrictInt]]
     claimed: Optional[Union[StrictFloat, StrictInt]]
     errors: Optional[Union[StrictFloat, StrictInt]]
+    guardian_pending: Optional[Union[StrictFloat, StrictInt]] = Field(alias="guardianPending")
     verifiable_credentials: List[StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf1] = Field(alias="verifiableCredentials")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["processed", "claimed", "errors", "verifiableCredentials"]
+    __properties: ClassVar[List[str]] = ["processed", "claimed", "errors", "guardianPending", "verifiableCredentials"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -47,8 +50,7 @@ class InboxFinalize200Response(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -102,6 +104,11 @@ class InboxFinalize200Response(BaseModel):
         if self.errors is None and "errors" in self.model_fields_set:
             _dict['errors'] = None
 
+        # set to None if guardian_pending (nullable) is None
+        # and model_fields_set contains the field
+        if self.guardian_pending is None and "guardian_pending" in self.model_fields_set:
+            _dict['guardianPending'] = None
+
         return _dict
 
     @classmethod
@@ -117,6 +124,7 @@ class InboxFinalize200Response(BaseModel):
             "processed": obj.get("processed"),
             "claimed": obj.get("claimed"),
             "errors": obj.get("errors"),
+            "guardianPending": obj.get("guardianPending"),
             "verifiableCredentials": [StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf1.from_dict(_item) for _item in obj["verifiableCredentials"]] if obj.get("verifiableCredentials") is not None else None
         })
         # store additional fields in additional_properties

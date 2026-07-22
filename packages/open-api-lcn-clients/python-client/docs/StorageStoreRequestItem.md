@@ -22,6 +22,7 @@ Name | Type | Description | Notes
 **status** | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md) |  | [optional] 
 **terms_of_use** | [**BoostSendBoostRequestCredentialAnyOfTermsOfUse**](BoostSendBoostRequestCredentialAnyOfTermsOfUse.md) |  | [optional] 
 **evidence** | [**BoostSendRequestTemplateCredentialAnyOfEvidence**](BoostSendRequestTemplateCredentialAnyOfEvidence.md) |  | [optional] 
+**render_method** | [**BoostSendRequestTemplateCredentialAnyOfRenderMethod**](BoostSendRequestTemplateCredentialAnyOfRenderMethod.md) |  | [optional] 
 **proof** | [**BoostSendRequestTemplateCredentialAnyOfProof**](BoostSendRequestTemplateCredentialAnyOfProof.md) |  | 
 **verifiable_credential** | [**PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential**](PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential.md) |  | [optional] 
 **holder** | **str** |  | [optional] 
@@ -31,6 +32,8 @@ Name | Type | Description | Notes
 **tag** | **str** |  | 
 **aad** | **str** |  | [optional] 
 **recipients** | [**List[CredentialSendCredentialRequestCredentialAnyOf1RecipientsInner]**](CredentialSendCredentialRequestCredentialAnyOf1RecipientsInner.md) |  | [optional] 
+**format** | **str** |  | 
+**data** | **str** |  | 
 
 ## Example
 

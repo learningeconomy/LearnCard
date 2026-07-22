@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **profile_id** | **str** |  | 
 **display_name** | **str** |  | [optional] 
+**image** | **str** |  | [optional] 
 
 ## Example
 

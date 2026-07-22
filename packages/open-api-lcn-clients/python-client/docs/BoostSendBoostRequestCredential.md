@@ -22,6 +22,7 @@ Name | Type | Description | Notes
 **status** | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md) |  | [optional] 
 **terms_of_use** | [**BoostSendBoostRequestCredentialAnyOfTermsOfUse**](BoostSendBoostRequestCredentialAnyOfTermsOfUse.md) |  | [optional] 
 **evidence** | [**BoostSendBoostRequestCredentialAnyOfEvidence**](BoostSendBoostRequestCredentialAnyOfEvidence.md) |  | [optional] 
+**render_method** | [**BoostSendBoostRequestCredentialAnyOfRenderMethod**](BoostSendBoostRequestCredentialAnyOfRenderMethod.md) |  | [optional] 
 **proof** | [**BoostSendBoostRequestCredentialAnyOfProof**](BoostSendBoostRequestCredentialAnyOfProof.md) |  | 
 **protected** | **str** |  | 
 **iv** | **str** |  | 

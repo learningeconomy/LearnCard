@@ -36,21 +36,21 @@ class TestContractsGetAllContractRequestsForProfile200ResponseInner(unittest.Tes
         if include_optional:
             return ContractsGetAllContractRequestsForProfile200ResponseInner(
                 contract = openapi_client.models.contracts_get_all_contract_requests_for_profile_200_response_inner_contract.contracts_getAllContractRequestsForProfile_200_response_inner_contract(
-                    read = openapi_client.models.contracts_get_consent_flow_contract_200_response_contract_read.contracts_getConsentFlowContract_200_response_contract_read(
+                    read = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read.storage_resolve_200_response_anyOf_anyOf_1_read(
                         anonymize = True, 
-                        credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_write_credentials.storage_resolve_200_response_anyOf_anyOf_1_write_credentials(
+                        credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write_credentials(
                             categories = {
-                                'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read_personal_value.storage_resolve_200_response_anyOf_anyOf_1_read_personal_value(
+                                'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                                     required = True, 
                                     default_enabled = True, )
                                 }, ), 
                         personal = {
-                            'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read_personal_value.storage_resolve_200_response_anyOf_anyOf_1_read_personal_value(
+                            'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                                 required = True, 
                                 default_enabled = True, )
                             }, ), 
-                    write = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_write.storage_resolve_200_response_anyOf_anyOf_1_write(
-                        credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_write_credentials.storage_resolve_200_response_anyOf_anyOf_1_write_credentials(
+                    write = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write(
+                        credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write_credentials(
                             categories = {
                                 'key' : 
                                 }, ), 
@@ -58,13 +58,16 @@ class TestContractsGetAllContractRequestsForProfile200ResponseInner(unittest.Tes
                             'key' : 
                             }, ), 
                     uri = '', ),
-                profile = openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to.boost_getPaginatedBoostRecipients_200_response_records_inner_to(
+                profile = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_3.boost_getBoostRecipients_200_response_inner_to_anyOf_3(
                     profile_id = '012', 
                     display_name = '', 
                     short_bio = '', 
                     bio = '', 
                     did = '', 
                     is_private = True, 
+                    profile_visibility = 'public', 
+                    show_email = True, 
+                    allow_connection_requests = 'anyone', 
                     email = '', 
                     image = '', 
                     hero_image = '', 
@@ -72,7 +75,7 @@ class TestContractsGetAllContractRequestsForProfile200ResponseInner(unittest.Tes
                     is_service_profile = True, 
                     type = '', 
                     notifications_webhook = 'httpjUR,rZ#UM/?R,Fp^l6$ARj', 
-                    display = openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to_display.boost_getPaginatedBoostRecipients_200_response_records_inner_to_display(
+                    display = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_1_display.boost_getBoostRecipients_200_response_inner_to_anyOf_1_display(
                         background_color = '', 
                         background_image = '', 
                         fade_background_image = True, 
@@ -97,21 +100,21 @@ class TestContractsGetAllContractRequestsForProfile200ResponseInner(unittest.Tes
         else:
             return ContractsGetAllContractRequestsForProfile200ResponseInner(
                 contract = openapi_client.models.contracts_get_all_contract_requests_for_profile_200_response_inner_contract.contracts_getAllContractRequestsForProfile_200_response_inner_contract(
-                    read = openapi_client.models.contracts_get_consent_flow_contract_200_response_contract_read.contracts_getConsentFlowContract_200_response_contract_read(
+                    read = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read.storage_resolve_200_response_anyOf_anyOf_1_read(
                         anonymize = True, 
-                        credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_write_credentials.storage_resolve_200_response_anyOf_anyOf_1_write_credentials(
+                        credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write_credentials(
                             categories = {
-                                'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read_personal_value.storage_resolve_200_response_anyOf_anyOf_1_read_personal_value(
+                                'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                                     required = True, 
                                     default_enabled = True, )
                                 }, ), 
                         personal = {
-                            'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read_personal_value.storage_resolve_200_response_anyOf_anyOf_1_read_personal_value(
+                            'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                                 required = True, 
                                 default_enabled = True, )
                             }, ), 
-                    write = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_write.storage_resolve_200_response_anyOf_anyOf_1_write(
-                        credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_write_credentials.storage_resolve_200_response_anyOf_anyOf_1_write_credentials(
+                    write = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write(
+                        credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write_credentials(
                             categories = {
                                 'key' : 
                                 }, ), 
@@ -119,13 +122,16 @@ class TestContractsGetAllContractRequestsForProfile200ResponseInner(unittest.Tes
                             'key' : 
                             }, ), 
                     uri = '', ),
-                profile = openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to.boost_getPaginatedBoostRecipients_200_response_records_inner_to(
+                profile = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_3.boost_getBoostRecipients_200_response_inner_to_anyOf_3(
                     profile_id = '012', 
                     display_name = '', 
                     short_bio = '', 
                     bio = '', 
                     did = '', 
                     is_private = True, 
+                    profile_visibility = 'public', 
+                    show_email = True, 
+                    allow_connection_requests = 'anyone', 
                     email = '', 
                     image = '', 
                     hero_image = '', 
@@ -133,7 +139,7 @@ class TestContractsGetAllContractRequestsForProfile200ResponseInner(unittest.Tes
                     is_service_profile = True, 
                     type = '', 
                     notifications_webhook = 'httpjUR,rZ#UM/?R,Fp^l6$ARj', 
-                    display = openapi_client.models.boost_get_paginated_boost_recipients_200_response_records_inner_to_display.boost_getPaginatedBoostRecipients_200_response_records_inner_to_display(
+                    display = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_1_display.boost_getBoostRecipients_200_response_inner_to_anyOf_1_display(
                         background_color = '', 
                         background_image = '', 
                         fade_background_image = True, 

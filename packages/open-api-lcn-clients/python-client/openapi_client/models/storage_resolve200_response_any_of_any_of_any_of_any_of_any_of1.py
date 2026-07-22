@@ -26,9 +26,11 @@ from openapi_client.models.boost_send_request_template_credential_any_of_context
 from openapi_client.models.boost_send_request_template_credential_any_of_credential_subject import BoostSendRequestTemplateCredentialAnyOfCredentialSubject
 from openapi_client.models.boost_send_request_template_credential_any_of_evidence import BoostSendRequestTemplateCredentialAnyOfEvidence
 from openapi_client.models.boost_send_request_template_credential_any_of_proof import BoostSendRequestTemplateCredentialAnyOfProof
-from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_issuer import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuer
+from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of1_issuer import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1Issuer
+from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of1_render_method import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1RenderMethod
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf1(BaseModel):
     """
@@ -37,7 +39,7 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf1(BaseModel):
     context: List[BoostSendRequestTemplateCredentialAnyOfContextInner] = Field(alias="@context")
     id: Optional[StrictStr] = None
     type: Annotated[List[StrictStr], Field(min_length=1)]
-    issuer: StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuer
+    issuer: StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1Issuer
     credential_subject: BoostSendRequestTemplateCredentialAnyOfCredentialSubject = Field(alias="credentialSubject")
     refresh_service: Optional[BoostSendBoostRequestCredentialAnyOfTermsOfUse] = Field(default=None, alias="refreshService")
     credential_schema: Optional[BoostSendBoostRequestCredentialAnyOfCredentialStatus] = Field(default=None, alias="credentialSchema")
@@ -51,12 +53,14 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf1(BaseModel):
     status: Optional[BoostSendBoostRequestCredentialAnyOfCredentialStatus] = None
     terms_of_use: Optional[BoostSendBoostRequestCredentialAnyOfTermsOfUse] = Field(default=None, alias="termsOfUse")
     evidence: Optional[BoostSendRequestTemplateCredentialAnyOfEvidence] = None
+    render_method: Optional[StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1RenderMethod] = Field(default=None, alias="renderMethod")
     proof: BoostSendRequestTemplateCredentialAnyOfProof
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["@context", "id", "type", "issuer", "credentialSubject", "refreshService", "credentialSchema", "issuanceDate", "expirationDate", "credentialStatus", "name", "description", "validFrom", "validUntil", "status", "termsOfUse", "evidence", "proof"]
+    __properties: ClassVar[List[str]] = ["@context", "id", "type", "issuer", "credentialSubject", "refreshService", "credentialSchema", "issuanceDate", "expirationDate", "credentialStatus", "name", "description", "validFrom", "validUntil", "status", "termsOfUse", "evidence", "renderMethod", "proof"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -68,8 +72,7 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf1(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -127,6 +130,9 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf1(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of evidence
         if self.evidence:
             _dict['evidence'] = self.evidence.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of render_method
+        if self.render_method:
+            _dict['renderMethod'] = self.render_method.to_dict()
         # override the default output from pydantic by calling `to_dict()` of proof
         if self.proof:
             _dict['proof'] = self.proof.to_dict()
@@ -185,7 +191,7 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf1(BaseModel):
             "@context": [BoostSendRequestTemplateCredentialAnyOfContextInner.from_dict(_item) for _item in obj["@context"]] if obj.get("@context") is not None else None,
             "id": obj.get("id"),
             "type": obj.get("type"),
-            "issuer": StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfIssuer.from_dict(obj["issuer"]) if obj.get("issuer") is not None else None,
+            "issuer": StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1Issuer.from_dict(obj["issuer"]) if obj.get("issuer") is not None else None,
             "credentialSubject": BoostSendRequestTemplateCredentialAnyOfCredentialSubject.from_dict(obj["credentialSubject"]) if obj.get("credentialSubject") is not None else None,
             "refreshService": BoostSendBoostRequestCredentialAnyOfTermsOfUse.from_dict(obj["refreshService"]) if obj.get("refreshService") is not None else None,
             "credentialSchema": BoostSendBoostRequestCredentialAnyOfCredentialStatus.from_dict(obj["credentialSchema"]) if obj.get("credentialSchema") is not None else None,
@@ -199,6 +205,7 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf1(BaseModel):
             "status": BoostSendBoostRequestCredentialAnyOfCredentialStatus.from_dict(obj["status"]) if obj.get("status") is not None else None,
             "termsOfUse": BoostSendBoostRequestCredentialAnyOfTermsOfUse.from_dict(obj["termsOfUse"]) if obj.get("termsOfUse") is not None else None,
             "evidence": BoostSendRequestTemplateCredentialAnyOfEvidence.from_dict(obj["evidence"]) if obj.get("evidence") is not None else None,
+            "renderMethod": StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1RenderMethod.from_dict(obj["renderMethod"]) if obj.get("renderMethod") is not None else None,
             "proof": BoostSendRequestTemplateCredentialAnyOfProof.from_dict(obj["proof"]) if obj.get("proof") is not None else None
         })
         # store additional fields in additional_properties
