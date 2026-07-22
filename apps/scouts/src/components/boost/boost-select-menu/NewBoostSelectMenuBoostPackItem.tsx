@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useHistory } from 'react-router-dom';
 import { BoostSmallCard } from '@learncard/react';
 
@@ -29,6 +29,7 @@ export type NewBoostSelectMenuBoostPackItemProps = {
     };
     parentUri?: string;
     useCMSModal?: boolean;
+    returnToParentAfterSave?: boolean;
 };
 
 const NewBoostSelectMenuBoostPackItem: React.FC<NewBoostSelectMenuBoostPackItemProps> = ({
@@ -38,9 +39,10 @@ const NewBoostSelectMenuBoostPackItem: React.FC<NewBoostSelectMenuBoostPackItemP
     boostPackItem,
     parentUri,
     useCMSModal = false,
+    returnToParentAfterSave = false,
 }) => {
     const history = useHistory();
-    const { newModal, closeModal, closeAllModals } = useModal({
+    const { newModal, closeModal } = useModal({
         mobile: ModalTypes.FullScreen,
         desktop: ModalTypes.FullScreen,
     });
@@ -62,6 +64,7 @@ const NewBoostSelectMenuBoostPackItem: React.FC<NewBoostSelectMenuBoostPackItemP
             newModal(
                 <BoostCMS
                     handleCloseModal={closeModal}
+                    returnToParentAfterSave={returnToParentAfterSave}
                     parentUri={parentUri}
                     category={category}
                     boostUserType={BoostUserTypeEnum.someone}

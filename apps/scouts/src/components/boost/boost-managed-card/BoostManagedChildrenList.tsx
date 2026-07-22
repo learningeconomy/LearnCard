@@ -47,6 +47,7 @@ type BoostManagedListProps = {
     enableCreateButton?: boolean;
     includeExtendedFamily?: boolean;
     handleCloseModal?: () => void;
+    returnToParentAfterSave?: boolean;
 };
 
 const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
@@ -61,6 +62,7 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
     includeExtendedFamily,
     enableCreateButton = true,
     handleCloseModal,
+    returnToParentAfterSave = false,
 }) => {
     const history = useHistory();
     /*
@@ -102,12 +104,7 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
     });
 
     const openNewBoostSelector = () => {
-        newModal(
-            <NewBoostSelectMenu
-                handleCloseModal={() => closeModal()}
-                category={category}
-            />
-        );
+        newModal(<NewBoostSelectMenu handleCloseModal={() => closeModal()} category={category} />);
     };
 
     useEffect(() => {
@@ -154,7 +151,15 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
                         />
                     ))
             ) ?? [],
-        [managedBoosts, searchResults, category, viewMode, managedBoostsLoading, managedBoostsRefetch, defaultImg]
+        [
+            managedBoosts,
+            searchResults,
+            category,
+            viewMode,
+            managedBoostsLoading,
+            managedBoostsRefetch,
+            defaultImg,
+        ]
     );
 
     const handleRefetch = async () => {
@@ -210,6 +215,7 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
                                         handleCloseModal={handleCloseModal}
                                         useCMSModal
                                         parentUri={parentUri}
+                                        returnToParentAfterSave={returnToParentAfterSave}
                                     />
                                 )}
                                 {managedBoostsList}

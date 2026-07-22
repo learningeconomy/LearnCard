@@ -75,6 +75,7 @@ const TroopCredentialsModal: React.FC<TroopCredentialsModalProps> = ({
                 category={credentialType}
                 parentUri={parentUri}
                 useCMSModal
+                returnToParentAfterSave
             />,
             {
                 className: '!p-0',
@@ -190,6 +191,7 @@ const TroopCredentialsModal: React.FC<TroopCredentialsModalProps> = ({
                         category={credentialType}
                         viewMode={BoostPageViewMode.Card}
                         enableCreateButton={!!showCreateBoostButton}
+                        returnToParentAfterSave
                     />
                 </IonContent>
             </section>
