@@ -847,11 +847,15 @@ jobs:
             # --no-build: CI already built above; Netlify must not rebuild. Runs from the app
             # directory so netlify.toml (headers/redirects/edge functions) resolves correctly.
             # --dir must be absolute: the CLI resolves relative paths against the repo root
-            # (monorepo project-root detection), not the cwd.
+            # (monorepo project-root detection), not the cwd. --cwd pins the CLI's project
+            # root to the app dir; without it, edge functions get bundled under the git
+            # root's .netlify/ but the uploader only scans the app dir's, so they are
+            # silently dropped from the deploy.
             - name: Deploy to Netlify
               working-directory: apps/${{ steps.vars.outputs.project_name }}
               run: |
                   bunx netlify-cli@26 deploy \
+                    --cwd "$PWD" \
                     --prod \
                     --no-build \
                     --dir "$PWD/build" \
