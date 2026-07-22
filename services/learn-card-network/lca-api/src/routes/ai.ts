@@ -166,7 +166,7 @@ export const aiRouter = t.router({
                 description: 'This route generates skills for a boost based on a description',
             },
         })
-        .input(z.object({ description: z.string().nonempty(), locale: z.string().optional() }))
+        .input(z.object({ description: z.string().nonempty() }))
         .output(z.array(BoostSkillsValidator))
         .query(async ({ input, ctx }) => {
             const {
@@ -187,8 +187,7 @@ export const aiRouter = t.router({
                     {
                         role: 'system',
                         content:
-                            'Generate *NO MORE THAN 3* skills for the provided description about a boost that matches the given skills hierarchy' +
-                            aiLocaleInstruction(input.locale),
+                            'Generate *NO MORE THAN 3* skills for the provided description about a boost that matches the given skills hierarchy. Keep every category, skill, and subskill value exactly as specified in the English skill hierarchy because they are validated identifiers, not user-facing prose.',
                     },
                     { role: 'user', content: description },
                 ],

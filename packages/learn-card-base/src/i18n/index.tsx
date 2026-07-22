@@ -81,6 +81,11 @@ export const addActiveLocaleToUrl = (url: string): string => {
     return parsedUrl.toString();
 };
 
+/** Add the active UI locale to a WebSocket payload without mutating the input. */
+export const addActiveLocaleToPayload = <Payload extends object>(
+    payload: Payload
+): Payload & { locale: string } => ({ ...payload, locale: getActiveLocale() });
+
 /** Minimal `{var}` interpolation — no dependency. */
 const interpolate = (str: string, params?: Record<string, unknown>): string =>
     params

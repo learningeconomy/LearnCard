@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import { addActiveLocaleToUrl, getActiveLocale } from './index';
+import { addActiveLocaleToPayload, addActiveLocaleToUrl, getActiveLocale } from './index';
 
 const store: Record<string, string> = {};
 
@@ -61,5 +61,15 @@ describe('addActiveLocaleToUrl', () => {
         expect(addActiveLocaleToUrl('https://ai.example/threads/visibility?did=did:key:123')).toBe(
             'https://ai.example/threads/visibility?did=did%3Akey%3A123&locale=ar'
         );
+    });
+});
+
+describe('addActiveLocaleToPayload', () => {
+    it('adds the current locale without mutating the original payload', () => {
+        store['i18n.language'] = 'fr';
+        const payload = { action: 'continue_plan', threadId: 'thread-1' };
+
+        expect(addActiveLocaleToPayload(payload)).toEqual({ ...payload, locale: 'fr' });
+        expect(payload).not.toHaveProperty('locale');
     });
 });

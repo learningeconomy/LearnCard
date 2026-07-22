@@ -223,14 +223,11 @@ export const getLCAPlugin = async (
 
                     return (await client.ai.generateImage.query({ prompt })).url;
                 },
-                generateBoostSkills: async (_learnCard, description: string, locale?: string) => {
+                generateBoostSkills: async (_learnCard, description: string) => {
                     await initialized;
                     await updateLearnCard(_learnCard);
 
-                    const result = await client.ai.generateBoostSkills.query({
-                        description,
-                        locale,
-                    });
+                    const result = await client.ai.generateBoostSkills.query({ description });
 
                     return result;
                 },

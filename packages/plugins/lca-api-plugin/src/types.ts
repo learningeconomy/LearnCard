@@ -305,7 +305,7 @@ export type LCAPluginMethods = {
         narrative: string;
     }>;
     generateImage: (prompt: string) => Promise<string>;
-    generateBoostSkills: (description: string, locale?: string) => Promise<BoostSkills[]>;
+    generateBoostSkills: (description: string) => Promise<BoostSkills[]>;
     generateSkillIcons: (names: string[]) => Promise<Record<string, string>>;
     createPin: (pin: string) => Promise<boolean>;
     hasPin: (did?: string) => Promise<boolean>;

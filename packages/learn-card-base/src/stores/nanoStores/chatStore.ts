@@ -8,7 +8,7 @@ import { showToast } from './toastStore';
 import { showErrorModal } from './ErrorModalStore';
 
 import { networkStore } from '../NetworkStore';
-import { addActiveLocaleToUrl } from '../../i18n';
+import { addActiveLocaleToPayload, addActiveLocaleToUrl } from '../../i18n';
 import type { ChatMessage, Thread, LearningPathway } from '../../types/ai-chat';
 
 export const messages = atom<ChatMessage[]>([]);
@@ -810,11 +810,13 @@ export function sendMessageWithQuestion(content: string, selectedQuestion?: stri
     }
 
     socket.send(
-        JSON.stringify({
-            message: newMessage,
-            threadId,
-            selectedQuestion,
-        })
+        JSON.stringify(
+            addActiveLocaleToPayload({
+                message: newMessage,
+                threadId,
+                selectedQuestion,
+            })
+        )
     );
 }
 
@@ -1006,7 +1008,7 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
             //     }
             // }
 
-            fetch(`${getBackendUrl()}/threads/finish?did=${did}`, {
+            fetch(addActiveLocaleToUrl(`${getBackendUrl()}/threads/finish?did=${did}`), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1126,7 +1128,7 @@ export function continuePlan() {
         return;
     }
     isTyping.set(true);
-    socket.send(JSON.stringify({ action: 'continue_plan', threadId }));
+    socket.send(JSON.stringify(addActiveLocaleToPayload({ action: 'continue_plan', threadId })));
     planReady.set(false);
     planReadyThread.set(null);
 }
@@ -1147,10 +1149,13 @@ export async function finishSession(onSuccess?: () => void) {
         ]);
         sessionEnded.set(true);
 
-        const res = await fetch(`${getBackendUrl()}/threads/finish?did=${did}`, {
-            method: 'POST',
-            body: JSON.stringify({ threadId, did }),
-        });
+        const res = await fetch(
+            addActiveLocaleToUrl(`${getBackendUrl()}/threads/finish?did=${did}`),
+            {
+                method: 'POST',
+                body: JSON.stringify({ threadId, did }),
+            }
+        );
 
         // In most cases the summary will come through the existing WebSocket
         // listener as a `conversation_summary` event. However, if the WS is not
@@ -1225,7 +1230,11 @@ export function disconnectWebSocket() {
 // for the "send right after connect" race that can otherwise add up to 100ms of
 // idle wait per first message.
 function sendWhenReady(payload: unknown) {
-    const json = JSON.stringify(payload);
+    const json = JSON.stringify(
+        typeof payload === 'object' && payload !== null
+            ? addActiveLocaleToPayload(payload)
+            : payload
+    );
     if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(json);
         return;
@@ -1269,10 +1278,12 @@ export async function closeInsightsSession(threadId?: string) {
     }
 
     socket.send(
-        JSON.stringify({
-            action: 'close_insights_session',
-            threadId: activeThreadId,
-        })
+        JSON.stringify(
+            addActiveLocaleToPayload({
+                action: 'close_insights_session',
+                threadId: activeThreadId,
+            })
+        )
     );
 
     // Optimistically reset state

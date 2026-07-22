@@ -152,8 +152,7 @@ const BoostWizard: React.FC<BoostWizardProps> = ({ boostUserType }) => {
                 (async () => {
                     try {
                         return await wallet.invoke.generateBoostSkills(
-                            `Please return an array of skills based on ${description}`,
-                            getLocale()
+                            `Please return an array of skills based on ${description}`
                         );
                     } catch (error) {
                         log.error('Error generating skills:', error);
