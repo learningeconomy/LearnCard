@@ -92,8 +92,8 @@ export const ActivityDetailOverlay: React.FC<{
             onClick={onClose}
         >
             <div
+                data-modal-root="bottom-sheet"
                 className="bg-white rounded-t-[24px] sm:rounded-[24px] w-full sm:max-w-[480px] shadow-2xl relative flex flex-col"
-                style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
                 onClick={e => e.stopPropagation()}
             >
                 <button

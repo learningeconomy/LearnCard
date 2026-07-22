@@ -31,10 +31,6 @@ vi.mock('learn-card-base', () => ({
     useToast: () => ({ presentToast: vi.fn() }),
 }));
 
-vi.mock('learn-card-base/hooks/useSafeArea', () => ({
-    useSafeArea: () => ({ bottom: 0 }),
-}));
-
 vi.mock('learn-card-base/svgs/LinkChain', () => ({
     default: () => null,
 }));

@@ -22,7 +22,7 @@ const ClrEvidenceHeader: React.FC<ClrEvidenceHeaderProps> = ({ evidence }) => {
     };
 
     return (
-        <div className="shrink-0 border-b border-grayscale-200 bg-white/95 backdrop-blur-sm px-4 py-3 safe-area-top-margin absolute top-0 left-0 right-0 z-9999 flex items-center justify-between">
+        <div className="shrink-0 border-b border-grayscale-200 bg-white/95 backdrop-blur-sm px-4 py-3 absolute top-0 left-0 right-0 z-9999 flex items-center justify-between">
             <div className="flex items-center gap-2">
                 {evidence.map(item => (
                     <button

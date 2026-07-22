@@ -155,7 +155,10 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
 
             {/* Confirmation Modal */}
             {showConfirmation && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div
+                    data-modal-root
+                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                >
                     <div className="bg-white rounded-2xl p-6 max-w-md w-full space-y-5">
                         <div className="flex items-center gap-4">
                             <div className="w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center">

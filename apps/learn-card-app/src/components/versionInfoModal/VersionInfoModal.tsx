@@ -895,15 +895,7 @@ const VersionInfoModal: React.FC<VersionInfoModalProps> = ({ fallbackVersion }) 
     const platformLabel = PLATFORM_LABELS[info.platform];
 
     return (
-        <div
-            className="font-poppins px-6 pb-5 flex flex-col items-center w-full max-w-[400px] mx-auto"
-            style={{
-                // Match the app-wide pattern (AppStoreDetailModal, ShareCredentialModal
-                // etc.): respect the iOS notch/dynamic-island inset when the modal is
-                // rendered as a fullscreen cancel sheet, fall back to 1.5rem elsewhere.
-                paddingTop: 'max(1.5rem, env(safe-area-inset-top))',
-            }}
-        >
+        <div className="font-poppins px-6 pt-6 pb-5 flex flex-col items-center w-full max-w-[400px] mx-auto">
             {/* ---- Hero ---------------------------------------------------------- */}
             <img
                 src={appIcon}

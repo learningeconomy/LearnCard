@@ -123,175 +123,181 @@ const SubPathwayCeremony: React.FC<SubPathwayCeremonyProps> = ({
 
     return (
         <PathwayPortal>
-        <motion.div
-            // Fixed overlay covering the shell. backdrop dims the
-            // page underneath; the card slides up from the bottom
-            // and self-centers on viewport so the touch target is
-            // reachable on tall mobile screens.
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.18 }}
-            className="fixed inset-0 z-50 font-poppins
+            <motion.div
+                // Fixed overlay covering the shell. backdrop dims the
+                // page underneath; the card slides up from the bottom
+                // and self-centers on viewport so the touch target is
+                // reachable on tall mobile screens.
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18 }}
+                className="fixed inset-0 z-50 font-poppins
                        bg-grayscale-900/40 backdrop-blur-sm
                        flex items-end sm:items-center justify-center
                        p-3 sm:p-6"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="subpathway-ceremony-title"
-            style={{
-                paddingTop:
-                    'max(0.75rem, calc(env(safe-area-inset-top) + 0.5rem))',
-                paddingBottom:
-                    'max(0.75rem, calc(env(safe-area-inset-bottom) + 0.5rem))',
-            }}
-        >
-            <motion.div
-                initial={{ y: 24, opacity: 0, scale: 0.98 }}
-                animate={{ y: 0, opacity: 1, scale: 1 }}
-                exit={{ y: 16, opacity: 0 }}
-                transition={{ type: 'spring', stiffness: 280, damping: 26, mass: 0.8 }}
-                className="relative w-full max-w-[480px]
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="subpathway-ceremony-title"
+            >
+                <motion.div
+                    initial={{ y: 24, opacity: 0, scale: 0.98 }}
+                    animate={{ y: 0, opacity: 1, scale: 1 }}
+                    exit={{ y: 16, opacity: 0 }}
+                    transition={{ type: 'spring', stiffness: 280, damping: 26, mass: 0.8 }}
+                    className="relative w-full max-w-[480px]
                            max-h-full
                            bg-white rounded-[28px]
                            shadow-2xl shadow-grayscale-900/10
                            border border-grayscale-200
                            overflow-hidden
                            flex flex-col"
-            >
-                {/* Top emerald hairline glow — quiet "this was a win" cue. */}
-                <div
-                    aria-hidden
-                    className="absolute inset-x-0 top-0 h-1
+                >
+                    {/* Top emerald hairline glow — quiet "this was a win" cue. */}
+                    <div
+                        aria-hidden
+                        className="absolute inset-x-0 top-0 h-1
                                bg-gradient-to-r from-emerald-300 via-emerald-500 to-emerald-300"
-                />
+                    />
 
-                <button
-                    type="button"
-                    aria-label="Dismiss"
-                    onClick={() => pathwayStore.set.dismissCelebration()}
-                    className="absolute top-3.5 right-3.5
+                    <button
+                        type="button"
+                        aria-label="Dismiss"
+                        onClick={() => pathwayStore.set.dismissCelebration()}
+                        className="absolute top-3.5 right-3.5
                                w-8 h-8 rounded-full
                                flex items-center justify-center
                                text-grayscale-500 hover:text-grayscale-900
                                hover:bg-grayscale-10 transition-colors"
-                >
-                    <IonIcon icon={closeOutline} className="text-xl" />
-                </button>
+                    >
+                        <IonIcon icon={closeOutline} className="text-xl" />
+                    </button>
 
-                <div
-                    className="p-6 pt-7 space-y-5 overflow-y-auto"
-                    style={{ overscrollBehavior: 'contain' }}
-                >
-                    {/* Eyebrow */}
-                    <p className="text-[11px] font-semibold tracking-[0.12em]
-                                  uppercase text-emerald-700">
-                        Chapter Complete
-                    </p>
-
-                    {/* Title + becoming */}
-                    <div className="space-y-1.5">
-                        <h2
-                            id="subpathway-ceremony-title"
-                            className="text-xl font-semibold text-grayscale-900 leading-snug"
+                    <div
+                        className="p-6 pt-7 space-y-5 overflow-y-auto"
+                        style={{ overscrollBehavior: 'contain' }}
+                    >
+                        {/* Eyebrow */}
+                        <p
+                            className="text-[11px] font-semibold tracking-[0.12em]
+                                  uppercase text-emerald-700"
                         >
-                            {subPathway.title}
-                        </h2>
+                            Chapter Complete
+                        </p>
 
-                        {banner.kicker && banner.phrase && (
-                            <p className="text-sm text-grayscale-600 leading-relaxed">
-                                <span className="text-grayscale-500">
-                                    {banner.kicker.toLowerCase()}
-                                </span>{' '}
-                                {banner.phrase}.
-                            </p>
-                        )}
-                    </div>
+                        {/* Title + becoming */}
+                        <div className="space-y-1.5">
+                            <h2
+                                id="subpathway-ceremony-title"
+                                className="text-xl font-semibold text-grayscale-900 leading-snug"
+                            >
+                                {subPathway.title}
+                            </h2>
 
-                    {/* Chain effect — the load-bearing line */}
-                    <div className="flex items-start gap-2.5
-                                    p-3.5 rounded-2xl
-                                    bg-emerald-50/70 border border-emerald-100">
-                        <IonIcon
-                            icon={arrowForwardOutline}
-                            className="shrink-0 mt-0.5 text-emerald-700 text-base"
-                            aria-hidden
-                        />
-
-                        <div className="min-w-0 flex-1">
-                            <p className="text-[10px] font-semibold tracking-[0.1em]
-                                          uppercase text-emerald-700/80">
-                                In {parent.title}
-                            </p>
-
-                            <p className="text-sm font-medium text-emerald-900 mt-0.5 truncate">
-                                {nextStep
-                                    ? `Unlocked: ${nextStep.title}`
-                                    : `${parent.title} is now complete!`}
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Receipt strip */}
-                    <div className="flex items-center gap-3 text-xs text-grayscale-500
-                                    border-t border-grayscale-100 pt-4">
-                        <span className="tabular-nums">
-                            <span className="text-grayscale-800 font-medium">
-                                {receipt.steps}
-                            </span>{' '}
-                            steps
-                        </span>
-
-                        <span aria-hidden className="text-grayscale-300">·</span>
-
-                        <span className="tabular-nums">
-                            <span className="text-grayscale-800 font-medium">
-                                {receipt.days}
-                            </span>{' '}
-                            {receipt.days === 1 ? 'day' : 'days'}
-                        </span>
-
-                        {receipt.vouches > 0 && (
-                            <>
-                                <span aria-hidden className="text-grayscale-300">·</span>
-
-                                <span className="tabular-nums">
-                                    <span className="text-grayscale-800 font-medium">
-                                        {receipt.vouches}
+                            {banner.kicker && banner.phrase && (
+                                <p className="text-sm text-grayscale-600 leading-relaxed">
+                                    <span className="text-grayscale-500">
+                                        {banner.kicker.toLowerCase()}
                                     </span>{' '}
-                                    {receipt.vouches === 1 ? 'vouch' : 'vouches'}
-                                </span>
-                            </>
-                        )}
-                    </div>
+                                    {banner.phrase}.
+                                </p>
+                            )}
+                        </div>
 
-                    {/* CTAs */}
-                    <div className="flex gap-2 pt-1">
-                        <button
-                            type="button"
-                            onClick={handleContinue}
-                            className="flex-1 py-3 px-4 rounded-[20px]
+                        {/* Chain effect — the load-bearing line */}
+                        <div
+                            className="flex items-start gap-2.5
+                                    p-3.5 rounded-2xl
+                                    bg-emerald-50/70 border border-emerald-100"
+                        >
+                            <IonIcon
+                                icon={arrowForwardOutline}
+                                className="shrink-0 mt-0.5 text-emerald-700 text-base"
+                                aria-hidden
+                            />
+
+                            <div className="min-w-0 flex-1">
+                                <p
+                                    className="text-[10px] font-semibold tracking-[0.1em]
+                                          uppercase text-emerald-700/80"
+                                >
+                                    In {parent.title}
+                                </p>
+
+                                <p className="text-sm font-medium text-emerald-900 mt-0.5 truncate">
+                                    {nextStep
+                                        ? `Unlocked: ${nextStep.title}`
+                                        : `${parent.title} is now complete!`}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Receipt strip */}
+                        <div
+                            className="flex items-center gap-3 text-xs text-grayscale-500
+                                    border-t border-grayscale-100 pt-4"
+                        >
+                            <span className="tabular-nums">
+                                <span className="text-grayscale-800 font-medium">
+                                    {receipt.steps}
+                                </span>{' '}
+                                steps
+                            </span>
+
+                            <span aria-hidden className="text-grayscale-300">
+                                ·
+                            </span>
+
+                            <span className="tabular-nums">
+                                <span className="text-grayscale-800 font-medium">
+                                    {receipt.days}
+                                </span>{' '}
+                                {receipt.days === 1 ? 'day' : 'days'}
+                            </span>
+
+                            {receipt.vouches > 0 && (
+                                <>
+                                    <span aria-hidden className="text-grayscale-300">
+                                        ·
+                                    </span>
+
+                                    <span className="tabular-nums">
+                                        <span className="text-grayscale-800 font-medium">
+                                            {receipt.vouches}
+                                        </span>{' '}
+                                        {receipt.vouches === 1 ? 'vouch' : 'vouches'}
+                                    </span>
+                                </>
+                            )}
+                        </div>
+
+                        {/* CTAs */}
+                        <div className="flex gap-2 pt-1">
+                            <button
+                                type="button"
+                                onClick={handleContinue}
+                                className="flex-1 py-3 px-4 rounded-[20px]
                                        bg-grayscale-900 text-white
                                        font-medium text-sm
                                        hover:opacity-90 transition-opacity"
-                        >
-                            Continue {parent.title}
-                        </button>
+                            >
+                                Continue {parent.title}
+                            </button>
 
-                        <button
-                            type="button"
-                            onClick={handleStayHere}
-                            className="py-3 px-4 rounded-[20px]
+                            <button
+                                type="button"
+                                onClick={handleStayHere}
+                                className="py-3 px-4 rounded-[20px]
                                        border border-grayscale-300
                                        text-grayscale-700 font-medium text-sm
                                        hover:bg-grayscale-10 transition-colors"
-                        >
-                            Stay here
-                        </button>
+                            >
+                                Stay here
+                            </button>
+                        </div>
                     </div>
-                </div>
+                </motion.div>
             </motion.div>
-        </motion.div>
         </PathwayPortal>
     );
 };

@@ -408,7 +408,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                 <section className="flex flex-1 h-full overflow-y-auto items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0">
                     <section className="flex flex-col items-center justify-center px-2 w-full">
                         <section
-                            className={`boost-preview-display px-6 w-full safe-area-top-margin max-h-full pb-32 disable-scrollbars ${
+                            className={`boost-preview-display px-6 w-full max-h-full pb-32 disable-scrollbars ${
                                 Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'
                             }`}
                         >
@@ -427,7 +427,10 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                 </>
                             )}
                             {selectedImage && (
-                                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                                <div
+                                    data-modal-root
+                                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                                >
                                     <div className="relative max-w-full max-h-[80vh]">
                                         <img
                                             src={selectedImage}

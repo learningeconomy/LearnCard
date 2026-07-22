@@ -112,7 +112,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
 
     return (
         <div className="h-full relative bg-grayscale-50 overflow-hidden">
-            <div className="px-[20px] py-[20px] bg-white safe-area-top-margin flex flex-col gap-[10px] z-20 relative border-b-[1px] border-grayscale-200 border-solid rounded-b-[30px]">
+            <div className="px-[20px] py-[20px] bg-white flex flex-col gap-[10px] z-20 relative border-b-[1px] border-grayscale-200 border-solid rounded-b-[30px]">
                 <div className="flex items-center gap-[10px] text-grayscale-900">
                     <PuzzlePiece className="w-[40px] h-[40px]" version="filled" />
                     <h5 className="text-[22px] font-poppins font-[600] leading-[24px]">

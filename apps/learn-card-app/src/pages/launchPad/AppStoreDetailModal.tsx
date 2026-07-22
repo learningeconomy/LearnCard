@@ -255,10 +255,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
     const showAgeBlockedModal = () => {
         newModal(
             <div className="flex flex-col h-full w-full bg-white max-w-[500px] mx-auto">
-                <div
-                    className="border-b border-grayscale-200 p-6"
-                    style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
-                >
+                <div className="border-b border-grayscale-200 p-6">
                     <h2 className="text-2xl font-bold text-grayscale-900 text-center">
                         Age Restricted
                     </h2>
@@ -302,12 +299,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                     </div>
                 </div>
 
-                <div
-                    className="flex items-center justify-center gap-4 p-6 border-t border-grayscale-200 bg-white"
-                    style={{
-                        paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
-                    }}
-                >
+                <div className="flex items-center justify-center gap-4 p-6 border-t border-grayscale-200 bg-white">
                     <button
                         onClick={closeModal}
                         className="px-8 py-3 text-lg font-semibold text-white bg-grayscale-600 rounded-full hover:bg-grayscale-700 transition-colors"
@@ -352,10 +344,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
 
             return (
                 <div className="flex flex-col h-full w-full bg-white max-w-[500px] mx-auto">
-                    <div
-                        className="border-b border-grayscale-200 p-6"
-                        style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
-                    >
+                    <div className="border-b border-grayscale-200 p-6">
                         <h2 className="text-2xl font-bold text-grayscale-900 text-center">
                             Date of Birth Required
                         </h2>
@@ -409,12 +398,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
                         </div>
                     </div>
 
-                    <div
-                        className="flex items-center justify-center gap-4 p-6 border-t border-grayscale-200 bg-white"
-                        style={{
-                            paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
-                        }}
-                    >
+                    <div className="flex items-center justify-center gap-4 p-6 border-t border-grayscale-200 bg-white">
                         <button
                             onClick={closeModal}
                             className="px-6 py-3 text-lg font-semibold text-grayscale-700 bg-grayscale-200 rounded-full hover:bg-grayscale-300 transition-colors"
@@ -722,7 +706,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             {/* Header */}
             <IonHeader mode="ios" className="ion-no-border">
                 <div className="ion-padding shadow-header bg-white">
-                    <div className="flex items-center justify-normal ion-padding safe-area-top-margin">
+                    <div className="flex items-center justify-normal ion-padding">
                         <div className="h-[65px] w-[65px] mr-3">
                             <img
                                 className="w-full h-full object-cover bg-white rounded-[16px] overflow-hidden border-[1px] border-solid border-grayscale-200"

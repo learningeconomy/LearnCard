@@ -46,7 +46,7 @@ export const UnfinishedAiSessionAssessmentPreviewSimple: React.FC<
     }, []);
 
     return (
-        <div className="w-full flex flex-col items-center justify-center safe-area-top-margin">
+        <div className="w-full flex flex-col items-center justify-center">
             {showLoader && (
                 <AiSessionLoader
                     topicRecord={session?.record || topicRecord}

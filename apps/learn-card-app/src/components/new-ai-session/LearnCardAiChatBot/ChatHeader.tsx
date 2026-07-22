@@ -185,7 +185,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ mode, aiApp, initialTopi
     const showEndSessionHint = !isInsights && !!currentThread;
 
     return (
-        <div className="sticky top-0 z-[100] w-full bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] pt-[calc(12px+env(safe-area-inset-top))] sm:pt-3 pb-3 px-4">
+        <div className="sticky top-0 z-[100] w-full bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] pt-[calc(12px+var(--ion-safe-area-top,0px))] sm:pt-3 pb-3 px-4">
             <div className="w-full max-w-[829px] mx-auto flex items-start gap-3">
                 <div className="flex-shrink-0 mt-[2px]">
                     {isInsights ? (

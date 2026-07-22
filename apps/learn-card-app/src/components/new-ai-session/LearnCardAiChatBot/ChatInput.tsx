@@ -205,7 +205,10 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                 {/* Pathway Selection Modal */}
                 {showPathwaySelection &&
                     createPortal(
-                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[50000]">
+                        <div
+                            data-modal-root
+                            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[50000]"
+                        >
                             <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-y-auto max-h-[80vh] relative">
                                 {/* Close button */}
                                 <button
@@ -290,7 +293,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
 
     return (
         <>
-            <div className="flex items-end gap-[10px] p-[15px] sm:p-0 pb-[calc(15px+env(safe-area-inset-bottom))] sm:pb-[env(safe-area-inset-bottom)] bg-grayscale-50">
+            <div className="flex items-end gap-[10px] p-[15px] sm:p-0 pb-[calc(15px+var(--ion-safe-area-bottom,0px))] sm:pb-[var(--ion-safe-area-bottom,0px)] bg-grayscale-50">
                 {showUserAvatar && (
                     <div className="flex-shrink-0 pb-[6px]">
                         <ProfilePicture

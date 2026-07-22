@@ -57,8 +57,10 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
 
     if (upgradeSuccess) {
         return (
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+            <div
+                data-modal-root
+                className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+            >
                 <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 animate-fade-in">
                     <div className="p-6 text-center">
                         <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -79,9 +81,12 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
     }
 
     return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+        <div
+            data-modal-root
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+        >
             <div
-                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                className="absolute inset-0"
                 onClick={onDismiss}
                 onKeyDown={e => e.key === 'Escape' && onDismiss()}
                 role="button"

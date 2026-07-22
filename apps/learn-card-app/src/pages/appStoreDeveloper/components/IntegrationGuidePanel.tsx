@@ -1714,6 +1714,7 @@ export const IntegrationGuidePanel: React.FC<IntegrationGuidePanelProps> = ({
 
             {/* Slide-out Panel - positioned below header */}
             <div
+                data-modal-root="bottom-sheet"
                 className={`fixed top-16 right-0 h-[calc(100%-64px)] w-full max-w-lg bg-white shadow-2xl z-[9999] transform transition-transform duration-300 ease-out rounded-tl-2xl ${
                     isOpen ? 'translate-x-0' : 'translate-x-full'
                 }`}

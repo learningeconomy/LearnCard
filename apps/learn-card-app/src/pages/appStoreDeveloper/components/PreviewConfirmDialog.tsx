@@ -39,9 +39,12 @@ export const PreviewConfirmDialog: React.FC<PreviewConfirmDialogProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+        <div
+            data-modal-root
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+        >
             {/* Backdrop */}
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
+            <div className="absolute inset-0" onClick={onCancel} />
 
             {/* Dialog */}
             <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full mx-4">

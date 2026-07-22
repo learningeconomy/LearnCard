@@ -492,7 +492,7 @@ const ClaimBoost: React.FC<{
                             Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'
                         }`}
                     >
-                        <div className="pb-4 vc-preview-modal-safe-area h-full w-full">
+                        <div className="pb-4 h-full w-full">
                             {loading && (
                                 <section className="relative loading-spinner-container flex flex-col items-center justify-center h-full w-full">
                                     <IonSpinner color="black" />

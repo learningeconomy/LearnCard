@@ -250,7 +250,10 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
     // Success state
     if (claimed) {
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+            <div
+                data-modal-root
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+            >
                 <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
                     <div className="text-center">
                         <div className="w-16 h-16 mx-auto mb-4 bg-emerald-100 rounded-full flex items-center justify-center">
@@ -280,7 +283,10 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
     // Loading state
     if (isLoading) {
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+            <div
+                data-modal-root
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+            >
                 <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8">
                     <div className="flex flex-col items-center justify-center">
                         <IonSpinner name="crescent" className="w-12 h-12 text-cyan-500" />
@@ -297,7 +303,10 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
     // Error state
     if (error || !credential) {
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+            <div
+                data-modal-root
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+            >
                 <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
                     <div className="text-center">
                         <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
@@ -341,7 +350,10 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
     const credentialName = resolvedCredentialName || m['claim.modal.credentialFallback']();
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+        <div
+            data-modal-root
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+        >
             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden max-h-[90vh] flex flex-col relative">
                 {/* Close button */}
                 <button

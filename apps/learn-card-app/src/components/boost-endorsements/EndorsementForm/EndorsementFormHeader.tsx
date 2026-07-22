@@ -82,7 +82,7 @@ export const EndorsementFormHeader: React.FC<{
     }
 
     return (
-        <div className="ion-padding bg-white safe-area-top-margin rounded-b-[30px] overflow-hidden shadow-md min-h-[110px] w-full">
+        <div className="ion-padding bg-white rounded-b-[30px] overflow-hidden shadow-md min-h-[110px] w-full">
             <div className="flex items-center justify-normal p-2">
                 <div className="flex items-start gap-4">
                     <div className="w-[60px] h-[60px] min-w-[60px] min-h-[60px] flex items-center justify-center">

@@ -228,7 +228,7 @@ export const VCDisplayCardWrapper = ({
                 fullscreen
             >
                 <IonRow className="flex flex-col items-center justify-center px-6">
-                    <div className="flex items-center justify-cente mb-2 vc-preview-modal-safe-area">
+                    <div className="flex items-center justify-cente mb-2">
                         <button
                             onClick={handleCloseModal}
                             className="w-[50px] h-[50px] bg-white rounded-full flex items-center justify-center shadow-3xl"

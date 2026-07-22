@@ -106,7 +106,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
     }>({ oneTimeShare: false, customDuration: '' });
 
     return (
-        <section className="disable-scrollbars safe-area-top-margin w-full flex flex-col gap-[20px] items-center px-[20px] py-[30px] bg-white shadow-bottom rounded-[24px] max-w-[400px]">
+        <section className="disable-scrollbars w-full flex flex-col gap-[20px] items-center px-[20px] py-[30px] bg-white shadow-bottom rounded-[24px] max-w-[400px]">
             <div className="flex flex-col pt-8 w-full">
                 <div className="w-full flex items-center justify-center pt-2">
                     <h6 className="tracking-[12px] text-base font-bold text-black">

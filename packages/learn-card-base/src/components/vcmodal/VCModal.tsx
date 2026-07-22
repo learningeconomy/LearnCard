@@ -183,7 +183,7 @@ export const VCClaim: React.FC<{
                         isCertificate ? 'pt-14 md:pt-20' : ''
                     }`}
                 >
-                    <div className="flex items-center justify-center w-full mb-2 vc-preview-modal-safe-area">
+                    <div className="flex items-center justify-center w-full mb-2">
                         {!isCertificate && (
                             <button
                                 onClick={() => {
@@ -364,7 +364,7 @@ export const VCModal = ({
                     }`}
                 >
                     {!isCertificate && (
-                        <div className="flex items-center justify-center mb-2 vc-preview-modal-safe-area">
+                        <div className="flex items-center justify-center mb-2">
                             <button
                                 onClick={() => handleDismiss()}
                                 className="w-[50px] h-[50px] bg-white rounded-full flex items-center justify-center shadow-3xl"

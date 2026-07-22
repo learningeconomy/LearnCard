@@ -1,5 +1,94 @@
 @import './fonts';
 
+// Safe areas belong to modal containers, never individual modal content.
+// Ionic adjusts its host variables for full-screen, inset, and sheet modals.
+ion-modal,
+#full-screen-modal,
+#right-modal,
+#center-modal,
+#cancel-modal,
+.freeform-modal,
+.pathway-modal-root,
+[data-modal-root] {
+    --modal-safe-area-top: var(--ion-safe-area-top, env(safe-area-inset-top, 0px));
+    --modal-safe-area-bottom: var(--ion-safe-area-bottom, env(safe-area-inset-bottom, 0px));
+}
+
+// Transparent borders reserve safe space without exposing backdrop bands:
+// the slotted modal root's own background paints through its border box.
+ion-modal > *,
+ion-modal > .ion-delegate-host > * {
+    box-sizing: border-box;
+    background-clip: border-box;
+}
+
+ion-modal > :first-child:not(ion-header):not(.ion-delegate-host),
+ion-modal > .ion-delegate-host > :first-child:not(ion-header) {
+    border-top: var(--modal-safe-area-top) solid transparent !important;
+}
+
+ion-modal > :last-child:not(ion-footer):not(.ion-delegate-host),
+ion-modal > .ion-delegate-host > :last-child:not(ion-footer) {
+    border-bottom: var(--modal-safe-area-bottom) solid transparent !important;
+}
+
+.pathway-modal-root > * {
+    box-sizing: border-box;
+    border-top: var(--modal-safe-area-top) solid transparent !important;
+    border-bottom: var(--modal-safe-area-bottom) solid transparent !important;
+    background-clip: border-box;
+}
+
+[data-modal-root] {
+    box-sizing: border-box;
+    border-top: var(--modal-safe-area-top) solid transparent !important;
+    border-bottom: var(--modal-safe-area-bottom) solid transparent !important;
+    background-clip: border-box;
+}
+
+[data-modal-root='bottom-sheet'] {
+    border-top: 0 !important;
+}
+
+// The positioned or bordered content root owns the insets and retains Ionic's
+// safe-area variables. Only its descendants are reset to prevent duplication.
+// Direct IonHeader/IonFooter siblings retain Ionic's built-in handling.
+ion-modal > :not(ion-header):not(ion-footer):not(.ion-delegate-host) > *,
+ion-modal > .ion-delegate-host > :not(ion-header):not(ion-footer) > *,
+#full-screen-modal > section > *,
+#right-modal > section > *,
+#center-modal > section > *,
+#cancel-modal > section > *,
+.freeform-modal > .freeform-section > *,
+.pathway-modal-root > * > *,
+[data-modal-root] > * {
+    --ion-safe-area-top: 0px;
+    --ion-safe-area-bottom: 0px;
+}
+
+ion-modal [data-modal-root],
+#full-screen-modal [data-modal-root],
+#right-modal [data-modal-root],
+#center-modal [data-modal-root],
+#cancel-modal [data-modal-root],
+.freeform-modal [data-modal-root],
+.pathway-modal-root [data-modal-root],
+[data-modal-root] [data-modal-root] {
+    border-top: 0 !important;
+    border-bottom: 0 !important;
+}
+
+ion-modal .safe-area-top-margin,
+#full-screen-modal .safe-area-top-margin,
+#right-modal .safe-area-top-margin,
+#center-modal .safe-area-top-margin,
+#cancel-modal .safe-area-top-margin,
+.freeform-modal .safe-area-top-margin,
+.pathway-modal-root .safe-area-top-margin,
+[data-modal-root] .safe-area-top-margin {
+    margin-top: 0;
+}
+
 #center-modal.new-post-overlay {
     overflow: hidden;
 
@@ -205,7 +294,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding-bottom: 0px;
+    padding-bottom: 0;
     background-color: rgba(0, 0, 0, 0.1);
     background: var(--modal-bg);
     background-position: center !important;
@@ -221,7 +310,6 @@
     bottom: 0;
     transition: all 300ms ease;
     animation: center-modal-background-intro 300ms normal none ease-out;
-    padding-top: calc(env(safe-area-inset-top) + 0px);
 
     &.closed {
         background-color: transparent;
@@ -273,6 +361,10 @@
         overflow-y: auto;
         -ms-overflow-style: none;
         scrollbar-width: none;
+        box-sizing: border-box;
+        border-top: var(--modal-safe-area-top) solid transparent !important;
+        border-bottom: var(--modal-safe-area-bottom) solid transparent !important;
+        background-clip: border-box;
 
         &::-webkit-scrollbar {
             display: none;
@@ -464,7 +556,7 @@
     display: flex;
     justify-content: flex-end;
     z-index: 100000;
-    padding-bottom: 0px;
+    padding-bottom: 0;
     background-color: rgba(0, 0, 0, 0.7);
     position: fixed;
     height: 100%;
@@ -524,6 +616,10 @@
         background-color: white;
         transition: transform 300ms cubic-bezier(0.64, 0.21, 0.01, 1.15);
         animation: right-modal-intro 300ms normal none ease;
+        box-sizing: border-box;
+        border-top: var(--modal-safe-area-top) solid transparent !important;
+        border-bottom: var(--modal-safe-area-bottom) solid transparent !important;
+        background-clip: border-box;
 
         &.widen {
             max-width: 600px;
@@ -593,13 +689,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding-bottom: 0px;
+    box-sizing: border-box;
+    padding-top: var(--modal-safe-area-top) !important;
+    padding-bottom: var(--modal-safe-area-bottom) !important;
     background-color: rgba(0, 0, 0, 0.1);
     backdrop-filter: blur(10px);
     position: fixed;
     height: 100%;
     width: 100vw;
-    top: env(safe-area-inset-top);
+    top: 0;
     left: 0;
     right: 0;
     bottom: 0;
@@ -762,7 +860,10 @@
     align-items: center;
     gap: 0.62rem;
     justify-content: flex-end;
+    box-sizing: border-box;
     padding: 0.62rem;
+    padding-top: calc(0.62rem + var(--modal-safe-area-top)) !important;
+    padding-bottom: calc(0.62rem + var(--modal-safe-area-bottom)) !important;
     background-color: rgba(0, 0, 0, 0.1);
     backdrop-filter: blur(10px);
     position: fixed;
@@ -771,7 +872,6 @@
     left: 0;
     right: 0;
     bottom: 0;
-    // padding-bottom: calc(50px + env(safe-area-inset-bottom)); // dynamically set inside <CancelModal />
     transition: all 300ms ease;
     animation: center-modal-background-intro 300ms normal none ease-out;
 
@@ -924,6 +1024,8 @@
 
 #cancel-modal.bottom-sheet-modal {
     padding: 0;
+    padding-top: var(--modal-safe-area-top) !important;
+    padding-bottom: 0 !important;
     justify-content: flex-end;
 
     & > .center-modal-dimmer {
@@ -938,6 +1040,8 @@
         max-width: none;
         max-height: 100vh;
         overflow: hidden;
+        box-sizing: border-box;
+        border-bottom: var(--modal-safe-area-bottom) solid transparent !important;
         padding-top: 8px;
         border-radius: 20px 20px 0 0;
         box-shadow: 0 0 2px 0 rgba(0, 0, 0, 0.5);
@@ -1062,7 +1166,11 @@
         z-index: 1;
         width: 100%;
         max-width: 600px;
+        box-sizing: border-box;
         max-height: 100%;
+        border-top: var(--modal-safe-area-top) solid transparent !important;
+        border-bottom: var(--modal-safe-area-bottom) solid transparent !important;
+        background-clip: border-box;
         overflow-y: auto;
         -ms-overflow-style: none;
         scrollbar-width: none;
@@ -1338,8 +1446,6 @@
 }
 
 #full-screen-modal.modal-full-bg {
-    margin-top: calc(0px + env(safe-area-inset-top));
-
     .full-screen-modal-dimmer {
         background-color: #efefef;
         opacity: 0.7;

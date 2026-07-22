@@ -59,7 +59,10 @@ export const JsonPreviewModal = ({ boost }: { boost: VC | UnsignedVC }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div
+            data-modal-root
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        >
             <div className="bg-white p-6 rounded-lg w-11/12 max-w-2xl max-h-[90vh] flex flex-col">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold">JSON View</h2>

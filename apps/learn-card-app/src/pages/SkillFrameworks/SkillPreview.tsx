@@ -147,7 +147,7 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
 
     return (
         <div className="h-full relative bg-grayscale-50 overflow-hidden">
-            <div className="px-[15px] py-[10px] bg-white safe-area-top-margin flex flex-col gap-[10px] z-20 relative border-b-[1px] border-grayscale-200 border-solid">
+            <div className="px-[15px] py-[10px] bg-white flex flex-col gap-[10px] z-20 relative border-b-[1px] border-grayscale-200 border-solid">
                 <div className="flex items-center gap-[10px]">
                     {isTopLevel ? (
                         <FrameworkImage

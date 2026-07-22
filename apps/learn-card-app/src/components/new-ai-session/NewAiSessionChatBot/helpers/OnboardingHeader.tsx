@@ -19,7 +19,7 @@ export const OnboardingHeader: React.FC<OnboardingHeaderProps> = ({ title, onClo
     return (
         <div
             className="absolute top-4 left-1/2 -translate-x-1/2 z-10 inline-flex items-center justify-between gap-2 bg-white rounded-full shadow-md border-[1px] border-grayscale-200 pl-5 pr-2 py-2 max-w-[calc(100%-32px)]"
-            style={{ top: 'calc(16px + env(safe-area-inset-top))' }}
+            style={{ top: 'calc(16px + var(--ion-safe-area-top, 0px))' }}
         >
             <h2 className="text-[15px] font-poppins font-[600] text-grayscale-900 m-0 truncate min-w-0">
                 {title}

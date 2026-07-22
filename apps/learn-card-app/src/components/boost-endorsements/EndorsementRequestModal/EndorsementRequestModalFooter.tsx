@@ -6,7 +6,6 @@ import X from 'learn-card-base/svgs/X';
 import { EndorsmentThumbWithCircle } from 'learn-card-base/svgs/EndorsementThumb';
 
 import { useModal } from 'learn-card-base';
-import { useSafeArea } from 'learn-card-base/hooks/useSafeArea';
 import * as m from '../../../paraglide/messages.js';
 
 const EndorsementRequestModalFooter: React.FC<{
@@ -15,10 +14,7 @@ const EndorsementRequestModalFooter: React.FC<{
     handleOnClick?: () => void;
 }> = ({ isDisabled, className, handleOnClick }) => {
     const { closeModal } = useModal();
-    const safeArea = useSafeArea();
-
-    let bottomPosition = safeArea.bottom;
-    if (Capacitor.isNativePlatform()) bottomPosition = 20 + safeArea.bottom;
+    const bottomPosition = Capacitor.isNativePlatform() ? 20 : 0;
 
     let iconStyles = '';
     if (isDisabled) iconStyles = 'text-grayscale-300';

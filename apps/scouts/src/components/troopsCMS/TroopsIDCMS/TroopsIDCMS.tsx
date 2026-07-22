@@ -36,11 +36,7 @@ export const TroopsIDCMS: React.FC<TroopsIDCMSProps> = ({
 
     return (
         <IonPage>
-            <TroopsCMSLayout
-                state={state}
-                viewMode={rootViewMode}
-                layoutClassName="!max-w-[375px] vc-preview-modal-safe-area"
-            >
+            <TroopsCMSLayout state={state} viewMode={rootViewMode} layoutClassName="!max-w-[375px]">
                 <div className="rounded-t-[20px] shadow-box-bottom overflow-hidden flex flex-col mb-[-2.5px]">
                     <div className="w-full flex items-center justify-center flex-col bg-white bg-opacity-70 backdrop-blur-[10px] rounded-t-[20px]">
                         <div className="w-full py-4 max-w-[335px]">

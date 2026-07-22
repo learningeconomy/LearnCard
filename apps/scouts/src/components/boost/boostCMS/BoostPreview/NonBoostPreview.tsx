@@ -116,10 +116,10 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                 <IonRow
                     className={`flex flex-col items-center justify-center px-1 overflow-x-auto pb-32 ${boostPreviewWrapperCustomClass} ${
                         isCertificate ? 'pt-14 md:pt-20' : ''
-                    } ${isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''}`}
+                    } ${isID ? '!px-0 mt-[20px]' : ''}`}
                 >
                     <section className="px-6 w-full">
-                        <div className="flex items-center justify-center mb-2 vc-preview-modal-safe-area" />
+                        <div className="flex items-center justify-center mb-2" />
                         <VCDisplayCardWrapper2
                             credential={credential}
                             issueeOverride={issueeOverride}

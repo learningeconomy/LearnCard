@@ -374,7 +374,7 @@ const ClaimFromDashboard: React.FC = () => {
             />
             <IonContent fullscreen color="grayscale-100">
                 <div
-                    className={`px-[40px] pb-[100px] vc-preview-modal-safe-area h-full overflow-y-auto ${
+                    className={`px-[40px] pb-[100px] h-full overflow-y-auto ${
                         isID ? '!px-[12px]' : ''
                     }`}
                     style={{

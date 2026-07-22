@@ -317,12 +317,12 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                             isMobile && isClrCredential ? 'px-0' : 'px-2'
                         } flex flex-col items-center justify-center overflow-x-auto ${boostPreviewWrapperCustomClass} ${
                             isCertificate ? 'certificate-display-zoom' : ''
-                        } ${isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''}`}
+                        } ${isID ? '!px-0 mt-[20px]' : ''}`}
                     >
                         <section
                             className={`w-full overflow-y-auto max-h-full pb-32 disable-scrollbars ${
                                 Capacitor.isNativePlatform() && !isClrCredential
-                                    ? 'pt-0 safe-area-top-margin'
+                                    ? 'pt-0'
                                     : 'pt-[30px]'
                             } ${isMobile && isClrCredential ? '!p-0' : 'px-6'}`}
                         >

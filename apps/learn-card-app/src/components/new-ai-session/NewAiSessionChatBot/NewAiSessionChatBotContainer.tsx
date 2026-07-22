@@ -233,7 +233,7 @@ export const NewAiSessionChatBotContainer: React.FC<{
             className={`relative w-full flex flex-col pt-[80px] ${
                 isDesktop ? 'max-w-[800px]' : ''
             }`}
-            style={{ paddingTop: 'calc(80px + env(safe-area-inset-top))' }}
+            style={{ paddingTop: 'calc(80px + var(--ion-safe-area-top, 0px))' }}
         >
             <OnboardingHeader
                 title={m['aiSession.newTopic']()}

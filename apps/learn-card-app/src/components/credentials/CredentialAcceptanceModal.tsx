@@ -24,12 +24,7 @@ export const CredentialAcceptanceModal: React.FC<CredentialAcceptanceModalProps>
     return (
         <div className="flex flex-col h-full w-full bg-grayscale-100">
             {/* Header */}
-            <div 
-                className="bg-white border-b border-grayscale-200 p-6"
-                style={{
-                    paddingTop: 'max(1.5rem, env(safe-area-inset-top))',
-                }}
-            >
+            <div className="bg-white border-b border-grayscale-200 p-6">
                 <h2 className="text-2xl font-bold text-grayscale-900 text-center">
                     Accept Credential
                 </h2>
@@ -48,10 +43,9 @@ export const CredentialAcceptanceModal: React.FC<CredentialAcceptanceModalProps>
             </div>
 
             {/* Action Buttons */}
-            <div 
+            <div
                 className="flex items-center justify-center gap-4 p-6 border-t border-grayscale-200 bg-white"
                 style={{
-                    paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
                     paddingLeft: 'max(1.5rem, env(safe-area-inset-left))',
                     paddingRight: 'max(1.5rem, env(safe-area-inset-right))',
                 }}

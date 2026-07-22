@@ -250,7 +250,7 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
 
     return (
         <IonPage className="max-w-full !bg-white/80 !backdrop-blur-sm !overflow-y-auto">
-            <div className="h-full max-h-full overflow-y-auto pb-[80px] pt-[30px] safe-area-top-margin">
+            <div className="h-full max-h-full overflow-y-auto pb-[80px] pt-[30px]">
                 <div className="mx-auto px-[2px]">
                     {!isMobile && (
                         <button

@@ -598,7 +598,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                     </div>
                 </div>
             )}
-            <div className="ion-padding p-[20px] bg-white safe-area-top-margin rounded-b-[30px] shadow-bottom-1-5 flex flex-col gap-[10px] z-20 relative">
+            <div className="ion-padding p-[20px] bg-white rounded-b-[30px] shadow-bottom-1-5 flex flex-col gap-[10px] z-20 relative">
                 <div className="flex gap-[10px] items-center">
                     {isManageJsonVersion ? (
                         <CodeIcon

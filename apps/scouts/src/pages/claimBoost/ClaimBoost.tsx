@@ -322,7 +322,7 @@ export const ClaimBoostModal: React.FC<{
                 customHeaderClass="main-header-branding-public-route"
             /> */}
             <IonContent fullscreen color="grayscale-100">
-                <div className="px-[40px] pb-4 vc-preview-modal-safe-area h-full">
+                <div className="px-[40px] pb-4 h-full">
                     {!boostExists && (
                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-full w-full">
                             <IonSpinner color="black" />

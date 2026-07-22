@@ -73,7 +73,7 @@ export const FinishedAiSessionAssessmentPreviewDetails: React.FC<{
 
     return (
         <div
-            className="h-full w-full flex flex-col items-center justify-center safe-area-top-margin scrollbar-hide"
+            className="h-full w-full flex flex-col items-center justify-center scrollbar-hide"
             style={{ ...appStyles }}
         >
             <div className="h-full w-full ion-padding max-w-[600px] overflow-y-scroll pb-[200px] scrollbar-hide">

@@ -9,19 +9,13 @@ export const UserContact: React.FC = () => {
     const { closeModal } = useModal();
     return (
         <div className="h-full flex flex-col bg-white">
-            <div
-                className="shrink-0"
-                style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0px)' }}
-            >
+            <div className="shrink-0">
                 <UserContactHeader />
             </div>
             <div className="flex-1 min-h-0 flex flex-col">
                 <UserEmailContacts />
             </div>
-            <div
-                className="shrink-0 border-t border-grayscale-200/50 bg-white/80 backdrop-blur-xl"
-                style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0px)' }}
-            >
+            <div className="shrink-0 border-t border-grayscale-200/50 bg-white/80 backdrop-blur-xl">
                 <div className="max-w-[600px] mx-auto px-6 py-4">
                     <button
                         type="button"

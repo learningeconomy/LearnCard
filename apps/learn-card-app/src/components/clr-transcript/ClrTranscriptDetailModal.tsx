@@ -17,7 +17,7 @@ const ClrTranscriptDetailModal: React.FC<{
     const verificationItems = useVerification(boost);
 
     return (
-        <div className="h-full overflow-y-auto pb-[100px] safe-area-top-margin">
+        <div className="h-full overflow-y-auto pb-[100px]">
             <ClrTranscriptFullPage
                 model={model}
                 options={options}

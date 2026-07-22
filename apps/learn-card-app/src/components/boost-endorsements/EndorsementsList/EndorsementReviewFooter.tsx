@@ -5,7 +5,6 @@ import { IonFooter } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 
 import { useModal } from 'learn-card-base';
-import { useSafeArea } from 'learn-card-base/hooks/useSafeArea';
 import * as m from '../../../paraglide/messages.js';
 
 const EndorsementReviewFooter: React.FC<{
@@ -16,10 +15,7 @@ const EndorsementReviewFooter: React.FC<{
     handleSaveEndorsement?: () => void;
 }> = ({ isDisabled, isLoading, className, showDeleteButton = true, handleSaveEndorsement }) => {
     const { closeModal } = useModal();
-    const safeArea = useSafeArea();
-
-    let bottomPosition = safeArea.bottom;
-    if (Capacitor.isNativePlatform()) bottomPosition = 20 + safeArea.bottom;
+    const bottomPosition = Capacitor.isNativePlatform() ? 20 : 0;
 
     let iconStyles = '';
     if (isDisabled) iconStyles = 'text-grayscale-300';

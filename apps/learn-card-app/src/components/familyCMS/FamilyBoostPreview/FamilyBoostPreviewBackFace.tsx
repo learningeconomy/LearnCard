@@ -17,7 +17,7 @@ export const FamilyBoostPreviewBackFace: React.FC<{
     const issueDate = moment(createdAt).format('MMMM DD, YYYY');
 
     return (
-        <div className="w-full max-w-[400px] pb-[100px] vc-preview-modal-safe-area">
+        <div className="w-full max-w-[400px] pb-[100px]">
             <section className="bg-white ion-padding rounded-[20px] shadow-soft-bottom mt-[20px]">
                 <div className="w-full flex flex-col items-start justify-start text-left">
                     <h3 className="text-[22px] font-normal text-grayscale-900 font-poppins">

@@ -14,7 +14,7 @@ import { createPortal } from 'react-dom';
 export const PathwayPortal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     if (typeof document === 'undefined') return null;
 
-    return createPortal(children, document.body);
+    return createPortal(<div className="pathway-modal-root">{children}</div>, document.body);
 };
 
 export default PathwayPortal;

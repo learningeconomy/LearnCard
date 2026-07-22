@@ -223,11 +223,6 @@ ion-modal.center-modal.smart-resume-prompt-modal {
     }
 }
 
-.vc-preview-modal-safe-area {
-    padding-top: calc(constant(safe-area-inset-top) + 0px);
-    padding-top: calc(env(safe-area-inset-top) + 0px);
-}
-
 .safe-area-top-margin {
     margin-top: calc(env(safe-area-inset-top) + 0px);
 }

@@ -15,7 +15,7 @@ export const AiPassportAppProfileConnectedView: React.FC<{ app: LaunchPadAppList
 
     return (
         <div
-            className="h-full w-full flex items-start justify-center overflow-y-scroll pb-[200px] safe-area-top-margin"
+            className="h-full w-full flex items-start justify-center overflow-y-scroll pb-[200px]"
             style={{ ...appStyles }}
         >
             <div className="w-full ion-padding max-w-[600px]">

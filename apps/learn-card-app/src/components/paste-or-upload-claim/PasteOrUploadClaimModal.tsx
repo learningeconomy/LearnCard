@@ -4,7 +4,6 @@ import { Capacitor } from '@capacitor/core';
 import QrScanner from 'qr-scanner';
 
 import { useToast, ToastTypeEnum, useModal, ModalTypes } from 'learn-card-base';
-import { useSafeArea } from 'learn-card-base/hooks/useSafeArea';
 import LinkChain from 'learn-card-base/svgs/LinkChain';
 
 import { useClaimInputRouter, type ClaimInputSource } from '../../hooks/useClaimInputRouter';
@@ -96,7 +95,6 @@ export type PasteOrUploadClaimMode = 'claim-link' | 'qr-code';
 export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }> = ({ mode }) => {
     const { closeModal, replaceModal } = useModal();
     const { presentToast } = useToast();
-    const safeArea = useSafeArea();
 
     const [pasted, setPasted] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
@@ -125,8 +123,7 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
             ? m['claim.paste.subtitleLink']()
             : m['claim.paste.subtitle']();
 
-    let footerBottom = safeArea.bottom;
-    if (Capacitor.isNativePlatform()) footerBottom = 20 + safeArea.bottom;
+    const footerBottom = Capacitor.isNativePlatform() ? 20 : 0;
 
     const dispatch = useCallback(
         async (input: string, source: ClaimInputSource): Promise<boolean> => {
@@ -279,10 +276,7 @@ export const PasteOrUploadClaimModal: React.FC<{ mode?: PasteOrUploadClaimMode }
 
     return (
         <div className="h-full relative bg-grayscale-100">
-            <IonHeader
-                color="light"
-                className="rounded-b-[30px] safe-area-top-margin overflow-hidden shadow-md "
-            >
+            <IonHeader color="light" className="rounded-b-[30px] overflow-hidden shadow-md">
                 <IonToolbar color="light" className="text-white px-4 !py-4">
                     <div className="flex items-center justify-normal p-2">
                         <div className="flex items-center">

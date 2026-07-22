@@ -85,10 +85,7 @@ export const LearnCardIDCMS: React.FC<{
 
     return (
         <IonPage>
-            <LearnCardIDCMSLayout
-                learnCardID={_learnCardID}
-                layoutClassName="!max-w-[375px] safe-area-top-margin"
-            >
+            <LearnCardIDCMSLayout learnCardID={_learnCardID} layoutClassName="!max-w-[375px]">
                 <div className="rounded-t-[20px] shadow-box-bottom flex flex-col">
                     <div className="w-full flex items-center justify-center flex-col bg-white bg-opacity-70 backdrop-blur-[10px] rounded-t-[20px]">
                         <div className="w-full py-4 max-w-[335px]">

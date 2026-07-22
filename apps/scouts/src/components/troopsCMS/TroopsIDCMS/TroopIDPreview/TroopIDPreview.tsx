@@ -17,11 +17,7 @@ const TroopIDPreview: React.FC<{
 
     return (
         <IonPage>
-            <TroopsCMSLayout
-                state={state}
-                viewMode={rootViewMode}
-                layoutClassName="!max-w-[375px] vc-preview-modal-safe-area"
-            >
+            <TroopsCMSLayout state={state} viewMode={rootViewMode} layoutClassName="!max-w-[375px]">
                 {isFront ? (
                     <TroopIDPreviewFrontFace
                         rootViewMode={rootViewMode}

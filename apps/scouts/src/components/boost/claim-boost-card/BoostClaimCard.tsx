@@ -55,13 +55,13 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     // Extract issuer DID and profileID for scouts role logic
-    const issuerDid = 
+    const issuerDid =
         typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
     const profileID = issuerDid?.split(':').pop();
 
     // Fetch highlighted credentials to get the issuer's role
     const { credentials: highlightedCreds } = useHighlightedCredentials(profileID);
-    
+
     // Compute unknownVerifierTitle based on the role (same logic as BoostPreview)
     const unknownVerifierTitle = useMemo(() => {
         if (!highlightedCreds || highlightedCreds.length === 0) return undefined;
@@ -107,7 +107,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                 fullscreen
                 className={`flex items-center justify-center ion-padding boost-cms-preview transition-colors [&::part(scroll)]:px-0 gradient-mask-b-80`}
             >
-                <IonRow className="flex flex-col items-center justify-center px-6 overflow-x-auto safe-area-top-margin pb-32">
+                <IonRow className="flex flex-col items-center justify-center px-6 overflow-x-auto pb-32">
                     {isClaiming && (
                         <div className="absolute w-full h-full top-0 left-0 z-50 flex items-center justify-center flex-col boost-loading-wrapper">
                             <div className="w-[180px] h-full m-auto mt-[5px] flex items-center justify-center">
@@ -133,7 +133,10 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                             />
                         )}
                         {selectedImage && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                            <div
+                                data-modal-root
+                                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                            >
                                 <div className="relative max-w-full max-h-[80vh]">
                                     <img
                                         src={selectedImage}

@@ -471,7 +471,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                 <div className="absolute -bottom-[20%] left-[20%] w-[80%] h-[80%] rounded-full bg-rose-400/10 blur-[120px]" />
             </div>
 
-            <div className="relative z-10 flex-1 overflow-y-auto safe-area-top-margin pb-6">
+            <div className="relative z-10 flex-1 overflow-y-auto pb-6">
                 {/* Identity Header */}
                 <div className="flex flex-col items-center justify-center pt-8 pb-6 px-6">
                     <div className="relative mb-4">
@@ -881,10 +881,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
             </div>
 
             {/* Sticky Footer */}
-            <div
-                className="shrink-0 relative z-20 bg-white/80 backdrop-blur-xl border-t border-grayscale-200/50"
-                style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-            >
+            <div className="shrink-0 relative z-20 bg-white/80 backdrop-blur-xl border-t border-grayscale-200/50">
                 <div className="max-w-[600px] mx-auto px-6 py-4 flex items-center gap-3">
                     <button
                         type="button"

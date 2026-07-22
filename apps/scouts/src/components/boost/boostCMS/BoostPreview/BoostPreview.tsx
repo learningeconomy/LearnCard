@@ -153,9 +153,9 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                 <IonRow
                     className={`flex flex-col items-center justify-center px-1 overflow-x-auto pb-32  ${boostPreviewWrapperCustomClass} ${
                         isCertificate ? 'pt-14 md:pt-20' : ''
-                    } ${isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''}`}
+                    } ${isID ? '!px-0 mt-[20px]' : ''}`}
                 >
-                    <section className="px-6 w-full safe-area-top-margin">
+                    <section className="px-6 w-full">
                         <VCDisplayCard2
                             credential={credential}
                             issueeOverride={issueeOverride}

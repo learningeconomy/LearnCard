@@ -221,7 +221,7 @@ export const ChildInviteModal: React.FC<ChildInviteModalProps> = ({
     return (
         <IonPage>
             <IonContent fullscreen color="grayscale-200">
-                <div className="w-full flex flex-col items-center justify-center ion-padding mt-8 safe-area-top-margin">
+                <div className="w-full flex flex-col items-center justify-center ion-padding mt-8">
                     <div className="flex flex-col items-center justify-center w-full max-w-[400px] shadow-sm rounded-[15px] bg-white px-4 pt-6 pb-10">
                         <div>
                             <p className="text-grayscale-900 font-poppins m-0 flex h-full w-full items-center justify-center text-center text-xl">

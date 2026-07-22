@@ -143,7 +143,7 @@ const UnderageModalContent: React.FC<UnderageModalContentProps> = ({
                 )}
             </div>
             <LoggingOutPanel isLoggingOut={isLoggingOut} />
-            <div className="w-full flex gap-[10px] justify-center px-[10px] left-[0px] items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 bg-white !max-h-[100px] safe-area-bottom">
+            <div className="w-full flex gap-[10px] justify-center px-[10px] left-[0px] items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 bg-white !max-h-[100px]">
                 <div className="w-full max-w-[700px] flex gap-[10px]">
                     <button
                         type="button"

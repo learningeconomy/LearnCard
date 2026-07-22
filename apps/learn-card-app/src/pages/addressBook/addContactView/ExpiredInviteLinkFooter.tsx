@@ -22,7 +22,7 @@ const ExpiredInviteLinkFooter: React.FC<ExpiredInviteLinkFooterProps> = ({
     return (
         <IonFooter
             mode="ios"
-            className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 bg-white !max-h-[100px] safe-area-bottom"
+            className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 bg-white !max-h-[100px]"
         >
             <div className="w-full flex items-center justify-center">
                 <div className="w-full flex items-center justify-between max-w-[600px] ion-padding">

@@ -489,7 +489,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                                 Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'
                             }`}
                         >
-                            <div className="pb-4 vc-preview-modal-safe-area h-full w-full">
+                            <div className="pb-4 h-full w-full">
                                 {renderSingleCredentialCard(credential)}
                             </div>
                         </section>

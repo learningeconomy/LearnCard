@@ -110,7 +110,7 @@ const GrowSkillsModal: React.FC<GrowSkillsModalProps> = ({
 
     return (
         <div className="h-full relative bg-grayscale-50 overflow-hidden text-grayscale-900">
-            <div className="px-[15px] py-[20px] bg-white safe-area-top-margin flex flex-col gap-[15px] z-20 relative shadow-bottom-1-5 rounded-b-[20px]">
+            <div className="px-[15px] py-[20px] bg-white flex flex-col gap-[15px] z-20 relative shadow-bottom-1-5 rounded-b-[20px]">
                 <div className="flex items-center gap-[10px] text-grayscale-900">
                     <SkillsIconWithShape className="w-[50px] h-[50px]" />
                     <h5 className="text-[21px] font-poppins font-[600] leading-[24px] flex flex-col gap-[5px]">

@@ -92,7 +92,7 @@ const FamilyGuardianIssueToList: React.FC<{
 
     return (
         <IonPage>
-            <IonHeader className="ion-no-border bg-white pt-4 border-b-solid border-b-grayscale-100 border-b-2 pb-4 vc-preview-modal-safe-area">
+            <IonHeader className="ion-no-border bg-white pt-4 border-b-solid border-b-grayscale-100 border-b-2 pb-4">
                 <IonCol className="w-full flex items-center justify-center">
                     <div className="boost-issue-container w-full flex items-center justify-between mx-[20px] max-w-[600px]">
                         <p className="boost-issue-to-text font-poppins text-2xl text-grayscale-900">

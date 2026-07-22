@@ -91,15 +91,27 @@ const ShareBoostLink: React.FC<{
     const { data: myProfile, isLoading: myProfileLoading } = useGetProfile();
 
     if (issuerProfileId) {
-        issuerName = issuerProfile ? issuerProfile?.displayName : isIssuerLoading ? 'Loading...' : 'Unknown';
+        issuerName = issuerProfile
+            ? issuerProfile?.displayName
+            : isIssuerLoading
+            ? 'Loading...'
+            : 'Unknown';
     } else {
         issuerName = getIssuerNameNonBoost(cred);
     }
 
     if (issueeProfileId) {
-        issueeName = issueeProfile ? issueeProfile?.displayName : isIssueeLoading ? 'Loading...' : 'Unknown';
+        issueeName = issueeProfile
+            ? issueeProfile?.displayName
+            : isIssueeLoading
+            ? 'Loading...'
+            : 'Unknown';
     } else {
-        issueeName = myProfile ? myProfile?.displayName : myProfileLoading ? 'Loading...' : 'Unknown';
+        issueeName = myProfile
+            ? myProfile?.displayName
+            : myProfileLoading
+            ? 'Loading...'
+            : 'Unknown';
     }
 
     if (issueeProfileId || issueeDid?.includes('did:web:scoutnetwork.org')) {
@@ -170,7 +182,7 @@ const ShareBoostLink: React.FC<{
     return (
         <>
             <IonGrid
-                className={`w-full max-w-[440px] px-[20px] ${customClassName} overflow-y-auto vc-preview-modal-safe-area disable-scrollbars`}
+                className={`w-full max-w-[440px] px-[20px] ${customClassName} overflow-y-auto disable-scrollbars`}
             >
                 <div
                     className="w-full bg-grayscale-900 flex flex-col items-center justify-center max-w-[600px] rounded-[20px] border-solid border-white border-2 overflow-hidden"

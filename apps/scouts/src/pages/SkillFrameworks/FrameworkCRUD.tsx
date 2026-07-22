@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useWallet , useToast, ToastTypeEnum } from 'learn-card-base';
+import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 import { IonSpinner } from '@ionic/react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Plus from 'apps/scouts/src/components/svgs/Plus';
@@ -49,8 +49,8 @@ export const FrameworkCRUD: React.FC = () => {
             const wallet = await initWallet();
             const boosts = await wallet.invoke.getPaginatedBoosts({ limit: 100 });
             // Filter for membership/ID boosts (networks)
-            return boosts.records.filter((b: any) => 
-                b.category === 'membership' || b.category === 'id'
+            return boosts.records.filter(
+                (b: any) => b.category === 'membership' || b.category === 'id'
             );
         },
     });
@@ -60,18 +60,20 @@ export const FrameworkCRUD: React.FC = () => {
         mutationFn: async (data: { name: string; description: string }) => {
             const wallet = await initWallet();
             const frameworkId = `fw-${Date.now()}`;
-            
+
             await wallet.invoke.createManagedSkillFrameworks({
-                frameworks: [{
-                    id: frameworkId,
-                    name: data.name,
-                    description: data.description,
-                    sourceURI: 'internal://scouts-admin',
-                    status: 'active' as const,
-                    skills: [], // Start with empty, add skills later
-                }],
+                frameworks: [
+                    {
+                        id: frameworkId,
+                        name: data.name,
+                        description: data.description,
+                        sourceURI: 'internal://scouts-admin',
+                        status: 'active' as const,
+                        skills: [], // Start with empty, add skills later
+                    },
+                ],
             });
-            
+
             return frameworkId;
         },
         onSuccess: () => {
@@ -92,7 +94,13 @@ export const FrameworkCRUD: React.FC = () => {
 
     // Attach framework to network
     const attachToNetworkMutation = useMutation({
-        mutationFn: async ({ frameworkId, networkUri }: { frameworkId: string; networkUri: string }) => {
+        mutationFn: async ({
+            frameworkId,
+            networkUri,
+        }: {
+            frameworkId: string;
+            networkUri: string;
+        }) => {
             const wallet = await initWallet();
             return await wallet.invoke.attachFrameworkToBoost(networkUri, frameworkId);
         },
@@ -140,7 +148,7 @@ export const FrameworkCRUD: React.FC = () => {
                 <div className="bg-white p-6 rounded-lg shadow-lg border-2 border-indigo-500">
                     <h3 className="text-lg font-bold mb-4">Create New Framework</h3>
                     <form
-                        onSubmit={(e) => {
+                        onSubmit={e => {
                             e.preventDefault();
                             const formData = new FormData(e.currentTarget);
                             createFrameworkMutation.mutate({
@@ -211,7 +219,7 @@ export const FrameworkCRUD: React.FC = () => {
                             </p>
                         </div>
                     ) : (
-                        frameworks.map((framework) => (
+                        frameworks.map(framework => (
                             <div
                                 key={framework.id}
                                 className="bg-white p-6 rounded-lg shadow border border-grayscale-200"
@@ -262,19 +270,22 @@ export const FrameworkCRUD: React.FC = () => {
 
             {/* Network Attachment Modal */}
             {showNetworkAttach && selectedFramework && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div
+                    data-modal-root
+                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                >
                     <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-y-auto">
                         <h3 className="text-lg font-bold mb-4">
                             Attach "{selectedFramework.name}" to Network
                         </h3>
-                        
+
                         {loadingNetworks ? (
                             <div className="flex justify-center py-4">
                                 <IonSpinner name="crescent" />
                             </div>
                         ) : networks && networks.length > 0 ? (
                             <div className="space-y-2">
-                                {networks.map((network) => (
+                                {networks.map(network => (
                                     <button
                                         key={network.uri}
                                         onClick={() => {
@@ -302,7 +313,7 @@ export const FrameworkCRUD: React.FC = () => {
                                 No networks found. Create a network (membership/ID boost) first.
                             </p>
                         )}
-                        
+
                         <button
                             onClick={() => {
                                 setShowNetworkAttach(false);

@@ -81,7 +81,10 @@ const ChildEditModal = lazy(() => import('./ChildEditModal'));
 
 // Loading fallback for lazy-loaded modals
 const ModalLoadingFallback = () => (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div
+        data-modal-root
+        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+    >
         <div className="bg-white rounded-2xl p-8">
             <Loader2 className="w-8 h-8 animate-spin text-cyan-500 mx-auto" />
         </div>
@@ -1269,7 +1272,10 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
             {/* Import from Catalog Modal */}
             {showImportModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div
+                    data-modal-root
+                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                >
                     <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
                         {/* Modal Header */}
                         <div className="flex items-center justify-between p-4 border-b border-gray-200">
@@ -1697,7 +1703,10 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
 
             {/* Edit Child Template Modal */}
             {editingChild && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div
+                    data-modal-root
+                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                >
                     <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
                         {/* Modal Header */}
                         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">

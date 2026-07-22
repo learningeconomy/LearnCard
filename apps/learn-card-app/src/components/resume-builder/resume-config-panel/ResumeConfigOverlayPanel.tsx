@@ -22,7 +22,7 @@ export const ResumeConfigOverlayPanel: React.FC<{
     return (
         <div className="fixed inset-0 z-40 flex">
             {/* Drawer panel */}
-            <div className="w-full h-full bg-white flex flex-col shadow-2xl">
+            <div data-modal-root className="w-full h-full bg-white flex flex-col shadow-2xl">
                 {/* Drawer header */}
                 <ResumeConfigPanelHeader
                     panelOpen={drawerOpen}

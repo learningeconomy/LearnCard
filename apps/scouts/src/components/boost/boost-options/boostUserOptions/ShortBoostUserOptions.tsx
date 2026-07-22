@@ -1,13 +1,7 @@
 import React, { useState } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 
-import {
-    IonCol,
-    IonRow,
-    IonGrid,
-    IonToolbar,
-    IonHeader,
-} from '@ionic/react';
+import { IonCol, IonRow, IonGrid, IonToolbar, IonHeader } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
 import BoostSearch from '../../boost-search/BoostSearch';
@@ -65,8 +59,7 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
     const [issueLoading, setIssueLoading] = useState(false);
     const [state, setState] = useState<ShortBoostState>({ issueTo: [] as BoostCMSIssueTo[] });
 
-    const { handleSubmitExistingBoostOther, handleSubmitExistingBoostSelf } =
-        useBoost(history);
+    const { handleSubmitExistingBoostOther, handleSubmitExistingBoostSelf } = useBoost(history);
 
     const presentBoostSomeoneModal = () => {
         newModal(
@@ -74,7 +67,7 @@ const ShortBoostUserOptions: React.FC<ShortBoostUserOptionsProps> = ({
                 boostUserType={BoostUserTypeEnum.someone}
                 handleCloseModal={closeModal}
                 handleCloseUserOptionsModal={closeModal}
-                cssClass="boost-search-modal safe-area-top-margin"
+                cssClass="boost-search-modal"
                 state={state}
                 setState={setState}
                 history={history}

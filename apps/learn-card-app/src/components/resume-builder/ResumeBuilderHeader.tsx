@@ -46,7 +46,7 @@ export const ResumeBuilderHeader: React.FC<{
     const history = useHistory();
 
     return (
-        <div className="shrink-0 border-b border-grayscale-200 bg-white/95 backdrop-blur-sm px-2 py-3 safe-area-top-margin">
+        <div className="shrink-0 border-b border-grayscale-200 bg-white/95 backdrop-blur-sm px-2 py-3">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1">
                     {isMobile && (
