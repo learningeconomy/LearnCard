@@ -120,16 +120,40 @@
                 "description": "Si tienes credenciales en formato JSON, puedes agregarlas a tu cartera aquí."
             },
             "title": "Construye tu {{brand}}",
-            "progress": "{{percent}}% optimizado",
             "processing": "Procesando documentos…",
-            "stepsCompleted": "<0>{{completed}}</0> de <1>{{total}}</1> pasos completados",
             "pendingReview": "{{count}} credencial(es) listas para revisión",
+            "helper": "Agrega un currículum, certificado, expediente académico o diploma.",
+            "actionsTitle": "Elige qué agregar a continuación",
+            "actionsDescription": "Elige el documento que mejor encaje y abriremos el flujo de carga adecuado.",
+            "managerDescription": "Agrega el documento que mejor encaje.",
             "titleMarkup": "Construye tu <0>{{brand}}</0>",
+            "intake": {
+                "title": "Agrega algo que recibiste",
+                "description": "Usa un código QR o un enlace de reclamación de un emisor u otra aplicación.",
+                "scanTitle": "Escanear código QR",
+                "scanDescription": "Abre la cámara para escanear el código QR de una credencial.",
+                "uploadTitle": "Subir código QR",
+                "uploadDescription": "Sube desde tu dispositivo una imagen del código QR de una credencial.",
+                "linkTitle": "Usar un enlace de reclamación",
+                "linkDescription": "Pega un enlace de reclamación de LearnCard o un enlace de reclamación externo para continuar."
+            },
+            "uploadError": {
+                "title": "Error de carga",
+                "partialTitle": "Algunos archivos fallaron",
+                "singleMessage": "No pudimos subir este archivo. Comprueba tu conexión e inténtalo de nuevo.",
+                "multipleMessage": "No pudimos subir estos archivos. Comprueba tu conexión e inténtalo de nuevo.",
+                "partialSingleMessage": "No se pudo subir 1 archivo. Puedes continuar con los archivos restantes.",
+                "partialMultipleMessage": "No se pudieron subir {{count}} archivos. Puedes continuar con los archivos restantes."
+            },
             "steps": {
                 "addResume": "Agregar currículum",
-                "addCertificates": "Agregar certificados",
+                "addCertificates": "Agregar certificado",
                 "addTranscript": "Agregar expediente académico",
                 "addDiploma": "Agregar diploma",
+                "resumeDescription": "Ideal para el historial laboral, los puestos y las fechas.",
+                "certificateDescription": "Ideal para capacitaciones, cursos y credenciales obtenidas.",
+                "transcriptDescription": "Ideal para el historial educativo verificado y los cursos realizados.",
+                "diplomaDescription": "Ideal para confirmar la finalización de un título y la graduación.",
                 "processingResume": "Procesando currículum…",
                 "processingCertificate": "Procesando certificado…",
                 "processingTranscript": "Procesando expediente…",
@@ -1346,7 +1370,6 @@
             "linkADevice": "Vincular un dispositivo",
             "switchAccount": "Cambiar de cuenta",
             "buildMyLearnCard": "Construye mi {{brand}}",
-            "stepsCompleted": "{{completed}} de {{total}}",
             "completeProfile": "Completar Perfil",
             "settings": "Configuración de la Cuenta"
         },
@@ -2358,7 +2381,10 @@
         },
         "paste": {
             "title": "Usar un enlace de reclamación",
+            "titleQr": "Subir un código QR",
             "subtitle": "Pega un enlace o sube un QR",
+            "subtitleLink": "Pega un enlace de reclamación de LearnCard o externo",
+            "subtitleQr": "Sube una imagen con el código QR de una credencial",
             "linkHeading": "¿Tienes un enlace de credencial?",
             "linkDesc": "Pégalo abajo para continuar.",
             "checking": "Comprobando…",
@@ -2376,8 +2402,18 @@
                 "empty": "Pega un enlace o sube una imagen de código QR para continuar.",
                 "malformedUrl": "Eso no parece un enlace de reclamación. Intenta copiar el enlace completo, que comience con https://, openid-credential-offer:// o similar.",
                 "unknownScheme": "Aún no reconocemos este tipo de enlace. El enlace parece válido, pero el formato no es compatible.",
+                "emptyLink": "Pega un enlace de reclamación para continuar.",
+                "emptyQr": "Elige una imagen con el código QR de una credencial para continuar.",
+                "malformedUrlLink": "Eso no parece un enlace de reclamación. Copia el enlace completo e inténtalo de nuevo.",
+                "malformedUrlQr": "Encontramos un código QR, pero su enlace no es válido. Prueba con otra imagen.",
+                "unknownSchemeLink": "Aún no reconocemos este tipo de enlace de reclamación.",
+                "unknownSchemeQr": "Encontramos un código QR, pero no usa un formato de credencial compatible.",
                 "invalidVc": "Eso parece una credencial, pero no pudimos leerla. Pídele al emisor una copia nueva.",
-                "unknownFormat": "No pudimos interpretar eso. Pega un enlace de reclamación o sube una imagen de código QR."
+                "interactionUnavailableLink": "No pudimos abrir ese enlace de reclamación. Puede que no esté disponible o haya caducado.",
+                "interactionUnavailableQr": "Encontramos el código QR, pero su credencial no está disponible o ha caducado.",
+                "unknownFormat": "No pudimos interpretar eso. Pega un enlace de reclamación o sube una imagen de código QR.",
+                "unknownFormatLink": "No pudimos usar ese enlace de reclamación. Comprueba que copiaste el enlace completo e inténtalo de nuevo.",
+                "unknownFormatQr": "Encontramos un código QR, pero no contiene una reclamación de credencial compatible."
             }
         },
         "accept": {
