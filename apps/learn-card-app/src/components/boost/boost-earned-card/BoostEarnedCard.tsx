@@ -130,7 +130,9 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     const { credentialWithEdits } = useGetCredentialWithEdits(cred);
     cred = credentialWithEdits ?? cred;
 
-    const type = categoryMetadata[categoryType].walletSubtype;
+    const categoryInfo =
+        categoryMetadata[categoryType] ?? categoryMetadata['Achievement' as CredentialCategory];
+    const type = categoryInfo.walletSubtype;
 
     let {
         issuerName,
@@ -188,8 +190,8 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     const showNewItemIndicator = newCredsForCategory?.includes(record?.uri) ?? false;
     const clrTranscriptIssuerInfo = isClrCredential && cred ? getClrTranscriptIssuerInfo(cred) : {};
 
-    const color = categoryMetadata[categoryType].color;
-    const darkColor = categoryMetadata[categoryType].darkColor;
+    const color = categoryInfo.color;
+    const darkColor = categoryInfo.darkColor;
     const { getThemedCategory } = useTheme();
     const colors = getThemedCategory(categoryType as CredentialCategoryEnum)?.colors;
     const indicatorColor = colors?.indicatorColor;

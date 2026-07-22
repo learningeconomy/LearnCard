@@ -299,6 +299,8 @@ export const getLifecycleStatusesForCredentialUris = async (
          OPTIONAL MATCH (sender)-[sent:CREDENTIAL_SENT { to: $profileId }]->(credential)
              WHERE (sender:Profile OR sender:AppStoreListing)
          OPTIONAL MATCH (credential)-[received:CREDENTIAL_RECEIVED]->(:Profile { profileId: $profileId })
+         WITH cid, sent, received
+         WHERE sent IS NOT NULL OR received IS NOT NULL
          WITH cid, coalesce(sent.status, received.status) AS status
          RETURN cid, status`,
         { profileId, ids: [...idToUri.keys()] }

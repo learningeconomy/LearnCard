@@ -3,20 +3,12 @@
  * Extracted from TemplateBuilderStep for lazy loading
  */
 
-import React from 'react';
-import {
-    X,
-    Pencil,
-    Save,
-    AlertCircle,
-    CheckCircle,
-    XCircle,
-} from 'lucide-react';
+import * as m from '../../../../paraglide/messages.js';
 
-import { 
-    CredentialBuilder, 
-    OBv3CredentialTemplate,
-} from '../components/CredentialBuilder';
+import React from 'react';
+import { X, Pencil, Save, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+
+import { CredentialBuilder, OBv3CredentialTemplate } from '../components/CredentialBuilder';
 import { ValidationStatus } from './templateBuilderUtils';
 
 interface ChildEditModalProps {
@@ -26,7 +18,9 @@ interface ChildEditModalProps {
     onCancel: () => void;
     issuerName?: string;
     issuerImage?: string;
-    onTestIssue?: (credential: Record<string, unknown>) => Promise<{ success: boolean; error?: string; result?: unknown }>;
+    onTestIssue?: (
+        credential: Record<string, unknown>
+    ) => Promise<{ success: boolean; error?: string; result?: unknown }>;
     validationStatus: ValidationStatus;
     validationError: string | null;
     onValidationChange: (status: ValidationStatus, error?: string) => void;
@@ -56,10 +50,13 @@ export const ChildEditModal: React.FC<ChildEditModalProps> = ({
 
                         <div>
                             <h3 className="font-semibold text-gray-800">
-                                Customize Boost
+                                {m['developerPortal.onboarding.templateBuilder.childEditTitle']()}
                             </h3>
                             <p className="text-sm text-gray-500">
-                                {template.name?.value || 'Untitled'}
+                                {template.name?.value ||
+                                    m[
+                                        'developerPortal.onboarding.templateBuilder.untitledTemplate'
+                                    ]()}
                             </p>
                         </div>
                     </div>
@@ -98,13 +95,21 @@ export const ChildEditModal: React.FC<ChildEditModalProps> = ({
                         {validationStatus === 'unknown' && (
                             <div className="flex items-center gap-2 text-sm text-gray-500">
                                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                                <span>Click "Validate" in the builder to verify before saving</span>
+                                <span>
+                                    {m[
+                                        'developerPortal.onboarding.templateBuilder.childValidateHint'
+                                    ]()}
+                                </span>
                             </div>
                         )}
                         {validationStatus === 'valid' && (
                             <div className="flex items-center gap-2 text-sm text-emerald-600">
                                 <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                                <span>Credential validated successfully</span>
+                                <span>
+                                    {m[
+                                        'developerPortal.onboarding.templateBuilder.childValidated'
+                                    ]()}
+                                </span>
                             </div>
                         )}
                     </div>
@@ -114,17 +119,23 @@ export const ChildEditModal: React.FC<ChildEditModalProps> = ({
                             onClick={onCancel}
                             className="px-4 py-2 text-gray-700 bg-gray-100 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                         >
-                            Cancel
+                            {m['developerPortal.onboarding.templateBuilder.childCancel']()}
                         </button>
 
                         <button
                             onClick={onSave}
                             disabled={validationStatus === 'invalid'}
                             className="flex items-center gap-2 px-4 py-2 bg-violet-500 text-white rounded-xl font-medium hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            title={validationStatus === 'invalid' ? 'Fix validation errors before saving' : undefined}
+                            title={
+                                validationStatus === 'invalid'
+                                    ? m[
+                                          'developerPortal.onboarding.templateBuilder.childFixValidation'
+                                      ]()
+                                    : undefined
+                            }
                         >
                             <Save className="w-4 h-4" />
-                            Save Changes
+                            {m['developerPortal.onboarding.templateBuilder.childSave']()}
                         </button>
                     </div>
                 </div>

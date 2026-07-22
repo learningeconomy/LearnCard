@@ -7,6 +7,7 @@ import { EndorsmentThumbWithCircle } from 'learn-card-base/svgs/EndorsementThumb
 
 import { useModal } from 'learn-card-base';
 import { useSafeArea } from 'learn-card-base/hooks/useSafeArea';
+import * as m from '../../../paraglide/messages.js';
 
 const EndorsementRequestModalFooter: React.FC<{
     isDisabled?: boolean;
@@ -37,7 +38,7 @@ const EndorsementRequestModalFooter: React.FC<{
                         onClick={closeModal}
                         className="py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-poppins text-[17px] leading-[24px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] justify-center mr-2"
                     >
-                        Back
+                        {m['common.back']()}
                     </button>
                     <button
                         onClick={handleOnClick}
@@ -45,7 +46,8 @@ const EndorsementRequestModalFooter: React.FC<{
                             isDisabled ? 'bg-grayscale-300' : 'bg-teal-400'
                         }`}
                     >
-                        Endorse <EndorsmentThumbWithCircle className={`w-6 h-6 ${iconStyles}`} />
+                        {m['endorsement.modal.footer.endorse']()}{' '}
+                        <EndorsmentThumbWithCircle className={`w-6 h-6 ${iconStyles}`} />
                     </button>
                 </div>
             </div>

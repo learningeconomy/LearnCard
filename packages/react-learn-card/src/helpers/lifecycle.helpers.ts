@@ -13,12 +13,10 @@ export type LifecycleTreatment = {
     textStyle: CSSProperties | undefined;
     /** Pill background color for the status chip (only meaningful when `isInactive`). */
     pillBg: string;
-    /** Pill label for the status chip (only meaningful when `isInactive`). */
-    pillLabel: string;
 };
 
 const REVOKED_COLOR = '#DC2626'; // red-600
-const SUSPENDED_COLOR = '#EA580C'; // orange-600
+const SUSPENDED_COLOR = '#D97706'; // amber-600
 
 /**
  * Shared visual treatment for a revoked/suspended credential, used by both the
@@ -36,6 +34,5 @@ export const getLifecycleTreatment = (
         mediaStyle: isInactive ? { filter: 'grayscale(1) brightness(0.9)' } : undefined,
         textStyle: isInactive ? { filter: 'grayscale(1)', opacity: 0.6 } : undefined,
         pillBg: status === 'suspended' ? SUSPENDED_COLOR : REVOKED_COLOR,
-        pillLabel: status === 'suspended' ? 'Suspended' : 'Revoked',
     };
 };

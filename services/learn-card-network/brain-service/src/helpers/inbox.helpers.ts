@@ -42,6 +42,8 @@ import {
     generateGuardianCredentialApprovalUrl,
 } from '@helpers/guardian-approval.helpers';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { getNotificationMessage } from '@helpers/notificationMessages';
+import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import { logCredentialDelivered } from '@helpers/activity.helpers';
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { getPrimarySigningAuthorityForUser } from '@accesslayer/signing-authority/relationships/read';
@@ -362,10 +364,15 @@ export const issueToInbox = async (
                 type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_DELIVERED,
                 from: { did: learnCard.id.did() },
                 to: issuerProfile,
-                message: {
-                    title: 'Credential Delivered to Inbox',
-                    body: `${issuerProfile.displayName} sent a credential to ${recipient.type}'s inbox at ${recipient.value}!`,
-                },
+                message: getNotificationMessage(
+                    'issuanceDelivered',
+                    resolveRecipientLocale(issuerProfile),
+                    {
+                        issuer: issuerProfile.displayName,
+                        recipientType: recipient.type,
+                        recipientValue: recipient.value,
+                    }
+                ),
                 data: {
                     inbox: {
                         issuanceId: inboxCredential.id,
@@ -436,6 +443,7 @@ export const issueToInbox = async (
                     },
                 },
                 branding: ctx.tenant?.emailBranding,
+                locale: resolveRecipientLocale(existingProfile),
                 messageStream: 'universal-inbox',
             });
 
@@ -473,6 +481,8 @@ export const issueToInbox = async (
                     },
                 },
                 branding: ctx.tenant?.emailBranding,
+                // Guardian email may not have a profile yet; fall back to the child's locale.
+                locale: resolveRecipientLocale(existingProfile),
                 messageStream: 'universal-inbox',
             });
 
@@ -505,10 +515,15 @@ export const issueToInbox = async (
                                         .GUARDIAN_APPROVAL_PENDING,
                                     to: guardianProfile,
                                     from: issuerProfile,
-                                    message: {
-                                        title: 'Credential Approval Request',
-                                        body: `${credentialName ?? 'A credential'} for ${childProfile.displayName ?? 'your student'} from ${issuerProfile.displayName}`,
-                                    },
+                                    message: getNotificationMessage(
+                                        'guardianApprovalPending',
+                                        resolveRecipientLocale(guardianProfile),
+                                        {
+                                            credentialName: credentialName ?? 'A credential',
+                                            childName: childProfile.displayName ?? 'your student',
+                                            issuer: issuerProfile.displayName,
+                                        }
+                                    ),
                                     data: {
                                         inboxCredentialId: inboxCredential.id,
                                         childProfileId: childProfile.profileId,
@@ -583,6 +598,7 @@ export const issueToInbox = async (
                                 },
                             },
                             branding: ctx.tenant?.emailBranding,
+                            locale: resolveRecipientLocale(guardianProfile),
                             messageStream: 'universal-inbox',
                         });
                     }
@@ -592,10 +608,15 @@ export const issueToInbox = async (
                         type: LCNNotificationTypeEnumValidator.enum.GUARDIAN_APPROVAL_PENDING,
                         to: guardianProfile,
                         from: issuerProfile,
-                        message: {
-                            title: 'Credential Approval Request',
-                            body: `${credentialName ?? 'A credential'} for ${childProfile?.displayName ?? 'your student'} from ${issuerProfile.displayName}`,
-                        },
+                        message: getNotificationMessage(
+                            'guardianApprovalPending',
+                            resolveRecipientLocale(guardianProfile),
+                            {
+                                credentialName: credentialName ?? 'A credential',
+                                childName: childProfile?.displayName ?? 'your student',
+                                issuer: issuerProfile.displayName,
+                            }
+                        ),
                         data: {
                             inboxCredentialId: inboxCredential.id,
                             childProfileId: childProfile?.profileId ?? '',
@@ -665,6 +686,7 @@ export const issueToInbox = async (
                         ...injectedTemplateFields,
                     },
                     branding: ctx.tenant?.emailBranding,
+                    locale: resolveRecipientLocale(existingProfile),
                     messageStream: 'universal-inbox',
                 });
             }
@@ -722,6 +744,7 @@ export const issueToInbox = async (
                     ...injectedTemplateFields,
                 },
                 branding: ctx.tenant?.emailBranding,
+                locale: resolveRecipientLocale(existingProfile),
                 messageStream: 'universal-inbox',
             });
         }
@@ -734,10 +757,15 @@ export const issueToInbox = async (
                 type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_DELIVERED,
                 from: { did: learnCard.id.did() },
                 to: issuerProfile,
-                message: {
-                    title: 'Credential Delivered to Inbox',
-                    body: `${issuerProfile.displayName} sent a credential to ${recipient.type}'s inbox at ${recipient.value}!`,
-                },
+                message: getNotificationMessage(
+                    'issuanceDelivered',
+                    resolveRecipientLocale(issuerProfile),
+                    {
+                        issuer: issuerProfile.displayName,
+                        recipientType: recipient.type,
+                        recipientValue: recipient.value,
+                    }
+                ),
                 data: {
                     inbox: {
                         issuanceId: inboxCredential.id,

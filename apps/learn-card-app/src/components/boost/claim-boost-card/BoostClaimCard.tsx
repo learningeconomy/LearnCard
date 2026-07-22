@@ -50,6 +50,7 @@ import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import ViewEndorsementRequest from '../../boost-endorsements/EndorsementRequestForm/ViewEndorsementRequest';
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
+import * as m from '../../../paraglide/messages.js';
 
 type BoostClaimCardProps = {
     credential: VC | VP;
@@ -177,7 +178,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
         const wallet = await initWallet();
 
         if (isRevoked) {
-            presentToast('This credential has been revoked and can no longer be claimed.', {
+            presentToast(m['claim.revokedToast'](), {
                 duration: 4000,
                 type: ToastTypeEnum.Error,
             });
@@ -230,7 +231,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                             }
 
                             setIsClaimed(true);
-                            presentToast(`Successfully claimed Credential!`, {
+                            presentToast(m['toasts.credentialClaimed'](), {
                                 duration: 3000,
                                 type: ToastTypeEnum.Success,
                             });
@@ -249,9 +250,9 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                         onError(err: any) {
                             setIsClaimLoading(false);
                             presentToast(
-                                `Failed to claim credential: ${
-                                    err?.message ?? 'Please try again.'
-                                }`,
+                                m['claim.failedToClaim']({
+                                    message: err?.message ?? m['claim.pleaseTryAgain'](),
+                                }),
                                 { duration: 4000, type: ToastTypeEnum.Error }
                             );
                         },
@@ -262,10 +263,10 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                 presentAlert({
                     backdropDismiss: false,
                     cssClass: 'boost-confirmation-alert',
-                    header: `There was an error: ${err?.message}`,
+                    header: m['claim.errorWithMessage']({ message: err?.message ?? '' }),
                     buttons: [
                         {
-                            text: 'Okay',
+                            text: m['contacts.okay'](),
                             role: 'cancel',
                             handler: () => {
                                 dismissAlert();
@@ -290,21 +291,21 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     const disableClaimButton = acceptCredentialLoading || isClaimLoading || isClaimed || isRevoked;
 
     if (!isClaimLoading && isLoggedIn && credential && isClaimed) {
-        claimStatusText = 'Claimed';
-        if (isFamily) claimStatusText = 'Joined';
+        claimStatusText = m['contacts.claimed']();
+        if (isFamily) claimStatusText = m['contacts.joined']();
     }
     if (isClaimLoading && isLoggedIn) {
-        claimStatusText = 'Saving...';
-        if (isFamily) claimStatusText = 'Joining...';
+        claimStatusText = m['contacts.saving']();
+        if (isFamily) claimStatusText = m['contacts.joining']();
     }
 
     if (!isClaimLoading && isLoggedIn && credential && !isClaimed) {
-        claimStatusText = 'Accept';
-        if (isFamily) claimStatusText = 'Join';
+        claimStatusText = m['common.accept']();
+        if (isFamily) claimStatusText = m['contacts.joinBoost']();
     }
 
     if (isRevoked) {
-        claimStatusText = 'Revoked';
+        claimStatusText = m['common.revoked']();
     }
 
     useEffect(() => {
@@ -433,7 +434,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                     <div className="relative max-w-full max-h-[80vh]">
                                         <img
                                             src={selectedImage}
-                                            alt="Full size attachment"
+                                            alt={m['claim.fullSizeAttachment']()}
                                             className="max-w-full max-h-[80vh] object-contain"
                                         />
                                     </div>

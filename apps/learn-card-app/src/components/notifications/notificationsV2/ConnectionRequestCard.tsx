@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 // import X from '../../../assets/images/X.svg';
 import X from 'learn-card-base/svgs/X';
@@ -57,7 +58,7 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
 
     const claimButtonStyles = acceptStatus ? claimedButtonStyles : unclaimedButtonStyles;
 
-    const buttonText: string = acceptStatus ? 'Accepted' : 'Accept';
+    const buttonText: string = acceptStatus ? m['alerts.accepted']() : m['common.accept']();
 
     const handleAcceptConnection = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.stopPropagation();
@@ -130,7 +131,7 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
                             onClick={handleAcceptConnection}
                             name="notification-claim-button"
                         >
-                            {isLoading ? 'Loading...' : buttonText}
+                            {isLoading ? m['common.loading']() : buttonText}
                             {acceptStatus && <Checkmark className="h-[24px] p-0 m-0" />}{' '}
                         </button>
 

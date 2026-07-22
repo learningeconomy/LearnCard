@@ -8,7 +8,12 @@
 import * as Sentry from '@sentry/browser';
 
 import type { TenantConfig } from 'learn-card-base';
-import { resolveTenantConfig, setAuthConfigFromTenant, getTenantBaseUrl } from 'learn-card-base';
+import {
+    resolveTenantConfig,
+    setAuthConfigFromTenant,
+    setImageUploadConfigFromTenant,
+    getTenantBaseUrl,
+} from 'learn-card-base';
 import { initNetworkStoreFromTenant } from 'learn-card-base';
 import { setOnFetchFailure } from 'learn-card-base/config/resolveTenantConfig';
 
@@ -69,9 +74,19 @@ const initializeTenantSubsystems = (config: TenantConfig): void => {
         { data: { provider: config.auth.provider, keyDerivation: config.auth.keyDerivation } }
     );
 
+    setImageUploadConfigFromTenant(config);
+    emitConfigDebugEvent(
+        'bootstrap:image_upload_config_set',
+        `Image upload config bridged (provider: ${config.storage.provider})`,
+        { data: { provider: config.storage.provider } }
+    );
+
     // 3. Populate network store with tenant API endpoints + tenant ID
     initNetworkStoreFromTenant(config.apis, config.tenantId);
-    emitConfigDebugEvent('bootstrap:network_store_init', 'Network store populated with tenant API endpoints');
+    emitConfigDebugEvent(
+        'bootstrap:network_store_init',
+        'Network store populated with tenant API endpoints'
+    );
 
     // 4. Initialize Sentry from tenant observability config
     initSentryFromTenant();

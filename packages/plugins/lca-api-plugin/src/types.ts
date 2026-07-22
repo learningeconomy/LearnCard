@@ -320,7 +320,10 @@ export type LCAPluginMethods = {
         username: string,
         password: string
     ) => Promise<ScoutSSOResponseType | null>;
-    sendLoginVerificationCode: (email: string) => Promise<{ success: boolean; message?: string }>;
+    sendLoginVerificationCode: (
+        email: string,
+        locale?: string
+    ) => Promise<{ success: boolean; message?: string }>;
     verifyLoginCode: (
         email: string,
         code: string

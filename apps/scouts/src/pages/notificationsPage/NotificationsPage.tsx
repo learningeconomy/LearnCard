@@ -14,6 +14,8 @@ import {
     DEFAULT_ACTIVE_FILTER,
     DEFAULT_ARCHIVE_OPTIONS,
     DEFAULT_ARCHIVE_FILTER,
+    DEFAULT_LCA_NOTIFICATIONS_ENDPOINT,
+    DEFAULT_SCOUTPASS_NOTIFICATIONS_ENDPOINT,
     getNotificationsEndpoint,
     useWallet,
     BrandingEnum,
@@ -35,12 +37,17 @@ const NotificationNavTabsContainer: React.FC<{
         try {
             const wallet = await initWallet();
             const myProfile = await wallet.invoke.getProfile();
+            const notificationsEndpoint = getNotificationsEndpoint();
+            const profileNotificationsWebhook = myProfile?.notificationsWebhook?.trim?.();
+            const isKnownAppEndpoint = [
+                DEFAULT_LCA_NOTIFICATIONS_ENDPOINT,
+                DEFAULT_SCOUTPASS_NOTIFICATIONS_ENDPOINT,
+            ].includes(profileNotificationsWebhook ?? '');
 
             if (
-                !myProfile?.notificationsWebhook ||
-                myProfile?.notificationsWebhook?.trim?.() === ''
+                !profileNotificationsWebhook ||
+                (isKnownAppEndpoint && profileNotificationsWebhook !== notificationsEndpoint)
             ) {
-                const notificationsEndpoint = getNotificationsEndpoint();
                 await wallet.invoke.updateProfile({
                     notificationsWebhook: notificationsEndpoint,
                 });

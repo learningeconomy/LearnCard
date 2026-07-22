@@ -25,6 +25,8 @@ import {
 } from '../../../components/onboarding/onboarding.helpers';
 import LaunchPadRoleSelector from '../../launchPad/LaunchPadHeader/LaunchPadRoleSelector';
 
+import * as m from '../../../paraglide/messages.js';
+
 const log = getLogger('dashboard-role-switcher');
 
 // Counselor is hidden from the picker everywhere else (OnboardingRoles + the
@@ -61,7 +63,9 @@ const DashboardRoleSwitcher: React.FC = () => {
         isChildProfile ? LearnCardRolesEnum.learner : role ?? LearnCardRolesEnum.learner
     ) as LearnCardRolesEnum;
 
-    const roleLabel = LearnCardRoles.find(r => r.type === activeRole)?.title ?? 'Learner';
+    const roleLabel =
+        LearnCardRoles.find(r => r.type === activeRole)?.title ??
+        m['onboarding.role.learner.title']();
 
     const handleRoleChange = async (newRole: LearnCardRolesEnum) => {
         if (newRole === activeRole) return;
@@ -79,7 +83,7 @@ const DashboardRoleSwitcher: React.FC = () => {
         } catch (e) {
             setOptimisticRole(null);
             setRole((lcNetworkProfile?.role as LearnCardRolesEnum) ?? LearnCardRolesEnum.learner);
-            presentToast('Unable to update role', {
+            presentToast(m['launchpad.modal.unableToUpdateRole'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -95,9 +99,11 @@ const DashboardRoleSwitcher: React.FC = () => {
             log.error('Failed to refresh profile cache after role change', e);
         }
 
-        const newRoleTitle = LearnCardRoles.find(r => r.type === newRole)?.title ?? 'Learner';
-        presentToast(`You're now a ${newRoleTitle}.`, {
-            title: 'Role updated',
+        const newRoleTitle =
+            LearnCardRoles.find(r => r.type === newRole)?.title ??
+            m['onboarding.role.learner.title']();
+        presentToast(m['toasts.launchpad.nowRole']({ role: newRoleTitle }), {
+            title: m['launchpad.modal.roleUpdated'](),
             type: ToastTypeEnum.Success,
             hasDismissButton: true,
             hasCheckmark: true,
@@ -117,7 +123,7 @@ const DashboardRoleSwitcher: React.FC = () => {
             >
                 <img
                     src={roleIcons[activeRole]}
-                    alt={`${roleLabel} icon`}
+                    alt={m['dashboard.roleSwitcher.iconAlt']({ role: roleLabel })}
                     className="h-[12px] w-[12px] object-contain"
                 />
             </span>
@@ -128,7 +134,10 @@ const DashboardRoleSwitcher: React.FC = () => {
 
     if (isChildProfile) {
         return (
-            <span className={pillClassName} aria-label={`Role: ${roleLabel}`}>
+            <span
+                className={pillClassName}
+                aria-label={m['dashboard.roleSwitcher.roleAria']({ role: roleLabel })}
+            >
                 {pillContents}
             </span>
         );
@@ -139,7 +148,7 @@ const DashboardRoleSwitcher: React.FC = () => {
             <Menu as="div" className="relative inline-block">
                 <MenuButton
                     className={pillClassName}
-                    aria-label={`Switch role — current: ${roleLabel}`}
+                    aria-label={m['dashboard.roleSwitcher.switchAria']({ role: roleLabel })}
                 >
                     {pillContents}
                 </MenuButton>
@@ -165,7 +174,9 @@ const DashboardRoleSwitcher: React.FC = () => {
                                         >
                                             <img
                                                 src={roleIcons[roleItem.type]}
-                                                alt={`${roleItem.title} icon`}
+                                                alt={m['dashboard.roleSwitcher.iconAlt']({
+                                                    role: roleItem.title,
+                                                })}
                                                 className="h-[20px] w-[20px] object-contain"
                                             />
                                         </span>
@@ -186,7 +197,7 @@ const DashboardRoleSwitcher: React.FC = () => {
     return (
         <button
             type="button"
-            aria-label={`Switch role — current: ${roleLabel}`}
+            aria-label={m['dashboard.roleSwitcher.switchAria']({ role: roleLabel })}
             onClick={() =>
                 newModal(
                     <LaunchPadRoleSelector role={activeRole} setRole={handleRoleChange} />,

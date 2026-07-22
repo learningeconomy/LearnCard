@@ -46,6 +46,7 @@ import {
 import endorsementsRequestStore from '../../stores/endorsementsRequestStore';
 import EndorsementDraftRequestSuccess from '../boost-endorsements/EndorsementRequestForm/EndorsementDraftRequestSuccess';
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
+import * as m from '../../paraglide/messages.js';
 
 const websiteLink = `${getAppBaseUrl()}/login`;
 
@@ -220,8 +221,9 @@ const ViewSharedBoost: React.FC<{
     const inactiveMediaStyle: React.CSSProperties | undefined = isInactiveCredential
         ? { filter: 'grayscale(1) brightness(0.9)' }
         : undefined;
-    const lifecyclePillBg = lifecycleStatus === 'suspended' ? '#EA580C' : '#DC2626';
-    const lifecyclePillLabel = lifecycleStatus === 'suspended' ? 'Suspended' : 'Revoked';
+    const lifecyclePillBg = lifecycleStatus === 'suspended' ? '#D97706' : '#DC2626';
+    const lifecyclePillLabel =
+        lifecycleStatus === 'suspended' ? m['issue.suspended']() : m['issue.revoked']();
 
     if (showEndorsementRequest) {
         return (

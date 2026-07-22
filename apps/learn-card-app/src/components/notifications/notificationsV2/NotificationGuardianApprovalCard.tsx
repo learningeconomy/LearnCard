@@ -7,6 +7,7 @@ import X from 'learn-card-base/svgs/X';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 import { notificationCardStyles } from './types';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 const log = getLogger('notification-guardian-approval-card');
 
 type NotificationGuardianApprovalCardProps = {
@@ -142,7 +143,9 @@ const NotificationGuardianApprovalCard: React.FC<NotificationGuardianApprovalCar
                                     onClick={handleApprove}
                                     disabled={isProcessing}
                                 >
-                                    {actionState === 'approving' ? 'Approving...' : 'Approve'}
+                                    {actionState === 'approving'
+                                        ? m['alerts.approving']()
+                                        : m['alerts.approve']()}
                                 </button>
                                 <button
                                     className={`${notificationCardStyles.primaryButton} ${
@@ -153,7 +156,9 @@ const NotificationGuardianApprovalCard: React.FC<NotificationGuardianApprovalCar
                                     onClick={handleReject}
                                     disabled={isProcessing}
                                 >
-                                    {actionState === 'rejecting' ? 'Rejecting...' : 'Reject'}
+                                    {actionState === 'rejecting'
+                                        ? m['alerts.rejecting']()
+                                        : m['alerts.reject']()}
                                 </button>
                             </div>
                         )}
@@ -163,7 +168,8 @@ const NotificationGuardianApprovalCard: React.FC<NotificationGuardianApprovalCar
                                 <div
                                     className={`${notificationCardStyles.primaryButton} border-emerald-600 text-emerald-600 bg-white`}
                                 >
-                                    Approved <Checkmark className="h-[24px] p-0 m-0" />
+                                    {m['alerts.approved']()}{' '}
+                                    <Checkmark className="h-[24px] p-0 m-0" />
                                 </div>
                             </div>
                         )}
@@ -173,7 +179,8 @@ const NotificationGuardianApprovalCard: React.FC<NotificationGuardianApprovalCar
                                 <div
                                     className={`${notificationCardStyles.primaryButton} border-grayscale-300 text-grayscale-500 bg-white`}
                                 >
-                                    Rejected <X className="h-[14px] w-[14px] ml-1" />
+                                    {m['alerts.rejected']()}{' '}
+                                    <X className="h-[14px] w-[14px] ml-1" />
                                 </div>
                             </div>
                         )}

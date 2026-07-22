@@ -73,6 +73,7 @@ describe('storeAcceptedCredentials', () => {
         expect(result.stored[0].uri).toBe('lc:network:abc');
         expect(result.stored[0].configurationId).toBe('OpenBadge_jwt_vc_json');
         expect(result.stored[0].format).toBe('jwt_vc_json');
+        expect(result.stored[0].category).toBe('Achievement');
 
         // Default encrypt=true → uses uploadEncrypted
         expect(upload).toHaveBeenCalledTimes(1);
@@ -118,6 +119,36 @@ describe('storeAcceptedCredentials', () => {
 
         expect(result.failures).toEqual([]);
         expect(upload).toHaveBeenCalledTimes(1);
+    });
+
+    it("maps employment credentials to the wallet's 'Work History' category", async () => {
+        const upload = jest.fn().mockResolvedValue('lc:network:work');
+        const add = jest.fn().mockResolvedValue(true);
+        const learnCard = makeLearnCard({ uploadEncrypted: upload, add });
+
+        const jwt = await signVcJwt({
+            iss: 'did:web:issuer.example.com',
+            sub: 'did:key:z6Mkholder',
+            nbf: 1_700_000_000,
+            vc: {
+                '@context': ['https://www.w3.org/2018/credentials/v1'],
+                type: ['VerifiableCredential', 'EmploymentCredential'],
+                credentialSubject: { name: 'Alice' },
+            },
+        });
+
+        const result = await storeAcceptedCredentials(learnCard, {
+            credentials: [
+                {
+                    format: 'jwt_vc_json',
+                    credential: jwt,
+                    configuration_id: 'Employment_jwt_vc_json',
+                },
+            ],
+        });
+
+        expect(add.mock.calls[0][0].category).toBe('Work History');
+        expect(result.stored[0]?.category).toBe('Work History');
     });
 
     it('honors a caller-supplied category override (string)', async () => {

@@ -1,4 +1,6 @@
 import { CredentialCategoryEnum } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
+import { getLocale } from '../../../paraglide/runtime.js';
 
 export type ActivityDirection = 'sent' | 'received';
 
@@ -58,15 +60,54 @@ const CATEGORY_LOOKUP: Record<string, CredentialCategoryEnum> = (() => {
     return map;
 })();
 
-const CATEGORY_LABEL: Partial<Record<CredentialCategoryEnum, string>> = {
-    [CredentialCategoryEnum.socialBadge]: 'Badge',
-    [CredentialCategoryEnum.achievement]: 'Achievement',
-    [CredentialCategoryEnum.learningHistory]: 'Course',
-    [CredentialCategoryEnum.accomplishment]: 'Portfolio item',
-    [CredentialCategoryEnum.accommodation]: 'Assistance',
-    [CredentialCategoryEnum.workHistory]: 'Experience',
-    [CredentialCategoryEnum.id]: 'ID',
+// Enum → translation key. Uses the enum MEMBER NAMES, which is how the existing
+// `passport.activity.categories.*` / `.categoriesPlural.*` / `.article.*` keys
+// are indexed.
+const CATEGORY_KEY: Partial<Record<CredentialCategoryEnum, string>> = {
+    [CredentialCategoryEnum.socialBadge]: 'socialBadge',
+    [CredentialCategoryEnum.achievement]: 'achievement',
+    [CredentialCategoryEnum.learningHistory]: 'learningHistory',
+    [CredentialCategoryEnum.accomplishment]: 'accomplishment',
+    [CredentialCategoryEnum.accommodation]: 'accommodation',
+    [CredentialCategoryEnum.workHistory]: 'workHistory',
+    [CredentialCategoryEnum.id]: 'id',
 };
+
+// Explicit records of literal message-function references keep the paraglide
+// keys statically analyzable (and type-safe) rather than string-built at runtime.
+const CAT_LABEL_FN: Record<string, () => string> = {
+    socialBadge: m['passport.activity.categories.socialBadge'],
+    achievement: m['passport.activity.categories.achievement'],
+    learningHistory: m['passport.activity.categories.learningHistory'],
+    accomplishment: m['passport.activity.categories.accomplishment'],
+    accommodation: m['passport.activity.categories.accommodation'],
+    workHistory: m['passport.activity.categories.workHistory'],
+    id: m['passport.activity.categories.id'],
+    credential: m['passport.activity.categories.credential'],
+};
+
+const CAT_ARTICLE_FN: Record<string, () => string> = {
+    socialBadge: m['passport.activity.article.socialBadge'],
+    achievement: m['passport.activity.article.achievement'],
+    learningHistory: m['passport.activity.article.learningHistory'],
+    accomplishment: m['passport.activity.article.accomplishment'],
+    accommodation: m['passport.activity.article.accommodation'],
+    workHistory: m['passport.activity.article.workHistory'],
+    id: m['passport.activity.article.id'],
+    credential: m['passport.activity.article.credential'],
+};
+
+const categoryLabel = (category?: CredentialCategoryEnum): string =>
+    (
+        CAT_LABEL_FN[(category && CATEGORY_KEY[category]) || 'credential'] ??
+        CAT_LABEL_FN.credential
+    )();
+
+const categoryArticle = (category?: CredentialCategoryEnum): string =>
+    (
+        CAT_ARTICLE_FN[(category && CATEGORY_KEY[category]) || 'credential'] ??
+        CAT_ARTICLE_FN.credential
+    )();
 
 export const matchActivityCategory = (category?: string): CredentialCategoryEnum | undefined =>
     category ? CATEGORY_LOOKUP[category.toLowerCase()] : undefined;
@@ -99,12 +140,23 @@ export const isHiddenActivity = (category?: string): boolean => {
     return matched !== undefined && HIDDEN_ACTIVITY_CATEGORIES.has(matched);
 };
 
-const STATUS_LABEL: Record<string, string> = {
-    CREATED: 'Sent',
-    DELIVERED: 'Sent',
-    CLAIMED: 'Claimed',
-    EXPIRED: 'Expired',
-    FAILED: 'Not delivered',
+// eventType → status sub-namespace key. CREATED/DELIVERED both read as "sent".
+const STATUS_KEY: Record<string, string> = {
+    CREATED: 'sent',
+    DELIVERED: 'sent',
+    CLAIMED: 'claimed',
+    EXPIRED: 'expired',
+    FAILED: 'notDelivered',
+};
+
+// Explicit record of literal message-function references for type-safety.
+const STATUS_LABEL_FN: Record<string, () => string> = {
+    sent: m['passport.activity.status.sent'],
+    claimed: m['passport.activity.status.claimed'],
+    expired: m['passport.activity.status.expired'],
+    notDelivered: m['passport.activity.status.notDelivered'],
+    revoked: m['passport.activity.status.revoked'],
+    suspended: m['passport.activity.status.suspended'],
 };
 
 const STATUS_TONE: Record<string, ActivityStatusTone> = {
@@ -116,7 +168,7 @@ const STATUS_TONE: Record<string, ActivityStatusTone> = {
 };
 
 const activityStatusLabel = (eventType?: string): string =>
-    (eventType && STATUS_LABEL[eventType]) || 'Sent';
+    (STATUS_LABEL_FN[(eventType && STATUS_KEY[eventType]) || 'sent'] ?? STATUS_LABEL_FN.sent)();
 
 const activityStatusTone = (eventType?: string): ActivityStatusTone =>
     (eventType && STATUS_TONE[eventType]) || 'neutral';
@@ -148,27 +200,48 @@ const buildTitleParts = (args: {
     // Current lifecycle state supersedes the original event: a revoked/suspended
     // credential reads as such regardless of how it was originally delivered.
     if (lifecycleStatus === 'revoked' || lifecycleStatus === 'suspended') {
-        const verb = lifecycleStatus === 'revoked' ? 'revoked' : 'suspended';
         if (direction === 'received' || isSelf) {
-            return { titleLead: `Your ${label} was ${verb}` };
+            return {
+                titleLead:
+                    lifecycleStatus === 'revoked'
+                        ? m['passport.activity.title.receivedRevoked']({ label })
+                        : m['passport.activity.title.receivedSuspended']({ label }),
+            };
         }
         const lead =
-            lifecycleStatus === 'revoked' ? `Revoked ${label} for` : `Suspended ${label} for`;
+            lifecycleStatus === 'revoked'
+                ? m['passport.activity.title.revokedFor']({ label })
+                : m['passport.activity.title.suspendedFor']({ label });
         return { titleLead: lead, titleSubject: recipientName };
     }
 
-    if (isSelf) return { titleLead: `You added ${article} ${label} to your passport` };
-    if (direction === 'received') return { titleLead: `${actorName} sent you ${article} ${label}` };
+    if (isSelf) return { titleLead: m['passport.activity.title.selfAdded']({ article, label }) };
+    if (direction === 'received')
+        return {
+            titleLead: m['passport.activity.title.received']({ actor: actorName, article, label }),
+        };
 
     switch (eventType) {
         case 'CLAIMED':
-            return { titleLead: `${label} claimed by`, titleSubject: recipientName };
+            return {
+                titleLead: m['passport.activity.title.claimedBy']({ label }),
+                titleSubject: recipientName,
+            };
         case 'EXPIRED':
-            return { titleLead: `Expired ${label} for`, titleSubject: recipientName };
+            return {
+                titleLead: m['passport.activity.title.expiredFor']({ label }),
+                titleSubject: recipientName,
+            };
         case 'FAILED':
-            return { titleLead: `Couldn't deliver ${label} to`, titleSubject: recipientName };
+            return {
+                titleLead: m['passport.activity.title.failedTo']({ label }),
+                titleSubject: recipientName,
+            };
         default:
-            return { titleLead: `You sent ${article} ${label} to`, titleSubject: recipientName };
+            return {
+                titleLead: m['passport.activity.title.sentTo']({ article, label }),
+                titleSubject: recipientName,
+            };
     }
 };
 
@@ -191,12 +264,15 @@ export const toActivityFeedVM = (record: RawActivity, myProfileId?: string): Act
     const matchedCategory = matchActivityCategory(record.boost?.category);
     const category = matchedCategory ?? CredentialCategoryEnum.socialBadge;
     const isGenericCredential = matchedCategory === undefined;
-    const label = (matchedCategory && CATEGORY_LABEL[matchedCategory]) || 'Credential';
-    const article = /^[AEIOU]/.test(label) ? 'an' : 'a';
+    const label = categoryLabel(matchedCategory);
+    const article = categoryArticle(matchedCategory);
     const recipientName = record.recipientProfile?.displayName ?? record.recipientIdentifier;
     // STUB: for received items this is a raw profileId, not a display name — the
     // backend follow-up (see investigation note) must resolve actor name + avatar.
-    const actorName = direction === 'sent' ? 'You' : record.actorProfileId ?? 'Someone';
+    const actorName =
+        direction === 'sent'
+            ? m['passport.activity.you']()
+            : record.actorProfileId ?? m['passport.activity.someone']();
     const isSelf =
         direction === 'sent' &&
         Boolean(myProfileId) &&
@@ -237,9 +313,7 @@ export const toActivityFeedVM = (record: RawActivity, myProfileId?: string): Act
         // Revoked/suspended is the credential's *current* state, so it supersedes
         // the event-based status label/tone.
         statusLabel: isInactive
-            ? lifecycleStatus === 'revoked'
-                ? 'Revoked'
-                : 'Suspended'
+            ? STATUS_LABEL_FN[lifecycleStatus]()
             : activityStatusLabel(record.eventType),
         statusTone: isInactive
             ? lifecycleStatus === 'revoked'
@@ -259,25 +333,18 @@ export const toActivityFeedVM = (record: RawActivity, myProfileId?: string): Act
     };
 };
 
-const MONTHS = [
-    'JANUARY',
-    'FEBRUARY',
-    'MARCH',
-    'APRIL',
-    'MAY',
-    'JUNE',
-    'JULY',
-    'AUGUST',
-    'SEPTEMBER',
-    'OCTOBER',
-    'NOVEMBER',
-    'DECEMBER',
-];
 // UTC grouping: matches the server's UTC timestamps and keeps month buckets
-// timezone-stable (deterministic across the user's locale and in tests).
+// timezone-stable (deterministic across the user's locale and in tests). The
+// month name itself is rendered in the active locale via Intl.
 const monthLabel = (iso: string): string => {
     const d = new Date(iso);
-    return `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+    return new Intl.DateTimeFormat(getLocale(), {
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'UTC',
+    })
+        .format(d)
+        .toLocaleUpperCase(getLocale());
 };
 
 /**
@@ -305,22 +372,22 @@ const startOfDay = (d: Date): number =>
 // Earlier This Week, Last Week, month name, or year). Mirrors the wallet's import
 // reuse list so chronological credential lists read consistently.
 export const relativeTimeBucket = (iso?: string): string => {
-    if (!iso) return 'Earlier';
+    if (!iso) return m['passport.activity.when.earlier']();
     const date = new Date(iso);
-    if (Number.isNaN(date.getTime())) return 'Earlier';
+    if (Number.isNaN(date.getTime())) return m['passport.activity.when.earlier']();
 
     const now = new Date();
     const daysAgo = Math.round((startOfDay(now) - startOfDay(date)) / MS_PER_DAY);
 
-    if (daysAgo <= 0) return 'Today';
-    if (daysAgo === 1) return 'Yesterday';
-    if (daysAgo <= now.getDay()) return 'Earlier This Week';
-    if (daysAgo <= now.getDay() + 7) return 'Last Week';
+    if (daysAgo <= 0) return m['passport.activity.when.today']();
+    if (daysAgo === 1) return m['passport.activity.when.yesterday']();
+    if (daysAgo <= now.getDay()) return m['passport.activity.when.thisWeek']();
+    if (daysAgo <= now.getDay() + 7) return m['passport.activity.when.lastWeek']();
     if (date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth()) {
-        return 'Earlier This Month';
+        return m['passport.activity.when.thisMonth']();
     }
     if (date.getFullYear() === now.getFullYear()) {
-        return date.toLocaleDateString(undefined, { month: 'long' });
+        return new Intl.DateTimeFormat(getLocale(), { month: 'long' }).format(date);
     }
     return String(date.getFullYear());
 };
@@ -347,13 +414,32 @@ export const groupByRelativeTime = <T>(
 export type ActivityFilterId = 'all' | CredentialCategoryEnum;
 
 // STUB: category filtering is applied client-side over the actor-scoped feed.
-export const ACTIVITY_FILTERS: { id: ActivityFilterId; label: string }[] = [
-    { id: 'all', label: 'All' },
-    { id: CredentialCategoryEnum.socialBadge, label: 'Badges' },
-    { id: CredentialCategoryEnum.achievement, label: 'Achievements' },
-    { id: CredentialCategoryEnum.learningHistory, label: 'Courses' },
-    { id: CredentialCategoryEnum.accomplishment, label: 'Portfolio' },
-    { id: CredentialCategoryEnum.accommodation, label: 'Assistance' },
-    { id: CredentialCategoryEnum.workHistory, label: 'Experiences' },
-    { id: CredentialCategoryEnum.id, label: 'IDs' },
+// A function (not a const) so labels re-compute for the active locale on render.
+export const getActivityFilters = (): { id: ActivityFilterId; label: string }[] => [
+    { id: 'all', label: m['passport.activity.categoriesPlural.all']() },
+    {
+        id: CredentialCategoryEnum.socialBadge,
+        label: m['passport.activity.categoriesPlural.socialBadge'](),
+    },
+    {
+        id: CredentialCategoryEnum.achievement,
+        label: m['passport.activity.categoriesPlural.achievement'](),
+    },
+    {
+        id: CredentialCategoryEnum.learningHistory,
+        label: m['passport.activity.categoriesPlural.learningHistory'](),
+    },
+    {
+        id: CredentialCategoryEnum.accomplishment,
+        label: m['passport.activity.categoriesPlural.accomplishment'](),
+    },
+    {
+        id: CredentialCategoryEnum.accommodation,
+        label: m['passport.activity.categoriesPlural.accommodation'](),
+    },
+    {
+        id: CredentialCategoryEnum.workHistory,
+        label: m['passport.activity.categoriesPlural.workHistory'](),
+    },
+    { id: CredentialCategoryEnum.id, label: m['passport.activity.categoriesPlural.id']() },
 ];

@@ -3,24 +3,12 @@ import { UserProfilePicture } from 'learn-card-base';
 import CaretRight from 'learn-card-base/svgs/CaretRight';
 import { ActivityCredentialIcon } from './ActivityCredentialIcon';
 import type { ActivityFeedItemVM } from './activityFeed.helpers';
+import * as m from '../../../paraglide/messages.js';
+import { tShortMonth } from './activityFeedI18n';
 
-const SHORT_MONTHS = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-];
 const shortDate = (iso: string) => {
     const d = new Date(iso);
-    return `${SHORT_MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`;
+    return `${tShortMonth(d.getUTCMonth())} ${d.getUTCDate()}`;
 };
 
 export const ActivityFeedItem: React.FC<{
@@ -98,7 +86,7 @@ export const ActivityFeedItem: React.FC<{
                             className="inline-block mt-1 rounded-full px-[8px] py-[1px] text-[11px] font-bold uppercase tracking-wide text-white"
                             style={{
                                 backgroundColor:
-                                    item.lifecycleStatus === 'revoked' ? '#DC2626' : '#EA580C',
+                                    item.lifecycleStatus === 'revoked' ? '#DC2626' : '#D97706',
                             }}
                         >
                             {item.statusLabel}

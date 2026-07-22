@@ -1,3 +1,5 @@
+import * as m from '../../../../paraglide/messages.js';
+
 import React, { useState, useMemo } from 'react';
 import {
     TestTube2,
@@ -148,9 +150,25 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
 
     // Integration method display
     const integrationMethodDisplay = {
-        api: { icon: Code, label: 'API Integration', color: 'violet' },
-        csv: { icon: FileSpreadsheet, label: 'CSV Upload', color: 'amber' },
-        webhook: { icon: Webhook, label: 'Webhook', color: 'emerald' },
+        api: {
+            icon: Code,
+            label: m['developerPortal.onboarding.sandboxTest.apiIntegration'](),
+            color: 'violet',
+        },
+        csv: {
+            icon: FileSpreadsheet,
+            label: m['developerPortal.onboarding.sandboxTest.csvUpload'](),
+            color: 'amber',
+        },
+        webhook: {
+            icon: Webhook,
+            label:
+                m['developerPortal.onboarding.integrationMethod.webhook']() +
+                ' (' +
+                m['developerPortal.onboarding.integrationMethod.realtimeAutomated']() +
+                ')',
+            color: 'emerald',
+        },
     }[integrationMethod];
 
     const handleSendTest = async () => {
@@ -201,7 +219,10 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
             log.error('Test send failed:', err);
             setTestStatus('error');
             setTestResult({
-                error: err instanceof Error ? err.message : 'Failed to send test credential',
+                error:
+                    err instanceof Error
+                        ? err.message
+                        : m['developerPortal.onboarding.sandboxTest.failedTitle'](),
             });
         }
     };
@@ -222,33 +243,40 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                 <TestTube2 className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
 
                 <div className="text-sm text-violet-800">
-                    <p className="font-medium mb-1">Sandbox Testing</p>
-                    <p>
-                        Let's make sure everything works before going live. Send yourself a test
-                        credential to verify your templates are configured correctly.
+                    <p className="font-medium mb-1">
+                        {m['developerPortal.onboarding.sandboxTest.title']()}
                     </p>
+                    <p>{m['developerPortal.onboarding.sandboxTest.description']()}</p>
                 </div>
             </div>
 
             {/* Configuration Summary */}
             <div className="p-4 bg-gray-50 rounded-xl space-y-3">
-                <h3 className="font-medium text-gray-800">Configuration Summary</h3>
+                <h3 className="font-medium text-gray-800">
+                    {m['developerPortal.onboarding.sandboxTest.configSummary']()}
+                </h3>
 
                 <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                        <p className="text-gray-500">Project</p>
+                        <p className="text-gray-500">
+                            {m['developerPortal.onboarding.sandboxTest.project']()}
+                        </p>
                         <p className="font-medium text-gray-800">{project.name}</p>
                     </div>
 
                     <div>
-                        <p className="text-gray-500">Issuer</p>
+                        <p className="text-gray-500">
+                            {m['developerPortal.onboarding.sandboxTest.issuer']()}
+                        </p>
                         <p className="font-medium text-gray-800">
                             {branding.displayName || 'Not set'}
                         </p>
                     </div>
 
                     <div>
-                        <p className="text-gray-500">Integration</p>
+                        <p className="text-gray-500">
+                            {m['developerPortal.onboarding.sandboxTest.integration']()}
+                        </p>
                         <div className="flex items-center gap-1.5">
                             {integrationMethodDisplay && (
                                 <integrationMethodDisplay.icon
@@ -262,13 +290,19 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                     </div>
 
                     <div>
-                        <p className="text-gray-500">Templates</p>
+                        <p className="text-gray-500">
+                            {m['developerPortal.onboarding.sandboxTest.templates']()}
+                        </p>
                         <p className="font-medium text-gray-800">
-                            {issuableTemplates.length} issuable
+                            {m['developerPortal.onboarding.sandboxTest.issuable']({
+                                count: issuableTemplates.length,
+                            })}
                             {masterTemplateCount > 0 && (
                                 <span className="text-gray-500 font-normal">
                                     {' '}
-                                    ({masterTemplateCount} master)
+                                    {m['developerPortal.onboarding.sandboxTest.master']({
+                                        count: masterTemplateCount,
+                                    })}
                                 </span>
                             )}
                         </p>
@@ -281,9 +315,11 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                 <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
                     <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                     <div className="text-sm text-amber-800">
-                        <p className="font-medium">Templates need to be saved first</p>
+                        <p className="font-medium">
+                            {m['developerPortal.onboarding.sandboxTest.templatesNotSaved']()}
+                        </p>
                         <p className="mt-1">
-                            Go back to the Templates step and save your templates before testing.
+                            {m['developerPortal.onboarding.sandboxTest.templatesNotSavedDesc']()}
                         </p>
                     </div>
                 </div>
@@ -293,7 +329,7 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                 <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                     <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                     <p className="text-sm text-amber-700">
-                        Some templates haven't been saved yet. Only saved templates can be tested.
+                        {m['developerPortal.onboarding.sandboxTest.someUnsaved']()}
                     </p>
                 </div>
             )}
@@ -302,7 +338,7 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
             {canTest && issuableTemplates.filter(t => t.boostUri).length > 1 && (
                 <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">
-                        Select Template to Test
+                        {m['developerPortal.onboarding.sandboxTest.selectTemplate']()}
                     </label>
 
                     <button
@@ -369,10 +405,12 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
             {canTest && selectedTemplate && (
                 <div className="p-4 border border-gray-200 rounded-xl">
                     <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-medium text-gray-800">Test Credential Preview</h3>
+                        <h3 className="font-medium text-gray-800">
+                            {m['developerPortal.onboarding.sandboxTest.testPreview']()}
+                        </h3>
                         <span className="flex items-center gap-1 text-xs text-violet-600 bg-violet-100 px-2 py-1 rounded-full">
                             <Sparkles className="w-3 h-3" />
-                            Sample Data
+                            {m['developerPortal.onboarding.sandboxTest.sampleData']()}
                         </span>
                     </div>
 
@@ -381,7 +419,7 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                             {branding.image ? (
                                 <img
                                     src={branding.image}
-                                    alt="Logo"
+                                    alt={m['developerPortal.onboarding.sandboxTest.logo']()}
                                     className="w-14 h-14 object-contain rounded-lg bg-white p-1"
                                 />
                             ) : (
@@ -396,7 +434,11 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                                 </p>
 
                                 <p className="text-sm text-gray-600 mb-3">
-                                    Issued by {branding.displayName || 'Your Organization'}
+                                    {m['developerPortal.onboarding.sandboxTest.issuedBy']({
+                                        name:
+                                            branding.displayName ||
+                                            m['developerPortal.onboarding.sandboxTest.notSet'](),
+                                    })}
                                 </p>
 
                                 <div className="flex flex-wrap gap-2">
@@ -418,7 +460,9 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                                     ))}
                                     {templateVariables.length > 4 && (
                                         <span className="px-2 py-1 text-xs text-gray-500">
-                                            +{templateVariables.length - 4} more
+                                            {m['developerPortal.onboarding.sandboxTest.moreFields'](
+                                                { count: templateVariables.length - 4 }
+                                            )}
                                         </span>
                                     )}
                                 </div>
@@ -431,13 +475,15 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
             {/* Send Test */}
             {canTest && (
                 <div className="space-y-4">
-                    <h3 className="font-medium text-gray-800">Send Test Credential</h3>
+                    <h3 className="font-medium text-gray-800">
+                        {m['developerPortal.onboarding.sandboxTest.sendTest']()}
+                    </h3>
 
                     {testStatus === 'idle' && (
                         <div className="space-y-3">
                             <div>
                                 <label className="block text-sm text-gray-600 mb-1">
-                                    Your Email Address
+                                    {m['developerPortal.onboarding.sandboxTest.yourEmail']()}
                                 </label>
 
                                 <div className="flex gap-2">
@@ -459,15 +505,15 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                                         className="flex items-center gap-2 px-6 py-3 bg-violet-500 text-white rounded-xl font-medium hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                     >
                                         <Send className="w-4 h-4" />
-                                        Send Test
+                                        {m[
+                                            'developerPortal.onboarding.sandboxTest.sendTestButton'
+                                        ]()}
                                     </button>
                                 </div>
                             </div>
 
                             <p className="text-xs text-gray-500">
-                                We'll issue a test credential with sample data and send it to this
-                                email address. Check your inbox for a claim link to view the
-                                credential.
+                                {m['developerPortal.onboarding.sandboxTest.sendHint']()}
                             </p>
                         </div>
                     )}
@@ -478,10 +524,10 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
 
                             <div className="text-center">
                                 <p className="font-medium text-gray-800">
-                                    Issuing Test Credential...
+                                    {m['developerPortal.onboarding.sandboxTest.issuing']()}
                                 </p>
                                 <p className="text-sm text-gray-500">
-                                    This should only take a moment
+                                    {m['developerPortal.onboarding.sandboxTest.issuingHint']()}
                                 </p>
                             </div>
                         </div>
@@ -494,15 +540,18 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
 
                                 <div className="flex-1">
                                     <p className="font-medium text-emerald-800">
-                                        Test Credential Issued!
+                                        {m['developerPortal.onboarding.sandboxTest.successTitle']()}
                                     </p>
                                     <p className="text-sm text-emerald-700 mt-1">
-                                        A test credential has been sent to{' '}
-                                        <strong>{testEmail}</strong>.
+                                        {m['developerPortal.onboarding.sandboxTest.successDesc']({
+                                            email: testEmail,
+                                        })}
                                     </p>
 
                                     <p className="text-xs text-emerald-600 mt-2 font-mono">
-                                        ID: {testResult.credentialId}
+                                        {m['developerPortal.onboarding.sandboxTest.id']({
+                                            id: testResult.credentialId,
+                                        })}
                                     </p>
                                 </div>
                             </div>
@@ -513,7 +562,7 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
                                 >
                                     <RefreshCw className="w-4 h-4" />
-                                    Send Another
+                                    {m['developerPortal.onboarding.sandboxTest.sendAnother']()}
                                 </button>
 
                                 {/* <a
@@ -533,7 +582,9 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                                 <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
 
                                 <div className="flex-1">
-                                    <p className="font-medium text-red-800">Test Failed</p>
+                                    <p className="font-medium text-red-800">
+                                        {m['developerPortal.onboarding.sandboxTest.failedTitle']()}
+                                    </p>
                                     <p className="text-sm text-red-700 mt-1">{testResult.error}</p>
                                 </div>
                             </div>
@@ -543,7 +594,7 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                                 className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
                             >
                                 <RefreshCw className="w-4 h-4" />
-                                Try Again
+                                {m['developerPortal.onboarding.sandboxTest.tryAgain']()}
                             </button>
                         </div>
                     )}
@@ -557,7 +608,7 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                     className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back
+                    {m['developerPortal.onboarding.sandboxTest.back']()}
                 </button>
 
                 <button
@@ -565,7 +616,7 @@ export const SandboxTestStep: React.FC<SandboxTestStepProps> = ({
                     disabled={testStatus !== 'success'}
                     className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                    Continue to Go Live
+                    {m['developerPortal.onboarding.sandboxTest.continueToGoLive']()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>

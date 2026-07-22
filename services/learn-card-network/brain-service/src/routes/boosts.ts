@@ -145,6 +145,8 @@ import {
 import { getBlockedAndBlockedByIds, isRelationshipBlocked } from '@helpers/connection.helpers';
 import { getDidWeb, getManagedDidWeb, getProfileIdFromString } from '@helpers/did.helpers';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { getNotificationMessage } from '@helpers/notificationMessages';
+import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import {
     setBoostAsParent,
     setProfileAsBoostAdmin,
@@ -189,46 +191,6 @@ import {
     allocateStatusListEntry,
     appendBitstringStatusListEntries,
 } from '@helpers/status-list.helpers';
-
-/**
- * Human-friendly noun for a credential-status notification, derived from the boost
- * category (e.g. "Social Badge" -> "badge"). Falls back to "credential" so the
- * message always reads naturally. Used to build bodies like
- * `Your Spec Gremlin badge was revoked by ...`.
- */
-const getCredentialNoun = (category?: string | null): string => {
-    switch (category) {
-        case 'Social Badge':
-        case 'Merit Badge':
-            return 'badge';
-        case 'Achievement':
-            return 'achievement';
-        case 'Accomplishment':
-            return 'accomplishment';
-        case 'Accommodation':
-            return 'accommodation';
-        case 'Membership':
-            return 'membership';
-        case 'Course':
-            return 'course';
-        case 'Skill':
-            return 'skill';
-        default:
-            // ID categories (e.g. "Scout ID", "Troop Leader ID") end in "ID".
-            if (category && /\bID$/.test(category)) return 'ID';
-            return 'credential';
-    }
-};
-
-/**
- * Builds the subject phrase for a lifecycle notification body, e.g.
- * `"Spec Gremlin" badge` (quoted name + category noun) or just `badge` when the
- * boost is unnamed. Keep the leading `Your ` in the caller.
- */
-const getCredentialSubject = (name?: string | null, category?: string | null): string => {
-    const noun = getCredentialNoun(category);
-    return name ? `"${name}" ${noun}` : noun;
-};
 
 /**
  * Builds inbox configuration from SendOptions for the issueToInbox helper.
@@ -2052,13 +2014,14 @@ export const boostsRouter = t.router({
                         profileId: profile.profileId,
                         displayName: profile.displayName,
                     },
-                    message: {
-                        title: 'Credential revoked',
-                        body: `Your ${getCredentialSubject(
-                            boost.name,
-                            boost.category
-                        )} was revoked by ${profile.displayName ?? profile.profileId}.`,
-                    },
+                    message: getNotificationMessage(
+                        boost.name ? 'credentialRevokedNamed' : 'credentialRevokedUnnamed',
+                        resolveRecipientLocale(recipientProfile),
+                        {
+                            credentialName: boost.name ?? undefined,
+                            issuer: profile.displayName ?? profile.profileId,
+                        }
+                    ),
                     data: { vcUris: [constructUri('credential', credential.id, ctx.domain)] },
                 });
             } catch (e) {
@@ -2168,13 +2131,14 @@ export const boostsRouter = t.router({
                         profileId: profile.profileId,
                         displayName: profile.displayName,
                     },
-                    message: {
-                        title: 'Credential suspended',
-                        body: `Your ${getCredentialSubject(
-                            boost.name,
-                            boost.category
-                        )} was suspended by ${profile.displayName ?? profile.profileId}.`,
-                    },
+                    message: getNotificationMessage(
+                        boost.name ? 'credentialSuspendedNamed' : 'credentialSuspendedUnnamed',
+                        resolveRecipientLocale(recipientProfile),
+                        {
+                            credentialName: boost.name ?? undefined,
+                            issuer: profile.displayName ?? profile.profileId,
+                        }
+                    ),
                     data: { vcUris: [constructUri('credential', credential.id, ctx.domain)] },
                 });
             } catch (e) {
@@ -2279,13 +2243,14 @@ export const boostsRouter = t.router({
                         profileId: profile.profileId,
                         displayName: profile.displayName,
                     },
-                    message: {
-                        title: 'Credential reinstated',
-                        body: `Your ${getCredentialSubject(
-                            boost.name,
-                            boost.category
-                        )} was reinstated by ${profile.displayName ?? profile.profileId}.`,
-                    },
+                    message: getNotificationMessage(
+                        boost.name ? 'credentialRestoredNamed' : 'credentialRestoredUnnamed',
+                        resolveRecipientLocale(recipientProfile),
+                        {
+                            credentialName: boost.name ?? undefined,
+                            issuer: profile.displayName ?? profile.profileId,
+                        }
+                    ),
                     data: { vcUris: [constructUri('credential', credential.id, ctx.domain)] },
                 });
             } catch (e) {

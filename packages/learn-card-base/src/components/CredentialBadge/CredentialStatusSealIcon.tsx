@@ -4,7 +4,7 @@ export type CredentialLifecycleStatus = 'active' | 'revoked' | 'suspended';
 
 const SEAL_COLOR: Record<Exclude<CredentialLifecycleStatus, 'active'>, string> = {
     revoked: '#DC2626', // red-600
-    suspended: '#EA580C', // orange-600
+    suspended: '#D97706', // amber-600
 };
 
 /** Seal badge with a white X (same silhouette as the verified seal). */

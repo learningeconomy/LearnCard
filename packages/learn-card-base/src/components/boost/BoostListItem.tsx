@@ -28,6 +28,7 @@ import { BoostMediaOptionsEnum } from './boost';
 import { newCredsStore } from 'learn-card-base/stores/newCredsStore';
 import DotIcon from '../../svgs/DotIcon';
 import { CredentialLifecycleStatus } from '../CredentialBadge/CredentialStatusSealIcon';
+import { useT } from 'learn-card-base/i18n';
 
 type BoostListItemProps = {
     title?: string;
@@ -74,13 +75,14 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
     lifecycleStatus = 'active',
     trustedVerifierOnly = false,
 }) => {
+    const t = useT();
     // Shared revoked/suspended treatment (kept in sync with the grid card).
     const {
         isInactive,
         mediaStyle: inactiveMediaStyle,
         pillBg,
-        pillLabel,
     } = getLifecycleTreatment(lifecycleStatus);
+    const pillLabel = t(`credential.lifecycle.${lifecycleStatus}`);
 
     const newCreds = newCredsStore.use.newCreds();
     const newCredsForCategory = newCreds?.[categoryType as CredentialCategory] ?? [];

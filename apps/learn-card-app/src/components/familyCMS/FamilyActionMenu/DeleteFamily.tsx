@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 import { ModalTypes, useModal } from 'learn-card-base';
 import { VC } from '@learncard/types';
+import { m } from '../../../paraglide/messages.js';
 
 export const DeleteFamily: React.FC<{ credential: VC; boostUri?: string }> = ({
     credential,
@@ -21,11 +22,10 @@ export const DeleteFamily: React.FC<{ credential: VC; boostUri?: string }> = ({
             <>
                 <div className="w-full flex flex-col justify-center items-center bg-white rounded-[20px] p-8">
                     <h4 className="text-[22px] font-normal font-poppins mt-2 text-grayscale-900 text-center">
-                        Family Deleted
+                        {m['family.delete.successTitle']()}
                     </h4>
                     <p className="text-[17px] font-poppins text-grayscale-700 text-left mt-4">
-                        {familyName} family has been deleted. You can now join or create another
-                        family.
+                        {m['family.delete.successBody']({ family: familyName ?? '' })}
                     </p>
                 </div>
 
@@ -35,7 +35,7 @@ export const DeleteFamily: React.FC<{ credential: VC; boostUri?: string }> = ({
                         type="button"
                         className="shrink-0 w-full py-2 h-full flex items-center font-medium justify-center text-xl bg-grayscale-900 rounded-[20px] shadow-bottom text-white"
                     >
-                        Got It
+                        {m['family.gotIt']()}
                     </button>
                 </div>
             </>,
@@ -50,11 +50,10 @@ export const DeleteFamily: React.FC<{ credential: VC; boostUri?: string }> = ({
         <>
             <div className="w-full flex flex-col justify-center items-center bg-white rounded-[20px] p-8">
                 <h4 className="text-[22px] font-normal font-poppins mt-2 text-grayscale-900 text-center">
-                    Delete Family?
+                    {m['family.delete.confirmTitle']()}
                 </h4>
                 <p className="text-[17px] font-poppins text-grayscale-700 text-left mt-4">
-                    Deleting this family will also delete the profiles and data of each child in
-                    this family.
+                    {m['family.delete.confirmBody']()}
                 </p>
             </div>
 
@@ -64,7 +63,7 @@ export const DeleteFamily: React.FC<{ credential: VC; boostUri?: string }> = ({
                     type="button"
                     className="shrink-0 w-full py-2 h-full flex items-center font-medium justify-center text-xl bg-red-600 rounded-[20px] shadow-bottom text-white"
                 >
-                    Delete
+                    {m['family.delete.action']()}
                 </button>
             </div>
         </>

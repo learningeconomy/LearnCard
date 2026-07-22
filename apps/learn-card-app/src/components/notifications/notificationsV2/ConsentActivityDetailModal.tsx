@@ -11,6 +11,7 @@ import {
     getConsentActivityStats,
     parseContractName,
 } from './consentFlowGrouping';
+import * as m from '../../../paraglide/messages.js';
 
 type ConsentActivityDetailModalProps = {
     notifications: NotificationType[];
@@ -47,8 +48,9 @@ const ConsentActivityDetailModal: React.FC<ConsentActivityDetailModalProps> = ({
     const primary = notifications[0];
     const { data: profile } = useGetProfile(primary?.from?.profileId);
 
-    const actorName = profile?.displayName || primary?.from?.displayName || 'Someone';
-    const contractName = parseContractName(primary?.message?.body) || 'your contract';
+    const actorName =
+        profile?.displayName || primary?.from?.displayName || m['dashboard.activity.someone']();
+    const contractName = parseContractName(primary?.message?.body) || m['notifications.contract']();
 
     const stats = useMemo(() => getConsentActivityStats(notifications), [notifications]);
     const buckets = useMemo(() => bucketNotifications(notifications), [notifications]);
@@ -63,7 +65,7 @@ const ConsentActivityDetailModal: React.FC<ConsentActivityDetailModalProps> = ({
         <ErrorBoundary
             fallback={
                 <section className="w-full px-6 py-7 text-grayscale-900">
-                    Unable to load activity
+                    {m['notifications.loadErr']()}
                 </section>
             }
         >
@@ -81,18 +83,24 @@ const ConsentActivityDetailModal: React.FC<ConsentActivityDetailModalProps> = ({
                             {actorName}
                         </h1>
                         <p className="text-sm text-grayscale-500 truncate">
-                            Shared with {contractName}
+                            {m['notifications.sharedWith']({ name: contractName })}
                         </p>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-3">
-                    <StatTile value={`${stats.totalUpdates}`} label="Updates" />
+                    <StatTile
+                        value={`${stats.totalUpdates}`}
+                        label={m['notifications.updates']()}
+                    />
                     <StatTile
                         value={`${stats.totalCredentialsShared}`}
-                        label="Credentials shared"
+                        label={m['notifications.credShared']()}
                     />
-                    <StatTile value={stats.firstDate || '—'} label="First activity" />
+                    <StatTile
+                        value={stats.firstDate || '—'}
+                        label={m['notifications.firstAct']()}
+                    />
                 </div>
 
                 {distinctActions.length > 1 && (
@@ -112,7 +120,9 @@ const ConsentActivityDetailModal: React.FC<ConsentActivityDetailModalProps> = ({
                 )}
 
                 <div className="space-y-3">
-                    <h2 className="text-sm font-semibold text-grayscale-900">Activity</h2>
+                    <h2 className="text-sm font-semibold text-grayscale-900">
+                        {m['dashboard.activity.title']()}
+                    </h2>
                     <div className="max-h-[300px] overflow-y-auto pr-2 relative">
                         <div className="absolute left-[11px] top-2 bottom-2 w-px bg-grayscale-200" />
                         <div className="flex flex-col gap-4">
@@ -151,7 +161,7 @@ const ConsentActivityDetailModal: React.FC<ConsentActivityDetailModalProps> = ({
                         onClick={handleArchive}
                         className="w-full py-3 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                     >
-                        Archive
+                        {m['alerts.archive']()}
                     </button>
                 )}
             </section>

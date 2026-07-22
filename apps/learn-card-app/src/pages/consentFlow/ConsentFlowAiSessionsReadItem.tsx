@@ -7,6 +7,7 @@ import { IonRippleEffect } from '@ionic/react';
 import BlueMagicWand from 'learn-card-base/svgs/BlueMagicWand';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 import ConsentFlowAiSessionsDetailsModal from './ConsentFlowAiSessionsDetailsModal';
+import * as m from '../../paraglide/messages.js';
 
 type ConsentFlowAiSessionsReadItemProps = {
     aiSessionCategories: {
@@ -61,7 +62,7 @@ const ConsentFlowAiSessionsReadItem: React.FC<ConsentFlowAiSessionsReadItemProps
                 </div>
 
                 <h4 className="text-[17px] text-grayscale-900 font-notoSans font-[600] leading-[24px] tracking-[0.25px] line-clamp-1 grow text-left">
-                    AI Sessions
+                    {m['wallet.categories.aiSessions']()}
                 </h4>
 
                 <section className="flex items-center">

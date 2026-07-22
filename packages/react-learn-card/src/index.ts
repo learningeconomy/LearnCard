@@ -17,3 +17,6 @@ export * from './helpers/lifecycle.helpers';
 export * from './hooks/useCredentialFormat';
 export * from './hooks/useParsedSdJwtVc';
 export * from './helpers/credentialFormat.helpers';
+
+// Optional i18n adapter (English by default; consumers may inject a resolver)
+export * from './i18n';

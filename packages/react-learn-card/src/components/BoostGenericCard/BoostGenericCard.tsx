@@ -7,6 +7,7 @@ import ThreeDotVertical from '../svgs/ThreeDotVertical';
 import { CircleCheckButton } from '../CircleCheckButton';
 import BadgeThumbnailImg from '../BadgeThumbnailImg/BadgeThumbnailImg';
 import { getLifecycleTreatment } from '../../helpers/lifecycle.helpers';
+import { useT } from '../../i18n';
 
 export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     title,
@@ -36,6 +37,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     checkBtnClass = '',
     lifecycleStatus = 'active',
 }) => {
+    const t = useT();
     const thumbClass = TYPE_TO_WALLET_DARK_COLOR[type]
         ? `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}`
         : 'bg-grayscale-50';
@@ -55,8 +57,8 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
         mediaStyle: inactiveMediaStyle,
         textStyle: inactiveTextStyle,
         pillBg,
-        pillLabel,
     } = getLifecycleTreatment(lifecycleStatus);
+    const pillLabel = t(`credential.lifecycle.${lifecycleStatus}`);
     const pillLeft = showChecked ? 'left-[44px]' : 'left-[8px]';
 
     return (

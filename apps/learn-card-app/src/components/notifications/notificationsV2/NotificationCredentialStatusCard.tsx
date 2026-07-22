@@ -10,31 +10,32 @@ import BoostClaimCard from '../../boost/claim-boost-card/BoostClaimCard';
 
 import { VC } from '@learncard/types';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
+import * as m from '../../../paraglide/messages.js';
 import { notificationCardStyles } from './types';
 
 export type CredentialStatusVariant = 'revoked' | 'suspended' | 'unsuspended';
 
 const VARIANT_STYLES: Record<
     CredentialStatusVariant,
-    { accent: string; border: string; tint: string; statusText: string }
+    { accent: string; border: string; tint: string; getStatusText: () => string }
 > = {
     revoked: {
         accent: 'text-red-600',
         border: 'border-red-600',
         tint: 'bg-red-50',
-        statusText: 'Revoked',
+        getStatusText: () => m['issue.revoked'](),
     },
     suspended: {
-        accent: 'text-orange-600',
-        border: 'border-orange-600',
-        tint: 'bg-orange-50',
-        statusText: 'Suspended',
+        accent: 'text-amber-600',
+        border: 'border-amber-600',
+        tint: 'bg-amber-50',
+        getStatusText: () => m['issue.suspended'](),
     },
     unsuspended: {
         accent: 'text-emerald-600',
         border: 'border-emerald-600',
         tint: 'bg-emerald-50',
-        statusText: 'Restored',
+        getStatusText: () => m['alerts.restored'](),
     },
 };
 
@@ -69,7 +70,8 @@ const NotificationCredentialStatusCard: React.FC<NotificationCredentialStatusCar
     const uri = notification?.data?.vcUris?.[0];
     const { data: resolved } = useGetResolvedCredential(uri);
 
-    const { accent, border, tint, statusText } = VARIANT_STYLES[variant];
+    const { accent, border, tint, getStatusText } = VARIANT_STYLES[variant];
+    const statusText = getStatusText();
 
     const formattedDate = notification.sent
         ? moment(notification.sent).format('MMM D, YYYY h:mma')
@@ -105,7 +107,7 @@ const NotificationCredentialStatusCard: React.FC<NotificationCredentialStatusCar
         <ErrorBoundary
             fallback={
                 <div className={notificationCardStyles.fallbackShell}>
-                    Unable to load notification
+                    {m['alerts.unableToLoad']()}
                 </div>
             }
         >
@@ -157,7 +159,7 @@ const NotificationCredentialStatusCard: React.FC<NotificationCredentialStatusCar
                             <div
                                 className={`${notificationCardStyles.primaryButton} bg-white ${accent} ${border}`}
                             >
-                                View Credential
+                                {m['alerts.viewCredential']()}
                             </div>
                         </div>
                     </div>

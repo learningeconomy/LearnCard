@@ -31,6 +31,9 @@ import {
 } from './boostTemplateSearch.helpers';
 import { getLearnCardBoostTemplates } from '../boostHelpers';
 
+import * as m from '../../../paraglide/messages.js';
+import { localizeCategoryTitle } from '../../../i18n/categoryTitle';
+
 type BoostTemplateSelectorBodyProps = {
     selectedCategory: BoostCategoryOptionsEnum;
     viewMode: BoostPageViewModeType;
@@ -231,7 +234,7 @@ const BoostTemplateSelectorBody: React.FC<BoostTemplateSelectorBodyProps> = ({
                             <IonInput
                                 type="text"
                                 value={searchInput}
-                                placeholder="Browse templates..."
+                                placeholder={m['boost.template.browseTemplates']()}
                                 onIonInput={e => setSearchInput(e.detail.value)}
                                 className="bg-white text-grayscale-800 rounded-[15px] !p-[5px] !font-notoSans text-[17px] !pl-[48px]"
                             />
@@ -246,12 +249,14 @@ const BoostTemplateSelectorBody: React.FC<BoostTemplateSelectorBodyProps> = ({
                         <div className="flex flex-col w-full h-full items-center justify-center">
                             <p className="mt-2 font-poppins text-xl text-grayscale-900">
                                 {searchInput
-                                    ? 'No results found'
-                                    : `No ${
-                                          selectedCategory === BoostCategoryOptionsEnum.all
-                                              ? 'Boosts'
-                                              : boostCategoryMetadata[selectedCategory].title
-                                      } yet!`}
+                                    ? m['boost.template.noResults']()
+                                    : m['boost.template.noneYet']({
+                                          type: localizeCategoryTitle(
+                                              selectedCategory === BoostCategoryOptionsEnum.all
+                                                  ? 'Boosts'
+                                                  : boostCategoryMetadata[selectedCategory].title
+                                          ),
+                                      })}
                             </p>
                         </div>
                     )}

@@ -22,6 +22,7 @@ import {
     ChevronDown,
 } from 'lucide-react';
 import type { LCNIntegration, AppStoreListing } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
 
 import { useWallet } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
@@ -98,63 +99,123 @@ import { useIntegrationActivity } from './hooks/useIntegrationActivity';
 
 function getTabsForConfig(config: DashboardConfig): DashboardTabConfig[] {
     const tabs: DashboardTabConfig[] = [
-        { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+        {
+            id: 'overview',
+            label: m['developerPortal.dashboards.nav.overview'](),
+            icon: LayoutDashboard,
+        },
     ];
 
     if (config.showTemplates) {
-        tabs.push({ id: 'templates', label: 'Templates', icon: Award });
+        tabs.push({
+            id: 'templates',
+            label: m['developerPortal.dashboards.nav.templates'](),
+            icon: Award,
+        });
     }
 
     if (config.showApiTokens) {
-        tabs.push({ id: 'tokens', label: 'API Tokens', icon: Key });
+        tabs.push({
+            id: 'tokens',
+            label: m['developerPortal.dashboards.nav.apiTokens'](),
+            icon: Key,
+        });
     }
 
     if (config.showEmbedConfig) {
-        tabs.push({ id: 'embed-config', label: 'Config', icon: Settings });
+        tabs.push({
+            id: 'embed-config',
+            label: m['developerPortal.dashboards.nav.config'](),
+            icon: Settings,
+        });
     }
 
     if (config.showEmbedCode) {
-        tabs.push({ id: 'embed-code', label: 'Embed Code', icon: Code });
+        tabs.push({
+            id: 'embed-code',
+            label: m['developerPortal.dashboards.nav.embedCode'](),
+            icon: Code,
+        });
     }
 
     if (config.showContracts) {
-        tabs.push({ id: 'contracts', label: 'Contracts', icon: FileText });
+        tabs.push({
+            id: 'contracts',
+            label: m['developerPortal.dashboards.nav.contracts'](),
+            icon: FileText,
+        });
     }
 
     if (config.showConnections) {
-        tabs.push({ id: 'connections', label: 'Connections', icon: Users });
+        tabs.push({
+            id: 'connections',
+            label: m['developerPortal.dashboards.nav.connections'](),
+            icon: Users,
+        });
     }
 
     if (config.showSigningAuthority) {
-        tabs.push({ id: 'signing', label: 'Signing', icon: Shield });
+        tabs.push({
+            id: 'signing',
+            label: m['developerPortal.dashboards.nav.signing'](),
+            icon: Shield,
+        });
     }
 
     if (config.showBranding) {
-        tabs.push({ id: 'branding', label: 'Branding', icon: Palette });
+        tabs.push({
+            id: 'branding',
+            label: m['developerPortal.dashboards.nav.branding'](),
+            icon: Palette,
+        });
     }
 
     // embed-app specific tabs
     if (config.showAppListings) {
-        tabs.push({ id: 'app-listings', label: 'App Listings', icon: Layout });
+        tabs.push({
+            id: 'app-listings',
+            label: m['developerPortal.dashboards.nav.appListings'](),
+            icon: Layout,
+        });
     }
 
     if (config.showPartnerConnect) {
-        tabs.push({ id: 'partner-connect', label: 'Partner Connect', icon: LinkIcon });
+        tabs.push({
+            id: 'partner-connect',
+            label: m['developerPortal.dashboards.nav.partnerConnect'](),
+            icon: LinkIcon,
+        });
     }
 
     if (config.showAppConfig) {
-        tabs.push({ id: 'app-config', label: 'App Config', icon: Settings });
+        tabs.push({
+            id: 'app-config',
+            label: m['developerPortal.dashboards.nav.appConfig'](),
+            icon: Settings,
+        });
     }
 
     // API-based integration tabs (code snippets, CSV upload, testing)
     // Excluded for embed-claim which has its own live preview in the Embed Code tab
     if (config.showTemplates && !config.showAppListings && !config.showEmbedCode) {
-        tabs.push({ id: 'code', label: 'Code', icon: FileCode });
+        tabs.push({
+            id: 'code',
+            label: m['developerPortal.dashboards.nav.code'](),
+            icon: FileCode,
+        });
         // CSV upload only for non-consent-flow (consent-flow sends via API after redirect)
         if (!config.showConnections) {
-            tabs.push({ id: 'csv-upload', label: 'CSV Upload', icon: FileSpreadsheet });
+            tabs.push({
+                id: 'csv-upload',
+                label: m['developerPortal.dashboards.nav.csvUpload'](),
+                icon: FileSpreadsheet,
+            });
         }
-        tabs.push({ id: 'testing', label: 'Testing', icon: TestTube2 });
+        tabs.push({
+            id: 'testing',
+            label: m['developerPortal.dashboards.nav.testing'](),
+            icon: TestTube2,
+        });
     }
 
     // Analytics tab hidden for now - will add back when we have time-series data
@@ -259,14 +320,14 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
             await upgradeAppMutation.mutateAsync({
                 listingId: listingToUpgrade.listing_id,
             });
-            presentToast('App upgraded successfully!', {
+            presentToast(m['developerPortal.dashboards.appUpgraded'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
             return true;
         } catch (error) {
             log.error('Upgrade failed:', error);
-            presentToast('Failed to upgrade app', {
+            presentToast(m['developerPortal.dashboards.appUpgradeFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -393,7 +454,7 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
                 }));
             } catch (err) {
                 log.error('Failed to load dashboard data:', err);
-                presentToast('Failed to load dashboard data', {
+                presentToast(m['developerPortal.dashboards.errorLoadFailed'](), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
@@ -453,28 +514,28 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
         integration.guideType === 'consent-flow'
             ? [
                   {
-                      label: 'Connections',
+                      label: m['developerPortal.dashboards.stats.connections'](),
                       value: mergedStats.totalConnections,
                       icon: Users,
                       iconBgColor: 'bg-blue-100',
                       iconColor: 'text-blue-600',
                   },
                   {
-                      label: 'Contracts',
+                      label: m['developerPortal.dashboards.stats.contracts'](),
                       value: mergedStats.activeContracts,
                       icon: FileText,
                       iconBgColor: 'bg-emerald-100',
                       iconColor: 'text-emerald-600',
                   },
                   {
-                      label: 'API Tokens',
+                      label: m['developerPortal.dashboards.stats.apiTokens'](),
                       value: mergedStats.activeTokens,
                       icon: Key,
                       iconBgColor: 'bg-cyan-100',
                       iconColor: 'text-cyan-600',
                   },
                   {
-                      label: 'Templates',
+                      label: m['developerPortal.dashboards.stats.templates'](),
                       value: mergedStats.templateCount,
                       icon: Award,
                       iconBgColor: 'bg-violet-100',
@@ -483,28 +544,28 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
               ]
             : [
                   {
-                      label: 'Credentials Sent',
+                      label: m['developerPortal.dashboards.stats.credentialsSent'](),
                       value: mergedStats.totalIssued,
                       icon: Zap,
                       iconBgColor: 'bg-cyan-100',
                       iconColor: 'text-cyan-600',
                   },
                   {
-                      label: 'Claimed',
+                      label: m['developerPortal.dashboards.stats.claimed'](),
                       value: mergedStats.totalClaimed,
                       icon: CheckCircle2,
                       iconBgColor: 'bg-emerald-100',
                       iconColor: 'text-emerald-600',
                   },
                   {
-                      label: 'Pending',
+                      label: m['developerPortal.dashboards.stats.pending'](),
                       value: mergedStats.pendingClaims,
                       icon: AlertCircle,
                       iconBgColor: 'bg-amber-100',
                       iconColor: 'text-amber-600',
                   },
                   {
-                      label: 'Claim Rate',
+                      label: m['developerPortal.dashboards.stats.claimRate'](),
                       value: `${mergedStats.claimRate.toFixed(1)}%`,
                       icon: BarChart3,
                       iconBgColor: 'bg-violet-100',
@@ -517,7 +578,9 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
             <div className="flex items-center justify-center min-h-[400px]">
                 <div className="text-center">
                     <Loader2 className="w-10 h-10 text-cyan-500 mx-auto animate-spin" />
-                    <p className="text-sm text-gray-500 mt-3">Loading dashboard...</p>
+                    <p className="text-sm text-gray-500 mt-3">
+                        {m['developerPortal.dashboards.loadingDashboard']()}
+                    </p>
                 </div>
             </div>
         );
@@ -526,16 +589,16 @@ export const UnifiedIntegrationDashboard: React.FC<UnifiedIntegrationDashboardPr
     const getSubtitle = () => {
         switch (integration.guideType) {
             case 'issue-credentials':
-                return 'Issue Credentials Dashboard';
+                return m['developerPortal.dashboards.subtitle.issueCredentials']();
             case 'embed-claim':
             case 'embed-app':
-                return 'Embed Integration Dashboard';
+                return m['developerPortal.dashboards.subtitle.embed']();
             case 'consent-flow':
-                return 'Consent Flow Dashboard';
+                return m['developerPortal.dashboards.subtitle.consentFlow']();
             case 'course-catalog':
-                return 'Course Catalog Dashboard';
+                return m['developerPortal.dashboards.subtitle.courseCatalog']();
             default:
-                return 'Integration Dashboard';
+                return m['developerPortal.dashboards.subtitle.default']();
         }
     };
 

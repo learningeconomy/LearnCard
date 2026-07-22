@@ -513,6 +513,27 @@ describe('Per-instance revoke/suspend/unsuspend (LC-1862)', () => {
             expect(stats.suspended).toBe(1);
             expect(stats.revoked).toBe(0);
         });
+
+        it('returns lifecycle status only to the credential holder', async () => {
+            const credentialUri = await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                boostUri,
+                true
+            );
+
+            const holderStatuses =
+                await userB.clients.fullAuth.activity.getMyCredentialLifecycleStatuses({
+                    uris: [credentialUri],
+                });
+            expect(holderStatuses).toEqual({ [credentialUri]: 'active' });
+
+            const issuerStatuses =
+                await userA.clients.fullAuth.activity.getMyCredentialLifecycleStatuses({
+                    uris: [credentialUri],
+                });
+            expect(issuerStatuses).toEqual({});
+        });
     });
 
     // -------------------------------------------------------------------

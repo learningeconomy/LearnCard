@@ -1,3 +1,5 @@
+import * as m from '../../../../paraglide/messages.js';
+import { TransP } from '../../../../i18n/TransP';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('consent-flow-testing-tab');
 /**
@@ -91,9 +93,12 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
 
     const handleSendTest = async () => {
         if (!testDid.trim() || !selectedTemplate?.boostUri) {
-            presentToast('Please enter a DID and select a template', {
-                type: ToastTypeEnum.Error,
-            });
+            presentToast(
+                m['developerPortal.dashboards.tabs.consentFlowTesting.enterDidAndTemplate'](),
+                {
+                    type: ToastTypeEnum.Error,
+                }
+            );
             return;
         }
 
@@ -116,12 +121,20 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                 credentialUri: result?.credentialUri || result?.uri,
             });
 
-            presentToast('Test credential sent!', { type: ToastTypeEnum.Success });
+            presentToast(
+                m['developerPortal.dashboards.tabs.consentFlowTesting.credentialSentSuccess'](),
+                { type: ToastTypeEnum.Success }
+            );
         } catch (err) {
             log.error('Test send failed:', err);
             setTestStatus('error');
             setTestResult({
-                error: err instanceof Error ? err.message : 'Failed to send credential',
+                error:
+                    err instanceof Error
+                        ? err.message
+                        : m[
+                              'developerPortal.dashboards.tabs.consentFlowTesting.sendFailedFallback'
+                          ](),
             });
         }
     };
@@ -137,9 +150,11 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-semibold text-gray-800">Test Consent Flow</h2>
+                <h2 className="text-lg font-semibold text-gray-800">
+                    {m['developerPortal.dashboards.tabs.consentFlowTesting.title']()}
+                </h2>
                 <p className="text-sm text-gray-500">
-                    Test the full consent redirect and credential sending flow
+                    {m['developerPortal.dashboards.tabs.consentFlowTesting.description']()}
                 </p>
             </div>
 
@@ -152,10 +167,10 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
 
                     <div>
                         <h3 className="font-medium text-gray-800 text-sm">
-                            Step 1: Test Consent Redirect
+                            {m['developerPortal.dashboards.tabs.consentFlowTesting.step1Title']()}
                         </h3>
                         <p className="text-xs text-gray-500">
-                            Open the consent flow and grant consent as a test user
+                            {m['developerPortal.dashboards.tabs.consentFlowTesting.step1Desc']()}
                         </p>
                     </div>
                 </div>
@@ -163,7 +178,11 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                 {consentUrl ? (
                     <div className="space-y-3">
                         <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                            <p className="text-xs text-gray-500 mb-1 font-medium">Consent URL:</p>
+                            <p className="text-xs text-gray-500 mb-1 font-medium">
+                                {m[
+                                    'developerPortal.dashboards.tabs.consentFlowTesting.consentUrl'
+                                ]()}
+                            </p>
                             <code className="text-xs text-gray-700 break-all">{consentUrl}</code>
                         </div>
 
@@ -174,14 +193,23 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                             className="inline-flex items-center gap-2 px-4 py-2.5 bg-cyan-500 text-white rounded-xl text-sm font-medium hover:bg-cyan-600 transition-colors"
                         >
                             <ExternalLink className="w-4 h-4" />
-                            Open Consent Flow
+                            {m[
+                                'developerPortal.dashboards.tabs.consentFlowTesting.openConsentFlow'
+                            ]()}
                         </a>
                     </div>
                 ) : (
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                         <p className="text-xs text-amber-800">
-                            <strong>Missing configuration:</strong> Complete the Build guide to set
-                            your contract URI and callback URL.
+                            <strong>
+                                {m[
+                                    'developerPortal.dashboards.tabs.consentFlowTesting.missingConfig'
+                                ]()}
+                                :
+                            </strong>{' '}
+                            {m[
+                                'developerPortal.dashboards.tabs.consentFlowTesting.missingConfigDesc'
+                            ]()}
                         </p>
                     </div>
                 )}
@@ -196,10 +224,10 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
 
                     <div>
                         <h3 className="font-medium text-gray-800 text-sm">
-                            Step 2: Verify Callback Parameters
+                            {m['developerPortal.dashboards.tabs.consentFlowTesting.step2Title']()}
                         </h3>
                         <p className="text-xs text-gray-500">
-                            After consent, check that your callback received these parameters
+                            {m['developerPortal.dashboards.tabs.consentFlowTesting.step2Desc']()}
                         </p>
                     </div>
                 </div>
@@ -208,22 +236,22 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                     <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
                         <code className="text-xs font-semibold text-gray-700">did</code>
                         <p className="text-xs text-gray-500 mt-1">
-                            The user&apos;s decentralized identifier. Store this to send them
-                            credentials later.
+                            {m['developerPortal.dashboards.tabs.consentFlowTesting.didParamDesc']()}
                         </p>
                     </div>
 
                     <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
                         <code className="text-xs font-semibold text-gray-700">vp</code>
                         <p className="text-xs text-gray-500 mt-1">
-                            A VP JWT proving consent. Verify this server-side to confirm
-                            authorization.
+                            {m['developerPortal.dashboards.tabs.consentFlowTesting.vpParamDesc']()}
                         </p>
                     </div>
                 </div>
 
                 <CodeOutputPanel
-                    title="Example callback your server receives"
+                    title={m[
+                        'developerPortal.dashboards.tabs.consentFlowTesting.exampleCallback'
+                    ]()}
                     snippets={{
                         curl: `GET ${
                             redirectUrl || 'https://your-app.com/api/learncard/callback'
@@ -241,10 +269,10 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
 
                     <div>
                         <h3 className="font-medium text-gray-800 text-sm">
-                            Step 3: Send Test Credential
+                            {m['developerPortal.dashboards.tabs.consentFlowTesting.step3Title']()}
                         </h3>
                         <p className="text-xs text-gray-500">
-                            Send a credential to the DID you received from the callback
+                            {m['developerPortal.dashboards.tabs.consentFlowTesting.step3Desc']()}
                         </p>
                     </div>
                 </div>
@@ -252,8 +280,15 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                 {sendableTemplates.length === 0 ? (
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                         <p className="text-xs text-amber-800">
-                            <strong>No saved templates:</strong> Create and save a credential
-                            template in the Templates tab first.
+                            <strong>
+                                {m[
+                                    'developerPortal.dashboards.tabs.consentFlowTesting.noSavedTemplates'
+                                ]()}
+                                :
+                            </strong>{' '}
+                            {m[
+                                'developerPortal.dashboards.tabs.consentFlowTesting.noSavedTemplatesDesc'
+                            ]()}
                         </p>
                     </div>
                 ) : (
@@ -261,7 +296,7 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                         {/* Template Selector */}
                         <div className="space-y-2">
                             <label className="block text-xs font-medium text-gray-600">
-                                Template
+                                {m['developerPortal.dashboards.tabs.consentFlowTesting.template']()}
                             </label>
                             <div className="relative">
                                 <button
@@ -271,7 +306,10 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                                     <Award className="w-4 h-4 text-cyan-600" />
 
                                     <span className="flex-1 text-left text-sm text-gray-800">
-                                        {selectedTemplate?.name || 'Select a template'}
+                                        {selectedTemplate?.name ||
+                                            m[
+                                                'developerPortal.dashboards.tabs.consentFlowTesting.selectTemplate'
+                                            ]()}
                                     </span>
 
                                     <ChevronDown
@@ -311,15 +349,23 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                         {/* DID Input */}
                         <div className="space-y-2">
                             <label className="block text-xs font-medium text-gray-600">
-                                Recipient DID{' '}
-                                <span className="text-gray-400">(from consent callback)</span>
+                                {m[
+                                    'developerPortal.dashboards.tabs.consentFlowTesting.recipientDid'
+                                ]()}{' '}
+                                <span className="text-gray-400">
+                                    {m[
+                                        'developerPortal.dashboards.tabs.consentFlowTesting.recipientDidHint'
+                                    ]()}
+                                </span>
                             </label>
 
                             <input
                                 type="text"
                                 value={testDid}
                                 onChange={e => setTestDid(e.target.value)}
-                                placeholder="did:web:... or did:key:..."
+                                placeholder={m[
+                                    'developerPortal.dashboards.tabs.consentFlowTesting.didPlaceholder'
+                                ]()}
                                 className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 font-mono"
                             />
                         </div>
@@ -332,7 +378,9 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                                 className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-emerald-500 text-white rounded-xl font-medium hover:from-cyan-600 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                             >
                                 <Send className="w-4 h-4" />
-                                Send Test Credential
+                                {m[
+                                    'developerPortal.dashboards.tabs.consentFlowTesting.sendTestCredential'
+                                ]()}
                             </button>
                         )}
 
@@ -340,7 +388,9 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                             <div className="flex items-center justify-center gap-3 px-6 py-3 bg-gray-100 rounded-xl">
                                 <Loader2 className="w-5 h-5 text-cyan-600 animate-spin" />
                                 <span className="text-gray-700 font-medium text-sm">
-                                    Sending credential...
+                                    {m[
+                                        'developerPortal.dashboards.tabs.consentFlowTesting.sendingCredential'
+                                    ]()}
                                 </span>
                             </div>
                         )}
@@ -351,14 +401,20 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                                     <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                                     <div className="flex-1">
                                         <p className="font-medium text-emerald-800 text-sm">
-                                            Credential sent!
+                                            {m[
+                                                'developerPortal.dashboards.tabs.consentFlowTesting.credentialSent'
+                                            ]()}
                                         </p>
                                         <p className="text-xs text-emerald-700 mt-1">
-                                            The recipient should see it in their LearnCard wallet.
+                                            {m[
+                                                'developerPortal.dashboards.tabs.consentFlowTesting.credentialSentDesc'
+                                            ]()}
                                         </p>
                                         {testResult.credentialUri && (
                                             <p className="text-xs text-emerald-600 mt-2 font-mono break-all">
-                                                URI: {testResult.credentialUri}
+                                                {m[
+                                                    'developerPortal.dashboards.tabs.consentFlowTesting.credentialUri'
+                                                ]({ uri: testResult.credentialUri })}
                                             </p>
                                         )}
                                     </div>
@@ -372,7 +428,9 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                                     className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
                                 >
                                     <RefreshCw className="w-4 h-4" />
-                                    Send Another
+                                    {m[
+                                        'developerPortal.dashboards.tabs.consentFlowTesting.sendAnother'
+                                    ]()}
                                 </button>
                             </div>
                         )}
@@ -383,7 +441,9 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                                     <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                                     <div className="flex-1">
                                         <p className="font-medium text-red-800 text-sm">
-                                            Send failed
+                                            {m[
+                                                'developerPortal.dashboards.tabs.consentFlowTesting.sendFailed'
+                                            ]()}
                                         </p>
                                         <p className="text-xs text-red-700 mt-1">
                                             {testResult.error}
@@ -399,7 +459,9 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                                     className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
                                 >
                                     <RefreshCw className="w-4 h-4" />
-                                    Try Again
+                                    {m[
+                                        'developerPortal.dashboards.tabs.consentFlowTesting.tryAgain'
+                                    ]()}
                                 </button>
                             </div>
                         )}
@@ -411,29 +473,39 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
                 <div className="flex items-center gap-2 mb-3">
                     <Info className="w-4 h-4 text-amber-500" />
-                    <span className="text-sm font-medium text-gray-700">Testing Tips</span>
+                    <span className="text-sm font-medium text-gray-700">
+                        {m['developerPortal.dashboards.tabs.consentFlowTesting.testingTips']()}
+                    </span>
                 </div>
 
                 <ul className="text-sm text-gray-600 space-y-2">
                     <li className="flex items-start gap-2">
                         <span className="text-gray-400">•</span>
                         <span>
-                            Use a second account to test the consent flow as a real user would
-                            experience it
+                            {m[
+                                'developerPortal.dashboards.tabs.consentFlowTesting.tipSecondAccount'
+                            ]()}
                         </span>
                     </li>
                     <li className="flex items-start gap-2">
                         <span className="text-gray-400">•</span>
                         <span>
-                            Copy the <code className="bg-gray-200 px-1 rounded text-xs">did</code>{' '}
-                            from your callback logs and paste it above
+                            <TransP
+                                m={
+                                    m[
+                                        'developerPortal.dashboards.tabs.consentFlowTesting.tipCallbackDid'
+                                    ]
+                                }
+                                components={[<code className="bg-gray-200 px-1 rounded text-xs" />]}
+                            />
                         </span>
                     </li>
                     <li className="flex items-start gap-2">
                         <span className="text-gray-400">•</span>
                         <span>
-                            Check the Connections tab after testing to verify the consent was
-                            recorded
+                            {m[
+                                'developerPortal.dashboards.tabs.consentFlowTesting.tipConnections'
+                            ]()}
                         </span>
                     </li>
                 </ul>

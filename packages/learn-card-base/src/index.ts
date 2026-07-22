@@ -102,6 +102,7 @@ export * from './config/tenantDefaults';
 export * from './config/resolveTenantConfig';
 export * from './config/TenantConfigProvider';
 export * from './config/brandingHelpers';
+export * from './storage/image-upload';
 export { SignInAdapterProvider, useSignInAdapter } from './providers/SignInAdapterProvider';
 export type { SignInAdapterProviderProps } from './providers/SignInAdapterProvider';
 export * from './hooks/useSocialLogins';
@@ -143,6 +144,7 @@ export * from './hooks/useSharedUrisInTerms';
 export * from './hooks/usePendingContractSync';
 export * from './hooks/useConsentedContracts';
 export * from './hooks/useLaunchDarklyIdentify';
+export * from './in-app-messages';
 
 export * from './SQL/useSQLiteInitWeb';
 export * from './SQL/sqliteInit';
@@ -244,7 +246,6 @@ export * from './types/boostAndCredentialMetadata';
 export * from './constants/gdprAgeLimits';
 export * from './constants/aiPassport';
 
-export * from './filestack/useFilestack';
 export * from './filestack/constants/filestack';
 export * from './filestack/images/filestack.helpers';
 export * from './types/sync-my-school';
