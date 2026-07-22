@@ -1,5 +1,43 @@
 # Changelog
 
+## 1.97.5
+
+### Patch Changes
+
+-   [#1420](https://github.com/learningeconomy/LearnCard/pull/1420) [`f19ca34c0ad6425f669304981b720619abdf0559`](https://github.com/learningeconomy/LearnCard/commit/f19ca34c0ad6425f669304981b720619abdf0559) Thanks [@Custard7](https://github.com/Custard7)! - feat: Live Notifications
+
+-   [#1266](https://github.com/learningeconomy/LearnCard/pull/1266) [`cf779d0e7d3d02d2b2c2d993986e3e1878b9cbaf`](https://github.com/learningeconomy/LearnCard/commit/cf779d0e7d3d02d2b2c2d993986e3e1878b9cbaf) Thanks [@goblincore](https://github.com/goblincore)! - feat: [LC-1898] Paraglide i18n LCA implementation and translations
+
+-   [#1266](https://github.com/learningeconomy/LearnCard/pull/1266) [`cf779d0e7d3d02d2b2c2d993986e3e1878b9cbaf`](https://github.com/learningeconomy/LearnCard/commit/cf779d0e7d3d02d2b2c2d993986e3e1878b9cbaf) Thanks [@goblincore](https://github.com/goblincore)! - i18n [LC-1989]: complete es/fr/ar App Store + Developer Portal translations + i18n guards
+
+-   [#1315](https://github.com/learningeconomy/LearnCard/pull/1315) [`9b853ae7aace370a527ac11ba2ae46ae025f22dd`](https://github.com/learningeconomy/LearnCard/commit/9b853ae7aace370a527ac11ba2ae46ae025f22dd) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add tenant-configured image upload providers and replace Filestack-specific upload hook usage with `useImageUpload`.
+
+-   Updated dependencies [[`2e5f5dba1b8b95a0fbdc24cd431d8826dc180852`](https://github.com/learningeconomy/LearnCard/commit/2e5f5dba1b8b95a0fbdc24cd431d8826dc180852)]:
+    -   @learncard/react@2.10.8
+    -   @learncard/credential-library@1.0.13
+    -   @learncard/lca-api-plugin@1.2.21
+
+## 1.97.4
+
+### Patch Changes
+
+-   [#1407](https://github.com/learningeconomy/LearnCard/pull/1407) [`0f2e8faa0e70de1917cfc7d1ab12494cb048136a`](https://github.com/learningeconomy/LearnCard/commit/0f2e8faa0e70de1917cfc7d1ab12494cb048136a) Thanks [@Custard7](https://github.com/Custard7)! - Fix selector
+
+-   [#1394](https://github.com/learningeconomy/LearnCard/pull/1394) [`147d2a5fda49ba33f20077400ac3aae633bddb05`](https://github.com/learningeconomy/LearnCard/commit/147d2a5fda49ba33f20077400ac3aae633bddb05) Thanks [@goblincore](https://github.com/goblincore)! - perf: eliminate duplicate wallet construction during app boot. getBespokeLearnCard/getSigningLearnCard now cache in-flight promises so concurrent boot callers share one build; getWalletOrFallback checks secure storage before falling back to the dummy wallet; useGetProofOfLoginVp reuses the logged-in user's wallet instead of building a throwaway 'aaa'-seed wallet (the server route ignores the caller DID).
+
+-   [#1412](https://github.com/learningeconomy/LearnCard/pull/1412) [`7e101e35f8faf1c43f5c37120dda63393a4ffe1b`](https://github.com/learningeconomy/LearnCard/commit/7e101e35f8faf1c43f5c37120dda63393a4ffe1b) Thanks [@Custard7](https://github.com/Custard7)! - fix: Badge Summit Bugs
+
+-   [#1413](https://github.com/learningeconomy/LearnCard/pull/1413) [`24bd3cd36c5aa9a3a013288909d389e0aa43dd5d`](https://github.com/learningeconomy/LearnCard/commit/24bd3cd36c5aa9a3a013288909d389e0aa43dd5d) Thanks [@Custard7](https://github.com/Custard7)! - feat: Onboarding 2.0
+
+-   [#1410](https://github.com/learningeconomy/LearnCard/pull/1410) [`daf64d05972682d6bd87b4afc7005eb0f19b0361`](https://github.com/learningeconomy/LearnCard/commit/daf64d05972682d6bd87b4afc7005eb0f19b0361) Thanks [@Custard7](https://github.com/Custard7)! - fix: Query Param Merging
+
+-   [#1410](https://github.com/learningeconomy/LearnCard/pull/1410) [`daf64d05972682d6bd87b4afc7005eb0f19b0361`](https://github.com/learningeconomy/LearnCard/commit/daf64d05972682d6bd87b4afc7005eb0f19b0361) Thanks [@Custard7](https://github.com/Custard7)! - fix: Query Param Merging
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.2.20
+    -   @learncard/credential-library@1.0.13
+    -   @learncard/react@2.10.7
+
 ## 1.97.3
 
 ### Patch Changes

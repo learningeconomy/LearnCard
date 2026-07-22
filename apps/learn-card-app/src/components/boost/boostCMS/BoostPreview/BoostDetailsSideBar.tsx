@@ -35,6 +35,7 @@ import {
 import { VC, VerificationItem } from '@learncard/types';
 import { UnsignedVC } from '@learncard/types';
 import moment from 'moment';
+import * as m from '../../../../paraglide/messages.js';
 
 type BoostDetailsSideBarProps = {
     credential: VC;
@@ -120,8 +121,8 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
             activeTabDetails = (
                 <>
                     <TruncateTextBox
-                        headerText="Details"
-                        subHeaderText={`${isMediaDisplay ? title : 'About'}`}
+                        headerText={m['common.details']()}
+                        subHeaderText={`${isMediaDisplay ? title : m['common.about']()}`}
                         text={description}
                         displayTextBelowChildren={isMediaDisplay}
                         subHeaderTextClassName="text-[17px] text-grayscale-900 font-semibold"
@@ -170,7 +171,12 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
 
                     <SdJwtVcClaimsBox credential={credential} />
 
-                    {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
+                    {criteria && (
+                        <TruncateTextBox
+                            headerText={m['boost.cms.preview.criteria']()}
+                            text={criteria}
+                        />
+                    )}
 
                     <CredentialIssuerInformation credential={credential} />
 
@@ -209,7 +215,12 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                             />
                         )}
 
-                    {alignment && <AlignmentsBox alignment={alignment} style="Certificate" />}
+                    {alignment && (
+                        <AlignmentsBox
+                            alignment={alignment}
+                            style={m['boost.cms.preview.certificate']()}
+                        />
+                    )}
 
                     {isPreview ? (
                         <PreviewVerificationBox />

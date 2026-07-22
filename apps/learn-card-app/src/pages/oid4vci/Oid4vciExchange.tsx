@@ -22,6 +22,7 @@ import {
     getDefaultCategoryForCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { fetchCredentialIssuerMetadata } from '@learncard/openid4vc-plugin';
+import { BOOST_CATEGORY_TO_WALLET_ROUTE } from '../../components/boost/boost-options/boostOptions';
 import type { VC } from '@learncard/types';
 import type {
     AcceptedCredentialResult,
@@ -202,7 +203,9 @@ const Oid4vciExchange: React.FC = () => {
                 // handles unbranded issuers gracefully.
                 let metadata: CredentialIssuerMetadata | undefined;
                 try {
-                    metadata = await fetchCredentialIssuerMetadata(persisted.flowHandle.issuer);
+                    ({ metadata } = await fetchCredentialIssuerMetadata(
+                        persisted.flowHandle.issuer
+                    ));
                 } catch (metadataError) {
                     log.warn(
                         'OID4VCI auth-code return: failed to refetch metadata for success-screen branding',
@@ -256,7 +259,9 @@ const Oid4vciExchange: React.FC = () => {
                 // without it. We don\u2019t block consent on this network call.
                 let metadata: CredentialIssuerMetadata | undefined;
                 try {
-                    metadata = await fetchCredentialIssuerMetadata(resolved.credential_issuer);
+                    ({ metadata } = await fetchCredentialIssuerMetadata(
+                        resolved.credential_issuer
+                    ));
                 } catch (metadataError) {
                     log.warn(
                         'OID4VCI: failed to fetch issuer metadata, falling back to URL display',
@@ -398,8 +403,19 @@ const Oid4vciExchange: React.FC = () => {
     );
 
     const handleViewWallet = useCallback(() => {
-        history.push('/');
-    }, [history]);
+        if (phase.kind === 'finished' && phase.stored.length === 1) {
+            const category = phase.stored[0]?.category;
+            const route =
+                BOOST_CATEGORY_TO_WALLET_ROUTE[
+                    category as keyof typeof BOOST_CATEGORY_TO_WALLET_ROUTE
+                ];
+
+            history.push(route ? `/${route}` : '/passport');
+            return;
+        }
+
+        history.push('/passport');
+    }, [history, phase]);
 
     const handleRetry = useCallback(() => {
         if (phase.kind !== 'error' || !phase.retryOffer) return;

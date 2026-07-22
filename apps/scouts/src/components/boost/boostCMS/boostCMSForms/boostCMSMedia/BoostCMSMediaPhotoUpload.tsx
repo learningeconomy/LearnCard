@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Keyboard } from '@capacitor/keyboard';
-import { useFilestack, UploadRes, BoostCMSMediaState } from 'learn-card-base';
+import { useImageUpload, UploadRes, BoostCMSMediaState } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { IonCol, IonRow, IonInput } from '@ionic/react';
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
@@ -75,7 +75,7 @@ const BoostCMSMediaPhotoUpload: React.FC<{
         );
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         // options: { onProgress: event => setUploadProgress(event.totalPercent) },

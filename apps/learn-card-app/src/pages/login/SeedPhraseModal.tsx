@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 import { IonInput } from '@ionic/react';
 import {
     useModal,
@@ -34,10 +36,10 @@ const SeedPhraseModal: React.FC = () => {
     const regex = /^[0-9a-fA-F]+$/;
     const handleLogin = async () => {
         if (!regex.test(seed)) {
-            setErrorMessage('Seed must only contain numbers and letters (a–f).');
+            setErrorMessage(m['login.seedPhrase.error.invalidChars']());
             return;
         } else if (seed.length < 64) {
-            setErrorMessage('Seed phrase needs to be 64 characters long.');
+            setErrorMessage(m['login.seedPhrase.error.tooShort']());
             return;
         }
         setErrorMessage('');
@@ -74,7 +76,7 @@ const SeedPhraseModal: React.FC = () => {
             closeModal();
             history.push('/wallet');
         } catch (e) {
-            setErrorMessage('Something went wrong. Please try again.');
+            setErrorMessage(m['login.seedPhrase.error.generic']());
             log.info('login error:', e);
         }
     };
@@ -82,26 +84,33 @@ const SeedPhraseModal: React.FC = () => {
     return (
         <section className="p-[20px] bg-white h-full">
             <h1 className="font-poppins text-[22px] font-medium leading-[28.6px] tracking-[-0.25px] mb-[20px] text-grayscale-900">
-                Use a Seed Phrase to Import Your Passport
+                {m['login.seedPhrase.title']()}
             </h1>
             <p className="font-poppins text-[14px] font-normal leading-[18.2px] tracking-[-0.25px] mb-[20px] text-grayscale-900">
-                Enter your <span className="font-semibold">64-character</span> or{' '}
-                <span className="font-semibold">word phrase seed</span> below to regain access to an
-                existing {brandingConfig?.name} passport.
+                <TransP
+                    m={m['login.seedPhrase.description']}
+                    values={{ brand: brandingConfig?.name }}
+                    components={[
+                        <span className="font-semibold" key="0" />,
+                        <React.Fragment key="1" />,
+                        <span className="font-semibold" key="2" />,
+                    ]}
+                />
             </p>
             <p className="font-poppins text-[14px] font-normal leading-[18.2px] tracking-[-0.25px] mb-[20px] text-grayscale-900">
-                This is an advanced option for users who already saved their seed during passport
-                creation. If you don’t have a seed, you will need to go back and{' '}
-                <button
-                    onClick={closeModal}
-                    className={`text-${primaryColor} font-semibold underline`}
-                >
-                    create a new passport
-                </button>{' '}
-                instead.
+                <TransP
+                    m={m['login.seedPhrase.advancedOption']}
+                    components={[
+                        <button
+                            key="0"
+                            onClick={closeModal}
+                            className={`text-${primaryColor} font-semibold underline`}
+                        />,
+                    ]}
+                />
             </p>
             <IonInput
-                placeholder="Paste your seed phrase or key here..."
+                placeholder={m['login.seedPhrase.placeholder']()}
                 value={seed}
                 className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-normal text-[14px]"
                 onIonInput={e => setSeed(e?.detail?.value)}
@@ -111,13 +120,13 @@ const SeedPhraseModal: React.FC = () => {
                 <div className="flex items-center">
                     <AlertTriangle />
                     <h2 className="ml-[5px] text-orange-700 font-poppins text-[17px] font-semibold">
-                        Important!
+                        {m['login.seedPhrase.important.heading']()}
                     </h2>
                 </div>
                 <ul className="list-disc pl-6 text-orange-700 font-poppins font-normal text-[14px]">
-                    <li>Keep your seed safe and offline.</li>
-                    <li>Never share it with anyone.</li>
-                    <li>If someone else has your seed, they can control your passport.</li>
+                    <li>{m['login.seedPhrase.important.rule1']()}</li>
+                    <li>{m['login.seedPhrase.important.rule2']()}</li>
+                    <li>{m['login.seedPhrase.important.rule3']()}</li>
                 </ul>
             </section>
             {errorMessage && <p className="text-red-500 text-sm mt-2 mb-[-10px]">{errorMessage}</p>}
@@ -126,14 +135,14 @@ const SeedPhraseModal: React.FC = () => {
                     onClick={closeModal}
                     className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full max-w-[170px] h-full mt-[20px] mr-[10px] border-grayscale-200 border-solid border-[1px] shadow-[0px_3px_4px_0px_rgba(0,0,0,0.25)]"
                 >
-                    Back
+                    {m['login.seedPhrase.back']()}
                 </button>
                 <button
                     disabled={seed === ''}
                     className={`bg-${primaryColor} text-white text-lg font-notoSans py-2 rounded-[20px] font-semibold w-full max-w-[350px] h-full shadow-[0px_3px_4px_0px_rgba(0,0,0,0.25)] disabled:opacity-50`}
                     onClick={handleLogin}
                 >
-                    Import Passport
+                    {m['login.seedPhrase.import']()}
                 </button>
             </div>
         </section>

@@ -3,7 +3,7 @@ import { Buffer } from 'buffer';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { asyncWithLDProvider } from 'launchdarkly-react-client-sdk';
-import { LAUNCH_DARKLY_CONFIG } from './constants/launchDarkly';
+import { ANONYMOUS_CONTEXT } from './constants/launchDarkly';
 import { TenantConfigProvider } from 'learn-card-base';
 
 import App from './App';
@@ -35,7 +35,10 @@ const log = getLogger('index');
     // initialize & hide splash screen
     SplashScreen.hide();
 
-    const LDProvider = await asyncWithLDProvider(LAUNCH_DARKLY_CONFIG);
+    const LDProvider = await asyncWithLDProvider({
+        clientSideID: tenantConfig.observability.launchDarklyClientId,
+        context: ANONYMOUS_CONTEXT,
+    });
     const container = document.getElementById('root');
     if (container) {
         const root = createRoot(container);

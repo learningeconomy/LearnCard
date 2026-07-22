@@ -1,3 +1,5 @@
+import * as m from '../../../../paraglide/messages.js';
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
     Building2,
@@ -221,10 +223,12 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                     </div>
 
                     <div className="flex-1">
-                        <h3 className="font-semibold text-gray-800">Select Project</h3>
+                        <h3 className="font-semibold text-gray-800">
+                            {m['developerPortal.onboarding.projectSetup.selectProject']()}
+                        </h3>
                         {!projectSelected && (
                             <p className="text-sm text-gray-500">
-                                Choose an existing project or create a new one
+                                {m['developerPortal.onboarding.projectSetup.selectProjectDesc']()}
                             </p>
                         )}
                     </div>
@@ -234,7 +238,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                 {integrationsLoading && !projectSelected && (
                     <div className="flex items-center gap-2 p-4 bg-gray-50 rounded-xl text-gray-500 ml-11">
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        Loading projects...
+                        {m['developerPortal.onboarding.projectSetup.loadingProjects']()}
                     </div>
                 )}
 
@@ -257,7 +261,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                             }}
                             className="text-sm text-emerald-600 hover:text-emerald-800 font-medium"
                         >
-                            Change
+                            {m['developerPortal.onboarding.projectSetup.change']()}
                         </button>
                     </div>
                 )}
@@ -286,7 +290,11 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                                                         {integration.name}
                                                     </p>
                                                     <p className="text-xs text-gray-500">
-                                                        ID: {integration.id.slice(0, 12)}...
+                                                        {m[
+                                                            'developerPortal.onboarding.projectSetup.idLabel'
+                                                        ]({
+                                                            id: integration.id.slice(0, 12) + '...',
+                                                        })}
                                                     </p>
                                                 </div>
                                             </button>
@@ -299,7 +307,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                                         </div>
                                         <div className="relative flex justify-center">
                                             <span className="px-2 bg-white text-xs text-gray-500">
-                                                or
+                                                {m['developerPortal.onboarding.projectSetup.or']()}
                                             </span>
                                         </div>
                                     </div>
@@ -309,7 +317,9 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                                         className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-cyan-400 hover:text-cyan-600 transition-colors"
                                     >
                                         <Building2 className="w-4 h-4" />
-                                        Create New Project
+                                        {m[
+                                            'developerPortal.onboarding.projectSetup.createNewProject'
+                                        ]()}
                                     </button>
                                 </>
                             )}
@@ -326,7 +336,10 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                                             onClick={() => setShowCreateNew(false)}
                                             className="text-sm text-gray-500 hover:text-gray-700"
                                         >
-                                            ← Back to existing projects
+                                            ←{' '}
+                                            {m[
+                                                'developerPortal.onboarding.projectSetup.backToExisting'
+                                            ]()}
                                         </button>
                                     )}
 
@@ -335,7 +348,9 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                                         type="text"
                                         value={projectName}
                                         onChange={e => setProjectName(e.target.value)}
-                                        placeholder="e.g., AARP Skills Builder"
+                                        placeholder={m[
+                                            'developerPortal.onboarding.projectSetup.projectNamePlaceholder'
+                                        ]()}
                                         className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
                                     />
 
@@ -347,7 +362,9 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                                         {isCreating ? (
                                             <>
                                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                                Creating...
+                                                {m[
+                                                    'developerPortal.onboarding.projectSetup.creating'
+                                                ]()}
                                             </>
                                         ) : (
                                             'Create'
@@ -373,10 +390,14 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                         </div>
 
                         <div className="flex-1">
-                            <h3 className="font-semibold text-gray-800">Get Credentials</h3>
+                            <h3 className="font-semibold text-gray-800">
+                                {m['developerPortal.onboarding.projectSetup.getCredentials']()}
+                            </h3>
                             {!apiToken && (
                                 <p className="text-sm text-gray-500">
-                                    Your DID and API key for issuing credentials
+                                    {m[
+                                        'developerPortal.onboarding.projectSetup.getCredentialsDesc'
+                                    ]()}
                                 </p>
                             )}
                         </div>
@@ -392,7 +413,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                                 <div className="flex items-center gap-2">
                                     <Fingerprint className="w-4 h-4 text-violet-500" />
                                     <span className="text-sm font-medium text-gray-700">
-                                        Issuer DID
+                                        {m['developerPortal.onboarding.projectSetup.issuerDid']()}
                                     </span>
                                 </div>
 
@@ -430,7 +451,9 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                                     </div>
 
                                     <p className="text-xs text-gray-500 mt-2">
-                                        Your decentralized identifier for signing credentials
+                                        {m[
+                                            'developerPortal.onboarding.projectSetup.issuerDidDesc'
+                                        ]()}
                                     </p>
                                 </div>
                             )}
@@ -440,7 +463,9 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                         <div className="space-y-3">
                             <div className="flex items-center gap-2">
                                 <Key className="w-4 h-4 text-amber-500" />
-                                <span className="text-sm font-medium text-gray-700">API Key</span>
+                                <span className="text-sm font-medium text-gray-700">
+                                    {m['developerPortal.onboarding.projectSetup.apiKey']()}
+                                </span>
                             </div>
 
                             {loadingGrants || isCreatingGrant ? (
@@ -480,7 +505,9 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
 
                                     <p className="text-xs text-amber-600 flex items-center gap-1">
                                         <Shield className="w-3 h-3" />
-                                        Store securely. Never commit to code.
+                                        {m[
+                                            'developerPortal.onboarding.projectSetup.storeSecurely'
+                                        ]()}
                                     </p>
                                 </div>
                             ) : (
@@ -499,10 +526,13 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                                                                 {grant.name}
                                                             </p>
                                                             <p className="text-xs text-gray-500">
-                                                                Created{' '}
-                                                                {new Date(
-                                                                    grant.createdAt!
-                                                                ).toLocaleDateString()}
+                                                                {m[
+                                                                    'developerPortal.onboarding.projectSetup.created'
+                                                                ]({
+                                                                    date: new Date(
+                                                                        grant.createdAt!
+                                                                    ).toLocaleDateString(),
+                                                                })}
                                                             </p>
                                                         </div>
                                                     </button>
@@ -515,7 +545,9 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                                                 </div>
                                                 <div className="relative flex justify-center">
                                                     <span className="px-2 bg-white text-xs text-gray-500">
-                                                        or
+                                                        {m[
+                                                            'developerPortal.onboarding.projectSetup.or'
+                                                        ]()}
                                                     </span>
                                                 </div>
                                             </div>
@@ -528,7 +560,9 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                                         className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:border-cyan-400 hover:text-cyan-600 transition-colors text-sm"
                                     >
                                         <RefreshCw className="w-4 h-4" />
-                                        Create New API Key
+                                        {m[
+                                            'developerPortal.onboarding.projectSetup.createNewApiKey'
+                                        ]()}
                                     </button>
                                 </div>
                             )}
@@ -545,7 +579,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                         className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        Back
+                        {m['developerPortal.onboarding.projectSetup.back']()}
                     </button>
                 )}
 
@@ -556,7 +590,7 @@ export const ProjectSetupStep: React.FC<ProjectSetupStepProps> = ({
                     disabled={!canProceed}
                     className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                    Continue to Branding
+                    {m['developerPortal.onboarding.projectSetup.continueToBranding']()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>

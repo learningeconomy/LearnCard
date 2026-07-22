@@ -1,5 +1,7 @@
 import React from 'react';
 
+import * as m from '../../paraglide/messages.js';
+
 import Trophy from 'learn-card-base/svgs/Trophy';
 import SproutIcon from 'learn-card-base/svgs/SproutIcon';
 import WrenchIcon from 'learn-card-base/svgs/WrenchIcon';
@@ -57,21 +59,21 @@ const AiInsightsLearningSnapshots: React.FC<{
 
     const insights: AiInsightsLearningSnapshot[] = [
         {
-            label: 'Strongest Area',
+            label: m['aiInsights.strongestArea'](),
             title: resolvedAiInsightCredential?.insights?.strongestArea?.title,
             description: resolvedAiInsightCredential?.insights?.strongestArea?.summary,
             type: AiInsightsLearningSnapshotType.StrongestArea,
             icon: <Trophy className="w-[25px] h-[25px] text-emerald-700" />,
         },
         {
-            label: 'Weakness',
+            label: m['aiInsights.weakness'](),
             title: resolvedAiInsightCredential?.insights?.weakestArea?.title,
             description: resolvedAiInsightCredential?.insights?.weakestArea?.summary,
             type: AiInsightsLearningSnapshotType.Weakness,
             icon: <WrenchIcon className="w-[25px] h-[25px] text-orange-600" />,
         },
         {
-            label: 'Room for Growth',
+            label: m['aiInsights.roomForGrowth'](),
             title: resolvedAiInsightCredential?.insights?.roomForGrowth?.title,
             description: resolvedAiInsightCredential?.insights?.roomForGrowth?.summary,
             type: AiInsightsLearningSnapshotType.RoomForGrowth,
@@ -102,7 +104,7 @@ const AiInsightsLearningSnapshots: React.FC<{
                 <div className="flex items-center justify-start">
                     <AiPathwaysIconWithShape className="w-auto h-[40px]" />
                     <h2 className="text-base sm:text-xl text-grayscale-800 font-notoSans text-left">
-                        Learning Snapshots
+                        {m['aiInsights.learningSnapshots']()}
                     </h2>
                 </div>
                 {showRegenerate && (
@@ -117,7 +119,9 @@ const AiInsightsLearningSnapshots: React.FC<{
                                 isLoading || isRegenerating ? 'animate-spin' : ''
                             }`}
                         />
-                        {isLoading || isRegenerating ? 'Regenerating...' : 'Regenerate'}
+                        {isLoading || isRegenerating
+                            ? m['aiInsights.regenLoad']()
+                            : m['aiInsights.regenerate']()}
                     </button>
                 )}
             </div>

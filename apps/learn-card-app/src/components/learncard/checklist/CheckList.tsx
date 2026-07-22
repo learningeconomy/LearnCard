@@ -1,5 +1,8 @@
 import React from 'react';
 
+import * as m from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
+
 import CheckListItem from './CheckListItem';
 
 import {
@@ -18,8 +21,14 @@ export const CheckList: React.FC<{ activeChecklistStep?: ChecklistEnum }> = ({
         <div className="w-full bg-white items-center justify-center flex flex-col shadow-2xl p-[15px] mt-4 rounded-[15px]">
             <div className="w-full flex items-center justify-start py-[10px]">
                 <h4 className="text-[20px] text-grayscale-900 font-notoSans">
-                    <span className="font-semibold">{completedItems}</span> of{' '}
-                    <span className="font-semibold">{checklistItems.length}</span> Steps Completed
+                    <TransP
+                        m={m['passport.buildMyLearnCard.stepsCompleted']}
+                        values={{ completed: completedItems, total: checklistItems.length }}
+                        components={[
+                            <span className="font-semibold" />,
+                            <span className="font-semibold" />,
+                        ]}
+                    />
                 </h4>
             </div>
             <div className="w-full flex items-center justify-start">

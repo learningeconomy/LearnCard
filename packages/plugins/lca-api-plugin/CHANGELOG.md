@@ -1,5 +1,21 @@
 # lca-api-plugin
 
+## 1.2.21
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.4.8
+    -   @learncard/lca-api-client@1.2.3
+
+## 1.2.20
+
+### Patch Changes
+
+-   Updated dependencies [[`147d2a5fda49ba33f20077400ac3aae633bddb05`](https://github.com/learningeconomy/LearnCard/commit/147d2a5fda49ba33f20077400ac3aae633bddb05)]:
+    -   @learncard/lca-api-client@1.2.3
+    -   @learncard/init@2.4.7
+
 ## 1.2.19
 
 ### Patch Changes

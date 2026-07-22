@@ -7,6 +7,7 @@ import SlimCaretRight from '../../components/svgs/SlimCaretRight';
 import SkillBreadcrumbText from '../SkillFrameworks/SkillBreadcrumbText';
 import BrowseFrameworkPage from '../SkillFrameworks/BrowseFrameworkPage';
 import FrameworkSkillsCount from '../SkillFrameworks/FrameworkSkillsCount';
+import * as m from '../../paraglide/messages.js';
 
 type SkillFrameworkInfoBoxProps = {
     frameworkId: string;
@@ -36,7 +37,9 @@ const SkillFrameworkInfoBox: React.FC<SkillFrameworkInfoBoxProps> = ({ framework
 
     return (
         <div className="flex flex-col gap-[20px] p-[15px] bg-white rounded-[15px] shadow-bottom-2-4 w-full">
-            <p className="font-poppins text-[17px] text-grayscale-900">Framework</p>
+            <p className="font-poppins text-[17px] text-grayscale-900">
+                {m['skills.framework.framework']()}
+            </p>
 
             <div className="flex items-center gap-[10px]">
                 <FrameworkImage
@@ -61,7 +64,9 @@ const SkillFrameworkInfoBox: React.FC<SkillFrameworkInfoBoxProps> = ({ framework
                             onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
                             className="text-grayscale-700 font-poppins text-[14px] font-[600] ml-1"
                         >
-                            {isDescriptionExpanded ? 'Show Less' : 'Show More'}
+                            {isDescriptionExpanded
+                                ? m['skills.misc.showLess']()
+                                : m['skills.misc.showMore']()}
                         </button>
                     )}
                 </p>
@@ -69,7 +74,7 @@ const SkillFrameworkInfoBox: React.FC<SkillFrameworkInfoBoxProps> = ({ framework
 
             <div className="flex flex-col gap-[5px]">
                 <span className="uppercase font-poppins text-[14px] text-grayscale-700">
-                    Location in Framework
+                    {m['skills.framework.locationInFramework']()}
                 </span>
 
                 <SkillBreadcrumbText frameworkId={frameworkId} skillId={skillId} includeSkill />
@@ -80,7 +85,7 @@ const SkillFrameworkInfoBox: React.FC<SkillFrameworkInfoBoxProps> = ({ framework
                     onClick={openBrowseFrameworkModal}
                     className="text-grayscale-900 font-poppins text-[17px] leading-[130%] flex items-center gap-[5px] w-full"
                 >
-                    Browse
+                    {m['skills.framework.browse']()}
                     <div className="flex items-center ml-auto text-[14px]">
                         <FrameworkSkillsCount
                             frameworkId={frameworkId}

@@ -1,5 +1,23 @@
 # @learncard/cli
 
+## 3.4.10
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.4.8
+    -   @learncard/holder-continuity@0.2.10
+
+## 3.4.9
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-plugin@2.3.33
+    -   @learncard/simple-signing-plugin@1.1.32
+    -   @learncard/init@2.4.7
+    -   @learncard/holder-continuity@0.2.9
+
 ## 3.4.8
 
 ### Patch Changes

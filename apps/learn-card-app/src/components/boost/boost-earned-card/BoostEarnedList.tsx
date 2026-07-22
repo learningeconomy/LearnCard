@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 
+import * as m from '../../../paraglide/messages.js';
 import { useLoadingLine } from '../../../stores/loadingStore';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
@@ -14,7 +15,6 @@ import {
     BoostPageViewMode,
     BoostPageViewModeType,
     searchCredentialsFromCache,
-    pluralize,
 } from 'learn-card-base';
 import {
     credentialCategoryToSubheaderType,
@@ -90,7 +90,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
         * end **
     */
 
-    const { bgColor: noResultsLineColor, title: categoryTitle } =
+    const { bgColor: noResultsLineColor } =
         SubheaderContentType[credentialCategoryToSubheaderType(category)];
 
     const credentialsBackgroundFetching = credentialsFetching && !credentialsLoading;
@@ -162,14 +162,15 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
     const searchResultsElement = (
         <div className={`flex flex-col gap-[5px] mt-[6px] ${isCardView ? 'px-[15px]' : ''}`}>
             <span className="font-notoSans text-grayscale-900 text-[14px] font-[700]">
-                {searchString?.trim?.() === '' && `Search ${searchResultsCount} earned boosts`}
-                {noSearchResults && `No earned ${categoryTitle} titled "${searchString}"`}
+                {searchString?.trim?.() === '' &&
+                    m['boost.search.searchEarned']({ count: searchResultsCount })}
+                {noSearchResults && m['boost.search.noResultsTitled']({ query: searchString })}
                 {searchResultsCount > 0 &&
                     searchString?.trim?.() !== '' &&
-                    `Found ${searchResultsCount} ${pluralize(
-                        'result',
-                        searchResultsCount
-                    )} for "${searchString}" `}
+                    m['boost.search.foundResults']({
+                        count: searchResultsCount,
+                        query: searchString,
+                    })}
             </span>
             <div className={`h-[1px] bg-sp-blue-ocean mb-[5px] ${noResultsLineColor}`} />
         </div>

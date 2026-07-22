@@ -1,6 +1,8 @@
 import React from 'react';
 import numeral from 'numeral';
 
+import * as m from '../../paraglide/messages.js';
+
 import DotIcon from 'learn-card-base/svgs/DotIcon';
 
 import { CredentialCategoryEnum } from 'learn-card-base';
@@ -8,6 +10,28 @@ import { IonSkeletonText, IonSpinner } from '@ionic/react';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 import { StyleSetEnum } from '../../theme/styles';
+
+/**
+ * Maps each CredentialCategoryEnum value to the existing translated tile
+ * label in wallet.categories.*. Lets us render the Passport tile title in the
+ * active locale instead of the hardcoded EN string in DEFAULT_CATEGORIES'
+ * `labels.plural`. Falls back to the hardcoded label for any category not in
+ * this map (custom-theme categories, etc.).
+ */
+const CATEGORY_TITLE: Partial<Record<CredentialCategoryEnum, () => string>> = {
+    [CredentialCategoryEnum.aiTopic]: m['wallet.categories.aiSessions'],
+    [CredentialCategoryEnum.aiPathway]: m['wallet.categories.aiPathways'],
+    [CredentialCategoryEnum.aiInsight]: m['wallet.categories.aiInsights'],
+    [CredentialCategoryEnum.skill]: m['wallet.categories.skills'],
+    [CredentialCategoryEnum.socialBadge]: m['wallet.categories.socialBadges'],
+    [CredentialCategoryEnum.achievement]: m['wallet.categories.achievements'],
+    [CredentialCategoryEnum.learningHistory]: m['wallet.categories.studies'],
+    [CredentialCategoryEnum.accomplishment]: m['wallet.categories.portfolio'],
+    [CredentialCategoryEnum.accommodation]: m['wallet.categories.assistance'],
+    [CredentialCategoryEnum.workHistory]: m['wallet.categories.experiences'],
+    [CredentialCategoryEnum.family]: m['wallet.categories.families'],
+    [CredentialCategoryEnum.id]: m['wallet.categories.ids'],
+};
 interface WalletPageSquareProps {
     handleClickSquare: (subtype: CredentialCategoryEnum) => void;
     walletPageItem: {
@@ -48,7 +72,11 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
         categoryType === CredentialCategoryEnum.aiInsight ||
         categoryType === CredentialCategoryEnum.aiPathway
     ) {
-        metaData = <p className="text-white font-poppins font-semibold text-base">Explore</p>;
+        metaData = (
+            <p className="text-white font-poppins font-semibold text-base">
+                {m['passport.explore']()}
+            </p>
+        );
         metaDataContainerStyles = 'w-[80px]';
     }
 
@@ -71,7 +99,9 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
             onClick={() => handleClickSquare(categoryType)}
         >
             <div
-                className={`w-[160px] flex-1 rounded-[25px] shadow-bottom-2-6 px-4 pb-6  flex flex-col items-center justify-between border-[3px] border-white ${cardStyles} ${!passportCardBgColor ? `bg-${primaryColor}` : ''} ${styles?.cardStyles}`}
+                className={`w-[160px] flex-1 rounded-[25px] shadow-bottom-2-6 px-4 pb-6  flex flex-col items-center justify-between border-[3px] border-white ${cardStyles} ${
+                    !passportCardBgColor ? `bg-${primaryColor}` : ''
+                } ${styles?.cardStyles}`}
                 style={passportCardBgColor ? { backgroundColor: passportCardBgColor } : undefined}
             >
                 <div className="w-full flex items-center justify-center relative">
@@ -83,8 +113,12 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
                 </div>
 
                 <div className="w-full flex items-center justify-center flex-col relative">
-                    <p className={`font-poppins text-[18px] font-[600] xs:text-[14px] text-center ${passportCardTextColor ?? 'text-grayscale-900'}`}>
-                        {walletPageItem.labels.plural}
+                    <p
+                        className={`font-poppins text-[18px] font-[600] xs:text-[14px] text-center ${
+                            passportCardTextColor ?? 'text-grayscale-900'
+                        }`}
+                    >
+                        {CATEGORY_TITLE[categoryType]?.() ?? walletPageItem.labels.plural}
                     </p>
                     {/* TODO: ADD SKELETON LOADER HERE ... i want the skeleton loader to retain the same width and height as the div + color but with a skeleton loader */}
                     <div

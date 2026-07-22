@@ -2,6 +2,7 @@ import React from 'react';
 import WarningIcon from '../../../../svgs/WarningIcon';
 
 import { useModal } from 'learn-card-base';
+import * as m from '../../../../../paraglide/messages.js';
 
 export const BoostCMSMediaDisplayWarning: React.FC<{ handleShowMediaOptions: () => void }> = ({
     handleShowMediaOptions,
@@ -11,11 +12,10 @@ export const BoostCMSMediaDisplayWarning: React.FC<{ handleShowMediaOptions: () 
         <div className="flex flex-col gap-[5px] items-center justify-center px-6 py-6">
             <WarningIcon className="!h-[30px] !w-[30px] text-grayscale-800" />
             <h4 className="text-grayscale-800 w-full text-center font-semibold text-lg">
-                Media Attachment Required
+                {m['boost.cms.media.attachmentRequired']()}
             </h4>
             <p className="text-grayscale-600 w-full text-base">
-                This credential uses a media-based display. Please attach a document, image, or link
-                to showcase.{' '}
+                {m['boost.cms.media.attachmentRequiredDescription']()}{' '}
                 <span
                     role="button"
                     className="text-indigo-800 font-semibold"
@@ -24,7 +24,7 @@ export const BoostCMSMediaDisplayWarning: React.FC<{ handleShowMediaOptions: () 
                         handleShowMediaOptions();
                     }}
                 >
-                    Add media attachment
+                    {m['boost.cms.media.addMediaAttachment']()}
                 </span>
             </p>
         </div>

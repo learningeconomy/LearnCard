@@ -16,6 +16,8 @@ import BoostWizardIcon from 'learn-card-base/svgs/BoostWizardIcon';
 import X from 'learn-card-base/svgs/X';
 import { BoostUserTypeEnum } from '../boost-options/boostOptions';
 
+import * as m from '../../../paraglide/messages.js';
+
 type BoostTemplateSelectorFooterProps = {
     selectedCategory: BoostCategoryOptionsEnum;
     otherUserProfileId?: string;
@@ -85,7 +87,7 @@ const BoostTemplateSelectorFooter: React.FC<BoostTemplateSelectorFooterProps> = 
                 }}
                 className="bg-cyan-101 text-grayscale-900 text-[17px] px-[20px] py-[5px] rounded-[40px] font-poppins font-[600] w-full flex gap-[5px] justify-center items-center shadow-button-bottom border-[2px] border-solid border-white mb-[10px] max-w-[600px] mx-auto"
             >
-                AI Badge Wizard
+                {m['boost.wizard.title']()}
                 <BoostWizardIcon className="h-[35px] w-[35px]" />
             </button>
             <div className="max-w-[600px] flex items-center justify-between mx-auto w-full gap-[10px]">
@@ -101,7 +103,7 @@ const BoostTemplateSelectorFooter: React.FC<BoostTemplateSelectorFooterProps> = 
                         onClick={closeModal}
                         className="bg-white flex-1 p-[7px] text-grayscale-900 font-poppins text-[17px] rounded-[30px] border-[1px] border-solid border-grayscale-200 shadow-button-bottom h-[44px]"
                     >
-                        Cancel
+                        {m['common.cancel']()}
                     </button>
                 )}
                 <button
@@ -110,7 +112,7 @@ const BoostTemplateSelectorFooter: React.FC<BoostTemplateSelectorFooterProps> = 
                         isAll ? 'border-solid border-[2px] border-white !h-[44px]' : ''
                     }`}
                 >
-                    New Template
+                    {m['boost.template.newTemplate']()}
                     <CredentialGeneralPlus className={`h-[30px] w-[30px]`} />
                 </button>
             </div>

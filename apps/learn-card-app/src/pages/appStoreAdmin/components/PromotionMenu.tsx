@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Star, TrendingUp, Minus, ArrowDown } from 'lucide-react';
 
 import { PROMOTION_LEVEL_INFO, type PromotionLevel } from '../../appStoreDeveloper/types';
+import * as m from '../../../paraglide/messages.js';
 
 const PROMOTION_ICONS: Record<PromotionLevel, React.FC<{ className?: string }>> = {
     FEATURED_CAROUSEL: Star,
@@ -16,6 +17,26 @@ interface PromotionMenuProps {
     onPromotionChange: (listingId: string, level: PromotionLevel) => void;
 }
 
+const getPromotionLabel = (level: PromotionLevel): string => {
+    const map: Record<PromotionLevel, () => string> = {
+        FEATURED_CAROUSEL: () => m['appStoreAdmin.listing.promotion.featuredCarousel'](),
+        CURATED_LIST: () => m['appStoreAdmin.listing.promotion.curatedList'](),
+        STANDARD: () => m['appStoreAdmin.listing.promotion.standard'](),
+        DEMOTED: () => m['appStoreAdmin.listing.promotion.demoted'](),
+    };
+    return map[level]();
+};
+
+const getPromotionDescription = (level: PromotionLevel): string => {
+    const map: Record<PromotionLevel, () => string> = {
+        FEATURED_CAROUSEL: () => m['appStoreAdmin.listing.promotion.featuredCarouselDesc'](),
+        CURATED_LIST: () => m['appStoreAdmin.listing.promotion.curatedListDesc'](),
+        STANDARD: () => m['appStoreAdmin.listing.promotion.standardDesc'](),
+        DEMOTED: () => m['appStoreAdmin.listing.promotion.demotedDesc'](),
+    };
+    return map[level]();
+};
+
 export const PromotionMenu: React.FC<PromotionMenuProps> = ({
     currentLevel,
     listingId,
@@ -25,7 +46,9 @@ export const PromotionMenu: React.FC<PromotionMenuProps> = ({
 
     return (
         <div>
-            <h3 className="text-sm font-medium text-gray-600 mb-2">Promotion Level</h3>
+            <h3 className="text-sm font-medium text-gray-600 mb-2">
+                {m['appStoreAdmin.listing.promotionTitle']()}
+            </h3>
 
             <div className="relative">
                 <button
@@ -33,7 +56,9 @@ export const PromotionMenu: React.FC<PromotionMenuProps> = ({
                     className="w-full p-3 bg-gray-50 rounded-lg flex items-center justify-between hover:bg-gray-100 transition-colors"
                 >
                     <span className="text-sm text-gray-600">
-                        {currentLevel ? PROMOTION_LEVEL_INFO[currentLevel].label : 'Standard'}
+                        {currentLevel
+                            ? getPromotionLabel(currentLevel)
+                            : m['appStoreAdmin.listing.promotion.standard']()}
                     </span>
                     <ArrowDown className="w-4 h-4 text-gray-400" />
                 </button>
@@ -62,9 +87,11 @@ export const PromotionMenu: React.FC<PromotionMenuProps> = ({
                                     <Icon className="w-4 h-4 text-gray-400" />
                                     <div>
                                         <p className="text-sm font-medium text-gray-600">
-                                            {info.label}
+                                            {getPromotionLabel(level)}
                                         </p>
-                                        <p className="text-xs text-gray-400">{info.description}</p>
+                                        <p className="text-xs text-gray-400">
+                                            {getPromotionDescription(level)}
+                                        </p>
                                     </div>
                                 </button>
                             );

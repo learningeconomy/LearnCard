@@ -42,6 +42,7 @@
  */
 
 import React, { useState } from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 import { IonIcon } from '@ionic/react';
 import { cloudDownloadOutline, sparklesOutline } from 'ionicons/icons';
@@ -259,7 +260,7 @@ const DiscoverStart: React.FC<DiscoverStartProps> = ({
                         className="w-full text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors
                                    disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                        Skip for now
+                        {m['common.skipForNow']()}
                     </button>
                 </div>
             </section>

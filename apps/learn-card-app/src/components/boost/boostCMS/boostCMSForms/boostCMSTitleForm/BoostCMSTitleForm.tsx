@@ -6,6 +6,7 @@ import { useAnalytics, AnalyticsEvents } from '@analytics';
 
 import { BoostCMSState } from '../../../boost';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
+import * as m from '../../../../../paraglide/messages.js';
 
 const BoostCMSTitleForm: React.FC<{
     state: BoostCMSState;
@@ -50,7 +51,10 @@ const BoostCMSTitleForm: React.FC<{
         });
     };
 
-    const placeHolder = isID || isMembership ? 'Title' : 'Boost Title';
+    const placeHolder =
+        isID || isMembership
+            ? m['boost.cms.title.titlePlaceholder']()
+            : m['boost.cms.title.boostTitlePlaceholder']();
 
     return (
         <div className="max-w-[600px] flex flex-col items-start justify-center w-full mt-6">

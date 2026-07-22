@@ -5,6 +5,7 @@ import FamilyCMSInviteModalButton, { FamilyInviteTypeEnum } from './FamilyCMSInv
 import ModalLayout from 'learn-card-base/components/modals/ionic-modals/CancelModalLayout';
 
 import { FamilyCMSState, FamilyMember } from '../familyCMSState';
+import { m } from '../../../paraglide/messages.js';
 
 type FamilyCMSInviteModalProps = {
     state: FamilyCMSState;
@@ -34,7 +35,9 @@ const FamilyCMSInviteModal: React.FC<FamilyCMSInviteModalProps> = ({
     return (
         <div className="w-full">
             <FamilyCMSInviteModalButton
-                btnText={`Add a ${customChildrenName?.singular || 'Child'}`}
+                btnText={m['family.invite.addMember']({
+                    title: customChildrenName?.singular || m['family.members.child'](),
+                })}
                 state={state}
                 setState={setState}
                 members={members}
@@ -47,7 +50,9 @@ const FamilyCMSInviteModal: React.FC<FamilyCMSInviteModalProps> = ({
                 handleDeleteUser={handleDeleteUser}
             />
             <FamilyCMSInviteModalButton
-                btnText={`Invite a ${customGuardianName?.singular || 'Guardian'}`}
+                btnText={m['family.invite.inviteMember']({
+                    title: customGuardianName?.singular || m['family.members.guardian'](),
+                })}
                 state={state}
                 setState={setState}
                 members={members}

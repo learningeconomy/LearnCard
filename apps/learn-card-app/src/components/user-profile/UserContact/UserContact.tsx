@@ -4,6 +4,7 @@ import { useModal } from 'learn-card-base';
 import UserContactHeader from './UserContactHeader';
 import UserEmailContacts from './UserEmailContacts';
 
+// i18n: no user-facing strings — composition-only component
 export const UserContact: React.FC = () => {
     const { closeModal } = useModal();
     return (

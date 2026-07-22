@@ -6,8 +6,8 @@ import { Checkmark } from '@learncard/react';
 import {
     LearnerInsightsFilterOptionsEnum,
     LearnerInsightsSortOptionsEnum,
-    LEARNER_INSIGHTS_FILTER_OPTIONS,
-    LEARNER_INSIGHTS_SORT_OPTIONS,
+    getLearnerInsightsFilterOptions,
+    getLearnerInsightsSortOptions,
 } from './learner-insights.helpers';
 import { useModal } from 'learn-card-base';
 
@@ -31,7 +31,7 @@ export const LearnerInsightsFilterSortingOptionsModal: React.FC<{
     return (
         <>
             <IonList className="py-4 rounded-[20px] bg-white">
-                {LEARNER_INSIGHTS_SORT_OPTIONS.map(option => {
+                {getLearnerInsightsSortOptions().map(option => {
                     return (
                         <IonItem
                             className="font-notoSans text-sm flex items-center justify-start text-left"
@@ -53,7 +53,7 @@ export const LearnerInsightsFilterSortingOptionsModal: React.FC<{
                 <div className="w-full flex items-center justify-center">
                     <div className="w-[90%] h-[1px] bg-grayscale-100 mt-2 mb-2" />
                 </div>
-                {LEARNER_INSIGHTS_FILTER_OPTIONS.map(option => {
+                {getLearnerInsightsFilterOptions().map(option => {
                     return (
                         <IonItem
                             className="font-notoSans text-sm flex items-center justify-start text-left"

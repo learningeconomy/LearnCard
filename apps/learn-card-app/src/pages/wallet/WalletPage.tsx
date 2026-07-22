@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import * as m from '../../paraglide/messages.js';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useHistory, useLocation, Link } from 'react-router-dom';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
@@ -93,7 +94,7 @@ const WalletPage: React.FC = () => {
                         />,
                         {
                             sectionClassName: '!max-w-[400px]',
-                            cancelButtonTextOverride: 'Maybe Later',
+                            cancelButtonTextOverride: m['claim.modal.maybeLater'](),
                         }
                     );
                 }
@@ -127,8 +128,8 @@ const WalletPage: React.FC = () => {
         if (AI_CATEGORIES.includes(categoryType) && !isAiEnabled) {
             const msg =
                 reason === 'disabled_minor'
-                    ? 'AI features are not available for users under 18.'
-                    : 'AI features are currently disabled. You can enable them in Privacy & Data from your profile.';
+                    ? m['launchpad.aiDisabledMinor']()
+                    : m['launchpad.aiDisabledPrivacy']();
             presentToast(msg, { type: ToastTypeEnum.Error });
             return;
         }
@@ -213,7 +214,7 @@ const WalletPage: React.FC = () => {
                                         <h2
                                             className={`${passportTextColor} font-poppins text-[30px] font-normal tracking-[0.25px]`}
                                         >
-                                            Passport
+                                            {m['sidemenu.links.passport']()}
                                         </h2>
 
                                         <WalletPageViewModeSelector />
@@ -222,7 +223,7 @@ const WalletPage: React.FC = () => {
                                     <div className="wallet-header-menu-options items-center flex gap-[10px] shrink-0 [@media(min-width:992px)_and_(max-width:1244px)]:pr-[90px] [@media(min-width:1245px)_and_(max-width:1350px)]:pr-[50px]">
                                         <NewCredentialsPill
                                             count={totalNewCredentialsCount}
-                                            label="New"
+                                            label={m['passport.wallet.new']()}
                                             tone={passportBgColor ? 'onColor' : 'light'}
                                         />
 
@@ -237,7 +238,7 @@ const WalletPage: React.FC = () => {
                                         {Capacitor.isNativePlatform() && (
                                             <button
                                                 className="flex items-center justify-center h-9 w-9 md:h-10 md:w-10 rounded-full bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.15)] shrink-0"
-                                                aria-label="Scan a QR code"
+                                                aria-label={m['passport.wallet.scanQrCode']()}
                                                 onClick={() =>
                                                     QRCodeScannerStore.set.showScanner(true)
                                                 }
@@ -247,7 +248,7 @@ const WalletPage: React.FC = () => {
                                         )}
                                         <button
                                             className="flex items-center justify-center h-9 w-9 md:h-10 md:w-10 rounded-full bg-white shadow-[0_2px_6px_0_rgba(0,0,0,0.15)] shrink-0"
-                                            aria-label="Add to Passport"
+                                            aria-label={m['passport.wallet.addToPassport']()}
                                             onClick={() => {
                                                 newModal(
                                                     <AddToPassportMenu />,

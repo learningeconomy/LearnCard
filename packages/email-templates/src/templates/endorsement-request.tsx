@@ -13,6 +13,8 @@ import { Layout } from '../components/Layout';
 import { EmailButton } from '../components/EmailButton';
 import { IssuerLogo } from '../components/IssuerLogo';
 import { LinkFallback } from '../components/LinkFallback';
+import type { NotificationLocale } from '../i18n';
+import { resolveCatalogLocale, interpolate, SHARED } from '../i18n';
 
 export interface EndorsementRequestProps {
     branding: TenantBranding;
@@ -30,7 +32,120 @@ export interface EndorsementRequestProps {
         type?: string;
     };
     message?: string;
+    /** Recipient locale (BCP-47). Defaults to English. */
+    locale?: string;
 }
+
+const STRINGS: Record<
+    NotificationLocale,
+    {
+        preview: (issuerName: string) => string;
+        greeting: string;
+        greetingName: string;
+        body: (issuerName: string, credentialName: string | undefined) => React.ReactNode;
+        passport: string;
+        button: string;
+        sincerely: string;
+        subject: (issuerName: string) => string;
+    }
+> = {
+    en: {
+        preview: i => `${i} is requesting your endorsement`,
+        greeting: 'Hello,',
+        greetingName: 'Hello {name},',
+        body: (issuerName, credentialName) => (
+            <>
+                <strong>{issuerName}</strong> has requested an endorsement from you
+                {credentialName ? (
+                    <>
+                        {' '}
+                        for <strong>{credentialName}</strong>
+                    </>
+                ) : (
+                    ''
+                )}
+                .
+            </>
+        ),
+        passport:
+            '{brandName} is your private, digital passport for learning and work. It lets you securely collect and share your verified skills and achievements online.',
+        button: 'Endorse \u2192',
+        sincerely: 'Sincerely,',
+        subject: i => `${i} is requesting your endorsement`,
+    },
+    es: {
+        preview: i => `${i} solicita tu validación`,
+        greeting: 'Hola,',
+        greetingName: 'Hola {name},',
+        body: (issuerName, credentialName) => (
+            <>
+                <strong>{issuerName}</strong> te ha solicitado una validación
+                {credentialName ? (
+                    <>
+                        {' '}
+                        para <strong>{credentialName}</strong>
+                    </>
+                ) : (
+                    ''
+                )}
+                .
+            </>
+        ),
+        passport:
+            '{brandName} es tu pasaporte digital y privado para el aprendizaje y el trabajo. Te permite recopilar y compartir de forma segura tus habilidades y logros verificados en línea.',
+        button: 'Validar \u2192',
+        sincerely: 'Atentamente,',
+        subject: i => `${i} solicita tu validación`,
+    },
+    fr: {
+        preview: i => `${i} vous demande une validation`,
+        greeting: 'Bonjour,',
+        greetingName: 'Bonjour {name},',
+        body: (issuerName, credentialName) => (
+            <>
+                <strong>{issuerName}</strong> vous a demandé une validation
+                {credentialName ? (
+                    <>
+                        {' '}
+                        pour <strong>{credentialName}</strong>
+                    </>
+                ) : (
+                    ''
+                )}
+                .
+            </>
+        ),
+        passport:
+            '{brandName} est votre passeport numérique privé pour l\u2019apprentissage et le travail. Il vous permet de collecter et de partager en toute sécurité vos compétences et réalisations vérifiées en ligne.',
+        button: 'Valider \u2192',
+        sincerely: 'Cordialement,',
+        subject: i => `${i} vous demande une validation`,
+    },
+    ar: {
+        preview: i => `${i} يطلب منك التأييد`,
+        greeting: 'مرحبًا،',
+        greetingName: 'مرحبًا {name}،',
+        body: (issuerName, credentialName) => (
+            <>
+                طلب <strong>{issuerName}</strong> منك تأييدًا
+                {credentialName ? (
+                    <>
+                        {' '}
+                        لـ <strong>{credentialName}</strong>
+                    </>
+                ) : (
+                    ''
+                )}
+                .
+            </>
+        ),
+        passport:
+            '{brandName} هو جواز سفرك الرقمي والخاص للتعلّم والعمل. يتيح لك جمع ومشاركة مهاراتك وإنجازاتك الموثّقة بأمان عبر الإنترنت.',
+        button: 'تأييد ←',
+        sincerely: 'مع التحيات،',
+        subject: i => `${i} يطلب منك التأييد`,
+    },
+};
 
 export const EndorsementRequest: React.FC<EndorsementRequestProps> = ({
     branding,
@@ -39,48 +154,58 @@ export const EndorsementRequest: React.FC<EndorsementRequestProps> = ({
     issuer,
     credential,
     message,
+    locale,
 }) => {
-    const greeting = recipient?.name ? `Hello ${recipient.name},` : 'Hello,';
+    const s = STRINGS[resolveCatalogLocale(locale)];
+    const greeting = interpolate(recipient?.name ? s.greetingName : s.greeting, {
+        name: recipient?.name,
+    });
     const issuerName = issuer?.name ?? 'Someone';
     const credentialName = credential?.name;
 
     return (
-        <Layout branding={branding} preview={`${issuerName} is requesting your endorsement`} showHeaderLogo={false}>
-            <IssuerLogo logoUrl={issuer?.logoUrl} alt={issuerName ? `${issuerName} logo` : undefined} />
+        <Layout
+            branding={branding}
+            locale={locale}
+            preview={s.preview(issuerName)}
+            showHeaderLogo={false}
+        >
+            <IssuerLogo
+                logoUrl={issuer?.logoUrl}
+                alt={issuerName ? `${issuerName} logo` : undefined}
+            />
 
             <Text style={paragraph}>{greeting}</Text>
 
-            <Text style={paragraph}>
-                <strong>{issuerName}</strong> has requested an endorsement from you
-                {credentialName ? <> for <strong>{credentialName}</strong></> : ''}.
-            </Text>
+            <Text style={paragraph}>{s.body(issuerName, credentialName)}</Text>
 
             {message && (
                 <Section style={messageBox}>
                     <Text style={messageText}>{message}</Text>
 
-                    {issuer?.name && (
-                        <Text style={messageSender}>— {issuer.name}</Text>
-                    )}
+                    {issuer?.name && <Text style={messageSender}>— {issuer.name}</Text>}
                 </Section>
             )}
 
             <Text style={paragraph}>
-                {branding.brandName} is your private, digital passport for learning and work.
-                It lets you securely collect and share your verified skills and achievements online.
+                {interpolate(s.passport, { brandName: branding.brandName })}
             </Text>
 
             <Section style={buttonWrapper}>
                 <EmailButton href={shareLink} branding={branding}>
-                    Endorse &rarr;
+                    {s.button}
                 </EmailButton>
             </Section>
 
             <Text style={signOff}>
-                Sincerely,<br />The {branding.brandName} Team
+                {s.sincerely}
+                <br />
+                {interpolate(SHARED[resolveCatalogLocale(locale)].teamSignature, {
+                    brandName: branding.brandName,
+                })}
             </Text>
 
-            <LinkFallback href={shareLink} />
+            <LinkFallback href={shareLink} locale={locale} />
         </Layout>
     );
 };
@@ -88,10 +213,10 @@ export const EndorsementRequest: React.FC<EndorsementRequestProps> = ({
 export const getEndorsementRequestSubject = (
     _branding: TenantBranding,
     props: EndorsementRequestProps,
+    locale?: string
 ): string => {
     const issuerName = props.issuer?.name ?? 'Someone';
-
-    return `${issuerName} is requesting your endorsement`;
+    return STRINGS[resolveCatalogLocale(locale)].subject(issuerName);
 };
 
 // ---------------------------------------------------------------------------

@@ -80,6 +80,12 @@ export const LCNProfileValidator = z.object({
         .optional()
         .describe('Date of birth of the profile: e.g. "1990-01-01".'),
     country: z.string().optional().describe('Country for the profile.'),
+    locale: z
+        .string()
+        .optional()
+        .describe(
+            "BCP-47 language tag (e.g. 'es', 'fr', 'ar') — the user's preferred language for server-sent notifications and emails."
+        ),
     approved: z.boolean().optional().describe('Approval status for the profile.'),
 });
 export type LCNProfile = z.infer<typeof LCNProfileValidator>;

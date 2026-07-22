@@ -8,6 +8,7 @@ import {
     LinkOptions,
     isEmail,
 } from '../../issue/components/recipientTypes';
+import * as m from '../../../paraglide/messages.js';
 
 const INPUT_CLASS =
     'w-full py-3 px-4 border border-grayscale-300 rounded-xl text-base text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition-all';
@@ -126,7 +127,7 @@ export const BoostRecipientPicker: React.FC<BoostRecipientPickerProps> = ({
                             : 'text-grayscale-700 hover:bg-grayscale-200'
                     }`}
                 >
-                    Friend
+                    {m['endorsement.form.relationship.friend']()}
                 </button>
                 <button
                     type="button"
@@ -137,7 +138,7 @@ export const BoostRecipientPicker: React.FC<BoostRecipientPickerProps> = ({
                             : 'text-grayscale-700 hover:bg-grayscale-200'
                     }`}
                 >
-                    Just me
+                    {m['boostAFriend.recip.justMe']()}
                 </button>
                 <button
                     type="button"
@@ -148,7 +149,7 @@ export const BoostRecipientPicker: React.FC<BoostRecipientPickerProps> = ({
                             : 'text-grayscale-700 hover:bg-grayscale-200'
                     }`}
                 >
-                    Share link
+                    {m['boostAFriend.recip.shareLnk']()}
                 </button>
             </div>
 
@@ -180,7 +181,7 @@ export const BoostRecipientPicker: React.FC<BoostRecipientPickerProps> = ({
                                         type="button"
                                         onClick={() => handleRemoveRecipient(index)}
                                         className="text-white/70 hover:text-white transition-colors shrink-0 ml-1"
-                                        aria-label="Remove recipient"
+                                        aria-label={m['boostAFriend.recip.rmRecip']()}
                                     >
                                         <X className="w-3.5 h-3.5" />
                                     </button>
@@ -195,7 +196,7 @@ export const BoostRecipientPicker: React.FC<BoostRecipientPickerProps> = ({
                             type="text"
                             value={query}
                             onChange={e => setQuery(e.target.value)}
-                            placeholder="Search people..."
+                            placeholder={m['boostAFriend.recip.search']()}
                             spellCheck={false}
                             autoCapitalize="none"
                             autoCorrect="off"
@@ -206,7 +207,7 @@ export const BoostRecipientPicker: React.FC<BoostRecipientPickerProps> = ({
                                 type="button"
                                 onClick={() => setQuery('')}
                                 className="absolute right-4 top-1/2 -translate-y-1/2 text-grayscale-400 hover:text-grayscale-700 transition-colors"
-                                aria-label="Clear search"
+                                aria-label={m['aiPathways.clearSearch']()}
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -292,10 +293,10 @@ export const BoostRecipientPicker: React.FC<BoostRecipientPickerProps> = ({
                                             </div>
                                             <div className="flex flex-col min-w-0 flex-1">
                                                 <span className="text-base font-medium text-grayscale-900 truncate">
-                                                    Send to {query}
+                                                    {m['boostAFriend.recip.sendTo']({ query })}
                                                 </span>
                                                 <span className="text-sm text-grayscale-500 truncate">
-                                                    They'll get an email to claim it
+                                                    {m['boostAFriend.recip.emailHint']()}
                                                 </span>
                                             </div>
                                         </button>
@@ -304,8 +305,8 @@ export const BoostRecipientPicker: React.FC<BoostRecipientPickerProps> = ({
                                 {displayList.length === 0 && !isValidEmail && (
                                     <div className="p-8 text-center text-sm text-grayscale-500">
                                         {debouncedQuery.length > 0
-                                            ? 'No results found. Enter a valid email to send an invite.'
-                                            : 'Search for someone by name, @username, or email.'}
+                                            ? m['boostAFriend.recip.noResults']()
+                                            : m['boostAFriend.recip.hint']()}
                                     </div>
                                 )}
                             </div>
@@ -320,10 +321,10 @@ export const BoostRecipientPicker: React.FC<BoostRecipientPickerProps> = ({
                         <Check className="w-8 h-8 text-grayscale-900" />
                     </div>
                     <h3 className="text-lg font-semibold text-grayscale-900 mb-2">
-                        Add to Passport
+                        {m['passport.wallet.addToPassport']()}
                     </h3>
                     <p className="text-sm text-grayscale-600 max-w-[240px]">
-                        This badge will be added directly to your own Passport.
+                        {m['boostAFriend.recip.selfDesc']()}
                     </p>
                 </div>
             )}
@@ -331,11 +332,13 @@ export const BoostRecipientPicker: React.FC<BoostRecipientPickerProps> = ({
             {mode === 'link' && (
                 <div className="flex-1 animate-fade-in-up">
                     <p className="text-sm text-grayscale-600 mb-6">
-                        Anyone with the link can claim this badge.
+                        {m['boostAFriend.recip.linkDesc']()}
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className={LABEL_CLASS}>Expires (optional)</label>
+                            <label className={LABEL_CLASS}>
+                                {m['boostAFriend.recip.expires']()}
+                            </label>
                             <div className="relative">
                                 <input
                                     type="date"
@@ -352,7 +355,9 @@ export const BoostRecipientPicker: React.FC<BoostRecipientPickerProps> = ({
                             </div>
                         </div>
                         <div>
-                            <label className={LABEL_CLASS}>Max claims (optional)</label>
+                            <label className={LABEL_CLASS}>
+                                {m['boostAFriend.recip.maxClaims']()}
+                            </label>
                             <input
                                 type="number"
                                 min="1"
@@ -365,7 +370,7 @@ export const BoostRecipientPicker: React.FC<BoostRecipientPickerProps> = ({
                                             : undefined,
                                     })
                                 }
-                                placeholder="Unlimited"
+                                placeholder={m['boostAFriend.recip.unlimited']()}
                                 className={INPUT_CLASS}
                             />
                         </div>
