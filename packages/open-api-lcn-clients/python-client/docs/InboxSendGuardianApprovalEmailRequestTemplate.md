@@ -6,7 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **str** |  | [optional] 
-**model** | **Dict[str, object]** |  | [optional] 
+**model** | **Dict[str, Optional[object]]** |  | [optional] 
 
 ## Example
 

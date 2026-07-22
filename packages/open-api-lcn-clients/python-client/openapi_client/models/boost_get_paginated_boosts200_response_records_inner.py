@@ -22,6 +22,7 @@ from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.boost_get_boost200_response_claim_permissions import BoostGetBoost200ResponseClaimPermissions
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostGetPaginatedBoosts200ResponseRecordsInner(BaseModel):
     """
@@ -31,6 +32,7 @@ class BoostGetPaginatedBoosts200ResponseRecordsInner(BaseModel):
     name: Optional[StrictStr] = None
     type: Optional[StrictStr] = None
     category: Optional[StrictStr] = None
+    created: Optional[StrictStr] = None
     status: Optional[StrictStr] = None
     auto_connect_recipients: Optional[StrictBool] = Field(default=None, alias="autoConnectRecipients")
     meta: Optional[Dict[str, Any]] = None
@@ -38,7 +40,7 @@ class BoostGetPaginatedBoosts200ResponseRecordsInner(BaseModel):
     default_permissions: Optional[BoostGetBoost200ResponseClaimPermissions] = Field(default=None, alias="defaultPermissions")
     allow_anyone_to_create_children: Optional[StrictBool] = Field(default=None, alias="allowAnyoneToCreateChildren")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["uri", "name", "type", "category", "status", "autoConnectRecipients", "meta", "claimPermissions", "defaultPermissions", "allowAnyoneToCreateChildren"]
+    __properties: ClassVar[List[str]] = ["uri", "name", "type", "category", "created", "status", "autoConnectRecipients", "meta", "claimPermissions", "defaultPermissions", "allowAnyoneToCreateChildren"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
@@ -51,7 +53,8 @@ class BoostGetPaginatedBoosts200ResponseRecordsInner(BaseModel):
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -63,8 +66,7 @@ class BoostGetPaginatedBoosts200ResponseRecordsInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -122,6 +124,11 @@ class BoostGetPaginatedBoosts200ResponseRecordsInner(BaseModel):
         if self.category is None and "category" in self.model_fields_set:
             _dict['category'] = None
 
+        # set to None if created (nullable) is None
+        # and model_fields_set contains the field
+        if self.created is None and "created" in self.model_fields_set:
+            _dict['created'] = None
+
         return _dict
 
     @classmethod
@@ -138,6 +145,7 @@ class BoostGetPaginatedBoosts200ResponseRecordsInner(BaseModel):
             "name": obj.get("name"),
             "type": obj.get("type"),
             "category": obj.get("category"),
+            "created": obj.get("created"),
             "status": obj.get("status"),
             "autoConnectRecipients": obj.get("autoConnectRecipients"),
             "meta": obj.get("meta"),

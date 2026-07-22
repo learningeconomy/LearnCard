@@ -54,9 +54,33 @@ class TestStorageStoreRequestItemAnyOf(unittest.TestCase):
                 status = None,
                 terms_of_use = None,
                 evidence = None,
+                render_method = None,
                 proof = None,
                 verifiable_credential = None,
-                holder = ''
+                holder = '',
+                protected = '',
+                iv = '',
+                ciphertext = '',
+                tag = '',
+                aad = '',
+                recipients = [
+                    openapi_client.models.credential_send_credential_request_credential_any_of_1_recipients_inner.credential_sendCredential_request_credential_anyOf_1_recipients_inner(
+                        header = openapi_client.models.credential_send_credential_request_credential_any_of_1_recipients_inner_header.credential_sendCredential_request_credential_anyOf_1_recipients_inner_header(
+                            alg = '', 
+                            iv = '', 
+                            tag = '', 
+                            epk = openapi_client.models.credential_send_credential_request_credential_any_of_1_recipients_inner_header_epk.credential_sendCredential_request_credential_anyOf_1_recipients_inner_header_epk(
+                                kty = '', 
+                                crv = '', 
+                                x = '', 
+                                y = '', 
+                                n = '', 
+                                d = '', ), 
+                            kid = '', 
+                            apv = '', 
+                            apu = '', ), 
+                        encrypted_key = '', )
+                    ]
             )
         else:
             return StorageStoreRequestItemAnyOf(
@@ -67,6 +91,10 @@ class TestStorageStoreRequestItemAnyOf(unittest.TestCase):
                 issuer = None,
                 credential_subject = None,
                 proof = None,
+                protected = '',
+                iv = '',
+                ciphertext = '',
+                tag = '',
         )
         """
 

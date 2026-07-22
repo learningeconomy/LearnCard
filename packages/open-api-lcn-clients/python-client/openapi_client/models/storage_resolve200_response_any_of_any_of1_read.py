@@ -19,23 +19,25 @@ import json
 
 from pydantic import BaseModel, ConfigDict, StrictBool
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.storage_resolve200_response_any_of_any_of1_read_credentials import StorageResolve200ResponseAnyOfAnyOf1ReadCredentials
-from openapi_client.models.storage_resolve200_response_any_of_any_of1_read_personal_value import StorageResolve200ResponseAnyOfAnyOf1ReadPersonalValue
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_contract_contract_read_personal_value import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractReadPersonalValue
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_contract_contract_write_credentials import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWriteCredentials
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class StorageResolve200ResponseAnyOfAnyOf1Read(BaseModel):
     """
     StorageResolve200ResponseAnyOfAnyOf1Read
     """ # noqa: E501
     anonymize: Optional[StrictBool] = None
-    credentials: StorageResolve200ResponseAnyOfAnyOf1ReadCredentials
-    personal: Dict[str, StorageResolve200ResponseAnyOfAnyOf1ReadPersonalValue]
+    credentials: CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWriteCredentials
+    personal: Dict[str, CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractReadPersonalValue]
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["anonymize", "credentials", "personal"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -47,8 +49,7 @@ class StorageResolve200ResponseAnyOfAnyOf1Read(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -103,9 +104,9 @@ class StorageResolve200ResponseAnyOfAnyOf1Read(BaseModel):
 
         _obj = cls.model_validate({
             "anonymize": obj.get("anonymize"),
-            "credentials": StorageResolve200ResponseAnyOfAnyOf1ReadCredentials.from_dict(obj["credentials"]) if obj.get("credentials") is not None else None,
+            "credentials": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWriteCredentials.from_dict(obj["credentials"]) if obj.get("credentials") is not None else None,
             "personal": dict(
-                (_k, StorageResolve200ResponseAnyOfAnyOf1ReadPersonalValue.from_dict(_v))
+                (_k, CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractReadPersonalValue.from_dict(_v))
                 for _k, _v in obj["personal"].items()
             )
             if obj.get("personal") is not None

@@ -17,12 +17,13 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
 from openapi_client.models.schema0 import Schema0
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class SkillFrameworksCreateManagedBatchRequestFrameworksInner(BaseModel):
     """
@@ -33,10 +34,11 @@ class SkillFrameworksCreateManagedBatchRequestFrameworksInner(BaseModel):
     description: Optional[StrictStr] = None
     image: Optional[StrictStr] = None
     source_uri: Optional[StrictStr] = Field(default=None, alias="sourceURI")
+    is_public: Optional[StrictBool] = Field(default=None, alias="isPublic")
     status: Optional[StrictStr] = None
     skills: Optional[List[Schema0]] = None
     boost_uris: Optional[List[StrictStr]] = Field(default=None, alias="boostUris")
-    __properties: ClassVar[List[str]] = ["id", "name", "description", "image", "sourceURI", "status", "skills", "boostUris"]
+    __properties: ClassVar[List[str]] = ["id", "name", "description", "image", "sourceURI", "isPublic", "status", "skills", "boostUris"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
@@ -49,7 +51,8 @@ class SkillFrameworksCreateManagedBatchRequestFrameworksInner(BaseModel):
         return value
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -61,8 +64,7 @@ class SkillFrameworksCreateManagedBatchRequestFrameworksInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -111,6 +113,7 @@ class SkillFrameworksCreateManagedBatchRequestFrameworksInner(BaseModel):
             "description": obj.get("description"),
             "image": obj.get("image"),
             "sourceURI": obj.get("sourceURI"),
+            "isPublic": obj.get("isPublic"),
             "status": obj.get("status"),
             "skills": [Schema0.from_dict(_item) for _item in obj["skills"]] if obj.get("skills") is not None else None,
             "boostUris": obj.get("boostUris")

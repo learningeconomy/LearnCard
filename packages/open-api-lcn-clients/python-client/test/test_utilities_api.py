@@ -26,6 +26,13 @@ class TestUtilitiesApi(unittest.TestCase):
     def tearDown(self) -> None:
         pass
 
+    def test_utilities_deep_health_check(self) -> None:
+        """Test case for utilities_deep_health_check
+
+        Deep health check (exercises DIDKit end to end)
+        """
+        pass
+
     def test_utilities_get_challenges(self) -> None:
         """Test case for utilities_get_challenges
 

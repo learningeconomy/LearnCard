@@ -5,8 +5,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**read** | [**ContractsGetConsentFlowContract200ResponseContractRead**](ContractsGetConsentFlowContract200ResponseContractRead.md) |  | 
-**write** | [**StorageResolve200ResponseAnyOfAnyOf1Write**](StorageResolve200ResponseAnyOfAnyOf1Write.md) |  | 
+**read** | [**StorageResolve200ResponseAnyOfAnyOf1Read**](StorageResolve200ResponseAnyOfAnyOf1Read.md) |  | 
+**write** | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite.md) |  | 
 **uri** | **str** |  | 
 
 ## Example

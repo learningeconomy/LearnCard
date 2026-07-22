@@ -36,7 +36,8 @@ class TestActivityGetActivity200ResponseRecipientProfile(unittest.TestCase):
         if include_optional:
             return ActivityGetActivity200ResponseRecipientProfile(
                 profile_id = '',
-                display_name = ''
+                display_name = '',
+                image = ''
             )
         else:
             return ActivityGetActivity200ResponseRecipientProfile(

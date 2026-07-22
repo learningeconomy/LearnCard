@@ -22,12 +22,14 @@ from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_statement import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions(BaseModel):
     """
     ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions
     """ # noqa: E501
     role: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
+    can_view: Optional[StrictBool] = Field(default=None, alias="canView")
     can_edit: Optional[StrictBool] = Field(default=None, alias="canEdit")
     can_issue: Optional[StrictBool] = Field(default=None, alias="canIssue")
     can_revoke: Optional[StrictBool] = Field(default=None, alias="canRevoke")
@@ -39,10 +41,11 @@ class ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions(BaseModel):
     can_manage_children_permissions: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = Field(default=None, alias="canManageChildrenPermissions")
     can_manage_children_profiles: Optional[StrictBool] = Field(default=None, alias="canManageChildrenProfiles")
     can_view_analytics: Optional[StrictBool] = Field(default=None, alias="canViewAnalytics")
-    __properties: ClassVar[List[str]] = ["role", "canEdit", "canIssue", "canRevoke", "canManagePermissions", "canIssueChildren", "canCreateChildren", "canEditChildren", "canRevokeChildren", "canManageChildrenPermissions", "canManageChildrenProfiles", "canViewAnalytics"]
+    __properties: ClassVar[List[str]] = ["role", "canView", "canEdit", "canIssue", "canRevoke", "canManagePermissions", "canIssueChildren", "canCreateChildren", "canEditChildren", "canRevokeChildren", "canManageChildrenPermissions", "canManageChildrenProfiles", "canViewAnalytics"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -54,8 +57,7 @@ class ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -111,6 +113,7 @@ class ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions(BaseModel):
 
         _obj = cls.model_validate({
             "role": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["role"]) if obj.get("role") is not None else None,
+            "canView": obj.get("canView"),
             "canEdit": obj.get("canEdit"),
             "canIssue": obj.get("canIssue"),
             "canRevoke": obj.get("canRevoke"),

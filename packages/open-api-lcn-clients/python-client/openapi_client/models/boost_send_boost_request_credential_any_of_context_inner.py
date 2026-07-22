@@ -23,7 +23,7 @@ from typing import Union, Any, List, Set, TYPE_CHECKING, Optional, Dict
 from typing_extensions import Literal, Self
 from pydantic import Field
 
-BOOSTSENDBOOSTREQUESTCREDENTIALANYOFCONTEXTINNER_ANY_OF_SCHEMAS = ["Dict[str, object]", "str"]
+BOOSTSENDBOOSTREQUESTCREDENTIALANYOFCONTEXTINNER_ANY_OF_SCHEMAS = ["Dict[str, Optional[object]]", "str"]
 
 class BoostSendBoostRequestCredentialAnyOfContextInner(BaseModel):
     """
@@ -32,13 +32,13 @@ class BoostSendBoostRequestCredentialAnyOfContextInner(BaseModel):
 
     # data type: str
     anyof_schema_1_validator: Optional[StrictStr] = None
-    # data type: Dict[str, object]
+    # data type: Dict[str, Optional[object]]
     anyof_schema_2_validator: Optional[Dict[str, Any]] = None
     if TYPE_CHECKING:
-        actual_instance: Optional[Union[Dict[str, object], str]] = None
+        actual_instance: Optional[Union[Dict[str, Optional[object]], str]] = None
     else:
         actual_instance: Any = None
-    any_of_schemas: Set[str] = { "Dict[str, object]", "str" }
+    any_of_schemas: Set[str] = { "Dict[str, Optional[object]]", "str" }
 
     model_config = {
         "validate_assignment": True,
@@ -65,7 +65,7 @@ class BoostSendBoostRequestCredentialAnyOfContextInner(BaseModel):
             return v
         except (ValidationError, ValueError) as e:
             error_messages.append(str(e))
-        # validate data type: Dict[str, object]
+        # validate data type: Dict[str, Optional[object]]
         try:
             instance.anyof_schema_2_validator = v
             return v
@@ -73,7 +73,7 @@ class BoostSendBoostRequestCredentialAnyOfContextInner(BaseModel):
             error_messages.append(str(e))
         if error_messages:
             # no match
-            raise ValueError("No match found when setting the actual_instance in BoostSendBoostRequestCredentialAnyOfContextInner with anyOf schemas: Dict[str, object], str. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when setting the actual_instance in BoostSendBoostRequestCredentialAnyOfContextInner with anyOf schemas: Dict[str, Optional[object]], str. Details: " + ", ".join(error_messages))
         else:
             return v
 
@@ -95,7 +95,7 @@ class BoostSendBoostRequestCredentialAnyOfContextInner(BaseModel):
             return instance
         except (ValidationError, ValueError) as e:
             error_messages.append(str(e))
-        # deserialize data into Dict[str, object]
+        # deserialize data into Dict[str, Optional[object]]
         try:
             # validation
             instance.anyof_schema_2_validator = json.loads(json_str)
@@ -107,7 +107,7 @@ class BoostSendBoostRequestCredentialAnyOfContextInner(BaseModel):
 
         if error_messages:
             # no match
-            raise ValueError("No match found when deserializing the JSON string into BoostSendBoostRequestCredentialAnyOfContextInner with anyOf schemas: Dict[str, object], str. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when deserializing the JSON string into BoostSendBoostRequestCredentialAnyOfContextInner with anyOf schemas: Dict[str, Optional[object]], str. Details: " + ", ".join(error_messages))
         else:
             return instance
 
@@ -121,7 +121,7 @@ class BoostSendBoostRequestCredentialAnyOfContextInner(BaseModel):
         else:
             return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Optional[Union[Dict[str, Any], Dict[str, object], str]]:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], Dict[str, Optional[object]], str]]:
         """Returns the dict representation of the actual instance"""
         if self.actual_instance is None:
             return None

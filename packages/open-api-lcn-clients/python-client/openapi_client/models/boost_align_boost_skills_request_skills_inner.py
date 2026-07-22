@@ -17,10 +17,11 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from pydantic import BaseModel, ConfigDict, Field, StrictFloat, StrictInt, StrictStr
+from typing import Any, ClassVar, Dict, List, Optional, Union
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class BoostAlignBoostSkillsRequestSkillsInner(BaseModel):
     """
@@ -28,10 +29,12 @@ class BoostAlignBoostSkillsRequestSkillsInner(BaseModel):
     """ # noqa: E501
     framework_id: Optional[StrictStr] = Field(alias="frameworkId")
     id: Optional[StrictStr]
-    __properties: ClassVar[List[str]] = ["frameworkId", "id"]
+    proficiency_level: Optional[Union[StrictFloat, StrictInt]] = Field(default=None, alias="proficiencyLevel")
+    __properties: ClassVar[List[str]] = ["frameworkId", "id", "proficiencyLevel"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -43,8 +46,7 @@ class BoostAlignBoostSkillsRequestSkillsInner(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -79,6 +81,11 @@ class BoostAlignBoostSkillsRequestSkillsInner(BaseModel):
         if self.id is None and "id" in self.model_fields_set:
             _dict['id'] = None
 
+        # set to None if proficiency_level (nullable) is None
+        # and model_fields_set contains the field
+        if self.proficiency_level is None and "proficiency_level" in self.model_fields_set:
+            _dict['proficiencyLevel'] = None
+
         return _dict
 
     @classmethod
@@ -92,7 +99,8 @@ class BoostAlignBoostSkillsRequestSkillsInner(BaseModel):
 
         _obj = cls.model_validate({
             "frameworkId": obj.get("frameworkId"),
-            "id": obj.get("id")
+            "id": obj.get("id"),
+            "proficiencyLevel": obj.get("proficiencyLevel")
         })
         return _obj
 

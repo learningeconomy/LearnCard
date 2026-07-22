@@ -6,7 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **var_in** | **List[str]** |  | 
-**regex** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInnerAnyOf1Regex**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInnerAnyOf1Regex.md) |  | 
+**regex** | **str** |  | [optional] 
 
 ## Example
 

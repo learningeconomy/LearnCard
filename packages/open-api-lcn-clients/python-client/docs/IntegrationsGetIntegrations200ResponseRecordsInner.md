@@ -12,7 +12,7 @@ Name | Type | Description | Notes
 **whitelisted_domains** | [**List[IntegrationsAddIntegrationRequestWhitelistedDomainsInner]**](IntegrationsAddIntegrationRequestWhitelistedDomainsInner.md) |  | [default to []]
 **status** | **str** |  | [default to 'setup']
 **guide_type** | **str** |  | [optional] 
-**guide_state** | **Dict[str, object]** |  | [optional] 
+**guide_state** | **Dict[str, Optional[object]]** |  | [optional] 
 **created_at** | **str** |  | [optional] 
 **updated_at** | **str** |  | [optional] 
 
