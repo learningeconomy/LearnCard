@@ -108,13 +108,16 @@ export const createContext = async (
             : undefined;
 
     // Resolve tenant from request headers (X-Tenant-Id → Origin → env → default)
-    const rawHeaders = 'event' in options
-        ? (options.event.headers as Record<string, string | undefined>)
-        : 'get' in event.headers
+    const rawHeaders =
+        'event' in options
+            ? (options.event.headers as Record<string, string | undefined>)
+            : 'get' in event.headers
             ? Object.fromEntries(event.headers as Map<string, string>)
             : (event.headers as Record<string, string | string[] | undefined>);
 
-    const tenant = resolveTenantFromRequest(rawHeaders as Record<string, string | string[] | undefined>);
+    const tenant = resolveTenantFromRequest(
+        rawHeaders as Record<string, string | string[] | undefined>
+    );
 
     if (authHeader && authHeader.split(' ').length === 2) {
         const [scheme, jwt] = authHeader.split(' ');
