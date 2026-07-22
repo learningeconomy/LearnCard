@@ -51,18 +51,34 @@ export const EN_DEFAULTS: Record<string, string> = {
 export const getActiveLocale = (): string => {
     try {
         if (typeof localStorage !== 'undefined') {
-            const raw = localStorage.getItem('i18n.language') || 'en';
-            // Strip anything that isn't a valid BCP-47 character (alphanumeric +
-            // hyphen) before this value gets interpolated into request URLs
-            // (`&locale=...`). A crafted localStorage entry — e.g. via XSS —
-            // must not be able to inject extra query parameters like
-            // `en&did=attacker`. An all-invalid value collapses to 'en'.
-            return raw.replace(/[^a-zA-Z0-9-]/g, '') || 'en';
+            const raw = localStorage.getItem('i18n.language');
+            if (raw) {
+                // Strip anything that isn't a valid BCP-47 character (alphanumeric +
+                // hyphen) before this value is sent to the backend. A crafted
+                // localStorage entry — e.g. via XSS — must not be able to alter
+                // request parameters. An all-invalid value collapses to 'en'.
+                return raw.replace(/[^a-zA-Z0-9-]/g, '') || 'en';
+            }
         }
     } catch {
-        // localStorage may be unavailable (native/SSR) — default to English.
+        // localStorage may be unavailable or no manual choice may exist.
+    }
+
+    try {
+        const liveLocale =
+            typeof document !== 'undefined' ? document.documentElement?.lang : undefined;
+        if (liveLocale) return liveLocale.replace(/[^a-zA-Z0-9-]/g, '') || 'en';
+    } catch {
+        // document may be unavailable (native/SSR) — default to English.
     }
     return 'en';
+};
+
+/** Add the active UI locale to an AI service URL without unsafe string interpolation. */
+export const addActiveLocaleToUrl = (url: string): string => {
+    const parsedUrl = new URL(url);
+    parsedUrl.searchParams.set('locale', getActiveLocale());
+    return parsedUrl.toString();
 };
 
 /** Minimal `{var}` interpolation — no dependency. */

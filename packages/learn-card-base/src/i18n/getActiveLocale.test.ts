@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import { getActiveLocale } from './index';
+import { addActiveLocaleToUrl, getActiveLocale } from './index';
 
 const store: Record<string, string> = {};
 
 beforeEach(() => {
     for (const key of Object.keys(store)) delete store[key];
+    vi.stubGlobal('document', undefined);
     vi.stubGlobal('localStorage', {
         getItem: (key: string) => store[key] ?? null,
         setItem: (key: string, value: string) => {
@@ -18,6 +19,19 @@ describe('getActiveLocale', () => {
     it('returns the stored locale', () => {
         store['i18n.language'] = 'es';
         expect(getActiveLocale()).toBe('es');
+    });
+
+    it('uses the persisted locale while the document locale is still stale during startup', () => {
+        store['i18n.language'] = 'en';
+        vi.stubGlobal('document', { documentElement: { lang: 'fr' } });
+
+        expect(getActiveLocale()).toBe('en');
+    });
+
+    it('uses the live document locale when there is no persisted choice', () => {
+        vi.stubGlobal('document', { documentElement: { lang: 'fr' } });
+
+        expect(getActiveLocale()).toBe('fr');
     });
 
     it('strips characters that could inject extra URL query params', () => {
@@ -37,5 +51,15 @@ describe('getActiveLocale', () => {
 
     it('falls back to en when unset', () => {
         expect(getActiveLocale()).toBe('en');
+    });
+});
+
+describe('addActiveLocaleToUrl', () => {
+    it('preserves existing parameters and adds the live locale', () => {
+        vi.stubGlobal('document', { documentElement: { lang: 'ar' } });
+
+        expect(addActiveLocaleToUrl('https://ai.example/threads/visibility?did=did:key:123')).toBe(
+            'https://ai.example/threads/visibility?did=did%3Akey%3A123&locale=ar'
+        );
     });
 });

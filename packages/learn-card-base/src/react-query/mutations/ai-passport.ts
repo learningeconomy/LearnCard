@@ -11,7 +11,7 @@ import {
     setAiInsightRefreshPending,
 } from '../../stores/aiInsightRefreshStore';
 import { getLogger } from '../../logging/logger';
-import { getActiveLocale } from '../../i18n';
+import { addActiveLocaleToUrl } from '../../i18n';
 const log = getLogger('ai-passport');
 
 const aiInsightCredentialQueryKey = ['useAiInsightCredential'];
@@ -114,7 +114,7 @@ export const usePreloadAssessment = () => {
     return useMutation({
         mutationFn: async ({ did, summaryCredential }: { did: string; summaryCredential: any }) => {
             const res = await fetch(
-                `${networkStore.get.aiServiceUrl()}/assessment?did=${did}&locale=${getActiveLocale()}`,
+                addActiveLocaleToUrl(`${networkStore.get.aiServiceUrl()}/assessment?did=${did}`),
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -147,7 +147,9 @@ export const useFinishAssessmentMutation = () => {
     return useMutation({
         mutationFn: async ({ did, assessmentQA, session, sessionUri }: FinishAssessmentPayload) => {
             const response = await fetch(
-                `${networkStore.get.aiServiceUrl()}/finish-assessment?did=${did}&locale=${getActiveLocale()}`,
+                addActiveLocaleToUrl(
+                    `${networkStore.get.aiServiceUrl()}/finish-assessment?did=${did}`
+                ),
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
