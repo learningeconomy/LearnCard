@@ -11,6 +11,8 @@ import {
 } from '@models';
 import * as Notifications from '@helpers/notifications.helpers';
 import { addNotificationToQueueSpy } from './helpers/spies';
+import { getNotificationMessage } from '@helpers/notificationMessages';
+import { LCNNotificationTypeEnumValidator } from '@learncard/types';
 import {
     getDidDocForProfile,
     getDidDocForProfileManager,
@@ -241,6 +243,33 @@ describe('Credentials', () => {
             await expect(
                 userB.clients.fullAuth.credential.acceptCredential({ uri })
             ).resolves.not.toThrow();
+        });
+
+        it('localizes the boost-accepted notification to the recipient (sender) profile locale', async () => {
+            // userA sends the credential, so userA is the recipient of the
+            // BOOST_ACCEPTED notification ("X has accepted your boost"). Their
+            // saved locale must drive the message language.
+            await userA.clients.fullAuth.profile.updateProfile({ locale: 'fr' });
+
+            const uri = await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+            });
+
+            addNotificationToQueueSpy.mockClear();
+
+            await userB.clients.fullAuth.credential.acceptCredential({ uri });
+
+            const acceptedCall = addNotificationToQueueSpy.mock.calls.find(
+                call => call[0]?.type === LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED
+            );
+            expect(acceptedCall).toBeDefined();
+            // Regression: sourceProfile is loaded via Profile.findRelationships,
+            // whose dataValues only carry schema-declared fields. Before `locale`
+            // was added to the Profile model schema this silently fell back to 'en'.
+            expect(acceptedCall?.[0]?.message.title).toBe(
+                getNotificationMessage('boostAccepted', 'fr', {}).title
+            );
         });
 
         it('should not allow accepting the same credential twice', async () => {
