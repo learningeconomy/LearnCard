@@ -44,6 +44,7 @@ import {
     ACCOUNT_CREATED_AT_KEY,
     SESSION_START_KEY,
     createFlowLifecycle,
+    newFlowId,
     type FlowLifecycle,
 } from '@analytics';
 
@@ -239,7 +240,7 @@ const ClaimFromDashboard: React.FC = () => {
 
         presentedCredentialIdRef.current = credentialId;
         track(AnalyticsEvents.CREDENTIAL_CLAIM_PRESENTED, {
-            flow_id: createFlowLifecycle().id,
+            flow_id: newFlowId(),
             entry_point: 'dashboard',
             credential_type: getAchievementType(credential),
             category: getDefaultCategoryForCredential(credential),

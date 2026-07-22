@@ -24,7 +24,13 @@ import {
 } from 'learn-card-base';
 import { useQueryClient } from '@tanstack/react-query';
 import useRegistry from 'learn-card-base/hooks/useRegistry';
-import { useAnalytics, AnalyticsEvents, createFlowLifecycle, type FlowLifecycle } from '@analytics';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    createFlowLifecycle,
+    newFlowId,
+    type FlowLifecycle,
+} from '@analytics';
 
 import {
     getAchievementType,
@@ -526,7 +532,7 @@ const ClaimFromRequest: React.FC = () => {
 
         presentedCredentialIdRef.current = credentialId;
         track(AnalyticsEvents.CREDENTIAL_CLAIM_PRESENTED, {
-            flow_id: createFlowLifecycle().id,
+            flow_id: newFlowId(),
             entry_point: 'vc_api_request',
             credential_type: getAchievementType(credential),
             category: getDefaultCategoryForCredential(credential),

@@ -1067,12 +1067,16 @@ export interface AnalyticsEventPayloads {
     [AnalyticsEvents.AI_RESPONSE_COMPLETED]: {
         flow_id: string;
         surface: string;
+        /** 1-indexed position of the message that produced this response. */
+        message_index?: number;
         duration_ms?: number;
     };
 
     [AnalyticsEvents.AI_RESPONSE_FAILED]: {
         flow_id: string;
         surface: string;
+        /** 1-indexed position of the message that produced this response. */
+        message_index?: number;
         error_code?: string;
         duration_ms?: number;
     };

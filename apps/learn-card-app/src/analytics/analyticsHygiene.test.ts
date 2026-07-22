@@ -25,6 +25,12 @@ import { detectAnalyticsEnvironment, getSharedEventContext, newFlowId } from './
 import { applyPostHogHygiene } from './providers/posthog';
 import { normalizeScreenName } from './useScreenView';
 import { createFlowLifecycle } from './flowLifecycle';
+import {
+    clearSignupFlow,
+    getOrCreateSignupFlow,
+    SIGNUP_FLOW_ID_KEY,
+    SIGNUP_STARTED_AT_MS_KEY,
+} from './storageKeys';
 
 const setHostname = (hostname: string) => {
     Object.defineProperty(window, 'location', {
@@ -186,6 +192,53 @@ describe('createFlowLifecycle', () => {
 
     it('reports non-negative durations', () => {
         expect(createFlowLifecycle().durationMs()).toBeGreaterThanOrEqual(0);
+    });
+});
+
+describe('signup flow storage', () => {
+    beforeEach(() => {
+        clearSignupFlow();
+    });
+
+    afterEach(() => {
+        clearSignupFlow();
+    });
+
+    it('reuses the login flow until it reaches a terminal event', () => {
+        localStorage.setItem(SIGNUP_FLOW_ID_KEY, 'login-flow');
+        localStorage.setItem(SIGNUP_STARTED_AT_MS_KEY, '100');
+
+        expect(
+            getOrCreateSignupFlow(
+                localStorage,
+                () => 'unused',
+                () => 200
+            )
+        ).toEqual({
+            flowId: 'login-flow',
+            startedAtMs: 100,
+            isNew: false,
+        });
+    });
+
+    it('creates a fresh flow for a retry after the terminal flow is cleared', () => {
+        localStorage.setItem(SIGNUP_FLOW_ID_KEY, 'failed-flow');
+        localStorage.setItem(SIGNUP_STARTED_AT_MS_KEY, '100');
+        clearSignupFlow();
+
+        expect(
+            getOrCreateSignupFlow(
+                localStorage,
+                () => 'retry-flow',
+                () => 200
+            )
+        ).toEqual({
+            flowId: 'retry-flow',
+            startedAtMs: 200,
+            isNew: true,
+        });
+        expect(localStorage.getItem(SIGNUP_FLOW_ID_KEY)).toBe('retry-flow');
+        expect(localStorage.getItem(SIGNUP_STARTED_AT_MS_KEY)).toBe('200');
     });
 });
 

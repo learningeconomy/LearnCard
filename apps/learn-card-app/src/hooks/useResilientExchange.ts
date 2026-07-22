@@ -7,7 +7,7 @@ import {
 
 import { AnalyticsEvents } from '../analytics/events';
 import { useAnalytics } from '../analytics/context';
-import { createFlowLifecycle, type FlowLifecycle } from '../analytics';
+import { createFlowLifecycle, type FlowLifecycle } from '../analytics/flowLifecycle';
 
 export type ExchangeSurface = 'vci' | 'vp';
 
@@ -161,10 +161,10 @@ export const useResilientExchange = ({
                 });
 
                 if (!outcomeReportedRef.current) {
-                    outcomeReportedRef.current = true;
                     const isFirstAttempt = event.attemptNumber === 1;
                     const flow = flowRef.current;
                     if (!flow || !flow.terminate()) return;
+                    outcomeReportedRef.current = true;
                     const totalDurationMs = flow.durationMs();
 
                     void track(AnalyticsEvents.OPENID_RESILIENCE_OUTCOME, {
@@ -244,9 +244,9 @@ export const useResilientExchange = ({
 
             if (event.type === 'orchestrator_exhausted') {
                 if (!outcomeReportedRef.current) {
-                    outcomeReportedRef.current = true;
                     const flow = flowRef.current;
                     if (!flow || !flow.terminate()) return;
+                    outcomeReportedRef.current = true;
                     const totalDurationMs = flow.durationMs();
                     const totalAttempts = event.attemptLog.signersTried.length;
 
@@ -294,9 +294,9 @@ export const useResilientExchange = ({
 
             if (event.type === 'prompt_resolved' && !event.accepted) {
                 if (!outcomeReportedRef.current) {
-                    outcomeReportedRef.current = true;
                     const flow = flowRef.current;
                     if (!flow || !flow.terminate()) return;
+                    outcomeReportedRef.current = true;
                     const totalDurationMs = flow.durationMs();
                     const totalAttempts = event.attemptLog.signersTried.length;
 

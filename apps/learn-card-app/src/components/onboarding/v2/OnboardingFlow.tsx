@@ -60,16 +60,15 @@ import {
     ONBOARDING_STARTED_AT_KEY,
     newFlowId,
     createFlowLifecycle,
+    LAST_LOGIN_METHOD_KEY,
+    getOrCreateSignupFlow,
+    clearSignupFlow,
 } from '@analytics';
 
 import countries from '../../../constants/countries.json';
 const COUNTRIES: Record<string, string> = countries as Record<string, string>;
 
 const log = getLogger('onboarding-flow-v2');
-
-const SIGNUP_FLOW_ID_KEY = 'lc_signup_flow_id';
-const SIGNUP_STARTED_AT_MS_KEY = 'lc_signup_started_at_ms';
-const LAST_LOGIN_METHOD_KEY = 'lc_last_login_method';
 
 type Step = 'age-country' | 'profile' | 'celebrate';
 
@@ -435,12 +434,21 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
         setError(null);
         setIsCreating(true);
 
-        const signupFlowId = localStorage.getItem(SIGNUP_FLOW_ID_KEY) ?? newFlowId();
-        const signupStartedAtMs = Number(
-            localStorage.getItem(SIGNUP_STARTED_AT_MS_KEY) ?? Date.now()
-        );
+        const {
+            flowId: signupFlowId,
+            startedAtMs: signupStartedAtMs,
+            isNew,
+        } = getOrCreateSignupFlow();
         const signupMethod = localStorage.getItem(LAST_LOGIN_METHOD_KEY) ?? undefined;
         const signupLifecycle = createFlowLifecycle(signupFlowId);
+
+        if (isNew) {
+            track(AnalyticsEvents.SIGNUP_STARTED, {
+                flow_id: signupFlowId,
+                method: signupMethod,
+                entry_point: 'onboarding_retry',
+            });
+        }
 
         try {
             const wallet = await initWallet();
@@ -481,10 +489,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                         method: signupMethod,
                         duration_ms: Date.now() - signupStartedAtMs,
                     });
+                    clearSignupFlow();
                 }
-
-                localStorage.removeItem(SIGNUP_FLOW_ID_KEY);
-                localStorage.removeItem(SIGNUP_STARTED_AT_MS_KEY);
 
                 onboardingCompletedRef.current = true;
 
@@ -592,6 +598,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                     error_code: typeof errorCode === 'string' ? errorCode : undefined,
                     duration_ms: Date.now() - signupStartedAtMs,
                 });
+                clearSignupFlow();
             }
 
             log.error('createProfile::error', err);

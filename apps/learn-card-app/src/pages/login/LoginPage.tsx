@@ -61,11 +61,12 @@ import endorsementRequestStore from '../../stores/endorsementsRequestStore';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useTheme } from '../../theme/hooks/useTheme';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
-import { useAnalytics, AnalyticsEvents, newFlowId } from '@analytics';
-
-const SIGNUP_FLOW_ID_KEY = 'lc_signup_flow_id';
-const SIGNUP_STARTED_AT_MS_KEY = 'lc_signup_started_at_ms';
-const LAST_LOGIN_METHOD_KEY = 'lc_last_login_method';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    LAST_LOGIN_METHOD_KEY,
+    getOrCreateSignupFlow,
+} from '@analytics';
 
 export const LoginContent: React.FC = () => {
     const { textLogo, brandMarkLight, fullLogoDark, desktopLoginBg } = useTenantBrandingAssets();
@@ -172,17 +173,16 @@ export const LoginContent: React.FC = () => {
             return;
         }
 
-        const flowId = newFlowId();
+        const { flowId, isNew } = getOrCreateSignupFlow();
         const method = localStorage.getItem(LAST_LOGIN_METHOD_KEY) ?? undefined;
 
-        localStorage.setItem(SIGNUP_FLOW_ID_KEY, flowId);
-        localStorage.setItem(SIGNUP_STARTED_AT_MS_KEY, String(Date.now()));
-
-        track(AnalyticsEvents.SIGNUP_STARTED, {
-            flow_id: flowId,
-            method,
-            entry_point: 'login_page',
-        });
+        if (isNew) {
+            track(AnalyticsEvents.SIGNUP_STARTED, {
+                flow_id: flowId,
+                method,
+                entry_point: 'login_page',
+            });
+        }
 
         didTrackSignupStartedRef.current = true;
     }, [track]);

@@ -17,7 +17,7 @@ import {
 } from 'firebase/auth';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 
-import { useAnalytics, AnalyticsEvents } from '@analytics';
+import { useAnalytics, AnalyticsEvents, LAST_LOGIN_METHOD_KEY } from '@analytics';
 import {
     emitAuthDebugEvent,
     emitAuthSuccess,
@@ -50,8 +50,6 @@ import {
 
 import { getLogger } from 'learn-card-base';
 const log = getLogger('use-firebase');
-
-const LAST_LOGIN_METHOD_KEY = 'lc_last_login_method';
 
 export const useFirebase = () => {
     const { newModal, closeModal } = useModal({

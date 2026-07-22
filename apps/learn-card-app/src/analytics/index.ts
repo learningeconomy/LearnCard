@@ -18,6 +18,14 @@ export type { AnalyticsEnvironment, SharedEventContext } from './sharedContext';
 export { createFlowLifecycle } from './flowLifecycle';
 export type { FlowLifecycle } from './flowLifecycle';
 export {
+    SIGNUP_FLOW_ID_KEY,
+    SIGNUP_STARTED_AT_MS_KEY,
+    LAST_LOGIN_METHOD_KEY,
+    getOrCreateSignupFlow,
+    clearSignupFlow,
+} from './storageKeys';
+export type { StoredSignupFlow } from './storageKeys';
+export {
     useProfileSnapshot,
     useProfileSnapshotCapture,
     ACCOUNT_CREATED_AT_KEY,

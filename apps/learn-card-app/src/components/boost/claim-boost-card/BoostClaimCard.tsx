@@ -21,6 +21,7 @@ import {
     ACCOUNT_CREATED_AT_KEY,
     SESSION_START_KEY,
     createFlowLifecycle,
+    newFlowId,
     type FlowLifecycle,
 } from '@analytics';
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
@@ -246,7 +247,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
 
         presentedCredentialKeyRef.current = presentedKey;
         track(AnalyticsEvents.CREDENTIAL_CLAIM_PRESENTED, {
-            flow_id: createFlowLifecycle().id,
+            flow_id: newFlowId(),
             entry_point: 'claim_modal',
             credential_type: achievementType,
             category,

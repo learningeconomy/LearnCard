@@ -33,6 +33,7 @@ import {
     ACCOUNT_CREATED_AT_KEY,
     SESSION_START_KEY,
     createFlowLifecycle,
+    newFlowId,
     type FlowLifecycle,
 } from '@analytics';
 import { v4 as uuidv4 } from 'uuid';
@@ -210,7 +211,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
         presentedBatchKeyRef.current = batchKey;
         track(AnalyticsEvents.CREDENTIAL_CLAIM_PRESENTED, {
-            flow_id: createFlowLifecycle().id,
+            flow_id: newFlowId(),
             entry_point: 'vc_api_request',
             credential_type: getAchievementType(primaryCredential),
             category: getDefaultCategoryForCredential(primaryCredential),

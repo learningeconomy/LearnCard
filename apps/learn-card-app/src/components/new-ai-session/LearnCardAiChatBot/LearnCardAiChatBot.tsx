@@ -5,7 +5,13 @@ import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('learn-card-ai-chat-bot');
 
-import { useAnalytics, AnalyticsEvents, newFlowId } from '@analytics';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    newFlowId,
+    createFlowLifecycle,
+    type FlowLifecycle,
+} from '@analytics';
 
 import ChatHeader from './ChatHeader';
 import ChatInput from './ChatInput';
@@ -103,6 +109,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     const loading = useStore(isLoading);
     const authState = useStore(auth);
     const streaming = useStore(streamingMessage);
+    const aiError = useStore(lastAiError);
 
     const chatContainerRef = useRef<HTMLDivElement>(null);
     const chatContentRef = useRef<HTMLDivElement>(null);
@@ -121,10 +128,15 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     const { track } = useAnalytics();
     const aiFlowIdRef = useRef(newFlowId());
     const aiMessageIndexRef = useRef(0);
-    const aiSendTimestampRef = useRef<number | null>(null);
+    const aiResponseQueueRef = useRef<Array<{ lifecycle: FlowLifecycle; messageIndex: number }>>(
+        []
+    );
     const aiPrevUserCountRef = useRef(0);
     const aiBaselineInitializedRef = useRef(false);
     const aiPrevStreamingRef = useRef(false);
+    const aiMountedAtRef = useRef(Date.now());
+    const aiHandledErrorAtRef = useRef<number | null>(null);
+    const aiSuppressNextStreamCompletionRef = useRef(false);
 
     // Viewport height for min-height pin calculation
     const [viewportAllowance, setViewportAllowance] = useState(0);
@@ -297,48 +309,71 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
             // the baseline without emitting.
             if (delta > 1 || !isTyping.get()) return;
             aiMessageIndexRef.current += 1;
-            aiSendTimestampRef.current = Date.now();
+            aiResponseQueueRef.current.push({
+                lifecycle: createFlowLifecycle(),
+                messageIndex: aiMessageIndexRef.current,
+            });
             track(AnalyticsEvents.AI_MESSAGE_SENT, {
                 flow_id: aiFlowIdRef.current,
                 surface: 'ai_chat',
                 message_index: aiMessageIndexRef.current,
             });
         }
-    }, [messagesToShow, showInitialMessages]);
+    }, [messagesToShow, showInitialMessages, track]);
 
     useEffect(() => {
         const isNowStreaming = Boolean(streaming);
+        const hasCurrentError = Boolean(
+            aiError &&
+                aiError.at >= aiMountedAtRef.current &&
+                aiError.at !== aiHandledErrorAtRef.current
+        );
         if (aiPrevStreamingRef.current && !isNowStreaming) {
-            track(AnalyticsEvents.AI_RESPONSE_COMPLETED, {
-                flow_id: aiFlowIdRef.current,
-                surface: 'ai_chat',
-                duration_ms:
-                    aiSendTimestampRef.current != null
-                        ? Date.now() - aiSendTimestampRef.current
-                        : undefined,
-            });
-            aiSendTimestampRef.current = null;
+            if (aiSuppressNextStreamCompletionRef.current) {
+                aiSuppressNextStreamCompletionRef.current = false;
+            } else if (!hasCurrentError) {
+                const response = aiResponseQueueRef.current[0];
+                if (response?.lifecycle.terminate()) {
+                    track(AnalyticsEvents.AI_RESPONSE_COMPLETED, {
+                        flow_id: aiFlowIdRef.current,
+                        surface: 'ai_chat',
+                        message_index: response.messageIndex,
+                        duration_ms: response.lifecycle.durationMs(),
+                    });
+                    aiResponseQueueRef.current.shift();
+                }
+            }
         }
         aiPrevStreamingRef.current = isNowStreaming;
-    }, [streaming]);
-
-    const aiError = useStore(lastAiError);
-    const aiMountedAtRef = useRef(Date.now());
+    }, [aiError, streaming, track]);
 
     useEffect(() => {
         // Ignore errors that predate this mount (the atom persists across sessions).
-        if (!aiError || aiError.at < aiMountedAtRef.current) return;
+        if (
+            !aiError ||
+            aiError.at < aiMountedAtRef.current ||
+            aiError.at === aiHandledErrorAtRef.current
+        ) {
+            return;
+        }
+        const response = aiResponseQueueRef.current[0];
+        if (!response?.lifecycle.terminate()) {
+            aiHandledErrorAtRef.current = aiError.at;
+            return;
+        }
         track(AnalyticsEvents.AI_RESPONSE_FAILED, {
             flow_id: aiFlowIdRef.current,
             surface: 'ai_chat',
+            message_index: response.messageIndex,
             error_code: aiError.code,
-            duration_ms:
-                aiSendTimestampRef.current != null
-                    ? Date.now() - aiSendTimestampRef.current
-                    : undefined,
+            duration_ms: response.lifecycle.durationMs(),
         });
-        aiSendTimestampRef.current = null;
-    }, [aiError]);
+        if (streaming) {
+            aiSuppressNextStreamCompletionRef.current = true;
+        }
+        aiResponseQueueRef.current.shift();
+        aiHandledErrorAtRef.current = aiError.at;
+    }, [aiError, streaming, track]);
 
     useEffect(() => {
         const userCount = messagesToShow.filter(m => m.role === 'user').length;
