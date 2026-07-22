@@ -92,7 +92,7 @@ const BoostCMSHeader: React.FC<BoostCMSHeaderProps> = ({
             <IonToolbar color="grayscale-800" className="ion-no-border px-2">
                 <IonRow className="flex items-center justify-center w-full py-[10px]">
                     <div className="w-full max-w-[600px] flex items-center justify-between">
-                        <IonCol className="w-full flex justify-start items-center">
+                        <IonCol className="w-full flex justify-start items-center !px-0">
                             {(currentStep === BoostCMSStepsEnum.publish ||
                                 (currentStep === BoostCMSStepsEnum.create &&
                                     returnToParentAfterSave)) && (
