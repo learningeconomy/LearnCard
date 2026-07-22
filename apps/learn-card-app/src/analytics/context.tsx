@@ -78,7 +78,13 @@ function withSharedContext(provider: AnalyticsProvider): AnalyticsProvider {
     return {
         name: provider.name,
         init: () => provider.init(),
-        identify: (userId, traits) => provider.identify(userId, traits),
+        identify: (userId, traits) => {
+            // Drop automation/e2e identify calls provider-agnostically —
+            // PostHog also catches $identify in before_send, but other
+            // providers have no SDK-level hook.
+            if (shouldDropEvents()) return Promise.resolve();
+            return provider.identify(userId, traits);
+        },
         reset: () => provider.reset(),
         setEnabled: enabled => provider.setEnabled(enabled),
         track: async (event, properties) => {

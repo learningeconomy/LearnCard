@@ -44,6 +44,7 @@ import {
     ACCOUNT_CREATED_AT_KEY,
     SESSION_START_KEY,
     createFlowLifecycle,
+    newFlowId,
     type FlowLifecycle,
 } from '@analytics';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
@@ -338,7 +339,10 @@ const ClaimBoost: React.FC<{
 
         presentedClaimKeyRef.current = presentedKey;
         track(AnalyticsEvents.CREDENTIAL_CLAIM_PRESENTED, {
-            flow_id: createFlowLifecycle().id,
+            // Intentionally uncorrelated with the `..._started` flow that may
+            // follow — presented/started are counted as independent funnel
+            // steps, so this id carries no join value.
+            flow_id: newFlowId(),
             entry_point: 'claim_link',
             credential_type: getAchievementType(claimCredential),
             category: getDefaultCategoryForCredential(claimCredential),

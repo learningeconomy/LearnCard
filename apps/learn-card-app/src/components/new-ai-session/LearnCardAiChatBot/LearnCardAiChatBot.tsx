@@ -22,6 +22,8 @@ import {
     startLearningPathway,
     currentThreadId,
     isLoading,
+    isTyping,
+    lastAiError,
     isEndingSession,
     showEndingSessionLoader,
     disconnectWebSocket,
@@ -277,12 +279,23 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     useEffect(() => {
         const userCount = messagesToShow.filter(m => m.role === 'user').length;
         if (!aiBaselineInitializedRef.current) {
+            // Wait until the message source has switched from the (possibly
+            // empty) initialMessages prop to the store — otherwise a resumed
+            // thread hydrating asynchronously baselines at 0 and its history
+            // gets counted as fresh sends.
+            if (showInitialMessages) return;
             aiBaselineInitializedRef.current = true;
             aiPrevUserCountRef.current = userCount;
             return;
         }
         if (userCount > aiPrevUserCountRef.current) {
+            const delta = userCount - aiPrevUserCountRef.current;
             aiPrevUserCountRef.current = userCount;
+            // A real send appends exactly one user message and synchronously
+            // sets isTyping (sendMessageWithQuestion). Thread hydration
+            // (loadThread) bulk-sets history with isTyping false — resync
+            // the baseline without emitting.
+            if (delta > 1 || !isTyping.get()) return;
             aiMessageIndexRef.current += 1;
             aiSendTimestampRef.current = Date.now();
             track(AnalyticsEvents.AI_MESSAGE_SENT, {
@@ -291,7 +304,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                 message_index: aiMessageIndexRef.current,
             });
         }
-    }, [messagesToShow]);
+    }, [messagesToShow, showInitialMessages]);
 
     useEffect(() => {
         const isNowStreaming = Boolean(streaming);
@@ -308,6 +321,24 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
         }
         aiPrevStreamingRef.current = isNowStreaming;
     }, [streaming]);
+
+    const aiError = useStore(lastAiError);
+    const aiMountedAtRef = useRef(Date.now());
+
+    useEffect(() => {
+        // Ignore errors that predate this mount (the atom persists across sessions).
+        if (!aiError || aiError.at < aiMountedAtRef.current) return;
+        track(AnalyticsEvents.AI_RESPONSE_FAILED, {
+            flow_id: aiFlowIdRef.current,
+            surface: 'ai_chat',
+            error_code: aiError.code,
+            duration_ms:
+                aiSendTimestampRef.current != null
+                    ? Date.now() - aiSendTimestampRef.current
+                    : undefined,
+        });
+        aiSendTimestampRef.current = null;
+    }, [aiError]);
 
     useEffect(() => {
         const userCount = messagesToShow.filter(m => m.role === 'user').length;
