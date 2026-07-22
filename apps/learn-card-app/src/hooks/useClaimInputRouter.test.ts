@@ -3,21 +3,15 @@ import { renderHook } from '@testing-library/react';
 
 import { AnalyticsEvents } from '../analytics/events';
 
-const {
-    trackMock,
-    pushMock,
-    getProfileMock,
-    initWalletMock,
-    validateTextVCMock,
-    fetchMock,
-} = vi.hoisted(() => ({
-    trackMock: vi.fn(),
-    pushMock: vi.fn(),
-    getProfileMock: vi.fn(),
-    initWalletMock: vi.fn(),
-    validateTextVCMock: vi.fn(),
-    fetchMock: vi.fn(),
-}));
+const { trackMock, pushMock, getProfileMock, initWalletMock, validateTextVCMock, fetchMock } =
+    vi.hoisted(() => ({
+        trackMock: vi.fn(),
+        pushMock: vi.fn(),
+        getProfileMock: vi.fn(),
+        initWalletMock: vi.fn(),
+        validateTextVCMock: vi.fn(),
+        fetchMock: vi.fn(),
+    }));
 
 vi.mock('react-router-dom', () => ({
     useHistory: () => ({ push: pushMock }),
@@ -41,8 +35,7 @@ vi.mock('./resolveTenantParseConfig', () => ({
 
 import { useClaimInputRouter } from './useClaimInputRouter';
 
-const renderRouter = () =>
-    renderHook(() => useClaimInputRouter({ defaultSource: 'paste' })).result;
+const renderRouter = () => renderHook(() => useClaimInputRouter({ defaultSource: 'paste' })).result;
 
 const findTrackCall = () =>
     trackMock.mock.calls.find(([event]) => event === AnalyticsEvents.CLAIM_INPUT_ROUTED)?.[1];
@@ -72,9 +65,7 @@ describe('useClaimInputRouter', () => {
             );
 
             expect(outcome.kind).toBe('routed');
-            expect(pushMock).toHaveBeenCalledWith(
-                expect.stringMatching(/^\/oid4vci\?offer=/)
-            );
+            expect(pushMock).toHaveBeenCalledWith(expect.stringMatching(/^\/oid4vci\?offer=/));
             const decoded = decodeURIComponent(
                 (pushMock.mock.calls[0][0] as string).split('offer=')[1]
             );
@@ -86,9 +77,7 @@ describe('useClaimInputRouter', () => {
             const outcome = await result.current('openid4vp://authorize?x=1', 'paste');
 
             expect(outcome.kind).toBe('routed');
-            expect(pushMock).toHaveBeenCalledWith(
-                expect.stringMatching(/^\/oid4vp\?request=/)
-            );
+            expect(pushMock).toHaveBeenCalledWith(expect.stringMatching(/^\/oid4vp\?request=/));
         });
 
         it('routes a vc-api custom scheme using the parsed path', async () => {
@@ -209,6 +198,22 @@ describe('useClaimInputRouter', () => {
     });
 
     describe('interaction-url flow', () => {
+        it('routes same-origin interaction claims through the SPA without fetching', async () => {
+            const encodedClaim =
+                'eyJib29zdFVyaSI6ImxjOm5ldHdvcms6Ym9vc3QiLCJjaGFsbGVuZ2UiOiJjaGFsbGVuZ2UifQ';
+            const input = `${window.location.origin}/interactions/claim/${encodedClaim}?iuv=1`;
+            const result = renderRouter();
+            const outcome = await result.current(input, 'paste');
+
+            expect(outcome).toEqual({
+                kind: 'routed',
+                surface: 'interaction',
+                path: `/interactions/claim/${encodedClaim}?iuv=1`,
+            });
+            expect(pushMock).toHaveBeenCalledWith(`/interactions/claim/${encodedClaim}?iuv=1`);
+            expect(fetchMock).not.toHaveBeenCalled();
+        });
+
         it('recursively routes the inner oid4vci offer into /oid4vci', async () => {
             fetchMock.mockResolvedValue({
                 json: async () => ({
@@ -238,10 +243,7 @@ describe('useClaimInputRouter', () => {
                 }),
             });
             const result = renderRouter();
-            const outcome = await result.current(
-                'https://example.com/interact?iuv=1',
-                'paste'
-            );
+            const outcome = await result.current('https://example.com/interact?iuv=1', 'paste');
 
             expect(outcome.kind).toBe('open_website');
             if (outcome.kind === 'open_website') {
@@ -250,15 +252,45 @@ describe('useClaimInputRouter', () => {
             expect(pushMock).not.toHaveBeenCalled();
         });
 
-        it('returns unrecognized when interaction fetch rejects', async () => {
+        it.each(['javascript:alert(document.domain)', '/relative-path'])(
+            'rejects unsafe website protocol URL %s',
+            async website => {
+                fetchMock.mockResolvedValue({
+                    json: async () => ({
+                        protocols: { website },
+                    }),
+                });
+                const result = renderRouter();
+                const outcome = await result.current('https://example.com/interact?iuv=1', 'paste');
+
+                expect(outcome).toMatchObject({
+                    kind: 'unrecognized',
+                    reason: 'interaction_unavailable',
+                });
+                expect(pushMock).not.toHaveBeenCalled();
+            }
+        );
+
+        it('returns interaction_unavailable when an interaction returns 404', async () => {
+            fetchMock.mockResolvedValue({ ok: false, status: 404 });
+            const result = renderRouter();
+            const outcome = await result.current('https://example.com/interact?iuv=1', 'paste');
+
+            expect(outcome).toMatchObject({
+                kind: 'unrecognized',
+                reason: 'interaction_unavailable',
+            });
+        });
+
+        it('returns interaction_unavailable when interaction fetch rejects', async () => {
             fetchMock.mockRejectedValue(new Error('boom'));
             const result = renderRouter();
-            const outcome = await result.current(
-                'https://example.com/interact?iuv=1',
-                'paste'
-            );
+            const outcome = await result.current('https://example.com/interact?iuv=1', 'paste');
 
-            expect(outcome.kind).toBe('unrecognized');
+            expect(outcome).toMatchObject({
+                kind: 'unrecognized',
+                reason: 'interaction_unavailable',
+            });
         });
 
         it('passes an AbortSignal so the fetch can be cancelled on timeout', async () => {
@@ -323,9 +355,7 @@ describe('useClaimInputRouter', () => {
         });
 
         it('threads camera as the source through the default option', async () => {
-            const { result } = renderHook(() =>
-                useClaimInputRouter({ defaultSource: 'camera' })
-            );
+            const { result } = renderHook(() => useClaimInputRouter({ defaultSource: 'camera' }));
             await result.current('https://learncard.app/wallet/x');
 
             const payload = findTrackCall();

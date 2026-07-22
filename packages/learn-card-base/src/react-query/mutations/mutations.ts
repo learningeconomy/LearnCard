@@ -527,6 +527,10 @@ export const useDeleteCredentialRecord = () => {
                 }
             };
 
+            queryClient.invalidateQueries({
+                queryKey: ['getChecklistCredentialCounts'],
+            });
+
             if (category) {
                 // Invalidate related queries to refresh data
                 queryClient.invalidateQueries({

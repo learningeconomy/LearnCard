@@ -15,7 +15,7 @@ export type ModalActionsContextValues = {
     newModal: (component: ModalComponent, type: ModalType, options?: ModalOptions) => void;
 
     /** Replaces the current modal */
-    replaceModal: (component: ModalComponent, options?: ModalOptions) => void;
+    replaceModal: (component: ModalComponent, options?: ModalOptions, type?: ModalType) => void;
 
     /** Closes the top modal */
     closeModal: () => void;
@@ -68,13 +68,14 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
 
     const replaceModal = useCallback(
-        (component: ModalComponent, options?: ModalOptions) => {
+        (component: ModalComponent, options?: ModalOptions, type?: ModalType) => {
             setModals(oldModals => {
                 const currentModal = oldModals[oldModals.length - 1];
 
                 if (currentModal) {
                     currentModal.component = component;
                     currentModal.options = options;
+                    if (type) currentModal.type = type;
                 }
             });
         },
