@@ -14,13 +14,10 @@ publish = "build/"
 [context.deploy-preview]
 environment = { NODE_ENV = 'production', VITE_NODE_ENV = "staging-scoutpass", NETLIFY_BUILD_TYPE = "deploy-preview", SENTRY_ENV="scouts-deploy-preview", SENTRY_DSN='https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704', LCN_URL = "https://staging.scoutnetwork.org/trpc", LCN_API_URL = "https://staging.scoutnetwork.org/api", CLOUD_URL = "https://staging.cloud.scoutnetwork.org/trpc", LEARN_CLOUD_XAPI_URL = "https://staging.cloud.scoutnetwork.org/xapi", API_URL = "https://staging.api.scoutnetwork.org/trpc", SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"  }
 
-# Staging Scouts (built by Netlify's git integration from `main`)
-[context.main]
-environment = { NODE_ENV = 'production', VITE_NODE_ENV = "staging-scoutpass", NETLIFY_BUILD_TYPE = "staging", SENTRY_ENV="scouts-staging", SENTRY_DSN='https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704', LCN_URL = "https://staging.scoutnetwork.org/trpc", LCN_API_URL = "https://staging.scoutnetwork.org/api", CLOUD_URL = "https://staging.cloud.scoutnetwork.org/trpc", LEARN_CLOUD_XAPI_URL = "https://staging.cloud.scoutnetwork.org/xapi", API_URL = "https://staging.api.scoutnetwork.org/trpc", SECRETS_SCAN_SMART_DETECTION_ENABLED = "false" }
-
-# Production Scouts is deployed from CI via `netlify deploy --prod --no-build`, keyed off
-# the scout-app-production GitHub Environment's NETLIFY_SITE_ID (see deploy.yml). Build-time
-# env is supplied by the CI "Build App" step, so no production build context is needed here.
+# Staging and production Scouts are both deployed from CI via `netlify deploy --prod
+# --no-build`, keyed off the scout-app-staging / scout-app-production GitHub Environments'
+# NETLIFY_SITE_ID (see deploy.yml). Build-time env is supplied by the CI "Build App" step,
+# so no branch build contexts are needed here.
 
 
 ###################################

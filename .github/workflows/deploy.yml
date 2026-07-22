@@ -82,8 +82,12 @@ jobs:
             lca_app_changed: ${{ steps.check_versions.outputs.lca_app_changed }}
             native_plugin_changed: ${{ steps.check_versions.outputs.native_plugin_changed }}
             # Dynamic environment names
+            # target_frontend_env is only consumed by publish-native-apps (fastlane);
+            # Netlify/CapGo deploys fan out over frontend_deployment_matrix instead.
             target_frontend_env: ${{ steps.set-env.outputs.frontend_env }}
             service_deployment_matrix: ${{ steps.set-env.outputs.service_deployment_matrix }}
+            frontend_deployment_matrix: ${{ steps.set-env.outputs.frontend_deployment_matrix }}
+            frontend_matrix_has_legs: ${{ steps.set-env.outputs.frontend_matrix_has_legs }}
         steps:
             # Check these first - no dependencies needed
             - name: Check if this is a manual dispatch
@@ -183,29 +187,79 @@ jobs:
                   SCOUTS_STAGING='{"name":"ScoutPass Staging","brain_env":"scout-network-api-staging","cloud_env":"scout-storage-api-staging","lca_api_env":"scout-app-api-staging"}'
                   SCOUTS_PRODUCTION='{"name":"ScoutPass Production","brain_env":"scout-network-api-production","cloud_env":"scout-storage-api-production","lca_api_env":"scout-app-api-production"}'
 
-                  set_outputs() {
-                    local frontend_env="$1"
-                    shift
+                  # Frontend legs mirror the service matrix, one Netlify site per GitHub
+                  # Environment. capgo=false on automatic staging legs: the LearnCard staging
+                  # OTA is owned by capgo-staging.yml (prod-config rationale documented there),
+                  # and ScoutPass staging has no OTA channel.
+                  LC_FE_STAGING='{"name":"LearnCard Staging","environment":"learn-card-app-staging","capgo":false}'
+                  LC_FE_STAGING_MANUAL='{"name":"LearnCard Staging","environment":"learn-card-app-staging","capgo":true}'
+                  LC_FE_PRODUCTION='{"name":"LearnCard Production","environment":"learn-card-app-production","capgo":true}'
+                  SCOUTS_FE_STAGING='{"name":"ScoutPass Staging","environment":"scout-app-staging","capgo":false}'
+                  SCOUTS_FE_STAGING_MANUAL='{"name":"ScoutPass Staging","environment":"scout-app-staging","capgo":true}'
+                  SCOUTS_FE_PRODUCTION='{"name":"ScoutPass Production","environment":"scout-app-production","capgo":true}'
+
+                  set_service_matrix() {
                     local legs
                     legs=$(IFS=,; echo "$*")
-                    echo "frontend_env=${frontend_env}" >> "$GITHUB_OUTPUT"
                     echo "service_deployment_matrix={\"include\":[${legs}]}" >> "$GITHUB_OUTPUT"
                   }
 
+                  set_frontend_matrix() {
+                    local legs
+                    legs=$(IFS=,; echo "$*")
+                    echo "frontend_deployment_matrix={\"include\":[${legs}]}" >> "$GITHUB_OUTPUT"
+                    if [[ -n "$legs" ]]; then
+                      echo "frontend_matrix_has_legs=true" >> "$GITHUB_OUTPUT"
+                    else
+                      echo "frontend_matrix_has_legs=false" >> "$GITHUB_OUTPUT"
+                    fi
+                  }
+
+                  AFFECTED="${{ steps.affected.outputs.affected }}"
+
+                  is_affected() {
+                    tr ',' '\n' <<< "$AFFECTED" | grep -qx "$1"
+                  }
+
                   if [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'scouts' ]]; then
-                    set_outputs scout-app-production "$SCOUTS_PRODUCTION"
+                    echo "frontend_env=scout-app-production" >> "$GITHUB_OUTPUT"
+                    set_service_matrix "$SCOUTS_PRODUCTION"
+                    set_frontend_matrix "$SCOUTS_FE_PRODUCTION"
                   elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'scouts-staging' ]]; then
-                    set_outputs scout-app-staging "$SCOUTS_STAGING"
+                    echo "frontend_env=scout-app-staging" >> "$GITHUB_OUTPUT"
+                    set_service_matrix "$SCOUTS_STAGING"
+                    set_frontend_matrix "$SCOUTS_FE_STAGING_MANUAL"
                   elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'production' ]]; then
-                    set_outputs learn-card-app-production "$LC_PRODUCTION"
+                    echo "frontend_env=learn-card-app-production" >> "$GITHUB_OUTPUT"
+                    set_service_matrix "$LC_PRODUCTION"
+                    set_frontend_matrix "$LC_FE_PRODUCTION"
                   elif [[ "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
-                    set_outputs learn-card-app-staging "$LC_STAGING"
+                    echo "frontend_env=learn-card-app-staging" >> "$GITHUB_OUTPUT"
+                    set_service_matrix "$LC_STAGING"
+                    set_frontend_matrix "$LC_FE_STAGING_MANUAL"
                   elif [[ "${{ steps.check_release.outputs.is_release }}" == 'true' ]]; then
                     # ScoutPass production is deliberately excluded from release
                     # pushes — it deploys only via the manual 'scouts' dispatch.
-                    set_outputs learn-card-app-production "$LC_PRODUCTION"
+                    echo "frontend_env=learn-card-app-production" >> "$GITHUB_OUTPUT"
+                    set_service_matrix "$LC_PRODUCTION"
+                    if [[ "${{ steps.check_versions.outputs.lca_app_changed }}" == 'true' ]]; then
+                      set_frontend_matrix "$LC_FE_PRODUCTION"
+                    else
+                      set_frontend_matrix
+                    fi
                   else
-                    set_outputs learn-card-app-staging "$LC_STAGING" "$SCOUTS_STAGING"
+                    echo "frontend_env=learn-card-app-staging" >> "$GITHUB_OUTPUT"
+                    set_service_matrix "$LC_STAGING" "$SCOUTS_STAGING"
+                    # Normal main push: staging front-ends deploy from CI (replacing
+                    # Netlify branch builds), only when their Nx project is affected.
+                    FE_LEGS=()
+                    if is_affected learn-card-app; then
+                      FE_LEGS+=("$LC_FE_STAGING")
+                    fi
+                    if is_affected scouts; then
+                      FE_LEGS+=("$SCOUTS_FE_STAGING")
+                    fi
+                    set_frontend_matrix "${FE_LEGS[@]}"
                   fi
 
     # ============================================================================
@@ -650,24 +704,40 @@ jobs:
 
     # ============================================================================
     # FRONTEND DEPLOYMENTS
-    # For production: Wait for any services that are deploying to complete first
+    # Triggers:
+    #   - Push: Deploy affected front-ends to their staging Netlify sites
+    #   - Release: Deploy LearnCard production if version changed
+    #   - Manual: Deploy to selected environment if selected
+    # Waits for any services that are deploying to complete first.
     # ============================================================================
     deploy-frontend:
-        name: Deploy Frontend
-        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api]
+        name: Deploy Frontend (${{ matrix.name }})
+        needs:
+            [
+                determine-affected,
+                test-affected,
+                deploy-brain-service,
+                deploy-learn-cloud,
+                deploy-lca-api,
+            ]
         if: |
             always() &&
             !cancelled() &&
+            needs.determine-affected.outputs.frontend_matrix_has_legs == 'true' &&
             (
                 (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-frontend == 'true') ||
+                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.target-environment == 'scouts') ||
                 (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.lca_app_changed == 'true') ||
-                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.target-environment == 'scouts')
+                (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success')
             ) &&
             !contains(needs.deploy-brain-service.result, 'failure') &&
             !contains(needs.deploy-learn-cloud.result, 'failure') &&
             !contains(needs.deploy-lca-api.result, 'failure')
         runs-on: ubuntu-latest
-        environment: ${{ needs.determine-affected.outputs.target_frontend_env }}
+        strategy:
+            fail-fast: false
+            matrix: ${{ fromJSON(needs.determine-affected.outputs.frontend_deployment_matrix) }}
+        environment: ${{ matrix.environment }}
         steps:
             - name: Set Deployment Variables
               id: vars
@@ -686,12 +756,14 @@ jobs:
 
             - name: Get App Version
               id: app-version
+              if: matrix.capgo
               run: |
                   VERSION=$(bun -e "console.log(require('./apps/${{ steps.vars.outputs.project_name }}/package.json').version)")
                   echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
             - name: Get CapGo Channel
               id: capgo-channel
+              if: matrix.capgo
               run: |
                   CHANNEL=$(bun tools/capgo/getCapgoChannel.js --app ${{ steps.vars.outputs.app_id }})
                   echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
@@ -746,7 +818,7 @@ jobs:
             - name: Validate Netlify target
               run: |
                   if [[ -z "${{ steps.vars.outputs.netlify_site_id }}" ]]; then
-                    echo "::error::NETLIFY_SITE_ID is not set in environment '${{ needs.determine-affected.outputs.target_frontend_env }}'! Configure it in the GitHub environment settings."
+                    echo "::error::NETLIFY_SITE_ID is not set in environment '${{ matrix.environment }}'! Configure it in the GitHub environment settings."
                     exit 1
                   fi
 
@@ -769,6 +841,7 @@ jobs:
 
             # Deploy OTA update to CapGo
             - name: Upload to CapGo
+              if: matrix.capgo
               run: |
                   bunx @capgo/cli@latest bundle upload \
                     ${{ steps.vars.outputs.capgo_id }} \
@@ -781,6 +854,7 @@ jobs:
                     --node-modules node_modules
 
             - name: Set CapGo Channel
+              if: matrix.capgo
               run: |
                   bunx @capgo/cli@latest channel set ${{ steps.capgo-channel.outputs.channel }} \
                     -s default \

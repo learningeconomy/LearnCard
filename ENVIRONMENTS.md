@@ -49,9 +49,12 @@ Each deployment environment provides secrets and variables for four service tier
 
 ## Front-End (Netlify) Deploys
 
-Front-end production deploys run from CI (`.github/workflows/deploy.yml`, `deploy-frontend` job)
-via the Netlify CLI (`netlify deploy --prod --no-build`) instead of force-pushing a deploy branch.
-Each front-end GitHub Environment must provide:
+Front-end deploys (staging and production) run from CI (`.github/workflows/deploy.yml`,
+`deploy-frontend` job) via the Netlify CLI (`netlify deploy --prod --no-build`) instead of
+Netlify branch builds. Normal pushes to `main` deploy LearnCard staging and ScoutPass staging
+(when their Nx project is affected); release pushes deploy LearnCard production; ScoutPass
+production deploys only via the manual `scouts` dispatch. Each front-end GitHub Environment
+must provide:
 
 | Key                  | Type   | Purpose                                                          |
 | -------------------- | ------ | ---------------------------------------------------------------- |
@@ -59,9 +62,10 @@ Each front-end GitHub Environment must provide:
 | `NETLIFY_AUTH_TOKEN` | secret | Netlify personal/team token with deploy rights (may be org-wide) |
 
 Set `NETLIFY_SITE_ID` per environment (`learn-card-app-staging`, `learn-card-app-production`,
-`scout-app-production`). The obsolete `NETLIFY_BRANCH` and `DEPLOY_FORCE_PUSH` vars are no longer
-used and can be removed. On the Netlify side, disable auto-publishing from the deploy branch so
-CI is the only publisher; Deploy Previews may still be built by Netlify's git integration.
+`scout-app-staging`, `scout-app-production`). The obsolete `NETLIFY_BRANCH` and
+`DEPLOY_FORCE_PUSH` vars are no longer used and can be removed. On the Netlify side, disable
+auto-publishing from git branches (`main`, `production`, `production-scouts`) so CI is the only
+publisher; Deploy Previews may still be built by Netlify's git integration.
 
 ## Environment Variables
 
