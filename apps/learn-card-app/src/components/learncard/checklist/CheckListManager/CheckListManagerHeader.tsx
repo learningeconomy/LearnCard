@@ -1,5 +1,9 @@
 import React from 'react';
 import { IonHeader, IonToolbar } from '@ionic/react';
+
+import * as m from '../../../../paraglide/messages.js';
+import { TransP } from '../../../../i18n/TransP';
+
 import WrenchIcon from 'learn-card-base/svgs/WrenchIcon';
 import BuildColorBlocksIcon from 'learn-card-base/svgs/BuildColorBlocksIcon';
 import { useGetCheckListStatus, checklistItems } from 'learn-card-base';
@@ -22,12 +26,24 @@ export const CheckListManagerHeader: React.FC<{}> = ({}) => {
                         </div>
                         <div className="flex flex-col items-start justify-center">
                             <h5 className="text-[22px] font-semibold text-grayscale-900 font-poppins">
-                                Build My {brandingConfig.name}
+                                <TransP
+                                    m={m['passport.buildMyLearnCard.titleMarkup']}
+                                    values={{ brand: brandingConfig.name }}
+                                    components={[<span />]}
+                                />
                             </h5>
                             <p className="text-[17px] text-grayscale-900 font-notoSans leading-[24px] tracking-[0.25px]">
-                                <span className="font-semibold">{completedItems}</span> of{' '}
-                                <span className="font-semibold">{checklistItems.length}</span> Steps
-                                Completed
+                                <TransP
+                                    m={m['passport.buildMyLearnCard.stepsCompleted']}
+                                    values={{
+                                        completed: completedItems,
+                                        total: checklistItems.length,
+                                    }}
+                                    components={[
+                                        <span className="font-semibold" />,
+                                        <span className="font-semibold" />,
+                                    ]}
+                                />
                             </p>
                         </div>
                     </div>

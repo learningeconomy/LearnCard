@@ -1,5 +1,21 @@
 # @learncard/network-brain-client
 
+## 2.5.47
+
+### Patch Changes
+
+-   [#1394](https://github.com/learningeconomy/LearnCard/pull/1394) [`147d2a5fda49ba33f20077400ac3aae633bddb05`](https://github.com/learningeconomy/LearnCard/commit/147d2a5fda49ba33f20077400ac3aae633bddb05) Thanks [@goblincore](https://github.com/goblincore)! - perf: eagerly prefetch DID-Auth challenges with single-flight refills so client setup overlaps network latency without duplicate pools when the first request races construction.
+
+-   Updated dependencies [[`c92534e3ceadbdbe4a79311f7d60dfd7cc54e015`](https://github.com/learningeconomy/LearnCard/commit/c92534e3ceadbdbe4a79311f7d60dfd7cc54e015)]:
+    -   @learncard/network-brain-service@3.16.10
+
+## 2.5.46
+
+### Patch Changes
+
+-   Updated dependencies [[`61e0a198c1166ec468f812caac8d7a3ddbd42edd`](https://github.com/learningeconomy/LearnCard/commit/61e0a198c1166ec468f812caac8d7a3ddbd42edd)]:
+    -   @learncard/network-brain-service@3.16.9
+
 ## 2.5.45
 
 ### Patch Changes

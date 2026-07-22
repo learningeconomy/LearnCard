@@ -20,15 +20,29 @@ import {
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
 
 import useTheme from '../../../theme/hooks/useTheme';
+import * as m from '../../../paraglide/messages.js';
 import { ColorSetEnum } from '../../../theme/colors/index';
 import { StyleSetEnum } from '../../../theme/styles/index';
 
 export const NotificationsSubHeader: React.FC<{
-    notificationCount: number;
     isEmptyState: boolean;
     setTab: React.Dispatch<React.SetStateAction<string>>;
     tab: string;
-}> = ({ notificationCount, isEmptyState, setTab, tab }) => {
+    /**
+     * Overrides the back-button behavior. Defaults to `history.goBack()` (used
+     * by the full-page route). The notifications modal passes `closeModal` so
+     * the back arrow dismisses the modal instead of navigating the route
+     * underneath it.
+     */
+    onBack?: () => void;
+    /**
+     * Forces the back arrow to render on desktop too (it is hidden on desktop
+     * by default). The notifications modal enables this so the arrow acts as the
+     * close control on every breakpoint — avoiding a separate close button that
+     * would collide with the "Archive All" button.
+     */
+    showBackButton?: boolean;
+}> = ({ isEmptyState, setTab, tab, onBack, showBackButton }) => {
     const { getColorSet, getStyleSet } = useTheme();
     const styleSet = getStyleSet(StyleSetEnum.defaults);
     const colorSet = getColorSet(ColorSetEnum.defaults);
@@ -111,13 +125,18 @@ export const NotificationsSubHeader: React.FC<{
                     <button
                         className="text-grayscale-50 p-0 mr-[2px] flex items-center justify-start"
                         onClick={() => {
-                            history.goBack();
+                            if (onBack) onBack();
+                            else history.goBack();
                         }}
-                        aria-label="Back button"
+                        aria-label={onBack ? 'Close alerts' : 'Back button'}
                     >
-                        <LeftArrow className="w-6 mr-[10px] h-auto text-black desktop:hidden" />
+                        <LeftArrow
+                            className={`w-6 mr-[10px] h-auto text-black ${
+                                showBackButton ? '' : 'desktop:hidden'
+                            }`}
+                        />
                         <span className="text-grayscale-900 font-poppins font-semibold text-[25px] tracking-[0.01rem]">
-                            Alerts
+                            {m['alerts.title']()}
                         </span>
                     </button>
                 </IonRow>
@@ -126,7 +145,7 @@ export const NotificationsSubHeader: React.FC<{
                         onClick={handleMarkAllRead}
                         className="text-[14px] text-grayscale-800 flex items-center justify-center font-semibold min-w-[140px] rounded-[36px] border-solid border-[1px] border-grayscale-200 py-[7px] px-[20px]"
                     >
-                        Archive All <X className="ml-[5px] w-[15px] h-[15px]" />
+                        {m['alerts.archive']()} <X className="ml-[5px] w-[15px] h-[15px]" />
                     </button>
                 )}
             </IonGrid>
@@ -143,7 +162,7 @@ export const NotificationsSubHeader: React.FC<{
                                     : 'text-grayscale-600'
                             }`}
                         >
-                            All
+                            {m['alerts.active']()}
                         </button>
                         <button
                             onClick={() => {
@@ -155,7 +174,7 @@ export const NotificationsSubHeader: React.FC<{
                                     : 'text-grayscale-600'
                             }`}
                         >
-                            {!isLoading ? numberArchived : ''} Archived
+                            {!isLoading ? numberArchived : ''} {m['alerts.archived']()}
                         </button>
                     </IonCol>
                 </IonRow>

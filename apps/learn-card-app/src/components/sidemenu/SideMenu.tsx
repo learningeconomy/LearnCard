@@ -21,6 +21,7 @@ import { IonMenu, IonContent, IonMenuToggle } from '@ionic/react';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 import Settings from '../svgs/Settings';
 import ThemeSelector, { themeSelectorViewMode } from '../../theme/components/ThemeSelector';
+import LanguagePicker from './LanguagePicker';
 import CheckListButton from '../learncard/checklist/CheckListButton';
 import useOpenMyLearnCard from '../learncard/useOpenMyLearnCard';
 import LaunchPadActionModal from '../../pages/launchPad/LaunchPadHeader/LaunchPadActionModal';
@@ -39,6 +40,8 @@ import useTheme from '../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../theme/colors';
 import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
 import useBoostRecoveryCheck from '../../hooks/useBoostRecoveryCheck';
+
+import * as m from '../../paraglide/messages.js';
 
 const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
     branding = BrandingEnum.learncard,
@@ -168,7 +171,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                     {isMobile && (
                                         <IonMenuToggle
                                             autoHide={false}
-                                            aria-label="Close menu"
+                                            aria-label={m['sidemenu.closeMenu']()}
                                             className="cursor-pointer flex items-center justify-center p-2 -mr-2"
                                         >
                                             <LeftArrow
@@ -194,7 +197,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                         onClick={handleBoost}
                                         className={`text-[17px] flex items-center justify-center gap-[10px] font-semibold py-[5px] rounded-full w-full max-w-[90%] h-[45px] max-h-[45px] shadow-soft-bottom ${colors.secondaryButtonColor}`}
                                     >
-                                        Issue Credentials
+                                        {m['issue.title']()}
                                         <GearPlusIcon className="w-[30px] h-[30px] text-grayscale-800" />
                                     </IonMenuToggle>
                                 </div>
@@ -228,11 +231,13 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
                                     className="w-full flex items-center gap-[10px] px-[10px] py-[5px] rounded-[10px] text-grayscale-900 font-poppins text-[17px]"
                                 >
                                     <Settings className="h-[35px] w-[35px] text-grayscale-400" />
-                                    Settings
+                                    {m['sidemenu.settings']()}
                                 </button>
                             </IonMenuToggle>
 
                             <ThemeSelector viewMode={themeSelectorViewMode.Compact} />
+
+                            <LanguagePicker />
 
                             <GenericErrorBoundary>
                                 <CheckListButton mode="sidemenu" className="mx-4 my-1" />

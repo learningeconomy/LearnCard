@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { LearnCardRolesEnum, LearnCardRoleType } from '../onboarding.helpers';
+import { getRoleTitle, getRoleDescription } from './onboardingRolesI18n';
 import Pencil from '../../svgs/Pencil';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import LearnerIcon from '../../../assets/images/quicknavroles/learnergradcapicon.png';
@@ -8,6 +9,7 @@ import GuardianIcon from '../../../assets/images/quicknavroles/guardianhomeicon.
 import TeacherIcon from '../../../assets/images/quicknavroles/teacherappleicon.png';
 import AdminIcon from '../../../assets/images/quicknavroles/adminshieldicon.png';
 import DeveloperIcon from '../../../assets/images/quicknavroles/developeralienicon.png';
+import * as m from '../../../paraglide/messages.js';
 
 export const roleIcons: Record<LearnCardRolesEnum, string> = {
     [LearnCardRolesEnum.learner]: LearnerIcon,
@@ -81,7 +83,7 @@ export const OnboardingRoleItem: React.FC<OnboardingRoleItemProps> = ({
                             >
                                 <img
                                     src={iconSrc}
-                                    alt={`${roleItem?.title ?? 'Role'} icon`}
+                                    alt={`${roleItem ? getRoleTitle(roleItem.type) : ''} icon`}
                                     className="h-[28px] w-[28px] object-contain"
                                 />
                             </span>
@@ -89,9 +91,15 @@ export const OnboardingRoleItem: React.FC<OnboardingRoleItemProps> = ({
 
                         <p className="font-semibold text-[17px] font-poppins min-w-0">
                             {!showDescription && isSelected && (
-                                <span className="text-grayscale-800 font-normal">I'm a {''}</span>
+                                <span className="text-grayscale-800 font-normal">
+                                    {m['onboarding.profile.imA']()}
+                                </span>
                             )}
-                            {!showDescription && !isSelected ? 'Select Role' : roleItem?.title}
+                            {!showDescription && !isSelected
+                                ? m['onboarding.profile.selectRole']()
+                                : roleItem
+                                ? getRoleTitle(roleItem.type)
+                                : ''}
                         </p>
                     </div>
 
@@ -115,9 +123,9 @@ export const OnboardingRoleItem: React.FC<OnboardingRoleItemProps> = ({
                     )}
                 </div>
 
-                {showDescription && (
+                {showDescription && roleItem && (
                     <p className="text-grayscale-600 text-[14px] font-poppins">
-                        {roleItem?.description}
+                        {getRoleDescription(roleItem.type)}
                     </p>
                 )}
             </div>

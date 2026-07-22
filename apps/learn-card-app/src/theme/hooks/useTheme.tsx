@@ -1,7 +1,12 @@
 // src/theme/hooks/useTheme.tsx
 import { useEffect } from 'react';
 
-import { CredentialCategoryEnum, useGetPreferencesForDid, useIsLoggedIn } from 'learn-card-base';
+import {
+    BoostPageViewMode,
+    CredentialCategoryEnum,
+    useGetPreferencesForDid,
+    useIsLoggedIn,
+} from 'learn-card-base';
 
 import { getDefaultTheme, resolveThemeForTenant, themeStore } from '../store/themeStore';
 
@@ -30,7 +35,13 @@ export const syncThemeDefaults = (theme: string): void => {
     const { defaults } = schema;
 
     passportPageStore.set.setViewMode(
-        defaults.viewMode === ViewMode.List ? PassportPageViewMode.list : PassportPageViewMode.grid
+        defaults.passportViewMode === ViewMode.List
+            ? PassportPageViewMode.list
+            : PassportPageViewMode.grid
+    );
+
+    passportPageStore.set.setCredentialViewMode(
+        defaults.credentialViewMode === 'list' ? BoostPageViewMode.List : BoostPageViewMode.Card
     );
 };
 

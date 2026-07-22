@@ -43,6 +43,37 @@ export type NotificationProps = {
     loadingState: boolean;
 };
 
+/**
+ * Shared visual system for all notification cards.
+ * Every notification variant composes these classes so layout, spacing,
+ * typography, elevation, radius, and interaction states stay consistent.
+ * Per-type accent colors still come from NotificationTypeStyles /
+ * UserNotificationTypeStyles / per-variant config.
+ */
+export const notificationCardStyles = {
+    /** Outer card shell: soft gray surface, white rounded border, subtle elevation */
+    shell: 'flex justify-start items-start relative w-full max-w-[600px] rounded-3xl border-[3px] border-solid border-white bg-grayscale-50 p-[14px] my-3 shadow-[0_2px_10px_rgba(24,34,78,0.08)] transition-shadow duration-200 hover:shadow-[0_4px_18px_rgba(24,34,78,0.12)]',
+    /** Error-boundary fallback shell */
+    fallbackShell:
+        'flex justify-center items-center relative w-full max-w-[600px] min-h-[100px] rounded-3xl border-[3px] border-solid border-white bg-grayscale-50 p-[14px] my-3 text-sm text-grayscale-600',
+    /** Card title */
+    title: 'font-semibold leading-snug tracking-wide line-clamp-2 text-grayscale-900 text-[14px] pr-[20px] notification-card-title',
+    /** Body/description text */
+    body: 'text-left text-[13px] leading-snug text-grayscale-600 line-clamp-2',
+    /** Meta row (type label); pair with a per-type accent color class */
+    meta: 'font-bold p-0 leading-none tracking-wide line-clamp-1 text-[12px] notification-card-type-text',
+    /** Timestamp inside the meta row */
+    date: 'text-grayscale-500 normal-case font-normal text-[12px] notification-card-type-issue-date',
+    /** Primary pill action button; pair with per-type color classes */
+    primaryButton:
+        'notification-claim-btn flex items-center justify-center flex-1 rounded-full border-2 border-solid font-semibold font-poppins text-[14px] py-2 px-3 tracking-wide transition duration-150 active:scale-[0.98]',
+    /** Circular secondary/dismiss icon button */
+    iconButton:
+        'shrink-0 rounded-full flex items-center justify-center border border-solid border-grayscale-200 h-[42px] w-[42px] bg-white p-0 font-semibold tracking-wide transition duration-150 hover:bg-grayscale-50 active:scale-[0.98]',
+    /** Tinted rounded icon chip for icon-led cards; pair with tint classes */
+    iconChip: 'shrink-0 w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center',
+};
+
 export const CATEGORY_TO_NOTIFICATION_ENUM = {
     [CredentialCategoryEnum.socialBadge]: NotificationTypeEnum.SocialBadges,
     [CredentialCategoryEnum.achievement]: NotificationTypeEnum.Achievement,

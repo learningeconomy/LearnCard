@@ -1,5 +1,7 @@
 import type { PaginatedConsentFlowTerms } from '@learncard/types';
 
+import * as m from '../../paraglide/messages.js';
+
 export type ConsentedContract = PaginatedConsentFlowTerms['records'][number];
 
 /** Counts accepted read/write categories for one contract. Shared by the modal rows and the dashboard summary. */
@@ -25,17 +27,19 @@ export const summarizeContractPermissions = (
     return { read, write };
 };
 
+/**
+ * Builds the localized "N read, M write" summary shown on each consented
+ * contract row. Called during render, so calling the Paraglide message
+ * functions here resolves against the active locale.
+ */
 export const buildPermissionText = (contract: ConsentedContract): string => {
     const { read, write } = summarizeContractPermissions(contract);
 
-    let text = '';
-    if (read > 0) text += `${read} read`;
-    if (write > 0) {
-        text += text ? ', ' : '';
-        text += `${write} write`;
-    }
+    const parts: string[] = [];
+    if (read > 0) parts.push(m['dataSharing.readCount']({ count: read }));
+    if (write > 0) parts.push(m['dataSharing.writeCount']({ count: write }));
 
-    return text || 'No permissions';
+    return parts.length ? parts.join(', ') : m['dataSharing.noPermissions']();
 };
 
 export type ConsentProofItem = {

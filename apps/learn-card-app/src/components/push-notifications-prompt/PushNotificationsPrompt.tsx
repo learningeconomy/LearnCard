@@ -1,131 +1,240 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('push-notifications-prompt');
 
 import { Capacitor } from '@capacitor/core';
 import { NativeSettings, IOSSettings, AndroidSettings } from 'capacitor-native-settings';
+import { ChevronLeft, CheckCircle2 } from 'lucide-react';
+import { IonSpinner } from '@ionic/react';
 
 import NotificationImage from '../../assets/images/notification-polygon.png';
 import { pushUtilities } from 'learn-card-base';
+import { ToastTypeEnum, useToast } from 'learn-card-base/hooks/useToast';
 import { openToS, openPP } from '../../helpers/externalLinkHelpers';
-import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import useTheme from '../../theme/hooks/useTheme';
+import * as m from '../../paraglide/messages.js';
 
 export const PushNotificationsPrompt: React.FC<{ handleCloseModal: () => void }> = ({
     handleCloseModal,
 }) => {
-    const { colors } = useTheme();
-    const primaryColor = colors?.defaults?.primaryColor;
-    const brandingConfig = useBrandingConfig();
+    const { getColorSet } = useTheme();
+    const primaryColor = getColorSet('defaults')?.primary || '#4f46e5';
+    const { presentToast } = useToast();
+
+    const [permState, setPermState] = useState<string | null>(null);
+    const [busy, setBusy] = useState(false);
+
+    useEffect(() => {
+        const checkPermission = async () => {
+            const state = await pushUtilities.getPushNotificationPermissionState();
+            setPermState(state);
+        };
+        checkPermission();
+    }, []);
+
+    const handleEnable = async () => {
+        setBusy(true);
+        try {
+            await pushUtilities.registerForNotifications(async success => {
+                if (success) {
+                    await pushUtilities.syncPushToken();
+                    presentToast(m['settings.notifications.prompt.enabled'](), {
+                        type: ToastTypeEnum.Success,
+                        hasDismissButton: true,
+                    });
+                    setPermState('GRANTED');
+                } else {
+                    presentToast(m['settings.notifications.prompt.anytime'](), {
+                        type: ToastTypeEnum.Error,
+                        hasDismissButton: true,
+                    });
+                    const s = await pushUtilities.getPushNotificationPermissionState();
+                    setPermState(s);
+                }
+            });
+        } catch (err) {
+            log.error('Failed to enable notifications', err);
+            presentToast(m['settings.notifications.prompt.enableFail'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const handleOpenSettings = async () => {
+        try {
+            if (Capacitor.isPluginAvailable('NativeSettings')) {
+                const platform = Capacitor.getPlatform();
+                if (platform === 'ios') {
+                    await NativeSettings.openIOS({ option: IOSSettings.App });
+                } else if (platform === 'android') {
+                    await NativeSettings.openAndroid({
+                        option: AndroidSettings.ApplicationDetails,
+                    });
+                } else {
+                    log.warn(`Unable to open settings for platform: '${platform}'`);
+                }
+            }
+        } catch (err) {
+            log.error('Issue directing user to settings', err);
+        }
+    };
+
+    const renderStatusPill = () => {
+        if (permState === 'GRANTED') {
+            return (
+                <div className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide">
+                    {m['settings.notifications.prompt.on']()}
+                </div>
+            );
+        }
+        if (permState === 'DENIED') {
+            return (
+                <div className="bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide">
+                    {m['settings.notifications.prompt.blocked']()}
+                </div>
+            );
+        }
+        return (
+            <div className="bg-grayscale-100 text-grayscale-600 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide">
+                {m['settings.notifications.prompt.off']()}
+            </div>
+        );
+    };
 
     return (
-        <section className="w-full px-6 pt-6 pb-4">
-            <div className="w-full flex flex-col items-center pb-4 pt-2">
-                <div className="w-full flex items-center justify-center">
-                    <h6 className="tracking-[12px] text-base font-bold text-black">
-                        {brandingConfig?.name}
-                    </h6>
-                </div>
-                <div className="w-full flex items-center justify-center mt-8">
-                    <h6 className="text-center text-black font-poppins text-xl">
-                        Stay in the Loop?
-                    </h6>
-                </div>
+        <section className="h-full flex flex-col bg-white">
+            {/* Top Bar */}
+            <div
+                className="shrink-0 flex items-center px-4 py-3 border-b border-grayscale-100"
+                style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)' }}
+            >
+                <button
+                    onClick={handleCloseModal}
+                    className="flex items-center text-grayscale-600 hover:text-grayscale-900 transition-colors font-poppins font-medium"
+                >
+                    <ChevronLeft className="w-6 h-6 mr-1" />
+                    {m['settings.notifications.prompt.back']()}
+                </button>
             </div>
 
-            <div className="w-full flex items-center justify-center">
-                <div className="relative flex flex-col items-center justify-center p-4 rounded-3xl flex-1 max-w-[600px]">
-                    <div className="absolute top-0 left-[%50] w-[70px] h-[70px] bg-rose-100 rounded-full" />
-                    <img src={NotificationImage} alt="notification icon" className="z-50" />
-                </div>
-            </div>
-            <div className="flex items-center justify-center w-full">
-                <div className="text-center">
-                    <p className="text-center text-sm font-semibold px-[16px] text-grayscale-600">
-                        <span className="font-bold text-grayscale-800">
-                            Receive push notifications for:
-                        </span>
-                        <br />
-                        New connection requests, New boosts (like achievements, credentials, and
-                        badges).
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto">
+                <div className="pt-10 pb-8 px-6 flex flex-col items-center max-w-[500px] mx-auto">
+                    <div className="w-24 h-24 mb-6 rounded-full bg-rose-50 flex items-center justify-center shadow-inner">
+                        <img
+                            src={NotificationImage}
+                            alt="notification icon"
+                            className="w-16 h-16 object-contain"
+                        />
+                    </div>
+
+                    <h2 className="text-2xl font-bold text-grayscale-900 font-poppins mb-3 text-center">
+                        {m['settings.notifications.prompt.title']()}
+                    </h2>
+
+                    <div className="mb-4">{renderStatusPill()}</div>
+
+                    <p className="text-center text-[15px] text-grayscale-600 leading-relaxed mb-8">
+                        {m['settings.notifications.prompt.description']()}
                     </p>
-                    <br />
-                </div>
-            </div>
-            <div className="w-full flex items-center justify-center mt-4">
-                <div className="flex items-center flex-col w-full border-grayscale-200">
-                    <button
-                        onClick={async () => {
-                            const permissionState =
-                                await pushUtilities.getPushNotificationPermissionState();
 
-                            log.info({ permissionState });
-
-                            if (permissionState === 'PENDING') {
-                                await pushUtilities.registerNotifications(async () => {
-                                    await pushUtilities.syncPushToken();
-                                    handleCloseModal();
-                                });
-                            } else if (
-                                permissionState === 'DENIED' ||
-                                permissionState === 'GRANTED'
-                            ) {
-                                await pushUtilities.syncPushToken();
-                                try {
-                                    if (Capacitor.isPluginAvailable('NativeSettings')) {
-                                        const platform = Capacitor.getPlatform();
-                                        if (platform === 'ios') {
-                                            NativeSettings.openIOS({
-                                                option: IOSSettings.App,
-                                            });
-                                        } else if (platform === 'android') {
-                                            NativeSettings.openAndroid({
-                                                option: AndroidSettings.ApplicationDetails,
-                                            });
-                                        } else {
-                                            log.warn(
-                                                `Unable to open settings for platform: '${platform}`
-                                            );
-                                        }
-                                    }
-                                } catch (err) {
-                                    log.error('Issue directing user to settings', err);
-                                } finally {
-                                    handleCloseModal();
-                                    await pushUtilities.syncPushToken();
-                                }
-                            } else {
-                                handleCloseModal();
-                            }
-                        }}
-                        type="button"
-                        className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-emerald-700 font-poppins text-xl w-full shadow-lg normal max-w-[320px]"
-                    >
-                        Continue
-                    </button>
-
-                    <div className="w-full flex items-center justify-center m-4">
-                        <button
-                            onClick={() => {
-                                handleCloseModal();
-                            }}
-                            className="text-grayscale-900 text-center text-base w-full font-medium"
-                        >
-                            Not Yet
-                        </button>
+                    <div className="w-full bg-grayscale-50 rounded-[20px] p-5">
+                        <h3 className="text-sm font-semibold text-grayscale-900 mb-4">
+                            {m['settings.notifications.prompt.about']()}
+                        </h3>
+                        <ul className="space-y-3">
+                            <li className="flex items-start gap-3">
+                                <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                                <span className="text-[15px] text-grayscale-700 leading-relaxed">
+                                    {m['settings.notifications.prompt.benefit1']()}
+                                </span>
+                            </li>
+                            <li className="flex items-start gap-3">
+                                <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                                <span className="text-[15px] text-grayscale-700 leading-relaxed">
+                                    {m['settings.notifications.prompt.benefit2']()}
+                                </span>
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </div>
-            <div className="flex items-center justify-center mt-4 w-full">
-                <div className="flex items-center justify-center">
-                    <button onClick={openPP} className={`text-${primaryColor} font-bold text-sm`}>
-                        Privacy Policy
-                    </button>
-                    <span className={`text-${primaryColor} font-bold text-sm`}>•</span>
-                    <button onClick={openToS} className={`text-${primaryColor} font-bold text-sm`}>
-                        Terms of Service
-                    </button>
+
+            {/* Bottom Action Area */}
+            <div
+                className="shrink-0 px-6 pt-4 border-t border-grayscale-100 bg-white"
+                style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}
+            >
+                <div className="max-w-[500px] mx-auto flex flex-col items-center gap-4">
+                    {permState === 'PENDING' || permState === null ? (
+                        <button
+                            onClick={handleEnable}
+                            disabled={busy || permState === null}
+                            className="flex items-center justify-center text-white rounded-full px-6 py-3.5 font-poppins font-semibold text-[17px] w-full shadow-[0_4px_12px_rgba(79,70,229,0.25)] hover:opacity-90 transition-opacity disabled:opacity-70 disabled:cursor-not-allowed"
+                            style={{ backgroundColor: primaryColor }}
+                        >
+                            {busy ? (
+                                <>
+                                    <IonSpinner
+                                        name="crescent"
+                                        color="light"
+                                        className="w-5 h-5 mr-2"
+                                    />
+                                    {m['settings.notifications.prompt.working']()}
+                                </>
+                            ) : (
+                                m['settings.notifications.prompt.continue']()
+                            )}
+                        </button>
+                    ) : permState === 'DENIED' ? (
+                        <button
+                            onClick={handleOpenSettings}
+                            className="flex items-center justify-center text-white rounded-full px-6 py-3.5 font-poppins font-semibold text-[17px] w-full shadow-[0_4px_12px_rgba(79,70,229,0.25)] hover:opacity-90 transition-opacity"
+                            style={{ backgroundColor: primaryColor }}
+                        >
+                            {m['settings.notifications.prompt.openSet']()}
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleOpenSettings}
+                            className="flex items-center justify-center text-grayscale-700 bg-grayscale-100 hover:bg-grayscale-200 rounded-full px-6 py-3.5 font-poppins font-semibold text-[17px] w-full transition-colors"
+                        >
+                            {m['settings.notifications.prompt.openSys']()}
+                        </button>
+                    )}
+
+                    {permState !== 'GRANTED' && (
+                        <button
+                            onClick={handleCloseModal}
+                            className="text-[15px] font-medium text-grayscale-500 hover:text-grayscale-900 transition-colors"
+                        >
+                            {m['settings.notifications.prompt.notYet']()}
+                        </button>
+                    )}
+
+                    <div className="flex items-center justify-center gap-2 mt-2">
+                        <button
+                            onClick={openPP}
+                            className="text-xs font-medium hover:opacity-80 transition-opacity"
+                            style={{ color: primaryColor }}
+                        >
+                            {m['settings.notifications.prompt.privacyPolicy']()}
+                        </button>
+                        <span className="text-xs font-medium" style={{ color: primaryColor }}>
+                            •
+                        </span>
+                        <button
+                            onClick={openToS}
+                            className="text-xs font-medium hover:opacity-80 transition-opacity"
+                            style={{ color: primaryColor }}
+                        >
+                            {m['settings.notifications.prompt.termsOfService']()}
+                        </button>
+                    </div>
                 </div>
             </div>
         </section>

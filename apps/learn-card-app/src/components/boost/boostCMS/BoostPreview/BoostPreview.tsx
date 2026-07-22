@@ -4,6 +4,7 @@ import { useRenderMethodEnabled } from '../../../../hooks/useRenderMethodEnabled
 
 import { IonPage } from '@ionic/react';
 import { VCDisplayCard2 } from '@learncard/react';
+import * as m from '../../../../paraglide/messages.js';
 import { BoostPreviewTabsEnum } from '../../../boost-preview-tabs/boost-preview-tabs.helpers';
 import { boostPreviewStore } from 'learn-card-base';
 import { prettifyVerificationItems } from 'learn-card-base/helpers/verificationPrettifier';
@@ -14,9 +15,9 @@ import RenderMethodDisplay from '../../../render-method/RenderMethodDisplay';
 import VerifiedChildCLRFooter from './VerifiedChildCLRFooter';
 import EndorsementBadge from '../../../boost-endorsements/EndorsementBadge';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
-import CredentialIssuerPopover, {
-    useCredentialIssuerPopover,
-} from 'learn-card-base/components/CredentialBadge/CredentialIssuerPopover';
+import ReactCredentialIssuerPopover, {
+    useReactCredentialIssuerPopover,
+} from 'learn-card-base/components/CredentialBadge/ReactCredentialIssuerPopover';
 
 import { VC, UnsignedVC, VerificationItem } from '@learncard/types';
 import {
@@ -97,17 +98,41 @@ export const useVerification = (credential: VC) => {
 const RibbonCategory: React.FC<{ categoryType: BoostCategoryOptionsEnum }> = ({ categoryType }) => {
     switch (categoryType) {
         case BoostCategoryOptionsEnum.socialBadge:
-            return <span className="text-[12px] font-semibold text-blue-500">Badge</span>;
+            return (
+                <span className="text-[12px] font-semibold text-blue-500">
+                    {m['wallet.categoriesSingular.socialBadges']()}
+                </span>
+            );
         case BoostCategoryOptionsEnum.achievement:
-            return <span className="text-[12px] font-semibold text-pink-400">Achievement</span>;
+            return (
+                <span className="text-[12px] font-semibold text-pink-400">
+                    {m['wallet.categoriesSingular.achievements']()}
+                </span>
+            );
         case BoostCategoryOptionsEnum.learningHistory:
-            return <span className="text-[12px] font-semibold text-emerald-600">Study</span>;
+            return (
+                <span className="text-[12px] font-semibold text-emerald-600">
+                    {m['wallet.categoriesSingular.studies']()}
+                </span>
+            );
         case BoostCategoryOptionsEnum.workHistory:
-            return <span className="text-[12px] font-semibold text-cyan-500">Experience</span>;
+            return (
+                <span className="text-[12px] font-semibold text-cyan-500">
+                    {m['wallet.categoriesSingular.experiences']()}
+                </span>
+            );
         case BoostCategoryOptionsEnum.accommodation:
-            return <span className="text-[12px] font-semibold text-violet-500">Assistance</span>;
+            return (
+                <span className="text-[12px] font-semibold text-violet-500">
+                    {m['wallet.categoriesSingular.assistance']()}
+                </span>
+            );
         case BoostCategoryOptionsEnum.accomplishment:
-            return <span className="text-[12px] font-semibold text-yellow-500">Portfolio</span>;
+            return (
+                <span className="text-[12px] font-semibold text-yellow-500">
+                    {m['wallet.categoriesSingular.portfolio']()}
+                </span>
+            );
         default:
             return;
     }
@@ -170,7 +195,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     const credential = credentialWithEdits ?? unwrappedCredential;
     const { newModal, closeModal } = useModal();
     const { credentialIssuerPopoverProps, openCredentialIssuerPopover } =
-        useCredentialIssuerPopover();
+        useReactCredentialIssuerPopover();
 
     const profileID =
         typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
@@ -355,7 +380,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                         isPreview={isPreview}
                     />
                 )}
-                <CredentialIssuerPopover {...credentialIssuerPopoverProps} />
+                <ReactCredentialIssuerPopover {...credentialIssuerPopoverProps} />
             </div>
         </IonPage>
     );

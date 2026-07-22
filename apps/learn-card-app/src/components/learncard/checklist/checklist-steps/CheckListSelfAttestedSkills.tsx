@@ -4,6 +4,8 @@ import Plus from 'learn-card-base/svgs/Plus';
 import AnimatedPlusToXIcon from '../../../ai-passport/helpers/AnimatedPlusToXIcon';
 import CheckListManagerFooter from '../CheckListManager/CheckListManagerFooter';
 
+import * as m from '../../../../paraglide/messages.js';
+
 export const CheckListSelfAttestedSkills: React.FC = () => {
     // TODO
     // - Add Self Attested Skills functionality
@@ -26,16 +28,17 @@ export const CheckListSelfAttestedSkills: React.FC = () => {
             <div className="w-full bg-white items-center justify-center flex flex-col shadow-2xl px-6 pt-2 pb-4 mt-4 rounded-[15px]">
                 <div className="flex flex-col items-start justify-center py-2 w-full">
                     <h4 className="text-lg text-grayscale-900 font-notoSans text-left mb-2">
-                        Self-Attested Skills
+                        {m['passport.buildMyLearnCard.managers.selfAttested.title']()}
                     </h4>
                     <p className="text-sm text-grayscale-600 font-notoSans text-left mb-4">
-                        Select from suggested skills based on your profile or add your own.
+                        {m['passport.buildMyLearnCard.managers.selfAttested.description']()}
                     </p>
 
                     <button
                         className={`w-full flex rounded-[30px] items-center justify-center py-2 font-semibold text-[17px] border-[2px] border-solid border-grayscale-200 text-grayscale-500`}
                     >
-                        Add a skill <Plus className="w-[20px] h-auto text-grayscale-500 ml-2" />
+                        {m['passport.buildMyLearnCard.managers.selfAttested.addSkill']()}{' '}
+                        <Plus className="w-[20px] h-auto text-grayscale-500 ml-2" />
                     </button>
 
                     <div className="flex flex-wrap items-center justify-start w-full mt-4">

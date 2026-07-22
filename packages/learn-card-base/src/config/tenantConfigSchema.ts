@@ -36,6 +36,7 @@ export const tenantApiConfigSchema = z
         cloudService: urlOrPlaceholder(),
         lcaApi: urlOrPlaceholder(),
         xapi: urlOrPlaceholder().optional(),
+        notificationsEndpoint: urlOrPlaceholder().optional(),
         aiService: urlOrPlaceholder().optional(),
         corsProxyApiKey: z.string().optional(),
     })
@@ -89,6 +90,29 @@ export const tenantAuthConfigSchema = z
         web3Auth: tenantWeb3AuthConfigSchema.optional(),
     })
     .passthrough();
+
+export const tenantFilestackStorageConfigSchema = z
+    .object({
+        provider: z.literal('filestack'),
+        apiKey: z.string().default('A7RsW3VzfSNO2TCsFJ6Eiz'),
+        cdnDomain: z.string().default('cdn.filestackcontent.com'),
+        apiDomain: z.string().default('www.filestackapi.com'),
+    })
+    .passthrough();
+
+export const tenantS3StorageConfigSchema = z
+    .object({
+        provider: z.literal('s3'),
+        uploadEndpoint: urlOrPlaceholder(),
+        cdnDomain: z.string(),
+        bucket: z.string().optional(),
+    })
+    .passthrough();
+
+export const tenantStorageConfigSchema = z.discriminatedUnion('provider', [
+    tenantFilestackStorageConfigSchema,
+    tenantS3StorageConfigSchema,
+]);
 
 const deleteSuccessStylesSchema = z
     .object({
@@ -242,11 +266,33 @@ export const tenantEmailConfigSchema = z
     })
     .passthrough();
 
+export const tenantI18nConfigSchema = z
+    .object({
+        defaultLanguage: z.string().default('en'),
+        supportedLanguages: z.array(z.string()).default(['en']),
+    })
+    .passthrough();
+
 /** @planned — ecosystem fields reserved for multi-tenant org hierarchy support */
 export const tenantEcosystemConfigSchema = z
     .object({
         ecosystemId: z.string().optional(),
         rootOrgId: z.string().optional(),
+    })
+    .passthrough();
+
+/**
+ * External badge-pack registries a tenant pulls in. A badge pack is a single JSON
+ * document of shape { categories: BadgeGroup[]; badges: LCAStylesPackRegistryEntry[] }.
+ * `badgePackUrls` are remote JSON files; `badgePackAssets` are names of bundled files
+ * shipped with the app (apps/learn-card-app/src/registries/badge-packs/<name>.json).
+ * All sources merge (remote then bundled): badges deduped by category+type, categories
+ * by id, later source wins per field.
+ */
+export const tenantRegistriesConfigSchema = z
+    .object({
+        badgePackUrls: z.array(z.string()).default([]),
+        badgePackAssets: z.array(z.string()).default([]),
     })
     .passthrough();
 
@@ -270,14 +316,22 @@ export const tenantConfigSchema = z
 
         apis: tenantApiConfigSchema,
         auth: tenantAuthConfigSchema,
+        storage: tenantStorageConfigSchema.default({
+            provider: 'filestack',
+            apiKey: 'A7RsW3VzfSNO2TCsFJ6Eiz',
+            cdnDomain: 'cdn.filestackcontent.com',
+            apiDomain: 'www.filestackapi.com',
+        }),
         branding: tenantBrandingConfigSchema,
         features: tenantFeatureConfigSchema,
         observability: tenantObservabilityConfigSchema,
         links: tenantLinksConfigSchema,
+        i18n: tenantI18nConfigSchema.optional(),
 
         email: tenantEmailConfigSchema.optional(),
         native: tenantNativeConfigSchema.optional(),
         ecosystem: tenantEcosystemConfigSchema.optional(),
+        registries: tenantRegistriesConfigSchema.default({}),
     })
     .passthrough();
 
@@ -291,12 +345,16 @@ export type TenantApiConfig = z.infer<typeof tenantApiConfigSchema>;
 export type TenantAuthConfig = z.infer<typeof tenantAuthConfigSchema>;
 export type TenantFirebaseConfig = z.infer<typeof tenantFirebaseConfigSchema>;
 export type TenantWeb3AuthConfig = z.infer<typeof tenantWeb3AuthConfigSchema>;
+export type TenantStorageConfig = z.infer<typeof tenantStorageConfigSchema>;
+export type TenantFilestackStorageConfig = z.infer<typeof tenantFilestackStorageConfigSchema>;
+export type TenantS3StorageConfig = z.infer<typeof tenantS3StorageConfigSchema>;
 export type TenantBrandingConfig = z.infer<typeof tenantBrandingConfigSchema>;
 export type TenantFeatureConfig = z.infer<typeof tenantFeatureConfigSchema>;
 export type TenantObservabilityConfig = z.infer<typeof tenantObservabilityConfigSchema>;
 export type TenantLinksConfig = z.infer<typeof tenantLinksConfigSchema>;
 export type TenantNativeConfig = z.infer<typeof tenantNativeConfigSchema>;
 export type TenantEmailConfig = z.infer<typeof tenantEmailConfigSchema>;
+export type TenantI18nConfig = z.infer<typeof tenantI18nConfigSchema>;
 export type TenantEcosystemConfig = z.infer<typeof tenantEcosystemConfigSchema>;
 
 // -----------------------------------------------------------------

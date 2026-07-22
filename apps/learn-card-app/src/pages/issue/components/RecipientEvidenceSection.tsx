@@ -3,6 +3,7 @@ import { Paperclip } from 'lucide-react';
 
 import { MediaAttachments, type SimpleMediaAttachment } from './MediaAttachments';
 import { Recipient, recipientKey, recipientLabel } from './recipientTypes';
+import * as m from '../../../paraglide/messages.js';
 
 const CARD_CLASS = 'bg-white border border-grayscale-200 rounded-[20px] p-5';
 
@@ -27,10 +28,10 @@ export const RecipientEvidenceSection: React.FC<RecipientEvidenceSectionProps> =
                 </span>
                 <div>
                     <h3 className="text-base font-semibold text-grayscale-900">
-                        Evidence per recipient
+                        {m['issueFlow.evidencePerRecipient']()}
                     </h3>
                     <p className="text-sm text-grayscale-600 leading-relaxed">
-                        Attach proof specific to each person. Optional.
+                        {m['issueFlow.evidenceSubtitle']()}
                     </p>
                 </div>
             </div>

@@ -58,7 +58,7 @@ export const CredentialIDBadge: React.FC<{
                 eliminating any awkward blue side-slivers. */}
             <div className="relative w-full z-0 pb-0 bg-blue-500 rounded-t-[20px] overflow-hidden">
                 {/* 1) Background card at z-0 */}
-                <div className="relative w-full px-2 pt-4">
+                <div className="relative w-full">
                     <IDDisplayCard credential={credential} backgroundColor={backgroundColor} />
                 </div>
 

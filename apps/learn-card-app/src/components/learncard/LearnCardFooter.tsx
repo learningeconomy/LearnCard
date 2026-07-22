@@ -4,6 +4,7 @@ import { IonFooter } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import ShareModal from '../share/ShareModal';
 import useLCNGatedAction from '../network-prompts/hooks/useLCNGatedAction';
+import * as m from '../../paraglide/messages.js';
 
 type LearnCardFooterProps = {
     hideShare?: boolean;
@@ -14,7 +15,7 @@ type LearnCardFooterProps = {
 
 const LearnCardFooter: React.FC<LearnCardFooterProps> = ({
     hideShare = false,
-    buttonText = 'Share',
+    buttonText,
     icon,
     buttonAction,
 }) => {
@@ -44,7 +45,7 @@ const LearnCardFooter: React.FC<LearnCardFooterProps> = ({
                             onClick={closeModal}
                             className=" py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] justify-center"
                         >
-                            Close
+                            {m['common.close']()}
                         </button>
                     ) : (
                         <button
@@ -57,10 +58,10 @@ const LearnCardFooter: React.FC<LearnCardFooterProps> = ({
 
                     {!hideShare && (
                         <button
-                            onClick={buttonText === 'Share' ? handleShare : buttonAction}
+                            onClick={buttonAction ?? handleShare}
                             className="bg-grayscale-800 py-[9px] pl-[20px] pr-[15px] rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white w-full shadow-button-bottom flex gap-[5px] items-center justify-center"
                         >
-                            {buttonText}
+                            {buttonText ?? m['common.share']()}
                             {icon}
                         </button>
                     )}

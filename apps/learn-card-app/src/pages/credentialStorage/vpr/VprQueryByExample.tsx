@@ -42,6 +42,7 @@ import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import { filterMaybes } from '@learncard/helpers';
 import type { CredentialRequestEvent } from '@learncard/chapi-plugin';
 import type { VP } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
 
 export type VprQueryByExampleProps = {
     event?: CredentialRequestEvent;
@@ -226,7 +227,7 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
                             }
                         >
                             {credentialsLoading
-                                ? 'Loading verifiable credentials...'
+                                ? m['common.loadingVerifiableCredentials']()
                                 : 'Select the verifiable credentials you would like to share.'}
                         </h2>
                         {credentialsLoading && (
@@ -298,7 +299,7 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
                         )}
                         {!credentialsLoading && allRecords.length === 0 && (
                             <section className="flex relative flex-col achievements-list-container pt-[10px] px-[20px] text-center justify-center">
-                                <strong>No credentials to share.</strong>
+                                <strong>{m['share.noCredentialsToShare']()}</strong>
                                 <button
                                     type="button"
                                     className="bg-rose-600 rounded-full text-white font-bold border px-4 py-2 w-full max-w-[200px]"

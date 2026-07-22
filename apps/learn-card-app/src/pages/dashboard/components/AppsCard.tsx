@@ -3,6 +3,8 @@ import { useHistory } from 'react-router-dom';
 
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
 
+import * as m from '../../../paraglide/messages.js';
+
 import AppTile from './AppTile';
 import FeaturedAppTile from './FeaturedAppTile';
 
@@ -61,7 +63,9 @@ const AppsCard: React.FC<AppsCardProps> = ({
     if (tiles.length === 0) return null;
 
     const allSuggested = tiles.every(t => t.suggested);
-    const headerLabel = allSuggested ? 'Suggested for you' : 'Your apps';
+    const headerLabel = allSuggested
+        ? m['dashboard.apps.suggestedLabel']()
+        : m['dashboard.apps.yourAppsLabel']();
 
     if (variant === 'featured') {
         return (
@@ -72,7 +76,9 @@ const AppsCard: React.FC<AppsCardProps> = ({
                             {headerLabel}
                         </h2>
                         <p className="mt-0.5 text-base desktop:text-lg font-semibold text-grayscale-900 leading-tight">
-                            {allSuggested ? 'Apps to explore' : 'Jump back in'}
+                            {allSuggested
+                                ? m['dashboard.apps.appsToExplore']()
+                                : m['dashboard.apps.jumpBackIn']()}
                         </p>
                     </div>
                     <button
@@ -80,7 +86,7 @@ const AppsCard: React.FC<AppsCardProps> = ({
                         onClick={() => history.push('/launchpad')}
                         className="text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
                     >
-                        Browse all →
+                        {m['dashboard.apps.browseAll']()}
                     </button>
                 </div>
 
@@ -112,7 +118,7 @@ const AppsCard: React.FC<AppsCardProps> = ({
                     onClick={() => history.push('/launchpad')}
                     className="text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors"
                 >
-                    View all →
+                    {m['dashboard.apps.viewAll']()}
                 </button>
             </div>
 

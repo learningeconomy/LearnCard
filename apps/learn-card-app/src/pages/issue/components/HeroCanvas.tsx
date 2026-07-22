@@ -5,6 +5,7 @@ import { BoostCategoryOptionsEnum, BoostPageViewMode } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { BoostEarnedCard } from '../../../components/boost/boost-earned-card/BoostEarnedCard';
 import type { SimpleCredentialType } from '../../../components/simple-send/simpleSend.helpers';
+import * as m from '../../../paraglide/messages.js';
 
 interface HeroCanvasProps {
     credential: Record<string, unknown> | null;
@@ -84,8 +85,8 @@ export const HeroCanvas: React.FC<HeroCanvasProps> = ({
 
             <p className="text-xs text-grayscale-400 text-center max-w-[230px] leading-relaxed">
                 {credentialType
-                    ? 'This is how your credential will look.'
-                    : 'Pick a type to start designing your credential.'}
+                    ? m['issueFlow.preview.willLook']()
+                    : m['issueFlow.preview.pickToStart']()}
             </p>
         </div>
     );

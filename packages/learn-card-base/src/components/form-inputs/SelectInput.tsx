@@ -8,6 +8,7 @@ type SelectOption = {
     value: string | number;
     displayText?: string;
     selectedText?: string;
+    description?: string;
 };
 
 type SelectInputProps = {
@@ -36,14 +37,24 @@ const SelectInput: React.FC<SelectInputProps> = ({
 
     const selectedOption = options.find(o => o.value === value);
 
+    const hasDescriptions = options.some(o => o.description);
+
     const openSelectModal = () => {
         if (disabled) return;
 
         newModal(
-            <div className="text-grayscale-900 flex flex-col py-[10px]">
+            <div
+                className={`text-grayscale-900 flex flex-col max-h-[70vh] overflow-y-auto ${
+                    hasDescriptions ? 'py-[8px] px-[6px] gap-[2px]' : 'py-[10px]'
+                }`}
+            >
                 {allowDeselect && value !== null && value !== undefined && (
                     <button
-                        className="py-[10px] text-grayscale-500 italic"
+                        className={`text-grayscale-500 italic ${
+                            hasDescriptions
+                                ? 'py-[10px] px-[16px] text-left rounded-[12px] hover:bg-grayscale-10 transition-colors'
+                                : 'py-[10px]'
+                        }`}
                         onClick={() => {
                             onChange(null);
                             closeModal();
@@ -52,20 +63,46 @@ const SelectInput: React.FC<SelectInputProps> = ({
                         Clear selection
                     </button>
                 )}
-                {options.map(o => (
-                    <button
-                        key={o.value}
-                        className={`py-[10px] ${o.value === value ? 'font-[700]' : ''}`}
-                        onClick={() => {
-                            onChange(o.value);
-                            closeModal();
-                        }}
-                    >
-                        {o.displayText ?? o.value}
-                    </button>
-                ))}
+                {options.map(o =>
+                    o.description ? (
+                        <button
+                            key={o.value}
+                            className={`flex flex-col gap-[2px] text-left px-[16px] py-[12px] rounded-[12px] transition-colors hover:bg-grayscale-10 ${
+                                o.value === value ? 'bg-grayscale-100' : ''
+                            }`}
+                            onClick={() => {
+                                onChange(o.value);
+                                closeModal();
+                            }}
+                        >
+                            <span
+                                className={`${
+                                    o.value === value
+                                        ? 'font-[700] text-grayscale-900'
+                                        : 'font-[600] text-grayscale-800'
+                                }`}
+                            >
+                                {o.displayText ?? o.value}
+                            </span>
+                            <span className="text-[13px] leading-[130%] text-grayscale-500">
+                                {o.description}
+                            </span>
+                        </button>
+                    ) : (
+                        <button
+                            key={o.value}
+                            className={`py-[10px] ${o.value === value ? 'font-[700]' : ''}`}
+                            onClick={() => {
+                                onChange(o.value);
+                                closeModal();
+                            }}
+                        >
+                            {o.displayText ?? o.value}
+                        </button>
+                    )
+                )}
             </div>,
-            { sectionClassName: '!max-w-[300px]' }
+            { sectionClassName: hasDescriptions ? '!max-w-[400px] !w-[90%]' : '!max-w-[300px]' }
         );
     };
 

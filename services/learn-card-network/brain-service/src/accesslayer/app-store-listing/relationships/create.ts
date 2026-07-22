@@ -101,14 +101,21 @@ export const associateListingWithSigningAuthority = async (
     signingAuthorityEndpoint: string,
     props: { name: string; did: string; isPrimary?: boolean }
 ): Promise<boolean> => {
-    await AppStoreListing.relateTo({
-        alias: 'usesSigningAuthority',
-        where: {
-            source: { listing_id: listingId },
-            target: { endpoint: signingAuthorityEndpoint },
-        },
-        properties: props,
-    });
+    const { neogma } = await import('@instance');
+
+    await neogma.queryRunner.run(
+        `MATCH (listing:AppStoreListing { listing_id: $listingId })
+         MATCH (signingAuthority:SigningAuthority { endpoint: $endpoint })
+         MERGE (listing)-[rel:USES_SIGNING_AUTHORITY { name: $name, did: $did }]->(signingAuthority)
+         SET rel.isPrimary = $isPrimary`,
+        {
+            listingId,
+            endpoint: signingAuthorityEndpoint,
+            name: props.name,
+            did: props.did,
+            isPrimary: props.isPrimary ?? false,
+        }
+    );
 
     return true;
 };

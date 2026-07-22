@@ -5,6 +5,8 @@ import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 import Pencil from '../../../svgs/Pencil';
 import { VC } from '@learncard/types';
 
+import * as m from '../../../../paraglide/messages.js';
+
 export const CustomManagedBoostButton: React.FC<{
     showSkeleton: boolean;
     isDraft: boolean;
@@ -44,7 +46,7 @@ export const CustomManagedBoostButton: React.FC<{
                     handleEditOnClick();
                 }}
             >
-                Edit Draft
+                {m['boost.editDraft']()}
                 <Pencil className="h-[20px] w-[20px] ml-[5px]" />
             </button>
         );
@@ -62,7 +64,9 @@ export const CustomManagedBoostButton: React.FC<{
                     }}
                 >
                     <>
-                        <span className="text-[14px] font-semibold font-poppins">Issue</span>
+                        <span className="text-[14px] font-semibold font-poppins">
+                            {m['boost.issue']()}
+                        </span>
                         <GearPlusIcon
                             className="h-[25px] w-[25px] text-white"
                             fill={buttonBgColor}

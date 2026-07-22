@@ -5,6 +5,7 @@ import useModal from './useModal';
 
 import { ModalContainer } from './types/Modals';
 import GenericErrorBoundary from '../generic/GenericErrorBoundary';
+import { useT } from '../../i18n';
 
 interface CancelModalOptions {
     customButtonText?: string;
@@ -15,11 +16,12 @@ interface CancelModalOptions {
 export const CancelModal: ModalContainer = ({ component, options, open }) => {
     const { closeModal } = useModal();
     const safeArea = useSafeArea();
+    const t = useT();
     const optionalClass = options?.className || 'd-c-modal';
     const hideButton = typeof options?.hideButton === 'boolean' ? options.hideButton : false;
     const customSectionClass = options?.sectionClassName || '';
     const topSectionClass = options?.topSectionClassName || '';
-    const buttonText = options?.cancelButtonTextOverride ?? 'Close';
+    const buttonText = options?.cancelButtonTextOverride ?? t('common.close');
     const usePortal = options?.usePortal || false;
     const portalClass = options?.portalClassName || '';
     const androidClass = options?.androidClassName || '';
@@ -89,6 +91,7 @@ export default CancelModal;
 
 export const SelectModal: ModalContainer = ({ component, options, open }) => {
     const { closeModal } = useModal();
+    const t = useT();
 
     const optionalClass = options?.className || 'd-c-modal';
     const hideButton = options?.hideButton;
@@ -136,7 +139,7 @@ export const SelectModal: ModalContainer = ({ component, options, open }) => {
                         className="w-full py-3 h-full flex items-center justify-center bg-white text-xl text-black font-medium rounded-[20px]"
                         onClick={handleCloseModal}
                     >
-                        Select
+                        {t('common.select')}
                     </button>
                 </section>
             )}

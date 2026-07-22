@@ -14,6 +14,7 @@ import {
 } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
 import DeleteUserConfirmationPrompt from './DeleteUserConfirmationPrompt';
+import * as m from '../../paraglide/messages.js';
 
 const UserOptions: React.FC<{
     handleCloseModal: () => void;
@@ -41,13 +42,13 @@ const UserOptions: React.FC<{
         handleCloseModal: () => dismissSheetModal(),
         showCloseButton: false,
         showFixedFooter: true,
-        handleLogout: () => onLogout()
+        handleLogout: () => onLogout(),
     });
 
     const userOptions = [
         {
             id: 1,
-            title: 'Delete Account',
+            title: m['profile.deleteAccount'](),
             onClick: () => {},
         },
     ];
@@ -55,7 +56,7 @@ const UserOptions: React.FC<{
     const onLogout = () => {
         handleCloseModal();
         handleLogout();
-    }
+    };
 
     const fixedFooterStyles = showFixedFooter ? 'absolute bottom-[25%] left-0 w-full' : '';
 
@@ -81,7 +82,8 @@ const UserOptions: React.FC<{
                             <button
                                 onClick={() =>
                                     presentCenterModal({
-                                        cssClass: 'center-modal user-options-modal delete-user-modal',
+                                        cssClass:
+                                            'center-modal user-options-modal delete-user-modal',
                                         backdropDismiss: false,
                                         showBackdrop: false,
                                     })

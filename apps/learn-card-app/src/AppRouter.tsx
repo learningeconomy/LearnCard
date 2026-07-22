@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { SplashScreen } from '@capacitor/splash-screen';
@@ -51,6 +51,7 @@ import { useFirebase } from './hooks/useFirebase';
 import { useSentryIdentify } from './constants/sentry';
 
 import { Modals, getLogger } from 'learn-card-base';
+import { SharedI18nProvider } from './i18n/SharedI18nProvider';
 import { useSetAnalyticsUserId, useAnalytics } from '@analytics';
 import { useAccountCreatedAndReturningSession } from '@analytics';
 import { useDeviceTypeByWidth } from 'learn-card-base';
@@ -353,6 +354,24 @@ const AppRouter: React.FC = () => {
             .catch(() => undefined);
     }, [enablePrefetch, isAiEnabled]);
 
+    // Warm the landing chunks immediately — while the boot loader or login
+    // form is still up, before auth resolves. The post-login redirect
+    // (→ /dashboard) and the post-boot mount of the refreshed route would
+    // otherwise only START downloading their chunk after navigation, leaving
+    // a white Suspense gap between the loader and the app on a cold cache.
+    // The full prefetch above stays gated on login; this is just the entry
+    // routes: the default landing pages plus wherever the URL already points.
+    const initialPathRef = useRef(window.location.pathname);
+    useEffect(() => {
+        import('./Routes')
+            .then(m => {
+                void m.ROUTE_PRELOAD['/dashboard']?.();
+                void m.ROUTE_PRELOAD['/wallet']?.();
+                void m.ROUTE_PRELOAD[initialPathRef.current]?.();
+            })
+            .catch(() => undefined);
+    }, []);
+
     const showScanner = QRCodeScannerStore.useTracked.showScanner();
     useLaunchDarklyIdentify({ debug: false });
     useSentryIdentify({ debug: false });
@@ -442,34 +461,36 @@ const AppRouter: React.FC = () => {
     // Keeping it as a persistent sibling of the loader/app content preserves the
     // live modal instance across the transition.
     return (
-        <GenericErrorBoundary>
-            {showOfflineBootGate ? (
-                <OfflineBootGate />
-            ) : initLoading ? (
-                <LoginLoadingPage />
-            ) : (
-                <div id="app-router" style={{ display: `${showScanner ? 'none' : 'block'}` }}>
-                    <IonSplitPane
-                        contentId="main"
-                        className={
-                            collapsed
-                                ? 'side-menu-split-pane-container-collapsed'
-                                : 'side-menu-split-pane-container-visible'
-                        }
-                    >
-                        <GenericErrorBoundary>
-                            {isLoggedIn && !hideSideMenu && (
-                                <SideMenu branding={BrandingEnum.learncard} />
-                            )}
-                            <div id="main" className="w-full">
-                                <MobileNavBar />
-                            </div>
-                        </GenericErrorBoundary>
-                    </IonSplitPane>
-                </div>
-            )}
-            <Modals />
-        </GenericErrorBoundary>
+        <SharedI18nProvider>
+            <GenericErrorBoundary>
+                {showOfflineBootGate ? (
+                    <OfflineBootGate />
+                ) : initLoading ? (
+                    <LoginLoadingPage />
+                ) : (
+                    <div id="app-router" style={{ display: `${showScanner ? 'none' : 'block'}` }}>
+                        <IonSplitPane
+                            contentId="main"
+                            className={
+                                collapsed
+                                    ? 'side-menu-split-pane-container-collapsed'
+                                    : 'side-menu-split-pane-container-visible'
+                            }
+                        >
+                            <GenericErrorBoundary>
+                                {isLoggedIn && !hideSideMenu && (
+                                    <SideMenu branding={BrandingEnum.learncard} />
+                                )}
+                                <div id="main" className="w-full">
+                                    <MobileNavBar />
+                                </div>
+                            </GenericErrorBoundary>
+                        </IonSplitPane>
+                    </div>
+                )}
+                <Modals />
+            </GenericErrorBoundary>
+        </SharedI18nProvider>
     );
 };
 

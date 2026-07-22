@@ -39,6 +39,7 @@ import QRCodeScanner from 'learn-card-base/svgs/QRCodeScanner';
 import BoostShareableQRCode from './BoostShareableQRCode';
 
 import useTheme from '../../../../../theme/hooks/useTheme';
+import * as m from '../../../../../paraglide/messages.js';
 
 type BoostShareableCodeProps = {
     state: BoostCMSState;
@@ -266,11 +267,11 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
             await Clipboard.write({
                 string: getCurrentClaimLink(),
             });
-            presentToast('Boost link copied to clipboard', {
+            presentToast(m['toasts.boost.boostLinkCopied'](), {
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy boost link to clipboard', {
+            presentToast(m['toasts.boost.boostLinkCopyFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -372,12 +373,12 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
 
             setTemplateDefaultPermissions(prev => ({ ...prev, canView: true }));
             setCanViewEnabled(true);
-            presentToast('Viewing enabled. You can now generate claim links.', {
+            presentToast(m['toasts.boost.viewingEnabled'](), {
                 hasDismissButton: true,
             });
         } catch (error) {
             log.error('Failed to update boost canView permission', error);
-            presentToast('Unable to update permissions. Please try again.', {
+            presentToast(m['toasts.boost.permissionsUpdateFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -405,7 +406,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                     {showTitle && (
                         <>
                             <h1 className="text-grayscale-900 font-poppins text-[20px] leading-[130%] tracking-[-0.25px] py-[5px]">
-                                Claim Link
+                                {m['boost.cms.issueTo.claimLink']()}
                             </h1>
 
                             <button
@@ -413,7 +414,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                 className={`font-poppins text-white text-[17px] font-normal bg-${primaryColor} rounded-[30px] px-[24px] py-[10px] disabled:opacity-[50%]`}
                                 disabled={!isManuallyChangingParameters}
                             >
-                                Update
+                                {m['common.update']()}
                             </button>
                         </>
                     )}
@@ -421,7 +422,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                 {showGenerateClaimLinkToggle && (
                     <div className="w-full flex items-center justify-between">
                         <p className="text-grayscale-900 font-medium w-10/12">
-                            Generate Claim Link?
+                            {m['boost.cms.issueTo.generateClaimLink']()}
                         </p>
                         <IonToggle
                             mode="ios"
@@ -448,18 +449,17 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                         {!isPermissionsLoading && !canViewEnabled && (
                             <div className="w-full flex flex-col gap-[12px] bg-amber-50 border border-amber-200 rounded-[15px] p-[14px] mb-2">
                                 <p className="text-amber-900 font-poppins text-[16px] font-[600] m-0">
-                                    Claim links are unavailable
+                                    {m['boost.cms.issueTo.claimLinksUnavailable']()}
                                 </p>
                                 <p className="text-amber-800 text-sm m-0">
-                                    This template cannot generate claim links because view
-                                    permission are disabled.
+                                    {m['boost.cms.issueTo.cannotGenerateClaimLinks']()}
                                 </p>
                                 <p className="text-amber-800 text-sm m-0">
-                                    Enable viewing to continue with claim link generation.
+                                    {m['boost.cms.issueTo.enableViewing']()}
                                 </p>
                                 <div className="w-full flex items-center justify-between pt-1">
                                     <p className="text-amber-900 font-medium w-10/12 m-0">
-                                        Anyone can view this credential template
+                                        {m['boost.cms.issueTo.anyoneCanView']()}
                                     </p>
                                     <IonToggle
                                         mode="ios"
@@ -495,7 +495,9 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                                                 />{' '}
                                                                 <p className="flex items-center justify-center text-left text-grayscale-500 font-medium text-sm line-clamp-1 ml-2">
                                                                     {getCurrentClaimLink()
-                                                                        ? 'Updating Link...'
+                                                                        ? m[
+                                                                              'boost.cms.issueTo.updatingLink'
+                                                                          ]()
                                                                         : 'Generating Link...'}
                                                                 </p>
                                                             </>
@@ -647,7 +649,7 @@ export const BoostShareableCode: React.FC<BoostShareableCodeProps> = ({
                                             <IonInput
                                                 autocapitalize="on"
                                                 className={`bg-grayscale-100 text-grayscale-500 rounded-[15px] !px-[15px] !py-[6px] font-notoSans text-[17px]`}
-                                                placeholder="How many claims?"
+                                                placeholder={m['boost.cms.issueTo.howManyClaims']()}
                                                 type="number"
                                                 min={0}
                                                 value={claimLimit}
