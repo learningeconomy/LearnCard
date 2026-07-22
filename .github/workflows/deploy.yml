@@ -847,13 +847,15 @@ jobs:
             # mechanism, so the deploy branch can be removed and `main` fully branch-protected.
             # --no-build: CI already built above; Netlify must not rebuild. Runs from the app
             # directory so netlify.toml (headers/redirects/edge functions) resolves correctly.
+            # --dir must be absolute: the CLI resolves relative paths against the repo root
+            # (monorepo project-root detection), not the cwd.
             - name: Deploy to Netlify
               working-directory: apps/${{ steps.vars.outputs.project_name }}
               run: |
                   bunx netlify-cli@26 deploy \
                     --prod \
                     --no-build \
-                    --dir build \
+                    --dir "$PWD/build" \
                     --site "${{ steps.vars.outputs.netlify_site_id }}" \
                     --message "CI deploy ${{ github.sha }}"
               env:
