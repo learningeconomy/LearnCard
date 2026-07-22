@@ -742,7 +742,7 @@ const BoostCMS: React.FC<{
             <BoostCMSPublish
                 state={state}
                 handlePreview={handlePreview}
-                handleSaveAndQuit={() => handleSaveAndQuit()}
+                handleSaveAndQuit={handleSaveAndQuit}
                 handlePublishBoost={handlePublishBoost}
                 showSaveAsDraftButton
                 isSaveLoading={isSaveLoading}
