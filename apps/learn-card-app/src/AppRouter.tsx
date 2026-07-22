@@ -51,7 +51,6 @@ import { useFirebase } from './hooks/useFirebase';
 import { useSentryIdentify } from './constants/sentry';
 
 import { Modals, getLogger } from 'learn-card-base';
-import { LocaleProvider } from './i18n';
 import { SharedI18nProvider } from './i18n/SharedI18nProvider';
 import { LocaleProfileSync } from './i18n/useSyncLocaleToProfile';
 import { useSetAnalyticsUserId, useAnalytics } from '@analytics';
@@ -463,46 +462,41 @@ const AppRouter: React.FC = () => {
     // Keeping it as a persistent sibling of the loader/app content preserves the
     // live modal instance across the transition.
     return (
-        <LocaleProvider>
-            <SharedI18nProvider>
-                {/* Best-effort mirror of the active locale to the LCN profile
-                    so the backend can localize server-sent notifications/emails.
-                    Render-less; mounted here (inside LocaleProvider + the
-                    authenticated subtree) so useLocale()/useGetProfile() work. */}
-                <LocaleProfileSync />
-                <GenericErrorBoundary>
-                    {showOfflineBootGate ? (
-                        <OfflineBootGate />
-                    ) : initLoading ? (
-                        <LoginLoadingPage />
-                    ) : (
-                        <div
-                            id="app-router"
-                            style={{ display: `${showScanner ? 'none' : 'block'}` }}
+        <SharedI18nProvider>
+            {/* Best-effort mirror of the active locale to the LCN profile
+                so the backend can localize server-sent notifications/emails.
+                Render-less; mounted here (inside the root LocaleProvider + the
+                authenticated subtree) so useLocale()/useGetProfile() work. */}
+            <LocaleProfileSync />
+            <GenericErrorBoundary>
+                {showOfflineBootGate ? (
+                    <OfflineBootGate />
+                ) : initLoading ? (
+                    <LoginLoadingPage />
+                ) : (
+                    <div id="app-router" style={{ display: `${showScanner ? 'none' : 'block'}` }}>
+                        <IonSplitPane
+                            contentId="main"
+                            className={
+                                collapsed
+                                    ? 'side-menu-split-pane-container-collapsed'
+                                    : 'side-menu-split-pane-container-visible'
+                            }
                         >
-                            <IonSplitPane
-                                contentId="main"
-                                className={
-                                    collapsed
-                                        ? 'side-menu-split-pane-container-collapsed'
-                                        : 'side-menu-split-pane-container-visible'
-                                }
-                            >
-                                <GenericErrorBoundary>
-                                    {isLoggedIn && !hideSideMenu && (
-                                        <SideMenu branding={BrandingEnum.learncard} />
-                                    )}
-                                    <div id="main" className="w-full">
-                                        <MobileNavBar />
-                                    </div>
-                                </GenericErrorBoundary>
-                            </IonSplitPane>
-                        </div>
-                    )}
-                    <Modals />
-                </GenericErrorBoundary>
-            </SharedI18nProvider>
-        </LocaleProvider>
+                            <GenericErrorBoundary>
+                                {isLoggedIn && !hideSideMenu && (
+                                    <SideMenu branding={BrandingEnum.learncard} />
+                                )}
+                                <div id="main" className="w-full">
+                                    <MobileNavBar />
+                                </div>
+                            </GenericErrorBoundary>
+                        </IonSplitPane>
+                    </div>
+                )}
+                <Modals />
+            </GenericErrorBoundary>
+        </SharedI18nProvider>
     );
 };
 

@@ -1,5 +1,12 @@
 # consent-flow-test
 
+## 1.0.24
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.4.8
+
 ## 1.0.23
 
 ### Patch Changes

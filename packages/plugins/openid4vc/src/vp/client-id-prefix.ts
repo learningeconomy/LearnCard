@@ -132,10 +132,7 @@ export interface DerivedClientId {
  * security-critical "is this prefix one I know how to verify"
  * decision happen at the JAR verifier where the trust context lives.
  */
-export const deriveClientIdPrefix = (
-    clientId: string,
-    legacyScheme?: string
-): DerivedClientId => {
+export const deriveClientIdPrefix = (clientId: string, legacyScheme?: string): DerivedClientId => {
     if (typeof clientId !== 'string' || clientId.length === 0) {
         // Caller is responsible for catching the empty case before
         // calling us — but if they don't, fall back gracefully rather
@@ -151,6 +148,11 @@ export const deriveClientIdPrefix = (
     // reject the request with a clear `unsupported_client_id_scheme`
     // because the signing-key binding won't be derivable).
     if (typeof legacyScheme === 'string' && legacyScheme.length > 0) {
+        // OID4VP 1.0 renamed the DID prefix to `decentralized_identifier`;
+        // normalize it to the internal `did` prefix.
+        if (legacyScheme === 'decentralized_identifier') {
+            return { prefix: 'did', value: clientId, inferred: false };
+        }
         if (isKnownPrefix(legacyScheme)) {
             return {
                 prefix: legacyScheme,
@@ -160,6 +162,18 @@ export const deriveClientIdPrefix = (
         }
         // Unknown scheme — fall through to inference. The JAR verifier
         // logs the legacy value as part of its error message.
+    }
+
+    // Path 2a — OID4VP 1.0 §5.9.3 canonical `decentralized_identifier:`
+    // prefix. Normalize to the internal `did` prefix; the value is the bare
+    // DID so the DID-resolution verifier receives a resolvable identifier.
+    // (The older bare `did:method:id` form is handled below in path 4.)
+    if (clientId.startsWith('decentralized_identifier:')) {
+        return {
+            prefix: 'did',
+            value: clientId.slice('decentralized_identifier:'.length),
+            inferred: false,
+        };
     }
 
     // Path 2 — explicit `<prefix>:<value>` form. Only the prefixes

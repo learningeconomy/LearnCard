@@ -1,5 +1,29 @@
 # @learncard/openid4vc-plugin
 
+## 0.3.0
+
+### Minor Changes
+
+-   [#1416](https://github.com/learningeconomy/LearnCard/pull/1416) [`4d08fc205de61058235707cfd6d2db4465f8ec9e`](https://github.com/learningeconomy/LearnCard/commit/4d08fc205de61058235707cfd6d2db4465f8ec9e) Thanks [@Custard7](https://github.com/Custard7)! - Bring the OID4VP (presentation) holder flow in line with OpenID4VP 1.0 final.
+
+    -   Reject requests carrying `transaction_data` we can't honor with a typed `invalid_transaction_data` error, instead of silently presenting without binding it (§8.4/§8.5).
+    -   Negotiate encrypted (JARM) responses per 1.0: content-encryption from `encrypted_response_enc_values_supported` with the `A128GCM` default, and the JWE key-wrap `alg` taken from the chosen verifier JWK (§8.3). The pre-1.0 `authorization_encrypted_response_alg`/`_enc` fields are still honored as a `[jarm-compat]` fallback.
+    -   Require the `nonce` claim in signed Request Objects (§5.2) rather than defaulting it to empty.
+    -   Accept the canonical `decentralized_identifier:` client-id prefix (§5.9.3), normalized to the internal `did` prefix; the bare `did:` form still works.
+    -   Parse `verifier_info` (§5.11) and `request_uri_method` (§5.10) from both query-param and signed Request Object forms.
+    -   Support the `x509_hash` client-id prefix (§5.9.3): the leaf certificate's base64url SHA-256 must equal the `client_id`.
+    -   Support `request_uri_method=post` (§5.10): the wallet POSTs a fresh `wallet_nonce` to the request URI and requires the signed Request Object to echo it.
+
+    DCQL remains the 1.0 query path; PEX (`presentation_definition`) is retained as `[pex-compat]` backward support for pre-1.0 verifiers.
+
+    Still not implemented (verifiers using these are cleanly rejected): the `openid_federation` and `verifier_attestation` client-id prefixes, actually binding `transaction_data` into a presentation (we reject requests that carry it), and the Digital Credentials API response modes (`dc_api`/`dc_api.jwt`).
+
+-   [#1416](https://github.com/learningeconomy/LearnCard/pull/1416) [`4d08fc205de61058235707cfd6d2db4465f8ec9e`](https://github.com/learningeconomy/LearnCard/commit/4d08fc205de61058235707cfd6d2db4465f8ec9e) Thanks [@Custard7](https://github.com/Custard7)! - Update the OID4VCI holder flow to OID4VCI 1.0 (final), keeping Draft 13 support.
+
+    -   Issuer and `oauth-authorization-server` metadata are now discovered by inserting the well-known segment between the host and path (§12.2.2 / RFC 8414). This fixes discovery against issuers whose identifier carries a path.
+    -   The credential request sends the 1.0 shape (`credential_configuration_id` + a `proofs` array) by default.
+    -   Draft 13 issuers remain supported: metadata discovery falls back to the legacy append-style well-known URL, and when that fallback fires the plugin sends the Draft 13 credential request shape (`format` + `credential_definition` + singular `proof`). The spec revision is detected once during discovery. All Draft-13-specific code is isolated in `vci/draft13-compat.ts` for easy removal once the ecosystem migrates.
+
 ## 0.2.5
 
 ### Patch Changes
