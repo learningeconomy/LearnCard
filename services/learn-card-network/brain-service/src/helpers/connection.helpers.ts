@@ -9,6 +9,8 @@ import { TRPCError } from '@trpc/server';
 import { Profile } from '@models';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { getNotificationMessage } from '@helpers/notificationMessages';
+import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import { FlatProfileType, ProfileType } from 'types/profile';
 import { inflateObject } from './objects.helpers';
 
@@ -346,10 +348,9 @@ export const connectProfiles = async (
         type: LCNNotificationTypeEnumValidator.enum.CONNECTION_ACCEPTED,
         to: target,
         from: source,
-        message: {
-            title: 'Connection Accepted',
-            body: `${source.displayName} has accepted your connection request!`,
-        },
+        message: getNotificationMessage('connectionAccepted', resolveRecipientLocale(target), {
+            name: source.displayName,
+        }),
     });
 
     return true;
@@ -455,14 +456,11 @@ export const requestConnection = async (
         type: notificationType,
         to: target,
         from: source,
-        message: {
-            title: isExpiredInviteRequest
-                ? 'Connection Request (Expired Invite)'
-                : 'New Connection Request',
-            body: isExpiredInviteRequest
-                ? `${source.displayName} tried to connect with an expired link and has sent you a connection request.`
-                : `${source.displayName} has sent you a connection request!`,
-        },
+        message: getNotificationMessage(
+            isExpiredInviteRequest ? 'connectionRequestExpiredInvite' : 'connectionRequest',
+            resolveRecipientLocale(target),
+            { name: source.displayName }
+        ),
     });
 
     return true;

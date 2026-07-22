@@ -15,6 +15,8 @@ import { t, openRoute, profileRoute, guardianGatedRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
 import type { CredentialIssuer } from '../types/issuer';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { getNotificationMessage } from '@helpers/notificationMessages';
+import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import { PerfTracker } from '@helpers/perf';
 import cache from '@cache';
 import {
@@ -2027,10 +2029,11 @@ export const appStoreRouter = t.router({
                         type: LCNNotificationTypeEnumValidator.enum.APP_LISTING_SUBMITTED,
                         to: adminProfile,
                         from: ctx.user.profile,
-                        message: {
-                            title: 'New App Listing Submitted',
-                            body: `"${listing.display_name}" has been submitted for review.`,
-                        },
+                        message: getNotificationMessage(
+                            'appListingSubmitted',
+                            resolveRecipientLocale(adminProfile),
+                            { displayName: listing.display_name }
+                        ),
                         data: {
                             metadata: {
                                 listingId: listing.listing_id,
@@ -2085,10 +2088,11 @@ export const appStoreRouter = t.router({
                         type: 'APP_LISTING_WITHDRAWN',
                         to: adminProfile,
                         from: ctx.user.profile,
-                        message: {
-                            title: 'App Listing Withdrawn',
-                            body: `"${listing.display_name}" has been withdrawn from review.`,
-                        },
+                        message: getNotificationMessage(
+                            'appListingWithdrawn',
+                            resolveRecipientLocale(adminProfile),
+                            { displayName: listing.display_name }
+                        ),
                         data: {
                             metadata: {
                                 listingId: listing.listing_id,
@@ -2883,10 +2887,11 @@ export const appStoreRouter = t.router({
                                 type: LCNNotificationTypeEnumValidator.enum.APP_LISTING_APPROVED,
                                 to: ownerProfile,
                                 from: ctx.user.profile,
-                                message: {
-                                    title: 'App Listing Approved!',
-                                    body: `"${listing.display_name}" has been approved and is now live in the App Store.`,
-                                },
+                                message: getNotificationMessage(
+                                    'appListingApproved',
+                                    resolveRecipientLocale(ownerProfile),
+                                    { displayName: listing.display_name }
+                                ),
                                 data: {
                                     metadata: {
                                         listingId: listing.listing_id,
@@ -2902,10 +2907,11 @@ export const appStoreRouter = t.router({
                                 type: LCNNotificationTypeEnumValidator.enum.APP_LISTING_REJECTED,
                                 to: ownerProfile,
                                 from: ctx.user.profile,
-                                message: {
-                                    title: 'App Listing Needs Changes',
-                                    body: `"${listing.display_name}" was not approved. Please review and resubmit.`,
-                                },
+                                message: getNotificationMessage(
+                                    'appListingRejected',
+                                    resolveRecipientLocale(ownerProfile),
+                                    { displayName: listing.display_name }
+                                ),
                                 data: {
                                     metadata: {
                                         listingId: listing.listing_id,

@@ -1346,7 +1346,16 @@ const AuthSessionManager: React.FC<{
                         const res = await fetch(`${serverUrl}/send-login-verification-code`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', ...getTenantHeaders() },
-                            body: JSON.stringify({ email }),
+                            // Localize the (pre-auth) login email to the active UI
+                            // language — LocaleProvider's source of truth is this
+                            // localStorage key; there's no profile to resolve from yet.
+                            body: JSON.stringify({
+                                email,
+                                locale:
+                                    (typeof localStorage !== 'undefined' &&
+                                        localStorage.getItem('i18n.language')) ||
+                                    undefined,
+                            }),
                         });
 
                         const data = await res.json().catch(() => ({}));
@@ -1810,8 +1819,16 @@ export const AuthCoordinatorProvider: React.FC<AppAuthCoordinatorProviderProps> 
         currentUserStore.set.currentUserPK(null);
         currentUserStore.set.currentUserIsLoggedIn(false);
 
+        // Preserve the user's chosen UI language across logout — it's a display
+        // preference, not session/secure data. Wiping it reset logged-out screens
+        // to English and, worse, let the post-logout default overwrite the saved
+        // profile locale on the next login. The profile locale is restored on
+        // login regardless (see useSyncLocaleToProfile); this keeps the logged-out
+        // UI in the user's language too.
+        const preservedLocale = window.localStorage.getItem('i18n.language');
         window.localStorage.clear();
         window.sessionStorage.clear();
+        if (preservedLocale) window.localStorage.setItem('i18n.language', preservedLocale);
 
         firstStartupStore.set.introSlidesCompleted(true);
         firstStartupStore.set.firstStart(false);
