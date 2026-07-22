@@ -2375,7 +2375,7 @@
             "title": "Utiliser un lien de réclamation",
             "titleQr": "Importer un code QR",
             "subtitle": "Collez un lien ou importez un QR",
-            "subtitleLink": "Collez un lien de réclamation LearnCard ou d’un portefeuille",
+            "subtitleLink": "Collez un lien de réclamation LearnCard ou externe",
             "subtitleQr": "Importez une image contenant le code QR d’un justificatif",
             "linkHeading": "Vous avez un lien de justificatif ?",
             "linkDesc": "Collez-le ci-dessous pour continuer.",

@@ -2375,7 +2375,7 @@
             "title": "Usar un enlace de reclamación",
             "titleQr": "Subir un código QR",
             "subtitle": "Pega un enlace o sube un QR",
-            "subtitleLink": "Pega un enlace de reclamación de LearnCard o de una billetera",
+            "subtitleLink": "Pega un enlace de reclamación de LearnCard o externo",
             "subtitleQr": "Sube una imagen con el código QR de una credencial",
             "linkHeading": "¿Tienes un enlace de credencial?",
             "linkDesc": "Pégalo abajo para continuar.",

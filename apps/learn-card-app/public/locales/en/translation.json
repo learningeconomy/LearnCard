@@ -2069,7 +2069,7 @@
             "title": "Use a Claim Link",
             "titleQr": "Upload a QR Code",
             "subtitle": "Paste a link or upload a QR",
-            "subtitleLink": "Paste a LearnCard or wallet claim link",
+            "subtitleLink": "Paste a LearnCard or external claim link",
             "subtitleQr": "Upload an image with a credential QR code",
             "linkHeading": "Got a credential link?",
             "linkDesc": "Paste it below to continue.",
