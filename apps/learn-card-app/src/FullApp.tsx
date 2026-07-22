@@ -18,6 +18,7 @@ import {
     sqliteStore,
     ensureReactQueryTableExists,
     getLogger,
+    InAppMessageHost,
 } from 'learn-card-base';
 import AppUrlListener from './components/app-url-listener/AppUrlListener';
 import PresentVcModalListener from './components/modalListener/ModalListener';
@@ -235,6 +236,7 @@ const FullApp: React.FC = () => {
                                             published — flows through one reactor. */}
                                         <PathwayProgressReactorMount />
                                         <AppRouter />
+                                        <InAppMessageHost />
                                         <QRCodeScannerListener />
 
                                         {showScannerOverlay && <QRCodeScannerOverlay />}

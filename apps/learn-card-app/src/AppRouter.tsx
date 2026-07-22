@@ -52,6 +52,7 @@ import { useSentryIdentify } from './constants/sentry';
 
 import { Modals, getLogger } from 'learn-card-base';
 import { SharedI18nProvider } from './i18n/SharedI18nProvider';
+import { LocaleProfileSync } from './i18n/useSyncLocaleToProfile';
 import { useSetAnalyticsUserId, useAnalytics } from '@analytics';
 import { useAccountCreatedAndReturningSession } from '@analytics';
 import { useDeviceTypeByWidth } from 'learn-card-base';
@@ -462,6 +463,11 @@ const AppRouter: React.FC = () => {
     // live modal instance across the transition.
     return (
         <SharedI18nProvider>
+            {/* Best-effort mirror of the active locale to the LCN profile
+                so the backend can localize server-sent notifications/emails.
+                Render-less; mounted here (inside the root LocaleProvider + the
+                authenticated subtree) so useLocale()/useGetProfile() work. */}
+            <LocaleProfileSync />
             <GenericErrorBoundary>
                 {showOfflineBootGate ? (
                     <OfflineBootGate />

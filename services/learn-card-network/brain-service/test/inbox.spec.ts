@@ -10,6 +10,7 @@ import {
 } from '@learncard/types';
 import { sendSpy, addNotificationToQueueSpy } from './helpers/spies';
 import * as notifications from '@helpers/notifications.helpers';
+import { getNotificationMessage } from '@helpers/notificationMessages';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -546,7 +547,7 @@ describe('Universal Inbox', () => {
             await userA.clients.fullAuth.inbox.issue({
                 credential: signedCredential,
                 recipient: { type: 'phone', value: '+15555555' },
-            }); 
+            });
 
             // Retrieve the verification token from the first spy's call arguments
             const sendArgs = sendSpy.mock.calls[8][0];
@@ -583,7 +584,10 @@ describe('Universal Inbox', () => {
             expect(
                 (
                     await userA.clients.fullAuth.inbox.getMyIssuedCredentials({
-                        query: { currentStatus: LCNInboxStatusEnumValidator.enum.ISSUED, isAccepted: true },
+                        query: {
+                            currentStatus: LCNInboxStatusEnumValidator.enum.ISSUED,
+                            isAccepted: true,
+                        },
                     })
                 ).records
             ).toHaveLength(3);
@@ -595,7 +599,10 @@ describe('Universal Inbox', () => {
             expect(
                 (
                     await userA.clients.fullAuth.inbox.getMyIssuedCredentials({
-                        query: { currentStatus: LCNInboxStatusEnumValidator.enum.ISSUED, isAccepted: true },
+                        query: {
+                            currentStatus: LCNInboxStatusEnumValidator.enum.ISSUED,
+                            isAccepted: true,
+                        },
                         limit: 3,
                         cursor: claimed.cursor,
                     })
@@ -604,7 +611,10 @@ describe('Universal Inbox', () => {
             expect(
                 (
                     await userA.clients.fullAuth.inbox.getMyIssuedCredentials({
-                        query: { currentStatus: LCNInboxStatusEnumValidator.enum.ISSUED, isAccepted: true },
+                        query: {
+                            currentStatus: LCNInboxStatusEnumValidator.enum.ISSUED,
+                            isAccepted: true,
+                        },
                         limit: 1,
                         cursor: claimed.cursor,
                     })
@@ -667,7 +677,10 @@ describe('Universal Inbox', () => {
                 (
                     await userA.clients.fullAuth.inbox.getMyIssuedCredentials({
                         recipient: { type: 'phone', value: '+15555555' },
-                        query: { currentStatus: LCNInboxStatusEnumValidator.enum.ISSUED, isAccepted: true },
+                        query: {
+                            currentStatus: LCNInboxStatusEnumValidator.enum.ISSUED,
+                            isAccepted: true,
+                        },
                     })
                 ).records
             ).toHaveLength(3);
@@ -683,7 +696,10 @@ describe('Universal Inbox', () => {
                 (
                     await userA.clients.fullAuth.inbox.getMyIssuedCredentials({
                         recipient: { type: 'phone', value: '+15555555' },
-                        query: { currentStatus: LCNInboxStatusEnumValidator.enum.ISSUED, isAccepted: false },
+                        query: {
+                            currentStatus: LCNInboxStatusEnumValidator.enum.ISSUED,
+                            isAccepted: false,
+                        },
                     })
                 ).records
             ).toHaveLength(2);
@@ -1034,12 +1050,63 @@ describe('Universal Inbox', () => {
             );
         });
 
+        it('localizes the claimed webhook to the issuer profile locale', async () => {
+            process.env.TRUSTED_ISSUERS_WHITELIST = userA.learnCard.id.did();
+
+            // userA is the issuer (the webhook recipient) — set their locale to Spanish.
+            await userA.clients.fullAuth.profile.updateProfile({ locale: 'es' });
+
+            const vc = await userA.learnCard.invoke.issueCredential(
+                await userA.learnCard.invoke.getTestVc()
+            );
+            const inboxCredential = await userA.clients.fullAuth.inbox.issue({
+                credential: vc,
+                recipient: { type: 'phone', value: '+15555555556' },
+                configuration: { webhookUrl: 'https://example.com/webhook' },
+            });
+
+            // Ignore the ISSUANCE_DELIVERED webhook fired on issue.
+            addNotificationToQueueSpy.mockClear();
+
+            const localExchangeId = getExchangeIdFromClaimUrl(inboxCredential?.claimUrl);
+            if (!localExchangeId) {
+                throw new Error('Local exchange ID is undefined');
+            }
+
+            const exchangeInitiationResponse =
+                await userB.clients.fullAuth.workflows.participateInExchange({
+                    localWorkflowId: 'inbox-claim',
+                    localExchangeId,
+                });
+            const didAuthVp = (await userB.learnCard.invoke.getDidAuthVp({
+                challenge: exchangeInitiationResponse?.verifiablePresentationRequest?.challenge,
+                domain: exchangeInitiationResponse?.verifiablePresentationRequest?.domain,
+            })) as VP;
+
+            await userB.clients.fullAuth.workflows.participateInExchange({
+                localWorkflowId: 'inbox-claim',
+                localExchangeId,
+                verifiablePresentation: didAuthVp,
+            });
+
+            // The claimed webhook to the issuer must be in the issuer's locale (es),
+            // not the hardcoded 'en'.
+            expect(addNotificationToQueueSpy).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_CLAIMED,
+                    message: getNotificationMessage('issuanceClaimed', 'es', {
+                        value: '+15555555556',
+                    }),
+                })
+            );
+        });
+
         it('should NOT verify and associate your email address contact method with your profile from the inbox claim link', async () => {
             const vc = await userA.learnCard.invoke.issueCredential(
                 await userA.learnCard.invoke.getTestVc()
             );
-            
-             const inboxCredential = await userA.clients.fullAuth.inbox.issue({
+
+            const inboxCredential = await userA.clients.fullAuth.inbox.issue({
                 credential: vc,
                 recipient: { type: 'email', value: 'userB@test.com' },
             });
@@ -1074,12 +1141,12 @@ describe('Universal Inbox', () => {
             expect(contactMethods).toBeDefined();
             expect(contactMethods?.length).toBe(0);
         });
-        
+
         it('should verify and associate your email address contact method with your profile', async () => {
             const vc = await userA.learnCard.invoke.issueCredential(
                 await userA.learnCard.invoke.getTestVc()
             );
-            
+
             await userA.clients.fullAuth.inbox.issue({
                 credential: vc,
                 recipient: { type: 'email', value: 'userB@test.com' },
@@ -1248,9 +1315,9 @@ describe('Universal Inbox', () => {
 
             // User C attempts to claim second credential
             await userC.clients.fullAuth.workflows.participateInExchange({
-                    localWorkflowId: 'inbox-claim',
-                    localExchangeId: localExchangeId2,
-                })
+                localWorkflowId: 'inbox-claim',
+                localExchangeId: localExchangeId2,
+            });
 
             const userCContactMethods =
                 await userC.clients.fullAuth.contactMethods.getMyContactMethods();
@@ -1500,7 +1567,7 @@ describe('Universal Inbox', () => {
                     verifiablePresentation: didAuthVp,
                 })
             ).rejects.toThrow();
-        }); 
+        });
     });
 
     describe('Finalize inbox credentials', () => {
@@ -1525,16 +1592,25 @@ describe('Universal Inbox', () => {
         });
 
         it('should not allow finalize without full auth', async () => {
-            await expect(noAuthClient.inbox.finalize({})).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
-            await expect(userA.clients.partialAuth.inbox.finalize({})).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            await expect(noAuthClient.inbox.finalize({})).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(userA.clients.partialAuth.inbox.finalize({})).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
         });
 
         it('should return zero counts and empty VCs when no pending credentials', async () => {
             // Add and verify a contact method for userA
-            await userA.clients.fullAuth.contactMethods.addContactMethod({ type: 'email', value: 'userA@test.com' });
+            await userA.clients.fullAuth.contactMethods.addContactMethod({
+                type: 'email',
+                value: 'userA@test.com',
+            });
             const sendArgs = sendSpy.mock.calls[0][0];
             const verificationToken = sendArgs.templateModel.verificationToken;
-            await userA.clients.fullAuth.contactMethods.verifyContactMethod({ token: verificationToken });
+            await userA.clients.fullAuth.contactMethods.verifyContactMethod({
+                token: verificationToken,
+            });
 
             const res = await userA.clients.fullAuth.inbox.finalize({});
             expect(res.processed).toBe(0);
@@ -1562,25 +1638,34 @@ describe('Universal Inbox', () => {
             await userA.clients.fullAuth.inbox.issue({
                 credential: vc1,
                 recipient: { type: 'email', value: 'userA@test.com' },
-                configuration: { signingAuthority: { endpoint: 'https://example.com', name: 'example' } },
+                configuration: {
+                    signingAuthority: { endpoint: 'https://example.com', name: 'example' },
+                },
             });
             await userA.clients.fullAuth.inbox.issue({
                 credential: vc2,
                 recipient: { type: 'email', value: 'userA@test.com' },
-                configuration: { signingAuthority: { endpoint: 'https://example.com', name: 'example' } },
+                configuration: {
+                    signingAuthority: { endpoint: 'https://example.com', name: 'example' },
+                },
             });
 
             // Assume userA accepts the inbox credentials through another flow i.e. an embed
             await InboxCredential.update({ isAccepted: true });
 
             // Add and verify a contact method for userB
-            await userB.clients.fullAuth.contactMethods.addContactMethod({ type: 'email', value: 'userA@test.com' });
+            await userB.clients.fullAuth.contactMethods.addContactMethod({
+                type: 'email',
+                value: 'userA@test.com',
+            });
             const sendArgs = sendSpy.mock.calls[2][0];
             const verificationToken = sendArgs.templateModel.verificationToken;
             if (!verificationToken) throw new Error('Verification token not found');
-            await userB.clients.fullAuth.contactMethods.verifyContactMethod({ token: verificationToken });
+            await userB.clients.fullAuth.contactMethods.verifyContactMethod({
+                token: verificationToken,
+            });
 
-            const res = await userB.clients.fullAuth.inbox.finalize({});  
+            const res = await userB.clients.fullAuth.inbox.finalize({});
 
             expect(res.processed).toBe(2);
             expect(res.claimed).toBe(2);
