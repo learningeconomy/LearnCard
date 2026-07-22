@@ -188,14 +188,13 @@ jobs:
                   SCOUTS_PRODUCTION='{"name":"ScoutPass Production","brain_env":"scout-network-api-production","cloud_env":"scout-storage-api-production","lca_api_env":"scout-app-api-production"}'
 
                   # Frontend legs mirror the service matrix, one Netlify site per GitHub
-                  # Environment. capgo=false on automatic staging legs: the LearnCard staging
-                  # OTA is owned by capgo-staging.yml (prod-config rationale documented there),
-                  # and ScoutPass staging has no OTA channel.
+                  # Environment. capgo=false on ALL staging legs (automatic and manual): the
+                  # LearnCard staging OTA is owned by capgo-staging.yml — it must be built with
+                  # PROD config or it breaks auth on installed prod binaries (rationale
+                  # documented there) — and ScoutPass staging has no OTA channel.
                   LC_FE_STAGING='{"name":"LearnCard Staging","environment":"learn-card-app-staging","capgo":false}'
-                  LC_FE_STAGING_MANUAL='{"name":"LearnCard Staging","environment":"learn-card-app-staging","capgo":true}'
                   LC_FE_PRODUCTION='{"name":"LearnCard Production","environment":"learn-card-app-production","capgo":true}'
                   SCOUTS_FE_STAGING='{"name":"ScoutPass Staging","environment":"scout-app-staging","capgo":false,"stage":"staging"}'
-                  SCOUTS_FE_STAGING_MANUAL='{"name":"ScoutPass Staging","environment":"scout-app-staging","capgo":true,"stage":"staging"}'
                   SCOUTS_FE_PRODUCTION='{"name":"ScoutPass Production","environment":"scout-app-production","capgo":true,"stage":"production"}'
 
                   set_service_matrix() {
@@ -228,7 +227,7 @@ jobs:
                   elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'scouts-staging' ]]; then
                     echo "frontend_env=scout-app-staging" >> "$GITHUB_OUTPUT"
                     set_service_matrix "$SCOUTS_STAGING"
-                    set_frontend_matrix "$SCOUTS_FE_STAGING_MANUAL"
+                    set_frontend_matrix "$SCOUTS_FE_STAGING"
                   elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'production' ]]; then
                     echo "frontend_env=learn-card-app-production" >> "$GITHUB_OUTPUT"
                     set_service_matrix "$LC_PRODUCTION"
@@ -236,7 +235,7 @@ jobs:
                   elif [[ "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
                     echo "frontend_env=learn-card-app-staging" >> "$GITHUB_OUTPUT"
                     set_service_matrix "$LC_STAGING"
-                    set_frontend_matrix "$LC_FE_STAGING_MANUAL"
+                    set_frontend_matrix "$LC_FE_STAGING"
                   elif [[ "${{ steps.check_release.outputs.is_release }}" == 'true' ]]; then
                     # ScoutPass production is deliberately excluded from release
                     # pushes — it deploys only via the manual 'scouts' dispatch.

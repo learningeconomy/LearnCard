@@ -9,6 +9,10 @@ SKIP_DIDKIT_NAPI = "1"
 [build]
 command = "bun scripts/generate-edge-tenant-configs.ts && bunx nx build learn-card-app --skip-nx-cache"
 publish = "build/"
+# Must be explicit for CI deploys: `netlify deploy --no-build` only bundles edge
+# functions when build.edge_functions is set — in a monorepo it does not discover
+# the default app-local netlify/edge-functions dir (CLI resolves from the git root).
+edge_functions = "netlify/edge-functions"
 
 # Netlify Deploy Preview (still built by Netlify's git integration for PRs)
 [context.deploy-preview]
