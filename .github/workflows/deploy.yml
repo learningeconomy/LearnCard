@@ -814,6 +814,15 @@ jobs:
                   VITE_REQUIRE_EMAIL_FOR_PHONE_USERS: ${{ vars.VITE_REQUIRE_EMAIL_FOR_PHONE_USERS }}
                   VITE_ANALYTICS_PROVIDER: ${{ vars.VITE_ANALYTICS_PROVIDER }}
                   VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
+                  # Backend URL build defines (Scouts app, apps/scouts/vite.config.ts). These
+                  # used to come from netlify.toml build contexts; now they must be set as
+                  # GitHub Environment vars (e.g. scout-app-staging → staging.scoutnetwork.org).
+                  # When unset, Networks.ts falls back to production ScoutPass endpoints.
+                  LCN_URL: ${{ vars.LCN_URL }}
+                  LCN_API_URL: ${{ vars.LCN_API_URL }}
+                  CLOUD_URL: ${{ vars.CLOUD_URL }}
+                  LEARN_CLOUD_XAPI_URL: ${{ vars.LEARN_CLOUD_XAPI_URL }}
+                  API_URL: ${{ vars.API_URL }}
 
             - name: Validate Netlify target
               run: |
@@ -830,7 +839,7 @@ jobs:
             - name: Deploy to Netlify
               working-directory: apps/${{ steps.vars.outputs.project_name }}
               run: |
-                  bunx netlify-cli@latest deploy \
+                  bunx netlify-cli@26 deploy \
                     --prod \
                     --no-build \
                     --dir build \

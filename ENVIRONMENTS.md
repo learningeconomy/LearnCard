@@ -61,6 +61,26 @@ must provide:
 | `NETLIFY_SITE_ID`    | var    | Target Netlify site ID for that environment                      |
 | `NETLIFY_AUTH_TOKEN` | secret | Netlify personal/team token with deploy rights (may be org-wide) |
 
+Build-time configuration that previously lived in `netlify.toml` build contexts must now be set
+as GitHub Environment vars, since CI runs the build. In particular `scout-app-staging` needs the
+full set the old `[context.main]` supplied:
+
+| Key                    | Value (scout-app-staging)                     |
+| ---------------------- | --------------------------------------------- |
+| `NODE_ENV`             | `production`                                  |
+| `VITE_NODE_ENV`        | `staging-scoutpass`                           |
+| `SENTRY_ENV`           | `scouts-staging`                              |
+| `SENTRY_DSN`           | (Scouts Sentry DSN)                           |
+| `LCN_URL`              | `https://staging.scoutnetwork.org/trpc`       |
+| `LCN_API_URL`          | `https://staging.scoutnetwork.org/api`        |
+| `CLOUD_URL`            | `https://staging.cloud.scoutnetwork.org/trpc` |
+| `LEARN_CLOUD_XAPI_URL` | `https://staging.cloud.scoutnetwork.org/xapi` |
+| `API_URL`              | `https://staging.api.scoutnetwork.org/trpc`   |
+
+The five URL vars are Scouts Vite build defines (`apps/scouts/vite.config.ts`). **If left unset,
+the build silently falls back to production ScoutPass endpoints** (`Networks.ts`), so a staging
+site would read/write production data. Production environments leave them unset on purpose.
+
 Set `NETLIFY_SITE_ID` per environment (`learn-card-app-staging`, `learn-card-app-production`,
 `scout-app-staging`, `scout-app-production`). The obsolete `NETLIFY_BRANCH` and
 `DEPLOY_FORCE_PUSH` vars are no longer used and can be removed. On the Netlify side, disable
