@@ -511,6 +511,29 @@ const startDev = async (
     const localAiEnv = useLocalAi ? ' LOCAL_AIP=1' : '';
     const dockerUidEnv = 'LOCAL_UID=$(id -u) LOCAL_GID=$(id -g)';
 
+    if (useLocalAi) {
+        let localAiIsReachable = false;
+
+        try {
+            const response = await fetch('http://localhost:3001/health', {
+                signal: AbortSignal.timeout(1_500),
+            });
+            localAiIsReachable = response.ok;
+        } catch {
+            // The launch still proceeds so the backend can be started afterward.
+        }
+
+        log.info(
+            localAiIsReachable
+                ? green('✓ AI Passport backend: local — http://localhost:3001 is reachable')
+                : yellow(
+                      '⚠ AI Passport backend: local selected — http://localhost:3001 is not reachable'
+                  )
+        );
+    } else {
+        log.info(dim('AI Passport backend: production — https://api.learncloud.ai'));
+    }
+
     switch (devMode) {
         case 'app':
             runCommand(
