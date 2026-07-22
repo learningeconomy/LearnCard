@@ -443,6 +443,7 @@ export const issueToInbox = async (
                     },
                 },
                 branding: ctx.tenant?.emailBranding,
+                locale: resolveRecipientLocale(existingProfile),
                 messageStream: 'universal-inbox',
             });
 
@@ -480,6 +481,8 @@ export const issueToInbox = async (
                     },
                 },
                 branding: ctx.tenant?.emailBranding,
+                // Guardian email may not have a profile yet; fall back to the child's locale.
+                locale: resolveRecipientLocale(existingProfile),
                 messageStream: 'universal-inbox',
             });
 
@@ -595,6 +598,7 @@ export const issueToInbox = async (
                                 },
                             },
                             branding: ctx.tenant?.emailBranding,
+                            locale: resolveRecipientLocale(guardianProfile),
                             messageStream: 'universal-inbox',
                         });
                     }
@@ -682,6 +686,7 @@ export const issueToInbox = async (
                         ...injectedTemplateFields,
                     },
                     branding: ctx.tenant?.emailBranding,
+                    locale: resolveRecipientLocale(existingProfile),
                     messageStream: 'universal-inbox',
                 });
             }
@@ -739,6 +744,7 @@ export const issueToInbox = async (
                     ...injectedTemplateFields,
                 },
                 branding: ctx.tenant?.emailBranding,
+                locale: resolveRecipientLocale(existingProfile),
                 messageStream: 'universal-inbox',
             });
         }
