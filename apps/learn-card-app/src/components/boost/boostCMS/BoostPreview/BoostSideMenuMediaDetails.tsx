@@ -1,27 +1,27 @@
 import React from 'react';
 import { VC } from '@learncard/types';
 import { getAttachmentTypeIcon, BoostMediaOptionsEnum } from 'learn-card-base';
-import { Capacitor } from '@capacitor/core';
-import { Browser } from '@capacitor/browser';
+import { getAttachmentSource } from 'learn-card-base/helpers/attachment.helpers';
 
 import useTheme from '../../../../theme/hooks/useTheme';
+import { openAttachmentUrl } from '../../../../components/clr-transcript/clr.helpers';
 
 export const BoostSideMenuMediaDetails: React.FC<{ credential: VC }> = ({ credential }) => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
-    const attachments = credential?.attachments ?? [];
+    const attachments = (credential?.attachments ?? []).map(attachment => ({
+        ...attachment,
+        url: getAttachmentSource(attachment),
+    }));
 
     const imageAttachments = attachments.filter(a => a?.type === BoostMediaOptionsEnum.photo);
     const nonImageAttachment = attachments.find(a => a?.type !== BoostMediaOptionsEnum.photo);
 
-    const handleClick = async (url?: string) => {
-        if (!url) return;
-        if (Capacitor?.isNativePlatform()) {
-            await Browser.open({ url });
-        } else {
-            window.open(url, '_blank');
-        }
+    const handleClick = async (source?: string, fileName?: string) => {
+        if (!source) return;
+
+        await openAttachmentUrl(source, fileName);
     };
 
     // Render image list (one icon, many buttons)
@@ -43,7 +43,7 @@ export const BoostSideMenuMediaDetails: React.FC<{ credential: VC }> = ({ creden
                         {imageAttachments.map((img, idx) => (
                             <button
                                 key={idx}
-                                onClick={() => handleClick(img?.url)}
+                                onClick={() => handleClick(img?.url, img?.fileName || img?.title)}
                                 className="hover:underline focus:outline-none text-left break-words"
                             >
                                 {img?.fileName || img?.url}
@@ -71,7 +71,7 @@ export const BoostSideMenuMediaDetails: React.FC<{ credential: VC }> = ({ creden
         return (
             <div
                 className="w-full flex items-center justify-start cursor-pointer"
-                onClick={() => handleClick(url)}
+                onClick={() => handleClick(url, fileName || title)}
             >
                 <div className="flex items-center justify-center mr-[12px]">
                     <AttachmentIcon className="w-[40px] h-[40px]" />
