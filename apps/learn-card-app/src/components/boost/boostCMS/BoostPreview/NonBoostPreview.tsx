@@ -21,6 +21,7 @@ import {
 import { getDownloadableEvidence } from '../../../clr-transcript/clr.helpers';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { getAchievementType } from 'learn-card-base/helpers/credentialHelpers';
+import { applyLifecycleStatusToVerifications } from 'learn-card-base/helpers/lifecycleVerification.helpers';
 
 import { VC, UnsignedVC, VerificationItem } from '@learncard/types';
 import {
@@ -75,6 +76,7 @@ type NonBoostPreviewProps = {
     isClrCredential?: boolean;
     displayType?: DisplayTypeEnum;
     isPreview?: boolean;
+    lifecycleStatus?: 'active' | 'revoked' | 'suspended';
 };
 
 const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
@@ -82,6 +84,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     boostUri,
     credentialUri,
     verificationItems,
+    lifecycleStatus,
     categoryType,
     issueHistory,
     issueeOverride,
@@ -218,6 +221,10 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
         verifications = vcVerifications;
     }
 
+    // Reflect the authoritative revoked/suspended status in the side-panel verifications
+    // list (the client status check can't see a set suspension bit).
+    verifications = applyLifecycleStatusToVerifications(verifications, lifecycleStatus);
+
     const detailVerificationItems = isClrChildCredential ? verificationItems : verifications;
 
     const selectedCredential = credential;
@@ -278,6 +285,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
             issueHistory={issueHistory}
             categoryType={categoryType}
             verificationItems={verifications}
+            lifecycleStatus={lifecycleStatus}
             customThumbComponent={customThumbComponent}
             customBodyCardComponent={customBodyCardComponent}
             customFooterComponent={

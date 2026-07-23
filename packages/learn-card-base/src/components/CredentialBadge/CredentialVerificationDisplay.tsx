@@ -11,6 +11,7 @@ import { isAppDidWeb } from '@learncard/helpers';
 import { useT } from 'learn-card-base/i18n';
 import CredentialIssuerPopover from './CredentialIssuerPopover';
 import { VERIFIER_STATES, VerifierState } from './credentialVerificationTypes';
+import { CredentialStatusSealIcon, CredentialLifecycleStatus } from './CredentialStatusSealIcon';
 
 export const getInfoFromCredential = (
     credential: VC | AchievementCredential,
@@ -43,6 +44,7 @@ type CredentialVerificationDisplayProps = {
     unknownVerifierTitle?: string;
     issuerDisplayName?: string;
     issuerPopoverEnabled?: boolean;
+    lifecycleStatus?: CredentialLifecycleStatus;
     trustedOnly?: boolean;
 };
 
@@ -55,6 +57,7 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
     unknownVerifierTitle,
     issuerDisplayName,
     issuerPopoverEnabled = true,
+    lifecycleStatus = 'active',
     trustedOnly = false,
 }) => {
     const t = useT();
@@ -115,6 +118,23 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
     const popoverTriggerId = `credential-issuer-trigger-${popoverId}`;
     const verifierStateLabel = unknownVerifierTitle ?? verifierState;
     const renderBadge = (badgeClassName = className, badgeIconClassName = iconClassName) => {
+        if (lifecycleStatus === 'revoked' || lifecycleStatus === 'suspended') {
+            const stateColor = lifecycleStatus === 'revoked' ? 'text-red-600' : 'text-amber-600';
+            return (
+                <div
+                    className={`flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight ${stateColor} ${badgeClassName}`}
+                >
+                    <CredentialStatusSealIcon
+                        status={lifecycleStatus}
+                        className={`w-[22px] h-[22px] ${badgeIconClassName}`}
+                    />
+                    <span className="whitespace-nowrap uppercase tracking-wide">
+                        {t(`credential.lifecycle.${lifecycleStatus}`)}
+                    </span>
+                </div>
+            );
+        }
+
         if (verifierState === VERIFIER_STATES.selfVerified) {
             return (
                 <div
@@ -179,6 +199,15 @@ export const CredentialVerificationDisplay: React.FC<CredentialVerificationDispl
         );
     };
     const renderIconOnlyBadge = (badgeIconClassName = iconClassName) => {
+        if (lifecycleStatus === 'revoked' || lifecycleStatus === 'suspended') {
+            return (
+                <CredentialStatusSealIcon
+                    status={lifecycleStatus}
+                    className={`w-[22px] h-[22px] ${badgeIconClassName}`}
+                />
+            );
+        }
+
         if (verifierState === VERIFIER_STATES.selfVerified) {
             return <SelfVerifiedCertIcon className={`w-[22px] h-[22px] ${badgeIconClassName}`} />;
         }
