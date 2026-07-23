@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.90.25
+
+### Patch Changes
+
+-   [#1432](https://github.com/learningeconomy/LearnCard/pull/1432) [`0ec072538d67ebf48af55e427426717420de6e62`](https://github.com/learningeconomy/LearnCard/commit/0ec072538d67ebf48af55e427426717420de6e62) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: [LC-1970] - hide sidenav scroll bar
+
+-   [#1400](https://github.com/learningeconomy/LearnCard/pull/1400) [`acf13250d6ffd39798b44f0c5b9331b3769ebd24`](https://github.com/learningeconomy/LearnCard/commit/acf13250d6ffd39798b44f0c5b9331b3769ebd24) Thanks [@Custard7](https://github.com/Custard7)! - feat: inAppMessage Nudge
+
+-   [#1425](https://github.com/learningeconomy/LearnCard/pull/1425) [`378217a4923e5ea4dc70ff0acff0463534810307`](https://github.com/learningeconomy/LearnCard/commit/378217a4923e5ea4dc70ff0acff0463534810307) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: Deploy ScoutPass Staging from `main`
+
+-   Updated dependencies [[`660778e73161c9c185e1f6592a5ac90dd9309a0a`](https://github.com/learningeconomy/LearnCard/commit/660778e73161c9c185e1f6592a5ac90dd9309a0a), [`0f93889aeebd38203ec57c44ed888d25f8d75f4f`](https://github.com/learningeconomy/LearnCard/commit/0f93889aeebd38203ec57c44ed888d25f8d75f4f)]:
+    -   @learncard/react@2.11.0
+    -   @learncard/lca-api-plugin@1.2.22
+    -   @learncard/helpers@1.3.10
+    -   @learncard/sss-key-manager@0.1.18
+
 ## 1.90.24
 
 ### Patch Changes

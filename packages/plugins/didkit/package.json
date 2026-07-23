@@ -1,6 +1,6 @@
 {
     "name": "@learncard/didkit-plugin",
-    "version": "1.9.7",
+    "version": "1.9.8",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",

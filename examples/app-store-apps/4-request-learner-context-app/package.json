@@ -1,6 +1,6 @@
 {
     "name": "@learncard/app-store-demo-request-learner-context",
-    "version": "1.0.14",
+    "version": "1.0.15",
     "private": true,
     "type": "module",
     "scripts": {
