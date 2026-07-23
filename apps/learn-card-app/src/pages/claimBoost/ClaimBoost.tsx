@@ -51,8 +51,7 @@ import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 import { useUploadVcFromText } from '../../hooks/useUploadVcFromText';
 
-import { getEmojiFromDidString } from 'learn-card-base/helpers/walletHelpers';
-import { getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
+import { getEmojiFromDidString, getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 import { VC, VerificationItem } from '@learncard/types';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
@@ -61,7 +60,6 @@ import {
     getDefaultCategoryForCredential,
     unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
-import { getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
 import * as m from '../../paraglide/messages.js';
