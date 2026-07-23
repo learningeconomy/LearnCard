@@ -1,9 +1,9 @@
 import React, { Suspense } from 'react';
 import { createBrowserHistory } from 'history';
 import { IonReactRouter } from '@ionic/react-router';
-import { QueryClient, onlineManager } from '@tanstack/react-query';
+import { QueryClient, MutationCache, onlineManager } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
-import { connectivityStore } from 'learn-card-base';
+import { connectivityStore, demoGateStore, isDemoModeError } from 'learn-card-base';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { IonApp } from '@ionic/react';
 import { LoadingPageDumb } from './pages/loadingPage/LoadingPage';
@@ -51,6 +51,8 @@ import DevDebugPanel from './components/debug/DevDebugPanel';
 import AuthCoordinatorProvider from './providers/AuthCoordinatorProvider';
 import localforage from 'localforage';
 import { useInitializeTheme } from './theme/hooks/useTheme';
+import SampleWalletGateSheet from './components/learncard/sample-wallet/SampleWalletGateSheet';
+import SampleWalletPill from './components/learncard/sample-wallet/SampleWalletPill';
 
 const log = getLogger('cache');
 
@@ -58,7 +60,18 @@ const history = createBrowserHistory();
 
 const CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 1 Week
 
-const client = new QueryClient({ defaultOptions: { queries: { gcTime: CACHE_TTL } } });
+// Safety net for un-gated write paths in Sample Wallet mode: any mutation
+// rejected by the demo wallet adapter opens the gate sheet instead of
+// surfacing a raw error. Point-of-use gating via useDemoGate() is still
+// preferred (it avoids the failed mutation entirely).
+const client = new QueryClient({
+    defaultOptions: { queries: { gcTime: CACHE_TTL } },
+    mutationCache: new MutationCache({
+        onError: error => {
+            if (isDemoModeError(error)) demoGateStore.set.openGate();
+        },
+    }),
+});
 
 // Drive React Query's online state from our connectivity model (fed by
 // Capacitor Network on native) instead of the default `navigator.onLine`, which
@@ -207,6 +220,8 @@ const FullApp: React.FC = () => {
                                     <IonApp>
                                         <div id="modal-mid-root"></div>
                                         <Toast />
+                                        <SampleWalletGateSheet />
+                                        <SampleWalletPill />
                                         <SdkActivityIndicator />
                                         <NetworkListener />
                                         <AppUrlListener />
