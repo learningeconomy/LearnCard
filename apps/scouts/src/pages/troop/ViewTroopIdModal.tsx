@@ -14,8 +14,8 @@ import TroopIdDetails from './TroopIdDetails/TroopIdDetails';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import ReplyIcon from 'learn-card-base/svgs/ReplyIcon';
 import X from 'learn-card-base/svgs/X';
-import Lottie from 'react-lottie-player';
-import HourGlass from '../../assets/lotties/hourglass.json';
+
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 
 import { getWallpaperBackgroundStyles } from '../../helpers/troop.helpers';
 import { VC, VerificationItem } from '@learncard/types';
@@ -102,12 +102,7 @@ const ViewTroopIdModal: React.FC<ViewTroopIdModalProps> = ({
             {isClaiming && (
                 <div className="absolute w-full h-full top-0 left-0 z-50 flex items-center justify-center flex-col boost-loading-wrapper">
                     <div className="w-[180px] h-full m-auto mt-[5px] flex items-center justify-center">
-                        <Lottie
-                            loop
-                            animationData={HourGlass}
-                            play
-                            style={{ width: '180px', height: '180px' }}
-                        />
+                        <LoadingSpinner className="h-[180px] w-[180px]" size="lg" />
                     </div>
                 </div>
             )}

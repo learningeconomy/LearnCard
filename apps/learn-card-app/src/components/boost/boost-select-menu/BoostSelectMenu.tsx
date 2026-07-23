@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import Lottie from 'react-lottie-player';
+
 import {
     useGetBoosts,
     useGetResolvedBoosts,
@@ -25,7 +25,7 @@ import {
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 
-const HourGlass = '/lotties/hourglass.json';
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 import BoostSelectCategoryMenu from './BoostSelectCategoryMenu';
 import * as m from '../../../paraglide/messages.js';
@@ -240,12 +240,7 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
                         {boostsLoading && !boosts && (
                             <div className="flex flex-col w-full h-full items-center justify-center">
                                 <div className="max-w-[150px] min-h-[150px]">
-                                    <Lottie
-                                        loop
-                                        path={HourGlass}
-                                        play
-                                        style={{ width: '100%', height: '100%' }}
-                                    />
+                                    <LoadingSpinner className="h-full w-full" />
                                 </div>
                             </div>
                         )}

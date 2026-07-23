@@ -14,9 +14,9 @@ import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack'
 import { IonCol, IonGrid, IonRow, IonSpinner } from '@ionic/react';
 import TransparentGrid from 'learn-card-base/assets/images/transparent-grid.png';
 import Camera from 'learn-card-base/svgs/Camera';
-const HourGlass = '/lotties/hourglass.json';
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import TrashBin from '../../../../svgs/TrashBin';
-import Lottie from 'react-lottie-player';
+
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 
 import { BoostCMSState } from '../../../boost';
@@ -331,12 +331,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
                 {isLoading ? (
                     <div className="flex flex-col w-full h-full items-center justify-center">
                         <div className="max-w-[160px] m-auto flex justify-center">
-                            <Lottie
-                                loop
-                                path={HourGlass}
-                                play
-                                style={{ width: '100%', height: '100%' }}
-                            />
+                            <LoadingSpinner className="h-full w-full" />
                         </div>
                         <p className="mt-2 font-poppins text-xl">{m['common.loading']()}</p>
                     </div>

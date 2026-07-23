@@ -5,8 +5,7 @@ import { useClaimCredential, BrandingEnum } from 'learn-card-base';
 import useFirebaseAnalytics from '../../../hooks/useFirebaseAnalytics';
 import { IonContent, IonRow, IonSpinner, IonPage, IonFooter } from '@ionic/react';
 
-import Lottie from 'react-lottie-player';
-import HourGlass from '../../../assets/lotties/hourglass.json';
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 
@@ -55,13 +54,13 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     // Extract issuer DID and profileID for scouts role logic
-    const issuerDid = 
+    const issuerDid =
         typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
     const profileID = issuerDid?.split(':').pop();
 
     // Fetch highlighted credentials to get the issuer's role
     const { credentials: highlightedCreds } = useHighlightedCredentials(profileID);
-    
+
     // Compute unknownVerifierTitle based on the role (same logic as BoostPreview)
     const unknownVerifierTitle = useMemo(() => {
         if (!highlightedCreds || highlightedCreds.length === 0) return undefined;
@@ -111,12 +110,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                     {isClaiming && (
                         <div className="absolute w-full h-full top-0 left-0 z-50 flex items-center justify-center flex-col boost-loading-wrapper">
                             <div className="w-[180px] h-full m-auto mt-[5px] flex items-center justify-center">
-                                <Lottie
-                                    loop
-                                    animationData={HourGlass}
-                                    play
-                                    style={{ width: '180px', height: '180px' }}
-                                />
+                                <LoadingSpinner className="h-[180px] w-[180px]" size="lg" />
                             </div>
                         </div>
                     )}

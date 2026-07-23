@@ -1,5 +1,4 @@
 import React from 'react';
-import Lottie from 'react-lottie-player';
 
 import { IonRow, IonCol } from '@ionic/react';
 import RibbonAwardIcon from 'learn-card-base/svgs/RibbonAwardIcon';
@@ -7,7 +6,7 @@ import MembershipSleeve from 'learn-card-base/assets/images/membership-sleeve.sv
 import IDDisplayCard from 'learn-card-base/components/id/IDDisplayCard';
 import EmptyImage from 'learn-card-base/assets/images/empty-image.png';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
-const HourGlass = '/lotties/hourglass.json';
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import BoostPreviewBody from '../../components/boost/boostCMS/BoostPreview/BoostPreviewBody';
 import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import IDIcon from 'learn-card-base/svgs/IDIcon';
@@ -161,12 +160,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
             recipientsEl = (
                 <div className="relative ml-8 text-center flex flex-col items-center justify-center">
                     <div className="max-w-[50px]">
-                        <Lottie
-                            loop
-                            path={HourGlass}
-                            play
-                            style={{ width: '100%', height: '100%' }}
-                        />
+                        <LoadingSpinner className="h-full w-full" />
                     </div>
                 </div>
             );

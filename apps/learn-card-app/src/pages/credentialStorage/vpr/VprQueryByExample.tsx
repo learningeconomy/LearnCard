@@ -21,8 +21,8 @@ import {
 } from '../../../helpers/contract.helpers';
 
 import { getUniqueId } from 'learn-card-base/helpers/credentials/ids';
-import Lottie from 'react-lottie-player';
-const HourGlass = '/lotties/hourglass.json';
+
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 
 import { chapiStore, redirectStore } from 'learn-card-base';
 
@@ -233,12 +233,7 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
                         {credentialsLoading && (
                             <div className="relative w-full text-center flex flex-col items-center justify-center">
                                 <div className="max-w-[500px]">
-                                    <Lottie
-                                        loop
-                                        path={HourGlass}
-                                        play
-                                        style={{ width: '100%', height: '100%' }}
-                                    />
+                                    <LoadingSpinner className="h-full w-full" />
                                 </div>
                             </div>
                         )}

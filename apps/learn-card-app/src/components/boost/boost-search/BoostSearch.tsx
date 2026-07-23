@@ -29,7 +29,7 @@ import { useBrandingConfig } from 'learn-card-base';
 
 import Lottie from 'react-lottie-player';
 const Pulpo = '/lotties/cuteopulpo.json';
-const HourGlass = '/lotties/hourglass.json';
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 
 type BoostSearchProps = {
     handleCloseModal: () => void;
@@ -149,12 +149,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                 {loading && !searchLoading && (
                     <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
                         <div className="max-w-[150px]">
-                            <Lottie
-                                loop
-                                path={HourGlass}
-                                play
-                                style={{ width: '100%', height: '100%' }}
-                            />
+                            <LoadingSpinner className="h-full w-full" />
                         </div>
                     </section>
                 )}
@@ -189,12 +184,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                 {searchLoading && search?.length > 0 && (
                     <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
                         <div className="max-w-[150px]">
-                            <Lottie
-                                loop
-                                path={HourGlass}
-                                play
-                                style={{ width: '100%', height: '100%' }}
-                            />
+                            <LoadingSpinner className="h-full w-full" />
                         </div>
                     </section>
                 )}
