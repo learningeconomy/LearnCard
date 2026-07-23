@@ -8,7 +8,7 @@ const log = getLogger('claim-boost');
 import { IonPage, IonSpinner, useIonModal, useIonAlert, IonRow } from '@ionic/react';
 import { useRenderMethodEnabled } from '../../hooks/useRenderMethodEnabled';
 // import MainHeader from '../../components/main-header/MainHeader';
-import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
+import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import RenderMethodDisplay from '../../components/render-method/RenderMethodDisplay';
 import ClaimBoostLoggedOutPrompt from 'learn-card-base/components/boost/claimBoostLoggedOutPrompt/ClaimBoostLoggedOutPrompt';
@@ -474,102 +474,104 @@ const ClaimBoost: React.FC<{
                 customClassName="bg-white"
                 customHeaderClass="main-header-branding-public-route"
             /> */}
-            <div className="flex h-full bg-grayscale-100">
-                <section
-                    style={{
-                        ...backgroundStyles,
-                    }}
-                    className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0"
-                >
-                    {/* <div
+            <BoostFooterLayout
+                contentOwnsScroll
+                footerProps={{
+                    handleClose: handleCancel,
+                    handleDetails: isMobile ? () => openDetailsSideModal() : undefined,
+                    handleClaim: vc ? handleClaimRawCredential : handleClaimBoostAction,
+                    claimBtnText: actionButtonText,
+                    useFullCloseButton: !isMobile,
+                }}
+            >
+                <div className="flex h-full bg-grayscale-100">
+                    <section
+                        style={{
+                            ...backgroundStyles,
+                        }}
+                        className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0"
+                    >
+                        {/* <div
                         style={{
                             ...backgroundStyles,
                         }}
                         className="flex flex-col items-center justify-center px-2 overflow-x-auto h-full pt-[30px]"
                     > */}
-                    <section
-                        className={`px-6 w-full safe-area-top-margin overflow-y-auto max-h-full pb-32 disable-scrollbars ${
-                            Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'
-                        }`}
-                    >
-                        <div className="pb-4 vc-preview-modal-safe-area h-full w-full">
-                            {loading && (
-                                <section className="relative loading-spinner-container flex flex-col items-center justify-center h-full w-full">
-                                    <IonSpinner color="black" />
-                                    <p className="mt-2 font-bold text-lg">
-                                        {m['common.loading']()}
-                                    </p>
-                                </section>
-                            )}
-                            {!loading && !boost && !vc && (
-                                <section className="h-full flex flex-col pt-[10px] px-[20px] text-center justify-center">
-                                    <h1 className="text-center text-xl font-bold text-grayscale-800">
-                                        {m['claim.notFound.title']()}
-                                    </h1>
-                                    <strong className="text-center font-medium text-grayscale-600">
-                                        {m['claim.notFound.message']()}
-                                    </strong>
-                                </section>
-                            )}
+                        <section
+                            className={`px-6 w-full safe-area-top-margin overflow-y-auto max-h-full disable-scrollbars ${
+                                Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'
+                            }`}
+                        >
+                            <div className="pb-4 vc-preview-modal-safe-area h-full w-full">
+                                {loading && (
+                                    <section className="relative loading-spinner-container flex flex-col items-center justify-center h-full w-full">
+                                        <IonSpinner color="black" />
+                                        <p className="mt-2 font-bold text-lg">
+                                            {m['common.loading']()}
+                                        </p>
+                                    </section>
+                                )}
+                                {!loading && !boost && !vc && (
+                                    <section className="h-full flex flex-col pt-[10px] px-[20px] text-center justify-center">
+                                        <h1 className="text-center text-xl font-bold text-grayscale-800">
+                                            {m['claim.notFound.title']()}
+                                        </h1>
+                                        <strong className="text-center font-medium text-grayscale-600">
+                                            {m['claim.notFound.message']()}
+                                        </strong>
+                                    </section>
+                                )}
 
-                            {boost && !loading && !vc && (
-                                <div>
-                                    {isIssuerViewSelected && renderMethod ? (
-                                        <RenderMethodDisplay
-                                            vc={displayCredential}
-                                            renderMethod={renderMethod}
-                                            fallback={
-                                                boostCredentialWithId
-                                                    ? renderClaimCredentialDisplay(
-                                                          boostCredentialWithId
-                                                      )
-                                                    : null
-                                            }
-                                            className="w-full"
-                                        />
-                                    ) : boostCredentialWithId ? (
-                                        renderClaimCredentialDisplay(boostCredentialWithId)
-                                    ) : null}
-                                </div>
-                            )}
+                                {boost && !loading && !vc && (
+                                    <div>
+                                        {isIssuerViewSelected && renderMethod ? (
+                                            <RenderMethodDisplay
+                                                vc={displayCredential}
+                                                renderMethod={renderMethod}
+                                                fallback={
+                                                    boostCredentialWithId
+                                                        ? renderClaimCredentialDisplay(
+                                                              boostCredentialWithId
+                                                          )
+                                                        : null
+                                                }
+                                                className="w-full"
+                                            />
+                                        ) : boostCredentialWithId ? (
+                                            renderClaimCredentialDisplay(boostCredentialWithId)
+                                        ) : null}
+                                    </div>
+                                )}
 
-                            {vc && !loading && (
-                                <>
-                                    {isIssuerViewSelected && renderMethod ? (
-                                        <RenderMethodDisplay
-                                            vc={displayCredential}
-                                            renderMethod={renderMethod}
-                                            fallback={renderClaimCredentialDisplay(vc)}
-                                            className="w-full"
-                                        />
-                                    ) : (
-                                        renderClaimCredentialDisplay(vc)
-                                    )}
-                                </>
-                            )}
-                        </div>
+                                {vc && !loading && (
+                                    <>
+                                        {isIssuerViewSelected && renderMethod ? (
+                                            <RenderMethodDisplay
+                                                vc={displayCredential}
+                                                renderMethod={renderMethod}
+                                                fallback={renderClaimCredentialDisplay(vc)}
+                                                className="w-full"
+                                            />
+                                        ) : (
+                                            renderClaimCredentialDisplay(vc)
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        </section>
+                        {/* </div> */}
                     </section>
-                    {/* </div> */}
-                </section>
 
-                <footer className="w-full flex justify-center items-center ion-no-border absolute bottom-0 z-10">
-                    <BoostFooter
-                        handleClose={handleCancel}
-                        handleDetails={isMobile ? () => openDetailsSideModal() : undefined}
-                        handleClaim={vc ? handleClaimRawCredential : handleClaimBoostAction}
-                        claimBtnText={actionButtonText}
-                        useFullCloseButton={!isMobile}
-                    />
-                </footer>
-                {!isMobile && (
-                    <BoostDetailsSideBar
-                        verificationItems={vcVerifications}
-                        credential={boost}
-                        categoryType={category}
-                        renderMethodCredential={renderMethodSource as VC}
-                    />
-                )}
-            </div>
+                    {!isMobile && (
+                        <BoostDetailsSideBar
+                            verificationItems={vcVerifications}
+                            credential={boost}
+                            categoryType={category}
+                            renderMethodCredential={renderMethodSource as VC}
+                        />
+                    )}
+                </div>
+            </BoostFooterLayout>
         </IonPage>
     );
 };

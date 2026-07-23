@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 import X from '../../../svgs/X';
 import OpenSyllabusMetaData from './OpenSyllabusMetaData';
-import { IonFooter, IonPage } from '@ionic/react';
+import { IonPage } from '@ionic/react';
 import { useRenderMethodEnabled } from '../../../../hooks/useRenderMethodEnabled';
 import BoostSideMenuMediaDetails from './BoostSideMenuMediaDetails';
 import BoostDisplayStyleSelector from './BoostDisplayStyleSelector';
@@ -12,7 +12,7 @@ import SdJwtVcClaimsBox from './SdJwtVcClaimsBox';
 import CredentialIssuerInformation from './CredentialIssuerInformation';
 import EndorsementCard from '../../../boost-endorsements/EndorsementCard';
 import BoostPreviewTabs from '../../../boost-preview-tabs/BoostPreviewTabs';
-import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
+import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
 import SkillsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/SkillsBox';
 import BoostEndorsementDetails from '../../../boost-endorsements/BoostEndorsementDetails';
 import EndorsementsList from '../../../boost-endorsements/EndorsementsList/EndorsementsList';
@@ -250,8 +250,11 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
 
     return (
         <IonPage className="max-w-full !bg-white/80 !backdrop-blur-sm !overflow-y-auto">
-            <div className="h-full max-h-full overflow-y-auto pb-[80px] pt-[30px] safe-area-top-margin">
-                <div className="mx-auto px-[2px]">
+            <BoostFooterLayout
+                footerProps={isMobile ? { handleBack: handleClose } : undefined}
+                contentClassName="pt-[30px] safe-area-top-margin"
+            >
+                <div className="min-h-full mx-auto px-[2px]">
                     {!isMobile && (
                         <button
                             className="text-grayscale-900 flex items-center justify-center gap-[5px] px-[10px] py-[5px] rounded-[10px] bg-white/90 shadow-md mb-[20px]"
@@ -262,7 +265,7 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
                         </button>
                     )}
 
-                    <section className="flex flex-col gap-[10px] w-[335px] pb-[30%] sm:pb-[20px] mx-auto">
+                    <section className="flex flex-col gap-[10px] w-[335px] pb-[20px] mx-auto">
                         <BoostPreviewTabs
                             selectedTab={selectedTab}
                             setSelectedTab={boostPreviewStore.set.updateSelectedTab}
@@ -271,15 +274,7 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
                         {activeTabDetails}
                     </section>
                 </div>
-            </div>
-            {isMobile && (
-                <IonFooter
-                    mode="ios"
-                    className="flex justify-center items-center ion-no-border absolute bottom-0"
-                >
-                    <BoostFooter handleBack={handleClose} />
-                </IonFooter>
-            )}
+            </BoostFooterLayout>
         </IonPage>
     );
 };

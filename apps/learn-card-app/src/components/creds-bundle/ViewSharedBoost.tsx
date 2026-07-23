@@ -3,17 +3,8 @@ import queryString from 'query-string';
 import { useLocation, useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
-import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
-import {
-    IonContent,
-    IonFooter,
-    IonRow,
-    IonPage,
-    useIonAlert,
-    IonHeader,
-    IonToolbar,
-    useIonModal,
-} from '@ionic/react';
+import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
+import { IonContent, IonPage, useIonAlert, IonHeader, IonToolbar, useIonModal } from '@ionic/react';
 import SharedBoostVerificationBlock, {
     SharedBoostVerificationBlockViewMode,
 } from './SharedBoostVerificationBlock';
@@ -240,79 +231,75 @@ const ViewSharedBoost: React.FC<{
                 </IonHeader>
             )}
             {isLoggedIn && <MainHeader showSideMenuButton />}
-            <IonContent fullscreen className="share-page">
-                {/* verification block */}
-                {boost && wallet && !loading && (
-                    <SharedBoostVerificationBlock
-                        verificationItems={verificationItems}
-                        boost={boost}
-                    />
-                )}
-
-                {loading && (
-                    <div className="relative w-full h-full text-center flex flex-col items-center justify-center">
-                        <div className="max-w-[200px] mt-[-50px]">
-                            <Lottie
-                                loop
-                                path={HourGlass}
-                                play
-                                style={{ width: '100%', height: '100%' }}
-                            />
-                        </div>
-                    </div>
-                )}
-                {boost && wallet && !loading && (
-                    <section
-                        className={`relative w-full h-full text-left flex flex-col items-center justify-start pt-4 overflow-y-scroll pb-[100px] ${
-                            category === 'ID' ? 'px-[12px]' : 'px-[32px]'
-                        } ]`}
-                    >
-                        {/* 
-                           // TODO: FIX THE NAV BUTTON FOR CERTIFICATES  
-                        */}
+            <BoostFooterLayout
+                contentOwnsScroll
+                footerProps={{
+                    handleDetails: isFront ? () => setIsFront(false) : undefined,
+                    handleBack: isFront ? undefined : () => setIsFront(true),
+                }}
+            >
+                <IonContent fullscreen className="share-page h-full">
+                    {/* verification block */}
+                    {boost && wallet && !loading && (
                         <SharedBoostVerificationBlock
-                            mode={SharedBoostVerificationBlockViewMode.mini}
                             verificationItems={verificationItems}
                             boost={boost}
-                            handleOnClick={presentModal}
                         />
+                    )}
 
-                        {isSharedClrCredential && clrModel && sharedCredential ? (
-                            <ClrTranscriptFullPage
-                                model={clrModel}
-                                boost={sharedCredential as VC}
-                                boostUri={typeof uri === 'string' ? uri : undefined}
-                                options={{
-                                    viewer: 'student',
-                                    surface: ClrTranscriptSurface.Full,
-                                }}
+                    {loading && (
+                        <div className="relative w-full h-full text-center flex flex-col items-center justify-center">
+                            <div className="max-w-[200px] mt-[-50px]">
+                                <Lottie
+                                    loop
+                                    path={HourGlass}
+                                    play
+                                    style={{ width: '100%', height: '100%' }}
+                                />
+                            </div>
+                        </div>
+                    )}
+                    {boost && wallet && !loading && (
+                        <section
+                            className={`relative w-full min-h-full text-left flex flex-col items-center justify-start pt-4 ${
+                                category === 'ID' ? 'px-[12px]' : 'px-[32px]'
+                            } ]`}
+                        >
+                            {/*
+                               // TODO: FIX THE NAV BUTTON FOR CERTIFICATES
+                            */}
+                            <SharedBoostVerificationBlock
+                                mode={SharedBoostVerificationBlockViewMode.mini}
+                                verificationItems={verificationItems}
+                                boost={boost}
+                                handleOnClick={presentModal}
                             />
-                        ) : (
-                            <VCDisplayCardWrapper2
-                                credential={_boost}
-                                lc={wallet}
-                                hideNavButtons
-                                hideQRCode
-                                hideFrontFaceDetails
-                                isFrontOverride={isFront}
-                                setIsFrontOverride={setIsFront}
-                            />
-                        )}
-                    </section>
-                )}
 
-                <IonFooter
-                    mode="ios"
-                    className="w-full flex justify-center items-center ion-no-border absolute bottom-0"
-                >
-                    <IonRow className="relative z-10 w-full flex justify-center items-center gap-8">
-                        <BoostFooter
-                            handleDetails={isFront ? () => setIsFront(!isFront) : undefined}
-                            handleBack={!isFront ? () => setIsFront(!isFront) : undefined}
-                        />
-                    </IonRow>
-                </IonFooter>
-            </IonContent>
+                            {isSharedClrCredential && clrModel && sharedCredential ? (
+                                <ClrTranscriptFullPage
+                                    model={clrModel}
+                                    boost={sharedCredential as VC}
+                                    boostUri={typeof uri === 'string' ? uri : undefined}
+                                    options={{
+                                        viewer: 'student',
+                                        surface: ClrTranscriptSurface.Full,
+                                    }}
+                                />
+                            ) : (
+                                <VCDisplayCardWrapper2
+                                    credential={_boost}
+                                    lc={wallet}
+                                    hideNavButtons
+                                    hideQRCode
+                                    hideFrontFaceDetails
+                                    isFrontOverride={isFront}
+                                    setIsFrontOverride={setIsFront}
+                                />
+                            )}
+                        </section>
+                    )}
+                </IonContent>
+            </BoostFooterLayout>
         </IonPage>
     );
 };

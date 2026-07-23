@@ -3,6 +3,12 @@ http://ionicframework.com/docs/theming/ */
 
 /** Ionic CSS Variables **/
 :root {
+    /*
+     * Capacitor SystemBars publishes live Android insets as custom properties.
+     * Prefer that signal while retaining Ionic's env() behavior on iOS and web.
+     */
+    --ion-safe-area-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+
     --ion-backdrop-color: #ffffff;
     /** primary **/
     --ion-color-primary: #3880ff;

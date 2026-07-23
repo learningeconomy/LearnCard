@@ -10,7 +10,7 @@ import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayC
 import RenderMethodDisplay from '../../render-method/RenderMethodDisplay';
 import Lottie from 'react-lottie-player';
 const HourGlass = '/lotties/hourglass.json';
-import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
+import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
 import BoostDetailsSideMenu from '../boostCMS/BoostPreview/BoostDetailsSideMenu';
 import BoostDetailsSideBar from '../boostCMS/BoostPreview/BoostDetailsSideBar';
 import {
@@ -392,91 +392,92 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
 
     return (
         <IonPage className="flex items-center justify-center boost-cms-preview">
-            <div className="flex h-full w-full">
-                {isClaimLoading && (
-                    <div className="absolute w-full h-full top-0 left-0 z-[10001] flex items-center justify-center flex-col boost-loading-wrapper">
-                        <div className="w-[180px] h-full m-auto mt-[5px] flex items-center justify-center">
-                            <Lottie
-                                loop
-                                path={HourGlass}
-                                play
-                                style={{ width: '180px', height: '180px' }}
-                            />
+            <BoostFooterLayout
+                contentOwnsScroll
+                footerProps={{
+                    handleClose: () => {
+                        onDismiss?.();
+                        closeModal();
+                    },
+                    handleDetails: isMobile ? () => openDetailsSideModal() : undefined,
+                    handleClaim: handleBoostCredential,
+                    claimBtnText: claimStatusText,
+                    disableClaimButton,
+                    isIdClaim: isID,
+                    useFullCloseButton: !isMobile,
+                }}
+            >
+                <div className="flex h-full w-full">
+                    {isClaimLoading && (
+                        <div className="absolute w-full h-full top-0 left-0 z-[10001] flex items-center justify-center flex-col boost-loading-wrapper">
+                            <div className="w-[180px] h-full m-auto mt-[5px] flex items-center justify-center">
+                                <Lottie
+                                    loop
+                                    path={HourGlass}
+                                    play
+                                    style={{ width: '180px', height: '180px' }}
+                                />
+                            </div>
                         </div>
-                    </div>
-                )}
-                <section className="flex flex-1 h-full overflow-y-auto items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0">
-                    <section className="flex flex-col items-center justify-center px-2 w-full">
-                        <section
-                            className={`boost-preview-display px-6 w-full safe-area-top-margin max-h-full pb-32 disable-scrollbars ${
-                                Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'
-                            }`}
-                        >
-                            {credential && !selectedImage && (
-                                <>
-                                    {isIssuerViewSelected && renderMethod ? (
-                                        <RenderMethodDisplay
-                                            vc={displayCredential}
-                                            renderMethod={renderMethod}
-                                            fallback={credentialDisplay}
-                                            className="w-full"
-                                        />
-                                    ) : (
-                                        credentialDisplay
-                                    )}
-                                </>
-                            )}
-                            {selectedImage && (
-                                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                                    <div className="relative max-w-full max-h-[80vh]">
-                                        <img
-                                            src={selectedImage}
-                                            alt={m['claim.fullSizeAttachment']()}
-                                            className="max-w-full max-h-[80vh] object-contain"
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                            {!credential && isLoading && (
-                                <section className="flippy-wrapper-container">
-                                    <section className="flex overflow-hidden flex-col items-center justify-between relative max-w-[400px] h-[100%] max-h-[600px] min-h-[600px] p-7 w-full rounded-3xl shadow-3xl bg-white vc-display-card-full-container">
-                                        <div className="w-full flex-grow h-full flex items-center justify-center bg-white">
-                                            <section className="loading-spinner-container flex flex-col items-center justify-center h-[100%] w-full opacity-50 ">
-                                                <IonSpinner color="dark" />
-                                            </section>
+                    )}
+                    <section className="flex flex-1 h-full overflow-y-auto items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0">
+                        <section className="flex flex-col items-center justify-center px-2 w-full">
+                            <section
+                                className={`boost-preview-display px-6 w-full safe-area-top-margin max-h-full disable-scrollbars ${
+                                    Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'
+                                }`}
+                            >
+                                {credential && !selectedImage && (
+                                    <>
+                                        {isIssuerViewSelected && renderMethod ? (
+                                            <RenderMethodDisplay
+                                                vc={displayCredential}
+                                                renderMethod={renderMethod}
+                                                fallback={credentialDisplay}
+                                                className="w-full"
+                                            />
+                                        ) : (
+                                            credentialDisplay
+                                        )}
+                                    </>
+                                )}
+                                {selectedImage && (
+                                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                                        <div className="relative max-w-full max-h-[80vh]">
+                                            <img
+                                                src={selectedImage}
+                                                alt={m['claim.fullSizeAttachment']()}
+                                                className="max-w-full max-h-[80vh] object-contain"
+                                            />
                                         </div>
+                                    </div>
+                                )}
+                                {!credential && isLoading && (
+                                    <section className="flippy-wrapper-container">
+                                        <section className="flex overflow-hidden flex-col items-center justify-between relative max-w-[400px] h-[100%] max-h-[600px] min-h-[600px] p-7 w-full rounded-3xl shadow-3xl bg-white vc-display-card-full-container">
+                                            <div className="w-full flex-grow h-full flex items-center justify-center bg-white">
+                                                <section className="loading-spinner-container flex flex-col items-center justify-center h-[100%] w-full opacity-50 ">
+                                                    <IonSpinner color="dark" />
+                                                </section>
+                                            </div>
+                                        </section>
                                     </section>
-                                </section>
-                            )}
+                                )}
+                            </section>
                         </section>
                     </section>
-                </section>
-                <footer className="w-full flex justify-center items-center ion-no-border absolute bottom-0 z-10">
-                    <BoostFooter
-                        handleClose={() => {
-                            onDismiss?.();
-                            closeModal();
-                        }}
-                        handleDetails={isMobile ? () => openDetailsSideModal() : undefined}
-                        // handleBack={!isFront ? () => setIsFront(!isFront) : undefined}
-                        handleClaim={handleBoostCredential}
-                        claimBtnText={claimStatusText}
-                        disableClaimButton={disableClaimButton}
-                        isIdClaim={isID}
-                        useFullCloseButton={!isMobile}
-                    />
-                </footer>
-                {!isMobile && (
-                    <BoostDetailsSideBar
-                        credential={selectedCredential}
-                        // categoryType={categoryType}
-                        verificationItems={vcVerifications}
-                        hideEndorsementRequestCard={hideEndorsementRequestCard}
-                        customLinkedCredentialsComponent={customLinkedCredentialsComponent}
-                        renderMethodCredential={credential as VC}
-                    />
-                )}
-            </div>
+                    {!isMobile && (
+                        <BoostDetailsSideBar
+                            credential={selectedCredential}
+                            // categoryType={categoryType}
+                            verificationItems={vcVerifications}
+                            hideEndorsementRequestCard={hideEndorsementRequestCard}
+                            customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                            renderMethodCredential={credential as VC}
+                        />
+                    )}
+                </div>
+            </BoostFooterLayout>
         </IonPage>
     );
 };
