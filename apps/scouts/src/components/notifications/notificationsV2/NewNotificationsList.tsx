@@ -66,9 +66,7 @@ const NewNotificationsList: React.FC<NewNotificationsListProps> = ({
         <div className="m-auto max-w-[600px] h-full  bg-white">
             {notificationsLoading && !isEmptyState && (
                 <section className="opacity-80 loading-spinner-container mt-[0px] h-full flex flex-col items-center justify-center w-full mt-4">
-                    <div className="w-[250px] h-[250px] translate-y-[45%]">
-                        <LoadingSpinner className="h-full w-full" />
-                    </div>
+                    <LoadingSpinner size="xl" label="Loading notifications" />
                 </section>
             )}
             {!notificationsLoading && !isEmptyState && renderNotifications}

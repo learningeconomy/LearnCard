@@ -240,7 +240,7 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
                         {boostsLoading && !boosts && (
                             <div className="flex flex-col w-full h-full items-center justify-center">
                                 <div className="max-w-[150px] min-h-[150px]">
-                                    <LoadingSpinner className="h-full w-full" />
+                                    <LoadingSpinner />
                                 </div>
                             </div>
                         )}

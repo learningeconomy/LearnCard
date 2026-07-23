@@ -94,7 +94,7 @@ export const ScoutsNewsList: React.FC = () => {
             {!data && isLoading && (
                 <section className="loading-spinner-container flex items-center mt-[20px] justify-center w-full ">
                     <div className="max-w-[180px]">
-                        <LoadingSpinner className="h-full w-full" />
+                        <LoadingSpinner />
                     </div>
                 </section>
             )}

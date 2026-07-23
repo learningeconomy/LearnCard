@@ -102,7 +102,7 @@ const ViewTroopIdModal: React.FC<ViewTroopIdModalProps> = ({
             {isClaiming && (
                 <div className="absolute w-full h-full top-0 left-0 z-50 flex items-center justify-center flex-col boost-loading-wrapper">
                     <div className="w-[180px] h-full m-auto mt-[5px] flex items-center justify-center">
-                        <LoadingSpinner className="h-[180px] w-[180px]" size="lg" />
+                        <LoadingSpinner size="xl" label="Loading troop ID" />
                     </div>
                 </div>
             )}

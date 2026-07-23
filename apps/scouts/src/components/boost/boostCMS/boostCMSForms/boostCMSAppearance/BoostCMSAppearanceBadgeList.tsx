@@ -187,7 +187,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                 {isLoading ? (
                     <div className="flex flex-col w-full h-full items-center justify-center">
                         <div className="max-w-[160px] m-auto flex justify-center">
-                            <LoadingSpinner className="h-full w-full" />
+                            <LoadingSpinner />
                         </div>
                         <p className="mt-2 font-mouse text-3xl">Loading...</p>
                     </div>

@@ -331,7 +331,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
                 {isLoading ? (
                     <div className="flex flex-col w-full h-full items-center justify-center">
                         <div className="max-w-[160px] m-auto flex justify-center">
-                            <LoadingSpinner className="h-full w-full" />
+                            <LoadingSpinner />
                         </div>
                         <p className="mt-2 font-poppins text-xl">{m['common.loading']()}</p>
                     </div>

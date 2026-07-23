@@ -227,7 +227,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                 {showInitialLoading && (
                     <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full mt-[80px]">
                         <div className="max-w-[150px]">
-                            <LoadingSpinner className="h-full w-full" />
+                            <LoadingSpinner />
                         </div>
                     </section>
                 )}
@@ -258,7 +258,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                 {showSearchLoader && (
                     <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full mt-[80px]">
                         <div className="max-w-[150px]">
-                            <LoadingSpinner className="h-full w-full" />
+                            <LoadingSpinner />
                         </div>
                     </section>
                 )}

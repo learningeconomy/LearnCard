@@ -171,7 +171,7 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
                 <IonContent className="w-full h-full  bg-white">
                     <div className="flex flex-col w-full h-full items-center justify-center  bg-white">
                         <div className="max-w-[150px]">
-                            <LoadingSpinner className="h-full w-full" />
+                            <LoadingSpinner />
                         </div>
                     </div>
                 </IonContent>
@@ -244,7 +244,7 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
                             {boostsLoading && (
                                 <div className="flex flex-col w-full h-full items-center justify-center">
                                     <div className="max-w-[150px]">
-                                        <LoadingSpinner className="h-full w-full" />
+                                        <LoadingSpinner />
                                     </div>
                                 </div>
                             )}

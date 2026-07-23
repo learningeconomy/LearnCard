@@ -198,7 +198,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
             recipientsEl = (
                 <div className="relative ml-8 text-center flex flex-col items-center justify-center">
                     <div className="max-w-[50px]">
-                        <LoadingSpinner className="h-full w-full" />
+                        <LoadingSpinner />
                     </div>
                 </div>
             );

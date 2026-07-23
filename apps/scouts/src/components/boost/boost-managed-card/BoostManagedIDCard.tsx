@@ -347,7 +347,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
             customBody = (
                 <div className="relative w-full text-center flex flex-col items-center justify-center">
                     <div className="max-w-[50px]">
-                        <LoadingSpinner className="h-full w-full" />
+                        <LoadingSpinner />
                     </div>
                 </div>
             );

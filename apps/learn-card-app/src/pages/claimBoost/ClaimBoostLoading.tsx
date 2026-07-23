@@ -14,7 +14,7 @@ const ClaimBoostLoading: React.FC = () => {
                             {m['claim.claiming']()}
                         </h3>
                         <div className="max-w-[150px]">
-                            <LoadingSpinner className="h-full w-full" />
+                            <LoadingSpinner />
                         </div>
                     </div>
                 </IonCol>

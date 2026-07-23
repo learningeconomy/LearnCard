@@ -95,7 +95,7 @@ const LocationSearch: React.FC<{
                         {isPlacePredictionsLoading && (
                             <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
                                 <div className="max-w-[150px]">
-                                    <LoadingSpinner className="h-full w-full" />
+                                    <LoadingSpinner />
                                 </div>
                             </section>
                         )}
