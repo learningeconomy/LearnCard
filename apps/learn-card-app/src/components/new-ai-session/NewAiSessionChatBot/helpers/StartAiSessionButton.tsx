@@ -6,20 +6,33 @@ import NewAiSessionIcon from 'learn-card-base/svgs/NewAiSessionIcon';
 
 import useTheme from '../../../../theme/hooks/useTheme';
 
-export const StartAiSessionButton: React.FC<{ handleStartSession?: () => void }> = ({
-    handleStartSession,
-}) => {
+export const StartAiSessionButton: React.FC<{
+    handleStartSession?: () => void;
+    isLoading?: boolean;
+}> = ({ handleStartSession, isLoading = false }) => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
     return (
         <div className="w-full bg-white items-center justify-center ion-padding flex fade-enter bottom-0 sticky z-50">
             <button
+                type="button"
                 onClick={handleStartSession}
-                className={`bg-${primaryColor} text-xl text-white flex items-center justify-center font-semibold py-[12px] rounded-full w-full shadow-soft-bottom mb-4 max-w-[375px]`}
+                disabled={isLoading}
+                aria-busy={isLoading}
+                className={`bg-${primaryColor} text-xl text-white flex items-center justify-center gap-2 font-semibold py-[12px] rounded-full w-full shadow-soft-bottom mb-4 max-w-[375px] disabled:cursor-not-allowed disabled:opacity-40`}
             >
-                {m['ai.start']()}
-                <NewAiSessionIcon className="ml-1" />
+                {isLoading ? (
+                    <>
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                        {m['aiSession.checkingActiveSession']()}
+                    </>
+                ) : (
+                    <>
+                        {m['ai.start']()}
+                        <NewAiSessionIcon className="ml-1" />
+                    </>
+                )}
             </button>
         </div>
     );

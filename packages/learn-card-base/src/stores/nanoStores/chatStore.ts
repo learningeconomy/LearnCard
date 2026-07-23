@@ -13,6 +13,7 @@ import type {
     Thread,
     ThreadCredentialContext,
     LearningPathway,
+    ActiveSessionStatus,
 } from '../../types/ai-chat';
 
 export const messages = atom<ChatMessage[]>([]);
@@ -258,6 +259,21 @@ export async function loadThreads() {
     }
 }
 
+/** Returns the learner's unfinished AI session, if one exists. */
+export async function getActiveSessionStatus(): Promise<ActiveSessionStatus> {
+    const { did } = auth.get();
+
+    if (!did) return { isActive: false, activeThreadId: null };
+
+    const response = await fetch(
+        `${getBackendUrl()}/api/chat/active-session-status?did=${encodeURIComponent(did)}`
+    );
+
+    if (!response.ok) throw new Error('Failed to check active AI session');
+
+    return response.json();
+}
+
 // Load messages for a specific thread
 export async function loadThread(threadId: string) {
     const { did } = auth.get();
@@ -267,7 +283,7 @@ export async function loadThread(threadId: string) {
         const response = await fetch(`${getBackendUrl()}/messages?did=${did}&threadId=${threadId}`);
         if (!response.ok) throw new Error('Failed to load messages');
 
-        const threadMessages = await response.json();
+        const threadMessages: ChatMessage[] = await response.json();
         messages.set(threadMessages);
         currentThreadId.set(threadId);
 
@@ -284,6 +300,13 @@ export async function loadThread(threadId: string) {
         const hasSessionEnded = hasThreadEnded(loadedThread);
 
         sessionEnded.set(hasSessionEnded);
+        const hasPendingPlan =
+            !hasSessionEnded &&
+            Boolean(loadedThread?.plans?.length) &&
+            !loadedThread?.plan_started_at;
+
+        planReady.set(hasPendingPlan);
+        planReadyThread.set(hasPendingPlan ? threadId : null);
 
         log.debug(`Thread ${threadId} session ended: ${hasSessionEnded}`);
 
@@ -301,6 +324,20 @@ export async function loadThread(threadId: string) {
     } catch (error) {
         log.error('Error loading messages:', error);
     }
+}
+
+/** Loads an unfinished thread and subscribes this tab to future thread updates. */
+export async function resumeThread(threadId: string): Promise<boolean> {
+    disconnectWebSocket();
+    resetChatSessionStores();
+
+    await loadThread(threadId);
+
+    if (currentThreadId.get() !== threadId) return false;
+
+    connectWebSocket();
+
+    return true;
 }
 
 // Create a new thread

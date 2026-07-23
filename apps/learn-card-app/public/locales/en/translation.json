@@ -2888,7 +2888,17 @@
         "unfinished": "Unfinished",
         "learningOverview": "Learning Overview",
         "finishSession": "Finish Session",
-        "finish": "Finish"
+        "finish": "Finish",
+        "activeTitle": "Session in progress",
+        "activeFallbackTitle": "Your current AI session",
+        "activeDescription": "\"{{title}}\" is still active. Starting a new session will end it.",
+        "resumeSession": "Resume Session",
+        "resumingSession": "Resuming...",
+        "checkingActiveSession": "Checking sessions...",
+        "startNewSession": "Start New Session",
+        "startingNewSession": "Starting...",
+        "activeCheckFailedTitle": "Something went wrong",
+        "activeCheckFailedDescription": "Please try starting the session again."
     },
     "aiFeatureLinks": {
         "skillsHub": "Skills Hub"

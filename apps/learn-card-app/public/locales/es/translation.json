@@ -2882,7 +2882,17 @@
         "unfinished": "Sin terminar",
         "learningOverview": "Resumen de aprendizaje",
         "finishSession": "Finalizar sesión",
-        "finish": "Finalizar"
+        "finish": "Finalizar",
+        "activeTitle": "Sesión en curso",
+        "activeFallbackTitle": "Tu sesión de IA actual",
+        "activeDescription": "\"{{title}}\" sigue activa. Si inicias una sesión nueva, finalizará.",
+        "resumeSession": "Reanudar sesión",
+        "resumingSession": "Reanudando...",
+        "checkingActiveSession": "Comprobando sesiones...",
+        "startNewSession": "Iniciar nueva sesión",
+        "startingNewSession": "Iniciando...",
+        "activeCheckFailedTitle": "Algo salió mal",
+        "activeCheckFailedDescription": "Intenta iniciar la sesión de nuevo."
     },
     "aiFeatureLinks": {
         "skillsHub": "Centro de habilidades"

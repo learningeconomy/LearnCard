@@ -51,6 +51,8 @@ export type Thread = {
     last_message_at: string;
     active?: boolean;
     ended_at?: string;
+    plan_started_at?: string;
+    mode?: 'ai-tutor' | 'ai-insights';
     // Thread-specific data (consolidated from separate collections)
     summaries?: Array<{
         summary_data: string;
@@ -64,6 +66,13 @@ export type Thread = {
     credentials?: ThreadCredentialContext[];
     credentialSearchTopic?: string;
     credentialContextStatus?: 'pending' | 'ready' | 'empty' | 'error';
+};
+
+export type ActiveSessionStatus = {
+    isActive: boolean;
+    activeThreadId: string | null;
+    activeThreadTitle?: string;
+    activeThreadMode?: 'ai-tutor' | 'ai-insights';
 };
 
 export type VerifiableCredential = {

@@ -2882,7 +2882,17 @@
         "unfinished": "Inachevé",
         "learningOverview": "Aperçu des apprentissages",
         "finishSession": "Terminer la session",
-        "finish": "Terminer"
+        "finish": "Terminer",
+        "activeTitle": "Session en cours",
+        "activeFallbackTitle": "Votre session d’IA actuelle",
+        "activeDescription": "« {{title}} » est toujours active. Démarrer une nouvelle session y mettra fin.",
+        "resumeSession": "Reprendre la session",
+        "resumingSession": "Reprise...",
+        "checkingActiveSession": "Vérification des sessions...",
+        "startNewSession": "Démarrer une nouvelle session",
+        "startingNewSession": "Démarrage...",
+        "activeCheckFailedTitle": "Un problème est survenu",
+        "activeCheckFailedDescription": "Essayez de redémarrer la session."
     },
     "aiFeatureLinks": {
         "skillsHub": "Pôle de compétences"
