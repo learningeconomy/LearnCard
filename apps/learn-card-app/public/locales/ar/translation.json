@@ -2595,6 +2595,26 @@
         "globalNetworkAdmin": "مسؤول الشبكة العالمية",
         "nationalNetworkAdmin": "مسؤول الشبكة الوطنية"
     },
+    "feedback": {
+        "howWasThat": "كيف كانت تجربتك؟",
+        "thanks": "شكرًا على ملاحظاتك!",
+        "bad": "سيئة",
+        "okay": "مقبولة",
+        "great": "رائعة",
+        "followup": {
+            "title": "ما الذي حدث؟",
+            "desc": "ملاحظاتك تساعدنا على تحسين LearnCard.",
+            "reason": {
+                "confusing": "مربك",
+                "slow": "بطيء",
+                "broken": "حدث خطأ ما",
+                "other": "أخرى"
+            },
+            "placeholder": "أخبرنا المزيد (اختياري)",
+            "send": "إرسال الملاحظات",
+            "skip": "تخطي"
+        }
+    },
     "toasts": {
         "copied": "تم النسخ إلى الحافظة",
         "copyFailed": "تعذر النسخ إلى الحافظة",

@@ -27,9 +27,25 @@ export interface ProfileSnapshot {
     daysSinceSignup: number;
 }
 
+// ── In-app micro-feedback (sentiment pilot) ─────────────────────────────────
+
+/** Where a micro-feedback prompt was rendered. */
+export type FeedbackSurface = 'issue_success' | 'claim_interaction' | 'claim_oidc';
+
+/** 3-point sentiment scale used by the SentimentStrip. */
+export type FeedbackSentiment = 'negative' | 'neutral' | 'positive';
+
 export const AnalyticsEvents = {
     // Boost/Credential Claims
     CLAIM_BOOST: 'claim_boost',
+
+    // In-app micro-feedback (sentiment strips at value moments).
+    // `shown` vs `sentiment_given` gives per-surface response rate — the
+    // health metric that tells us when a prompt has become annoying.
+    FEEDBACK_PROMPT_SHOWN: 'feedback_prompt_shown',
+    FEEDBACK_SENTIMENT_GIVEN: 'feedback_sentiment_given',
+    FEEDBACK_FOLLOWUP_SUBMITTED: 'feedback_followup_submitted',
+    FEEDBACK_FOLLOWUP_DISMISSED: 'feedback_followup_dismissed',
 
     // Boost CMS
     BOOST_CMS_PUBLISH: 'boostCMS_publish',
@@ -193,6 +209,35 @@ export interface AnalyticsEventPayloads {
         method: 'VC-API Request' | 'Dashboard' | 'Claim Modal' | 'Notification' | string;
         /** LC-1853: ms from when the claim flow started to when the boost was claimed. */
         msSinceMethodStarted?: number;
+    };
+
+    [AnalyticsEvents.FEEDBACK_PROMPT_SHOWN]: {
+        surface: FeedbackSurface;
+    };
+
+    [AnalyticsEvents.FEEDBACK_SENTIMENT_GIVEN]: {
+        surface: FeedbackSurface;
+        sentiment: FeedbackSentiment;
+        /** ms from prompt render to tap. Rising latency = prompt fatigue signal. */
+        msSinceShown: number;
+    };
+
+    [AnalyticsEvents.FEEDBACK_FOLLOWUP_SUBMITTED]: {
+        surface: FeedbackSurface;
+        sentiment: FeedbackSentiment;
+        reasons: string[];
+        hasFreeText: boolean;
+        /**
+         * Optional free text. Only attached when the user's
+         * `bugReportsEnabled` preference allows it — treat as
+         * user-supplied PII downstream.
+         */
+        userNote?: string;
+    };
+
+    [AnalyticsEvents.FEEDBACK_FOLLOWUP_DISMISSED]: {
+        surface: FeedbackSurface;
+        sentiment: FeedbackSentiment;
     };
 
     [AnalyticsEvents.BOOST_CMS_PUBLISH]: {

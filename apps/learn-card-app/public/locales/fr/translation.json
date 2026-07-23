@@ -2595,6 +2595,26 @@
         "globalNetworkAdmin": "Administrateur réseau mondial",
         "nationalNetworkAdmin": "Administrateur réseau national"
     },
+    "feedback": {
+        "howWasThat": "Comment ça s'est passé ?",
+        "thanks": "Merci pour votre retour !",
+        "bad": "Pas bien",
+        "okay": "Moyen",
+        "great": "Super",
+        "followup": {
+            "title": "Qu'est-ce qui n'a pas fonctionné ?",
+            "desc": "Vos retours nous aident à améliorer LearnCard.",
+            "reason": {
+                "confusing": "Déroutant",
+                "slow": "Lent",
+                "broken": "Quelque chose s'est cassé",
+                "other": "Autre"
+            },
+            "placeholder": "Dites-nous en plus (facultatif)",
+            "send": "Envoyer",
+            "skip": "Passer"
+        }
+    },
     "toasts": {
         "copied": "Copié dans le presse-papiers",
         "copyFailed": "Impossible de copier dans le presse-papiers",
