@@ -31,6 +31,7 @@ export const ClaimFeedbackToast: React.FC<{ surface: FeedbackSurface }> = ({ sur
                 surface={surface}
                 onAnswered={handleAnswered}
                 className="!justify-start"
+                countUnmountAsIgnore={false}
             />
         </div>
     );
