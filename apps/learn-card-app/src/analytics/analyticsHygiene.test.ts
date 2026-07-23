@@ -22,7 +22,7 @@ vi.mock('../helpers/sendCredentialFlow.helpers', () => ({
 }));
 
 import { detectAnalyticsEnvironment, getSharedEventContext, newFlowId } from './sharedContext';
-import { applyPostHogHygiene } from './providers/posthog';
+import { applyPostHogHygiene, scrubUrl } from './providers/posthog';
 import { normalizeScreenName } from './useScreenView';
 import { createFlowLifecycle } from './flowLifecycle';
 import {
@@ -152,6 +152,59 @@ describe('applyPostHogHygiene', () => {
         const result = applyPostHogHygiene({ properties: { environment: 'production' } });
 
         expect(result?.properties?.environment).toBe('development');
+    });
+
+    it('scrubs sensitive query params from URL properties', () => {
+        const result = applyPostHogHygiene({
+            properties: {
+                $current_url:
+                    'http://localhost:3000/request?vc_request_url=https%3A%2F%2Fnetwork.learncard.com%2Fapi%2Fworkflows%2Fclaim%2Fexchanges%2Fabc123',
+                $referrer: 'https://learncard.app/claim?iuv=secret-token',
+            },
+        });
+
+        expect(result?.properties?.$current_url).toBe('http://localhost:3000/request');
+        expect(result?.properties?.$referrer).toBe('https://learncard.app/claim');
+    });
+
+    it('scrubs URL properties inside $set and $set_once person bags', () => {
+        const result = applyPostHogHygiene({
+            properties: {
+                $set: { $initial_current_url: 'https://learncard.app/request?vc_request_url=x' },
+            },
+            $set_once: {
+                $initial_referrer: 'https://learncard.app/request?vc_request_url=x',
+            },
+        });
+
+        expect((result?.properties?.$set as Record<string, unknown>).$initial_current_url).toBe(
+            'https://learncard.app/request'
+        );
+        expect(result?.$set_once?.$initial_referrer).toBe('https://learncard.app/request');
+    });
+});
+
+describe('scrubUrl', () => {
+    it.each([
+        [
+            'https://learncard.app/request?vc_request_url=https%3A%2F%2Fexample.com%2Fexchanges%2Fabc',
+            'https://learncard.app/request',
+        ],
+        ['https://learncard.app/claim#access_token=secret', 'https://learncard.app/claim'],
+        [
+            'https://learncard.app/wallet?utm_source=email&utm_campaign=launch&iuv=secret',
+            'https://learncard.app/wallet?utm_source=email&utm_campaign=launch',
+        ],
+        ['https://learncard.app/wallet', 'https://learncard.app/wallet'],
+    ])('scrubs %s to %s', (input, expected) => {
+        expect(scrubUrl(input)).toBe(expected);
+    });
+
+    it('passes non-URL values through unchanged', () => {
+        expect(scrubUrl('not a url')).toBe('not a url');
+        expect(scrubUrl(undefined)).toBeUndefined();
+        expect(scrubUrl(42)).toBe(42);
+        expect(scrubUrl('')).toBe('');
     });
 });
 
