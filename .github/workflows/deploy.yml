@@ -858,13 +858,20 @@ jobs:
                   STAGE_DIR="$STAGE_ROOT/apps/${{ steps.vars.outputs.project_name }}"
                   rm -rf "$STAGE_ROOT"
                   mkdir -p "$STAGE_DIR"
-                  cp netlify.toml "$STAGE_ROOT/"
+                  cp netlify.toml "$STAGE_DIR/"
                   if [[ -d netlify ]]; then
                     cp -R netlify "$STAGE_DIR/netlify"
                   fi
                   cp -R build "$STAGE_DIR/build"
+                  # Pin the CLI's repositoryRoot to the stage root so the site's UI base
+                  # (apps/<project>) resolves to $STAGE_DIR. Without a .git here, the CLI
+                  # treats the cwd as the repo root and base resolution fails.
+                  git -C "$STAGE_ROOT" init --quiet
 
-                  cd "$STAGE_ROOT"
+                  # Run from the app dir: the uploader only scans <cwd>/.netlify for the
+                  # edge-function bundle, and the bundler writes it under the resolved
+                  # base dir — both must be $STAGE_DIR or edge functions are dropped.
+                  cd "$STAGE_DIR"
                   # --debug: without it the CLI swallows config-resolution errors and
                   # silently retries offline, which drops siteInfo and surfaces as a
                   # misleading "Project not found".
@@ -877,10 +884,9 @@ jobs:
                     --message "CI deploy ${{ github.sha }}"
 
                   if [[ -d "$STAGE_DIR/netlify/edge-functions" ]]; then
-                    ROOT_EDGE_BUNDLE="$STAGE_ROOT/.netlify/edge-functions-dist"
                     APP_EDGE_BUNDLE="$STAGE_DIR/.netlify/edge-functions-dist"
-                    if ! compgen -G "$ROOT_EDGE_BUNDLE/*" > /dev/null && ! compgen -G "$APP_EDGE_BUNDLE/*" > /dev/null; then
-                      echo "::error::Edge functions were not bundled into the deploy (checked $ROOT_EDGE_BUNDLE and $APP_EDGE_BUNDLE)."
+                    if ! compgen -G "$APP_EDGE_BUNDLE/*" > /dev/null; then
+                      echo "::error::Edge functions were not bundled into the deploy (expected $APP_EDGE_BUNDLE to be populated — a bundle anywhere else is never uploaded)."
                       exit 1
                     fi
                   fi
