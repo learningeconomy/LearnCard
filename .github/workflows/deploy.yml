@@ -82,8 +82,12 @@ jobs:
             lca_app_changed: ${{ steps.check_versions.outputs.lca_app_changed }}
             native_plugin_changed: ${{ steps.check_versions.outputs.native_plugin_changed }}
             # Dynamic environment names
+            # target_frontend_env is only consumed by publish-native-apps (fastlane);
+            # Netlify/CapGo deploys fan out over frontend_deployment_matrix instead.
             target_frontend_env: ${{ steps.set-env.outputs.frontend_env }}
             service_deployment_matrix: ${{ steps.set-env.outputs.service_deployment_matrix }}
+            frontend_deployment_matrix: ${{ steps.set-env.outputs.frontend_deployment_matrix }}
+            frontend_matrix_has_legs: ${{ steps.set-env.outputs.frontend_matrix_has_legs }}
         steps:
             # Check these first - no dependencies needed
             - name: Check if this is a manual dispatch
@@ -183,29 +187,78 @@ jobs:
                   SCOUTS_STAGING='{"name":"ScoutPass Staging","brain_env":"scout-network-api-staging","cloud_env":"scout-storage-api-staging","lca_api_env":"scout-app-api-staging"}'
                   SCOUTS_PRODUCTION='{"name":"ScoutPass Production","brain_env":"scout-network-api-production","cloud_env":"scout-storage-api-production","lca_api_env":"scout-app-api-production"}'
 
-                  set_outputs() {
-                    local frontend_env="$1"
-                    shift
+                  # Frontend legs mirror the service matrix, one Netlify site per GitHub
+                  # Environment. capgo=false on ALL staging legs (automatic and manual): the
+                  # LearnCard staging OTA is owned by capgo-staging.yml — it must be built with
+                  # PROD config or it breaks auth on installed prod binaries (rationale
+                  # documented there) — and ScoutPass staging has no OTA channel.
+                  LC_FE_STAGING='{"name":"LearnCard Staging","environment":"learn-card-app-staging","capgo":false}'
+                  LC_FE_PRODUCTION='{"name":"LearnCard Production","environment":"learn-card-app-production","capgo":true}'
+                  SCOUTS_FE_STAGING='{"name":"ScoutPass Staging","environment":"scout-app-staging","capgo":false,"stage":"staging"}'
+                  SCOUTS_FE_PRODUCTION='{"name":"ScoutPass Production","environment":"scout-app-production","capgo":true,"stage":"production"}'
+
+                  set_service_matrix() {
                     local legs
                     legs=$(IFS=,; echo "$*")
-                    echo "frontend_env=${frontend_env}" >> "$GITHUB_OUTPUT"
                     echo "service_deployment_matrix={\"include\":[${legs}]}" >> "$GITHUB_OUTPUT"
                   }
 
+                  set_frontend_matrix() {
+                    local legs
+                    legs=$(IFS=,; echo "$*")
+                    echo "frontend_deployment_matrix={\"include\":[${legs}]}" >> "$GITHUB_OUTPUT"
+                    if [[ -n "$legs" ]]; then
+                      echo "frontend_matrix_has_legs=true" >> "$GITHUB_OUTPUT"
+                    else
+                      echo "frontend_matrix_has_legs=false" >> "$GITHUB_OUTPUT"
+                    fi
+                  }
+
+                  AFFECTED="${{ steps.affected.outputs.affected }}"
+
+                  is_affected() {
+                    tr ',' '\n' <<< "$AFFECTED" | grep -qx "$1"
+                  }
+
                   if [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'scouts' ]]; then
-                    set_outputs scout-app-production "$SCOUTS_PRODUCTION"
+                    echo "frontend_env=scout-app-production" >> "$GITHUB_OUTPUT"
+                    set_service_matrix "$SCOUTS_PRODUCTION"
+                    set_frontend_matrix "$SCOUTS_FE_PRODUCTION"
                   elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'scouts-staging' ]]; then
-                    set_outputs scout-app-staging "$SCOUTS_STAGING"
+                    echo "frontend_env=scout-app-staging" >> "$GITHUB_OUTPUT"
+                    set_service_matrix "$SCOUTS_STAGING"
+                    set_frontend_matrix "$SCOUTS_FE_STAGING"
                   elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'production' ]]; then
-                    set_outputs learn-card-app-production "$LC_PRODUCTION"
+                    echo "frontend_env=learn-card-app-production" >> "$GITHUB_OUTPUT"
+                    set_service_matrix "$LC_PRODUCTION"
+                    set_frontend_matrix "$LC_FE_PRODUCTION"
                   elif [[ "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
-                    set_outputs learn-card-app-staging "$LC_STAGING"
+                    echo "frontend_env=learn-card-app-staging" >> "$GITHUB_OUTPUT"
+                    set_service_matrix "$LC_STAGING"
+                    set_frontend_matrix "$LC_FE_STAGING"
                   elif [[ "${{ steps.check_release.outputs.is_release }}" == 'true' ]]; then
                     # ScoutPass production is deliberately excluded from release
                     # pushes — it deploys only via the manual 'scouts' dispatch.
-                    set_outputs learn-card-app-production "$LC_PRODUCTION"
+                    echo "frontend_env=learn-card-app-production" >> "$GITHUB_OUTPUT"
+                    set_service_matrix "$LC_PRODUCTION"
+                    if [[ "${{ steps.check_versions.outputs.lca_app_changed }}" == 'true' ]]; then
+                      set_frontend_matrix "$LC_FE_PRODUCTION"
+                    else
+                      set_frontend_matrix
+                    fi
                   else
-                    set_outputs learn-card-app-staging "$LC_STAGING" "$SCOUTS_STAGING"
+                    echo "frontend_env=learn-card-app-staging" >> "$GITHUB_OUTPUT"
+                    set_service_matrix "$LC_STAGING" "$SCOUTS_STAGING"
+                    # Normal main push: staging front-ends deploy from CI (replacing
+                    # Netlify branch builds), only when their Nx project is affected.
+                    FE_LEGS=()
+                    if is_affected learn-card-app; then
+                      FE_LEGS+=("$LC_FE_STAGING")
+                    fi
+                    if is_affected scouts; then
+                      FE_LEGS+=("$SCOUTS_FE_STAGING")
+                    fi
+                    set_frontend_matrix "${FE_LEGS[@]}"
                   fi
 
     # ============================================================================
@@ -650,79 +703,66 @@ jobs:
 
     # ============================================================================
     # FRONTEND DEPLOYMENTS
-    # For production: Wait for any services that are deploying to complete first
+    # Triggers:
+    #   - Push: Deploy affected front-ends to their staging Netlify sites
+    #   - Release: Deploy LearnCard production if version changed
+    #   - Manual: Deploy to selected environment if selected
+    # Waits for any services that are deploying to complete first.
     # ============================================================================
     deploy-frontend:
-        name: Deploy Frontend
-        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api]
+        name: Deploy Frontend (${{ matrix.name }})
+        needs:
+            [
+                determine-affected,
+                test-affected,
+                deploy-brain-service,
+                deploy-learn-cloud,
+                deploy-lca-api,
+            ]
         if: |
             always() &&
             !cancelled() &&
+            needs.determine-affected.outputs.frontend_matrix_has_legs == 'true' &&
             (
                 (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-frontend == 'true') ||
+                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.target-environment == 'scouts') ||
                 (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.lca_app_changed == 'true') ||
-                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.target-environment == 'scouts')
+                (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success')
             ) &&
             !contains(needs.deploy-brain-service.result, 'failure') &&
             !contains(needs.deploy-learn-cloud.result, 'failure') &&
             !contains(needs.deploy-lca-api.result, 'failure')
         runs-on: ubuntu-latest
-        permissions:
-            contents: write
-        environment: ${{ needs.determine-affected.outputs.target_frontend_env }}
-        # The pre-push hook blocks pushes to protected branches and needs a TTY
-        # to confirm; CI has none, so it aborted the push to production. HUSKY=0
-        # disables local git hooks, which should never run in CI anyway.
-        env:
-            HUSKY: 0
+        strategy:
+            fail-fast: false
+            matrix: ${{ fromJSON(needs.determine-affected.outputs.frontend_deployment_matrix) }}
+        environment: ${{ matrix.environment }}
         steps:
             - name: Set Deployment Variables
               id: vars
               run: |
                   echo "app_id=${{ vars.DEPLOY_APP_ID }}" >> "$GITHUB_OUTPUT"
                   echo "project_name=${{ vars.DEPLOY_PROJECT_NAME }}" >> "$GITHUB_OUTPUT"
-                  echo "netlify_branch=${{ vars.NETLIFY_BRANCH }}" >> "$GITHUB_OUTPUT"
+                  echo "netlify_site_id=${{ vars.NETLIFY_SITE_ID }}" >> "$GITHUB_OUTPUT"
                   echo "capgo_id=${{ vars.APP_ID }}" >> "$GITHUB_OUTPUT"
                   echo "build_path=${{ vars.DEPLOY_BUILD_PATH }}" >> "$GITHUB_OUTPUT"
-                  echo "force_push=${{ vars.DEPLOY_FORCE_PUSH }}" >> "$GITHUB_OUTPUT"
 
             - name: Checkout Repo
               uses: actions/checkout@v7
-              with:
-                  fetch-depth: 0
-                  token: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
-            # Force-push to the deploy branch (Netlify auto-deploys from it). The deploy
-            # branch is a pointer to the source tip, not a dev branch — force-pushing
-            # prevents a diverged pointer (e.g. from a direct hotfix) from deadlocking the
-            # deploy on a non-fast-forward rejection. --force-with-lease refuses if the
-            # remote tip isn't the one we just fetched, guarding concurrent updates.
-            - name: Push to production branch
-              if: |
-                  needs.determine-affected.outputs.is_release == 'true' ||
-                  (github.event_name == 'workflow_dispatch' && (github.event.inputs.target-environment == 'production' || github.event.inputs.target-environment == 'scouts'))
-              run: |
-                  BRANCH="${{ steps.vars.outputs.netlify_branch }}"
-                  git fetch origin "$BRANCH" || true
-                  if [[ "${{ steps.vars.outputs.force_push }}" == 'true' ]]; then
-                    git push --force origin HEAD:"$BRANCH"
-                  elif git rev-parse --verify --quiet "origin/$BRANCH" >/dev/null; then
-                    git push --force-with-lease="$BRANCH:origin/$BRANCH" origin HEAD:"$BRANCH"
-                  else
-                    git push origin HEAD:"$BRANCH"
-                  fi
-
             - name: Get App Version
               id: app-version
+              if: matrix.capgo
               run: |
                   VERSION=$(bun -e "console.log(require('./apps/${{ steps.vars.outputs.project_name }}/package.json').version)")
                   echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
             - name: Get CapGo Channel
               id: capgo-channel
+              if: matrix.capgo
               run: |
                   CHANNEL=$(bun tools/capgo/getCapgoChannel.js --app ${{ steps.vars.outputs.app_id }})
                   echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
@@ -743,12 +783,34 @@ jobs:
                   echo "Preparing tenant config: $TENANT $STAGE_FLAG"
                   bunx tsx scripts/prepare-native-config.ts "$TENANT" $STAGE_FLAG
 
+            # Generate the resolved per-tenant configs consumed by the Netlify edge
+            # function (netlify/edge-functions/shared/resolved-tenant-configs.generated.json).
+            # This previously ran inside Netlify's own build command; now that CI builds the
+            # artifact and deploys it with `--no-build`, we must generate it here so the
+            # edge function bundles the up-to-date data. LCA only — Scouts has no edge config.
+            - name: Generate edge tenant configs
+              if: steps.vars.outputs.project_name == 'learn-card-app'
+              working-directory: apps/learn-card-app
+              run: bun scripts/generate-edge-tenant-configs.ts
+
+            # Scouts backend URLs come from the checked-in stage configs
+            # (environments/scoutpass/config[.<stage>].json) via the same resolution local
+            # dev uses, so CI and dev share one source of truth instead of duplicating URLs
+            # as GitHub Environment vars. The stage is baked into the matrix leg (not an ops
+            # var, so it can't be forgotten); unknown stages fail the build rather than
+            # silently building against production.
+            - name: Resolve Scouts stage env
+              id: scouts-stage-env
+              if: steps.vars.outputs.project_name == 'scouts'
+              working-directory: apps/scouts
+              run: bun scripts/lc.ts stage-env "${{ matrix.stage || 'production' }}" | tee -a "$GITHUB_OUTPUT"
+
             - name: Build App
               run: bunx nx build ${{ steps.vars.outputs.project_name }}
               env:
                   NODE_ENV: ${{ vars.NODE_ENV }}
                   VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
-                  SENTRY_ENV: ${{ vars.SENTRY_ENV }}
+                  SENTRY_ENV: ${{ steps.scouts-stage-env.outputs.SENTRY_ENV || vars.SENTRY_ENV }}
                   SENTRY_DSN: ${{ vars.SENTRY_DSN }}
                   GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
                   VITE_WEB3AUTH_CLIENT_ID: ${{ secrets.VITE_WEB3AUTH_CLIENT_ID }}
@@ -757,15 +819,83 @@ jobs:
                   VITE_WEB3AUTH_RPC_TARGET: ${{ secrets.VITE_WEB3AUTH_RPC_TARGET }}
                   VITE_AUTH_PROVIDER: ${{ vars.VITE_AUTH_PROVIDER }}
                   VITE_KEY_DERIVATION: ${{ vars.VITE_KEY_DERIVATION }}
-                  VITE_SSS_SERVER_URL: ${{ vars.VITE_SSS_SERVER_URL }}
+                  VITE_SSS_SERVER_URL: ${{ steps.scouts-stage-env.outputs.VITE_SSS_SERVER_URL || vars.VITE_SSS_SERVER_URL }}
                   VITE_ENABLE_EMAIL_BACKUP_SHARE: ${{ vars.VITE_ENABLE_EMAIL_BACKUP_SHARE }}
                   VITE_ENABLE_AUTH_DEBUG_WIDGET: ${{ vars.VITE_ENABLE_AUTH_DEBUG_WIDGET }}
                   VITE_REQUIRE_EMAIL_FOR_PHONE_USERS: ${{ vars.VITE_REQUIRE_EMAIL_FOR_PHONE_USERS }}
                   VITE_ANALYTICS_PROVIDER: ${{ vars.VITE_ANALYTICS_PROVIDER }}
                   VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
+                  # Backend URL build defines consumed by apps/scouts/vite.config.ts, resolved
+                  # from the checked-in stage configs above (empty for learn-card-app, which
+                  # uses the tenant config system instead).
+                  LCN_URL: ${{ steps.scouts-stage-env.outputs.LCN_URL }}
+                  LCN_API_URL: ${{ steps.scouts-stage-env.outputs.LCN_API_URL }}
+                  CLOUD_URL: ${{ steps.scouts-stage-env.outputs.CLOUD_URL }}
+                  LEARN_CLOUD_XAPI_URL: ${{ steps.scouts-stage-env.outputs.LEARN_CLOUD_XAPI_URL }}
+                  API_URL: ${{ steps.scouts-stage-env.outputs.API_URL }}
+
+            - name: Validate Netlify target
+              run: |
+                  if [[ -z "${{ steps.vars.outputs.netlify_site_id }}" ]]; then
+                    echo "::error::NETLIFY_SITE_ID is not set in environment '${{ matrix.environment }}'! Configure it in the GitHub environment settings."
+                    exit 1
+                  fi
+
+            # Deploy the pre-built web artifact straight to Netlify, keyed off the GitHub
+            # Environment's NETLIFY_SITE_ID. This replaces the old force-push-to-deploy-branch
+            # mechanism, so the deploy branch can be removed and `main` fully branch-protected.
+            # --no-build: CI already built above; Netlify must not rebuild.
+            #
+            # The deploy runs from a clean staging dir OUTSIDE the repo. The Netlify sites have
+            # `apps/<project>` configured as their UI base directory, and account settings are
+            # merged into netlify.toml even for CLI deploys. Mirror that path in the staging
+            # directory so online config resolution succeeds, while still avoiding monorepo
+            # workspace detection (which can desync the edge-function bundle and upload paths).
+            - name: Deploy to Netlify
+              working-directory: apps/${{ steps.vars.outputs.project_name }}
+              run: |
+                  STAGE_ROOT="$RUNNER_TEMP/netlify-deploy-${{ steps.vars.outputs.project_name }}"
+                  STAGE_DIR="$STAGE_ROOT/apps/${{ steps.vars.outputs.project_name }}"
+                  rm -rf "$STAGE_ROOT"
+                  mkdir -p "$STAGE_DIR"
+                  cp netlify.toml "$STAGE_DIR/"
+                  if [[ -d netlify ]]; then
+                    cp -R netlify "$STAGE_DIR/netlify"
+                  fi
+                  cp -R build "$STAGE_DIR/build"
+                  # Pin the CLI's repositoryRoot to the stage root so the site's UI base
+                  # (apps/<project>) resolves to $STAGE_DIR. Without a .git here, the CLI
+                  # treats the cwd as the repo root and base resolution fails.
+                  git -C "$STAGE_ROOT" init --quiet
+
+                  # Run from the app dir: the uploader only scans <cwd>/.netlify for the
+                  # edge-function bundle, and the bundler writes it under the resolved
+                  # base dir — both must be $STAGE_DIR or edge functions are dropped.
+                  cd "$STAGE_DIR"
+                  # --debug: without it the CLI swallows config-resolution errors and
+                  # silently retries offline, which drops siteInfo and surfaces as a
+                  # misleading "Project not found".
+                  bunx netlify-cli@26 deploy \
+                    --debug \
+                    --prod \
+                    --no-build \
+                    --dir "$STAGE_DIR/build" \
+                    --site "${{ steps.vars.outputs.netlify_site_id }}" \
+                    --message "CI deploy ${{ github.sha }}"
+
+                  if [[ -d "$STAGE_DIR/netlify/edge-functions" ]]; then
+                    APP_EDGE_BUNDLE="$STAGE_DIR/.netlify/edge-functions-dist"
+                    if ! compgen -G "$APP_EDGE_BUNDLE/*" > /dev/null; then
+                      echo "::error::Edge functions were not bundled into the deploy (expected $APP_EDGE_BUNDLE to be populated — a bundle anywhere else is never uploaded)."
+                      exit 1
+                    fi
+                  fi
+              env:
+                  NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
 
             # Deploy OTA update to CapGo
             - name: Upload to CapGo
+              if: matrix.capgo
               run: |
                   bunx @capgo/cli@latest bundle upload \
                     ${{ steps.vars.outputs.capgo_id }} \
@@ -778,6 +908,7 @@ jobs:
                     --node-modules node_modules
 
             - name: Set CapGo Channel
+              if: matrix.capgo
               run: |
                   bunx @capgo/cli@latest channel set ${{ steps.capgo-channel.outputs.channel }} \
                     -s default \
