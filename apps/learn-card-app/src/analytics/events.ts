@@ -19,6 +19,20 @@ export enum ProfileBuildMethod {
     ResumeImport = 'resume_import',
 }
 
+/**
+ * Where a credential-claim flow was entered from. Used by the
+ * `credential_claim_*` lifecycle events; values align with
+ * `ProfileBuildMethod` where the two overlap.
+ */
+export type ClaimEntryPoint =
+    | 'claim_link'
+    | 'claim_modal'
+    | 'dashboard'
+    | 'vc_api_request'
+    | 'notification'
+    | 'consent_flow'
+    | string;
+
 /** Snapshot of the user's profile state at a point in time. */
 export interface ProfileSnapshot {
     credentialCount: number;
@@ -177,6 +191,90 @@ export const AnalyticsEvents = {
     SKILL_PROFILE_STEP_COMPLETED: 'skill_profile_step_completed',
     SKILL_PROFILE_COMPLETED: 'skill_profile_completed',
     SKILL_PROFILE_ABANDONED: 'skill_profile_abandoned',
+
+    // ── Lifecycle funnels (P0) ───────────────────────────────────────────────
+    // Start/terminal pairs share a `flow_id` (see `newFlowId()` in
+    // sharedContext.ts) so concurrent flows reconstruct reliably.
+    // `environment` / `app_version` / `tenant_id` / `platform` are
+    // auto-attached to every event — do NOT pass them per-call.
+
+    // Signup: `signup_started` fires when the AuthCoordinator reaches
+    // `needs_setup` (a provably new account), giving acquisition a real
+    // denominator — unlike ACCOUNT_CREATED, which is device-scoped.
+    SIGNUP_STARTED: 'signup_started',
+    SIGNUP_COMPLETED: 'signup_completed',
+    SIGNUP_FAILED: 'signup_failed',
+
+    ONBOARDING_STARTED: 'onboarding_started',
+    ONBOARDING_STEP_COMPLETED: 'onboarding_step_completed',
+    ONBOARDING_ABANDONED: 'onboarding_abandoned',
+
+    // Credential claim lifecycle: CLAIM_BOOST records success only.
+    // `presented` = the claim screen rendered (exposure); `started` =
+    // the user actively triggered the claim. Funnel denominators MUST
+    // use `started` — `presented` includes dwell/bounce traffic.
+    // Exactly one terminal event fires per started flow_id.
+    CREDENTIAL_CLAIM_PRESENTED: 'credential_claim_presented',
+    CREDENTIAL_CLAIM_STARTED: 'credential_claim_started',
+    CREDENTIAL_CLAIM_SUCCEEDED: 'credential_claim_succeeded',
+    CREDENTIAL_CLAIM_FAILED: 'credential_claim_failed',
+    CREDENTIAL_CLAIM_CANCELLED: 'credential_claim_cancelled',
+
+    // Issuance lifecycle for the Issue page (successor to the deprecated
+    // Boost CMS send flow). Legacy outcome events (SELF_BOOST, SEND_BOOST,
+    // GENERATE_CLAIM_LINK) still fire alongside these with
+    // `method: 'Issue Page'` so pre-existing dashboards keep a continuous
+    // series and CMS→IssuePage migration is visible via the method split.
+    CREDENTIAL_ISSUE_STARTED: 'credential_issue_started',
+    CREDENTIAL_ISSUE_SUCCEEDED: 'credential_issue_succeeded',
+    CREDENTIAL_ISSUE_FAILED: 'credential_issue_failed',
+
+    // OID4VC/VP exchange lifecycle. `exchange_id` equals the resilience
+    // orchestrator's `exchange_run_id` where one exists so these join
+    // against OPENID_RESILIENCE_* events. `offer_presented` = the offer
+    // screen rendered; `started` = the network exchange actually began.
+    OPENID_OFFER_PRESENTED: 'openid_offer_presented',
+    OPENID_EXCHANGE_STARTED: 'openid_exchange_started',
+    OPENID_EXCHANGE_SUCCEEDED: 'openid_exchange_succeeded',
+    OPENID_EXCHANGE_FAILED: 'openid_exchange_failed',
+    OPENID_EXCHANGE_CANCELLED: 'openid_exchange_cancelled',
+
+    // Post-claim value — activation/retention signals. CREDENTIAL_SHARED
+    // means the user completed a share action (clipboard copy, native
+    // share sheet, LinkedIn). Rendering a QR is only exposure — that is
+    // CREDENTIAL_QR_PRESENTED, since a scan can't be confirmed client-side.
+    CREDENTIAL_VIEWED: 'credential_viewed',
+    CREDENTIAL_SHARED: 'credential_shared',
+    CREDENTIAL_QR_PRESENTED: 'credential_qr_presented',
+    PRESENTATION_COMPLETED: 'presentation_completed',
+
+    // ── Feature outcomes (P1) ────────────────────────────────────────────────
+    LAUNCHPAD_APP_OPENED: 'launchpad_app_opened',
+    LAUNCHPAD_APP_ACTION_COMPLETED: 'launchpad_app_action_completed',
+    LAUNCHPAD_APP_UNINSTALLED: 'launchpad_app_uninstalled',
+
+    AI_MESSAGE_SENT: 'ai_message_sent',
+    AI_RESPONSE_COMPLETED: 'ai_response_completed',
+    AI_RESPONSE_FAILED: 'ai_response_failed',
+    AI_RECOMMENDATION_ACCEPTED: 'ai_recommendation_accepted',
+
+    PROFILE_ITEM_UPDATED: 'profile_item_updated',
+    PROFILE_ITEM_REMOVED: 'profile_item_removed',
+    PROFILE_SHARED: 'profile_shared',
+
+    // Dashboard "Get Started" checklist — the activation-loop UI.
+    // `item_clicked` is declared intent entering a funnel; `dismissed`
+    // is an explicit opt-out of activation guidance. Checklist
+    // completion needs no event (derivable from the funnel events).
+    DASHBOARD_GET_STARTED_INTERACTED: 'dashboard_get_started_interacted',
+
+    // ConsentFlow terminal states — distinguish deliberate exits and
+    // technical failures from silent abandonment.
+    CONSENT_FLOW_DECLINED: 'consent_flow_declined',
+    CONSENT_FLOW_CANCELLED: 'consent_flow_cancelled',
+    CONSENT_FLOW_FAILED: 'consent_flow_failed',
+    CONSENT_SYNC_COMPLETED: 'consent_sync_completed',
+    CONSENT_SYNC_FAILED: 'consent_sync_failed',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];
@@ -727,6 +825,318 @@ export interface AnalyticsEventPayloads {
     [AnalyticsEvents.CREDENTIAL_UNSUSPENDED]: {
         boostUri: string;
         surface: 'managed-boosts' | 'issuer-dashboard';
+    };
+
+    // ── Lifecycle funnels (P0) ───────────────────────────────────────────────
+
+    [AnalyticsEvents.SIGNUP_STARTED]: {
+        flow_id: string;
+        /** Auth method that produced the new account (google/apple/passwordless/sms). */
+        method?: string;
+        entry_point?: string;
+    };
+
+    [AnalyticsEvents.SIGNUP_COMPLETED]: {
+        flow_id: string;
+        method?: string;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.SIGNUP_FAILED]: {
+        flow_id: string;
+        method?: string;
+        /** Which part of setup failed — key derivation, profile creation, etc. */
+        step_id?: string;
+        error_code?: string;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.ONBOARDING_STARTED]: {
+        flow_id: string;
+        entry_point?: string;
+    };
+
+    [AnalyticsEvents.ONBOARDING_STEP_COMPLETED]: {
+        flow_id: string;
+        step_id: string;
+        /** 1-indexed position in the flow. */
+        step_index: number;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.ONBOARDING_ABANDONED]: {
+        flow_id: string;
+        /** Step the user was on when they exited. */
+        step_id: string;
+        step_index: number;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_CLAIM_PRESENTED]: {
+        flow_id: string;
+        entry_point: ClaimEntryPoint;
+        credential_type?: string;
+        category?: string;
+        partner_id?: string;
+        credential_count?: number;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_CLAIM_STARTED]: {
+        flow_id: string;
+        entry_point: ClaimEntryPoint;
+        credential_type?: string;
+        category?: string;
+        /** Sanitized issuer identifier (profileId or URL host — never PII). */
+        partner_id?: string;
+        /** Batch size for multi-credential claims (default 1). */
+        credential_count?: number;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED]: {
+        flow_id: string;
+        entry_point: ClaimEntryPoint;
+        credential_type?: string;
+        category?: string;
+        partner_id?: string;
+        credential_count?: number;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_CLAIM_FAILED]: {
+        flow_id: string;
+        entry_point: ClaimEntryPoint;
+        credential_type?: string;
+        category?: string;
+        partner_id?: string;
+        credential_count?: number;
+        error_code?: string;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED]: {
+        flow_id: string;
+        entry_point: ClaimEntryPoint;
+        credential_type?: string;
+        category?: string;
+        partner_id?: string;
+        credential_count?: number;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_ISSUE_STARTED]: {
+        flow_id: string;
+        recipient_mode: 'self' | 'people' | 'link';
+        credential_type?: string;
+        category?: string;
+        recipient_count?: number;
+        has_skills?: boolean;
+        used_dynamic_variables?: boolean;
+        /** Surface that launched the issue flow (router state), e.g. 'dashboard'. */
+        entry_point?: string;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_ISSUE_SUCCEEDED]: {
+        flow_id: string;
+        recipient_mode: 'self' | 'people' | 'link';
+        credential_type?: string;
+        category?: string;
+        recipient_count?: number;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_ISSUE_FAILED]: {
+        flow_id: string;
+        recipient_mode: 'self' | 'people' | 'link';
+        /** Pre-flight validation rejections vs technical issuance failures. */
+        step_id: 'jsonld_validation' | 'issuance';
+        error_code?: string;
+        credential_type?: string;
+        category?: string;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.OPENID_OFFER_PRESENTED]: {
+        exchange_id: string;
+        surface: 'vci' | 'vp';
+        counterparty?: string;
+        entry_point?: string;
+    };
+
+    [AnalyticsEvents.OPENID_EXCHANGE_STARTED]: {
+        /** Equals the resilience orchestrator's `exchange_run_id` when present. */
+        exchange_id: string;
+        surface: 'vci' | 'vp';
+        counterparty?: string;
+        entry_point?: string;
+    };
+
+    [AnalyticsEvents.OPENID_EXCHANGE_SUCCEEDED]: {
+        exchange_id: string;
+        surface: 'vci' | 'vp';
+        counterparty?: string;
+        total_attempts?: number;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.OPENID_EXCHANGE_FAILED]: {
+        exchange_id: string;
+        surface: 'vci' | 'vp';
+        counterparty?: string;
+        error_code?: string;
+        error_kind?:
+            | 'format_gap'
+            | 'trust_gap'
+            | 'transport'
+            | 'request_invalid'
+            | 'wallet'
+            | 'unknown';
+        total_attempts?: number;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.OPENID_EXCHANGE_CANCELLED]: {
+        exchange_id: string;
+        surface: 'vci' | 'vp';
+        counterparty?: string;
+        total_attempts?: number;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_VIEWED]: {
+        credential_type?: string;
+        category?: string;
+        /** Where the detail view was opened from. */
+        surface: string;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_SHARED]: {
+        credential_type?: string;
+        category?: string;
+        /** Completed delivery action — never fired on UI open or link generation. */
+        method: 'clipboard_copy' | 'native_share' | 'linkedin' | string;
+        surface?: string;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_QR_PRESENTED]: {
+        credential_type?: string;
+        category?: string;
+        surface?: string;
+    };
+
+    [AnalyticsEvents.PRESENTATION_COMPLETED]: {
+        exchange_id?: string;
+        surface: string;
+        /** Sanitized verifier identifier (host only — never PII). */
+        verifier?: string;
+        duration_ms?: number;
+    };
+
+    // ── Feature outcomes (P1) ────────────────────────────────────────────────
+
+    [AnalyticsEvents.LAUNCHPAD_APP_OPENED]: {
+        appName: string;
+        appId: string;
+        appType?: string;
+        entry_point?: string;
+    };
+
+    [AnalyticsEvents.LAUNCHPAD_APP_ACTION_COMPLETED]: {
+        appName?: string;
+        appId: string;
+        /** What the app accomplished — credential_issued, consent_granted, etc. */
+        action: string;
+        result: 'success' | 'failure';
+        error_code?: string;
+    };
+
+    [AnalyticsEvents.LAUNCHPAD_APP_UNINSTALLED]: {
+        appName: string;
+        appId: string;
+        result: 'success' | 'failure';
+        error_code?: string;
+    };
+
+    [AnalyticsEvents.AI_MESSAGE_SENT]: {
+        flow_id: string;
+        surface: string;
+        appType?: 'internal' | 'external';
+        /** 1-indexed position of the message within the session. */
+        message_index?: number;
+    };
+
+    [AnalyticsEvents.AI_RESPONSE_COMPLETED]: {
+        flow_id: string;
+        surface: string;
+        /** 1-indexed position of the message that produced this response. */
+        message_index?: number;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.AI_RESPONSE_FAILED]: {
+        flow_id: string;
+        surface: string;
+        /** 1-indexed position of the message that produced this response. */
+        message_index?: number;
+        error_code?: string;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.AI_RECOMMENDATION_ACCEPTED]: {
+        surface: string;
+        /** What kind of recommendation was accepted — skill, pathway, job, etc. */
+        recommendation_type: string;
+    };
+
+    [AnalyticsEvents.PROFILE_ITEM_UPDATED]: {
+        itemType: 'credential' | 'skill' | 'profile_data';
+        surface?: string;
+    };
+
+    [AnalyticsEvents.PROFILE_ITEM_REMOVED]: {
+        itemType: 'credential' | 'skill' | 'profile_data';
+        surface?: string;
+    };
+
+    [AnalyticsEvents.PROFILE_SHARED]: {
+        method: string;
+        surface?: string;
+    };
+
+    [AnalyticsEvents.DASHBOARD_GET_STARTED_INTERACTED]: {
+        action: 'item_clicked' | 'dismissed';
+        item_key?: string;
+        hero_action_id?: string;
+    };
+
+    [AnalyticsEvents.CONSENT_FLOW_DECLINED]: {
+        contractName?: string;
+        flow_id?: string;
+    };
+
+    [AnalyticsEvents.CONSENT_FLOW_CANCELLED]: {
+        contractName?: string;
+        flow_id?: string;
+        /** Step the user was on when they exited. */
+        step_id?: string;
+    };
+
+    [AnalyticsEvents.CONSENT_FLOW_FAILED]: {
+        contractName?: string;
+        flow_id?: string;
+        error_code?: string;
+    };
+
+    [AnalyticsEvents.CONSENT_SYNC_COMPLETED]: {
+        contractUri: string;
+        totalCredentials?: number;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.CONSENT_SYNC_FAILED]: {
+        contractUri: string;
+        failedCredentials?: number;
+        error_code?: string;
+        duration_ms?: number;
     };
 }
 

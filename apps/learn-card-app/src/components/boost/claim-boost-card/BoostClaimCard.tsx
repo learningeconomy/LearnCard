@@ -20,6 +20,9 @@ import {
     useProfileSnapshotCapture,
     ACCOUNT_CREATED_AT_KEY,
     SESSION_START_KEY,
+    createFlowLifecycle,
+    newFlowId,
+    type FlowLifecycle,
 } from '@analytics';
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
 import { useGetResolvedCredential, useToast, ToastTypeEnum } from 'learn-card-base';
@@ -44,6 +47,7 @@ import {
     getClrLinkedCredentialCounts,
     unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
+import { getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 import ClrAchievementsSummaryBox from '../boostLinkedCredentials/ClrAchievementsSummaryBox';
 import BoostLinkedCredentialsBox from '../boostLinkedCredentials/BoostLinkedCredentialsBox';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
@@ -114,6 +118,8 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     const { track } = useAnalytics();
     const { capture, snapshotRef } = useProfileSnapshotCapture();
     const flowStartedAt = useRef(Date.now());
+    const claimAttemptRef = useRef<FlowLifecycle | null>(null);
+    const presentedCredentialKeyRef = useRef<string | null>(null);
 
     const [isFront, setIsFront] = useState(true);
     const [isClaimLoading, setIsClaimLoading] = useState(false);
@@ -132,6 +138,18 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
 
     const category = getDefaultCategoryForCredential(credential);
     const achievementType = getAchievementType(credential);
+    const issuerId =
+        typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
+    const partnerId = (() => {
+        const profileId = getUserHandleFromDid(issuerId ?? '');
+        if (profileId) return profileId;
+
+        try {
+            return issuerId ? new URL(issuerId).host || undefined : undefined;
+        } catch {
+            return undefined;
+        }
+    })();
     const renderMethod = enableRenderMethod ? getSvgMustacheRenderMethod(credential as VC) : null;
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
     const displayCredential = unwrapBoostCredential(credential as VC) as VC;
@@ -166,6 +184,10 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
 
     const _isEndorsement = isEndorsementCredential(credential) ?? false;
 
+    const getClaimErrorCode = (e: unknown): string =>
+        (e as { code?: string })?.code ??
+        (e instanceof Error && e.name !== 'Error' ? e.name : 'unknown');
+
     // A credential that fails verification because it's revoked can't be claimed
     // (the backend rejects acceptCredential with "Credential has been revoked").
     const isRevoked = vcVerifications.some(
@@ -173,6 +195,77 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
             v?.status !== 'Success' &&
             /revoked/i.test(`${v?.message ?? ''} ${v?.details ?? ''} ${v?.check ?? ''}`)
     );
+
+    const beginClaimAttempt = () => {
+        const attempt = createFlowLifecycle();
+        claimAttemptRef.current = attempt;
+
+        track(AnalyticsEvents.CREDENTIAL_CLAIM_STARTED, {
+            flow_id: attempt.id,
+            entry_point: 'claim_modal',
+            credential_type: achievementType,
+            category,
+            partner_id: partnerId,
+            credential_count: 1,
+        });
+
+        return attempt;
+    };
+
+    const completeClaimAttempt = (
+        eventName:
+            | typeof AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED
+            | typeof AnalyticsEvents.CREDENTIAL_CLAIM_FAILED
+            | typeof AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED,
+        extraProps?: { error_code?: string }
+    ) => {
+        const attempt = claimAttemptRef.current;
+        if (!attempt || !attempt.terminate()) return;
+
+        track(eventName, {
+            flow_id: attempt.id,
+            entry_point: 'claim_modal',
+            credential_type: achievementType,
+            category,
+            partner_id: partnerId,
+            credential_count: 1,
+            duration_ms: attempt.durationMs(),
+            ...extraProps,
+        });
+
+        claimAttemptRef.current = null;
+    };
+
+    useEffect(() => {
+        const presentedKey = credential?.id ?? credentialUri ?? notification?.id ?? null;
+        if (
+            !credential ||
+            isClaimed ||
+            !presentedKey ||
+            presentedCredentialKeyRef.current === presentedKey
+        ) {
+            return;
+        }
+
+        presentedCredentialKeyRef.current = presentedKey;
+        track(AnalyticsEvents.CREDENTIAL_CLAIM_PRESENTED, {
+            flow_id: newFlowId(),
+            entry_point: 'claim_modal',
+            credential_type: achievementType,
+            category,
+            partner_id: partnerId,
+            credential_count: 1,
+        });
+    }, [
+        credential,
+        isClaimed,
+        credentialUri,
+        notification?.id,
+        track,
+        achievementType,
+        category,
+        partnerId,
+    ]);
 
     const handleBoostCredential = async (visibility?: boolean) => {
         const wallet = await initWallet();
@@ -186,6 +279,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
         }
 
         if (!acceptCredentialLoading && !isClaimLoading && !isClaimed) {
+            beginClaimAttempt();
             setIsClaimLoading(true);
             // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
             capture();
@@ -212,6 +306,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                     method: 'Notification',
                                     msSinceMethodStarted: Date.now() - flowStartedAt.current,
                                 });
+                                completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED);
 
                                 const now = Date.now();
                                 const sessionStart = Number(
@@ -248,6 +343,9 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                             closeModal();
                         },
                         onError(err: any) {
+                            completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, {
+                                error_code: getClaimErrorCode(err),
+                            });
                             setIsClaimLoading(false);
                             presentToast(
                                 m['claim.failedToClaim']({
@@ -259,6 +357,9 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                     }
                 );
             } catch (err) {
+                completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, {
+                    error_code: getClaimErrorCode(err),
+                });
                 log.info('acceptCredential::error', err?.message);
                 presentAlert({
                     backdropDismiss: false,
@@ -457,6 +558,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                 <footer className="w-full flex justify-center items-center ion-no-border absolute bottom-0 z-10">
                     <BoostFooter
                         handleClose={() => {
+                            completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED);
                             onDismiss?.();
                             closeModal();
                         }}

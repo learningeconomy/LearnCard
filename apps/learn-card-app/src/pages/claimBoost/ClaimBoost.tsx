@@ -43,13 +43,15 @@ import {
     useProfileSnapshotCapture,
     ACCOUNT_CREATED_AT_KEY,
     SESSION_START_KEY,
+    createFlowLifecycle,
+    newFlowId,
+    type FlowLifecycle,
 } from '@analytics';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 import { useUploadVcFromText } from '../../hooks/useUploadVcFromText';
 
-import { getEmojiFromDidString } from 'learn-card-base/helpers/walletHelpers';
-import { getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
+import { getEmojiFromDidString, getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 import { VC, VerificationItem } from '@learncard/types';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
@@ -146,12 +148,29 @@ const ClaimBoost: React.FC<{
     const { track } = useAnalytics();
     const { capture, snapshotRef } = useProfileSnapshotCapture();
     const flowStartedAt = useRef(Date.now());
+    const claimAttemptRef = useRef<FlowLifecycle | null>(null);
+    const presentedClaimKeyRef = useRef<string | null>(null);
     const { newModal, closeModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
 
     const { uploadVcFromTextAndAddToWallet } = useUploadVcFromText();
     const { gate } = useLCNGatedAction();
     const enableRenderMethod = useRenderMethodEnabled();
+
+    const resolvePartnerId = (issuerId?: string) => {
+        const profileId = getUserHandleFromDid(issuerId ?? '');
+        if (profileId) return profileId;
+
+        try {
+            return issuerId ? new URL(issuerId).host || undefined : undefined;
+        } catch {
+            return undefined;
+        }
+    };
+
+    const getClaimErrorCode = (e: unknown): string =>
+        (e as { code?: string })?.code ??
+        (e instanceof Error && e.name !== 'Error' ? e.name : 'unknown');
 
     const rawBoostUri = query.get('boostUri') || uri;
     const boostUri = rawBoostUri ? decodeURIComponent(rawBoostUri) : rawBoostUri;
@@ -216,9 +235,119 @@ const ClaimBoost: React.FC<{
     };
 
     const handleCancel = () => {
+        const flow = claimAttemptRef.current;
+        if (flow) {
+            const claimCredential = boost ?? vc;
+            const claimCategory = claimCredential
+                ? getDefaultCategoryForCredential(claimCredential)
+                : undefined;
+            const claimType = claimCredential ? getAchievementType(claimCredential) : undefined;
+            const issuerId =
+                typeof claimCredential?.issuer === 'string'
+                    ? claimCredential.issuer
+                    : claimCredential?.issuer?.id;
+
+            if (flow.terminate()) {
+                track(AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED, {
+                    flow_id: flow.id,
+                    entry_point: 'claim_link',
+                    credential_type: claimType,
+                    category: claimCategory,
+                    partner_id: resolvePartnerId(issuerId),
+                    credential_count: 1,
+                    duration_ms: flow.durationMs(),
+                });
+            }
+
+            claimAttemptRef.current = null;
+        }
+
         dismissClaimModal?.();
         history?.push('/');
     };
+
+    const beginClaimAttempt = (claimCredential?: VC) => {
+        if (!claimCredential) return null;
+
+        const attempt = createFlowLifecycle();
+        const issuerId =
+            typeof claimCredential.issuer === 'string'
+                ? claimCredential.issuer
+                : claimCredential.issuer?.id;
+
+        claimAttemptRef.current = attempt;
+        track(AnalyticsEvents.CREDENTIAL_CLAIM_STARTED, {
+            flow_id: attempt.id,
+            entry_point: 'claim_link',
+            credential_type: getAchievementType(claimCredential),
+            category: getDefaultCategoryForCredential(claimCredential),
+            partner_id: resolvePartnerId(issuerId),
+            credential_count: 1,
+        });
+
+        return attempt;
+    };
+
+    const completeClaimAttempt = (
+        claimCredential: VC | undefined,
+        eventName:
+            | typeof AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED
+            | typeof AnalyticsEvents.CREDENTIAL_CLAIM_FAILED,
+        errorCode?: string
+    ) => {
+        const attempt = claimAttemptRef.current;
+        if (!attempt || !claimCredential || !attempt.terminate()) return;
+
+        const issuerId =
+            typeof claimCredential.issuer === 'string'
+                ? claimCredential.issuer
+                : claimCredential.issuer?.id;
+
+        track(eventName, {
+            flow_id: attempt.id,
+            entry_point: 'claim_link',
+            credential_type: getAchievementType(claimCredential),
+            category: getDefaultCategoryForCredential(claimCredential),
+            partner_id: resolvePartnerId(issuerId),
+            credential_count: 1,
+            duration_ms: attempt.durationMs(),
+            error_code: errorCode,
+        });
+
+        claimAttemptRef.current = null;
+    };
+
+    useEffect(() => {
+        const claimCredential = boost ?? vc;
+        const presentedKey = claimCredential?.id ?? boostUri ?? null;
+
+        if (
+            !claimCredential ||
+            isClaimed ||
+            !presentedKey ||
+            presentedClaimKeyRef.current === presentedKey
+        ) {
+            return;
+        }
+
+        const issuerId =
+            typeof claimCredential.issuer === 'string'
+                ? claimCredential.issuer
+                : claimCredential.issuer?.id;
+
+        presentedClaimKeyRef.current = presentedKey;
+        track(AnalyticsEvents.CREDENTIAL_CLAIM_PRESENTED, {
+            // Intentionally uncorrelated with the `..._started` flow that may
+            // follow — presented/started are counted as independent funnel
+            // steps, so this id carries no join value.
+            flow_id: newFlowId(),
+            entry_point: 'claim_link',
+            credential_type: getAchievementType(claimCredential),
+            category: getDefaultCategoryForCredential(claimCredential),
+            partner_id: resolvePartnerId(issuerId),
+            credential_count: 1,
+        });
+    }, [boost, vc, isClaimed, boostUri, track]);
 
     const handleClaimBoost = async () => {
         if (isClaimed) return;
@@ -228,6 +357,7 @@ const ClaimBoost: React.FC<{
         if (prompted) return;
 
         try {
+            beginClaimAttempt(boost);
             setIsClaimLoading(true);
             // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
             capture();
@@ -239,6 +369,7 @@ const ClaimBoost: React.FC<{
             const achievementType = getAchievementType(boost);
 
             if (boost) {
+                completeClaimAttempt(boost, AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED);
                 track(AnalyticsEvents.CLAIM_BOOST, {
                     boostType: category,
                     achievementType,
@@ -300,6 +431,11 @@ const ClaimBoost: React.FC<{
             });
 
             log.warn('claimBoostWithLink::error', e);
+            completeClaimAttempt(
+                boost,
+                AnalyticsEvents.CREDENTIAL_CLAIM_FAILED,
+                getClaimErrorCode(e)
+            );
         }
     };
 
@@ -310,8 +446,10 @@ const ClaimBoost: React.FC<{
         if (prompted) return;
 
         try {
+            beginClaimAttempt(vc);
             setIsClaimLoading(true);
             await uploadVcFromTextAndAddToWallet(vc);
+            completeClaimAttempt(vc, AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED);
 
             setIsClaimed(true);
             setIsClaimLoading(false);
@@ -324,6 +462,7 @@ const ClaimBoost: React.FC<{
                 hasDismissButton: true,
             });
         } catch (e) {
+            completeClaimAttempt(vc, AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, getClaimErrorCode(e));
             setIsClaimLoading(false);
 
             presentToast(m['toasts.credentialClaimFailed'](), {

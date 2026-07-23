@@ -43,6 +43,9 @@ import {
     useProfileSnapshotCapture,
     ACCOUNT_CREATED_AT_KEY,
     SESSION_START_KEY,
+    createFlowLifecycle,
+    newFlowId,
+    type FlowLifecycle,
 } from '@analytics';
 
 import {
@@ -157,6 +160,94 @@ const ClaimFromDashboard: React.FC = () => {
     const { track } = useAnalytics();
     const { capture, snapshotRef } = useProfileSnapshotCapture();
     const flowStartedAt = useRef(Date.now());
+    const claimAttemptRef = useRef<FlowLifecycle | null>(null);
+    const presentedCredentialIdRef = useRef<string | null>(null);
+
+    const resolvePartnerId = (issuerId?: string) => {
+        const profileId = getUserHandleFromDid(issuerId ?? '');
+        if (profileId) return profileId;
+
+        try {
+            return issuerId ? new URL(issuerId).host || undefined : undefined;
+        } catch {
+            return undefined;
+        }
+    };
+
+    const getClaimErrorCode = (e: unknown): string =>
+        (e as { code?: string })?.code ??
+        (e instanceof Error && e.name !== 'Error' ? e.name : 'unknown');
+
+    const beginClaimAttempt = (claimCredential?: VC) => {
+        if (!claimCredential) return null;
+
+        const issuerId =
+            typeof claimCredential.issuer === 'string'
+                ? claimCredential.issuer
+                : claimCredential.issuer?.id;
+        const attempt = createFlowLifecycle();
+
+        claimAttemptRef.current = attempt;
+        track(AnalyticsEvents.CREDENTIAL_CLAIM_STARTED, {
+            flow_id: attempt.id,
+            entry_point: 'dashboard',
+            credential_type: getAchievementType(claimCredential),
+            category: getDefaultCategoryForCredential(claimCredential),
+            partner_id: resolvePartnerId(issuerId),
+            credential_count: 1,
+        });
+
+        return attempt;
+    };
+
+    const completeClaimAttempt = (
+        claimCredential: VC | undefined,
+        eventName:
+            | typeof AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED
+            | typeof AnalyticsEvents.CREDENTIAL_CLAIM_FAILED
+            | typeof AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED,
+        errorCode?: string
+    ) => {
+        const attempt = claimAttemptRef.current;
+        if (!attempt || !claimCredential || !attempt.terminate()) return;
+
+        const issuerId =
+            typeof claimCredential.issuer === 'string'
+                ? claimCredential.issuer
+                : claimCredential.issuer?.id;
+
+        track(eventName, {
+            flow_id: attempt.id,
+            entry_point: 'dashboard',
+            credential_type: getAchievementType(claimCredential),
+            category: getDefaultCategoryForCredential(claimCredential),
+            partner_id: resolvePartnerId(issuerId),
+            credential_count: 1,
+            duration_ms: attempt.durationMs(),
+            error_code: errorCode,
+        });
+
+        claimAttemptRef.current = null;
+    };
+
+    useEffect(() => {
+        const credentialId = credential?.id;
+        if (!credential || !credentialId || presentedCredentialIdRef.current === credentialId)
+            return;
+
+        const issuerId =
+            typeof credential.issuer === 'string' ? credential.issuer : credential.issuer?.id;
+
+        presentedCredentialIdRef.current = credentialId;
+        track(AnalyticsEvents.CREDENTIAL_CLAIM_PRESENTED, {
+            flow_id: newFlowId(),
+            entry_point: 'dashboard',
+            credential_type: getAchievementType(credential),
+            category: getDefaultCategoryForCredential(credential),
+            partner_id: resolvePartnerId(issuerId),
+            credential_count: 1,
+        });
+    }, [credential, track]);
 
     const queryClient = useQueryClient();
     const registry = useRegistry();
@@ -285,6 +376,7 @@ const ClaimFromDashboard: React.FC = () => {
     const handleClaimCredential = async () => {
         try {
             if (!credential) return;
+            beginClaimAttempt(credential);
             setClaimingCredential(true);
             // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
             capture();
@@ -295,6 +387,7 @@ const ClaimFromDashboard: React.FC = () => {
             const achievementType = getAchievementType(credential);
 
             if (credential) {
+                completeClaimAttempt(credential, AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED);
                 track(AnalyticsEvents.CLAIM_BOOST, {
                     category: category,
                     boostType: achievementType,
@@ -325,6 +418,11 @@ const ClaimFromDashboard: React.FC = () => {
                 hasDismissButton: true,
             });
         } catch (e) {
+            completeClaimAttempt(
+                credential,
+                AnalyticsEvents.CREDENTIAL_CLAIM_FAILED,
+                getClaimErrorCode(e)
+            );
             setClaimingCredential(false);
             log.error('Error claiming credential', e);
             /**
@@ -421,7 +519,13 @@ const ClaimFromDashboard: React.FC = () => {
                 <IonToolbar color="transparent" mode="ios">
                     <IonRow className="relative z-10 w-full flex flex-nowrap justify-center items-center gap-4">
                         <button
-                            onClick={() => history.push('/')}
+                            onClick={() => {
+                                completeClaimAttempt(
+                                    credential,
+                                    AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED
+                                );
+                                history.push('/');
+                            }}
                             className="w-[50px] h-[50px] min-h-[50px] min-w-[50px] bg-white rounded-full flex items-center justify-center shadow-3xl"
                         >
                             <X className="text-black w-[30px]" />

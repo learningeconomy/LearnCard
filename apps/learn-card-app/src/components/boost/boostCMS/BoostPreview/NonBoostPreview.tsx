@@ -20,6 +20,7 @@ import {
 } from '../../../../helpers/clrRenderer.helpers';
 import { getDownloadableEvidence } from '../../../clr-transcript/clr.helpers';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
+import { getAchievementType } from 'learn-card-base/helpers/credentialHelpers';
 import { applyLifecycleStatusToVerifications } from 'learn-card-base/helpers/lifecycleVerification.helpers';
 
 import { VC, UnsignedVC, VerificationItem } from '@learncard/types';
@@ -33,6 +34,7 @@ import {
 } from 'learn-card-base';
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
+import { AnalyticsEvents, useAnalytics } from '@analytics';
 
 type IssueHistory = {
     id?: string | number;
@@ -113,8 +115,10 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     isPreview = false,
 }) => {
     const enableRenderMethod = useRenderMethodEnabled();
+    const { track } = useAnalytics();
     const { initWallet } = useWallet();
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
+    const viewedCredentialIdRef = React.useRef<string | undefined>(undefined);
     const renderMethod = enableRenderMethod ? getSvgMustacheRenderMethod(credential as VC) : null;
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
 
@@ -145,6 +149,20 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
 
         verify();
     }, [credential, isPreview]);
+
+    useEffect(() => {
+        if (!isEarnedBoost || isPreview) return;
+
+        const viewedCredentialId = credential?.id;
+        if (!viewedCredentialId || viewedCredentialIdRef.current === viewedCredentialId) return;
+
+        viewedCredentialIdRef.current = viewedCredentialId;
+        track(AnalyticsEvents.CREDENTIAL_VIEWED, {
+            credential_type: getAchievementType(credential),
+            category: categoryType,
+            surface: 'wallet',
+        });
+    }, [categoryType, credential, isEarnedBoost, isPreview, track]);
 
     useEffect(() => {
         if (!isFront) {

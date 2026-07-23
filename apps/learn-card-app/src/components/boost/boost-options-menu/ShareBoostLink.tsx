@@ -65,6 +65,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     const [shareLink, setShareLink] = useState<string | undefined>('');
 
     const { track } = useAnalytics();
+    const qrTrackedRef = React.useRef(false);
 
     const { mutate: shareEarnedBoost, isPending: isLinkLoading } = useShareBoostMutation();
 
@@ -180,6 +181,17 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
         generateShareLink();
     }, []);
 
+    useEffect(() => {
+        if (!shareLink || qrTrackedRef.current) return;
+
+        qrTrackedRef.current = true;
+        track(AnalyticsEvents.CREDENTIAL_QR_PRESENTED, {
+            category: categoryType,
+            credential_type: achievementType,
+            surface: 'wallet',
+        });
+    }, [achievementType, categoryType, shareLink, track]);
+
     const copyBoostLinkToClipBoard = async () => {
         try {
             await Clipboard.write({
@@ -187,6 +199,12 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
             });
             presentToast(m['toasts.boost.shareLinkCopied'](), {
                 hasDismissButton: true,
+            });
+            track(AnalyticsEvents.CREDENTIAL_SHARED, {
+                category: categoryType,
+                credential_type: achievementType,
+                method: 'clipboard_copy',
+                surface: 'wallet',
             });
         } catch (err) {
             presentToast(m['toasts.boost.shareLinkCopyFailed'](), {
@@ -320,6 +338,14 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                     href={generateLinkedInUrl()}
                                     target="_blank"
                                     rel="noopener noreferrer"
+                                    onClick={() =>
+                                        track(AnalyticsEvents.CREDENTIAL_SHARED, {
+                                            category: categoryType,
+                                            credential_type: achievementType,
+                                            method: 'linkedin',
+                                            surface: 'wallet',
+                                        })
+                                    }
                                     className="group flex items-center justify-center w-full bg-white text-grayscale-600 font-semibold py-2 px-4 rounded-full border-2 border-grayscale-20 hover:border-[#0A66C2] hover:bg-[#0A66C2] hover:text-white transition-colors duration-300"
                                 >
                                     <svg

@@ -60,7 +60,7 @@ const useAddToLearnCardActions = (): AddToLearnCardActions => {
         if (flags?.enableSimpleSend) {
             checkAndPromptRecovery(() => {
                 closeAllModals();
-                history.push('/issue');
+                history.push('/issue', { entryPoint: 'dashboard' });
             });
             return;
         }

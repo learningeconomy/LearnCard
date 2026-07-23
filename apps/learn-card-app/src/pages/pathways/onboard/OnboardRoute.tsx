@@ -119,6 +119,10 @@ const OnboardRoute: React.FC = () => {
             suggestionId: suggestion.template.id,
             position,
         });
+        analytics.track(AnalyticsEvents.AI_RECOMMENDATION_ACCEPTED, {
+            surface: 'pathways_onboard',
+            recommendation_type: 'pathway',
+        });
 
         history.replace('/pathways/today');
     };
