@@ -9,13 +9,12 @@ SKIP_DIDKIT_NAPI = "1"
 [build]
 command = "bun scripts/generate-edge-tenant-configs.ts && bunx nx build learn-card-app --skip-nx-cache"
 publish = "build/"
-# base and edge_functions must both be explicit for CI deploys (`netlify deploy
-# --no-build` from the monorepo): edge_functions makes the CLI bundle them at all,
-# and base makes buildDir the app dir so the bundle lands in the app's
-# .netlify/edge-functions-dist — the only place the deploy uploader scans. Without
-# base, the bundle is written under the git root and silently dropped from the
-# deploy. Netlify-run Deploy Previews already use this base via the site UI setting.
-base = "apps/learn-card-app"
+# Explicit for CI deploys: `netlify deploy --no-build` only bundles edge functions
+# when build.edge_functions is set. Relative to the build base (app dir on Netlify
+# via the site UI setting; the staged deploy dir in CI — see deploy.yml, which
+# deploys from a clean staging dir because the CLI's workspace detection breaks
+# edge-function paths inside this monorepo). Do NOT add `base` here: it doubles
+# the CLI's workspace packagePath and silently drops edge functions from deploys.
 edge_functions = "netlify/edge-functions"
 
 # Netlify Deploy Preview (still built by Netlify's git integration for PRs)

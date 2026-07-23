@@ -844,23 +844,40 @@ jobs:
             # Deploy the pre-built web artifact straight to Netlify, keyed off the GitHub
             # Environment's NETLIFY_SITE_ID. This replaces the old force-push-to-deploy-branch
             # mechanism, so the deploy branch can be removed and `main` fully branch-protected.
-            # --no-build: CI already built above; Netlify must not rebuild. Runs from the app
-            # directory so netlify.toml (headers/redirects/edge functions) resolves correctly.
-            # --dir must be absolute: the CLI resolves relative paths against the repo root
-            # (monorepo project-root detection), not the cwd. --cwd pins the CLI's project
-            # root to the app dir; without it, edge functions get bundled under the git
-            # root's .netlify/ but the uploader only scans the app dir's, so they are
-            # silently dropped from the deploy.
+            # --no-build: CI already built above; Netlify must not rebuild.
+            #
+            # The deploy runs from a clean staging dir OUTSIDE the repo, not the app dir:
+            # inside the monorepo, netlify-cli's workspace detection sets a packagePath that
+            # desyncs the edge-function bundle output dir (buildDir + packagePath + .netlify)
+            # from the dir the uploader scans (workingDir + .netlify), so edge functions get
+            # bundled but silently dropped from the deploy. There is no CLI flag to disable
+            # the detection (--cwd is ignored when it equals process.cwd). A bare dir with
+            # only netlify.toml + edge-function sources + build output has no git root and
+            # no workspaces, so every path resolves to the same place.
             - name: Deploy to Netlify
               working-directory: apps/${{ steps.vars.outputs.project_name }}
               run: |
+                  STAGE_DIR="$RUNNER_TEMP/netlify-deploy-${{ steps.vars.outputs.project_name }}"
+                  rm -rf "$STAGE_DIR"
+                  mkdir -p "$STAGE_DIR"
+                  cp netlify.toml "$STAGE_DIR/"
+                  if [[ -d netlify ]]; then
+                    cp -R netlify "$STAGE_DIR/netlify"
+                  fi
+                  cp -R build "$STAGE_DIR/build"
+
+                  cd "$STAGE_DIR"
                   bunx netlify-cli@26 deploy \
-                    --cwd "$PWD" \
                     --prod \
                     --no-build \
-                    --dir "$PWD/build" \
+                    --dir "$STAGE_DIR/build" \
                     --site "${{ steps.vars.outputs.netlify_site_id }}" \
                     --message "CI deploy ${{ github.sha }}"
+
+                  if [[ -d netlify/edge-functions ]] && ! compgen -G '.netlify/edge-functions-dist/*' > /dev/null; then
+                    echo "::error::Edge functions were not bundled into the deploy (expected .netlify/edge-functions-dist to be populated)."
+                    exit 1
+                  fi
               env:
                   NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
 
