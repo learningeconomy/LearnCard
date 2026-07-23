@@ -1,6 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { getLogger } from 'learn-card-base';
-const log = getLogger('use-integration-activity');
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 
 import { useWallet } from 'learn-card-base';
 import * as m from '../../../../paraglide/messages.js';
@@ -45,6 +43,8 @@ interface CredentialActivityStats {
     claimed: number;
     expired: number;
     failed: number;
+    revoked?: number;
+    suspended?: number;
     claimRate: number;
 }
 
@@ -183,6 +183,8 @@ export interface IntegrationActivityResult {
         totalEvents: number;
         expired: number;
         failed: number;
+        revoked: number;
+        suspended: number;
         pendingClaims: number;
         claimRate: number;
     };
@@ -200,6 +202,19 @@ export interface IntegrationActivityResult {
  * @param options.listingId - Filter activities by app listing ID for per-app stats
  * @param options.eventType - Filter activities by event type (optional)
  */
+const EMPTY_STATS: IntegrationActivityResult['stats'] = {
+    totalSent: 0,
+    totalClaimed: 0,
+    total: 0,
+    totalEvents: 0,
+    expired: 0,
+    failed: 0,
+    revoked: 0,
+    suspended: 0,
+    pendingClaims: 0,
+    claimRate: 0,
+};
+
 export function useIntegrationActivity(
     templates: CredentialTemplate[],
     options: {
@@ -212,158 +227,89 @@ export function useIntegrationActivity(
 ): IntegrationActivityResult {
     const { limit = 25, integrationId, listingId, eventType, boostUri } = options;
     const { initWallet } = useWallet();
-    const initWalletRef = useRef(initWallet);
-    initWalletRef.current = initWallet;
-
-    const [activity, setActivity] = useState<CredentialActivityRecord[]>([]);
-    const [stats, setStats] = useState<IntegrationActivityResult['stats']>({
-        totalSent: 0,
-        totalClaimed: 0,
-        total: 0,
-        totalEvents: 0,
-        expired: 0,
-        failed: 0,
-        pendingClaims: 0,
-        claimRate: 0,
-    });
-    const [isLoading, setIsLoading] = useState(true);
-    const [isLoadingMore, setIsLoadingMore] = useState(false);
-    const [hasMore, setHasMore] = useState(false);
-    const [cursor, setCursor] = useState<string | undefined>(undefined);
-    const [error, setError] = useState<Error | null>(null);
-    const [fetchKey, setFetchKey] = useState(0);
-
-    // Get boostUris from templates for client-side filtering
     const boostUris = templates.map(t => t.boostUri).filter(Boolean) as string[];
+    const boostUrisKey = boostUris.join(',');
 
-    // Fetch activity and stats
-    useEffect(() => {
-        let cancelled = false;
-
-        const fetchActivity = async () => {
-            try {
-                setIsLoading(true);
-                const wallet = await initWalletRef.current();
-
-                // Fetch activity records using unified API
-                // Use integrationId/listingId for server-side filtering when available
-                const activityResult = await (wallet.invoke as any).getMyActivities?.({
-                    limit,
-                    integrationId,
-                    listingId,
-                    eventType,
-                    boostUri,
-                });
-
-                // Fetch stats using unified API with integrationId/listingId for accurate per-integration/app stats
-                // When integrationId or listingId is provided, don't also filter by boostUris — it's redundant
-                // and excludes activities without a FOR_BOOST relationship (e.g. embed claims)
-                const statsResult = await (wallet.invoke as any).getActivityStats?.({
-                    boostUris: boostUri
-                        ? [boostUri]
-                        : !integrationId && !listingId && boostUris.length > 0
-                        ? boostUris
-                        : undefined,
-                    integrationId,
-                    listingId,
-                    boostUri,
-                });
-
-                if (cancelled) return;
-
-                // Pass through all records - server already filters by integrationId
-                // Client-side filtering by boostUri is not needed since stats API handles it
-                const records: CredentialActivityRecord[] = activityResult?.records || [];
-                const apiHasMore = activityResult?.hasMore ?? false;
-                const nextCursor = activityResult?.cursor;
-
-                setActivity(records);
-                setHasMore(apiHasMore);
-                setCursor(nextCursor);
-
-                // Set stats from unified API
-                if (statsResult) {
-                    const apiStats = statsResult as CredentialActivityStats;
-
-                    setStats({
-                        totalSent: apiStats.delivered + apiStats.created + apiStats.claimed,
-                        totalClaimed: apiStats.claimed,
-                        total: apiStats.total,
-                        totalEvents: apiStats.totalEvents,
-                        expired: apiStats.expired,
-                        failed: apiStats.failed,
-                        pendingClaims: apiStats.delivered + apiStats.created,
-                        claimRate: apiStats.claimRate,
-                    });
-                }
-
-                setError(null);
-            } catch (err) {
-                if (cancelled) return;
-                log.error('Failed to fetch activity', err);
-                setError(
-                    err instanceof Error
-                        ? err
-                        : new Error(m['developerPortal.dashboards.activity.fetchFailed']())
-                );
-                setActivity([]);
-            } finally {
-                if (!cancelled) {
-                    setIsLoading(false);
-                }
-            }
-        };
-
-        fetchActivity();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [boostUris.join(','), limit, integrationId, listingId, eventType, boostUri, fetchKey]);
-
-    const refetch = useCallback(() => {
-        setCursor(undefined);
-        setHasMore(false);
-        setFetchKey(k => k + 1);
-    }, []);
-
-    // Fetches next page and appends to existing activity
-    const loadMore = useCallback(async () => {
-        if (isLoadingMore || !hasMore || !cursor) return;
-
-        try {
-            setIsLoadingMore(true);
-            const wallet = await initWalletRef.current();
-
-            const activityResult = await (wallet.invoke as any).getMyActivities?.({
+    const activityQuery = useInfiniteQuery({
+        queryKey: ['getMyActivities', { limit, integrationId, listingId, eventType, boostUri }],
+        initialPageParam: undefined as string | undefined,
+        queryFn: async ({ pageParam }) => {
+            const wallet = await initWallet();
+            const result = await (wallet.invoke as any).getMyActivities?.({
                 limit,
-                cursor,
+                cursor: pageParam,
                 integrationId,
                 listingId,
                 eventType,
                 boostUri,
             });
+            return {
+                records: (result?.records ?? []) as CredentialActivityRecord[],
+                cursor: result?.cursor as string | undefined,
+                hasMore: (result?.hasMore ?? false) as boolean,
+            };
+        },
+        getNextPageParam: lastPage => (lastPage.hasMore ? lastPage.cursor : undefined),
+    });
 
-            const records: CredentialActivityRecord[] = activityResult?.records || [];
-            const apiHasMore = activityResult?.hasMore ?? false;
-            const nextCursor = activityResult?.cursor;
+    const statsQuery = useQuery({
+        queryKey: [
+            'getActivityStats',
+            { integrationId, listingId, boostUri, boostUris: boostUrisKey },
+        ],
+        queryFn: async () => {
+            const wallet = await initWallet();
+            const result = await (wallet.invoke as any).getActivityStats?.({
+                boostUris: boostUri
+                    ? [boostUri]
+                    : !integrationId && !listingId && boostUris.length > 0
+                    ? boostUris
+                    : undefined,
+                integrationId,
+                listingId,
+                boostUri,
+            });
+            return (result ?? undefined) as CredentialActivityStats | undefined;
+        },
+    });
 
-            setActivity(prev => [...prev, ...records]);
-            setHasMore(apiHasMore);
-            setCursor(nextCursor);
-        } catch (err) {
-            log.error('Failed to load more activity', err);
-            setError(
-                err instanceof Error
-                    ? err
-                    : new Error(m['developerPortal.dashboards.activity.loadMoreFailed']())
-            );
-        } finally {
-            setIsLoadingMore(false);
+    const activity = activityQuery.data?.pages.flatMap(p => p.records) ?? [];
+    const apiStats = statsQuery.data;
+    const stats: IntegrationActivityResult['stats'] = apiStats
+        ? {
+              totalSent: apiStats.delivered + apiStats.created + apiStats.claimed,
+              totalClaimed: apiStats.claimed,
+              total: apiStats.total,
+              totalEvents: apiStats.totalEvents,
+              expired: apiStats.expired,
+              failed: apiStats.failed,
+              revoked: apiStats.revoked ?? 0,
+              suspended: apiStats.suspended ?? 0,
+              pendingClaims: apiStats.delivered + apiStats.created,
+              claimRate: apiStats.claimRate,
+          }
+        : EMPTY_STATS;
+
+    const refetch = () => {
+        activityQuery.refetch();
+        statsQuery.refetch();
+    };
+    const loadMore = async () => {
+        if (activityQuery.hasNextPage && !activityQuery.isFetchingNextPage) {
+            await activityQuery.fetchNextPage();
         }
-    }, [isLoadingMore, hasMore, cursor, limit, integrationId, listingId, eventType, boostUri]);
+    };
 
-    return { activity, isLoading, isLoadingMore, hasMore, error, refetch, loadMore, stats };
+    return {
+        activity,
+        isLoading: activityQuery.isLoading,
+        isLoadingMore: activityQuery.isFetchingNextPage,
+        hasMore: activityQuery.hasNextPage ?? false,
+        error: (activityQuery.error ?? statsQuery.error ?? null) as Error | null,
+        refetch,
+        loadMore,
+        stats,
+    };
 }
 
 /**

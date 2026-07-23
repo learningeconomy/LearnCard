@@ -46,10 +46,13 @@ export const EN_DEFAULTS: Record<string, string> = {
     'verification.message.invalid': 'Invalid',
     'verification.message.notRevoked': 'Not Revoked',
     'verification.message.revoked': 'Revoked',
+    'verification.message.suspended': 'Suspended',
     'verification.message.doesNotExpire': 'Does Not Expire',
     'verification.message.expired': 'Expired',
     'verification.message.active': 'Active',
     'verification.message.couldNotVerify': 'Boost Credential could not be verified.',
+    'credential.lifecycle.revoked': 'Revoked',
+    'credential.lifecycle.suspended': 'Suspended',
 };
 
 /** Minimal `{var}` interpolation — no dependency. */

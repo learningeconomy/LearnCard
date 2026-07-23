@@ -137,6 +137,40 @@ describe('toActivityFeedVM', () => {
         expect(toActivityFeedVM(record({ eventType: 'EXPIRED' }), 'me').statusTone).toBe('warning');
         expect(toActivityFeedVM(record({ eventType: 'FAILED' }), 'me').statusTone).toBe('critical');
     });
+    it('lets a revoked/suspended status supersede the event-based label + tone', () => {
+        const revoked = toActivityFeedVM(record({ eventType: 'CLAIMED', status: 'revoked' }), 'me');
+        expect(revoked.lifecycleStatus).toBe('revoked');
+        expect(revoked.statusLabel).toBe('Revoked');
+        expect(revoked.statusTone).toBe('critical');
+
+        const suspended = toActivityFeedVM(
+            record({ eventType: 'DELIVERED', status: 'suspended' }),
+            'me'
+        );
+        expect(suspended.lifecycleStatus).toBe('suspended');
+        expect(suspended.statusLabel).toBe('Suspended');
+        expect(suspended.statusTone).toBe('warning');
+    });
+    it('treats an active/undefined status as a normal event row', () => {
+        expect(toActivityFeedVM(record({ status: 'active' }), 'me').lifecycleStatus).toBe('active');
+        expect(toActivityFeedVM(record(), 'me').lifecycleStatus).toBe('active');
+        expect(toActivityFeedVM(record(), 'me').statusLabel).toBe('Sent');
+    });
+    it('rephrases the title for a revoked/suspended credential (sent vs received)', () => {
+        // Issuer viewing a credential they revoked
+        const sent = toActivityFeedVM(record({ status: 'revoked' }), 'me');
+        expect(sent.titleLead).toBe('Revoked Badge for');
+        expect(sent.titleSubject).toBe('Justin Smith');
+
+        // Holder viewing a credential of theirs that was revoked
+        const received = toActivityFeedVM(
+            record({ status: 'revoked', actorProfileId: 'issuer' }),
+            'me'
+        );
+        expect(received.direction).toBe('received');
+        expect(received.titleLead).toBe('Your Badge was revoked');
+        expect(received.titleSubject).toBeUndefined();
+    });
     it('splits the title into an emphasized lead and a de-emphasized recipient', () => {
         const vm = toActivityFeedVM(
             record({ recipientIdentifier: 'custard7@gmail.com', recipientProfile: undefined }),
