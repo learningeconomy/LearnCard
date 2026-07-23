@@ -7,7 +7,7 @@ type CredentialListSkeletonProps = {
 };
 
 const CARD_GRID_STYLE: React.CSSProperties = {
-    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 170px), 1fr))',
 };
 
 const CardSkeleton: React.FC = () => (
