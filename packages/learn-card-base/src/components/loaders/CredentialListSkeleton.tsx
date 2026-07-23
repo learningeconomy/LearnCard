@@ -55,7 +55,7 @@ export const CredentialListSkeleton: React.FC<CredentialListSkeletonProps> = ({
                 style={isCardView ? CARD_GRID_STYLE : undefined}
             >
                 {Array.from({ length: count }, (_, index) =>
-                    isCardView ? <CardSkeleton key={index} /> : <ListSkeleton key={index} />
+                    isCardView ? <CardSkeleton key={`${viewMode}-skeleton-${index}`} /> : <ListSkeleton key={`${viewMode}-skeleton-${index}`} />
                 )}
             </div>
         </section>
