@@ -24,7 +24,6 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
                 aria-hidden="true"
                 className={`${sizeClasses[size]} animate-spin rounded-full border-grayscale-200 border-t-emerald-600`}
             />
-            <span className="sr-only">{label}</span>
         </div>
     );
 };

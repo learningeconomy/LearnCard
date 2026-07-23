@@ -58,7 +58,6 @@ export const CredentialListSkeleton: React.FC<CredentialListSkeletonProps> = ({
                     isCardView ? <CardSkeleton key={index} /> : <ListSkeleton key={index} />
                 )}
             </div>
-            <span className="sr-only">Loading credentials</span>
         </section>
     );
 };
