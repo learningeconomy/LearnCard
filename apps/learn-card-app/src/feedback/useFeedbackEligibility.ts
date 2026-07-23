@@ -29,6 +29,8 @@ export const useFeedbackPrivacyEligibility = (): boolean => {
     return useMemo(() => {
         if (isLoading) return false;
         if (profileType === 'child') return false;
+        // Intentionally opt-out: an unset preference counts as eligible.
+        // Minors are covered by the explicit isMinor/DOB checks below.
         if (preferences?.analyticsEnabled === false) return false;
         if (preferences?.isMinor === true) return false;
 
