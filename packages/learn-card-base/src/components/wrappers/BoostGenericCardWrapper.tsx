@@ -12,6 +12,7 @@ import {
     BoostPageViewModeType,
 } from '../earned-and-managed-tabs/EarnedAndManagedTabs';
 import CredentialVerificationDisplay from '../CredentialBadge/CredentialVerificationDisplay';
+import { CredentialLifecycleStatus } from '../CredentialBadge/CredentialStatusSealIcon';
 import { BrandingEnum } from '../headerBranding/headerBrandingHelpers';
 
 type BoostGenericCardWrapperProps = {
@@ -48,6 +49,7 @@ type BoostGenericCardWrapperProps = {
     relativeDate?: boolean;
     compact?: boolean;
     isCLR?: boolean;
+    lifecycleStatus?: CredentialLifecycleStatus;
     trustedVerifierOnly?: boolean;
 };
 
@@ -85,6 +87,7 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
     relativeDate,
     compact,
     isCLR,
+    lifecycleStatus = 'active',
     trustedVerifierOnly,
 }) => {
     if (boostPageViewMode === BoostPageViewMode.List) {
@@ -106,6 +109,7 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
                 unknownVerifierTitle={unknownVerifierTitle}
                 relativeDate={relativeDate}
                 compact={compact}
+                lifecycleStatus={lifecycleStatus}
                 trustedVerifierOnly={trustedVerifierOnly}
             />
         );
@@ -139,11 +143,13 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
                         iconClassName="!w-[15px] !h-[15px]"
                         showText={!!unknownVerifierTitle}
                         unknownVerifierTitle={unknownVerifierTitle}
+                        lifecycleStatus={lifecycleStatus}
                         trustedOnly={trustedVerifierOnly}
                     />
                 )
             }
             credential={credential}
+            lifecycleStatus={lifecycleStatus}
             isInSkillsModal={isInSkillsModal}
             linkedCredentialsCount={linkedCredentialsCount ?? 0}
             linkedCredentialsClassName={linkedCredentialsClassName}

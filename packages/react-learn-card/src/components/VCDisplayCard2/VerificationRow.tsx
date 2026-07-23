@@ -20,6 +20,7 @@ const MESSAGE_KEYS: Record<string, string> = {
     Invalid: 'invalid',
     'Not Revoked': 'notRevoked',
     Revoked: 'revoked',
+    Suspended: 'suspended',
     'Does Not Expire': 'doesNotExpire',
     Expired: 'expired',
     Active: 'active',

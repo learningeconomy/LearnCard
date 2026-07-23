@@ -11,17 +11,17 @@ const verifier = await initLearnCard({ seed: 'verifier seed', network: true });
 
 ## Send a Boost With Status
 
-Network-issued VC 2.0 Boost credentials receive revocation status by default.
+Network-issued VC 2.0 Boost credentials receive both revocation **and** suspension status entries by default, so both states are externally verifiable from issuance.
 
 ```typescript
 const credentialUri = await issuer.invoke.sendBoost(recipientProfileId, boostUri);
 ```
 
-To include both revocation and suspension status, pass `statusPurposes`:
+To allocate only a subset of status purposes, pass `statusPurposes` (e.g. revocation only):
 
 ```typescript
 const credentialUri = await issuer.invoke.sendBoost(recipientProfileId, boostUri, {
-    statusPurposes: ['revocation', 'suspension'],
+    statusPurposes: ['revocation'],
 });
 ```
 
