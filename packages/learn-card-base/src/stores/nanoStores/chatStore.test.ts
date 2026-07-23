@@ -350,6 +350,112 @@ describe('chat session startup', () => {
         expect(sessionEnded.get()).toBe(true);
     });
 
+    it('marks a session ended when another tab replaces it', async () => {
+        connectWebSocket();
+        const socket = await openLatestSocket();
+        currentThreadId.set('thread-current');
+        threads.set([
+            {
+                id: 'thread-current',
+                did: 'did:example:learner',
+                title: 'Current session',
+                created_at: '2026-01-01T00:00:00.000Z',
+                last_message_at: '2026-01-01T00:00:00.000Z',
+                active: true,
+            },
+        ]);
+        isTyping.set(true);
+
+        socket.receive({
+            event: 'session_replaced',
+            threadId: 'thread-current',
+        });
+
+        expect(socket.readyState).toBe(FakeWebSocket.CLOSED);
+        expect(isLoading.get()).toBe(false);
+        expect(isTyping.get()).toBe(false);
+        expect(sessionEnded.get()).toBe(true);
+        expect(threads.get()[0]).toMatchObject({
+            active: false,
+            ended_at: expect.any(String),
+        });
+        expect(mocks.showErrorModal).toHaveBeenCalledWith(
+            'Session opened elsewhere',
+            'This session ended because a new AI session was started in another tab or device.'
+        );
+    });
+
+    it('reports a non-fatal topic publication failure after the session is ready', async () => {
+        connectWebSocket();
+        const socket = await openLatestSocket();
+        currentThreadId.set('thread-current');
+
+        socket.receive({
+            event: 'topic_publication_status',
+            threadId: 'thread-current',
+            status: 'error',
+        });
+
+        expect(sessionEnded.get()).toBe(false);
+        expect(mocks.showErrorModal).toHaveBeenCalledWith(
+            'Progress may not be saved',
+            'You can keep learning, but progress from this session may not be saved. Check your AI access settings and try again.'
+        );
+    });
+
+    it('reloads a shared thread when another tab finishes a response', async () => {
+        connectWebSocket();
+        const socket = await openLatestSocket();
+        currentThreadId.set('thread-current');
+        threads.set([
+            {
+                id: 'thread-current',
+                did: 'did:example:learner',
+                title: 'Current session',
+                created_at: '2026-01-01T00:00:00.000Z',
+                last_message_at: '2026-01-01T00:00:00.000Z',
+                active: true,
+            },
+        ]);
+        isTyping.set(true);
+        mocks.fetch
+            .mockResolvedValueOnce(
+                new Response(
+                    JSON.stringify([
+                        { role: 'user', content: 'Question from another tab' },
+                        { role: 'assistant', content: 'Shared response' },
+                    ])
+                )
+            )
+            .mockResolvedValueOnce(new Response(JSON.stringify([])));
+
+        socket.receive({
+            event: 'thread_updated',
+            threadId: 'thread-current',
+            phase: 'ready',
+        });
+        await vi.waitFor(() => {
+            expect(messages.get()).toEqual([
+                { role: 'user', content: 'Question from another tab' },
+                { role: 'assistant', content: 'Shared response' },
+            ]);
+            expect(isTyping.get()).toBe(false);
+        });
+
+        isTyping.set(true);
+        mocks.fetch
+            .mockResolvedValueOnce(new Response(JSON.stringify(messages.get())))
+            .mockResolvedValueOnce(new Response(JSON.stringify([])));
+        socket.receive({
+            event: 'thread_updated',
+            threadId: 'thread-current',
+            phase: 'error',
+        });
+        await vi.waitFor(() => {
+            expect(isTyping.get()).toBe(false);
+        });
+    });
+
     it('shows the app error modal when the AI backend is offline', async () => {
         const start = startTopic('Offline topic');
 

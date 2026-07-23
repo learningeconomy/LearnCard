@@ -623,12 +623,75 @@ export function connectWebSocket() {
                 return;
             }
 
+            if (data.event === 'topic_publication_status') {
+                if (!isCurrentThreadFrame(data.threadId)) return;
+
+                if (data.status === 'error') {
+                    showErrorModal(
+                        'Progress may not be saved',
+                        'You can keep learning, but progress from this session may not be saved. Check your AI access settings and try again.'
+                    );
+                }
+
+                return;
+            }
+
+            if (data.event === 'thread_updated') {
+                if (!isCurrentThreadFrame(data.threadId)) return;
+
+                if (data.phase === 'responding') isTyping.set(true);
+
+                void loadThread(data.threadId).finally(() => {
+                    if (data.phase !== 'responding') isTyping.set(false);
+                });
+                return;
+            }
+
+            if (data.event === 'thread_busy') {
+                if (!isCurrentThreadFrame(data.threadId)) return;
+
+                void loadThread(data.threadId);
+                showErrorModal(
+                    'Session is busy',
+                    'Another tab is already waiting for a response. This session will update when it is ready.'
+                );
+                return;
+            }
+
+            if (data.event === 'session_replaced') {
+                if (!isCurrentThreadFrame(data.threadId)) return;
+
+                clearSessionStartWatchdog();
+                disconnectWebSocket();
+                isLoading.set(false);
+                isTyping.set(false);
+                planStreamActive.set(false);
+                sessionEnded.set(true);
+                threads.set(
+                    threads.get().map(thread =>
+                        thread.id === data.threadId
+                            ? {
+                                  ...thread,
+                                  active: false,
+                                  ended_at: new Date().toISOString(),
+                              }
+                            : thread
+                    )
+                );
+                showErrorModal(
+                    'Session opened elsewhere',
+                    'This session ended because a new AI session was started in another tab or device.'
+                );
+                return;
+            }
+
             // Handle session completed event
             if (data.event === 'session_completed') {
                 if (!isCurrentThreadFrame(data.threadId)) return;
                 log.debug('Session already completed for this thread');
-                sessionEnded.set(true);
+                isLoading.set(false);
                 isTyping.set(false);
+                sessionEnded.set(true);
                 return;
             }
 
@@ -660,6 +723,7 @@ export function connectWebSocket() {
             }
 
             if (data.event === 'assistant_typing') {
+                if (data.threadId && !isCurrentThreadFrame(data.threadId)) return;
                 isLoading.set(false);
                 isTyping.set(true);
                 return;
