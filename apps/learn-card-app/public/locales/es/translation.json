@@ -596,7 +596,9 @@
                 "sent": "Enviado",
                 "claimed": "Reclamado",
                 "expired": "Vencido",
-                "notDelivered": "No entregado"
+                "notDelivered": "No entregado",
+                "revoked": "Revocada",
+                "suspended": "Suspendida"
             },
             "title": {
                 "selfAdded": "Agregaste {{article}} {{label}} a tu pasaporte",
@@ -604,7 +606,11 @@
                 "claimedBy": "{{label}} reclamado por",
                 "expiredFor": "{{label}} vencido para",
                 "failedTo": "No se pudo entregar {{label}} a",
-                "sentTo": "Enviaste {{article}} {{label}} a"
+                "sentTo": "Enviaste {{article}} {{label}} a",
+                "receivedRevoked": "Tu {{label}} fue revocada",
+                "receivedSuspended": "Tu {{label}} fue suspendida",
+                "revokedFor": "{{label}} revocada para",
+                "suspendedFor": "{{label}} suspendida para"
             },
             "when": {
                 "earlier": "Antes",
@@ -1829,7 +1835,9 @@
         "okay": "De acuerdo",
         "viewCredential": "Ver credencial",
         "loadingNotifications": "Cargando notificaciones...",
-        "refresh": "Actualizar"
+        "refresh": "Actualizar",
+        "restored": "Restaurada",
+        "unableToLoad": "No se pudo cargar la notificación"
     },
     "share": {
         "addContact": "Agregar contacto",
@@ -2961,6 +2969,12 @@
         "common": {
             "close": "Cerrar",
             "select": "Seleccionar"
+        },
+        "credential": {
+            "lifecycle": {
+                "revoked": "Revocada",
+                "suspended": "Suspendida"
+            }
         }
     },
     "sdk": {
@@ -2990,7 +3004,14 @@
                 "doesNotExpire": "No vence",
                 "expired": "Vencido",
                 "active": "Activo",
-                "couldNotVerify": "No se pudo verificar la credencial Boost."
+                "couldNotVerify": "No se pudo verificar la credencial Boost.",
+                "suspended": "Suspendida"
+            }
+        },
+        "credential": {
+            "lifecycle": {
+                "revoked": "Revocada",
+                "suspended": "Suspendida"
             }
         }
     },

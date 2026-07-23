@@ -38,6 +38,12 @@ const SUPPORTED_KEYS = [
     'consentFlowTransactionWithdrawn',
     'consentFlowTransactionSyncedSingle',
     'consentFlowTransactionSyncedPlural',
+    'credentialRevokedNamed',
+    'credentialRevokedUnnamed',
+    'credentialSuspendedNamed',
+    'credentialSuspendedUnnamed',
+    'credentialRestoredNamed',
+    'credentialRestoredUnnamed',
 ] as NotificationMessageKey[];
 
 const LOCALES = ['en', 'es', 'fr', 'ar'];
@@ -90,6 +96,16 @@ describe('getNotificationMessage — interpolation', () => {
         const es = getNotificationMessage('boostReceived', 'es', { issuer: 'ACME' });
         expect(es.body).toBe('¡ACME te ha enviado un reconocimiento!');
         expect(es.title).toBe('Reconocimiento recibido');
+    });
+
+    it('localizes named credential lifecycle notifications', () => {
+        const es = getNotificationMessage('credentialRevokedNamed', 'es', {
+            credentialName: 'Insignia de seguridad',
+            issuer: 'ACME',
+        });
+
+        expect(es.title).toBe('Credencial revocada');
+        expect(es.body).toBe('Tu credencial "Insignia de seguridad" fue revocada por ACME.');
     });
 });
 

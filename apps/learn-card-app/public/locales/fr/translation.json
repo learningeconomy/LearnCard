@@ -596,7 +596,9 @@
                 "sent": "Envoyé",
                 "claimed": "Récupéré",
                 "expired": "Expiré",
-                "notDelivered": "Non livré"
+                "notDelivered": "Non livré",
+                "revoked": "Révoqué",
+                "suspended": "Suspendu"
             },
             "title": {
                 "selfAdded": "Vous avez ajouté {{article}} {{label}} à votre passeport",
@@ -604,7 +606,11 @@
                 "claimedBy": "{{label}} récupéré par",
                 "expiredFor": "{{label}} expiré pour",
                 "failedTo": "Impossible de livrer {{label}} à",
-                "sentTo": "Vous avez envoyé {{article}} {{label}} à"
+                "sentTo": "Vous avez envoyé {{article}} {{label}} à",
+                "receivedRevoked": "Votre {{label}} a été révoqué",
+                "receivedSuspended": "Votre {{label}} a été suspendu",
+                "revokedFor": "{{label}} révoqué pour",
+                "suspendedFor": "{{label}} suspendu pour"
             },
             "when": {
                 "earlier": "Plus tôt",
@@ -1829,7 +1835,9 @@
         "okay": "OK",
         "viewCredential": "Voir la crédention",
         "loadingNotifications": "Chargement des notifications...",
-        "refresh": "Actualiser"
+        "refresh": "Actualiser",
+        "restored": "Rétabli",
+        "unableToLoad": "Impossible de charger la notification"
     },
     "share": {
         "addContact": "Ajouter un contact",
@@ -2961,6 +2969,12 @@
         "common": {
             "close": "Fermer",
             "select": "Sélectionner"
+        },
+        "credential": {
+            "lifecycle": {
+                "revoked": "Révoqué",
+                "suspended": "Suspendu"
+            }
         }
     },
     "sdk": {
@@ -2990,7 +3004,14 @@
                 "doesNotExpire": "N’expire pas",
                 "expired": "Expiré",
                 "active": "Actif",
-                "couldNotVerify": "Le justificatif Boost n’a pas pu être vérifié."
+                "couldNotVerify": "Le justificatif Boost n’a pas pu être vérifié.",
+                "suspended": "Suspendu"
+            }
+        },
+        "credential": {
+            "lifecycle": {
+                "revoked": "Révoqué",
+                "suspended": "Suspendu"
             }
         }
     },

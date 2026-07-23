@@ -25,6 +25,7 @@ const vm = (over: Partial<ActivityFeedItemVM> = {}): ActivityFeedItemVM => ({
     isSelf: false,
     statusLabel: 'Sent',
     statusTone: 'neutral',
+    lifecycleStatus: 'active',
     title: 'You sent a Badge to Justin Smith',
     titleLead: 'You sent a Badge to',
     titleSubject: 'Justin Smith',
