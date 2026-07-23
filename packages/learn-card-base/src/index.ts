@@ -31,6 +31,7 @@ export * from './components/boost/boostOptions/boostOptions';
 export * from './components/boost/boost';
 export * from './components/boost/BoostRecipients';
 export * from './components/boost/boostFooter/BoostFooter';
+export * from './components/boost/boostFooter/BoostFooterLayout';
 export * from './components/CredentialBadge/CredentialBadge';
 export * from './components/CredentialBadge/CredentialBadgeNew';
 export * from './components/CredentialBadge/CredentialCLRBadge';
