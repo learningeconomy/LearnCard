@@ -94,6 +94,7 @@ const BoostCMS: React.FC<{
     handleCloseModal?: () => void;
     parentUri?: string;
     overrideCustomize?: boolean;
+    returnToParentAfterSave?: boolean;
 }> = ({
     category,
     achievementType,
@@ -101,6 +102,7 @@ const BoostCMS: React.FC<{
     handleCloseModal,
     parentUri,
     showCustomTypeInput,
+    returnToParentAfterSave = false,
 }) => {
     const flags = useFlags();
     const history = useHistory();
@@ -390,13 +392,15 @@ const BoostCMS: React.FC<{
                 queryKey: ['useCountFamilialBoosts'],
             });
 
-            if (boostUri && state?.admins?.length > 0) {
-                if (wallet) handleAddAdmin(wallet, boostUri);
+            if (boostUri && state?.admins?.length > 0 && wallet) {
+                void handleAddAdmin(wallet, boostUri).catch(error => {
+                    log.error('boost.admin.assignment.failed', error);
+                });
             }
 
             if (boostUri) {
                 setIsSaveLoading(false);
-                presentToast('Boost saved successfully', {
+                presentToast('Draft saved successfully', {
                     type: ToastTypeEnum.Success,
                     hasDismissButton: true,
                 });
@@ -440,11 +444,23 @@ const BoostCMS: React.FC<{
                 status: LCNBoostStatusEnum.live,
                 skillIds,
             });
+            queryClient.invalidateQueries({ queryKey: ['boosts', state.basicInfo.type] });
+            queryClient.invalidateQueries({
+                queryKey: ['useGetPaginatedBoostChildren', parentUri],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['useCountBoostChildren', parentUri],
+            });
+            queryClient.invalidateQueries({
+                queryKey: ['useGetPaginatedFamilialBoosts', parentUri],
+            });
             queryClient.invalidateQueries({
                 queryKey: ['useCountFamilialBoosts', parentUri],
             });
+            queryClient.invalidateQueries({
+                queryKey: ['useCountFamilialBoosts'],
+            });
 
-            setIsPublishLoading(false);
             if (boostUri) {
                 logAnalyticsEvent('boostCMS_publish_live', {
                     timestamp: Date.now(),
@@ -452,6 +468,22 @@ const BoostCMS: React.FC<{
                     boostType: state?.basicInfo?.achievementType,
                     category: state?.basicInfo?.type,
                 });
+
+                if (state?.admins?.length > 0 && wallet) {
+                    void handleAddAdmin(wallet, boostUri).catch(error => {
+                        log.error('boost.admin.assignment.failed', error);
+                    });
+                }
+
+                if (returnToParentAfterSave && handleCloseModal) {
+                    setIsPublishLoading(false);
+                    presentToast('Boost published successfully', {
+                        type: ToastTypeEnum.Success,
+                        hasDismissButton: true,
+                    });
+                    handleCloseModal();
+                    return;
+                }
 
                 setPublishedBoostUri(boostUri);
 
@@ -462,13 +494,11 @@ const BoostCMS: React.FC<{
                     handleNextStep();
                 }
             }
-            if (boostUri && state?.admins?.length > 0) {
-                if (wallet) handleAddAdmin(wallet, boostUri);
-            }
+            setIsPublishLoading(false);
         } catch (e) {
             setIsPublishLoading(false);
-            log.debug('error::boosting::someone', e);
-            presentToast('Error issuing boost', {
+            log.debug('error::publishingBoost', e);
+            presentToast('Unable to publish boost', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -742,7 +772,7 @@ const BoostCMS: React.FC<{
             <BoostCMSPublish
                 state={state}
                 handlePreview={handlePreview}
-                handleSaveAndQuit={handleSaveAndQuit}
+                handleSaveAndQuit={() => handleSaveAndQuit()}
                 handlePublishBoost={handlePublishBoost}
                 showSaveAsDraftButton
                 isSaveLoading={isSaveLoading}
@@ -773,7 +803,7 @@ const BoostCMS: React.FC<{
     if (isLoading) {
         loadingText = 'Sending...';
     } else if (isPublishLoading) {
-        loadingText = 'Sending...';
+        loadingText = 'Publishing...';
     } else if (isSaveLoading) {
         loadingText = 'Saving...';
     } else if (stylePackLoading) {
@@ -791,12 +821,17 @@ const BoostCMS: React.FC<{
                 selectedVCType={state.basicInfo.type}
                 currentStep={currentStep}
                 handleNextStep={handleNextStep}
+                handleSaveAsDraft={handleSaveAndQuit}
+                handlePublish={handlePublishBoost}
                 handlePrevStep={handlePrevStep}
                 handleConfirmationModal={handleConfirmationModal}
                 publishedBoostUri={publishedBoostUri}
                 handleSaveAndIssue={handleSaveAndIssue}
                 isLoading={isLoading}
+                isSaveLoading={isSaveLoading}
+                isPublishLoading={isPublishLoading}
                 issueToLength={issueToLength}
+                returnToParentAfterSave={returnToParentAfterSave}
             />
 
             <IonContent fullscreen color="grayscale-800">

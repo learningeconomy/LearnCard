@@ -20,13 +20,10 @@ import {
     searchManagedBoostsFromCache,
     pluralize,
     BoostCategoryOptionsEnum,
-    useModal,
-    ModalTypes,
 } from 'learn-card-base';
 import { BoostQuery } from '@learncard/types';
 
 import Lottie from 'react-lottie-player';
-import NewBoostSelectMenu from '../boost-select-menu/NewBoostSelectMenuOld';
 import NewBoostSelectMenuCustomTypeButton from '../boost-select-menu/NewBoostSelectMenuCustomTypeButton';
 import {
     credentialCategoryToSubheaderType,
@@ -47,6 +44,7 @@ type BoostManagedListProps = {
     enableCreateButton?: boolean;
     includeExtendedFamily?: boolean;
     handleCloseModal?: () => void;
+    returnToParentAfterSave?: boolean;
 };
 
 const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
@@ -61,11 +59,12 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
     includeExtendedFamily,
     enableCreateButton = true,
     handleCloseModal,
+    returnToParentAfterSave = false,
 }) => {
     const history = useHistory();
     /*
         * start **
-        Managed boosts query + pagination 
+        Managed boosts query + pagination
     */
     const managedBoostInfiniteScrollRef = useRef<HTMLDivElement>(null);
 
@@ -96,20 +95,6 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
         managedBoosts?.pages?.[0]?.records?.length,
     ]);
 
-    const { newModal, closeModal } = useModal({
-        desktop: ModalTypes.Cancel,
-        mobile: ModalTypes.Cancel,
-    });
-
-    const openNewBoostSelector = () => {
-        newModal(
-            <NewBoostSelectMenu
-                handleCloseModal={() => closeModal()}
-                category={category}
-            />
-        );
-    };
-
     useEffect(() => {
         if (managedBoostsOnScreen && managedBoostsHasNextPage) managedBoostsFetchNextPage();
     }, [
@@ -119,7 +104,7 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
         managedBoostInfiniteScrollRef,
     ]);
     /*
-        Managed boosts query + pagination 
+        Managed boosts query + pagination
          * end **
     */
 
@@ -154,7 +139,15 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
                         />
                     ))
             ) ?? [],
-        [managedBoosts, searchResults, category, viewMode, managedBoostsLoading, managedBoostsRefetch, defaultImg]
+        [
+            managedBoosts,
+            searchResults,
+            category,
+            viewMode,
+            managedBoostsLoading,
+            managedBoostsRefetch,
+            defaultImg,
+        ]
     );
 
     const handleRefetch = async () => {
@@ -210,6 +203,7 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
                                         handleCloseModal={handleCloseModal}
                                         useCMSModal
                                         parentUri={parentUri}
+                                        returnToParentAfterSave={returnToParentAfterSave}
                                     />
                                 )}
                                 {managedBoostsList}
