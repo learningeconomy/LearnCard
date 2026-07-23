@@ -1,0 +1,47 @@
+{
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "name": "ai-agent-service",
+    "sourceRoot": "services/learn-card-network/ai-agent/src",
+    "projectType": "application",
+    "root": "services/learn-card-network/ai-agent",
+    "tags": [],
+    "namedInputs": {
+        "source": ["{projectRoot}/src/**/*", "{projectRoot}/public/**/*"],
+        "tests": ["{projectRoot}/test/**/*"],
+        "dist": ["{projectRoot}/dist/**/*"]
+    },
+    "targets": {
+        "build": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "dependsOn": [],
+            "options": {
+                "script": "build"
+            }
+        },
+        "start": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "dependsOn": [],
+            "options": {
+                "script": "start"
+            }
+        },
+        "start:docker": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "dependsOn": [],
+            "options": {
+                "script": "start:docker"
+            }
+        },
+        "test": {
+            "executor": "nx:run-script",
+            "inputs": ["source", "tests"],
+            "dependsOn": [],
+            "options": {
+                "script": "test"
+            }
+        }
+    }
+}

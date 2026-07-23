@@ -1,4 +1,5 @@
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import numeral from 'numeral';
 import PreloadingLink from '../generic/PreloadingLink';
 
@@ -7,7 +8,11 @@ import * as m from '../../paraglide/messages.js';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import {
     currentUserStore,
+    ToastTypeEnum,
+    useAiFeatureGate,
+    useGetCurrentLCNUser,
     useGetUnreadUserNotifications,
+    useToast,
     walletStore,
     WalletSyncState,
 } from 'learn-card-base';
@@ -28,6 +33,11 @@ import useOpenNotifications from '../notifications/useOpenNotifications';
 import { useTheme } from '../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../theme/icons/index';
 import { ColorSetEnum } from '../../theme/colors/index';
+import {
+    fetchLearnCardAssistantProfile,
+    getInitialAgentUrl,
+    normalizeAgentUrl,
+} from '../../pages/my-assistant/learnCardAssistant.api';
 import { useDashboardAsHome } from '../../pages/dashboard/hooks/useDashboardAsHome';
 
 type SideMenuRootLinksProps = {
@@ -64,11 +74,25 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
     const { isMobile } = useDeviceTypeByWidth();
     const parentLDFlags = currentUserStore.use.parentLDFlags();
     const hasAdminAccess = flags.enableAdminTools || parentLDFlags?.enableAdminTools;
+    const learnCardAssistantEnabled =
+        import.meta.env.DEV || Boolean(flags.enableLearnCardAssistant);
+    const { isAiEnabled, reason } = useAiFeatureGate();
+    const { presentToast } = useToast();
     // Same two-layer gate as the `/` landing redirect in Routes.tsx, so the
     // Dashboard nav entry and the home route can never drift.
     const dashboardAsHome = useDashboardAsHome();
 
     const { newModal } = useModal();
+    const { currentLCNUser } = useGetCurrentLCNUser();
+    const currentDid = currentLCNUser?.did;
+    const normalizedAgentUrl = React.useMemo(() => normalizeAgentUrl(getInitialAgentUrl()), []);
+    const { data: assistantProfile } = useQuery({
+        queryKey: ['learncard-assistant-profile', currentDid, normalizedAgentUrl],
+        queryFn: () => fetchLearnCardAssistantProfile(normalizedAgentUrl, currentDid!),
+        enabled: learnCardAssistantEnabled && Boolean(currentDid),
+        staleTime: 60_000,
+    });
+    const assistantLabel = assistantProfile?.name ?? 'My Assistant';
     const openNotifications = useOpenNotifications();
 
     const handlePersonalizeMyAi = () => {
@@ -135,6 +159,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
 
     rootLinks = walletLink?.map(link => {
         if (link.id === SideMenuLinksEnum.adminTools && !hasAdminAccess) return null;
+        if (link.path === '/ai/assistant' && !learnCardAssistantEnabled) return null;
         if (link.path === '/dashboard' && !dashboardAsHome) return null;
         // Alerts lives in the header island on desktop; only show it in the
         // side menu on mobile (LC-1921).
@@ -142,18 +167,38 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
 
         const IconComponent = iconSet[link.id as keyof typeof iconSet] as React.FC<any>;
         const linkPath = link.path;
+        const linkLabel =
+            linkPath === '/ai/assistant' ? assistantLabel : getSideMenuLinkLabel(m, link);
 
         const iconStyles = getIconStyles(linkPath);
         const textStyles = getTextStyles(linkPath);
         const linkBackgroundStyles = getLinkBackgroundStyles(linkPath);
 
-        let linkEl = (
+        const isGatedAssistantRoute = linkPath === '/ai/assistant' && !isAiEnabled;
+
+        let linkEl = isGatedAssistantRoute ? (
+            <button
+                type="button"
+                onClick={e => {
+                    e.preventDefault();
+                    const msg =
+                        reason === 'disabled_minor'
+                            ? 'AI features are not available for users under 18.'
+                            : 'AI features are currently disabled. You can enable them in Privacy & Data from your profile.';
+                    presentToast(msg, { type: ToastTypeEnum.Error });
+                }}
+                className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles} opacity-50`}
+            >
+                <IconComponent className={`${iconStyles}`} shadeColor={shadeColor} />
+                {linkLabel}
+            </button>
+        ) : (
             <PreloadingLink
                 to={linkPath}
                 className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
             >
                 <IconComponent className={`${iconStyles}`} shadeColor={shadeColor} />
-                {getSideMenuLinkLabel(m, link)}
+                {linkLabel}
             </PreloadingLink>
         );
 
@@ -165,7 +210,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
                     className={`cursor-pointer learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
                 >
                     <IconComponent className={`${iconStyles}`} shadeColor={shadeColor} />
-                    {getSideMenuLinkLabel(m, link)}
+                    {linkLabel}
                 </button>
             );
         }

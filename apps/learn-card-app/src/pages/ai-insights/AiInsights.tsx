@@ -20,6 +20,7 @@ import AiInsightsUserRequestsToast from './toasts/AiInsightsUserRequestsToast';
 import AiInsightsPromptBoxContainer from './ai-inisghts-prompt/AiInsightsPromptBoxContainer';
 import { m } from '../../paraglide/messages.js';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
+import AiAgentDebug from './agent-debug/AiAgentDebug';
 
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
 import {
@@ -50,6 +51,7 @@ import AiInsightsWidgets from './AiInsightsWidgets';
 type Flags = {
     hideAiPathways?: boolean;
     showGenerateAiInsightsButton?: boolean;
+    enableAiAgentDebugTab?: boolean;
 };
 
 type ContractRequestRecord = {
@@ -65,6 +67,8 @@ const AiInsights: React.FC = () => {
     const location = useLocation();
 
     const [selectedTab, setSelectedTab] = useState(AiInsightsTabsEnum.MyInsights);
+    const flags = useFlags<Flags>();
+    const showAgentDebugTab = flags?.enableAiAgentDebugTab ?? !IS_PRODUCTION;
     const autoGenerateAiInsightsAttemptedRef = useRef(false);
 
     useEffect(() => {
@@ -74,15 +78,21 @@ const AiInsights: React.FC = () => {
             tab === AiInsightsTabsEnum.MyInsights ||
             tab === AiInsightsTabsEnum.LearnerInsights ||
             tab === AiInsightsTabsEnum.SharedInsights ||
-            tab === AiInsightsTabsEnum.ChildInsights
+            tab === AiInsightsTabsEnum.ChildInsights ||
+            (tab === AiInsightsTabsEnum.AgentDebug && showAgentDebugTab)
         ) {
             setSelectedTab(tab);
         }
-    }, [location.search]);
+    }, [location.search, showAgentDebugTab]);
 
     const colors = getThemedCategoryColors(CredentialCategoryEnum.aiInsight);
     const { backgroundSecondaryColor } = colors;
-    const flags = useFlags<Flags>();
+
+    useEffect(() => {
+        if (!showAgentDebugTab && selectedTab === AiInsightsTabsEnum.AgentDebug) {
+            setSelectedTab(AiInsightsTabsEnum.MyInsights);
+        }
+    }, [selectedTab, showAgentDebugTab]);
 
     const {
         data: allResolvedCreds,
@@ -297,6 +307,7 @@ const AiInsights: React.FC = () => {
     const childInsights = <ChildInsights />;
     const learningInsights = <LearnerInsights />;
     const sharedInsights = <SharedInsights />;
+    const agentDebug = <AiAgentDebug />;
 
     let activeInsights;
     if (selectedTab === AiInsightsTabsEnum.MyInsights) {
@@ -305,6 +316,8 @@ const AiInsights: React.FC = () => {
         activeInsights = sharedInsights;
     } else if (selectedTab === AiInsightsTabsEnum.ChildInsights) {
         activeInsights = childInsights;
+    } else if (selectedTab === AiInsightsTabsEnum.AgentDebug && showAgentDebugTab) {
+        activeInsights = agentDebug;
     } else {
         activeInsights = learningInsights;
     }
@@ -326,6 +339,7 @@ const AiInsights: React.FC = () => {
                                 <AiInsightsTabs
                                     selectedTab={selectedTab}
                                     setSelectedTab={setSelectedTab}
+                                    showAgentDebugTab={showAgentDebugTab}
                                     className="w-full mb-4"
                                 />
                                 {activeInsights}

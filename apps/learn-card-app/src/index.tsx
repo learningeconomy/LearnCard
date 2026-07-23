@@ -45,10 +45,19 @@ import * as Sentry from '@sentry/browser';
         }
     }
 
-    // Disable LaunchDarkly logging
+    // Disable LaunchDarkly logging. In local development, bootstrap draft assistant
+    // flags on so the page and debug tooling are available before LD has remote values.
     const ldOptions = {
         options: {
             logger: basicLogger({ level: 'none' }),
+            ...(import.meta.env.DEV
+                ? {
+                      bootstrap: {
+                          enableLearnCardAssistant: true,
+                          enableLearnCardAssistantDebug: true,
+                      },
+                  }
+                : {}),
         },
     };
 

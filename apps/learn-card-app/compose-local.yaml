@@ -14,6 +14,7 @@ services:
             - brain
             - cloud
             - api
+            - ai-agent
             - delete-service
         networks:
             - learn-card
@@ -216,6 +217,48 @@ services:
             REDIS_HOST: redis3
             REDIS_PORT: 6379
             METABASE_SECRET_KEY: ${METABASE_SECRET_KEY:-notARealSecretKey}
+
+    ai-agent:
+        image: learncard-monorepo-local
+        build:
+            context: ../../
+            dockerfile: Dockerfile.monorepo
+        container_name: 'lcn-ai-agent-service'
+        expose:
+            - 4300
+        ports:
+            - '4300:4300'
+        command:
+            - sh
+            - -c
+            - |
+                export PORT="$${PORT:-4300}"
+                export AI_AGENT_CLOUD_URL="$${AI_AGENT_CLOUD_URL:-http://cloud:4100/trpc}"
+                export AI_AGENT_NETWORK_URL="$${AI_AGENT_NETWORK_URL:-http://brain:4000/trpc}"
+                export AI_AGENT_CONSENT_FLOW_APP_URL="$${AI_AGENT_CONSENT_FLOW_APP_URL:-http://localhost:3000}"
+                export AI_AGENT_MONGO_URI="$${AI_AGENT_MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}"
+                export AI_AGENT_MONGO_DB_NAME="$${AI_AGENT_MONGO_DB_NAME:-learn-card-ai-agent}"
+                export AI_AGENT_WALLET_SEED="$${AI_AGENT_WALLET_SEED:-$${SEED:-d}}"
+                bun run --cwd services/learn-card-network/ai-agent dev
+        depends_on:
+            - brain
+            - cloud
+            - mongodb
+        networks:
+            - learn-card
+        extra_hosts:
+            - 'localhost:host-gateway'
+        env_file:
+            - path: ../../services/learn-card-network/ai-agent/.env
+              required: false
+        volumes:
+            - ../../services/learn-card-network/ai-agent/src:/app/services/learn-card-network/ai-agent/src
+            - ../../services/learn-card-network/ai-agent/public:/app/services/learn-card-network/ai-agent/public
+            - ../../packages:/app/packages
+        environment:
+            SKIP_DIDKIT_NAPI: '1'
+            CHOKIDAR_USEPOLLING: 'true'
+            CHOKIDAR_INTERVAL: '1000'
 
     neo4j:
         image: neo4j:latest
