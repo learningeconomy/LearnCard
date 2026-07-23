@@ -596,7 +596,9 @@
                 "sent": "أُرسلت",
                 "claimed": "تمت المطالبة",
                 "expired": "منتهية الصلاحية",
-                "notDelivered": "لم تُسلَّم"
+                "notDelivered": "لم تُسلَّم",
+                "revoked": "ملغاة",
+                "suspended": "معلقة"
             },
             "title": {
                 "selfAdded": "أضفت {{label}} إلى جواز سفرك",
@@ -604,7 +606,11 @@
                 "claimedBy": "تمت المطالبة بـ{{label}} بواسطة",
                 "expiredFor": "انتهت صلاحية {{label}} لـ",
                 "failedTo": "تعذّر تسليم {{label}} إلى",
-                "sentTo": "أرسلت {{label}} إلى"
+                "sentTo": "أرسلت {{label}} إلى",
+                "receivedRevoked": "تم إلغاء {{label}} الخاصة بك",
+                "receivedSuspended": "تم تعليق {{label}} الخاصة بك",
+                "revokedFor": "تم إلغاء {{label}} لـ",
+                "suspendedFor": "تم تعليق {{label}} لـ"
             },
             "when": {
                 "earlier": "سابقًا",
@@ -1829,7 +1835,9 @@
         "okay": "حسناً",
         "viewCredential": "عرض الشهادة",
         "loadingNotifications": "جاري تحميل الإشعارات...",
-        "refresh": "تحديث"
+        "refresh": "تحديث",
+        "restored": "تمت الاستعادة",
+        "unableToLoad": "تعذر تحميل الإشعار"
     },
     "share": {
         "addContact": "إضافة جهة اتصال",
@@ -2938,6 +2946,12 @@
         "common": {
             "close": "إغلاق",
             "select": "تحديد"
+        },
+        "credential": {
+            "lifecycle": {
+                "revoked": "ملغاة",
+                "suspended": "معلقة"
+            }
         }
     },
     "sdk": {
@@ -2967,7 +2981,14 @@
                 "doesNotExpire": "لا تنتهي صلاحيته",
                 "expired": "منتهي الصلاحية",
                 "active": "نشط",
-                "couldNotVerify": "تعذّر التحقق من بيان اعتماد Boost."
+                "couldNotVerify": "تعذّر التحقق من بيان اعتماد Boost.",
+                "suspended": "معلق"
+            }
+        },
+        "credential": {
+            "lifecycle": {
+                "revoked": "ملغاة",
+                "suspended": "معلقة"
             }
         }
     },

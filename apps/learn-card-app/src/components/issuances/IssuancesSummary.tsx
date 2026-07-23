@@ -9,12 +9,16 @@ interface IssuancesSummaryProps {
 export const IssuancesSummary: React.FC<IssuancesSummaryProps> = ({ boostUri, onManage }) => {
     const { stats } = useIntegrationActivity([], { boostUri, limit: 1 });
     const pending = stats.pendingClaims ?? 0;
+    const revoked = stats.revoked ?? 0;
+    const suspended = stats.suspended ?? 0;
 
     return (
         <div className="flex flex-col gap-2">
             <p className="text-sm text-gray-500">
                 {stats.totalSent ?? 0} issued · {stats.totalClaimed ?? 0} claimed
                 {pending > 0 ? ` · ${pending} pending` : ''}
+                {revoked > 0 ? ` · ${revoked} revoked` : ''}
+                {suspended > 0 ? ` · ${suspended} suspended` : ''}
             </p>
             <button
                 type="button"
