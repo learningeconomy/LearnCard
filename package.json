@@ -152,6 +152,7 @@
         ]
     },
     "patchedDependencies": {
+        "capacitor-plugin-safe-area@5.0.0": "patches/capacitor-plugin-safe-area@5.0.0.patch",
         "libsodium-wrappers@0.7.16": "patches/libsodium-wrappers@0.7.16.patch"
     }
 }

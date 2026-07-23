@@ -22,10 +22,12 @@ const config: CapacitorConfig = {
     appName: 'LearnCard',
     webDir: 'build',
     bundledWebRuntime: false,
-    android: {
-        adjustMarginsForEdgeToEdge: 'force',
-    },
     plugins: {
+        SystemBars: {
+            // Capacitor injects --safe-area-inset-* and keeps them synchronized
+            // as Android switches between gesture and button navigation.
+            insetsHandling: 'css',
+        },
         SplashScreen: {
             launchShowDuration: 6000,
             launchAutoHide: false,
@@ -62,7 +64,7 @@ const config: CapacitorConfig = {
             // Bump this value whenever you bump native binaries; do NOT add a parallel
             // tenant-level override — that's how channels drift and OTA updates land in
             // an empty channel (see PR #1063 incident).
-            defaultChannel: '1.0.8', // bumped here https://github.com/learningeconomy/LearnCard/pull/1313
+            defaultChannel: '1.0.9', // bumped here https://github.com/learningeconomy/LearnCard/pull/1434
         },
     },
 };

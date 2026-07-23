@@ -1,12 +1,11 @@
 import React from 'react';
-import { useModal } from 'learn-card-base';
 import { useT } from 'learn-card-base/i18n';
 import ReplyIcon from 'learn-card-base/svgs/ReplyIcon';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import X from 'learn-card-base/svgs/X';
 import ExpandIcon from 'learn-card-base/svgs/ExpandIcon';
 
-type BoostFooterProps = {
+export type BoostFooterProps = {
     handleShare?: () => void;
     handleClaim?: () => void;
     handleBack?: () => void;
@@ -23,7 +22,13 @@ type BoostFooterProps = {
     handleFullScreen?: () => void;
 };
 
-const BoostFooter: React.FC<BoostFooterProps> = props => {
+/**
+ * Button surface for a credential footer.
+ *
+ * Use `BoostFooterLayout` for full-height screens so content clearance and
+ * system-bar insets are handled automatically.
+ */
+export const BoostFooter: React.FC<BoostFooterProps> = props => {
     const t = useT();
     const propsCount = Object.values(props).filter(value => value !== undefined).length;
     const {
@@ -44,7 +49,14 @@ const BoostFooter: React.FC<BoostFooterProps> = props => {
     } = props;
 
     return (
-        <footer className="w-full bg-white border-white border-t-1px bg-opacity-60 border-t-[1px] sticky bottom-0 p-[20px] backdrop-blur-[10px] h-[85px]">
+        <footer
+            className="w-full min-h-[85px] bg-white border-white border-t-1px bg-opacity-60 border-t-[1px] sticky bottom-0 px-[20px] pt-[20px] backdrop-blur-[10px]"
+            style={{
+                // Keep the frosted surface edge-to-edge while lifting its controls
+                // above gesture, two-button, and three-button system navigation.
+                paddingBottom: 'calc(20px + var(--ion-safe-area-bottom, 0px))',
+            }}
+        >
             <div className="max-w-[600px] mx-auto flex gap-[10px]">
                 {handleClose && (propsCount === 2 || isIdClaim || useFullCloseButton) && (
                     <button

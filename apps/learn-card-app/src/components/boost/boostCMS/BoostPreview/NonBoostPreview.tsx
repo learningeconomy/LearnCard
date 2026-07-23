@@ -12,7 +12,7 @@ import VerifiedChildCLRFooter from './VerifiedChildCLRFooter';
 import EndorsementBadge from '../../../boost-endorsements/EndorsementBadge';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import BoostMediaPreview from './BoostMediaPreview';
-import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
+import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
 import ClrTranscriptFullPage from '../../../clr-transcript/surfaces/ClrTranscriptFullPage';
 import {
     normalizeClrTranscriptDisplayModel,
@@ -316,53 +316,53 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
 
     return (
         <IonPage>
-            <div className={`flex h-full ${bgColor}`}>
-                <section
-                    className={`flex h-full overflow-y-scroll pb-[80px] flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0`}
-                >
-                    <div
-                        className={`w-full ${
-                            isMobile && isClrCredential ? 'px-0' : 'px-2'
-                        } flex flex-col items-center justify-center overflow-x-auto ${boostPreviewWrapperCustomClass} ${
-                            isCertificate ? 'certificate-display-zoom' : ''
-                        } ${isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''}`}
-                    >
-                        <section
-                            className={`w-full overflow-y-auto max-h-full pb-32 disable-scrollbars ${
-                                Capacitor.isNativePlatform() && !isClrCredential
-                                    ? 'pt-0 safe-area-top-margin'
-                                    : 'pt-[30px]'
-                            } ${isMobile && isClrCredential ? '!p-0' : 'px-6'}`}
+            <BoostFooterLayout
+                className={bgColor}
+                contentOwnsScroll
+                footerProps={{
+                    handleClose: handleCloseModal,
+                    handleDetails:
+                        isMobile && !isClrCredential ? () => openDetailsSideModal() : undefined,
+                    handleShare: handleShareBoost,
+                    handleDotMenu: onDotsClick,
+                    useFullCloseButton: !isMobile || isClrCredential,
+                }}
+            >
+                <div className="flex h-full">
+                    <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0">
+                        <div
+                            className={`w-full ${
+                                isMobile && isClrCredential ? 'px-0' : 'px-2'
+                            } flex flex-col items-center justify-center overflow-x-auto ${boostPreviewWrapperCustomClass} ${
+                                isCertificate ? 'certificate-display-zoom' : ''
+                            } ${isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''}`}
                         >
-                            {credentialContent}
-                        </section>
-                    </div>
-                </section>
-                <footer className="w-full flex justify-center items-center ion-no-border absolute bottom-0 z-10">
-                    <BoostFooter
-                        handleClose={handleCloseModal}
-                        handleDetails={
-                            isMobile && !isClrCredential ? () => openDetailsSideModal() : undefined
-                        }
-                        handleShare={handleShareBoost}
-                        handleDotMenu={onDotsClick}
-                        useFullCloseButton={!isMobile || isClrCredential}
-                    />
-                </footer>
-                {!isMobile && !isClrCredential && (
-                    <BoostDetailsSideBar
-                        credential={selectedCredential}
-                        categoryType={categoryType}
-                        verificationItems={detailVerificationItems}
-                        customLinkedCredentialsComponent={customLinkedCredentialsComponent}
-                        existingEndorsements={existingEndorsements}
-                        isEarnedBoost={isEarnedBoost}
-                        isClrChildCredential={isClrChildCredential}
-                        renderMethodCredential={credential as VC | UnsignedVC}
-                        isPreview={isPreview}
-                    />
-                )}
-            </div>
+                            <section
+                                className={`w-full overflow-y-auto max-h-full disable-scrollbars ${
+                                    Capacitor.isNativePlatform() && !isClrCredential
+                                        ? 'pt-0 safe-area-top-margin'
+                                        : 'pt-[30px]'
+                                } ${isMobile && isClrCredential ? '!p-0' : 'px-6'}`}
+                            >
+                                {credentialContent}
+                            </section>
+                        </div>
+                    </section>
+                    {!isMobile && !isClrCredential && (
+                        <BoostDetailsSideBar
+                            credential={selectedCredential}
+                            categoryType={categoryType}
+                            verificationItems={detailVerificationItems}
+                            customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                            existingEndorsements={existingEndorsements}
+                            isEarnedBoost={isEarnedBoost}
+                            isClrChildCredential={isClrChildCredential}
+                            renderMethodCredential={credential as VC | UnsignedVC}
+                            isPreview={isPreview}
+                        />
+                    )}
+                </div>
+            </BoostFooterLayout>
         </IonPage>
     );
 };

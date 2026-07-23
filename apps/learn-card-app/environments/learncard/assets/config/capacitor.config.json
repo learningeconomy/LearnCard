@@ -3,10 +3,10 @@
 	"appName": "LearnCard",
 	"webDir": "build",
 	"bundledWebRuntime": false,
-	"android": {
-		"adjustMarginsForEdgeToEdge": "force"
-	},
 	"plugins": {
+		"SystemBars": {
+			"insetsHandling": "css"
+		},
 		"SplashScreen": {
 			"launchShowDuration": 6000,
 			"launchAutoHide": false,
