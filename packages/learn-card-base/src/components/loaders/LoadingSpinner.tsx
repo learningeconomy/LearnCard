@@ -22,7 +22,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
         <div className="inline-flex items-center justify-center" role="status" aria-label={label}>
             <span
                 aria-hidden="true"
-                className={`${sizeClasses[size]} animate-spin rounded-full border-grayscale-200 border-t-emerald-600`}
+                className={`${sizeClasses[size]} animate-spin rounded-full border-solid border-grayscale-200 border-t-emerald-600`}
             />
         </div>
     );
