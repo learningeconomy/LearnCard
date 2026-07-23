@@ -1,6 +1,21 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Tier 2: Browser Smoke Checks', () => {
+    test('tenant config edge function returns JSON', async ({ request }) => {
+        test.skip(
+            process.env.SMOKETEST_ENV === 'scouts',
+            'ScoutPass has no tenant config edge function'
+        );
+
+        const response = await request.get('/__tenant-config');
+
+        expect(response.status()).toBe(200);
+        expect(response.headers()['content-type']).toContain('application/json');
+
+        const config = (await response.json()) as { tenantId?: string };
+        expect(config.tenantId).toBe('learncard');
+    });
+
     test('app returns 200 and renders', async ({ page }) => {
         const response = await page.goto('/');
         expect(response?.status()).toBe(200);

@@ -846,27 +846,25 @@ jobs:
             # mechanism, so the deploy branch can be removed and `main` fully branch-protected.
             # --no-build: CI already built above; Netlify must not rebuild.
             #
-            # The deploy runs from a clean staging dir OUTSIDE the repo, not the app dir:
-            # inside the monorepo, netlify-cli's workspace detection sets a packagePath that
-            # desyncs the edge-function bundle output dir (buildDir + packagePath + .netlify)
-            # from the dir the uploader scans (workingDir + .netlify), so edge functions get
-            # bundled but silently dropped from the deploy. There is no CLI flag to disable
-            # the detection (--cwd is ignored when it equals process.cwd). A bare dir with
-            # only netlify.toml + edge-function sources + build output has no git root and
-            # no workspaces, so every path resolves to the same place.
+            # The deploy runs from a clean staging dir OUTSIDE the repo. The Netlify sites have
+            # `apps/<project>` configured as their UI base directory, and account settings are
+            # merged into netlify.toml even for CLI deploys. Mirror that path in the staging
+            # directory so online config resolution succeeds, while still avoiding monorepo
+            # workspace detection (which can desync the edge-function bundle and upload paths).
             - name: Deploy to Netlify
               working-directory: apps/${{ steps.vars.outputs.project_name }}
               run: |
-                  STAGE_DIR="$RUNNER_TEMP/netlify-deploy-${{ steps.vars.outputs.project_name }}"
-                  rm -rf "$STAGE_DIR"
+                  STAGE_ROOT="$RUNNER_TEMP/netlify-deploy-${{ steps.vars.outputs.project_name }}"
+                  STAGE_DIR="$STAGE_ROOT/apps/${{ steps.vars.outputs.project_name }}"
+                  rm -rf "$STAGE_ROOT"
                   mkdir -p "$STAGE_DIR"
-                  cp netlify.toml "$STAGE_DIR/"
+                  cp netlify.toml "$STAGE_ROOT/"
                   if [[ -d netlify ]]; then
                     cp -R netlify "$STAGE_DIR/netlify"
                   fi
                   cp -R build "$STAGE_DIR/build"
 
-                  cd "$STAGE_DIR"
+                  cd "$STAGE_ROOT"
                   # --debug: without it the CLI swallows config-resolution errors and
                   # silently retries offline, which drops siteInfo and surfaces as a
                   # misleading "Project not found".
@@ -878,9 +876,13 @@ jobs:
                     --site "${{ steps.vars.outputs.netlify_site_id }}" \
                     --message "CI deploy ${{ github.sha }}"
 
-                  if [[ -d netlify/edge-functions ]] && ! compgen -G '.netlify/edge-functions-dist/*' > /dev/null; then
-                    echo "::error::Edge functions were not bundled into the deploy (expected .netlify/edge-functions-dist to be populated)."
-                    exit 1
+                  if [[ -d "$STAGE_DIR/netlify/edge-functions" ]]; then
+                    ROOT_EDGE_BUNDLE="$STAGE_ROOT/.netlify/edge-functions-dist"
+                    APP_EDGE_BUNDLE="$STAGE_DIR/.netlify/edge-functions-dist"
+                    if ! compgen -G "$ROOT_EDGE_BUNDLE/*" > /dev/null && ! compgen -G "$APP_EDGE_BUNDLE/*" > /dev/null; then
+                      echo "::error::Edge functions were not bundled into the deploy (checked $ROOT_EDGE_BUNDLE and $APP_EDGE_BUNDLE)."
+                      exit 1
+                    fi
                   fi
               env:
                   NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
