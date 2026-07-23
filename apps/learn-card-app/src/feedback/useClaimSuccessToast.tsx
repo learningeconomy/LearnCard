@@ -28,7 +28,7 @@ export const useClaimSuccessToast = () => {
             type: ToastTypeEnum.Success,
             hasDismissButton: true,
         });
-    }, [feedbackEligible, presentToast]);
+    }, [privacyEligible, presentToast]);
 };
 
 export default useClaimSuccessToast;
