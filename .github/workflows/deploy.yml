@@ -867,7 +867,11 @@ jobs:
                   cp -R build "$STAGE_DIR/build"
 
                   cd "$STAGE_DIR"
+                  # --debug: without it the CLI swallows config-resolution errors and
+                  # silently retries offline, which drops siteInfo and surfaces as a
+                  # misleading "Project not found".
                   bunx netlify-cli@26 deploy \
+                    --debug \
                     --prod \
                     --no-build \
                     --dir "$STAGE_DIR/build" \
