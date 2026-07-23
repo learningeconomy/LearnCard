@@ -969,6 +969,7 @@
       "name": "@learncard/partner-connect",
       "version": "0.4.0",
       "dependencies": {
+        "@learncard/partner-connect-core": "workspace:*",
         "@learncard/types": "workspace:*",
       },
       "devDependencies": {
@@ -998,6 +999,19 @@
         "np": "^7.6.1",
         "size-limit": "^7.0.8",
         "typescript": "5.6.2",
+      },
+    },
+    "packages/partner-connect-core": {
+      "name": "@learncard/partner-connect-core",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@rollup/plugin-commonjs": "^22.0.2",
+        "@rollup/plugin-node-resolve": "^13.3.0",
+        "@types/node": "^18.19.64",
+        "rollup": "^2.80.0",
+        "rollup-plugin-dts": "^4.2.2",
+        "rollup-plugin-esbuild": "^4.9.1",
+        "typescript": "^5.4.5",
       },
     },
     "packages/plugins/ceramic": {
@@ -1792,6 +1806,7 @@
         "@learncard/expiration-plugin": "workspace:*",
         "@learncard/helpers": "workspace:*",
         "@learncard/learn-card-plugin": "workspace:*",
+        "@learncard/partner-connect-core": "workspace:*",
         "@learncard/types": "workspace:*",
         "@learncard/vc-plugin": "workspace:*",
         "@learncard/vc-templates-plugin": "workspace:*",
@@ -1812,6 +1827,7 @@
         "libsodium-wrappers": "^0.7.11",
         "lodash": "^4.17.21",
         "messagebird": "^4.0.1",
+        "mongodb": "^6.2.0",
         "multiformats": "^11.0.1",
         "mustache": "^4.2.0",
         "neo4j-driver": "5.18.0",
@@ -3760,6 +3776,8 @@
     "@learncard/openid4vc-plugin": ["@learncard/openid4vc-plugin@workspace:packages/plugins/openid4vc"],
 
     "@learncard/partner-connect": ["@learncard/partner-connect@workspace:packages/learn-card-partner-connect-sdk"],
+
+    "@learncard/partner-connect-core": ["@learncard/partner-connect-core@workspace:packages/partner-connect-core"],
 
     "@learncard/react": ["@learncard/react@workspace:packages/react-learn-card"],
 

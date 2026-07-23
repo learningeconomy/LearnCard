@@ -99,6 +99,64 @@ interface PartnerConnectOptions {
 }
 ```
 
+### From mock to App Store
+
+While mock mode is active, the SDK silently captures an app manifest in local storage
+(`{namespace}:manifests`) with the LearnCard surface your app actually uses:
+
+-   inline credential templates
+-   consent scopes
+-   permissions inferred from SDK calls
+-   launched feature paths, counter keys, learner-context usage, notifications
+
+Once the manifest becomes publishable (at least **1 inline template** or **2 distinct permissions**), mock mode shows a persistent, dismissible **Publish to LearnCard** card. The link opens:
+
+```text
+https://learncard.app/app-store/developer/submit?manifest=<base64url(JSON)>
+```
+
+You can also read the same data yourself:
+
+```typescript
+const manifest = learnCard.getCapturedManifest();
+const publishUrl = learnCard.getPublishUrl();
+```
+
+Configure the nudge with `mockOptions`:
+
+```typescript
+createPartnerConnect({
+    mock: 'auto',
+    mockOptions: {
+        publishPrompt: true, // default
+        publishOrigin: 'https://learncard.app', // default
+    },
+});
+```
+
+If the card is dismissed, that dismissal is persisted for 24 hours under
+`{namespace}:publish-dismissed-at:{fingerprint}`.
+
+#### Multiple apps on one origin
+
+If you run multiple apps on the same origin (for example, two local projects on
+`http://localhost:4321`), mock mode keeps a separate manifest for each app.
+By default it fingerprints the app from the **initial** `document.title`, so a
+single SPA stays in one slot even if route changes later update the title.
+
+If you want an explicit identity, pass `mockOptions.appId`:
+
+```typescript
+createPartnerConnect({
+    mock: 'auto',
+    mockOptions: {
+        appId: 'student-quest-dev',
+    },
+});
+```
+
+That fingerprint scopes both the captured manifest and the publish-nudge dismissal.
+
 ### Dynamic Origin Configuration
 
 The SDK uses a hierarchical approach to determine the active host origin:
@@ -403,6 +461,45 @@ if (response.alreadyClaimed) {
 }
 ```
 
+#### Inline credential templates (zero-config)
+
+You can also issue a credential from an inline template with no pre-configured host boost. The SDK validates the template and `templateData` locally before it posts anything to LearnCard, so invalid inputs fail fast with `TEMPLATE_INVALID` or `TEMPLATE_DATA_INVALID`.
+
+```typescript
+const response = await learnCard.sendCredential({
+    alias: 'course-complete',
+    template: {
+        name: 'Completed {{courseName}}',
+        description: 'Awarded for finishing {{courseName}}.',
+        achievementType: 'Course',
+        criteria: { narrative: 'Finished all modules' },
+    },
+    templateData: { courseName: 'Intro to Baking' },
+});
+
+console.log(response.credentialUri, response.templateVersion);
+```
+
+Inline templates are versioned by `alias`. Re-sending the same alias with the same canonical template keeps the same `templateVersion`; changing the template body under that alias bumps the version (`1`, `2`, `3`, ...).
+
+If you want to validate offline before issuing, use `validateCredentialTemplate`:
+
+```typescript
+const validation = learnCard.validateCredentialTemplate(
+    {
+        name: 'Completed {{courseName}}',
+        description: 'Awarded for finishing {{courseName}}.',
+        achievementType: 'Course',
+        criteria: { narrative: 'Finished all modules' },
+    },
+    { courseName: 'Intro to Baking' }
+);
+
+if (!validation.valid) {
+    console.error(validation.errors);
+}
+```
+
 ---
 
 ### `checkUserHasCredential(input)`
@@ -650,7 +747,7 @@ if (response.credential) {
 
 ---
 
-### `requestConsent(contractUri)`
+### `requestConsent(contractUri)` / `requestConsent(scopes)`
 
 Request user consent for permissions.
 
@@ -665,6 +762,18 @@ if (response.granted) {
     console.log('User denied consent');
 }
 ```
+
+Declarative scopes can be requested without a pre-created contract URI:
+
+```typescript
+const { granted } = await learnCard.requestConsent({
+    read: { credentialCategories: ['Achievement', 'Skill'], personalFields: ['name'] },
+    write: { credentialCategories: ['Achievement'] },
+    reason: 'Personalize your training plan',
+});
+```
+
+In standalone mock mode, calling `requestConsent()` without scopes or a contract URI will auto-grant but show a toast nudge suggesting you pass scopes for zero-setup production use.
 
 **Returns:** `{ granted: boolean }`
 

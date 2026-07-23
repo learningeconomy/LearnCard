@@ -1,6 +1,7 @@
 import React, { useMemo, useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useHistory } from 'react-router-dom';
+import type { ConsentRequest } from '@learncard/partner-connect-core';
 import {
     useIsLoggedIn,
     useWallet,
@@ -20,7 +21,7 @@ import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContrac
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
 import { ActionHandlers, AppEvent } from './useLearnCardPostMessage';
-import { createActionHandlers } from './useLearnCardPostMessage.handlers';
+import { createActionHandlers, IntegrationHint } from './useLearnCardPostMessage.handlers';
 import FullScreenConsentFlow from '../../pages/consentFlow/FullScreenConsentFlow';
 import sdkActivityStore from '../../stores/sdkActivityStore';
 import { publishWalletEvent } from '../../pages/pathways/events/walletEventBus';
@@ -61,6 +62,13 @@ interface UseLearnCardMessageHandlersOptions {
         priority?: string;
     }) => void;
     debug?: boolean;
+    onIntegrationHint?: (hint: IntegrationHint) => void;
+    /**
+     * When true, LAUNCH_FEATURE opens the feature in a new tab instead of
+     * navigating the host SPA away. Used by dev/preview surfaces (e.g. the
+     * publish workspace) where navigation would destroy the builder session.
+     */
+    launchFeaturesInNewTab?: boolean;
 }
 
 import { getLogger } from 'learn-card-base';
@@ -186,6 +194,8 @@ export function useLearnCardMessageHandlers({
     onCredentialIssued,
     onAppNotification,
     debug = false,
+    onIntegrationHint,
+    launchFeaturesInNewTab = false,
 }: UseLearnCardMessageHandlersOptions): ActionHandlers {
     const isLoggedIn = useIsLoggedIn();
     const { initWallet, storeAndAddVCToWallet } = useWallet();
@@ -385,6 +395,46 @@ export function useLearnCardMessageHandlers({
                 ?.contractUri || guideState?.config?.consentFlowConfig?.contractUri
         );
     };
+
+    const upsertScopedContract = useCallback(
+        async (scopes: ConsentRequest): Promise<string | undefined> => {
+            if (!appId) {
+                log('Scoped consent contract upsert skipped: appId not available');
+                return undefined;
+            }
+
+            const learnCard = await initWallet();
+
+            if (!learnCard) {
+                logError('Scoped consent contract upsert failed: wallet not initialized');
+                return undefined;
+            }
+
+            if (!learnCard.invoke.sendAppEvent) {
+                logError('Scoped consent contract upsert failed: sendAppEvent not available');
+                return undefined;
+            }
+
+            try {
+                const result = await learnCard.invoke.sendAppEvent(appId, {
+                    type: 'upsert-consent-contract',
+                    scopes,
+                });
+                const contractUri =
+                    typeof result.contractUri === 'string' ? result.contractUri : undefined;
+
+                if (!contractUri) {
+                    logError('Scoped consent contract upsert returned no contractUri', result);
+                }
+
+                return contractUri;
+            } catch (error) {
+                logError('Failed to upsert scoped consent contract:', error);
+                return undefined;
+            }
+        },
+        [appId, initWallet, log, logError]
+    );
 
     const normalizeLearnerContextOptions = useCallback(
         (options: LearnerContextRequestOptions = {}): LearnerContextRequestOptions => ({
@@ -751,11 +801,13 @@ export function useLearnCardMessageHandlers({
                     log('Consent requested for contract:', contractUri, options);
                     return showConsentFlow(contractUri, options);
                 },
+                upsertScopedContract,
                 getContractUri: () => launchConfig?.contractUri as string | undefined,
                 getIntegrationContractUri: async () => {
                     return getConfiguredContractUri();
                 },
                 prewarmLearnerContext,
+                onIntegrationHint,
 
                 // Credential handlers
                 showCredentialAcceptanceModal: async (credential: any) => {
@@ -1223,6 +1275,31 @@ export function useLearnCardMessageHandlers({
                 navigate: (path: string, params?: Record<string, string>) => {
                     log('Navigating to:', path, params);
                     const queryParams = params ? '?' + new URLSearchParams(params).toString() : '';
+
+                    if (launchFeaturesInNewTab) {
+                        // No 'noopener' feature: window.open returns null for
+                        // noopener windows EVEN ON SUCCESS (spec), which made the
+                        // popup-blocked fallback below also navigate in place.
+                        // The target is our own same-origin app, so omitting it is
+                        // safe and restores accurate block detection.
+                        const opened = window.open(
+                            `${window.location.origin}${path}${queryParams}`,
+                            '_blank'
+                        );
+
+                        // Iframe clicks don't grant the host user-activation, so
+                        // popup blockers may return null; fall back to in-place
+                        // navigation rather than silently doing nothing.
+                        if (!opened) {
+                            log('Popup blocked for feature launch; navigating in place:', path);
+                            history.push(path + queryParams);
+                            onNavigate?.();
+                        }
+
+                        sdkActivityStore.set.endActivity();
+                        return;
+                    }
+
                     history.push(path + queryParams);
 
                     // Call optional onNavigate callback (e.g., to close modal)
@@ -1606,7 +1683,21 @@ export function useLearnCardMessageHandlers({
                           };
                       }
                     : undefined,
-                getSyncStatus: async () => getPendingSyncStatus(await getConfiguredContractUri()),
+                // The SDK's host-presence probe (ambiguous localhost parents) gives
+                // GET_SYNC_STATUS only ~1500ms before falling back to mock mode, so
+                // this must answer fast: race the contract lookup (network fetch on
+                // cold cache) against a short deadline and fall back to the global
+                // sync view rather than blocking the response.
+                getSyncStatus: async () => {
+                    const contractUri = await Promise.race([
+                        getConfiguredContractUri().catch(() => undefined),
+                        new Promise<undefined>(resolve =>
+                            setTimeout(() => resolve(undefined), 300)
+                        ),
+                    ]);
+
+                    return getPendingSyncStatus(contractUri);
+                },
             }),
         [
             isLoggedIn,
@@ -1632,6 +1723,8 @@ export function useLearnCardMessageHandlers({
             normalizeLearnerContextOptions,
             prewarmLearnerContext,
             resolveLearnerContextCredentials,
+            upsertScopedContract,
+            launchFeaturesInNewTab,
         ]
     );
 

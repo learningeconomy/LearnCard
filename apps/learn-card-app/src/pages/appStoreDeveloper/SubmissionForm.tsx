@@ -19,6 +19,8 @@ import { ExitConfirmDialog } from './components/ExitConfirmDialog';
 import { PreviewConfirmDialog } from './components/PreviewConfirmDialog';
 import { AppPreviewModal } from './components/AppPreviewModal';
 import type { AppStoreListingCreate, ExtendedAppStoreListing } from './types';
+import type { CapturedAppManifest } from '@learncard/partner-connect-core';
+import { EmbedIframeModal } from '../launchPad/EmbedIframeModal';
 
 const STEPS = [
     {
@@ -45,6 +47,7 @@ const STEPS = [
 
 interface LocationState {
     listing?: ExtendedAppStoreListing;
+    capturedManifest?: CapturedAppManifest;
 }
 
 /**
@@ -282,14 +285,14 @@ const SubmissionForm: React.FC = () => {
         openPreviewModal();
     };
 
-    const saveDraft = async (): Promise<boolean> => {
+    const saveDraft = async (showSuccessScreen = true): Promise<string | null> => {
         if (!integrationId && !isEditMode) {
             setSubmitError('Please select an integration first');
-            return false;
+            return null;
         }
         if (!hasMinimumDataForDraft()) {
             setSubmitError('Please enter at least a display name');
-            return false;
+            return null;
         }
         setIsSavingDraft(true);
         setSubmitError(null);
@@ -333,8 +336,10 @@ const SubmissionForm: React.FC = () => {
             }
 
             setIsSavingDraft(false);
-            setIsDraftSaved(true);
-            return true;
+            if (showSuccessScreen) {
+                setIsDraftSaved(true);
+            }
+            return savedListingId;
         } catch (error) {
             setSubmitError(
                 error instanceof Error
@@ -342,13 +347,53 @@ const SubmissionForm: React.FC = () => {
                     : m['developerPortal.submissionForm.failedToSaveDraft']()
             );
             setIsSavingDraft(false);
-            return false;
+            return null;
         }
     };
 
     const handleSaveDraft = async () => {
-        const success = await saveDraft();
-        if (success) setTimeout(() => handleBackToDashboard(), 1500);
+        const savedId = await saveDraft(true);
+        if (savedId) setTimeout(() => handleBackToDashboard(), 1500);
+    };
+
+    const handleTestLive = async () => {
+        let currentListingId = listingId;
+        if (!currentListingId) {
+            const savedId = await saveDraft(false);
+            if (!savedId) return;
+            currentListingId = savedId;
+            history.replace(
+                `/app-store/developer/integrations/${integrationId}/apps/${savedId}`,
+                location.state
+            );
+        }
+
+        let parsedConfig: any = {};
+        try {
+            parsedConfig = formData.launch_config_json
+                ? JSON.parse(formData.launch_config_json)
+                : {};
+        } catch (e) {}
+
+        if (formData.launch_type === 'EMBEDDED_IFRAME' && parsedConfig.url) {
+            // ModalTypes.Right + hideButton, matching useAppListingLaunch: the default
+            // Center type collapses EmbedIframeModal's IonPage via `.ion-page-invisible`.
+            newModal(
+                <EmbedIframeModal
+                    embedUrl={parsedConfig.url}
+                    appId={formData.slug || currentListingId}
+                    appName={formData.display_name}
+                    launchConfig={parsedConfig}
+                    isInstalled={true}
+                />,
+                { hideButton: true },
+                { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+            );
+        } else {
+            setSubmitError(
+                'Test Live is only supported for Embedded Iframe apps with a valid URL.'
+            );
+        }
     };
 
     const handleSubmit = async () => {
@@ -531,11 +576,29 @@ const SubmissionForm: React.FC = () => {
                     )}
                     <div className="bg-white rounded-xl border border-gray-200 p-6 min-h-[450px]">
                         {currentStep === 1 && (
-                            <AppDetailsStep
-                                data={formData}
-                                onChange={handleFormChange}
-                                errors={errors}
-                            />
+                            <>
+                                {location.state?.capturedManifest && (
+                                    <div className="mb-6 p-4 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-3">
+                                        <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-emerald-800">
+                                                Pre-filled from your app
+                                            </p>
+                                            <p className="text-sm text-emerald-700 mt-0.5">
+                                                We've populated these fields based on what we
+                                                captured. You can edit them before submitting.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+                                <AppDetailsStep
+                                    data={formData}
+                                    onChange={handleFormChange}
+                                    errors={errors}
+                                />
+                            </>
                         )}
                         {currentStep === 2 && (
                             <LaunchTypeStep data={formData} onChange={handleFormChange} />
@@ -548,7 +611,12 @@ const SubmissionForm: React.FC = () => {
                                 onPreview={handlePreviewClick}
                             />
                         )}
-                        {currentStep === 4 && <ReviewStep data={formData} />}
+                        {currentStep === 4 && (
+                            <ReviewStep
+                                data={formData}
+                                capturedManifest={location.state?.capturedManifest}
+                            />
+                        )}
                     </div>
                     <div className="flex justify-between mt-6">
                         <button
@@ -600,25 +668,36 @@ const SubmissionForm: React.FC = () => {
                                 </button>
                             ) : (
                                 !isPendingReview && (
-                                    <button
-                                        onClick={handleSubmit}
-                                        disabled={isSubmitting || isSavingDraft}
-                                        className="flex items-center gap-2 px-5 py-2 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors disabled:opacity-50 min-w-[160px] justify-center"
-                                    >
-                                        {isSubmitting ? (
-                                            <>
-                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                                {m['developerPortal.submissionForm.submitting']()}
-                                            </>
-                                        ) : (
-                                            <>
-                                                {m[
-                                                    'developerPortal.components.partnerDashboard.submitForReview'
-                                                ]()}
-                                                <Send className="w-4 h-4" />
-                                            </>
-                                        )}
-                                    </button>
+                                    <>
+                                        <button
+                                            onClick={handleTestLive}
+                                            disabled={isSubmitting || isSavingDraft}
+                                            className="flex items-center gap-2 px-5 py-2 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
+                                        >
+                                            Test Live
+                                        </button>
+                                        <button
+                                            onClick={handleSubmit}
+                                            disabled={isSubmitting || isSavingDraft}
+                                            className="flex items-center gap-2 px-5 py-2 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors disabled:opacity-50 min-w-[160px] justify-center"
+                                        >
+                                            {isSubmitting ? (
+                                                <>
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                    {m[
+                                                        'developerPortal.submissionForm.submitting'
+                                                    ]()}
+                                                </>
+                                            ) : (
+                                                <>
+                                                    {m[
+                                                        'developerPortal.components.partnerDashboard.submitForReview'
+                                                    ]()}
+                                                    <Send className="w-4 h-4" />
+                                                </>
+                                            )}
+                                        </button>
+                                    </>
                                 )
                             )}
                         </div>

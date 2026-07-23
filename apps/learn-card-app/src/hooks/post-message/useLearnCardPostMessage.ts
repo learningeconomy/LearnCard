@@ -1,4 +1,5 @@
 import { useEffect, useCallback, useRef } from 'react';
+import type { ConsentRequest } from '@learncard/partner-connect-core';
 import type { AppEvent, SendCredentialEvent } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('use-learn-card-post-message');
@@ -67,6 +68,7 @@ export interface RequestIdentityPayload {
 
 export interface RequestConsentPayload {
     contractUri?: string;
+    scopes?: ConsentRequest;
     redirect?: boolean;
 }
 
