@@ -4,7 +4,7 @@ import BoostErrorsDisplay, {
     ErrorBoundaryFallback,
 } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 
-import { IonContent, IonPage, IonSpinner } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
 
 import { BrandingEnum, categoryMetadata, usePathQuery } from 'learn-card-base';
