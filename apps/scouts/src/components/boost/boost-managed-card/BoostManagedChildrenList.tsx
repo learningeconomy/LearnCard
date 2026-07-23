@@ -9,8 +9,7 @@ import { EmptyState } from '../boost-select-menu/NewBoostSelectMenu';
 import { IonRow, IonGrid, IonSpinner } from '@ionic/react';
 import BoostManagedCard from '../../../components/boost/boost-managed-card/BoostManagedCard';
 import BoostErrorsDisplay from '../../../components/boost/boostErrors/BoostErrorsDisplay';
-// @ts-ignore
-import HourGlass from '../../../assets/lotties/hourglass.json';
+import { CredentialListSkeleton } from 'learn-card-base/components/loaders/CredentialListSkeleton';
 import {
     CredentialCategoryEnum,
     BoostPageViewModeType,
@@ -25,7 +24,6 @@ import {
 } from 'learn-card-base';
 import { BoostQuery } from '@learncard/types';
 
-import Lottie from 'react-lottie-player';
 import NewBoostSelectMenu from '../boost-select-menu/NewBoostSelectMenuOld';
 import NewBoostSelectMenuCustomTypeButton from '../boost-select-menu/NewBoostSelectMenuCustomTypeButton';
 import {
@@ -102,12 +100,7 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
     });
 
     const openNewBoostSelector = () => {
-        newModal(
-            <NewBoostSelectMenu
-                handleCloseModal={() => closeModal()}
-                category={category}
-            />
-        );
+        newModal(<NewBoostSelectMenu handleCloseModal={() => closeModal()} category={category} />);
     };
 
     useEffect(() => {
@@ -154,7 +147,15 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
                         />
                     ))
             ) ?? [],
-        [managedBoosts, searchResults, category, viewMode, managedBoostsLoading, managedBoostsRefetch, defaultImg]
+        [
+            managedBoosts,
+            searchResults,
+            category,
+            viewMode,
+            managedBoostsLoading,
+            managedBoostsRefetch,
+            defaultImg,
+        ]
     );
 
     const handleRefetch = async () => {
@@ -186,16 +187,7 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
     return (
         <>
             {managedBoostsLoading && !boostError && (
-                <section className="loading-spinner-container flex items-center justify-center h-[80%] w-full ">
-                    <div className="max-w-[280px] mt-[40px]">
-                        <Lottie
-                            loop
-                            animationData={HourGlass}
-                            play
-                            style={{ width: '100%', height: '100%' }}
-                        />
-                    </div>
-                </section>
+                <CredentialListSkeleton viewMode={isCardView ? 'card' : 'list'} />
             )}
 
             {!managedBoostsLoading && !boostError && managedBoostsList && (

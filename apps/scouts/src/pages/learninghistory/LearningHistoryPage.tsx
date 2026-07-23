@@ -17,14 +17,12 @@ import {
     BrandingEnum,
     useGetBoosts,
     categoryMetadata,
+    CredentialListSkeleton,
 } from 'learn-card-base';
 
 import { usePathQuery } from 'learn-card-base';
 
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
-
-import Lottie from 'react-lottie-player';
-import HourGlass from '../../assets/lotties/hourglass.json';
 
 import BoostErrorsDisplay from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
@@ -122,18 +120,7 @@ const LearningHistoryPage: React.FC = () => {
                     <CurvedBackdropEl className="bg-emerald-300" />
                     {loading &&
                         activeTab === CredentialListTabEnum.Earned &&
-                        !earnedBoostsError && (
-                            <section className="relative loading-spinner-container flex items-center justify-center h-[80%] w-full ">
-                                <div className="max-w-[280px] mt-[-40px]">
-                                    <Lottie
-                                        loop
-                                        animationData={HourGlass}
-                                        play
-                                        style={{ width: '100%', height: '100%' }}
-                                    />
-                                </div>
-                            </section>
-                        )}
+                        !earnedBoostsError && <CredentialListSkeleton />}
                     {!loading &&
                         vcs?.length > 0 &&
                         activeTab === CredentialListTabEnum.Earned &&
@@ -161,18 +148,7 @@ const LearningHistoryPage: React.FC = () => {
 
                     {boostsLoading &&
                         activeTab === CredentialListTabEnum.Managed &&
-                        !managedBoostsError && (
-                            <section className="relative loading-spinner-container flex items-center justify-center h-[80%] w-full ">
-                                <div className="max-w-[280px] mt-[-40px]">
-                                    <Lottie
-                                        loop
-                                        animationData={HourGlass}
-                                        play
-                                        style={{ width: '100%', height: '100%' }}
-                                    />
-                                </div>
-                            </section>
-                        )}
+                        !managedBoostsError && <CredentialListSkeleton />}
                     {!boostsLoading &&
                         !managedBoostsError &&
                         boosts?.length > 0 &&

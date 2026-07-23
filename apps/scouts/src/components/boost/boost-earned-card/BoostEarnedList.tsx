@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useMemo } from 'react';
-import Lottie from 'react-lottie-player';
 
 import { useLoadingLine } from '../../../stores/loadingStore';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
@@ -8,7 +7,7 @@ import { searchCredentialsFromCache } from 'learn-card-base';
 import { IonRow, IonCol, IonGrid, IonSpinner } from '@ionic/react';
 import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEarnedCard';
 import BoostErrorsDisplay from '../../../components/boost/boostErrors/BoostErrorsDisplay';
-import HourGlass from '../../../assets/lotties/hourglass.json';
+import { CredentialListSkeleton } from 'learn-card-base/components/loaders/CredentialListSkeleton';
 
 import {
     CredentialCategoryEnum,
@@ -135,16 +134,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
     return (
         <>
             {credentialsLoading && !earnedBoostsError && (
-                <section className="loading-spinner-container flex items-center justify-center h-[80%] w-full ">
-                    <div className="max-w-[280px] mt-[-40px]">
-                        <Lottie
-                            loop
-                            animationData={HourGlass}
-                            play
-                            style={{ width: '100%', height: '100%' }}
-                        />
-                    </div>
-                </section>
+                <CredentialListSkeleton viewMode={isCardView ? 'card' : 'list'} />
             )}
             {!credentialsLoading &&
                 credentials &&

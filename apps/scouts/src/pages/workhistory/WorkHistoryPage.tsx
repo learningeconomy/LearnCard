@@ -16,13 +16,12 @@ import {
     VC_WITH_URI,
     BrandingEnum,
     categoryMetadata,
+    CredentialListSkeleton,
 } from 'learn-card-base';
 
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
 import { usePathQuery } from 'learn-card-base';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
-import Lottie from 'react-lottie-player';
-import HourGlass from '../../assets/lotties/hourglass.json';
 import BoostErrorsDisplay from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
 
@@ -117,16 +116,7 @@ const WorkHistoryPage: React.FC = () => {
                 <IonContent fullscreen className="job-history-page relative" color={'rose-400'}>
                     <CurvedBackdropEl className="bg-rose-300" />
                     {loading && activeTab === CredentialListTabEnum.Earned && !boostError && (
-                        <section className="relative loading-spinner-container flex items-center justify-center h-[80%] w-full ">
-                            <div className="max-w-[280px] mt-[-40px]">
-                                <Lottie
-                                    loop
-                                    animationData={HourGlass}
-                                    play
-                                    style={{ width: '100%', height: '100%' }}
-                                />
-                            </div>
-                        </section>
+                        <CredentialListSkeleton />
                     )}
                     {!loading &&
                         vcs &&
@@ -160,18 +150,7 @@ const WorkHistoryPage: React.FC = () => {
 
                     {boostsLoading &&
                         activeTab === CredentialListTabEnum.Managed &&
-                        !boostError && (
-                            <section className="relative loading-spinner-container flex items-center justify-center h-[80%] w-full ">
-                                <div className="max-w-[280px] mt-[-40px]">
-                                    <Lottie
-                                        loop
-                                        animationData={HourGlass}
-                                        play
-                                        style={{ width: '100%', height: '100%' }}
-                                    />
-                                </div>
-                            </section>
-                        )}
+                        !boostError && <CredentialListSkeleton />}
                     {!boostsLoading &&
                         boosts &&
                         !boostError &&

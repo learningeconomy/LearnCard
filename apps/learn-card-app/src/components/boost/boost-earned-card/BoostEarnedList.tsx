@@ -15,6 +15,7 @@ import {
     BoostPageViewMode,
     BoostPageViewModeType,
     searchCredentialsFromCache,
+    CredentialListSkeleton,
 } from 'learn-card-base';
 import {
     credentialCategoryToSubheaderType,
@@ -178,28 +179,19 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
 
     return (
         <>
-            {(credentialsLoading ||
-                (credentials?.length === 0 && !credentialsLoading && !searchActive)) &&
-                !boostError && (
-                    <section className="flex relative  min-h-[200px]  flex-col achievements-list-container pt-[10px] px-[20px] text-center justify-center">
-                        <CategoryEmptyPlaceholder category={category} />
-                        <div className="text-black mt-10">
-                            <strong>
-                                <span
-                                    className={`flex justify-center ${
-                                        credentialsLoading ? 'animate-pulse' : 'normal'
-                                    }`}
-                                >
-                                    {credentialsLoading ? (
-                                        <p className={`loader text-${textColor}`}></p>
-                                    ) : (
-                                        <p className="font-montserrat text-[14px] font-[700] text-grayscale-900">{`No ${title} yet.`}</p>
-                                    )}
-                                </span>
-                            </strong>
-                        </div>
-                    </section>
-                )}
+            {credentialsLoading && !boostError && (
+                <CredentialListSkeleton viewMode={isCardView ? 'card' : 'list'} />
+            )}
+            {credentials?.length === 0 && !credentialsLoading && !searchActive && !boostError && (
+                <section className="flex relative min-h-[200px] flex-col achievements-list-container pt-[10px] px-[20px] text-center justify-center">
+                    <CategoryEmptyPlaceholder category={category} />
+                    <div className="text-black mt-10">
+                        <strong>
+                            <p className="font-montserrat text-[14px] font-[700] text-grayscale-900">{`No ${title} yet.`}</p>
+                        </strong>
+                    </div>
+                </section>
+            )}
             {!credentialsLoading && !boostError && records && (
                 <>
                     <IonCol className="flex m-auto items-center flex-wrap w-full  achievements-list-container">
