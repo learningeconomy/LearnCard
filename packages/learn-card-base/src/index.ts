@@ -67,6 +67,7 @@ export * from './utils/pushUtilities';
 export * from './constants/redirects';
 export * from './constants/LCNWebhookEndpoints';
 export * from './constants/Networks';
+export * from './i18n';
 
 export * from './hooks/useWallet';
 export * from './hooks/useContract';

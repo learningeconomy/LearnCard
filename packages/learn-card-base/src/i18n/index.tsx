@@ -44,6 +44,50 @@ export const EN_DEFAULTS: Record<string, string> = {
     'boostFooter.accept': 'Accept',
 };
 
+/**
+ * The user's active language as a plain BCP-47 string, read from the same
+ * localStorage key the app's i18n writes (`i18n.language`). For non-React call
+ * sites (network mutations, WebSocket setup) that need to tell the backend
+ * which language to generate AI content in (LC-1901). Falls back to `'en'`.
+ */
+export const getActiveLocale = (): string => {
+    try {
+        if (typeof localStorage !== 'undefined') {
+            const raw = localStorage.getItem('i18n.language');
+            if (raw) {
+                // Strip anything that isn't a valid BCP-47 character (alphanumeric +
+                // hyphen) before this value is sent to the backend. A crafted
+                // localStorage entry — e.g. via XSS — must not be able to alter
+                // request parameters. An all-invalid value collapses to 'en'.
+                return raw.replace(/[^a-zA-Z0-9-]/g, '') || 'en';
+            }
+        }
+    } catch {
+        // localStorage may be unavailable or no manual choice may exist.
+    }
+
+    try {
+        const liveLocale =
+            typeof document !== 'undefined' ? document.documentElement?.lang : undefined;
+        if (liveLocale) return liveLocale.replace(/[^a-zA-Z0-9-]/g, '') || 'en';
+    } catch {
+        // document may be unavailable (native/SSR) — default to English.
+    }
+    return 'en';
+};
+
+/** Add the active UI locale to an AI service URL without unsafe string interpolation. */
+export const addActiveLocaleToUrl = (url: string): string => {
+    const parsedUrl = new URL(url);
+    parsedUrl.searchParams.set('locale', getActiveLocale());
+    return parsedUrl.toString();
+};
+
+/** Add the active UI locale to a WebSocket payload without mutating the input. */
+export const addActiveLocaleToPayload = <Payload extends object>(
+    payload: Payload
+): Payload & { locale: string } => ({ ...payload, locale: getActiveLocale() });
+
 /** Minimal `{var}` interpolation — no dependency. */
 const interpolate = (str: string, params?: Record<string, unknown>): string =>
     params

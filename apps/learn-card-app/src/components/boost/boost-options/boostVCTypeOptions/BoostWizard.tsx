@@ -26,6 +26,7 @@ import AiSessionLoader from '../../../new-ai-session/AiSessionLoader';
 import { useTheme } from '../../../../theme/hooks/useTheme';
 
 import * as m from '../../../../paraglide/messages.js';
+import { getLocale } from '../../../../paraglide/runtime.js';
 
 import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-wizard');
@@ -123,7 +124,7 @@ const BoostWizard: React.FC<BoostWizardProps> = ({ boostUserType }) => {
                 type,
                 skills,
                 narrative,
-            } = await wallet.invoke.generateBoostInfo(description);
+            } = await wallet.invoke.generateBoostInfo(description, getLocale());
 
             const [generatedImageUrl, generatedBackgroundUrl, generatedSkills] = await Promise.all([
                 (async () => {
