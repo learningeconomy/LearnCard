@@ -18,6 +18,12 @@ export interface SentimentStripProps {
     surface: FeedbackSurface;
     onAnswered?: (sentiment: FeedbackSentiment) => void;
     className?: string;
+    /**
+     * When false, unmounting without an answer does NOT count toward the
+     * ignore-mute backoff. Set for hosts that disappear on their own (e.g.
+     * auto-dismissing toasts) where unmount ≠ "user saw it and ignored it".
+     */
+    countUnmountAsIgnore?: boolean;
 }
 
 const SENTIMENT_OPTIONS: {
@@ -57,6 +63,7 @@ export const SentimentStrip: React.FC<SentimentStripProps> = ({
     surface,
     onAnswered,
     className = '',
+    countUnmountAsIgnore = true,
 }) => {
     const eligible = useFeedbackEligibility(surface);
     const { track } = useAnalytics();
@@ -68,24 +75,39 @@ export const SentimentStrip: React.FC<SentimentStripProps> = ({
     const [latched, setLatched] = useState(false);
     const [answered, setAnswered] = useState<FeedbackSentiment | null>(null);
     const shownAtRef = useRef<number | null>(null);
+    const shownRecordedRef = useRef(false);
     const answeredRef = useRef(false);
+    const ignoreTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
     useEffect(() => {
-        if (!eligible || latched) return;
+        // Ref (not state) guards the side effects so StrictMode's double
+        // effect invocation can't consume governor budget twice.
+        if (!eligible || shownRecordedRef.current) return;
 
+        shownRecordedRef.current = true;
         setLatched(true);
         shownAtRef.current = Date.now();
         feedbackGovernorStore.set.recordShown(surface);
         void track(AnalyticsEvents.FEEDBACK_PROMPT_SHOWN, { surface });
-    }, [eligible, latched, surface, track]);
+    }, [eligible, surface, track]);
 
     useEffect(() => {
+        // Ignore recording is deferred a tick and cancelled on remount so
+        // StrictMode's simulated unmount doesn't log a spurious ignore.
+        if (ignoreTimeoutRef.current) {
+            clearTimeout(ignoreTimeoutRef.current);
+            ignoreTimeoutRef.current = undefined;
+        }
+
         return () => {
-            if (shownAtRef.current !== null && !answeredRef.current) {
+            if (!countUnmountAsIgnore) return;
+            if (shownAtRef.current === null || answeredRef.current) return;
+
+            ignoreTimeoutRef.current = setTimeout(() => {
                 feedbackGovernorStore.set.recordIgnored(surface);
-            }
+            }, 0);
         };
-    }, [surface]);
+    }, [surface, countUnmountAsIgnore]);
 
     const handleSelect = useCallback(
         (sentiment: FeedbackSentiment) => {

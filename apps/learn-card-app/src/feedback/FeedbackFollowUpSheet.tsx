@@ -97,14 +97,33 @@ export const FeedbackFollowUpSheet: React.FC<FeedbackFollowUpSheetProps> = ({
         closeModal();
     }, [surface, sentiment, track, closeModal]);
 
+    const trackRef = useRef(track);
+    trackRef.current = track;
+    const dismissTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
     useEffect(() => {
+        // Mount-only effect (via refs) so re-renders and StrictMode's
+        // simulated unmount can't fire a spurious "dismissed" event; the
+        // real dismissal is deferred a tick and cancelled on remount.
+        if (dismissTimeoutRef.current) {
+            clearTimeout(dismissTimeoutRef.current);
+            dismissTimeoutRef.current = undefined;
+        }
+
         return () => {
-            if (!resolvedRef.current) {
+            if (resolvedRef.current) return;
+
+            dismissTimeoutRef.current = setTimeout(() => {
+                if (resolvedRef.current) return;
+
                 resolvedRef.current = true;
-                void track(AnalyticsEvents.FEEDBACK_FOLLOWUP_DISMISSED, { surface, sentiment });
-            }
+                void trackRef.current(AnalyticsEvents.FEEDBACK_FOLLOWUP_DISMISSED, {
+                    surface,
+                    sentiment,
+                });
+            }, 0);
         };
-    }, [surface, sentiment, track]);
+    }, [surface, sentiment]);
 
     const canSubmit = selected.length > 0 || note.trim().length > 0;
 

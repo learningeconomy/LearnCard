@@ -12,12 +12,16 @@ import type { FeedbackSurface } from '@analytics';
 import { canPromptForFeedback } from './feedbackGovernor';
 
 /**
- * Whether a feedback prompt may render on this surface right now.
- * Combines the privacy gate (child profiles and minors never see
- * prompts; users who disabled analytics never see prompts — their
- * answers couldn't be recorded anyway) with the frequency governor.
+ * Privacy half of the feedback gate: child profiles, minors (by DOB or
+ * server-side `isMinor` preference), and users who disabled analytics
+ * never see prompts — their answers couldn't be recorded anyway.
+ *
+ * Split out from `useFeedbackEligibility` so call sites that decide to
+ * prompt *later* (e.g. inside a claim-success callback) can pair this
+ * reactive privacy check with a call-time `canPromptForFeedback()`
+ * governor check, avoiding stale governor state captured at render.
  */
-export const useFeedbackEligibility = (surface: FeedbackSurface): boolean => {
+export const useFeedbackPrivacyEligibility = (): boolean => {
     const { currentLCNUser } = useGetCurrentLCNUser();
     const profileType = switchedProfileStore.use.profileType();
     const { data: preferences, isLoading } = useGetPreferencesForDid();
@@ -26,6 +30,7 @@ export const useFeedbackEligibility = (surface: FeedbackSurface): boolean => {
         if (isLoading) return false;
         if (profileType === 'child') return false;
         if (preferences?.analyticsEnabled === false) return false;
+        if (preferences?.isMinor === true) return false;
 
         const dob = currentLCNUser?.dob;
         if (dob) {
@@ -34,15 +39,27 @@ export const useFeedbackEligibility = (surface: FeedbackSurface): boolean => {
             if (age < getMinorAgeThreshold(currentLCNUser?.country)) return false;
         }
 
-        return canPromptForFeedback(surface);
+        return true;
     }, [
         isLoading,
         profileType,
         preferences?.analyticsEnabled,
+        preferences?.isMinor,
         currentLCNUser?.dob,
         currentLCNUser?.country,
-        surface,
     ]);
+};
+
+/**
+ * Whether a feedback prompt may render on this surface right now.
+ * Combines the privacy gate with the frequency governor. The governor
+ * check runs at render time — for deferred prompting (callbacks), use
+ * `useFeedbackPrivacyEligibility` + `canPromptForFeedback` at call time.
+ */
+export const useFeedbackEligibility = (surface: FeedbackSurface): boolean => {
+    const privacyEligible = useFeedbackPrivacyEligibility();
+
+    return privacyEligible && canPromptForFeedback(surface);
 };
 
 export default useFeedbackEligibility;
