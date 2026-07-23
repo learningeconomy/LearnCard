@@ -25,7 +25,16 @@ export const revokeCredentialReceived = async (
         .run();
 
     if (result.records.length > 0) {
-        await setCredentialBitstringStatus(credentialId, 'revocation', true);
+        const bitSet = await setCredentialBitstringStatus(credentialId, 'revocation', true);
+        if (!bitSet) {
+            // The relationship is marked revoked but the credential has no 'revocation'
+            // status-list entry, so the verifiable bit was NOT set. Holders relying purely
+            // on verifyCredential can't see the revocation. Surface it instead of failing
+            // silently (the authoritative relationship status still drives the UI).
+            console.warn(
+                `[revokeCredentialReceived] credential ${credentialId} has no verifiable 'revocation' status entry; bitstring bit not set`
+            );
+        }
     }
 
     return result.records.length > 0;
@@ -54,7 +63,15 @@ export const suspendCredentialReceived = async (
         .run();
 
     if (result.records.length > 0) {
-        await setCredentialBitstringStatus(credentialId, 'suspension', true);
+        const bitSet = await setCredentialBitstringStatus(credentialId, 'suspension', true);
+        if (!bitSet) {
+            // Relationship marked suspended but the credential has no 'suspension' status
+            // entry, so the verifiable bit was NOT set. The authoritative relationship
+            // status still drives the UI; log so the gap is visible.
+            console.warn(
+                `[suspendCredentialReceived] credential ${credentialId} has no verifiable 'suspension' status entry; bitstring bit not set`
+            );
+        }
     }
 
     return result.records.length > 0;
@@ -82,7 +99,12 @@ export const unsuspendCredentialReceived = async (
         .run();
 
     if (result.records.length > 0) {
-        await setCredentialBitstringStatus(credentialId, 'suspension', false);
+        const bitCleared = await setCredentialBitstringStatus(credentialId, 'suspension', false);
+        if (!bitCleared) {
+            console.warn(
+                `[unsuspendCredentialReceived] credential ${credentialId} has no verifiable 'suspension' status entry; bitstring bit not cleared`
+            );
+        }
     }
 
     return result.records.length > 0;
