@@ -22,10 +22,12 @@ const config: CapacitorConfig = {
     appName: 'LearnCard',
     webDir: 'build',
     bundledWebRuntime: false,
-    android: {
-        adjustMarginsForEdgeToEdge: 'force',
-    },
     plugins: {
+        SystemBars: {
+            // Capacitor injects --safe-area-inset-* and keeps them synchronized
+            // as Android switches between gesture and button navigation.
+            insetsHandling: 'css',
+        },
         SplashScreen: {
             launchShowDuration: 6000,
             launchAutoHide: false,
