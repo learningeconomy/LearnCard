@@ -144,6 +144,9 @@ import {
 } from '@cache/claim-links';
 import { getBlockedAndBlockedByIds, isRelationshipBlocked } from '@helpers/connection.helpers';
 import { getDidWeb, getManagedDidWeb, getProfileIdFromString } from '@helpers/did.helpers';
+import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { getNotificationMessage } from '@helpers/notificationMessages';
+import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import {
     setBoostAsParent,
     setProfileAsBoostAdmin,
@@ -158,7 +161,7 @@ import {
     removeProfileAsBoostAdmin,
     removeBoostUsesFramework,
 } from '@accesslayer/boost/relationships/delete';
-import { getDomainFromUri, getIdFromUri, getUriParts } from '@helpers/uri.helpers';
+import { constructUri, getDomainFromUri, getIdFromUri, getUriParts } from '@helpers/uri.helpers';
 import { updateBoostPermissions } from '@accesslayer/boost/relationships/update';
 import {
     EMPTY_PERMISSIONS,
@@ -176,7 +179,7 @@ import { removeConnectionsForBoost } from '@helpers/connection.helpers';
 import { issueToInbox } from '@helpers/inbox.helpers';
 import { findInboxServiceEndpoint } from '@helpers/federation.helpers';
 import { getDidWebLearnCard } from '@helpers/learnCard.helpers';
-import { SendOptions } from '@learncard/types';
+import { LCNNotificationTypeEnumValidator, SendOptions } from '@learncard/types';
 import {
     canViewerSeeFullBoostRecipientList,
     sanitizeBoostRecipientRecords,
@@ -1995,6 +1998,36 @@ export const boostsRouter = t.router({
             const { processRevokeHooks } = await import('@helpers/revoke-hooks.helpers');
             await processRevokeHooks(recipientProfile, credential);
 
+            // Notify the holder (fire-and-forget — must not fail the revoke)
+            try {
+                await addNotificationToQueue({
+                    type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_REVOKED,
+                    to: {
+                        did: getDidWeb(ctx.domain, resolvedRecipientProfileId),
+                        profileId: resolvedRecipientProfileId,
+                        ...(recipientProfile.notificationsWebhook && {
+                            notificationsWebhook: recipientProfile.notificationsWebhook,
+                        }),
+                    },
+                    from: {
+                        did: getDidWeb(ctx.domain, profile.profileId),
+                        profileId: profile.profileId,
+                        displayName: profile.displayName,
+                    },
+                    message: getNotificationMessage(
+                        boost.name ? 'credentialRevokedNamed' : 'credentialRevokedUnnamed',
+                        resolveRecipientLocale(recipientProfile),
+                        {
+                            credentialName: boost.name ?? undefined,
+                            issuer: profile.displayName ?? profile.profileId,
+                        }
+                    ),
+                    data: { vcUris: [constructUri('credential', credential.id, ctx.domain)] },
+                });
+            } catch (e) {
+                console.error('Failed to queue CREDENTIAL_REVOKED notification', e);
+            }
+
             return true;
         }),
 
@@ -2082,6 +2115,36 @@ export const boostsRouter = t.router({
                 });
             }
 
+            // Notify the holder (fire-and-forget — must not fail the suspend)
+            try {
+                await addNotificationToQueue({
+                    type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_SUSPENDED,
+                    to: {
+                        did: getDidWeb(ctx.domain, resolvedRecipientProfileId),
+                        profileId: resolvedRecipientProfileId,
+                        ...(recipientProfile.notificationsWebhook && {
+                            notificationsWebhook: recipientProfile.notificationsWebhook,
+                        }),
+                    },
+                    from: {
+                        did: getDidWeb(ctx.domain, profile.profileId),
+                        profileId: profile.profileId,
+                        displayName: profile.displayName,
+                    },
+                    message: getNotificationMessage(
+                        boost.name ? 'credentialSuspendedNamed' : 'credentialSuspendedUnnamed',
+                        resolveRecipientLocale(recipientProfile),
+                        {
+                            credentialName: boost.name ?? undefined,
+                            issuer: profile.displayName ?? profile.profileId,
+                        }
+                    ),
+                    data: { vcUris: [constructUri('credential', credential.id, ctx.domain)] },
+                });
+            } catch (e) {
+                console.error('Failed to queue CREDENTIAL_SUSPENDED notification', e);
+            }
+
             return true;
         }),
 
@@ -2158,6 +2221,40 @@ export const boostsRouter = t.router({
                     code: 'NOT_FOUND',
                     message: 'Credential is not suspended',
                 });
+            }
+
+            // Look up the recipient so we can forward their notifications webhook
+            // (parity with revoke/suspend), if they registered one.
+            const recipientProfile = await getProfileByProfileId(resolvedRecipientProfileId);
+
+            // Notify the holder (fire-and-forget — must not fail the unsuspend)
+            try {
+                await addNotificationToQueue({
+                    type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_UNSUSPENDED,
+                    to: {
+                        did: getDidWeb(ctx.domain, resolvedRecipientProfileId),
+                        profileId: resolvedRecipientProfileId,
+                        ...(recipientProfile?.notificationsWebhook && {
+                            notificationsWebhook: recipientProfile.notificationsWebhook,
+                        }),
+                    },
+                    from: {
+                        did: getDidWeb(ctx.domain, profile.profileId),
+                        profileId: profile.profileId,
+                        displayName: profile.displayName,
+                    },
+                    message: getNotificationMessage(
+                        boost.name ? 'credentialRestoredNamed' : 'credentialRestoredUnnamed',
+                        resolveRecipientLocale(recipientProfile),
+                        {
+                            credentialName: boost.name ?? undefined,
+                            issuer: profile.displayName ?? profile.profileId,
+                        }
+                    ),
+                    data: { vcUris: [constructUri('credential', credential.id, ctx.domain)] },
+                });
+            } catch (e) {
+                console.error('Failed to queue CREDENTIAL_UNSUSPENDED notification', e);
             }
 
             return true;

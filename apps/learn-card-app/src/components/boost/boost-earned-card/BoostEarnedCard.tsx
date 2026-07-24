@@ -51,6 +51,7 @@ import { VC, VerificationItem } from '@learncard/types';
 import { LCR } from 'learn-card-base/types/credential-records';
 import { ID_CARD_DISPLAY_TYPES } from 'learn-card-base/helpers/credentials/ids';
 import { getDefaultDisplayType } from '../boostHelpers';
+import { useCredentialStatus } from 'src/hooks/useCredentialStatus';
 
 type BoostEarnedCardProps = {
     credential?: VC;
@@ -121,6 +122,9 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
 
     const credential = resolvedCredential || _credential;
     const isBoost = credential && isBoostCredential(credential);
+
+    // Lazily verify this credential's revoked/suspended status (cached by URI, fail-open).
+    const lifecycleStatus = useCredentialStatus(credential, record?.uri);
 
     let cred = credential && unwrapBoostCredential(credential);
     const { credentialWithEdits } = useGetCredentialWithEdits(cred);
@@ -275,6 +279,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             issuerOverride: issuerName,
             issueeOverride: issueeName,
             verificationItems,
+            lifecycleStatus,
             handleCloseModal: () => closeModal(),
             handleShareBoost: () => presentShareBoostLink(),
             onDotsClick: () => {
@@ -328,6 +333,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             issuerOverride: issuerName,
             issueeOverride: issueeName,
             verificationItems,
+            lifecycleStatus,
             handleShareBoost: () => presentShareBoostLink(),
             handleCloseModal: () => closeModal(),
             subjectImageComponent: subjectProfileImageElement,
@@ -409,6 +415,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         return (
             <ErrorBoundary fallback={<div>Something went wrong</div>}>
                 <BoostGenericCardWrapper
+                    lifecycleStatus={lifecycleStatus}
                     innerOnClick={
                         cred && !showSkeleton
                             ? () => {
@@ -498,6 +505,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     }`}
                 >
                     <BoostGenericCardWrapper
+                        lifecycleStatus={lifecycleStatus}
                         innerOnClick={() => handleClick('innerOnClick')}
                         onCheckClick={() => handleClick('onCheckClick')}
                         showChecked={showChecked}
@@ -574,6 +582,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                 className={`flex justify-center items-center relative ${isCardView ? '' : 'p-0'}`}
             >
                 <BoostGenericCardWrapper
+                    lifecycleStatus={lifecycleStatus}
                     innerOnClick={
                         cred && !showSkeleton
                             ? () => {

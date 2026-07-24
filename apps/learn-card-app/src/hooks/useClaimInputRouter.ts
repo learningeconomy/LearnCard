@@ -28,10 +28,33 @@ export type ClaimInputSource = 'camera' | 'paste' | 'image_upload' | 'clipboard_
 
 export type ClaimInputRouter = (
     input: string,
-    source: ClaimInputSource
+    source?: ClaimInputSource
 ) => Promise<ClaimRouteResult>;
 
 const INTERACTION_URL_TIMEOUT_MS = 10_000;
+
+const getSameOriginInteractionPath = (url: string): string | null => {
+    if (typeof window === 'undefined') return null;
+
+    try {
+        const parsed = new URL(url);
+        if (parsed.origin !== window.location.origin) return null;
+        return parsed.pathname + parsed.search + parsed.hash;
+    } catch {
+        return null;
+    }
+};
+
+const getSafeWebsiteUrl = (value: unknown): string | null => {
+    if (typeof value !== 'string') return null;
+
+    try {
+        const url = new URL(value);
+        return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null;
+    } catch {
+        return null;
+    }
+};
 
 const fetchWithTimeout = async (
     url: string,
@@ -50,9 +73,9 @@ const fetchWithTimeout = async (
 /**
  * The structured outcome of routing a claim input. Returned by the
  * function `useClaimInputRouter()` produces. Consumers branch on
- * `kind`: 'routed' / 'open_contact' / 'open_claim' / 'open_website'
- * are success states; 'unrecognized' is the only failure path the
- * caller has to surface.
+ * `kind`: 'routed' / 'open_contact' / 'open_claim_boost' /
+ * 'open_claim_vc' / 'open_website' are success states;
+ * 'unrecognized' is the only failure path the caller has to surface.
  */
 export type ClaimRouteResult =
     | { kind: 'routed'; surface: ClaimSurface; path: string }
@@ -75,9 +98,10 @@ const SURFACE_TO_PATH: Record<ClaimSurface, (parsed: ParsedClaimInput) => string
     oid4vci: parsed =>
         parsed.kind === 'oid4vci' ? `/oid4vci?offer=${encodeURIComponent(parsed.offerUrl)}` : null,
     oid4vp: parsed =>
-        parsed.kind === 'oid4vp' ? `/oid4vp?request=${encodeURIComponent(parsed.requestUrl)}` : null,
-    'vc-api-custom-scheme': parsed =>
-        parsed.kind === 'vc-api-custom-scheme' ? parsed.path : null,
+        parsed.kind === 'oid4vp'
+            ? `/oid4vp?request=${encodeURIComponent(parsed.requestUrl)}`
+            : null,
+    'vc-api-custom-scheme': parsed => (parsed.kind === 'vc-api-custom-scheme' ? parsed.path : null),
     'lcw-https': parsed => (parsed.kind === 'lcw-https' ? parsed.path : null),
     'boost-claim': () => null,
     'connection-request': () => null,
@@ -108,13 +132,13 @@ export const useClaimInputRouter = ({
     const { validateTextVC } = useUploadVcFromText();
     const { track } = useAnalytics();
 
-    const parserConfig = useMemo<ParseClaimInputConfig>(
-        () => resolveTenantParseConfig(),
-        []
-    );
+    const parserConfig = useMemo<ParseClaimInputConfig>(() => resolveTenantParseConfig(), []);
 
     return useCallback(
-        async (input: string, source: ClaimInputSource = defaultSource): Promise<ClaimRouteResult> => {
+        async (
+            input: string,
+            source: ClaimInputSource = defaultSource
+        ): Promise<ClaimRouteResult> => {
             const parsed = parseClaimInput(input, parserConfig);
 
             const emit = (result: ClaimRouteResult) => {
@@ -122,8 +146,7 @@ export const useClaimInputRouter = ({
                     source,
                     parsed_kind: parsed.kind,
                     outcome: result.kind,
-                    unrecognized_reason:
-                        result.kind === 'unrecognized' ? result.reason : undefined,
+                    unrecognized_reason: result.kind === 'unrecognized' ? result.reason : undefined,
                     surface: result.kind === 'routed' ? result.surface : undefined,
                 });
                 return result;
@@ -178,12 +201,25 @@ export const useClaimInputRouter = ({
             }
 
             if (parsed.kind === 'interaction-url') {
+                const sameOriginPath = getSameOriginInteractionPath(parsed.url);
+                if (sameOriginPath) {
+                    history.push(sameOriginPath);
+                    return emit({ kind: 'routed', surface: 'interaction', path: sameOriginPath });
+                }
+
                 try {
                     const response = await fetchWithTimeout(
                         parsed.url,
                         { headers: { Accept: 'application/json' } },
                         INTERACTION_URL_TIMEOUT_MS
                     );
+                    if (response.ok === false) {
+                        return emit({
+                            kind: 'unrecognized',
+                            reason: 'interaction_unavailable',
+                            raw: input,
+                        });
+                    }
                     const interactionData = await response.json();
                     if (interactionData?.protocols?.openid4vci) {
                         const path = `/oid4vci?offer=${encodeURIComponent(
@@ -210,16 +246,25 @@ export const useClaimInputRouter = ({
                             path,
                         });
                     }
-                    if (interactionData?.protocols?.website) {
+                    const websiteUrl = getSafeWebsiteUrl(interactionData?.protocols?.website);
+                    if (websiteUrl) {
                         return emit({
                             kind: 'open_website',
-                            url: interactionData.protocols.website,
+                            url: websiteUrl,
                         });
                     }
                 } catch {
-                    // fall through
+                    return emit({
+                        kind: 'unrecognized',
+                        reason: 'interaction_unavailable',
+                        raw: input,
+                    });
                 }
-                return emit({ kind: 'unrecognized', reason: 'unknown_format', raw: input });
+                return emit({
+                    kind: 'unrecognized',
+                    reason: 'interaction_unavailable',
+                    raw: input,
+                });
             }
 
             return emit({ kind: 'unrecognized', reason: 'unknown_format', raw: input });

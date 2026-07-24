@@ -120,16 +120,40 @@
                 "description": "If you have raw JSON credentials, you can add them to your wallet here."
             },
             "title": "Build My {{brand}}",
-            "progress": "{{percent}}% optimized",
             "processing": "Processing documents…",
-            "stepsCompleted": "<0>{{completed}}</0> of <1>{{total}}</1> Steps Completed",
             "pendingReview": "{{count}} credential(s) ready for review",
+            "helper": "Add a resume, certificate, transcript, or diploma.",
+            "actionsTitle": "Choose what to add next",
+            "actionsDescription": "Pick the document that fits best, then we’ll open the right upload flow.",
+            "managerDescription": "Add the document that fits best.",
             "titleMarkup": "Build My <0>{{brand}}</0>",
+            "intake": {
+                "title": "Add something you received",
+                "description": "Use a QR code or claim link from an issuer or another app.",
+                "scanTitle": "Scan QR Code",
+                "scanDescription": "Open your camera to scan a credential QR code.",
+                "uploadTitle": "Upload QR Code",
+                "uploadDescription": "Upload an image of a credential QR code from your device.",
+                "linkTitle": "Use a Claim Link",
+                "linkDescription": "Paste a LearnCard or external claim link to continue."
+            },
+            "uploadError": {
+                "title": "Upload Failed",
+                "partialTitle": "Some Files Failed",
+                "singleMessage": "We could not upload this file. Please check your connection and try again.",
+                "multipleMessage": "We could not upload these files. Please check your connection and try again.",
+                "partialSingleMessage": "1 file could not be uploaded. You can continue with the remaining files.",
+                "partialMultipleMessage": "{{count}} files could not be uploaded. You can continue with the remaining files."
+            },
             "steps": {
                 "addResume": "Add Resume",
-                "addCertificates": "Add Certificates",
+                "addCertificates": "Add Certificate",
                 "addTranscript": "Add Transcript",
                 "addDiploma": "Add Diploma",
+                "resumeDescription": "Best for work history, roles, and dates.",
+                "certificateDescription": "Best for training, courses, and earned credentials.",
+                "transcriptDescription": "Best for verified education history and coursework.",
+                "diplomaDescription": "Best for confirming degree completion and graduation.",
                 "processingResume": "Processing Resume…",
                 "processingCertificate": "Processing Certificate…",
                 "processingTranscript": "Processing Transcript…",
@@ -572,7 +596,9 @@
                 "sent": "Sent",
                 "claimed": "Claimed",
                 "expired": "Expired",
-                "notDelivered": "Not delivered"
+                "notDelivered": "Not delivered",
+                "revoked": "Revoked",
+                "suspended": "Suspended"
             },
             "title": {
                 "selfAdded": "You added {{article}} {{label}} to your passport",
@@ -580,7 +606,11 @@
                 "claimedBy": "{{label}} claimed by",
                 "expiredFor": "Expired {{label}} for",
                 "failedTo": "Couldn't deliver {{label}} to",
-                "sentTo": "You sent {{article}} {{label}} to"
+                "sentTo": "You sent {{article}} {{label}} to",
+                "receivedRevoked": "Your {{label}} was revoked",
+                "receivedSuspended": "Your {{label}} was suspended",
+                "revokedFor": "Revoked {{label}} for",
+                "suspendedFor": "Suspended {{label}} for"
             },
             "when": {
                 "earlier": "Earlier",
@@ -1310,7 +1340,6 @@
             "linkADevice": "Link a Device",
             "switchAccount": "Switch Account",
             "buildMyLearnCard": "Build My {{brand}}",
-            "stepsCompleted": "{{completed}} of {{total}}",
             "completeProfile": "Complete Profile",
             "settings": "Account Settings"
         },
@@ -1806,7 +1835,9 @@
         "okay": "Okay",
         "viewCredential": "View Credential",
         "loadingNotifications": "Loading Notifications...",
-        "refresh": "Refresh"
+        "refresh": "Refresh",
+        "restored": "Restored",
+        "unableToLoad": "Unable to load notification"
     },
     "share": {
         "addContact": "Add contact",
@@ -2044,7 +2075,10 @@
         },
         "paste": {
             "title": "Use a Claim Link",
+            "titleQr": "Upload a QR Code",
             "subtitle": "Paste a link or upload a QR",
+            "subtitleLink": "Paste a LearnCard or external claim link",
+            "subtitleQr": "Upload an image with a credential QR code",
             "linkHeading": "Got a credential link?",
             "linkDesc": "Paste it below to continue.",
             "checking": "Checking…",
@@ -2062,8 +2096,18 @@
                 "empty": "Paste a link or upload a QR code image to continue.",
                 "malformedUrl": "That doesn't look like a claim link. Try copying the whole link, starting with https://, openid-credential-offer://, or similar.",
                 "unknownScheme": "We don't recognize this kind of link yet. The link looks valid, but the format isn't supported.",
+                "emptyLink": "Paste a claim link to continue.",
+                "emptyQr": "Choose an image with a credential QR code to continue.",
+                "malformedUrlLink": "That doesn't look like a claim link. Copy the whole link and try again.",
+                "malformedUrlQr": "We found a QR code, but its link isn't valid. Try a different image.",
+                "unknownSchemeLink": "We don't recognize this kind of claim link yet.",
+                "unknownSchemeQr": "We found a QR code, but it doesn't use a supported credential format.",
                 "invalidVc": "That looks like a credential, but we couldn't read it. Ask the issuer for a fresh copy.",
-                "unknownFormat": "We couldn't make sense of that. Paste a claim link or upload a QR code image."
+                "interactionUnavailableLink": "We could not open that claim link. It may be unavailable or expired.",
+                "interactionUnavailableQr": "We found the QR code, but its credential is unavailable or expired.",
+                "unknownFormat": "We couldn't make sense of that. Paste a claim link or upload a QR code image.",
+                "unknownFormatLink": "We couldn't use that claim link. Check that you copied the full link and try again.",
+                "unknownFormatQr": "We found a QR code, but it doesn't contain a supported credential claim."
             }
         },
         "accept": {
@@ -2921,6 +2965,12 @@
         "common": {
             "close": "Close",
             "select": "Select"
+        },
+        "credential": {
+            "lifecycle": {
+                "revoked": "Revoked",
+                "suspended": "Suspended"
+            }
         }
     },
     "sdk": {
@@ -2950,7 +3000,14 @@
                 "doesNotExpire": "Does Not Expire",
                 "expired": "Expired",
                 "active": "Active",
-                "couldNotVerify": "Boost Credential could not be verified."
+                "couldNotVerify": "Boost Credential could not be verified.",
+                "suspended": "Suspended"
+            }
+        },
+        "credential": {
+            "lifecycle": {
+                "revoked": "Revoked",
+                "suspended": "Suspended"
             }
         }
     },

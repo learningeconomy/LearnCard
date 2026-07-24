@@ -120,16 +120,40 @@
                 "description": "إذا كان لديك بيانات اعتماد بصيغة JSON، يمكنك إضافتها إلى محفظتك هنا."
             },
             "title": "إنشاء {{brand}} الخاص بي",
-            "progress": "{{percent}}% محسّن",
             "processing": "جاري معالجة المستندات…",
-            "stepsCompleted": "<0>{{completed}}</0> من <1>{{total}}</1> خطوات مكتملة",
             "pendingReview": "{{count}} شهادة(شهادات) جاهزة للمراجعة",
+            "helper": "أضف سيرة ذاتية أو شهادة أو كشف درجات أو دبلوم.",
+            "actionsTitle": "اختر ما تريد إضافته بعد ذلك",
+            "actionsDescription": "اختر المستند الأنسب، وسنفتح مسار الرفع المناسب.",
+            "managerDescription": "أضف المستند الأنسب.",
             "titleMarkup": "إنشاء <0>{{brand}}</0> الخاص بي",
+            "intake": {
+                "title": "أضف شيئًا استلمته",
+                "description": "استخدم رمز QR أو رابط مطالبة من جهة إصدار أو تطبيق آخر.",
+                "scanTitle": "مسح رمز QR",
+                "scanDescription": "افتح الكاميرا لمسح رمز QR لبيانات اعتماد.",
+                "uploadTitle": "رفع رمز QR",
+                "uploadDescription": "ارفع صورة لرمز QR لبيانات اعتماد من جهازك.",
+                "linkTitle": "استخدام رابط مطالبة",
+                "linkDescription": "الصق رابط مطالبة من LearnCard أو رابط مطالبة خارجي للمتابعة."
+            },
+            "uploadError": {
+                "title": "فشل الرفع",
+                "partialTitle": "تعذّر رفع بعض الملفات",
+                "singleMessage": "تعذّر رفع هذا الملف. تحقق من اتصالك بالإنترنت وحاول مرة أخرى.",
+                "multipleMessage": "تعذّر رفع هذه الملفات. تحقق من اتصالك بالإنترنت وحاول مرة أخرى.",
+                "partialSingleMessage": "تعذّر رفع ملف واحد. يمكنك المتابعة باستخدام الملفات المتبقية.",
+                "partialMultipleMessage": "تعذّر رفع {{count}} ملفات. يمكنك المتابعة باستخدام الملفات المتبقية."
+            },
             "steps": {
                 "addResume": "إضافة سيرة ذاتية",
-                "addCertificates": "إضافة شهادات",
+                "addCertificates": "إضافة شهادة",
                 "addTranscript": "إضافة كشف درجات",
                 "addDiploma": "إضافة دبلوم",
+                "resumeDescription": "الأنسب للسجل المهني والأدوار والتواريخ.",
+                "certificateDescription": "الأنسب للتدريب والدورات وبيانات الاعتماد المكتسبة.",
+                "transcriptDescription": "الأنسب للسجل التعليمي الموثق والمقررات الدراسية.",
+                "diplomaDescription": "الأنسب لتأكيد إكمال الدرجة والتخرج.",
                 "processingResume": "جارٍ معالجة السيرة الذاتية…",
                 "processingCertificate": "جارٍ معالجة الشهادة…",
                 "processingTranscript": "جارٍ معالجة كشف الدرجات…",
@@ -572,7 +596,9 @@
                 "sent": "أُرسلت",
                 "claimed": "تمت المطالبة",
                 "expired": "منتهية الصلاحية",
-                "notDelivered": "لم تُسلَّم"
+                "notDelivered": "لم تُسلَّم",
+                "revoked": "ملغاة",
+                "suspended": "معلقة"
             },
             "title": {
                 "selfAdded": "أضفت {{label}} إلى جواز سفرك",
@@ -580,7 +606,11 @@
                 "claimedBy": "تمت المطالبة بـ{{label}} بواسطة",
                 "expiredFor": "انتهت صلاحية {{label}} لـ",
                 "failedTo": "تعذّر تسليم {{label}} إلى",
-                "sentTo": "أرسلت {{label}} إلى"
+                "sentTo": "أرسلت {{label}} إلى",
+                "receivedRevoked": "تم إلغاء {{label}} الخاصة بك",
+                "receivedSuspended": "تم تعليق {{label}} الخاصة بك",
+                "revokedFor": "تم إلغاء {{label}} لـ",
+                "suspendedFor": "تم تعليق {{label}} لـ"
             },
             "when": {
                 "earlier": "سابقًا",
@@ -1340,7 +1370,6 @@
             "linkADevice": "ربط جهاز",
             "switchAccount": "تبديل الحساب",
             "buildMyLearnCard": "ابنِ {{brand}} الخاص بي",
-            "stepsCompleted": "{{completed}} من {{total}}",
             "completeProfile": "إكمال الملف الشخصي",
             "settings": "إعدادات الحساب"
         },
@@ -1806,7 +1835,9 @@
         "okay": "حسناً",
         "viewCredential": "عرض الشهادة",
         "loadingNotifications": "جاري تحميل الإشعارات...",
-        "refresh": "تحديث"
+        "refresh": "تحديث",
+        "restored": "تمت الاستعادة",
+        "unableToLoad": "تعذر تحميل الإشعار"
     },
     "share": {
         "addContact": "إضافة جهة اتصال",
@@ -2350,7 +2381,10 @@
         },
         "paste": {
             "title": "استخدام رابط مطالبة",
+            "titleQr": "رفع رمز QR",
             "subtitle": "الصق رابطًا أو ارفع رمز QR",
+            "subtitleLink": "الصق رابط مطالبة من LearnCard أو رابط مطالبة خارجي",
+            "subtitleQr": "ارفع صورة تحتوي على رمز QR لبيانات اعتماد",
             "linkHeading": "هل لديك رابط بيانات اعتماد؟",
             "linkDesc": "الصقه أدناه للمتابعة.",
             "checking": "جارٍ التحقق…",
@@ -2368,8 +2402,18 @@
                 "empty": "الصق رابطًا أو ارفع صورة رمز QR للمتابعة.",
                 "malformedUrl": "هذا لا يبدو كرابط مطالبة. حاول نسخ الرابط بالكامل، بدءًا من https:// أو openid-credential-offer:// أو ما شابه.",
                 "unknownScheme": "لا نتعرّف على هذا النوع من الروابط بعد. يبدو الرابط صالحًا، لكن التنسيق غير مدعوم.",
+                "emptyLink": "الصق رابط مطالبة للمتابعة.",
+                "emptyQr": "اختر صورة تحتوي على رمز QR لبيانات اعتماد للمتابعة.",
+                "malformedUrlLink": "هذا لا يبدو كرابط مطالبة. انسخ الرابط بالكامل وحاول مرة أخرى.",
+                "malformedUrlQr": "عثرنا على رمز QR، لكن رابطه غير صالح. جرّب صورة أخرى.",
+                "unknownSchemeLink": "لا نتعرّف على هذا النوع من روابط المطالبة بعد.",
+                "unknownSchemeQr": "عثرنا على رمز QR، لكنه لا يستخدم تنسيق بيانات اعتماد مدعومًا.",
                 "invalidVc": "يبدو هذا كبيانات اعتماد، لكن لم نتمكن من قراءتها. اطلب نسخة جديدة من الجهة المُصدِرة.",
-                "unknownFormat": "لم نتمكن من فهم ذلك. الصق رابط مطالبة أو ارفع صورة رمز QR."
+                "interactionUnavailableLink": "تعذّر فتح رابط المطالبة. قد يكون غير متاح أو منتهي الصلاحية.",
+                "interactionUnavailableQr": "عثرنا على رمز QR، لكن بيانات الاعتماد الخاصة به غير متاحة أو منتهية الصلاحية.",
+                "unknownFormat": "لم نتمكن من فهم ذلك. الصق رابط مطالبة أو ارفع صورة رمز QR.",
+                "unknownFormatLink": "تعذّر استخدام رابط المطالبة. تأكد من نسخ الرابط بالكامل وحاول مرة أخرى.",
+                "unknownFormatQr": "عثرنا على رمز QR، لكنه لا يحتوي على مطالبة بيانات اعتماد مدعومة."
             }
         },
         "accept": {
@@ -2912,6 +2956,12 @@
         "common": {
             "close": "إغلاق",
             "select": "تحديد"
+        },
+        "credential": {
+            "lifecycle": {
+                "revoked": "ملغاة",
+                "suspended": "معلقة"
+            }
         }
     },
     "sdk": {
@@ -2941,7 +2991,14 @@
                 "doesNotExpire": "لا تنتهي صلاحيته",
                 "expired": "منتهي الصلاحية",
                 "active": "نشط",
-                "couldNotVerify": "تعذّر التحقق من بيان اعتماد Boost."
+                "couldNotVerify": "تعذّر التحقق من بيان اعتماد Boost.",
+                "suspended": "معلق"
+            }
+        },
+        "credential": {
+            "lifecycle": {
+                "revoked": "ملغاة",
+                "suspended": "معلقة"
             }
         }
     },

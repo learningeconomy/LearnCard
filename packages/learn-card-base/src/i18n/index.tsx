@@ -35,6 +35,8 @@ export const EN_DEFAULTS: Record<string, string> = {
     'verification.unknownIssuer': 'Unknown Issuer',
     'verification.appIssuer': 'App Issuer',
     'verification.untrustedIssuer': 'Untrusted Issuer',
+    'credential.lifecycle.revoked': 'Revoked',
+    'credential.lifecycle.suspended': 'Suspended',
     'boostFooter.close': 'Close',
     'boostFooter.back': 'Back',
     'boostFooter.details': 'Details',
