@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useMemo } from 'react';
-import Lottie from 'react-lottie-player';
 
 import { useLoadingLine } from '../../../stores/loadingStore';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
@@ -8,7 +7,7 @@ import { searchCredentialsFromCache } from 'learn-card-base';
 import { IonRow, IonCol, IonGrid, IonSpinner } from '@ionic/react';
 import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEarnedCard';
 import BoostErrorsDisplay from '../../../components/boost/boostErrors/BoostErrorsDisplay';
-import HourGlass from '../../../assets/lotties/hourglass.json';
+import { CredentialListSkeleton } from 'learn-card-base/components/loaders/CredentialListSkeleton';
 
 import {
     CredentialCategoryEnum,
@@ -53,6 +52,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
         data: records,
         isLoading: credentialsLoading,
         isFetching: credentialsFetching,
+        isFetchingNextPage,
         hasNextPage,
         fetchNextPage,
         refetch: earnedBoostsRefetch,
@@ -80,7 +80,13 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
     const noResultsLineColor =
         SubheaderContentType[credentialCategoryToSubheaderType(category)].bgColor;
 
-    const credentialsBackgroundFetching = credentialsFetching && !credentialsLoading;
+    const hasCredentialRecords =
+        records?.pages?.some(page => (page?.records?.length ?? 0) > 0) ?? false;
+    const showSkeleton =
+        !earnedBoostsError &&
+        (credentialsLoading || (credentialsFetching && !hasCredentialRecords));
+    const credentialsBackgroundFetching =
+        credentialsFetching && !credentialsLoading && !isFetchingNextPage && hasCredentialRecords;
 
     useLoadingLine(credentialsBackgroundFetching);
 
@@ -134,19 +140,8 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
 
     return (
         <>
-            {credentialsLoading && !earnedBoostsError && (
-                <section className="loading-spinner-container flex items-center justify-center h-[80%] w-full ">
-                    <div className="max-w-[280px] mt-[-40px]">
-                        <Lottie
-                            loop
-                            animationData={HourGlass}
-                            play
-                            style={{ width: '100%', height: '100%' }}
-                        />
-                    </div>
-                </section>
-            )}
-            {!credentialsLoading &&
+            {showSkeleton && <CredentialListSkeleton viewMode={isCardView ? 'card' : 'list'} />}
+            {!showSkeleton &&
                 credentials &&
                 credentials?.length === 0 &&
                 !earnedBoostsError &&
@@ -164,7 +159,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
                         </p>
                     </section>
                 )}
-            {!credentialsLoading && !boostError && records && (
+            {!showSkeleton && !boostError && records && (
                 <>
                     <IonCol className="flex m-auto items-center flex-wrap w-full  achievements-list-container">
                         {isCardView && (
@@ -183,7 +178,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
                                 <div role="presentation" ref={infiniteScrollRef} />
                             </>
                         )}
-                        {credentialsFetching && (
+                        {isFetchingNextPage && (
                             <div className="w-full flex items-center justify-center">
                                 <IonSpinner
                                     name="crescent"

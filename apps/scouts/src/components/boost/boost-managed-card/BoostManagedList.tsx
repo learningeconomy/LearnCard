@@ -9,8 +9,7 @@ import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore'
 import { IonRow, IonCol, IonGrid, IonSpinner } from '@ionic/react';
 import BoostManagedCard from '../../../components/boost/boost-managed-card/BoostManagedCard';
 import BoostErrorsDisplay from '../../../components/boost/boostErrors/BoostErrorsDisplay';
-// @ts-ignore
-import HourGlass from '../../../assets/lotties/hourglass.json';
+import { CredentialListSkeleton } from 'learn-card-base/components/loaders/CredentialListSkeleton';
 import {
     CredentialCategoryEnum,
     BoostPageViewModeType,
@@ -24,7 +23,6 @@ import {
 } from 'learn-card-base';
 
 import NewBoostButton from 'learn-card-base/components/boost/NewBoostButton';
-import Lottie from 'react-lottie-player';
 import NewBoostSelectMenu from '../boost-select-menu/NewBoostSelectMenuOld';
 import {
     credentialCategoryToSubheaderType,
@@ -78,9 +76,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
     ]);
 
     const presentNewBoostSelector = () => {
-        newModal(
-            <NewBoostSelectMenu handleCloseModal={() => closeModal()} category={category} />
-        );
+        newModal(<NewBoostSelectMenu handleCloseModal={() => closeModal()} category={category} />);
     };
 
     useEffect(() => {
@@ -158,16 +154,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
     return (
         <>
             {managedBoostsLoading && !boostError && (
-                <section className="loading-spinner-container flex items-center justify-center h-[80%] w-full ">
-                    <div className="max-w-[280px] mt-[-40px]">
-                        <Lottie
-                            loop
-                            animationData={HourGlass}
-                            play
-                            style={{ width: '100%', height: '100%' }}
-                        />
-                    </div>
-                </section>
+                <CredentialListSkeleton viewMode={isCardView ? 'card' : 'list'} />
             )}
 
             {!managedBoostsLoading && !boostError && managedBoostsList && (

@@ -38,7 +38,7 @@ import {
 import { UnsignedVC, VC } from '@learncard/types';
 
 import PurpGhost from '../../../assets/lotties/purpghost.json';
-import HourGlass from '../../../assets/lotties/hourglass.json';
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 
 const PATH_TO_CATEGORY = {
     learninghistory: BoostCategoryOptionsEnum.learningHistory,
@@ -171,12 +171,7 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
                 <IonContent className="w-full h-full  bg-white">
                     <div className="flex flex-col w-full h-full items-center justify-center  bg-white">
                         <div className="max-w-[150px]">
-                            <Lottie
-                                loop
-                                animationData={HourGlass}
-                                play
-                                style={{ width: '100%', height: '100%' }}
-                            />
+                            <LoadingSpinner />
                         </div>
                     </div>
                 </IonContent>
@@ -249,12 +244,7 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
                             {boostsLoading && (
                                 <div className="flex flex-col w-full h-full items-center justify-center">
                                     <div className="max-w-[150px]">
-                                        <Lottie
-                                            loop
-                                            animationData={HourGlass}
-                                            play
-                                            style={{ width: '100%', height: '100%' }}
-                                        />
+                                        <LoadingSpinner />
                                     </div>
                                 </div>
                             )}

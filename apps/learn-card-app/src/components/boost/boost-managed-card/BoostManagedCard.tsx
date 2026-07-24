@@ -6,8 +6,8 @@ import useBoost from '../hooks/useBoost';
 import useManagedBoost from 'apps/learn-card-app/src/hooks/useManagedBoost';
 
 import { IonCol } from '@ionic/react';
-import Lottie from 'react-lottie-player';
-const HourGlass = '/lotties/hourglass.json';
+
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import { BoostSmallCard } from '@learncard/react';
 import { ErrorBoundary } from 'react-error-boundary';
 import FamilyCard from '../../familyCMS/FamilyCard/FamilyCard';
@@ -173,7 +173,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
         customBody = (
             <div className="relative w-full text-center flex flex-col items-center justify-center">
                 <div className="max-w-[50px]">
-                    <Lottie loop path={HourGlass} play style={{ width: '100%', height: '100%' }} />
+                    <LoadingSpinner />
                 </div>
             </div>
         );

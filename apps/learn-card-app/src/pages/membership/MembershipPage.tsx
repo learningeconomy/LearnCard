@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Lottie from 'react-lottie-player';
 import { ErrorBoundary } from 'react-error-boundary';
 import BoostErrorsDisplay, {
     ErrorBoundaryFallback,
@@ -7,7 +6,6 @@ import BoostErrorsDisplay, {
 
 import { IonContent, IonPage } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
-const HourGlass = '/lotties/hourglass.json';
 
 import { categoryMetadata, useGetBoosts, usePathQuery } from 'learn-card-base';
 import {
@@ -19,6 +17,7 @@ import {
     useGetCredentialList,
     useGetCredentialCount,
     BoostCategoryOptionsEnum,
+    CredentialListSkeleton,
 } from 'learn-card-base';
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
 import BoostEarnedIDCard from '../../components/boost/boost-earned-card/BoostEarnedIDCard';
@@ -129,18 +128,7 @@ const MembershipPage: React.FC = () => {
                     <div className="w-full flex items-center justify-center mt-8">
                         {credentialsLoading &&
                             activeTab === CredentialListTabEnum.Earned &&
-                            !boostError && (
-                                <section className="loading-spinner-container flex items-center justify-center h-[80%] w-full ">
-                                    <div className="max-w-[280px] mt-[-40px]">
-                                        <Lottie
-                                            loop
-                                            path={HourGlass}
-                                            play
-                                            style={{ width: '100%', height: '100%' }}
-                                        />
-                                    </div>
-                                </section>
-                            )}
+                            !boostError && <CredentialListSkeleton />}
                         {!credentialsLoading &&
                             !boostError &&
                             records &&
@@ -165,18 +153,7 @@ const MembershipPage: React.FC = () => {
 
                         {boostsLoading &&
                             activeTab === CredentialListTabEnum.Managed &&
-                            !boostError && (
-                                <section className="loading-spinner-container flex items-center justify-center h-[80%] w-full ">
-                                    <div className="max-w-[280px] mt-[-10px]">
-                                        <Lottie
-                                            loop
-                                            path={HourGlass}
-                                            play
-                                            style={{ width: '100%', height: '100%' }}
-                                        />
-                                    </div>
-                                </section>
-                            )}
+                            !boostError && <CredentialListSkeleton />}
                         {!boostsLoading &&
                             !boostError &&
                             boosts &&

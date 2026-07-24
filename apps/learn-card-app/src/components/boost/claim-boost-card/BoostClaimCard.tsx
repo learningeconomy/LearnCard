@@ -8,8 +8,8 @@ import { IonSpinner, useIonAlert, IonPage } from '@ionic/react';
 import { useRenderMethodEnabled } from '../../../hooks/useRenderMethodEnabled';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import RenderMethodDisplay from '../../render-method/RenderMethodDisplay';
-import Lottie from 'react-lottie-player';
-const HourGlass = '/lotties/hourglass.json';
+
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import BoostDetailsSideMenu from '../boostCMS/BoostPreview/BoostDetailsSideMenu';
 import BoostDetailsSideBar from '../boostCMS/BoostPreview/BoostDetailsSideBar';
@@ -399,12 +399,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                 {isClaimLoading && (
                     <div className="absolute w-full h-full top-0 left-0 z-[10001] flex items-center justify-center flex-col boost-loading-wrapper">
                         <div className="w-[180px] h-full m-auto mt-[5px] flex items-center justify-center">
-                            <Lottie
-                                loop
-                                path={HourGlass}
-                                play
-                                style={{ width: '180px', height: '180px' }}
-                            />
+                            <LoadingSpinner size="xl" label="Loading credential" />
                         </div>
                     </div>
                 )}

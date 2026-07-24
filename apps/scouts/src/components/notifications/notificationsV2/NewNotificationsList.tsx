@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 
 import Lottie from 'react-lottie-player';
-import HourGlass from '../../../assets/lotties/hourglass.json';
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import lizardflame from '../../../assets/lotties/lizardflame.json';
 import NotificationCardContainer from './NotificationCardContainer';
 
@@ -66,14 +66,7 @@ const NewNotificationsList: React.FC<NewNotificationsListProps> = ({
         <div className="m-auto max-w-[600px] h-full  bg-white">
             {notificationsLoading && !isEmptyState && (
                 <section className="opacity-80 loading-spinner-container mt-[0px] h-full flex flex-col items-center justify-center w-full mt-4">
-                    <div className="w-[250px] h-[250px] translate-y-[45%]">
-                        <Lottie
-                            loop
-                            animationData={HourGlass}
-                            play
-                            style={{ width: '100%', height: '100%' }}
-                        />
-                    </div>
+                    <LoadingSpinner size="xl" label="Loading notifications" />
                 </section>
             )}
             {!notificationsLoading && !isEmptyState && renderNotifications}

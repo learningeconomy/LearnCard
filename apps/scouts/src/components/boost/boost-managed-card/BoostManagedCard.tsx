@@ -22,8 +22,7 @@ import {
 
 import { closeAll } from '../../../helpers/uiHelpers';
 
-import Lottie from 'react-lottie-player';
-import HourGlass from '../../../assets/lotties/hourglass.json';
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import BoostListItem from 'learn-card-base/components/boost/BoostListItem';
 import BadgeSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BadgeSkeleton';
 import BoostTextSkeleton, {
@@ -66,7 +65,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
     boostPageViewMode = BoostPageViewMode.Card,
     showSelectMenuPlusButton = false,
     useCmsModal = false,
-    handleCloseModal = () => { },
+    handleCloseModal = () => {},
     loading,
     parentUri,
     refetchQuery,
@@ -134,12 +133,7 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
             customBody = (
                 <div className="relative w-full text-center flex flex-col items-center justify-center">
                     <div className="max-w-[50px]">
-                        <Lottie
-                            loop
-                            animationData={HourGlass}
-                            play
-                            style={{ width: '100%', height: '100%' }}
-                        />
+                        <LoadingSpinner />
                     </div>
                 </div>
             );
@@ -277,10 +271,11 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
                 </button>
                 {
                     <p
-                        className={`text-xs font-notoSans text-grayscale-600 font-semibold   ${(recipientCount ?? 0) > 0
+                        className={`text-xs font-notoSans text-grayscale-600 font-semibold   ${
+                            (recipientCount ?? 0) > 0
                                 ? 'text-grayscale-600 mt-[6px]'
                                 : 'text-white mt-[6px]'
-                            }`}
+                        }`}
                     >
                         Issued to {recipientCount ?? 0}{' '}
                         {(recipientCount ?? 0) === 1 ? 'person' : 'people'}
@@ -304,8 +299,9 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
                         innerOnClick={
                             boostVC && !showSkeleton ? () => presentManagedBoostModal() : undefined
                         }
-                        className={`bg-white text-black z-[1000] mt-[15px] ${isMeritBadge ? '!h-[298px]' : ''
-                            }`}
+                        className={`bg-white text-black z-[1000] mt-[15px] ${
+                            isMeritBadge ? '!h-[298px]' : ''
+                        }`}
                         customHeaderClass="boost-managed-card"
                         buttonOnClick={
                             boostVC && !showSkeleton
@@ -350,8 +346,9 @@ export const BoostManagedCard: React.FC<BoostManagedCardProps> = ({
                                     backgroundImage={boostVC?.display?.backgroundImage}
                                     backgroundColor={cred?.display?.backgroundColor}
                                     badgeContainerCustomClass="mt-[0px] mb-[8px]"
-                                    badgeCircleCustomClass={`w-[117px] h-[117px] mt-1 ${isMeritBadge ? 'mt-[20px]' : 'shadow-3xl'
-                                        }`}
+                                    badgeCircleCustomClass={`w-[117px] h-[117px] mt-1 ${
+                                        isMeritBadge ? 'mt-[20px]' : 'shadow-3xl'
+                                    }`}
                                     badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"
                                     badgeRibbonCustomClass="w-[26px]"
                                     badgeRibbonIconCustomClass="w-[90%] mt-[4px]"

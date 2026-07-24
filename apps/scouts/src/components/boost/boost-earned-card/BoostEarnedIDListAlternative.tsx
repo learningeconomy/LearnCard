@@ -1,9 +1,8 @@
 import React from 'react';
-import Lottie from 'react-lottie-player';
 
 import { IonCol, IonSpinner } from '@ionic/react';
 import BoostErrorsDisplay from '../../../components/boost/boostErrors/BoostErrorsDisplay';
-import HourGlass from '../../../assets/lotties/hourglass.json';
+import { CredentialListSkeleton } from 'learn-card-base/components/loaders/CredentialListSkeleton';
 import BoostEarnedIDCard from './BoostEarnedIDCard';
 
 import {
@@ -74,16 +73,7 @@ const BoostEarnedIDListAlternative: React.FC<BoostEarnedIDListProps> = ({
     return (
         <>
             {credentialsLoading && !earnedBoostsError && (
-                <section className="loading-spinner-container flex items-center justify-center h-[80%] w-full ">
-                    <div className="max-w-[280px] mt-[-40px]">
-                        <Lottie
-                            loop
-                            animationData={HourGlass}
-                            play
-                            style={{ width: '100%', height: '100%' }}
-                        />
-                    </div>
-                </section>
+                <CredentialListSkeleton viewMode={isCardView ? 'card' : 'list'} />
             )}
             {!credentialsLoading && !earnedBoostsError && records && credentials.length > 0 && (
                 <>

@@ -15,6 +15,7 @@ import {
     BoostPageViewMode,
     BoostPageViewModeType,
     searchCredentialsFromCache,
+    CredentialListSkeleton,
 } from 'learn-card-base';
 import {
     credentialCategoryToSubheaderType,
@@ -48,6 +49,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
         data: records,
         isLoading: credentialsLoading,
         isFetching: credentialsFetching,
+        isFetchingNextPage,
         hasNextPage,
         fetchNextPage,
         refetch: earnedBoostsRefetch,
@@ -93,7 +95,13 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
     const { bgColor: noResultsLineColor } =
         SubheaderContentType[credentialCategoryToSubheaderType(category)];
 
-    const credentialsBackgroundFetching = credentialsFetching && !credentialsLoading;
+    const hasCredentialRecords =
+        records?.pages?.some(page => (page?.records?.length ?? 0) > 0) ?? false;
+    const showSkeleton =
+        !earnedBoostsError &&
+        (credentialsLoading || (credentialsFetching && !hasCredentialRecords));
+    const credentialsBackgroundFetching =
+        credentialsFetching && !credentialsLoading && !isFetchingNextPage && hasCredentialRecords;
 
     useLoadingLine(credentialsBackgroundFetching);
 
@@ -178,29 +186,18 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
 
     return (
         <>
-            {(credentialsLoading ||
-                (credentials?.length === 0 && !credentialsLoading && !searchActive)) &&
-                !boostError && (
-                    <section className="flex relative  min-h-[200px]  flex-col achievements-list-container pt-[10px] px-[20px] text-center justify-center">
-                        <CategoryEmptyPlaceholder category={category} />
-                        <div className="text-black mt-10">
-                            <strong>
-                                <span
-                                    className={`flex justify-center ${
-                                        credentialsLoading ? 'animate-pulse' : 'normal'
-                                    }`}
-                                >
-                                    {credentialsLoading ? (
-                                        <p className={`loader text-${textColor}`}></p>
-                                    ) : (
-                                        <p className="font-montserrat text-[14px] font-[700] text-grayscale-900">{`No ${title} yet.`}</p>
-                                    )}
-                                </span>
-                            </strong>
-                        </div>
-                    </section>
-                )}
-            {!credentialsLoading && !boostError && records && (
+            {showSkeleton && <CredentialListSkeleton viewMode={isCardView ? 'card' : 'list'} />}
+            {credentials?.length === 0 && !showSkeleton && !searchActive && !boostError && (
+                <section className="flex relative min-h-[200px] flex-col achievements-list-container pt-[10px] px-[20px] text-center justify-center">
+                    <CategoryEmptyPlaceholder category={category} />
+                    <div className="text-black mt-10">
+                        <strong>
+                            <p className="font-montserrat text-[14px] font-[700] text-grayscale-900">{`No ${title} yet.`}</p>
+                        </strong>
+                    </div>
+                </section>
+            )}
+            {!showSkeleton && !boostError && records && (
                 <>
                     <IonCol className="flex m-auto items-center flex-wrap w-full  achievements-list-container">
                         {isCardView && (
@@ -219,7 +216,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
                                 <div role="presentation" ref={infiniteScrollRef} />
                             </>
                         )}
-                        {credentialsFetching && (
+                        {isFetchingNextPage && (
                             <div className="w-full flex items-center justify-center">
                                 <IonSpinner
                                     name="crescent"
