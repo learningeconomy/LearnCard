@@ -17,7 +17,6 @@ import useAlignments from '../../hooks/useAlignments';
 import WalletPageSquare from './WalletPageSquare';
 import WalletPageListItem from './WalletPageListItem';
 
-import { mapBoostsToSkills } from '../skills/skills.helpers';
 import { quantifyInsights } from '../ai-insights/ai-insights.helpers';
 
 type WalletPageItemWrapperProps = {
@@ -58,8 +57,7 @@ const WalletPageItemWrapper: React.FC<WalletPageItemWrapperProps> = ({
         useGetAllAiTopicCredentials(enableAiCount);
 
     // skill count
-    const { data: skillCreds, isLoading: skillsLoading } =
-        useGetCredentialsForSkills(enableSkillsCount);
+    const { isLoading: skillsLoading } = useGetCredentialsForSkills(enableSkillsCount);
 
     const { data: aiInsightCredential, isLoading: aiInsightCredentialLoading } =
         useAiInsightCredential();
@@ -69,18 +67,7 @@ const WalletPageItemWrapper: React.FC<WalletPageItemWrapperProps> = ({
     let categoryCount = data !== null && data !== undefined ? Number(data) : 0;
     if (enableAiCount) categoryCount = aiTopicsCount?.length ?? 0;
     if (enableSkillsCount) {
-        const skillsMap = mapBoostsToSkills(skillCreds);
-        // Calculate total count of skills and subskills
-        const totalSkills = Object.values(skillsMap).reduce(
-            (total, category) => total + category.length,
-            0
-        ) as number;
-        const totalSubskills = Object.values(skillsMap).reduce(
-            (total, category) => total + (category?.totalSubskills || 0),
-            0
-        ) as number;
-        const skillsCount = totalSkills + totalSubskills + (alignments?.length || 0);
-        categoryCount = skillsCount;
+        categoryCount = alignments.length;
     } else if (enableAiInsightCount) {
         categoryCount = quantifyInsights(aiInsightCredential?.insights);
     }

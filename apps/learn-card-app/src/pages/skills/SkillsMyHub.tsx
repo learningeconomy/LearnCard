@@ -4,7 +4,6 @@ import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
 import SkillDisplay from './SkillDisplay';
 import SkillsHubSearch from './SkillsHubSearch';
-import LegacySkillDisplay from './LegacySkillDisplay';
 import SkillsPageEmptyPlaceholder from './SkillsEmptyPlaceholder';
 import BoostErrorsDisplay from '../../components/boost/boostErrors/BoostErrorsDisplay';
 
@@ -55,13 +54,9 @@ const SkillsMyHub: React.FC<SkillsMyHubProps> = ({}) => {
 
                     {!noSkills && (
                         <div className="flex flex-col gap-[10px] w-full">
-                            {alignmentsAndSkills?.map((item, index) =>
-                                item.isLegacySkill ? (
-                                    <LegacySkillDisplay key={`legacy-${index}`} skill={item} />
-                                ) : (
-                                    <SkillDisplay key={`alignment-${index}`} skill={item} />
-                                )
-                            )}
+                            {alignmentsAndSkills?.map(item => (
+                                <SkillDisplay key={item.targetUrl} skill={item} />
+                            ))}
                         </div>
                     )}
 

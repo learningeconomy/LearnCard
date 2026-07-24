@@ -71,26 +71,9 @@ export const categorizeSkills = (skills: SkillShape[]): CategorizedSkills => {
 };
 
 export const mapBoostsToSkills = (credentials: CredentialLike[] = []): CategorizedSkills | [] => {
-    if (!credentials || credentials.length === 0) return [];
-
-    // filter boosts with skills
-    const credentialsWithSkills = credentials.filter(credential => {
-        const vc = getCredentialVc(credential);
-        const skills = vc?.boostCredential?.skills ?? vc?.skills;
-        return Boolean(skills && skills.length > 0);
-    });
-
-    // map out the skills object for each
-    const mappedSkills = credentialsWithSkills.map(credential => {
-        const vc = getCredentialVc(credential);
-        return vc?.boostCredential?.skills ?? vc?.skills;
-    });
-
-    // combine all mapped skills into a single array
-    const combinedSkills = mergeSkills(...(mappedSkills ?? []));
-
-    // map skills by category
-    return categorizeSkills(combinedSkills);
+    // Legacy `credential.skills` are retained only for credential-detail rendering.
+    // Framework alignments are the source of truth for all aggregate skill views.
+    return [];
 };
 
 export const filterBoostsBySkillCategory = (
