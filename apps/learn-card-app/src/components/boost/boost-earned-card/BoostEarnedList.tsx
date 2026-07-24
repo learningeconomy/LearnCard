@@ -49,6 +49,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
         data: records,
         isLoading: credentialsLoading,
         isFetching: credentialsFetching,
+        isFetchingNextPage,
         hasNextPage,
         fetchNextPage,
         refetch: earnedBoostsRefetch,
@@ -94,7 +95,13 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
     const { bgColor: noResultsLineColor } =
         SubheaderContentType[credentialCategoryToSubheaderType(category)];
 
-    const credentialsBackgroundFetching = credentialsFetching && !credentialsLoading;
+    const hasCredentialRecords =
+        records?.pages?.some(page => (page?.records?.length ?? 0) > 0) ?? false;
+    const showSkeleton =
+        !earnedBoostsError &&
+        (credentialsLoading || (credentialsFetching && !hasCredentialRecords));
+    const credentialsBackgroundFetching =
+        credentialsFetching && !credentialsLoading && !isFetchingNextPage && hasCredentialRecords;
 
     useLoadingLine(credentialsBackgroundFetching);
 
@@ -179,10 +186,8 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
 
     return (
         <>
-            {credentialsLoading && !boostError && (
-                <CredentialListSkeleton viewMode={isCardView ? 'card' : 'list'} />
-            )}
-            {credentials?.length === 0 && !credentialsLoading && !searchActive && !boostError && (
+            {showSkeleton && <CredentialListSkeleton viewMode={isCardView ? 'card' : 'list'} />}
+            {credentials?.length === 0 && !showSkeleton && !searchActive && !boostError && (
                 <section className="flex relative min-h-[200px] flex-col achievements-list-container pt-[10px] px-[20px] text-center justify-center">
                     <CategoryEmptyPlaceholder category={category} />
                     <div className="text-black mt-10">
@@ -192,7 +197,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
                     </div>
                 </section>
             )}
-            {!credentialsLoading && !boostError && records && (
+            {!showSkeleton && !boostError && records && (
                 <>
                     <IonCol className="flex m-auto items-center flex-wrap w-full  achievements-list-container">
                         {isCardView && (
@@ -211,7 +216,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
                                 <div role="presentation" ref={infiniteScrollRef} />
                             </>
                         )}
-                        {credentialsFetching && (
+                        {isFetchingNextPage && (
                             <div className="w-full flex items-center justify-center">
                                 <IonSpinner
                                     name="crescent"
