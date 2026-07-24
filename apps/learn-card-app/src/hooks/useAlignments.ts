@@ -8,8 +8,7 @@ import {
     SkillsHubFilterValue,
     SkillsHubSortOptionsEnum,
 } from '../pages/skills/skillshub-search.helpers';
-
-const WEF_GLOBAL_SKILLS_FRAMEWORK_ID = 'wef-global-skills-taxonomy';
+import { useGlobalSkillFrameworks } from '../helpers/globalSkillFrameworks.helpers';
 
 export type SkillFrameworkNodeWithCredentials = SkillFrameworkNode & {
     credentials?: string[];
@@ -43,6 +42,11 @@ export const useAlignments = (
         sortBy: SkillsHubSortOptionsEnum.recentlyAdded,
     }
 ) => {
+    const globalSkillFrameworks = useGlobalSkillFrameworks();
+    const globalFrameworkIds = useMemo(
+        () => globalSkillFrameworks.map(framework => framework.frameworkId),
+        [globalSkillFrameworks]
+    );
     const {
         data: allResolvedCreds,
         isFetching: credentialsFetching,
@@ -64,8 +68,6 @@ export const useAlignments = (
 
     const { alignments, frameworkIds } = useMemo(() => {
         const alignmentMap = new Map<string, AlignmentWithMetadata>();
-        const frameworkIdSet = new Set<string>();
-
         credentialsWithAlignments?.forEach(vc => {
             const credentialAlignments = (vc as VC)?.boostCredential?.credentialSubject?.achievement
                 ?.alignment;
@@ -76,11 +78,6 @@ export const useAlignments = (
                 credentialAlignments.forEach(alignment => {
                     const { targetUrl } = alignment;
                     const { frameworkId, skillId } = getFrameworkIdAndSkillIdFromUrl(targetUrl);
-
-                    // Collect unique frameworkIds
-                    if (frameworkId) {
-                        frameworkIdSet.add(frameworkId);
-                    }
 
                     if (targetUrl) {
                         if (alignmentMap.has(targetUrl)) {
@@ -110,14 +107,12 @@ export const useAlignments = (
         });
 
         return {
-            alignments: Array.from(alignmentMap.values()).filter(
-                alignment => alignment.frameworkId === WEF_GLOBAL_SKILLS_FRAMEWORK_ID
+            alignments: Array.from(alignmentMap.values()).filter(alignment =>
+                globalFrameworkIds.includes(alignment.frameworkId)
             ),
-            frameworkIds: Array.from(frameworkIdSet).filter(
-                frameworkId => frameworkId === WEF_GLOBAL_SKILLS_FRAMEWORK_ID
-            ),
+            frameworkIds: globalFrameworkIds,
         };
-    }, [credentialsWithAlignments]);
+    }, [credentialsWithAlignments, globalFrameworkIds]);
 
     const alignmentsAndSkills = useMemo(() => {
         const filterBySet = new Set(filterBy);

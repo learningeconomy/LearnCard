@@ -84,8 +84,11 @@ const SkillsPage: React.FC = () => {
         }
     };
 
-    const { isFetching: credentialsFetching, isLoading: allResolvedBoostsLoading } =
-        useGetCredentialsForSkills();
+    const {
+        data: allResolvedCreds,
+        isFetching: credentialsFetching,
+        isLoading: allResolvedBoostsLoading,
+    } = useGetCredentialsForSkills();
 
     const credentialsBackgroundFetching = credentialsFetching && !allResolvedBoostsLoading;
 

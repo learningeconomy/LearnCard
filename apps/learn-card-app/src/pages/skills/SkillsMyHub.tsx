@@ -31,10 +31,7 @@ const SkillsMyHub: React.FC<SkillsMyHubProps> = ({}) => {
     });
 
     const noSkills = alignmentsAndSkills?.length === 0;
-    const noFilter =
-        filterBy.length === 0 ||
-        (filterBy.length === 1 && filterBy.includes(SkillsHubFilterOptionsEnum.all));
-    const showPlaceholder = (noSkills && !searchInput && noFilter) || isLoading;
+    const showPlaceholder = isLoading;
 
     return (
         <div className="flex flex-col gap-[10px] w-full">
@@ -69,6 +66,8 @@ const SkillsMyHub: React.FC<SkillsMyHubProps> = ({}) => {
                             />
                         </p>
                     )}
+
+                    {noSkills && !searchInput && <SkillsPageEmptyPlaceholder isLoading={false} />}
                 </>
             )}
 
