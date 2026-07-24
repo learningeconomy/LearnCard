@@ -189,6 +189,7 @@ export {
     suggestedTopics,
     topicCredentials,
     sessionEnded,
+    hasThreadEnded,
     planReady,
     planReadyThread,
     resetChatStores,
@@ -207,6 +208,7 @@ export {
 } from './stores/nanoStores/chatStore';
 
 export * from './helpers/credentialHelpers';
+export * from './helpers/credentialIngestion';
 export * from './helpers/credentials/queries';
 export * from './helpers/openid4vcErrors';
 export * from './helpers/faviconHelpers';

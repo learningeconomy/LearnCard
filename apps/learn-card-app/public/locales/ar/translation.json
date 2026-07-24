@@ -2923,7 +2923,17 @@
         "unfinished": "غير مكتمل",
         "learningOverview": "نظرة عامة على التعلّم",
         "finishSession": "إنهاء الجلسة",
-        "finish": "إنهاء"
+        "finish": "إنهاء",
+        "activeTitle": "جلسة قيد التقدم",
+        "activeFallbackTitle": "جلسة الذكاء الاصطناعي الحالية",
+        "activeDescription": "لا تزال «{{title}}» نشطة. سيؤدي بدء جلسة جديدة إلى إنهائها.",
+        "resumeSession": "استئناف الجلسة",
+        "resumingSession": "جارٍ الاستئناف...",
+        "checkingActiveSession": "جارٍ التحقق من الجلسات...",
+        "startNewSession": "بدء جلسة جديدة",
+        "startingNewSession": "جارٍ البدء...",
+        "activeCheckFailedTitle": "حدث خطأ ما",
+        "activeCheckFailedDescription": "حاول بدء الجلسة مرة أخرى."
     },
     "aiFeatureLinks": {
         "skillsHub": "مركز المهارات"

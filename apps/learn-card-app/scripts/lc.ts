@@ -405,12 +405,14 @@ const asNoBuild = (s?: string): boolean | undefined => {
 
     return undefined;
 };
+const isLocalAi = (s?: string): boolean => s?.toLowerCase() === 'local-aip';
 
 const startDev = async (
     tenantId?: string,
     stageId?: string,
     devMode?: DevMode,
-    noBuild?: boolean
+    noBuild?: boolean,
+    useLocalAi = false
 ) => {
     const tenants = discoverTenants();
 
@@ -504,14 +506,40 @@ const startDev = async (
     const modeArg = devMode === 'full' ? '' : ` ${devMode}`;
     const buildFlag = noBuild ? '' : ' --build';
     const fastArg = noBuild ? ' fast' : '';
+    const localAiFlag = useLocalAi ? ' --local-aip' : '';
+    const localAiArg = useLocalAi ? ' local-aip' : '';
+    const localAiEnv = useLocalAi ? ' LOCAL_AIP=1' : '';
     const dockerUidEnv = 'LOCAL_UID=$(id -u) LOCAL_GID=$(id -g)';
+
+    if (useLocalAi) {
+        let localAiIsReachable = false;
+
+        try {
+            const response = await fetch('http://localhost:3001/health', {
+                signal: AbortSignal.timeout(1_500),
+            });
+            localAiIsReachable = response.ok;
+        } catch {
+            // The launch still proceeds so the backend can be started afterward.
+        }
+
+        log.info(
+            localAiIsReachable
+                ? green('✓ AI Passport backend: local — http://localhost:3001 is reachable')
+                : yellow(
+                      '⚠ AI Passport backend: local selected — http://localhost:3001 is not reachable'
+                  )
+        );
+    } else {
+        log.info(dim('AI Passport backend: production — https://api.learncloud.ai'));
+    }
 
     switch (devMode) {
         case 'app':
             runCommand(
-                `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag} && vite --host`,
-                `Starting ${displayName}${stageLabel} — app only`,
-                `bun run lc dev ${tenantId}${stageArg} app`
+                `bun scripts/prepare-native-config.ts ${tenantId}${stageFlag}${localAiFlag} && vite --host`,
+                `Starting ${displayName}${stageLabel} — app only${useLocalAi ? ' + local AI' : ''}`,
+                `bun run lc dev ${tenantId}${stageArg} app${localAiArg}`
             );
             break;
 
@@ -526,11 +554,13 @@ const startDev = async (
         case 'full':
         default:
             runCommand(
-                `${dockerUidEnv} TENANT=${tenantId} STAGE=${stageId} docker compose -f compose-local.yaml up${buildFlag}`,
+                `${dockerUidEnv}${localAiEnv} TENANT=${tenantId} STAGE=${stageId} docker compose -f compose-local.yaml up${buildFlag}`,
                 `Starting ${displayName}${stageLabel} — full stack${
                     noBuild ? ' (skipping rebuild)' : ''
-                }`,
-                `bun run lc dev ${tenantId}${stageArg}${modeArg ? '' : ' full'}${fastArg}`
+                }${useLocalAi ? ' + local AI' : ''}`,
+                `bun run lc dev ${tenantId}${stageArg}${
+                    modeArg ? '' : ' full'
+                }${fastArg}${localAiArg}`
             );
             break;
     }
@@ -1989,8 +2019,8 @@ const handleShortcuts = async (): Promise<boolean> => {
         }
 
         case 'dev': {
-            // bun run lc dev [tenant] [stage] [full|app|services] [fast|no-build]
-            const devAllArgs = [arg, arg2, args[3], args[4]];
+            // bun run lc dev [tenant] [stage] [full|app|services] [fast|no-build] [local-aip]
+            const devAllArgs = args.slice(1);
 
             const devModeArg = devAllArgs.reduce<DevMode | undefined>(
                 (found, a) => found ?? asDevMode(a),
@@ -2001,19 +2031,21 @@ const handleShortcuts = async (): Promise<boolean> => {
                 (found, a) => found ?? asNoBuild(a),
                 undefined
             );
+            const useLocalAi = devAllArgs.some(isLocalAi);
 
             const devStageArg = devAllArgs.reduce<string | undefined>((found, a) => {
                 if (found !== undefined) return found;
-                if (asDevMode(a) || asNoBuild(a) !== undefined) return undefined;
+                if (asDevMode(a) || asNoBuild(a) !== undefined || isLocalAi(a)) return undefined;
 
                 return asStage(a);
             }, undefined);
 
             const devTenantArg = devAllArgs.find(
-                a => a && !asDevMode(a) && !asStage(a) && asNoBuild(a) === undefined
+                a =>
+                    a && !asDevMode(a) && !asStage(a) && asNoBuild(a) === undefined && !isLocalAi(a)
             );
 
-            await startDev(devTenantArg, devStageArg, devModeArg, devNoBuildArg);
+            await startDev(devTenantArg, devStageArg, devModeArg, devNoBuildArg, useLocalAi);
             return true;
         }
 
@@ -2234,7 +2266,7 @@ const printHelp = () => {
     log.info(bold('  ⚡ Start'));
     log.info('');
     log.info(
-        `  ${cyan('bun run lc dev <tenant> [stage] [mode] [fast]')}  ${dim(
+        `  ${cyan('bun run lc dev <tenant> [stage] [mode] [fast] [local-aip]')}  ${dim(
             'Web dev server (mode: full|app|services)'
         )}`
     );
@@ -2255,6 +2287,7 @@ const printHelp = () => {
     );
     log.info(dim('    bun run lc dev vetpass alpha app            # app only, no prompt'));
     log.info(dim('    bun run lc dev vetpass alpha full           # full stack, no prompt'));
+    log.info(dim('    bun run lc dev learncard production app local-aip # app + local AI backend'));
     log.info(
         dim('    bun run lc dev vetpass alpha full fast      # full stack, skip docker --build')
     );
