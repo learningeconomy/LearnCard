@@ -1684,7 +1684,7 @@ const capgoPreview = async (tenantId?: string, stageId?: string, channelArg?: st
     );
 
     setNativeBuildEnv(stageId);
-    execFileBlocking('npx', ['vite', 'build'], 'Step 2/4 — Building web app');
+    execBlocking(VITE_BUILD_COMMAND, 'Step 2/4 — Building web app');
 
     log.info('');
     log.info(green('▶ Step 3/4 — Ensuring Capgo channel exists'));
