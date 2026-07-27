@@ -7,7 +7,7 @@ import useBoostModal from '../hooks/useBoostModal';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
 import { EmptyState } from '../boost-select-menu/NewBoostSelectMenu';
 import { IonRow, IonGrid, IonSpinner } from '@ionic/react';
-import BoostManagedCard from '../../../components/boost/boost-managed-card/BoostManagedCard';
+import BoostManagedCard, { BoostManagedCardSkeleton } from './BoostManagedCard';
 import BoostErrorsDisplay from '../../../components/boost/boostErrors/BoostErrorsDisplay';
 import { CredentialListSkeleton } from 'learn-card-base/components/loaders/CredentialListSkeleton';
 import {
@@ -45,7 +45,9 @@ type BoostManagedListProps = {
     enableCreateButton?: boolean;
     includeExtendedFamily?: boolean;
     handleCloseModal?: () => void;
+    useManagedCardSkeleton?: boolean;
 };
+const INITIAL_SKELETON_COUNT = 4;
 
 const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
     parentUri,
@@ -59,6 +61,7 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
     includeExtendedFamily,
     enableCreateButton = true,
     handleCloseModal,
+    useManagedCardSkeleton = false,
 }) => {
     const history = useHistory();
     /*
@@ -157,6 +160,14 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
             defaultImg,
         ]
     );
+    const loadingManagedBoosts = Array.from({ length: INITIAL_SKELETON_COUNT }, (_, index) => (
+        <BoostManagedCardSkeleton
+            key={`managed-child-skeleton-${category}-${index}`}
+            categoryType={category}
+            boostPageViewMode={viewMode}
+            branding={BrandingEnum.scoutPass}
+        />
+    ));
 
     const handleRefetch = async () => {
         try {
@@ -186,12 +197,30 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
 
     return (
         <>
-            {managedBoostsLoading && !boostError && (
-                <CredentialListSkeleton
-                    viewMode={isCardView ? 'card' : 'list'}
-                    cardSize="credential"
-                />
-            )}
+            {managedBoostsLoading &&
+                !boostError &&
+                (useManagedCardSkeleton ? (
+                    <section
+                        className="w-full"
+                        role="status"
+                        aria-label={`Loading managed ${category}`}
+                    >
+                        {isCardView ? (
+                            <IonGrid className="max-w-[600px]">
+                                <IonRow>{loadingManagedBoosts}</IonRow>
+                            </IonGrid>
+                        ) : (
+                            <div className="flex flex-col gap-[10px] w-full max-w-[700px] px-[20px] pt-[25px]">
+                                {loadingManagedBoosts}
+                            </div>
+                        )}
+                    </section>
+                ) : (
+                    <CredentialListSkeleton
+                        viewMode={isCardView ? 'card' : 'list'}
+                        cardSize="credential"
+                    />
+                ))}
 
             {!managedBoostsLoading && !boostError && managedBoostsList && (
                 <>
