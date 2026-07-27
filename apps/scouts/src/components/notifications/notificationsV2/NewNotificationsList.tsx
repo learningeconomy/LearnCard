@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 
 import Lottie from 'react-lottie-player';
-import HourGlass from '../../../assets/lotties/hourglass.json';
+import NotificationSkeleton from './NotificationSkeleton';
 import lizardflame from '../../../assets/lotties/lizardflame.json';
 import NotificationCardContainer from './NotificationCardContainer';
 
@@ -65,15 +65,14 @@ const NewNotificationsList: React.FC<NewNotificationsListProps> = ({
     return (
         <div className="m-auto max-w-[600px] h-full  bg-white">
             {notificationsLoading && !isEmptyState && (
-                <section className="opacity-80 loading-spinner-container mt-[0px] h-full flex flex-col items-center justify-center w-full mt-4">
-                    <div className="w-[250px] h-[250px] translate-y-[45%]">
-                        <Lottie
-                            loop
-                            animationData={HourGlass}
-                            play
-                            style={{ width: '100%', height: '100%' }}
-                        />
-                    </div>
+                <section
+                    className="flex w-full flex-col items-center px-[10px]"
+                    role="status"
+                    aria-label="Loading notifications"
+                >
+                    {[0, 1, 2].map(index => (
+                        <NotificationSkeleton key={index} />
+                    ))}
                 </section>
             )}
             {!notificationsLoading && !isEmptyState && renderNotifications}
