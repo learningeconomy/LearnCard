@@ -58,10 +58,15 @@ vi.mock('@ionic/react', () => ({
         <div {...props}>{children}</div>
     ),
 }));
-vi.mock('@learncard/react', () => ({
-    formatDidDisplayName: (did: string) => did,
-    isDid: () => false,
-}));
+vi.mock('@learncard/react', async importOriginal => {
+    const actual = await importOriginal<typeof import('@learncard/react')>();
+
+    return {
+        ...actual,
+        formatDidDisplayName: (did: string) => did,
+        isDid: () => false,
+    };
+});
 vi.mock('learn-card-base/helpers/display.helpers', () => ({
     DisplayTypeEnum: { Media: 'media' },
     getAttachmentTypeIcon: () => ({

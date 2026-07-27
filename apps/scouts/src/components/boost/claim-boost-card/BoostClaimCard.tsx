@@ -5,8 +5,7 @@ import { useClaimCredential, BrandingEnum } from 'learn-card-base';
 import useFirebaseAnalytics from '../../../hooks/useFirebaseAnalytics';
 import { IonContent, IonRow, IonSpinner, IonPage, IonFooter } from '@ionic/react';
 
-import Lottie from 'react-lottie-player';
-import HourGlass from '../../../assets/lotties/hourglass.json';
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 
@@ -111,12 +110,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                     {isClaiming && (
                         <div className="absolute w-full h-full top-0 left-0 z-50 flex items-center justify-center flex-col boost-loading-wrapper">
                             <div className="w-[180px] h-full m-auto mt-[5px] flex items-center justify-center">
-                                <Lottie
-                                    loop
-                                    animationData={HourGlass}
-                                    play
-                                    style={{ width: '180px', height: '180px' }}
-                                />
+                                <LoadingSpinner size="xl" label="Loading credential" />
                             </div>
                         </div>
                     )}

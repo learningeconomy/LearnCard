@@ -596,7 +596,9 @@
                 "sent": "Sent",
                 "claimed": "Claimed",
                 "expired": "Expired",
-                "notDelivered": "Not delivered"
+                "notDelivered": "Not delivered",
+                "revoked": "Revoked",
+                "suspended": "Suspended"
             },
             "title": {
                 "selfAdded": "You added {{article}} {{label}} to your passport",
@@ -604,7 +606,11 @@
                 "claimedBy": "{{label}} claimed by",
                 "expiredFor": "Expired {{label}} for",
                 "failedTo": "Couldn't deliver {{label}} to",
-                "sentTo": "You sent {{article}} {{label}} to"
+                "sentTo": "You sent {{article}} {{label}} to",
+                "receivedRevoked": "Your {{label}} was revoked",
+                "receivedSuspended": "Your {{label}} was suspended",
+                "revokedFor": "Revoked {{label}} for",
+                "suspendedFor": "Suspended {{label}} for"
             },
             "when": {
                 "earlier": "Earlier",
@@ -1829,7 +1835,9 @@
         "okay": "Okay",
         "viewCredential": "View Credential",
         "loadingNotifications": "Loading Notifications...",
-        "refresh": "Refresh"
+        "refresh": "Refresh",
+        "restored": "Restored",
+        "unableToLoad": "Unable to load notification"
     },
     "share": {
         "addContact": "Add contact",
@@ -2947,6 +2955,12 @@
         "common": {
             "close": "Close",
             "select": "Select"
+        },
+        "credential": {
+            "lifecycle": {
+                "revoked": "Revoked",
+                "suspended": "Suspended"
+            }
         }
     },
     "sdk": {
@@ -2976,7 +2990,14 @@
                 "doesNotExpire": "Does Not Expire",
                 "expired": "Expired",
                 "active": "Active",
-                "couldNotVerify": "Boost Credential could not be verified."
+                "couldNotVerify": "Boost Credential could not be verified.",
+                "suspended": "Suspended"
+            }
+        },
+        "credential": {
+            "lifecycle": {
+                "revoked": "Revoked",
+                "suspended": "Suspended"
             }
         }
     },

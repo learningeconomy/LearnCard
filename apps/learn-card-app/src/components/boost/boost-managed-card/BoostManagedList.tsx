@@ -17,6 +17,7 @@ import {
     BoostPageViewMode,
     useGetPaginatedManagedBoosts,
     searchManagedBoostsFromCache,
+    CredentialListSkeleton,
 } from 'learn-card-base';
 import {
     credentialCategoryToSubheaderType,
@@ -137,6 +138,9 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
 
     return (
         <>
+            {managedBoostsLoading && !boostError && (
+                <CredentialListSkeleton viewMode={isCardView ? 'card' : 'list'} />
+            )}
             {!managedBoostsLoading && !boostError && managedBoostsList && (
                 <>
                     <IonCol className="flex m-auto items-center flex-wrap w-full achievements-list-container ">
@@ -182,7 +186,8 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
                     </IonCol>
                 </>
             )}
-            {((!managedBoostsLoading && managedBoostsList?.length === 0) || managedBoostsLoading) &&
+            {!managedBoostsLoading &&
+                managedBoostsList?.length === 0 &&
                 !boostError &&
                 !searchActive && (
                     <section

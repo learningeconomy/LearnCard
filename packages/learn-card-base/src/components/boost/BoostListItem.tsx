@@ -7,7 +7,7 @@ import CredentialVerificationDisplay, {
     getInfoFromCredential,
 } from '../CredentialBadge/CredentialVerificationDisplay';
 import BadgeThumbnailImg from '../CredentialBadge/BadgeThumbnailImg';
-import { isDid, formatDidDisplayName } from '@learncard/react';
+import { isDid, formatDidDisplayName, getLifecycleTreatment } from '@learncard/react';
 import {
     getAchievementType,
     getAchievementTypeDisplayText,
@@ -27,6 +27,8 @@ import CredentialMediaBadge from '../CredentialBadge/CredentialMediaBadge';
 import { BoostMediaOptionsEnum } from './boost';
 import { newCredsStore } from 'learn-card-base/stores/newCredsStore';
 import DotIcon from '../../svgs/DotIcon';
+import { CredentialLifecycleStatus } from '../CredentialBadge/CredentialStatusSealIcon';
+import { useT } from 'learn-card-base/i18n';
 
 type BoostListItemProps = {
     title?: string;
@@ -46,6 +48,7 @@ type BoostListItemProps = {
     unknownVerifierTitle?: string;
     relativeDate?: boolean;
     compact?: boolean;
+    lifecycleStatus?: CredentialLifecycleStatus;
     trustedVerifierOnly?: boolean;
 };
 
@@ -69,8 +72,18 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
     unknownVerifierTitle,
     relativeDate = false,
     compact = false,
+    lifecycleStatus = 'active',
     trustedVerifierOnly = false,
 }) => {
+    const t = useT();
+    // Shared revoked/suspended treatment (kept in sync with the grid card).
+    const {
+        isInactive,
+        mediaStyle: inactiveMediaStyle,
+        pillBg,
+    } = getLifecycleTreatment(lifecycleStatus);
+    const pillLabel = t(`credential.lifecycle.${lifecycleStatus}`);
+
     const newCreds = newCredsStore.use.newCreds();
     const newCredsForCategory = newCreds?.[categoryType as CredentialCategory] ?? [];
     const showNewItemIndicator = newCredsForCategory?.includes(uri) ?? false;
@@ -207,7 +220,10 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
             data-testid="boost-list-item"
         >
             {showMediaBadge ? (
-                <div className="relative min-h-[100px] max-w-[100px] flex-1 flex items-center justify-center relative">
+                <div
+                    className="relative min-h-[100px] max-w-[100px] flex-1 flex items-center justify-center relative"
+                    style={inactiveMediaStyle}
+                >
                     <CredentialMediaBadge
                         credential={credential}
                         backgroundColor={backgroundColor}
@@ -217,7 +233,10 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                     />
                 </div>
             ) : (
-                <div className={`relative ${thumbSize} rounded-full bg-${subColor}`}>
+                <div
+                    className={`relative ${thumbSize} rounded-full bg-${subColor}`}
+                    style={inactiveMediaStyle}
+                >
                     <BadgeThumbnailImg
                         src={
                             thumbImgSrc ||
@@ -255,9 +274,19 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                     </>
                 )}
                 {!showMediaBadge && (
-                    <h3 className="text-grayscale-900 font-semibold truncate w-full leading-tight">
-                        {title}
-                    </h3>
+                    <div className="flex items-center gap-1.5 w-full min-w-0">
+                        <h3 className="text-grayscale-900 font-semibold truncate min-w-0 leading-tight">
+                            {title}
+                        </h3>
+                        {isInactive && (
+                            <span
+                                className="shrink-0 rounded-full px-[6px] py-[1px] text-[9px] font-extrabold uppercase tracking-wide text-white"
+                                style={{ backgroundColor: pillBg }}
+                            >
+                                {pillLabel}
+                            </span>
+                        )}
+                    </div>
                 )}
                 {!showMediaBadge && !compact && (
                     <span className="text-grayscale-500 font-normal">
@@ -278,6 +307,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                             credential={credential}
                             iconClassName={verificationIconClass}
                             unknownVerifierTitle={unknownVerifierTitle}
+                            lifecycleStatus={lifecycleStatus}
                             trustedOnly={trustedVerifierOnly}
                         />
                     )}

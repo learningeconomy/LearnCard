@@ -2599,6 +2599,12 @@ export async function getLearnCardNetworkPlugin(
                 return client.activity.getMyActivities.query(options);
             },
 
+            getMyCredentialLifecycleStatuses: async (_learnCard, options) => {
+                await ensureUser();
+
+                return client.activity.getMyCredentialLifecycleStatuses.query(options);
+            },
+
             getActivityStats: async (_learnCard, options = {}) => {
                 await ensureUser();
 
