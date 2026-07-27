@@ -65,6 +65,7 @@ type BoostClaimCardProps = {
     onDismiss?: () => void;
     notification?: LCNNotification;
     hideEndorsementRequestCard?: boolean;
+    lifecycleStatus?: 'active' | 'revoked' | 'suspended';
 };
 
 export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
@@ -78,6 +79,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     onDismiss,
     notification,
     hideEndorsementRequestCard,
+    lifecycleStatus,
 }) => {
     const history = useHistory();
     const isLoggedIn = useIsLoggedIn();
@@ -332,6 +334,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
         <VCDisplayCardWrapper2
             credential={credential}
             hideNavButtons
+            lifecycleStatus={lifecycleStatus}
             // isFrontOverride={isFront}
             setIsFrontOverride={setIsFront}
             onMediaClick={handleImageClick}

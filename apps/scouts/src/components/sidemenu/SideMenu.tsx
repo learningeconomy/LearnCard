@@ -111,7 +111,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum }> = ({ branding = BrandingEnu
 
     return (
         <IonMenu contentId="main" swipeGesture menuId="appSideMenu">
-            <IonContent>
+            <IonContent className="scout-pass-side-menu-content">
                 <IonHeader className="learn-card-header ion-no-border ion-no-padding">
                     <IonToolbar
                         className="ion-no-border ion-no-padding"

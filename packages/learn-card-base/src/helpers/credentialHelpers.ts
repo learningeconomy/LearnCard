@@ -1448,17 +1448,50 @@ export const convertEvidenceToAttachments = (evidence: BoostEvidenceSpec[]): Boo
     });
 };
 
-// ! small helper to handle the transition from attachments to evidence
-// ! existing attachments will take higher precedence over evidence
+type RawArtifactAttachmentSource = {
+    data?: unknown;
+    fileName?: unknown;
+    fileSize?: unknown;
+    fileType?: unknown;
+};
+
+const convertRawArtifactToAttachment = (
+    rawArtifact: unknown
+): BoostCMSMediaAttachment | undefined => {
+    if (!rawArtifact || typeof rawArtifact !== 'object') return undefined;
+
+    const artifact = rawArtifact as RawArtifactAttachmentSource;
+    if (typeof artifact.data !== 'string' || artifact.data.length === 0) return undefined;
+
+    const fileName = typeof artifact.fileName === 'string' ? artifact.fileName : undefined;
+    const fileSize = typeof artifact.fileSize === 'string' ? artifact.fileSize : undefined;
+    const fileType = typeof artifact.fileType === 'string' ? artifact.fileType : undefined;
+    const normalizedFileType = fileType?.toUpperCase();
+    const type = ['PNG', 'JPG', 'JPEG', 'WEBP'].includes(normalizedFileType ?? '')
+        ? 'photo'
+        : 'document';
+
+    return {
+        title: fileName ?? null,
+        fileName,
+        fileSize,
+        fileType,
+        type,
+        url: artifact.data,
+    };
+};
+
+/**
+ * Returns published attachments first, then legacy evidence, and finally an embedded raw artifact.
+ */
 export const getExistingAttachmentsOrEvidence = (
     attachments: BoostCMSMediaAttachment[],
-    evidence: BoostEvidenceSpec[]
+    evidence: BoostEvidenceSpec[],
+    rawArtifact?: unknown
 ): BoostCMSMediaAttachment[] => {
-    const existingAttachments = attachments?.length > 0;
-    const existingEvidence = evidence?.length > 0;
+    if (attachments?.length > 0) return attachments;
+    if (evidence?.length > 0) return convertEvidenceToAttachments(evidence);
 
-    if (existingAttachments) return attachments;
-    if (!existingAttachments && existingEvidence) return convertEvidenceToAttachments(evidence);
-
-    return [];
+    const rawArtifactAttachment = convertRawArtifactToAttachment(rawArtifact);
+    return rawArtifactAttachment ? [rawArtifactAttachment] : [];
 };

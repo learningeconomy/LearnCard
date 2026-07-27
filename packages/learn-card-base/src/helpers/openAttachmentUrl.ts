@@ -83,21 +83,14 @@ export const openAttachmentUrl = async (
                 const bytes = Uint8Array.from(atob(base64), char => char.charCodeAt(0));
                 const blobUrl = URL.createObjectURL(new Blob([bytes], { type: mimeType }));
 
-                const opened = window.open(blobUrl, '_blank', 'noopener');
-                if (!opened) {
-                    URL.revokeObjectURL(blobUrl);
-                    throw new Error('Browser blocked the preview tab');
-                }
+                window.open(blobUrl, '_blank', 'noopener');
 
                 window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
             }
         } else if (Capacitor.isNativePlatform()) {
             await Browser.open({ url });
         } else {
-            const opened = window.open(url, '_blank', 'noopener,noreferrer');
-            if (!opened) {
-                throw new Error('Browser blocked the link tab');
-            }
+            window.open(url, '_blank', 'noopener,noreferrer');
         }
 
         return true;
