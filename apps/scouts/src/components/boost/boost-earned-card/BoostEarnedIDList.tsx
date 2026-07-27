@@ -97,7 +97,10 @@ const BoostEarnedIDList: React.FC<BoostEarnedIDListProps> = ({
     return (
         <>
             {credentialsLoading && !earnedBoostsError && (
-                <CredentialListSkeleton viewMode={isCardView ? 'card' : 'list'} />
+                <CredentialListSkeleton
+                    viewMode={isCardView ? 'card' : 'list'}
+                    cardSize="credential"
+                />
             )}
             {!credentialsLoading && !earnedBoostsError && records && credentials.length > 0 && (
                 <>

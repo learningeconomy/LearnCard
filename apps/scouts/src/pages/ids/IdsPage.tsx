@@ -117,7 +117,7 @@ const IdsPage: React.FC = () => {
                     <div className="w-full flex items-center justify-center mt-8">
                         {credentialsLoading &&
                             activeTab === CredentialListTabEnum.Earned &&
-                            !boostError && <CredentialListSkeleton />}
+                            !boostError && <CredentialListSkeleton cardSize="credential" />}
                         {!credentialsLoading &&
                             !boostError &&
                             credentials &&
@@ -141,7 +141,7 @@ const IdsPage: React.FC = () => {
 
                         {boostsLoading &&
                             activeTab === CredentialListTabEnum.Managed &&
-                            !boostError && <CredentialListSkeleton />}
+                            !boostError && <CredentialListSkeleton cardSize="credential" />}
                         {!boostsLoading &&
                             !boostError &&
                             boosts &&

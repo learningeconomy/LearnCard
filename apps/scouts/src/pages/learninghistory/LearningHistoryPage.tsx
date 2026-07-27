@@ -120,7 +120,7 @@ const LearningHistoryPage: React.FC = () => {
                     <CurvedBackdropEl className="bg-emerald-300" />
                     {loading &&
                         activeTab === CredentialListTabEnum.Earned &&
-                        !earnedBoostsError && <CredentialListSkeleton />}
+                        !earnedBoostsError && <CredentialListSkeleton cardSize="credential" />}
                     {!loading &&
                         vcs?.length > 0 &&
                         activeTab === CredentialListTabEnum.Earned &&
@@ -148,7 +148,7 @@ const LearningHistoryPage: React.FC = () => {
 
                     {boostsLoading &&
                         activeTab === CredentialListTabEnum.Managed &&
-                        !managedBoostsError && <CredentialListSkeleton />}
+                        !managedBoostsError && <CredentialListSkeleton cardSize="credential" />}
                     {!boostsLoading &&
                         !managedBoostsError &&
                         boosts?.length > 0 &&

@@ -187,7 +187,10 @@ const BoostManagedChildrenList: React.FC<BoostManagedListProps> = ({
     return (
         <>
             {managedBoostsLoading && !boostError && (
-                <CredentialListSkeleton viewMode={isCardView ? 'card' : 'list'} />
+                <CredentialListSkeleton
+                    viewMode={isCardView ? 'card' : 'list'}
+                    cardSize="credential"
+                />
             )}
 
             {!managedBoostsLoading && !boostError && managedBoostsList && (

@@ -140,7 +140,12 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
 
     return (
         <>
-            {showSkeleton && <CredentialListSkeleton viewMode={isCardView ? 'card' : 'list'} />}
+            {showSkeleton && (
+                <CredentialListSkeleton
+                    viewMode={isCardView ? 'card' : 'list'}
+                    cardSize="credential"
+                />
+            )}
             {!showSkeleton &&
                 credentials &&
                 credentials?.length === 0 &&

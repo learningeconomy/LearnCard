@@ -116,7 +116,7 @@ const WorkHistoryPage: React.FC = () => {
                 <IonContent fullscreen className="job-history-page relative" color={'rose-400'}>
                     <CurvedBackdropEl className="bg-rose-300" />
                     {loading && activeTab === CredentialListTabEnum.Earned && !boostError && (
-                        <CredentialListSkeleton />
+                        <CredentialListSkeleton cardSize="credential" />
                     )}
                     {!loading &&
                         vcs &&
@@ -150,7 +150,7 @@ const WorkHistoryPage: React.FC = () => {
 
                     {boostsLoading &&
                         activeTab === CredentialListTabEnum.Managed &&
-                        !boostError && <CredentialListSkeleton />}
+                        !boostError && <CredentialListSkeleton cardSize="credential" />}
                     {!boostsLoading &&
                         boosts &&
                         !boostError &&
