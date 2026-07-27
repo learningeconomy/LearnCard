@@ -152,8 +152,12 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
     const renderCredentialList = vcsToDisplay?.map(credential => {
         if (!credential.record?.uri) return <></>;
 
-        const categoryImgUrl =
-            categoryMetadata[credential.category as CredentialCategoryEnum].defaultImageSrc;
+        // record.category can be an arbitrary string (e.g. custom contract categories),
+        // so fall back to Achievement metadata when it isn't a known category.
+        const categoryImgUrl = (
+            categoryMetadata[credential.category as CredentialCategoryEnum] ??
+            categoryMetadata[CredentialCategoryEnum.achievement]
+        ).defaultImageSrc;
         const uniqueId = credential.vc ? getUniqueId(credential.vc) : credential.record.uri;
 
         return (
