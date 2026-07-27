@@ -39,9 +39,14 @@ import {
 } from '../../helpers/clrRenderer.helpers';
 import { BrandingEnum, useGetCredentialWithEdits, useIsLoggedIn } from 'learn-card-base';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
+import {
+    deriveLifecycleStatus,
+    CredentialLifecycleStatus,
+} from '../../hooks/deriveLifecycleStatus';
 import endorsementsRequestStore from '../../stores/endorsementsRequestStore';
 import EndorsementDraftRequestSuccess from '../boost-endorsements/EndorsementRequestForm/EndorsementDraftRequestSuccess';
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
+import * as m from '../../paraglide/messages.js';
 
 const websiteLink = `${getAppBaseUrl()}/login`;
 
@@ -60,6 +65,7 @@ const ViewSharedBoost: React.FC<{
     const [vc, setVC] = useState<VP>();
     const [errMsg, setErrMsg] = useState<string | undefined | null>();
     const [verificationItems, setVerificationItems] = useState<VerificationItem[]>([]);
+    const [lifecycleStatus, setLifecycleStatus] = useState<CredentialLifecycleStatus>('active');
     const [tryRefetch, setTryRefetch] = useState(false);
     const [loading, setLoading] = useState<boolean>(true);
 
@@ -107,15 +113,32 @@ const ViewSharedBoost: React.FC<{
             setWallet(wallet);
             const resolvedVc = await wallet.read.get(uri);
 
+            const credentialToVerify = Array.isArray(resolvedVc?.verifiableCredential)
+                ? resolvedVc?.verifiableCredential[0]
+                : resolvedVc?.verifiableCredential;
+
             const verifications = await wallet?.invoke?.verifyCredential(
-                Array.isArray(resolvedVc?.verifiableCredential)
-                    ? resolvedVc?.verifiableCredential[0]
-                    : resolvedVc?.verifiableCredential,
+                credentialToVerify,
                 {},
                 true
             );
 
             setVerificationItems(verifications);
+
+            // Derive revoked/suspended lifecycle status from a raw verification check
+            // (prettify=false) using the same bespoke wallet, so the shared card can reflect
+            // it. Fail-open to 'active' so a check error never renders a valid credential as
+            // revoked.
+            try {
+                const rawCheck = await (wallet?.invoke?.verifyCredential as any)?.(
+                    credentialToVerify,
+                    {},
+                    false
+                );
+                setLifecycleStatus(deriveLifecycleStatus(rawCheck));
+            } catch {
+                setLifecycleStatus('active');
+            }
 
             setVC(resolvedVc);
             if (resolvedVc?.verifiableCredential) {
@@ -189,6 +212,18 @@ const ViewSharedBoost: React.FC<{
     };
 
     const redirectHome = () => history.push('/');
+
+    // Revoked/suspended visual treatment for the shared card. Mirrors the shared
+    // getLifecycleTreatment helper (kept inline here to avoid a cross-package import
+    // for a distinct card surface). Inline filter style so it applies regardless of
+    // Tailwind scanning.
+    const isInactiveCredential = lifecycleStatus === 'revoked' || lifecycleStatus === 'suspended';
+    const inactiveMediaStyle: React.CSSProperties | undefined = isInactiveCredential
+        ? { filter: 'grayscale(1) brightness(0.9)' }
+        : undefined;
+    const lifecyclePillBg = lifecycleStatus === 'suspended' ? '#D97706' : '#DC2626';
+    const lifecyclePillLabel =
+        lifecycleStatus === 'suspended' ? m['issue.suspended']() : m['issue.revoked']();
 
     if (showEndorsementRequest) {
         return (
@@ -288,15 +323,34 @@ const ViewSharedBoost: React.FC<{
                                 }}
                             />
                         ) : (
-                            <VCDisplayCardWrapper2
-                                credential={_boost}
-                                lc={wallet}
-                                hideNavButtons
-                                hideQRCode
-                                hideFrontFaceDetails
-                                isFrontOverride={isFront}
-                                setIsFrontOverride={setIsFront}
-                            />
+                            <div className="relative w-full flex flex-col items-center">
+                                {/* Pill sits OUTSIDE the desaturated wrapper so it stays
+                                    colored (a parent CSS filter would grayscale it too). */}
+                                {isInactiveCredential && (
+                                    <span
+                                        className="mb-3 rounded-full px-[14px] py-[4px] text-[12px] font-extrabold uppercase tracking-wide text-white shadow-[0_2px_6px_rgba(0,0,0,0.2)]"
+                                        style={{ backgroundColor: lifecyclePillBg }}
+                                        data-testid="shared-boost-lifecycle-pill"
+                                    >
+                                        {lifecyclePillLabel}
+                                    </span>
+                                )}
+                                <div
+                                    className="w-full flex flex-col items-center"
+                                    style={inactiveMediaStyle}
+                                >
+                                    <VCDisplayCardWrapper2
+                                        credential={_boost}
+                                        lc={wallet}
+                                        hideNavButtons
+                                        hideQRCode
+                                        hideFrontFaceDetails
+                                        isFrontOverride={isFront}
+                                        setIsFrontOverride={setIsFront}
+                                        lifecycleStatus={lifecycleStatus}
+                                    />
+                                </div>
+                            </div>
                         )}
                     </section>
                 )}

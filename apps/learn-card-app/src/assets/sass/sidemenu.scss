@@ -109,6 +109,17 @@ ion-split-pane {
 // The selected row is already conveyed by its background highlight; the default
 // outline drew an unwanted box around the focused/just-clicked item.
 .lc-side-menu-content {
+    &::part(scroll) {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    &::part(scroll)::-webkit-scrollbar {
+        display: none;
+        width: 0;
+        height: 0;
+    }
+
     a,
     button {
         &:focus,
