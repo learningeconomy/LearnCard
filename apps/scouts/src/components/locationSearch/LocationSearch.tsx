@@ -21,8 +21,6 @@ import HourGlass from '../../assets/lotties/hourglass.json';
 
 import { AddressSpec, formatLocationObject } from './location.helpers';
 
-const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
-
 const LocationSearch: React.FC<{
     showCloseButton?: boolean;
     handleLocationStateChange: (locaton: AddressSpec) => void;
