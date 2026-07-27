@@ -5,9 +5,8 @@ import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
 import { searchCredentialsFromCache } from 'learn-card-base';
 import { IonRow, IonCol, IonGrid, IonSpinner } from '@ionic/react';
-import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEarnedCard';
+import BoostEarnedCard, { BoostEarnedCardSkeleton } from './BoostEarnedCard';
 import BoostErrorsDisplay from '../../../components/boost/boostErrors/BoostErrorsDisplay';
-import { CredentialListSkeleton } from 'learn-card-base/components/loaders/CredentialListSkeleton';
 
 import {
     CredentialCategoryEnum,
@@ -32,6 +31,7 @@ type BoostEarnedListProps = {
     emptyMessage?: string;
     emptyMessageStyle?: string;
 };
+const INITIAL_SKELETON_COUNT = 4;
 
 const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
     category,
@@ -111,6 +111,14 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
             ) ?? [],
         [records, searchResults]
     );
+    const loadingCredentials = Array.from({ length: INITIAL_SKELETON_COUNT }, (_, index) => (
+        <BoostEarnedCardSkeleton
+            key={`earned-skeleton-${category}-${index}`}
+            categoryType={category}
+            boostPageViewMode={viewMode}
+            branding={BrandingEnum.scoutPass}
+        />
+    ));
 
     const handleRefetch = async () => {
         try {
@@ -141,10 +149,21 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
     return (
         <>
             {showSkeleton && (
-                <CredentialListSkeleton
-                    viewMode={isCardView ? 'card' : 'list'}
-                    cardSize="credential"
-                />
+                <IonCol
+                    className="flex m-auto items-center flex-wrap w-full achievements-list-container"
+                    role="status"
+                    aria-label={`Loading earned ${category}`}
+                >
+                    {isCardView ? (
+                        <IonGrid className="max-w-[600px] pt-[25px]">
+                            <IonRow>{loadingCredentials}</IonRow>
+                        </IonGrid>
+                    ) : (
+                        <div className="flex flex-col gap-[10px] w-full max-w-[700px] px-[20px] pt-[25px]">
+                            {loadingCredentials}
+                        </div>
+                    )}
+                </IonCol>
             )}
             {!showSkeleton &&
                 credentials &&

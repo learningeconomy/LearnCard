@@ -7,9 +7,8 @@ import useBoostModal from '../hooks/useBoostModal';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
 
 import { IonRow, IonCol, IonGrid, IonSpinner } from '@ionic/react';
-import BoostManagedCard from '../../../components/boost/boost-managed-card/BoostManagedCard';
+import BoostManagedCard, { BoostManagedCardSkeleton } from './BoostManagedCard';
 import BoostErrorsDisplay from '../../../components/boost/boostErrors/BoostErrorsDisplay';
-import { CredentialListSkeleton } from 'learn-card-base/components/loaders/CredentialListSkeleton';
 import {
     CredentialCategoryEnum,
     BoostPageViewModeType,
@@ -37,6 +36,7 @@ type BoostManagedListProps = {
     title?: string;
     enableCreateButton?: boolean;
 };
+const INITIAL_SKELETON_COUNT = 4;
 
 const BoostManagedList: React.FC<BoostManagedListProps> = ({
     category,
@@ -124,6 +124,14 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
             ) ?? [],
         [managedBoosts, searchResults, category, viewMode, managedBoostsLoading, defaultImg]
     );
+    const loadingManagedBoosts = Array.from({ length: INITIAL_SKELETON_COUNT }, (_, index) => (
+        <BoostManagedCardSkeleton
+            key={`managed-skeleton-${category}-${index}`}
+            categoryType={category}
+            boostPageViewMode={viewMode}
+            branding={BrandingEnum.scoutPass}
+        />
+    ));
 
     const handleRefetch = async () => {
         try {
@@ -154,10 +162,21 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
     return (
         <>
             {managedBoostsLoading && !boostError && (
-                <CredentialListSkeleton
-                    viewMode={isCardView ? 'card' : 'list'}
-                    cardSize="credential"
-                />
+                <IonCol
+                    className="flex m-auto items-center flex-wrap w-full achievements-list-container"
+                    role="status"
+                    aria-label={`Loading managed ${category}`}
+                >
+                    {isCardView ? (
+                        <IonGrid className="max-w-[600px] pt-[20px]">
+                            <IonRow>{loadingManagedBoosts}</IonRow>
+                        </IonGrid>
+                    ) : (
+                        <div className="flex flex-col gap-[10px] w-full max-w-[700px] px-[20px] pt-[25px]">
+                            {loadingManagedBoosts}
+                        </div>
+                    )}
+                </IonCol>
             )}
 
             {!managedBoostsLoading && !boostError && managedBoostsList && (
