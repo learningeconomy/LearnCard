@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
-import Lottie from 'react-lottie-player';
+
 import { useHistory } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 
@@ -11,8 +11,7 @@ import BoostPreview from '../../boost/boostCMS/BoostPreview/BoostPreview';
 import BoostPreviewBody from '../../boost/boostCMS/BoostPreview/BoostPreviewBody';
 import BoostPreviewFooter from '../../boost/boostCMS/BoostPreview/BoostPreviewFooter';
 import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
-// @ts-ignore
-import HourGlass from '../../../assets/lotties/hourglass.json';
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import IDDisplayCard from 'learn-card-base/components/id/IDDisplayCard';
 import IdDisplayContainer from '../../../pages/ids/IdDisplayContainer';
 import { BoostIssuanceLoading } from '../boostLoader/BoostLoader';
@@ -94,10 +93,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
     );
 
     const { data: recipients, isLoading: recipientsLoading } = useGetBoostRecipients(boost?.uri);
-    const {
-        data: myProfile,
-        isLoading: myProfileLoading,
-    } = useGetProfile();
+    const { data: myProfile, isLoading: myProfileLoading } = useGetProfile();
 
     const showSkeleton = loading || resolvedBoostLoading || recipientsLoading || myProfileLoading;
 
@@ -148,7 +144,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
 
     const cardTitle = boost?.name || boostVC?.credentialSubject?.achievement?.name;
 
-    const link = "/boost/update";
+    const link = '/boost/update';
     const linkQueryParams = `?uri=${boost?.uri}&boostUserType=someone&boostCategoryType=${boost?.category}&boostSubCategoryType=${boost?.type}`;
 
     const thumbImage = (cred && getImageUrlFromCredential(cred)) || defaultImg;
@@ -211,10 +207,22 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
                 categoryType={categoryType as any}
                 showVerifications={false}
                 issueHistory={issueHistory as any}
-                onDotsClick={boost?.status === 'DRAFT' && !showSkeleton ? handleOptionsMenu : undefined}
-                issueeOverride={categoryType === CredentialCategoryEnum.meritBadge ? 'Scout' : undefined}
-                issuerOverride={categoryType === CredentialCategoryEnum.meritBadge ? currentUser?.name : undefined}
-                issuerImageComponent={categoryType === CredentialCategoryEnum.meritBadge ? <ProfilePicture /> : undefined}
+                onDotsClick={
+                    boost?.status === 'DRAFT' && !showSkeleton ? handleOptionsMenu : undefined
+                }
+                issueeOverride={
+                    categoryType === CredentialCategoryEnum.meritBadge ? 'Scout' : undefined
+                }
+                issuerOverride={
+                    categoryType === CredentialCategoryEnum.meritBadge
+                        ? currentUser?.name
+                        : undefined
+                }
+                issuerImageComponent={
+                    categoryType === CredentialCategoryEnum.meritBadge ? (
+                        <ProfilePicture />
+                    ) : undefined
+                }
                 handleCloseModal={() => closePreviewModal()}
                 customBodyCardComponent={
                     <BoostPreviewBody
@@ -245,7 +253,9 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
                         />
                     ) : (
                         <CredentialBadge
-                            achievementType={boostVC?.credentialSubject?.achievement?.achievementType}
+                            achievementType={
+                                boostVC?.credentialSubject?.achievement?.achievementType
+                            }
                             boostType={categoryType as any}
                             badgeThumbnail={badgeThumbnail}
                             badgeCircleCustomClass="w-[170px] h-[170px]"
@@ -264,7 +274,10 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
                     />
                 }
                 customIssueHistoryComponent={
-                    <IonList lines="none" className="flex flex-col items-center justify-center w-[100%]">
+                    <IonList
+                        lines="none"
+                        className="flex flex-col items-center justify-center w-[100%]"
+                    >
                         {recipients?.map((recipient, index) => {
                             return (
                                 <IonItem
@@ -283,10 +296,12 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
                                         </div>
                                         <div className="flex flex-col items-start justify-center pt-1 pr-1 pb-1">
                                             <p className="text-grayscale-900 font-semibold capitalize text-sm">
-                                                {recipient?.to?.displayName || recipient?.to?.profileId}
+                                                {recipient?.to?.displayName ||
+                                                    recipient?.to?.profileId}
                                             </p>
                                             <p className="text-grayscale-600 font-normal text-sm">
-                                                {moment(recipient?.received).format('DD MMMM YYYY')} &bull;{' '}
+                                                {moment(recipient?.received).format('DD MMMM YYYY')}{' '}
+                                                &bull;{' '}
                                                 {moment(recipient?.received).format('h:mm A')}
                                             </p>
                                         </div>
@@ -332,12 +347,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
             customBody = (
                 <div className="relative w-full text-center flex flex-col items-center justify-center">
                     <div className="max-w-[50px]">
-                        <Lottie
-                            loop
-                            animationData={HourGlass}
-                            play
-                            style={{ width: '100%', height: '100%' }}
-                        />
+                        <LoadingSpinner />
                     </div>
                 </div>
             );
