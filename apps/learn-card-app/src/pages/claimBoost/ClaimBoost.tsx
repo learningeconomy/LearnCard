@@ -50,6 +50,7 @@ import {
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGatedAction';
 import { useUploadVcFromText } from '../../hooks/useUploadVcFromText';
+import { useClaimSuccessToast } from '../../feedback/useClaimSuccessToast';
 
 import { getEmojiFromDidString, getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 import { VC, VerificationItem } from '@learncard/types';
@@ -183,6 +184,7 @@ const ClaimBoost: React.FC<{
     const [isFront, setIsFront] = useState(true);
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
     const { presentToast } = useToast();
+    const presentClaimSuccessToast = useClaimSuccessToast();
 
     const { credentialWithEdits } = useGetCredentialWithEdits(boost);
 
@@ -402,10 +404,7 @@ const ClaimBoost: React.FC<{
                 history?.push('/');
             }
 
-            presentToast(m['toasts.credentialClaimed'](), {
-                type: ToastTypeEnum.Success,
-                hasDismissButton: true,
-            });
+            presentClaimSuccessToast();
         } catch (e) {
             setIsClaimLoading(false);
 
@@ -457,10 +456,7 @@ const ClaimBoost: React.FC<{
 
             history?.push('/');
 
-            presentToast(m['toasts.credentialClaimed'](), {
-                type: ToastTypeEnum.Success,
-                hasDismissButton: true,
-            });
+            presentClaimSuccessToast();
         } catch (e) {
             completeClaimAttempt(vc, AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, getClaimErrorCode(e));
             setIsClaimLoading(false);

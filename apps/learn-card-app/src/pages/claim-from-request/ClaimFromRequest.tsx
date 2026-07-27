@@ -31,6 +31,7 @@ import {
     newFlowId,
     type FlowLifecycle,
 } from '@analytics';
+import { useClaimSuccessToast } from '../../feedback/useClaimSuccessToast';
 
 import {
     getAchievementType,
@@ -553,6 +554,7 @@ const ClaimFromRequest: React.FC = () => {
     const { initWallet, storeAndAddVCToWallet } = useWallet();
 
     const { presentToast } = useToast();
+    const presentClaimSuccessToast = useClaimSuccessToast();
 
     // Resolve the wallet category route for a just-claimed credential (e.g.
     // "/achievements", "/socialBadges"). Falls back to the passport ("/home")
@@ -767,10 +769,7 @@ const ClaimFromRequest: React.FC = () => {
             setClaimingCredential(false);
             void handleAfterCredentialClaim(credential);
 
-            presentToast(m['toasts.credentialClaimed'](), {
-                type: ToastTypeEnum.Success,
-                hasDismissButton: true,
-            });
+            presentClaimSuccessToast();
         } catch (e) {
             completeClaimAttempt(
                 credential,
