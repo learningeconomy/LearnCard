@@ -353,6 +353,7 @@ export type BoostGenericCardProps = {
     linkedCredentialsCount?: number;
     linkedCredentialsClassName?: string;
     checkBtnClass?: string;
+    lifecycleStatus?: 'active' | 'revoked' | 'suspended';
 };
 
 export type Attachment = {

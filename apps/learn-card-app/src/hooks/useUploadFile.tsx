@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { v4 as uuid } from 'uuid';
+
+import * as m from '../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('use-upload-file');
 
@@ -18,12 +20,13 @@ import {
     useModal,
     ToastTypeEnum,
     getCategoryForCredential,
-    useSyncAllCredentialsToContractsMutation,
     categoryMetadata,
+    useSyncAllCredentialsToContractsMutation,
 } from 'learn-card-base';
 import { useAiInsightCredentialMutation } from 'learn-card-base/hooks/useAiInsightCredential';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { useUploadVcFromText } from './useUploadVcFromText';
+import { addCertificateAttachment } from './certificateAttachment';
 
 export type RawArtifactType = {
     id: string;
@@ -78,6 +81,13 @@ const SUCCESS_TOAST_OPTIONS = {
     autoDismiss: false,
 } as const;
 
+const FILE_UPLOAD_ERROR_TOAST_OPTIONS = {
+    hasDismissButton: true,
+    type: ToastTypeEnum.Error,
+    hasX: true,
+    duration: 5000,
+} as const;
+
 const TOAST_PAUSE_MS = 100;
 
 // Stable, user-facing copy for inline file errors. Raw parser / validation / storage
@@ -86,7 +96,7 @@ const FRIENDLY_FILE_ERROR =
     'We could not add that credential. Please check the file and try again.';
 
 export const getFileInfo = (file: File) => {
-    const match = file.name.match(/\.([0-9a-z]+)(?=[?#])?|(\.)(?:[\w]+)$/i);
+    const match = file.name.match(/\.([0-9a-z]+)(?:[?#].*)?$/i);
     const extension = match?.[1]?.toLowerCase() ?? 'unknown';
 
     const typeMap: Record<string, string> = {
@@ -155,10 +165,12 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
         });
 
     const getFile = async (event: React.ChangeEvent<HTMLInputElement>, uploadType: string) => {
+        setIsUploading(true);
+        setBase64Data('');
+        setRawArtifactCredential(null);
+        setFile(null);
+
         try {
-            setIsUploading(true);
-            setBase64Data('');
-            setRawArtifactCredential(null);
             const wallet = await initWallet();
             const walletDid = wallet?.id?.did();
             const file = event.target.files?.[0];
@@ -166,19 +178,21 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             if (!file || !walletDid) return;
 
             const fileInfo = getFileInfo(file);
-            setFile(fileInfo);
-
-            const base64Data = await toBase64(file);
-            if (base64Data) setBase64Data(base64Data);
 
             const rawArtifactCredential = await createRawArtifactVC(file, walletDid, uploadType);
+            setFile(fileInfo);
+            setBase64Data(rawArtifactCredential.rawArtifact.data);
             setRawArtifactCredential(rawArtifactCredential);
-            setIsUploading(false);
 
             return { fileInfo, rawArtifactCredential };
         } catch (error) {
+            log.error('getFile::error', error);
+            presentToast(m['passport.buildMyLearnCard.uploadError.singleMessage'](), {
+                ...FILE_UPLOAD_ERROR_TOAST_OPTIONS,
+                title: m['passport.buildMyLearnCard.uploadError.title'](),
+            });
+        } finally {
             setIsUploading(false);
-            log.info('getFile::error', error);
         }
     };
 
@@ -187,32 +201,78 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
         e: React.ChangeEvent<HTMLInputElement>,
         uploadType: UploadTypesEnum
     ) => {
+        setIsUploading(true);
+        setBase64Datas([]);
+        setRawArtifactCredentials([]);
+        setFiles([]);
+
         try {
-            setIsUploading(true);
-            setBase64Datas([]);
-            setRawArtifactCredentials([]);
             const wallet = await initWallet();
             const walletDid = wallet?.id?.did();
-            const files = e.target.files;
+            const selectedFiles = e.target.files;
 
-            if (!files || !walletDid) return;
+            if (!selectedFiles || !walletDid) return;
 
-            const fileInfos = Array.from(files).map(file => getFileInfo(file));
-            setFiles(fileInfos);
+            const fileArray = Array.from(selectedFiles);
+            const uploadResults = await Promise.all(
+                fileArray.map(async file => {
+                    try {
+                        const rawArtifactCredential = await createRawArtifactVC(
+                            file,
+                            walletDid,
+                            uploadType
+                        );
 
-            const _base64Datas = await Promise.all(Array.from(files).map(toBase64));
-            if (_base64Datas) setBase64Datas(_base64Datas);
-
-            const rawArtifactCredentials = await Promise.all(
-                Array.from(files).map(file => createRawArtifactVC(file, walletDid, uploadType))
+                        return {
+                            fileInfo: getFileInfo(file),
+                            base64Data: rawArtifactCredential.rawArtifact.data,
+                            rawArtifactCredential,
+                        };
+                    } catch (error) {
+                        log.error('getFiles::file-error', error);
+                        return null;
+                    }
+                })
             );
+            const successfulUploads = uploadResults.filter(result => result !== null);
+            const failedCount = fileArray.length - successfulUploads.length;
+            const fileInfos = successfulUploads.map(result => result.fileInfo);
+            const rawArtifactCredentials = successfulUploads.map(
+                result => result.rawArtifactCredential
+            );
+
+            setFiles(fileInfos);
+            setBase64Datas(successfulUploads.map(result => result.base64Data));
             setRawArtifactCredentials(rawArtifactCredentials);
-            setIsUploading(false);
+
+            if (failedCount > 0) {
+                const hadPartialSuccess = successfulUploads.length > 0;
+                presentToast(
+                    hadPartialSuccess
+                        ? failedCount === 1
+                            ? m['passport.buildMyLearnCard.uploadError.partialSingleMessage']()
+                            : m['passport.buildMyLearnCard.uploadError.partialMultipleMessage']({
+                                  count: failedCount,
+                              })
+                        : m['passport.buildMyLearnCard.uploadError.multipleMessage'](),
+                    {
+                        ...FILE_UPLOAD_ERROR_TOAST_OPTIONS,
+                        title: hadPartialSuccess
+                            ? m['passport.buildMyLearnCard.uploadError.partialTitle']()
+                            : m['passport.buildMyLearnCard.uploadError.title'](),
+                    }
+                );
+            }
 
             return { fileInfos, rawArtifactCredentials };
         } catch (error) {
+            log.error('getFiles::error', error);
+            presentToast(m['passport.buildMyLearnCard.uploadError.multipleMessage'](), {
+                ...FILE_UPLOAD_ERROR_TOAST_OPTIONS,
+                title: m['passport.buildMyLearnCard.uploadError.title'](),
+            });
+        } finally {
             setIsUploading(false);
-            log.info('getFiles::error', error);
         }
     };
 
@@ -397,7 +457,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             return { vc, credentialUri };
         } catch (error) {
             setIsSaving(false);
-            log.info('saveFile::error', error);
+            log.error('saveFile::error', error);
         }
     };
 
@@ -486,7 +546,13 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                 const wallet = await initWallet();
                 const issuedVCs = await Promise.all(
                     selectedVcs.map(async vc => {
-                        const issuedVc = await wallet.invoke.issueCredential(vc);
+                        const credentialWithAttachment = addCertificateAttachment(
+                            vc,
+                            rawArtifactVc
+                        );
+                        const issuedVc = await wallet.invoke.issueCredential(
+                            credentialWithAttachment
+                        );
                         const { credentialUri: uri, category } = await storeAndAddVCToWallet(
                             issuedVc
                         );
@@ -572,7 +638,13 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             if (vcs?.vcs?.length > 0) {
                 const issuedVCs = await Promise.all(
                     vcs.vcs.map(async ({ vc }) => {
-                        const issuedVc = await wallet.invoke.issueCredential(vc);
+                        const credentialWithAttachment = addCertificateAttachment(
+                            vc,
+                            rawArtifactCredential
+                        );
+                        const issuedVc = await wallet.invoke.issueCredential(
+                            credentialWithAttachment
+                        );
                         const { credentialUri: uri, category } = await storeAndAddVCToWallet(
                             issuedVc
                         );
@@ -684,7 +756,13 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                         if (fname) filenamesWithCreds.push(fname);
                         const issuedVCs = await Promise.all(
                             vcs.vcs.map(async ({ vc }) => {
-                                const issuedVc = await wallet.invoke.issueCredential(vc);
+                                const credentialWithAttachment = addCertificateAttachment(
+                                    vc,
+                                    rawVC
+                                );
+                                const issuedVc = await wallet.invoke.issueCredential(
+                                    credentialWithAttachment
+                                );
                                 const { credentialUri: uri, category } =
                                     await storeAndAddVCToWallet(issuedVc);
                                 return { uri, category };

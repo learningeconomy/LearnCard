@@ -667,6 +667,7 @@ export interface AnalyticsEventPayloads {
             | 'malformed_url'
             | 'unknown_scheme'
             | 'invalid_vc'
+            | 'interaction_unavailable'
             | 'unknown_format';
         surface?:
             | 'oid4vci'

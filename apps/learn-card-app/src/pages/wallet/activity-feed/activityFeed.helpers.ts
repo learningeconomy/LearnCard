@@ -23,6 +23,9 @@ export type ActivityFeedItemVM = {
     isSelf: boolean;
     statusLabel: string;
     statusTone: ActivityStatusTone;
+    /** Current lifecycle state of the credential. When revoked/suspended it
+     *  supersedes the event-based status label/tone/title. */
+    lifecycleStatus: 'active' | 'revoked' | 'suspended';
     /** Full, flat title used for the aria-label and free-text search. */
     title: string;
     /** Emphasized action phrase, e.g. "You sent a Badge to". */
@@ -152,6 +155,8 @@ const STATUS_LABEL_FN: Record<string, () => string> = {
     claimed: m['passport.activity.status.claimed'],
     expired: m['passport.activity.status.expired'],
     notDelivered: m['passport.activity.status.notDelivered'],
+    revoked: m['passport.activity.status.revoked'],
+    suspended: m['passport.activity.status.suspended'],
 };
 
 const STATUS_TONE: Record<string, ActivityStatusTone> = {
@@ -175,12 +180,40 @@ const buildTitleParts = (args: {
     direction: ActivityDirection;
     isSelf: boolean;
     eventType?: string;
+    lifecycleStatus: 'active' | 'revoked' | 'suspended';
     label: string;
     article: string;
     recipientName: string;
     actorName: string;
 }): { titleLead: string; titleSubject?: string } => {
-    const { direction, isSelf, eventType, label, article, recipientName, actorName } = args;
+    const {
+        direction,
+        isSelf,
+        eventType,
+        lifecycleStatus,
+        label,
+        article,
+        recipientName,
+        actorName,
+    } = args;
+
+    // Current lifecycle state supersedes the original event: a revoked/suspended
+    // credential reads as such regardless of how it was originally delivered.
+    if (lifecycleStatus === 'revoked' || lifecycleStatus === 'suspended') {
+        if (direction === 'received' || isSelf) {
+            return {
+                titleLead:
+                    lifecycleStatus === 'revoked'
+                        ? m['passport.activity.title.receivedRevoked']({ label })
+                        : m['passport.activity.title.receivedSuspended']({ label }),
+            };
+        }
+        const lead =
+            lifecycleStatus === 'revoked'
+                ? m['passport.activity.title.revokedFor']({ label })
+                : m['passport.activity.title.suspendedFor']({ label });
+        return { titleLead: lead, titleSubject: recipientName };
+    }
 
     if (isSelf) return { titleLead: m['passport.activity.title.selfAdded']({ article, label }) };
     if (direction === 'received')
@@ -220,6 +253,9 @@ type RawActivity = {
     recipientIdentifier: string;
     boost?: { id: string; name?: string; category?: string };
     recipientProfile?: { profileId: string; displayName?: string; image?: string };
+    /** Current lifecycle status derived server-side from the credential's status
+     *  list (revoked/suspension bits). `undefined`/`'active'` means still valid. */
+    status?: 'active' | 'revoked' | 'suspended';
 };
 
 export const toActivityFeedVM = (record: RawActivity, myProfileId?: string): ActivityFeedItemVM => {
@@ -242,10 +278,14 @@ export const toActivityFeedVM = (record: RawActivity, myProfileId?: string): Act
         Boolean(myProfileId) &&
         (record.recipientProfile?.profileId === myProfileId ||
             record.recipientIdentifier === myProfileId);
+    const lifecycleStatus: 'active' | 'revoked' | 'suspended' =
+        record.status === 'revoked' || record.status === 'suspended' ? record.status : 'active';
+    const isInactive = lifecycleStatus !== 'active';
     const { titleLead, titleSubject } = buildTitleParts({
         direction,
         isSelf,
         eventType: record.eventType,
+        lifecycleStatus,
         label,
         article,
         recipientName,
@@ -270,8 +310,17 @@ export const toActivityFeedVM = (record: RawActivity, myProfileId?: string): Act
         categoryLabel: label,
         isGenericCredential,
         isSelf,
-        statusLabel: activityStatusLabel(record.eventType),
-        statusTone: activityStatusTone(record.eventType),
+        // Revoked/suspended is the credential's *current* state, so it supersedes
+        // the event-based status label/tone.
+        statusLabel: isInactive
+            ? STATUS_LABEL_FN[lifecycleStatus]()
+            : activityStatusLabel(record.eventType),
+        statusTone: isInactive
+            ? lifecycleStatus === 'revoked'
+                ? 'critical'
+                : 'warning'
+            : activityStatusTone(record.eventType),
+        lifecycleStatus,
         title,
         titleLead,
         titleSubject,
