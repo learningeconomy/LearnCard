@@ -640,7 +640,9 @@ const ComparisonOverlay: React.FC<{
         <PathwayPortal>
             <div
                 className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-grayscale-900/40 backdrop-blur-sm font-poppins"
-                style={{ overscrollBehavior: 'contain' }}
+                style={{
+                    overscrollBehavior: 'contain',
+                }}
                 role="dialog"
                 aria-label="Compare two scenarios"
                 onClick={e => {

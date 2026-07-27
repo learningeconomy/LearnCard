@@ -1024,7 +1024,7 @@ ion-modal .safe-area-top-margin,
 
 #cancel-modal.bottom-sheet-modal {
     padding: 0;
-    padding-top: var(--modal-safe-area-top) !important;
+    padding-top: 0 !important;
     padding-bottom: 0 !important;
     justify-content: flex-end;
 
