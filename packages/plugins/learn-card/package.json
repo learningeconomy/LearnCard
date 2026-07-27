@@ -1,6 +1,6 @@
 {
     "name": "@learncard/learn-card-plugin",
-    "version": "1.2.27",
+    "version": "1.2.28",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",
