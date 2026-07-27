@@ -54,6 +54,7 @@ import {
 import { getEmojiFromDidString, getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 
 import useTheme from '../../theme/hooks/useTheme';
+import { useClaimSuccessToast } from '../../feedback/useClaimSuccessToast';
 import * as m from '../../paraglide/messages.js';
 
 export type FromDashboardMetadata = {
@@ -170,6 +171,7 @@ const ClaimFromDashboard: React.FC = () => {
     const { initWallet, storeAndAddVCToWallet } = useWallet();
 
     const { presentToast } = useToast();
+    const presentClaimSuccessToast = useClaimSuccessToast();
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
@@ -320,10 +322,7 @@ const ClaimFromDashboard: React.FC = () => {
             setClaimingCredential(false);
             handleAfterCredentialClaim();
 
-            presentToast(m['toasts.credentialClaimed'](), {
-                type: ToastTypeEnum.Success,
-                hasDismissButton: true,
-            });
+            presentClaimSuccessToast();
         } catch (e) {
             setClaimingCredential(false);
             log.error('Error claiming credential', e);
