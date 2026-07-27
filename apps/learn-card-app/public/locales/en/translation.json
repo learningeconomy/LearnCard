@@ -2595,6 +2595,26 @@
         },
         "endorsements": "Endorsements"
     },
+    "feedback": {
+        "howWasThat": "How was that?",
+        "thanks": "Thanks for the feedback!",
+        "bad": "Not good",
+        "okay": "Okay",
+        "great": "Great",
+        "followup": {
+            "title": "What went wrong?",
+            "desc": "Your feedback helps us make LearnCard better.",
+            "reason": {
+                "confusing": "Confusing",
+                "slow": "Slow",
+                "broken": "Something broke",
+                "other": "Other"
+            },
+            "placeholder": "Tell us more (optional)",
+            "send": "Send Feedback",
+            "skip": "Skip"
+        }
+    },
     "toasts": {
         "acceptFailed": "Oops, we were unable accept the credentials. Please try again.",
         "ai": {
