@@ -192,6 +192,7 @@ const TroopCredentialsModal: React.FC<TroopCredentialsModalProps> = ({
                         viewMode={BoostPageViewMode.Card}
                         enableCreateButton={!!showCreateBoostButton}
                         returnToParentAfterSave
+                        useManagedCardSkeleton
                     />
                 </IonContent>
             </section>
