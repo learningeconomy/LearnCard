@@ -1,75 +1,16 @@
+import { fileURLToPath } from 'url';
 import path from 'path';
 
-import esbuild from 'esbuild';
-import fs from 'fs/promises';
+import { buildPackage } from '../../../../scripts/esbuild-package-build.mjs';
 
-const buildOptions = {
-    target: 'es2020',
-    sourcemap: true,
-    external: [
+await buildPackage({
+    packageDir: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'),
+    outfileBase: 'openid4vc-plugin',
+    extraExternals: [
         'isomorphic-fetch',
         'isomorphic-webcrypto',
-        '@learncard/core',
-        '@learncard/didkit-plugin',
-        '@learncard/vc-plugin',
+        // Type-only usage — declared in devDependencies, not runtime deps.
         '@learncard/types',
+        '@learncard/types/*',
     ],
-};
-
-const configurations = [
-    {
-        keepNames: true,
-        bundle: true,
-        sourcemap: 'external',
-        tsconfig: 'tsconfig.json',
-        plugins: [],
-        entryPoints: ['src/index.ts'],
-        format: 'cjs',
-        outfile: 'dist/openid4vc-plugin.cjs.development.cjs',
-        ...buildOptions,
-    },
-    {
-        keepNames: true,
-        bundle: true,
-        sourcemap: 'external',
-        tsconfig: 'tsconfig.json',
-        plugins: [],
-        entryPoints: ['src/index.ts'],
-        minify: true,
-        format: 'cjs',
-        outfile: 'dist/openid4vc-plugin.cjs.production.min.cjs',
-        ...buildOptions,
-    },
-    {
-        keepNames: true,
-        bundle: true,
-        sourcemap: 'external',
-        tsconfig: 'tsconfig.json',
-        plugins: [],
-        entryPoints: ['src/index.ts'],
-        format: 'esm',
-        outfile: 'dist/openid4vc-plugin.esm.js',
-        ...buildOptions,
-    },
-];
-
-function asyncRimraf(dirPath) {
-    return fs.rm(dirPath, { recursive: true, force: true });
-}
-
-await Promise.all(
-    configurations.map(async config => {
-        var dir = config.outdir || path.dirname(config.outfile);
-        await asyncRimraf(dir).catch(() => {
-            console.log('Unable to delete directory', dir);
-        });
-    })
-);
-
-await Promise.all(configurations.map(config => esbuild.build(config))).catch(err => {
-    console.error('❌ Build failed');
-    process.exit(1);
 });
-
-console.log('✔ Build successful');
-process.exit(0);

@@ -1,5 +1,7 @@
-import React from 'react';
-import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
+import React, { Suspense } from 'react';
+import type { EmojiClickData } from 'emoji-picker-react';
+
+const EmojiPicker = React.lazy(() => import('emoji-picker-react'));
 
 import X from 'learn-card-base/svgs/X';
 
@@ -17,15 +19,21 @@ export const FamilyEmojiPicker: React.FC<{
                     <X className="text-black w-[30px]" />
                 </button>
             </div>
-            <EmojiPicker
-                className="z-9999"
-                lazyLoadEmojis
-                theme="auto"
-                onEmojiClick={emojiSelected => {
-                    handleSetEmoji(emojiSelected);
-                    handleCloseModal();
-                }}
-            />
+            <Suspense
+                fallback={
+                    <div className="w-[350px] h-[450px] bg-white rounded-2xl animate-pulse" />
+                }
+            >
+                <EmojiPicker
+                    className="z-9999"
+                    lazyLoadEmojis
+                    theme="auto"
+                    onEmojiClick={emojiSelected => {
+                        handleSetEmoji(emojiSelected);
+                        handleCloseModal();
+                    }}
+                />
+            </Suspense>
         </div>
     );
 };

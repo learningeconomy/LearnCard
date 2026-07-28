@@ -1,76 +1,9 @@
+import { fileURLToPath } from 'url';
 import path from 'path';
 
-import esbuild from 'esbuild';
-import { NodeResolvePlugin } from '@esbuild-plugins/node-resolve';
-import fs from 'fs/promises';
+import { buildPackage } from '../../../../scripts/esbuild-package-build.mjs';
 
-const nodeResolveExternal = NodeResolvePlugin({
-    extensions: ['.ts', '.js', '.tsx', '.jsx', '.cjs', '.mjs'],
-    onResolved: resolved => {
-        if (resolved.includes('node_modules')) {
-            return {
-                external: true,
-            };
-        }
-        return resolved;
-    },
+await buildPackage({
+    packageDir: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'),
+    outfileBase: 'brain-client',
 });
-
-const configurations = [
-    {
-        keepNames: true,
-        bundle: true,
-        sourcemap: 'external',
-        tsconfig: 'tsconfig.json',
-        plugins: [nodeResolveExternal],
-        entryPoints: ['src/index.ts'],
-        format: 'cjs',
-        outfile: 'dist/brain-client.cjs.development.cjs',
-    },
-    {
-        keepNames: true,
-        bundle: true,
-        sourcemap: 'external',
-        tsconfig: 'tsconfig.json',
-        plugins: [nodeResolveExternal],
-        entryPoints: ['src/index.ts'],
-        minify: true,
-        format: 'cjs',
-        outfile: 'dist/brain-client.cjs.production.min.cjs',
-    },
-    {
-        keepNames: true,
-        bundle: true,
-        sourcemap: 'external',
-        tsconfig: 'tsconfig.json',
-        // For the ESM build, rely on esbuild's default resolution and
-        // bundle dependencies like @learncard/helpers directly, so we
-        // don't end up importing the CJS helpers build that uses
-        // dynamic require('query-string') in the browser.
-        plugins: [],
-        entryPoints: ['src/index.ts'],
-        format: 'esm',
-        outfile: 'dist/brain-client.esm.js',
-    },
-];
-
-function asyncRimraf(path) {
-    return fs.rm(path, { recursive: true, force: true });
-}
-
-await Promise.all(
-    configurations.map(async config => {
-        var dir = config.outdir || path.dirname(config.outfile);
-        await asyncRimraf(dir).catch(() => {
-            console.log('Unable to delete directory', dir);
-        });
-    })
-);
-
-await Promise.all(configurations.map(config => esbuild.build(config))).catch(err => {
-    console.error('❌ Build failed');
-    process.exit(1);
-});
-
-console.log('✔ Build successful');
-process.exit(0);

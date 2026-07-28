@@ -1,5 +1,5 @@
 import React from 'react';
-import { EmojiClickData } from 'emoji-picker-react';
+import type { EmojiClickData } from 'emoji-picker-react';
 
 import IDSleeve from 'learn-card-base/svgs/IDSleeve';
 import CrescentCornerLeft from '../../svgs/CrescentCornerLeft';

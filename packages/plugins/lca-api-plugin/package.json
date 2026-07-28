@@ -60,7 +60,8 @@
         "hex-lite": "^1.5.0",
         "isomorphic-fetch": "^3.0.0",
         "isomorphic-webcrypto": "^2.3.8",
-        "pbkdf2-hmac": "^1.2.1"
+        "pbkdf2-hmac": "^1.2.1",
+        "zod": "^4.1.13"
     },
     "sideEffects": false
 }

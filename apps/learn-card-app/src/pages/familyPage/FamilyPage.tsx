@@ -132,7 +132,7 @@ const FamilyPage: React.FC = () => {
     const simpleEarnedBoostsCount = records?.pages?.[0]?.records?.length ?? 0;
     const simpleManagedBoostsCount = managedBoosts?.pages?.[0]?.records?.length ?? 0;
 
-    const hasFamilyID = records?.pages?.[0]?.records?.length > 0 ?? false;
+    const hasFamilyID = (records?.pages?.[0]?.records?.length ?? 0) > 0;
 
     let isBoostsEmpty = false;
     if (activeTab === CredentialListTabEnum.Managed) {

@@ -3,7 +3,7 @@ import { useStore } from '@nanostores/react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('message-with-artifact');
 
-import MarkdownRenderer from '../../ai-assessment/AiAssessment/helpers/MarkdownRenderer';
+import MarkdownRenderer from '../../ai-assessment/AiAssessment/helpers/LazyMarkdownRenderer';
 import { IonSpinner } from '@ionic/react';
 
 import {

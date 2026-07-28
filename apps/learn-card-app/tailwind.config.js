@@ -1,4 +1,12 @@
-const colors = require('tailwindcss/colors');
+// Deprecated aliases (renamed in Tailwind v2.2/v3.0) are getters that emit build
+// warnings on ANY access — including destructuring — so filter by key name instead.
+const allColors = require('tailwindcss/colors');
+const DEPRECATED_COLORS = ['lightBlue', 'warmGray', 'trueGray', 'coolGray', 'blueGray'];
+const colors = Object.fromEntries(
+    Object.keys(allColors)
+        .filter(key => !DEPRECATED_COLORS.includes(key))
+        .map(key => [key, allColors[key]])
+);
 
 module.exports = {
     content: [
@@ -465,7 +473,6 @@ module.exports = {
     },
     plugins: [
         require('@tailwindcss/typography'),
-        require('@tailwindcss/line-clamp'),
         require('tailwind-gradient-mask-image'), // Add a plugin for animation delays
         function ({ addUtilities }) {
             const newUtilities = {

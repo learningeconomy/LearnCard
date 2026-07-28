@@ -42,7 +42,7 @@ const SideMenuSecondaryLinks: React.FC<{
     const isAiRoute = (path: string) => AI_ROUTES.includes(path);
 
     const { data: records } = useGetCredentialList(CredentialCategoryEnum.family);
-    const hasFamilyID = records?.pages?.[0]?.records?.length > 0 ?? false;
+    const hasFamilyID = (records?.pages?.[0]?.records?.length ?? 0) > 0;
 
     const canCreateFamilies = hasFamilyID || flags?.canCreateFamilies;
     const showAiInsights = flags?.showAiInsights;

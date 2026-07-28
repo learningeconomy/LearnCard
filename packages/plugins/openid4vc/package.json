@@ -57,6 +57,7 @@
     "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
+        "@learncard/helpers": "workspace:*",
         "@learncard/vc-plugin": "workspace:^",
         "@peculiar/x509": "^1.12.0",
         "dcql": "^3.0.0",

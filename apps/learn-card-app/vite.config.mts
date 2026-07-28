@@ -146,6 +146,15 @@ export default defineConfig(async ({ mode, command }) => {
     const useSourceConditions = useDockerSourceMode || command === 'serve';
 
     return {
+        css: {
+            preprocessorOptions: {
+                scss: {
+                    // Tailwind v3 requires `@import` directives in index.scss, which Dart
+                    // Sass deprecated. Silence until the Tailwind v4 migration removes them.
+                    silenceDeprecations: ['import'],
+                },
+            },
+        },
         plugins: [
             i18nImportGuard(),
             react(),
@@ -172,17 +181,28 @@ export default defineConfig(async ({ mode, command }) => {
             rollupOptions: {
                 onwarn: paraglideMissingKeyOnWarn,
                 output: {
-                    manualChunks: {
-                        // Core framework
-                        'vendor-react': ['react', 'react-dom', 'react-router', 'react-router-dom'],
-                        'vendor-ionic': ['@ionic/react', '@ionic/react-router', '@ionic/core'],
-                        // Heavy deps in their own chunks
-                        'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/analytics'],
-                        'vendor-sentry': ['@sentry/react', '@sentry/browser'],
-                        'vendor-launchdarkly': ['launchdarkly-react-client-sdk'],
-                        'vendor-swiper': ['swiper'],
-                        'vendor-lottie': ['react-lottie-player'],
-                        'vendor-tanstack': ['@tanstack/react-query'],
+                    // Function form so vendor rules match a package's internal modules
+                    // (e.g. firebase resolves to @firebase/*, which the object form missed).
+                    manualChunks(id: string) {
+                        if (id.includes('/src/paraglide/')) return 'i18n-messages';
+
+                        if (!id.includes('node_modules/')) return undefined;
+
+                        if (/node_modules\/(react|react-dom|react-router|react-router-dom|scheduler)\//.test(id))
+                            return 'vendor-react';
+                        if (id.includes('node_modules/@ionic/') || id.includes('node_modules/ionicons/'))
+                            return 'vendor-ionic';
+                        if (id.includes('node_modules/@firebase/') || id.includes('node_modules/firebase/'))
+                            return 'vendor-firebase';
+                        if (id.includes('node_modules/@sentry/') || id.includes('node_modules/@sentry-internal/'))
+                            return 'vendor-sentry';
+                        if (id.includes('node_modules/launchdarkly-')) return 'vendor-launchdarkly';
+                        if (id.includes('node_modules/swiper/')) return 'vendor-swiper';
+                        if (id.includes('node_modules/react-lottie-player/') || id.includes('node_modules/lottie-web/'))
+                            return 'vendor-lottie';
+                        if (id.includes('node_modules/@tanstack/')) return 'vendor-tanstack';
+
+                        return undefined;
                     },
                 },
             },

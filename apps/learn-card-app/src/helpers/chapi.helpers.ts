@@ -5,7 +5,7 @@ export const isInteractExchangeRequest = (event: CredentialStoreEvent): boolean 
 };
 
 export const isVcApiProtocolExchangeRequest = (event: CredentialStoreEvent): boolean => {
-    return 'vcapi' in (event.credential?.options as any)?.protocols ?? {};
+    return 'vcapi' in ((event.credential?.options as any)?.protocols ?? {});
 };
 
 export const isExchangeRequest = (event: CredentialStoreEvent): boolean => {
