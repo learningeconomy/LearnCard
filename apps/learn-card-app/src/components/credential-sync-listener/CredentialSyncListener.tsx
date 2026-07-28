@@ -76,21 +76,37 @@ const CredentialSyncListener: React.FC = () => {
         if (contractSyncTelemetryKeyRef.current === telemetryKey) return;
         contractSyncTelemetryKeyRef.current = telemetryKey;
 
+        const elapsedMs =
+            newestJob.startedAt && newestJob.finishedAt
+                ? newestJob.finishedAt - newestJob.startedAt
+                : undefined;
+
         analytics.track(AnalyticsEvents.CONSENT_FLOW_SYNC_JOB, {
             contractUri: newestJob.contractUri,
             termsUri: newestJob.termsUri,
             ownerDid: newestJob.ownerDid,
             phase: newestJob.status,
-            elapsedMs:
-                newestJob.startedAt && newestJob.finishedAt
-                    ? newestJob.finishedAt - newestJob.startedAt
-                    : undefined,
+            elapsedMs,
             totalCredentials: newestJob.totalCredentials,
             processedCredentials: newestJob.processedCredentials,
             completedCredentials: newestJob.completedCredentials,
             failedCredentials: newestJob.failedCredentials,
             retryCount: newestJob.retryCount,
         });
+
+        if (newestJob.status === 'done') {
+            analytics.track(AnalyticsEvents.CONSENT_SYNC_COMPLETED, {
+                contractUri: newestJob.contractUri,
+                totalCredentials: newestJob.totalCredentials,
+                duration_ms: elapsedMs,
+            });
+        } else if (newestJob.status === 'error') {
+            analytics.track(AnalyticsEvents.CONSENT_SYNC_FAILED, {
+                contractUri: newestJob.contractUri,
+                failedCredentials: newestJob.failedCredentials,
+                duration_ms: elapsedMs,
+            });
+        }
     }, [analytics, pendingContractSyncJobs]);
 
     return (

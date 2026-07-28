@@ -40,6 +40,15 @@ export const credentialContextReadiness = atom<CredentialContextReadiness>({
     count: 0,
 });
 export const chatInputText = atom('');
+
+/**
+ * Set whenever an in-flight AI response fails (server `data.error`
+ * payload or a WebSocket error while a response was pending).
+ * Consumers (e.g. analytics in `LearnCardAiChatBot`) subscribe to
+ * this to emit failure telemetry. `at` makes each failure a distinct
+ * value so repeated failures re-trigger subscribers.
+ */
+export const lastAiError = atom<{ at: number; code?: string } | null>(null);
 import { getLogger } from '../../logging/logger';
 const log = getLogger('chat-store');
 
@@ -160,6 +169,7 @@ export function resetChatSessionStores() {
     currentTopicUri.set(null);
     currentAiPathwayUri.set(null);
     sessionStartedAt.set(null);
+    lastAiError.set(null);
     planStreamActive.set(false);
     planMetadata.set(EMPTY_PLAN_METADATA);
     planSections.set(EMPTY_PLAN_SECTIONS);
@@ -749,6 +759,10 @@ export function connectWebSocket() {
                 log.error('Error:', data.error);
                 isLoading.set(false);
                 isTyping.set(false);
+                lastAiError.set({
+                    at: Date.now(),
+                    code: typeof data.error === 'string' ? data.error : 'server_error',
+                });
                 planStreamActive.set(false);
                 if (isStartupPending || typeof data.requestId === 'string') {
                     showErrorModal(
@@ -935,6 +949,8 @@ export function connectWebSocket() {
     ws.onerror = err => {
         if (ws !== socket) return;
         log.error('WebSocket error:', err);
+        const responsePending = isTyping.get() || isLoading.get() || !!streamingMessage.get();
+        if (responsePending) lastAiError.set({ at: Date.now(), code: 'websocket_error' });
     };
 
     return ws;
