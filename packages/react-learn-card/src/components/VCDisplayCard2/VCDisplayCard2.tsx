@@ -158,7 +158,6 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     const setIsFront = setIsFrontOverride ?? _setIsFront;
 
     const [headerHeight, setHeaderHeight] = useState(100); // 79 is the height if the header is one line
-    const [headerWidth, setHeaderWidth] = useState(0);
 
     const headerRef = useRef<HTMLHeadingElement>(null);
 
@@ -167,7 +166,6 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
         //   Probably because of the interaction with FitText
         setTimeout(() => {
             setHeaderHeight(headerRef.current?.clientHeight || 100);
-            setHeaderWidth(headerRef.current?.clientWidth ?? 0);
         }, 10);
     });
 
@@ -351,7 +349,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                 text={_title ?? ''}
                                 maxFontSize={32}
                                 minFontSize={20}
-                                width={((headerWidth ?? 290) - 40).toString()}
+                                width="100%"
                                 className={headerFitTextClassName}
                             />
                         </h1>
@@ -390,7 +388,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                     text={_title ?? ''}
                                     maxFontSize={32}
                                     minFontSize={20}
-                                    width={((headerWidth ?? 290) - 40).toString()}
+                                    width="100%"
                                     className={headerFitTextClassName}
                                 />
                             </h1>
