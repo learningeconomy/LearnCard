@@ -61,7 +61,15 @@ const FitText: React.FC<FitTextProps> = ({
 
         // Device rotation and responsive layouts change the container without
         // necessarily changing the text or receiving a window resize event.
-        const resizeObserver = new ResizeObserver(fitText);
+        let lastObservedWidth: number | undefined;
+        const resizeObserver = new ResizeObserver(([entry]) => {
+            const observedWidth = entry?.contentRect.width;
+
+            if (observedWidth === undefined || observedWidth === lastObservedWidth) return;
+
+            lastObservedWidth = observedWidth;
+            fitText();
+        });
         resizeObserver.observe(container);
 
         // Web fonts can alter the measured glyph width after the first layout.

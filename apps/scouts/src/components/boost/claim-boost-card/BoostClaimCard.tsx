@@ -21,7 +21,7 @@ import { useHighlightedCredentials } from '../../../hooks/useHighlightedCredenti
 import { getRoleFromCred, getScoutsNounForRole } from '../../../helpers/troop.helpers';
 
 type BoostClaimCardProps = {
-    credential: VC | VP;
+    credential: VC | VP | undefined;
     dismiss: ({ historyPush, callback }) => void;
     showFooter?: boolean;
     credentialUri?: string;
@@ -87,8 +87,8 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
         setSelectedImage(url);
     }, []);
 
-    const isID = credential?.display?.displayType === 'id' || false;
     const shouldUseHostCardPadding =
+        !credential ||
         getVCDisplayCardVariant(
             credential as VC,
             getDefaultCategoryForCredential(credential as VC)
@@ -130,11 +130,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                             </div>
                         </div>
                     )}
-                    <section
-                        className={`w-full ${shouldUseHostCardPadding ? 'px-6' : ''} ${
-                            isID ? '!px-0' : ''
-                        }`}
-                    >
+                    <section className="w-full">
                         {credential && (
                             <VCDisplayCardWrapper2
                                 credential={credential}
