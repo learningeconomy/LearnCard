@@ -135,6 +135,7 @@ services:
             SMART_RESUME_CLIENT_ID: ${SMART_RESUME_CLIENT_ID:-5B5AE2CE}
             SMART_RESUME_ACCESS_KEY: ${SMART_RESUME_ACCESS_KEY:-BACF7EF16263}
             SMART_RESUME_CONTRACT_URI: ${SMART_RESUME_CONTRACT_URI:-lc:network:localhost%3A4000/trpc:contract:a1087887-88ac-4eea-9a70-71b88b728719}
+            AUTHORIZED_SERVICE_DIDS: ${AUTHORIZED_SERVICE_DIDS:-did:web:localhost%3A3200:p:service}
 
     cloud:
         image: learncard-monorepo-local
@@ -355,6 +356,93 @@ services:
             # If Postgres is too slow to start, increase this
             LRSQL_POOL_INITIALIZATION_FAIL_TIMEOUT: 10000
             LRSQL_ALLOW_ALL_ORIGINS: true
+
+    console-seed:
+        image: neo4j:latest
+        profiles: ['console']
+        depends_on:
+            neo4j:
+                condition: service_healthy
+        networks:
+            - learn-card
+        restart: 'no'
+        volumes:
+            - ../../services/learn-card-network/console-bff/dev/seed-eco.cypher:/seed.cypher
+        entrypoint:
+            - sh
+            - -c
+            - 'cypher-shell -a bolt://neo4j:7687 -u neo4j -p this-is-the-password -f /seed.cypher'
+
+    console-bff:
+        image: learncard-monorepo-local
+        build:
+            context: ../../
+            dockerfile: Dockerfile.monorepo
+        container_name: 'lcn-console-bff'
+        profiles: ['console']
+        expose:
+            - 3200
+        ports:
+            - '3200:3200'
+        depends_on:
+            neo4j:
+                condition: service_healthy
+            redis:
+                condition: service_started
+            mongodb:
+                condition: service_healthy
+            brain:
+                condition: service_started
+        networks:
+            - learn-card
+        extra_hosts:
+            - 'localhost:host-gateway'
+        command: ['sh', '-c', 'cd services/learn-card-network/console-bff && bun run dev']
+        volumes:
+            - ../../services/learn-card-network:/app/services/learn-card-network
+            - ../../packages:/app/packages
+        environment:
+            CONSOLE_BFF_DEV_INSECURE_AUTH: 'true'
+            PORT: 3200
+            CONSOLE_DOMAIN: 'localhost:3200'
+            BRAIN_SERVICE_URL: http://localhost:4000
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
+            MONGO_URI: mongodb://mongodb:27017
+            MONGO_DB: console-bff
+            CHOKIDAR_USEPOLLING: 'true'
+            CHOKIDAR_INTERVAL: '1000'
+
+    console-web:
+        image: learncard-monorepo-local
+        build:
+            context: ../../
+            dockerfile: Dockerfile.monorepo
+        container_name: 'lcn-console-web'
+        profiles: ['console']
+        expose:
+            - 5173
+        ports:
+            - '5173:5173'
+        depends_on:
+            - console-bff
+        networks:
+            - learn-card
+        extra_hosts:
+            - 'localhost:host-gateway'
+        command: ['sh', '-c', 'cd apps/learn-cloud-console && bun run dev -- --host 0.0.0.0']
+        volumes:
+            - ../../apps/learn-cloud-console/src:/app/apps/learn-cloud-console/src
+            - ../../apps/learn-cloud-console/index.html:/app/apps/learn-cloud-console/index.html
+            - ../../apps/learn-cloud-console/vite.config.ts:/app/apps/learn-cloud-console/vite.config.ts
+            - ../../apps/learn-cloud-console/package.json:/app/apps/learn-cloud-console/package.json
+            - ../../apps/learn-cloud-console/tsconfig.json:/app/apps/learn-cloud-console/tsconfig.json
+            - ../../packages:/app/packages
+            - ../../services/learn-card-network:/app/services/learn-card-network
+        environment:
+            BFF_URL: http://console-bff:3200
+            CHOKIDAR_USEPOLLING: 'true'
+            CHOKIDAR_INTERVAL: '1000'
 
 networks:
     learn-card:

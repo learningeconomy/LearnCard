@@ -139,6 +139,8 @@
         "dev:services": "docker compose -f compose-local.yaml up --build --scale app=0",
         "dev-no-build": "docker compose -f compose-local.yaml up",
         "dev-build-brain": "docker compose -f compose-local.yaml up --build brain",
+        "dev-console": "docker compose -f compose-local.yaml --profile console up --build",
+        "dev-console:down": "docker compose -f compose-local.yaml --profile console down",
         "start": "vite --host",
         "start-p-4000": "vite --port=4000",
         "storybook": "storybook dev -p 6007",
