@@ -15,8 +15,8 @@ import {
 
 import {
     AiPassportAppsEnum,
-    aiPassportApps,
     areAiPassportAppsAvailable,
+    getSelectableAiPassportApps,
 } from '../../../ai-passport-apps/aiPassport-apps.helpers';
 import { ChatBotQuestionsEnum } from '../newAiSessionChatbot.helpers';
 import { getMinimumTermsForContract } from 'apps/learn-card-app/src/helpers/contract.helpers';
@@ -43,8 +43,6 @@ export const ChatBotAppListItem: React.FC<{
     );
 
     const isLearnCardAI = app.type === AiPassportAppsEnum.learncardapp;
-
-    if (!aiAppsAvailable) return null;
 
     // Always show LearnCard AI
     if (!hasConsented && !isLearnCardAI) return null;
@@ -100,8 +98,7 @@ export const ChatBotAppList: React.FC<{
         currentIndex: number
     ) => void;
 }> = ({ handleChatBotAnswer }) => {
-    const aiAppsAvailable = areAiPassportAppsAvailable();
-    const apps = aiAppsAvailable ? aiPassportApps : [];
+    const apps = getSelectableAiPassportApps();
 
     return (
         <div className="w-full flex items-center justify-around bg-white py-[24px] px-[20px] gap-[20px] overflow-x-auto">
