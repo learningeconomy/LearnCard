@@ -8,8 +8,14 @@ interface FitTextProps {
     maxFontSize?: number;
 }
 
-const FIT_GUTTER_PX = 16;
+// Keep fitted text slightly inside the measured edge to account for borders,
+// subpixel rounding, and glyph overhang on narrow screens.
+const FIT_GUTTER_PX = 12;
 
+/**
+ * Shrinks a single-line label to fit its container, wrapping only when the
+ * text still cannot fit at the configured minimum font size.
+ */
 const FitText: React.FC<FitTextProps> = ({
     text,
     width,
@@ -26,6 +32,9 @@ const FitText: React.FC<FitTextProps> = ({
         if (!container || !textElement) return;
 
         const fitText = () => {
+            // Measure from the maximum size each time so repeated resizes do not
+            // compound a previously calculated font size. Font-size transitions
+            // are intentionally avoided so scrollWidth reflects this size immediately.
             textElement.style.fontSize = `${maxFontSize}px`;
             textElement.style.whiteSpace = 'nowrap';
 
@@ -39,6 +48,9 @@ const FitText: React.FC<FitTextProps> = ({
             );
 
             textElement.style.fontSize = `${fittedFontSize}px`;
+
+            // Preserve the single-line ribbon treatment whenever possible.
+            // Extremely long titles may wrap only after reaching the minimum.
             textElement.style.whiteSpace =
                 fittedFontSize === minFontSize && textElement.scrollWidth > availableWidth
                     ? 'normal'
@@ -47,9 +59,12 @@ const FitText: React.FC<FitTextProps> = ({
 
         fitText();
 
+        // Device rotation and responsive layouts change the container without
+        // necessarily changing the text or receiving a window resize event.
         const resizeObserver = new ResizeObserver(fitText);
         resizeObserver.observe(container);
 
+        // Web fonts can alter the measured glyph width after the first layout.
         let isMounted = true;
         document.fonts?.ready.then(() => {
             if (isMounted) fitText();
@@ -67,7 +82,7 @@ const FitText: React.FC<FitTextProps> = ({
             style={{ width, maxWidth: '100%' }}
             className={`text-center ${className}`}
         >
-            <span className="inline-block whitespace-nowrap transition-[font-size]" ref={textRef}>
+            <span className="block w-full whitespace-nowrap" ref={textRef}>
                 {text}
             </span>
         </div>
