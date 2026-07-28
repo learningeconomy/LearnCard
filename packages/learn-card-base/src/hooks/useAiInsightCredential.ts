@@ -11,6 +11,7 @@ import {
 
 import { CredentialCategoryEnum, categoryMetadata } from 'learn-card-base';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
+import { addActiveLocaleToUrl } from '../i18n';
 
 import { LCR } from 'learn-card-base/types/credential-records';
 import { VCValidator, VC } from '@learncard/types';
@@ -143,7 +144,9 @@ const createAiInsightCredentialInternal = async (
     });
 
     const response = await fetch(
-        `${networkStore.get.aiServiceUrl()}/credentials/ai-insight?did=${did}`,
+        addActiveLocaleToUrl(
+            `${networkStore.get.aiServiceUrl()}/credentials/ai-insight?did=${did}`
+        ),
         {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

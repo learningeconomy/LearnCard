@@ -199,11 +199,14 @@ export const getLCAPlugin = async (
                     client = await getNewClient(url, _learnCard);
                     learnCard = _learnCard;
                 },
-                generateBoostInfo: async (_learnCard, description) => {
+                generateBoostInfo: async (_learnCard, description, locale) => {
                     await initialized;
                     await updateLearnCard(_learnCard);
 
-                    const result = await client.ai.generateBoostInfo.query({ description });
+                    const result = await client.ai.generateBoostInfo.query({
+                        description,
+                        locale,
+                    });
 
                     return {
                         title: result.title,

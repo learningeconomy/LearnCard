@@ -1,6 +1,11 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useStore } from '@nanostores/react';
-import { useDeviceTypeByWidth, useKeyboardHeight, isPlatformIOS } from 'learn-card-base';
+import {
+    addActiveLocaleToUrl,
+    useDeviceTypeByWidth,
+    useKeyboardHeight,
+    isPlatformIOS,
+} from 'learn-card-base';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('learn-card-ai-chat-bot');
@@ -186,7 +191,9 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                             form.append('threadId', threadId);
                             form.append('event', 'hidden');
                             navigator.sendBeacon(
-                                `${getBackendUrl()}/threads/visibility?did=${did}`,
+                                addActiveLocaleToUrl(
+                                    `${getBackendUrl()}/threads/visibility?did=${did}`
+                                ),
                                 form
                             );
                             log.debug('sent beacon after 5min hidden');
@@ -205,7 +212,10 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                     form.append('did', did);
                     form.append('threadId', threadId);
                     form.append('event', 'visible');
-                    navigator.sendBeacon(`${getBackendUrl()}/threads/visibility?did=${did}`, form);
+                    navigator.sendBeacon(
+                        addActiveLocaleToUrl(`${getBackendUrl()}/threads/visibility?did=${did}`),
+                        form
+                    );
                     log.debug('sent beacon visible');
                 }
             }
