@@ -185,16 +185,20 @@ const ViewSharedBoost: React.FC<{
                 ],
             });
 
-            throw new Error(`Error fetching credential: ${e}`);
+            return undefined;
         }
     };
 
     useEffect(() => {
-        if (pin && uri) {
-            fetchCredential((uri as string).replace('localhost:', 'localhost%3A'));
+        if (pin && seed && uri) {
+            setBoost(undefined);
+            setVC(undefined);
+            setExistingEndorsements(null);
+            setErrMsg(undefined);
             setShareLinkInfo(`uri=${uri}&seed=${seed}&pin=${pin}`);
+            void fetchCredential((uri as string).replace('localhost:', 'localhost%3A'));
         }
-    }, [pin, tryRefetch]);
+    }, [pin, seed, uri, tryRefetch]);
 
     const [presentModal, dismissModal] = useIonModal(SharedBoostVerificationBlock, {
         handleCloseModal: () => dismissModal(),

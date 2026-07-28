@@ -53,13 +53,14 @@ export const EndorsementRequestOptions: React.FC<{
 
     const { mutate: shareEarnedBoost, isPending: isLinkLoading } = useShareBoostMutation();
 
-    const generateShareLink = async () => {
+    const generateShareLink = () => {
+        setShareLink(undefined);
         setIsGeneratingShareLink(true);
         shareEarnedBoost(
-            { credential: credential, credentialUri: credential.id },
+            { credential, credentialUri: credential.id },
             {
-                async onSuccess(data) {
-                    const url = new URL(data?.link);
+                onSuccess(data) {
+                    const url = new URL(data.link);
                     const params = new URLSearchParams(url.search);
 
                     const host = url.host;
@@ -67,7 +68,11 @@ export const EndorsementRequestOptions: React.FC<{
                     const seed = params.get('seed');
                     const pin = params.get('pin');
 
-                    // generate endorsement request share link
+                    if (!uri || !seed || !pin) {
+                        setShareLink(undefined);
+                        return;
+                    }
+
                     setShareLink(
                         `https://${host}/?uri=${uri}&seed=${seed}&pin=${pin}&endorsementRequest=true`
                     );
@@ -77,9 +82,18 @@ export const EndorsementRequestOptions: React.FC<{
                         method: 'Share Boost',
                     });
                 },
+                onError() {
+                    setShareLink(undefined);
+                    presentToast(m['toasts.boost.endorsementRequestFailed'](), {
+                        type: ToastTypeEnum.Error,
+                        hasDismissButton: true,
+                    });
+                },
+                onSettled() {
+                    setIsGeneratingShareLink(false);
+                },
             }
         );
-        setIsGeneratingShareLink(false);
     };
 
     const copyItem = async () => {
@@ -92,7 +106,7 @@ export const EndorsementRequestOptions: React.FC<{
 
     useEffect(() => {
         generateShareLink();
-    }, []);
+    }, [credential.id]);
 
     const presentShareBoostLink = () => {
         const shareBoostLinkModalProps = {
@@ -168,7 +182,7 @@ export const EndorsementRequestOptions: React.FC<{
                 </p>
 
                 <button
-                    disabled={isGeneratingShareLink}
+                    disabled={isGeneratingShareLink || isLinkLoading || !shareLink}
                     onClick={copyItem}
                     className="text-[17px] text-center flex items-center justify-center rounded-full px-[16px] py-[12px] bg-grayscale-900 text-white w-full cursor-pointer"
                 >
@@ -178,7 +192,7 @@ export const EndorsementRequestOptions: React.FC<{
                     <CopyStack className="ml-2 h-[24px] w-[24px]" />
                 </button>
                 <button
-                    disabled={isGeneratingShareLink}
+                    disabled={isGeneratingShareLink || isLinkLoading || !shareLink}
                     onClick={presentShareBoostLink}
                     className="text-[17px] text-center flex items-center justify-center rounded-full px-[16px] py-[12px] bg-grayscale-900 text-white w-full cursor-pointer"
                 >

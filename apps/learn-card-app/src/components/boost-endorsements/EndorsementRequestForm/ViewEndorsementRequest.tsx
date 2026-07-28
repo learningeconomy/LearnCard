@@ -114,10 +114,13 @@ const ViewEndorsementRequest: React.FC<{
     };
 
     useEffect(() => {
-        if (pin && uri) {
-            fetchCredential((uri as string).replace('localhost:', 'localhost%3A'));
+        if (pin && seed && uri) {
+            setBoost(undefined);
+            setVC(undefined);
+            setErrMsg(undefined);
+            void fetchCredential((uri as string).replace('localhost:', 'localhost%3A'));
         }
-    }, [pin, tryRefetch]);
+    }, [pin, seed, uri, tryRefetch]);
 
     return (
         <section className="h-full w-full flex flex-col items-start justify-start overflow-y-scroll bg-grayscale-50 gap-4 pb-[200px]">
