@@ -25,6 +25,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import useRegistry from 'learn-card-base/hooks/useRegistry';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
+import { useClaimSuccessToast } from '../../feedback/useClaimSuccessToast';
 
 import {
     getAchievementType,
@@ -460,6 +461,7 @@ const ClaimFromRequest: React.FC = () => {
     const { initWallet, storeAndAddVCToWallet } = useWallet();
 
     const { presentToast } = useToast();
+    const presentClaimSuccessToast = useClaimSuccessToast();
 
     // Resolve the wallet category route for a just-claimed credential (e.g.
     // "/achievements", "/socialBadges"). Falls back to the passport ("/home")
@@ -672,10 +674,7 @@ const ClaimFromRequest: React.FC = () => {
             setClaimingCredential(false);
             void handleAfterCredentialClaim(credential);
 
-            presentToast(m['toasts.credentialClaimed'](), {
-                type: ToastTypeEnum.Success,
-                hasDismissButton: true,
-            });
+            presentClaimSuccessToast();
         } catch (e) {
             setClaimingCredential(false);
             log.error('Error claiming credential', e);

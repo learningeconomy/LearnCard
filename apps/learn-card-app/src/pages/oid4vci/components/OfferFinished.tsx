@@ -9,10 +9,10 @@ import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credent
 
 import { BoostEarnedCard } from '../../../components/boost/boost-earned-card/BoostEarnedCard';
 
+import SentimentStrip from '../../../feedback/SentimentStrip';
+
 import { prettifyConfigurationId } from '../displayHelpers';
-import CredentialPreviewCard, {
-    type CredentialPreviewClaim,
-} from './CredentialPreviewCard';
+import CredentialPreviewCard, { type CredentialPreviewClaim } from './CredentialPreviewCard';
 import FlowSteps from './FlowSteps';
 
 export interface FinishedCredential {
@@ -100,7 +100,7 @@ const OfferFinished: React.FC<OfferFinishedProps> = ({
         : undefined;
 
     const headline = fullFailure
-        ? "Couldn’t claim credentials"
+        ? 'Couldn’t claim credentials'
         : partialSuccess
         ? 'Claimed with some warnings'
         : isSingleCredential
@@ -108,7 +108,7 @@ const OfferFinished: React.FC<OfferFinishedProps> = ({
         : `${stored.length} credentials claimed`;
 
     const subhead = fullFailure
-        ? "None of the credentials could be claimed."
+        ? 'None of the credentials could be claimed.'
         : partialSuccess
         ? `${stored.length} of ${totalAttempted} claimed — the rest had problems.`
         : isSingleCredential
@@ -164,8 +164,9 @@ const OfferFinished: React.FC<OfferFinishedProps> = ({
                         doesn't satisfy the VC shape BoostEarnedCard
                         expects, so we fall back to the metadata-only
                         preview. */}
-                    {isSingleCredential && featuredCredential && (
-                        isVcdmShape(featuredCredential.vc) ? (
+                    {isSingleCredential &&
+                        featuredCredential &&
+                        (isVcdmShape(featuredCredential.vc) ? (
                             // BoostEarnedCard with useWrapper={false} skips
                             // the IonCol wrapper it normally uses to center
                             // itself within a grid cell, so we replicate
@@ -176,9 +177,8 @@ const OfferFinished: React.FC<OfferFinishedProps> = ({
                                 <BoostEarnedCard
                                     credential={featuredCredential.vc}
                                     categoryType={
-                                        getDefaultCategoryForCredential(
-                                            featuredCredential.vc
-                                        ) || 'achievement'
+                                        getDefaultCategoryForCredential(featuredCredential.vc) ||
+                                        'achievement'
                                     }
                                     boostPageViewMode={BoostPageViewMode.Card}
                                     useWrapper={false}
@@ -188,9 +188,7 @@ const OfferFinished: React.FC<OfferFinishedProps> = ({
                             </div>
                         ) : (
                             <CredentialPreviewCard
-                                title={
-                                    featuredTitle ?? featuredCredential.configurationId
-                                }
+                                title={featuredTitle ?? featuredCredential.configurationId}
                                 description={featuredCredential.description}
                                 claims={featuredCredential.claims}
                                 issuerUrl={issuerUrl}
@@ -198,16 +196,14 @@ const OfferFinished: React.FC<OfferFinishedProps> = ({
                                 issuerLogoUri={issuerLogoUri}
                                 showSaved
                             />
-                        )
-                    )}
+                        ))}
 
                     {!isSingleCredential && stored.length > 0 && (
                         <ul className="space-y-2">
                             {stored.map(entry => {
-                                const title = prettifyConfigurationId(
-                                    entry.configurationId,
-                                    { displayName: entry.title }
-                                );
+                                const title = prettifyConfigurationId(entry.configurationId, {
+                                    displayName: entry.title,
+                                });
                                 return (
                                     <li
                                         key={`${entry.configurationId}-${entry.format}`}
@@ -244,9 +240,7 @@ const OfferFinished: React.FC<OfferFinishedProps> = ({
 
                             <ul className="text-xs text-amber-800 space-y-0.5">
                                 {failures.map((entry, i) => {
-                                    const title = prettifyConfigurationId(
-                                        entry.configurationId
-                                    );
+                                    const title = prettifyConfigurationId(entry.configurationId);
                                     return (
                                         <li key={i} className="leading-relaxed">
                                             <span className="font-medium">{title}</span>
@@ -320,6 +314,8 @@ const OfferFinished: React.FC<OfferFinishedProps> = ({
                             {fullFailure ? 'Try again' : 'Done'}
                         </button>
                     </div>
+
+                    {!fullFailure && <SentimentStrip surface="claim_oidc" />}
                 </div>
             </div>
         </div>

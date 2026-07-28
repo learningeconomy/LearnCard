@@ -1,6 +1,6 @@
 {
     "name": "@learncard/holder-continuity",
-    "version": "0.2.10",
+    "version": "0.2.11",
     "description": "Holder continuity bundle helpers for LearnCard wallets",
     "main": "./dist/index.js",
     "module": "./dist/holder-continuity.esm.js",

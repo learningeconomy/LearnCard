@@ -1078,6 +1078,8 @@ const setNativeBuildEnv = (stageId: string): void => {
     process.env.VITE_ENABLE_AUTH_DEBUG_WIDGET = isProduction ? 'false' : 'true';
 };
 
+const VITE_BUILD_COMMAND = 'NODE_OPTIONS="--max-old-space-size=16608" npx vite build';
+
 const execBlocking = (cmd: string, label: string, cwd: string = APP_ROOT): void => {
     log.info('');
     log.info(green(`▶ ${label}`));
@@ -1140,7 +1142,7 @@ const nativeSync = async (tenantId?: string, stageId?: string) => {
 
     // 2. Build web app with correct tenant data
     setNativeBuildEnv(stageId);
-    execBlocking('npx vite build', 'Building web app');
+    execBlocking(VITE_BUILD_COMMAND, 'Building web app');
 
     // 3. Copy fresh build/ into native projects
     execBlocking('bunx cap sync', 'Running Capacitor sync');
@@ -1188,7 +1190,7 @@ const nativeOpen = async (platform?: Platform, tenantId?: string, stageId?: stri
 
         // 2. Build web app with correct tenant data
         setNativeBuildEnv(stageId);
-        execBlocking('npx vite build', 'Building web app');
+        execBlocking(VITE_BUILD_COMMAND, 'Building web app');
 
         // 3. Copy fresh build/ into native projects
         execBlocking('bunx cap sync', 'Running Capacitor sync');
@@ -1235,7 +1237,7 @@ const nativeRun = async (tenantId?: string, platform?: Platform) => {
 
     // 2. Build web app with correct tenant data
     setNativeBuildEnv('local');
-    execBlocking('npx vite build', 'Building web app');
+    execBlocking(VITE_BUILD_COMMAND, 'Building web app');
 
     // 3. Copy fresh build/ into native projects
     execBlocking('bunx cap sync', 'Running Capacitor sync');
@@ -1444,7 +1446,7 @@ const nativeBuild = async (tenantId?: string, platform?: Platform, lane?: Fastla
 
     // Step 2: Build web app with correct tenant data
     setNativeBuildEnv(stage);
-    execBlocking('npx vite build', 'Building web app');
+    execBlocking(VITE_BUILD_COMMAND, 'Building web app');
 
     // Step 3: Cap sync (copies fresh build/ into native projects)
     execBlocking('bunx cap sync', 'Running Capacitor sync');
@@ -1712,7 +1714,7 @@ const capgoPreview = async (tenantId?: string, stageId?: string, channelArg?: st
     );
 
     setNativeBuildEnv(stageId);
-    execFileBlocking('npx', ['vite', 'build'], 'Step 2/4 — Building web app');
+    execBlocking(VITE_BUILD_COMMAND, 'Step 2/4 — Building web app');
 
     log.info('');
     log.info(green('▶ Step 3/4 — Ensuring Capgo channel exists'));
