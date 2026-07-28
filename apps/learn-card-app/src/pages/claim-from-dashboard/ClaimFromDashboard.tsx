@@ -3,6 +3,7 @@ import moment from 'moment';
 import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
 import { VC, UnsignedVP } from '@learncard/types';
+import { getVCDisplayCardVariant } from '@learncard/react';
 import {
     IonLoading,
     IonContent,
@@ -361,6 +362,17 @@ const ClaimFromDashboard: React.FC = () => {
     const isCertificate = credential?.display?.displayType === 'certificate';
     const isID =
         credential?.display?.displayType === 'id' || credential?.hasOwnProperty('boostID') || false;
+    const isRibbonDisplayCard =
+        credential &&
+        getVCDisplayCardVariant(credential, getDefaultCategoryForCredential(credential)) ===
+            'ribbon';
+    let previewHorizontalPaddingClass = 'px-[40px]';
+
+    if (isID) {
+        previewHorizontalPaddingClass = 'px-[12px]';
+    } else if (isRibbonDisplayCard) {
+        previewHorizontalPaddingClass = 'px-0';
+    }
 
     const credBackground = credential?.display?.backgroundImage ?? undefined;
 
@@ -374,9 +386,7 @@ const ClaimFromDashboard: React.FC = () => {
             />
             <IonContent fullscreen color="grayscale-100">
                 <div
-                    className={`px-[40px] pb-[100px] vc-preview-modal-safe-area h-full overflow-y-auto ${
-                        isID ? '!px-[12px]' : ''
-                    }`}
+                    className={`pb-[100px] vc-preview-modal-safe-area h-full overflow-y-auto ${previewHorizontalPaddingClass}`}
                     style={{
                         backgroundImage: `url(${credBackground})`,
                         backgroundSize: 'cover',

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { getVCDisplayCardVariant } from '@learncard/react';
 import moment from 'moment';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('claim-boost');
@@ -431,6 +432,10 @@ const ClaimBoost: React.FC<{
         enableRenderMethod &&
         Boolean(renderMethod) &&
         selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+    const shouldUseHostCardPadding =
+        !renderMethodSource ||
+        isIssuerViewSelected ||
+        getVCDisplayCardVariant(displayCredential, category ?? undefined) !== 'ribbon';
 
     const renderClaimCredentialDisplay = (credentialToDisplay: VC) => (
         <VCDisplayCardWrapper2
@@ -488,9 +493,9 @@ const ClaimBoost: React.FC<{
                         className="flex flex-col items-center justify-center px-2 overflow-x-auto h-full pt-[30px]"
                     > */}
                     <section
-                        className={`px-6 w-full safe-area-top-margin overflow-y-auto max-h-full pb-32 disable-scrollbars ${
-                            Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'
-                        }`}
+                        className={`w-full safe-area-top-margin overflow-y-auto max-h-full pb-32 disable-scrollbars ${
+                            shouldUseHostCardPadding ? 'px-6' : ''
+                        } ${Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'}`}
                     >
                         <div className="pb-4 vc-preview-modal-safe-area h-full w-full">
                             {loading && (

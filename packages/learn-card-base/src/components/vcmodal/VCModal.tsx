@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
+import { getVCDisplayCardVariant } from '@learncard/react';
 
 import {
     IonContent,
@@ -171,17 +172,20 @@ export const VCClaim: React.FC<{
     }
 
     const isCertificate = vc?.display?.displayType === 'certificate';
+    const shouldUseHostCardPadding = !vc || getVCDisplayCardVariant(vc) !== 'ribbon';
 
     return (
         <IonPage>
             <IonContent
-                className="flex items-center justify-center ion-padding boost-cms-preview"
+                className={`flex items-center justify-center ion-padding boost-cms-preview ${
+                    shouldUseHostCardPadding ? '' : '[&::part(scroll)]:px-0'
+                }`}
                 fullscreen
             >
                 <IonRow
-                    className={`flex flex-col items-center justify-center px-6 ${
-                        isCertificate ? 'pt-14 md:pt-20' : ''
-                    }`}
+                    className={`flex flex-col items-center justify-center ${
+                        shouldUseHostCardPadding ? 'px-6' : ''
+                    } ${isCertificate ? 'pt-14 md:pt-20' : ''}`}
                 >
                     <div className="flex items-center justify-center w-full mb-2 vc-preview-modal-safe-area">
                         {!isCertificate && (
@@ -351,17 +355,21 @@ export const VCModal = ({
     };
 
     const isCertificate = vc?.display?.displayType === 'certificate';
+    const shouldUseHostCardPadding =
+        !credential || getVCDisplayCardVariant(credential) !== 'ribbon';
 
     return (
         <IonPage>
             <IonContent
-                className="flex items-center justify-center ion-padding boost-cms-preview"
+                className={`flex items-center justify-center ion-padding boost-cms-preview ${
+                    shouldUseHostCardPadding ? '' : '[&::part(scroll)]:px-0'
+                }`}
                 fullscreen
             >
                 <IonRow
-                    className={`flex flex-col items-center justify-center px-6 ${
-                        isCertificate ? 'pt-14 md:pt-20' : ''
-                    }`}
+                    className={`flex flex-col items-center justify-center ${
+                        shouldUseHostCardPadding ? 'px-6' : ''
+                    } ${isCertificate ? 'pt-14 md:pt-20' : ''}`}
                 >
                     {!isCertificate && (
                         <div className="flex items-center justify-center mb-2 vc-preview-modal-safe-area">

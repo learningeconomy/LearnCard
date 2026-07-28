@@ -371,6 +371,15 @@
     font-family: 'Mouse Memoirs';
 }
 
+/*
+ * Ribbon tails extend 30px beyond the card. Keep that overhang plus an 8px
+ * visible gutter inside VCDisplayCard2 so every preview host gets the same fit.
+ */
+.vc-display-card-ribbon-safe-area {
+    box-sizing: border-box;
+    padding-inline: 38px;
+}
+
 .vc-toggle-side-button {
     background-color: #00000099;
 }

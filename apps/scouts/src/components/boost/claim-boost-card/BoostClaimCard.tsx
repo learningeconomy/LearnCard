@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 
+import { getVCDisplayCardVariant } from '@learncard/react';
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
 import { useClaimCredential, BrandingEnum } from 'learn-card-base';
 import useFirebaseAnalytics from '../../../hooks/useFirebaseAnalytics';
@@ -55,13 +56,13 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     // Extract issuer DID and profileID for scouts role logic
-    const issuerDid = 
+    const issuerDid =
         typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
     const profileID = issuerDid?.split(':').pop();
 
     // Fetch highlighted credentials to get the issuer's role
     const { credentials: highlightedCreds } = useHighlightedCredentials(profileID);
-    
+
     // Compute unknownVerifierTitle based on the role (same logic as BoostPreview)
     const unknownVerifierTitle = useMemo(() => {
         if (!highlightedCreds || highlightedCreds.length === 0) return undefined;
@@ -87,6 +88,11 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     }, []);
 
     const isID = credential?.display?.displayType === 'id' || false;
+    const shouldUseHostCardPadding =
+        getVCDisplayCardVariant(
+            credential as VC,
+            getDefaultCategoryForCredential(credential as VC)
+        ) !== 'ribbon';
 
     let claimStatusText;
 
@@ -107,7 +113,11 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                 fullscreen
                 className={`flex items-center justify-center ion-padding boost-cms-preview transition-colors [&::part(scroll)]:px-0 gradient-mask-b-80`}
             >
-                <IonRow className="flex flex-col items-center justify-center px-6 overflow-x-auto safe-area-top-margin pb-32">
+                <IonRow
+                    className={`flex flex-col items-center justify-center overflow-x-auto safe-area-top-margin pb-32 ${
+                        shouldUseHostCardPadding ? 'px-6' : ''
+                    }`}
+                >
                     {isClaiming && (
                         <div className="absolute w-full h-full top-0 left-0 z-50 flex items-center justify-center flex-col boost-loading-wrapper">
                             <div className="w-[180px] h-full m-auto mt-[5px] flex items-center justify-center">
@@ -120,7 +130,11 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                             </div>
                         </div>
                     )}
-                    <section className={`px-6 w-full ${isID ? '!px-0' : ''}`}>
+                    <section
+                        className={`w-full ${shouldUseHostCardPadding ? 'px-6' : ''} ${
+                            isID ? '!px-0' : ''
+                        }`}
+                    >
                         {credential && (
                             <VCDisplayCardWrapper2
                                 credential={credential}

@@ -3,6 +3,7 @@ import queryString from 'query-string';
 import { useLocation, useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
+import { getVCDisplayCardVariant } from '@learncard/react';
 
 import {
     useIonAlert,
@@ -159,6 +160,15 @@ const ViewSharedBoost: React.FC = () => {
     const redirectHome = () => history.push('/');
 
     const troopBackgroundStyles = getWallpaperBackgroundStyles(undefined, boost as any);
+    const isRibbonDisplayCard = boost && getVCDisplayCardVariant(boost, category) === 'ribbon';
+    let previewHorizontalPaddingClass = 'px-[32px]';
+
+    if (category === 'ID') {
+        previewHorizontalPaddingClass = 'px-[12px]';
+    } else if (isRibbonDisplayCard) {
+        previewHorizontalPaddingClass = 'px-0';
+    }
+
     const troopIdComponent = isFront ? (
         <ViewTroopIdTemplate
             idMainText={issueeProfile?.displayName}
@@ -233,9 +243,7 @@ const ViewSharedBoost: React.FC = () => {
                 )}
                 {boost && wallet && !loading && (
                     <section
-                        className={`relative w-full h-full text-left flex flex-col items-center justify-start pt-4 overflow-y-scroll pb-[100px] ${
-                            category === 'ID' ? 'px-[12px]' : 'px-[32px]'
-                        } ]`}
+                        className={`relative w-full h-full text-left flex flex-col items-center justify-start pt-4 overflow-y-scroll pb-[100px] ${previewHorizontalPaddingClass}`}
                         style={isTroopId ? troopBackgroundStyles : undefined}
                     >
                         {/* 
