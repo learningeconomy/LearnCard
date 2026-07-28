@@ -61,6 +61,8 @@ export * from './components/shadcn/lib/utils';
 export * from './components/generic/Select';
 export * from './components/form-inputs';
 export * from './components/toast/Toast';
+export * from './components/loaders/LoadingSpinner';
+export * from './components/loaders/CredentialListSkeleton';
 
 export * from './utils/regexes';
 export * from './utils/pushUtilities';
@@ -189,6 +191,7 @@ export {
     suggestedTopics,
     topicCredentials,
     sessionEnded,
+    hasThreadEnded,
     planReady,
     planReadyThread,
     resetChatStores,
@@ -207,6 +210,7 @@ export {
 } from './stores/nanoStores/chatStore';
 
 export * from './helpers/credentialHelpers';
+export * from './helpers/credentialIngestion';
 export * from './helpers/credentials/queries';
 export * from './helpers/openid4vcErrors';
 export * from './helpers/faviconHelpers';

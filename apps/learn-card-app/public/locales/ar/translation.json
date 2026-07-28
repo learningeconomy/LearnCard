@@ -2595,6 +2595,26 @@
         "globalNetworkAdmin": "مسؤول الشبكة العالمية",
         "nationalNetworkAdmin": "مسؤول الشبكة الوطنية"
     },
+    "feedback": {
+        "howWasThat": "كيف كانت تجربتك؟",
+        "thanks": "شكرًا على ملاحظاتك!",
+        "bad": "سيئة",
+        "okay": "مقبولة",
+        "great": "رائعة",
+        "followup": {
+            "title": "ما الذي حدث؟",
+            "desc": "ملاحظاتك تساعدنا على تحسين LearnCard.",
+            "reason": {
+                "confusing": "مربك",
+                "slow": "بطيء",
+                "broken": "حدث خطأ ما",
+                "other": "أخرى"
+            },
+            "placeholder": "أخبرنا المزيد (اختياري)",
+            "send": "إرسال الملاحظات",
+            "skip": "تخطي"
+        }
+    },
     "toasts": {
         "copied": "تم النسخ إلى الحافظة",
         "copyFailed": "تعذر النسخ إلى الحافظة",
@@ -2923,7 +2943,17 @@
         "unfinished": "غير مكتمل",
         "learningOverview": "نظرة عامة على التعلّم",
         "finishSession": "إنهاء الجلسة",
-        "finish": "إنهاء"
+        "finish": "إنهاء",
+        "activeTitle": "جلسة قيد التقدم",
+        "activeFallbackTitle": "جلسة الذكاء الاصطناعي الحالية",
+        "activeDescription": "لا تزال «{{title}}» نشطة. سيؤدي بدء جلسة جديدة إلى إنهائها.",
+        "resumeSession": "استئناف الجلسة",
+        "resumingSession": "جارٍ الاستئناف...",
+        "checkingActiveSession": "جارٍ التحقق من الجلسات...",
+        "startNewSession": "بدء جلسة جديدة",
+        "startingNewSession": "جارٍ البدء...",
+        "activeCheckFailedTitle": "حدث خطأ ما",
+        "activeCheckFailedDescription": "حاول بدء الجلسة مرة أخرى."
     },
     "aiFeatureLinks": {
         "skillsHub": "مركز المهارات"

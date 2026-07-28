@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { useRenderMethodEnabled } from '../../../../hooks/useRenderMethodEnabled';
 
@@ -34,8 +34,10 @@ import {
 import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
 
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
+import { getAchievementType } from 'learn-card-base/helpers/credentialHelpers';
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
+import { AnalyticsEvents, useAnalytics } from '@analytics';
 
 export type IssueHistory = {
     id?: string | number;
@@ -179,6 +181,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     isPreview = false,
 }) => {
     const enableRenderMethod = useRenderMethodEnabled();
+    const { track } = useAnalytics();
     const unwrappedCredential = unwrapBoostCredential(_credential);
     const { credentialWithEdits } = useGetCredentialWithEdits(unwrappedCredential);
     const renderMethod = enableRenderMethod ? getSvgMustacheRenderMethod(_credential as VC) : null;
@@ -206,6 +209,21 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
 
     const vcVerifications = useVerification(credential);
     const [isFront, setIsFront] = useState(true);
+    const viewedCredentialIdRef = useRef<string | undefined>(undefined);
+
+    useEffect(() => {
+        if (!isEarnedBoost || isPreview) return;
+
+        const viewedCredentialId = credential?.id;
+        if (!viewedCredentialId || viewedCredentialIdRef.current === viewedCredentialId) return;
+
+        viewedCredentialIdRef.current = viewedCredentialId;
+        track(AnalyticsEvents.CREDENTIAL_VIEWED, {
+            credential_type: getAchievementType(_credential),
+            category: categoryType,
+            surface: 'wallet',
+        });
+    }, [categoryType, credential?.id, isEarnedBoost, isPreview, track, _credential]);
 
     let verifications: VerificationItem[] = [];
     if (isClrChildCredential) {
