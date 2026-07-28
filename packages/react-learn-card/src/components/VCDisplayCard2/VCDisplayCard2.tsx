@@ -157,17 +157,28 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     const isFront = isFrontOverride ?? _isFront;
     const setIsFront = setIsFrontOverride ?? _setIsFront;
 
-    const [headerHeight, setHeaderHeight] = useState(100); // 79 is the height if the header is one line
+    const [headerHeight, setHeaderHeight] = useState(79);
 
     const headerRef = useRef<HTMLHeadingElement>(null);
 
     useLayoutEffect(() => {
-        // Needs a small setTimeout otherwise it'll be wrong sometimes with multiline header.
-        //   Probably because of the interaction with FitText
-        setTimeout(() => {
-            setHeaderHeight(headerRef.current?.clientHeight || 100);
-        }, 10);
-    });
+        const header = headerRef.current;
+        if (!header) return;
+
+        // Keep the ribbon tails aligned when a long title makes the center
+        // section taller than its normal single-line height.
+        const updateHeaderHeight = () => setHeaderHeight(header.clientHeight || 79);
+        const resizeObserver = new ResizeObserver(updateHeaderHeight);
+
+        updateHeaderHeight();
+        resizeObserver.observe(header);
+
+        return () => resizeObserver.disconnect();
+    }, []);
+
+    // The tails start 10px below the center ribbon and visually overlap its
+    // lower border, so they are slightly shorter than the measured header.
+    const ribbonEndHeight = Math.max(headerHeight - 4, 75).toString();
 
     let worstVerificationStatus = verificationItems.reduce(
         (
@@ -323,14 +334,14 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                         <RibbonEnd
                             side="left"
                             className="absolute left-[-30px] top-[50px] z-0"
-                            height={'75'}
+                            height={ribbonEndHeight}
                         />
                     </Flipped>
                     <Flipped inverseFlipId="card">
                         <RibbonEnd
                             side="right"
                             className="absolute right-[-30px] top-[50px] z-0"
-                            height={'75'}
+                            height={ribbonEndHeight}
                         />
                     </Flipped>
 
