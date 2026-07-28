@@ -1,5 +1,11 @@
+import { neogma } from '@instance';
 import { Group } from '@models';
-import { Group as GroupType } from '@learncard/types';
+import {
+    Group as GroupType,
+    GroupReference,
+    GroupReferenceMode,
+    GroupReferenceView,
+} from '@learncard/types';
 import { FlatGroupType } from 'types/group';
 
 export const inflateGroup = (flat: FlatGroupType): GroupType => {
@@ -18,7 +24,12 @@ export const inflateGroup = (flat: FlatGroupType): GroupType => {
         }
     }
 
-    return { ...rest, parentGroupId: parentGroupId ?? null, computedCriteria: parsedCriteria };
+    return {
+        ...rest,
+        parentGroupId: parentGroupId ?? null,
+        computedCriteria: parsedCriteria,
+        identityIssuanceEnabled: rest.identityIssuanceEnabled ?? Boolean(rest.identityProfileId),
+    };
 };
 
 export const getGroupById = async (id: string): Promise<GroupType | null> => {
@@ -37,4 +48,92 @@ export const getChildGroups = async (parentGroupId: string): Promise<GroupType[]
     const results = await Group.findMany({ where: { parentGroupId } });
 
     return results.map(result => inflateGroup(result.dataValues as FlatGroupType));
+};
+
+export const getGroupMemberProfileIds = async (groupId: string): Promise<string[]> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (p:Profile)-[:MEMBER_OF]->(:Group { id: $groupId })
+         RETURN p.profileId AS profileId
+         ORDER BY p.profileId ASC`,
+        { groupId }
+    );
+
+    return result.records.map(record => String(record.get('profileId')));
+};
+
+export const getGroupMemberships = async (
+    groupId: string
+): Promise<{ profileId: string; provenance: string; joinedAt: string }[]> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (p:Profile)-[r:MEMBER_OF]->(:Group { id: $groupId })
+         RETURN p.profileId AS profileId, r.provenance AS provenance, r.joinedAt AS joinedAt
+         ORDER BY p.profileId ASC`,
+        { groupId }
+    );
+
+    return result.records.map(record => ({
+        profileId: String(record.get('profileId')),
+        provenance: String(record.get('provenance')),
+        joinedAt: String(record.get('joinedAt')),
+    }));
+};
+
+export const getGroupReferences = async (groupId: string): Promise<GroupReference[]> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (e:Ecosystem)-[r:REFERENCES]->(:Group { id: $groupId })
+         RETURN e.id AS consumerEcosystemId,
+                r.mode AS mode,
+                r.grantedAt AS grantedAt,
+                r.grantedByProfileId AS grantedByProfileId,
+                r.expiresAt AS expiresAt
+         ORDER BY consumerEcosystemId ASC`,
+        { groupId }
+    );
+
+    return result.records.map(record => ({
+        groupId,
+        consumerEcosystemId: String(record.get('consumerEcosystemId')),
+        mode: record.get('mode') as GroupReferenceMode,
+        grantedAt: String(record.get('grantedAt')),
+        grantedByProfileId: String(record.get('grantedByProfileId')),
+        expiresAt: (record.get('expiresAt') as string | null | undefined) ?? null,
+    }));
+};
+
+export const getGroupReferenceView = async (
+    groupId: string,
+    consumerEcosystemId: string
+): Promise<GroupReferenceView | null> => {
+    const group = await getGroupById(groupId);
+
+    if (!group) return null;
+
+    const result = await neogma.queryRunner.run(
+        `MATCH (:Ecosystem { id: $consumerEcosystemId })-[r:REFERENCES]->(:Group { id: $groupId })
+         RETURN r.mode AS mode
+         LIMIT 1`,
+        { groupId, consumerEcosystemId }
+    );
+
+    const mode = result.records[0]?.get('mode') as GroupReferenceMode | undefined;
+
+    if (!mode) return null;
+
+    const view: GroupReferenceView = {
+        group: {
+            id: group.id,
+            name: group.name,
+            slug: group.slug,
+            type: group.type,
+            description: group.description,
+            status: group.status,
+            ownerEcosystemId: group.ownerEcosystemId,
+        },
+    };
+
+    if (mode === 'ROSTER') {
+        view.memberProfileIds = await getGroupMemberProfileIds(groupId);
+    }
+
+    return view;
 };

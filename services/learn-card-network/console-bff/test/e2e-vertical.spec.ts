@@ -20,7 +20,7 @@ import {
     type BindingCollectionLike,
     type MembershipWriter,
     type ProfileCreator,
-} from '@provisioning';
+} from '@identity-provisioning';
 
 const policy = TenantAuthPolicyValidator.parse({
     tenantId: 'lef',

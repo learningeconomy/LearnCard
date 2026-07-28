@@ -4,7 +4,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 
 import type { ExternalIdentityBinding } from '@learncard/types';
 
-import { createMongoBindingRepository, type MongoBindingRepository } from '@provisioning';
+import { createMongoBindingRepository, type MongoBindingRepository } from '@identity-provisioning';
 
 let mongod: MongoMemoryServer;
 let client: MongoClient;

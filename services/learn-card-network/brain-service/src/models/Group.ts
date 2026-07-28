@@ -43,6 +43,7 @@ export const Group = ModelFactory<FlatGroupType, GroupRelationships>(
             rootGroupId: { type: 'string', required: true },
             ownerEcosystemId: { type: 'string', required: true },
             identityProfileId: { type: 'string', required: false },
+            identityIssuanceEnabled: { type: 'boolean', required: false },
             membershipMode: {
                 type: 'string',
                 enum: GroupMembershipModeEnum.options,

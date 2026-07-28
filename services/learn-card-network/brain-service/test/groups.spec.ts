@@ -1,200 +1,681 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { getClient } from './helpers/getClient';
-import { Ecosystem, Group } from '@models';
+import { neogma } from '@instance';
 import { createEcosystem } from '@accesslayer/ecosystem/create';
+import { grantEcosystemMembership } from '@accesslayer/ecosystem/membership';
 import { createGroup } from '@accesslayer/group/create';
-import { getGroupById, getGroupsOwnedByEcosystem, getChildGroups } from '@accesslayer/group/read';
+import { getGroupAuditEvents } from '@accesslayer/group/audit';
+import {
+    getChildGroups,
+    getGroupById,
+    getGroupMemberships,
+    getGroupReferenceView,
+    getGroupReferences,
+    getGroupsOwnedByEcosystem,
+} from '@accesslayer/group/read';
+import { enforceGroupInvariants } from '@helpers/group.helpers';
+import { createProfile } from '@accesslayer/profile/create';
+import { APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
+import { Ecosystem, Group, GroupAuditEvent, Profile } from '@models';
 
-const client = getClient({ did: 'did:key:z6MkGroupTester', isChallengeValid: true });
+import { getClient } from './helpers/getClient';
+
+const OWNER_DID = 'did:key:z6MkGroupOwner';
+const ADMIN_DID = 'did:key:z6MkGroupAdmin';
+const WRONG_ADMIN_DID = 'did:key:z6MkWrongAdmin';
+const MEMBER_DID = 'did:key:z6MkGroupMember';
+const STRANGER_DID = 'did:key:z6MkGroupStranger';
+const PLATFORM_ADMIN_DID = 'did:key:z6MkPlatformAdmin';
+
+const ownerClient = getClient({ did: OWNER_DID, isChallengeValid: true });
+const adminClient = getClient({ did: ADMIN_DID, isChallengeValid: true });
+const wrongAdminClient = getClient({ did: WRONG_ADMIN_DID, isChallengeValid: true });
+const memberClient = getClient({ did: MEMBER_DID, isChallengeValid: true });
+const strangerClient = getClient({ did: STRANGER_DID, isChallengeValid: true });
+const platformAdminClient = getClient({ did: PLATFORM_ADMIN_DID, isChallengeValid: true });
 const noAuthClient = getClient();
 
-const OWNER_ECO = 'eco_owner_ca';
+const seedProfile = (profileId: string, did: string) =>
+    createProfile({ profileId, did, displayName: profileId } as Parameters<
+        typeof createProfile
+    >[0]);
 
-const baseInput = {
-    name: 'California Districts',
-    slug: 'ca-districts',
-    type: 'geographic' as const,
-    description: undefined,
-    parentGroupId: null,
-    ownerEcosystemId: OWNER_ECO,
-    identityProfileId: undefined,
-    membershipMode: 'EXPLICIT' as const,
-    computedCriteria: undefined,
-    status: 'ACTIVE' as const,
-};
+const seedManagedProfile = (profileId: string) =>
+    seedProfile(profileId, `did:web:localhost%3A3000:users:${profileId}`);
+
+const createOwnerEcosystem = async (ownerProfileId = 'owner') =>
+    createEcosystem({
+        name: 'California DOE',
+        slug: 'california-doe',
+        description: undefined,
+        parentEcosystemId: null,
+        ownerProfileId,
+        settings: {},
+        status: 'ACTIVE',
+    });
+
+const createOtherEcosystem = async (ownerProfileId = 'wrong-admin') =>
+    createEcosystem({
+        name: 'Federal DOE',
+        slug: 'federal-doe',
+        description: undefined,
+        parentEcosystemId: null,
+        ownerProfileId,
+        settings: {},
+        status: 'ACTIVE',
+    });
 
 describe('Groups', () => {
     beforeEach(async () => {
+        APP_STORE_ADMIN_PROFILE_IDS.splice(0, APP_STORE_ADMIN_PROFILE_IDS.length);
+        await GroupAuditEvent.delete({ detach: true, where: {} });
         await Group.delete({ detach: true, where: {} });
         await Ecosystem.delete({ detach: true, where: {} });
+        await Profile.delete({ detach: true, where: {} });
     });
 
-    describe('createGroup (access layer)', () => {
-        it('creates a root group with cached hierarchy fields', async () => {
-            const created = await createGroup(baseInput);
-            const flat = created.dataValues;
-
-            expect(flat.id).toMatch(/^grp_/);
-            expect(flat.parentGroupId).toBeUndefined();
-            expect(flat.pathIds).toEqual([flat.id]);
-            expect(flat.depth).toBe(0);
-            expect(flat.rootGroupId).toBe(flat.id);
+    it('creates, reads, and exposes groups through the read routes', async () => {
+        const ecosystem = await createOwnerEcosystem();
+        const root = await createGroup({
+            name: 'California Districts',
+            slug: 'ca-districts',
+            type: 'geographic',
+            description: undefined,
+            parentGroupId: null,
+            ownerEcosystemId: ecosystem.id,
+            identityProfileId: undefined,
+            identityIssuanceEnabled: undefined,
+            membershipMode: 'EXPLICIT',
+            computedCriteria: undefined,
+            status: 'ACTIVE',
+        });
+        await createGroup({
+            name: 'LAUSD',
+            slug: 'lausd',
+            type: 'administrative',
+            description: undefined,
+            parentGroupId: root.id,
+            ownerEcosystemId: ecosystem.id,
+            identityProfileId: undefined,
+            identityIssuanceEnabled: undefined,
+            membershipMode: 'EXPLICIT',
+            computedCriteria: undefined,
+            status: 'ACTIVE',
         });
 
-        it('derives child hierarchy fields from the parent and links a CHILD_OF edge', async () => {
-            const root = await createGroup(baseInput);
-            const child = await createGroup({
-                ...baseInput,
-                name: 'LAUSD',
-                slug: 'lausd',
-                type: 'administrative',
-                parentGroupId: root.id,
-            });
-            const flat = child.dataValues;
+        const read = await getGroupById(root.id);
+        const owned = await getGroupsOwnedByEcosystem(ecosystem.id);
+        const children = await getChildGroups(root.id);
 
-            expect(flat.parentGroupId).toBe(root.id);
-            expect(flat.pathIds).toEqual([root.id, child.id]);
-            expect(flat.depth).toBe(1);
-            expect(flat.rootGroupId).toBe(root.id);
+        expect(read?.pathIds).toEqual([root.id]);
+        expect(owned).toHaveLength(2);
+        expect(children.map(child => child.slug)).toEqual(['lausd']);
+        await expect(noAuthClient.group.getGroup({ id: root.id })).rejects.toThrow();
+        expect((await ownerClient.group.getGroup({ id: root.id }))?.id).toBe(root.id);
+    });
 
-            const parents = await child.findRelationships({ alias: 'childOf' });
-            expect(parents).toHaveLength(1);
-            expect(parents[0]!.target.id).toBe(root.id);
+    it('reuses ecosystem-role authorization only, rejecting non-admins, wrong-ecosystem admins, and group members', async () => {
+        const owner = await seedProfile('owner', OWNER_DID);
+        const admin = await seedProfile('admin', ADMIN_DID);
+        const wrongAdmin = await seedProfile('wrong-admin', WRONG_ADMIN_DID);
+        const member = await seedProfile('member', MEMBER_DID);
+        await seedProfile('stranger', STRANGER_DID);
+
+        const ownerEcosystem = await createOwnerEcosystem(owner.profileId);
+        const otherEcosystem = await createOtherEcosystem(wrongAdmin.profileId);
+        await grantEcosystemMembership({
+            profileId: admin.profileId,
+            ecosystemId: ownerEcosystem.id,
+            role: 'ADMIN',
+        });
+        await grantEcosystemMembership({
+            profileId: wrongAdmin.profileId,
+            ecosystemId: otherEcosystem.id,
+            role: 'ADMIN',
         });
 
-        it('serializes computedCriteria as JSON only when present', async () => {
-            const explicit = await createGroup(baseInput);
-            expect(explicit.dataValues.computedCriteria).toBeUndefined();
-
-            const computed = await createGroup({
-                ...baseInput,
-                slug: 'computed-cohort',
-                membershipMode: 'COMPUTED',
-                computedCriteria: { field: 'grade', op: 'eq', value: 12 },
-            });
-
-            expect(typeof computed.dataValues.computedCriteria).toBe('string');
-            expect(JSON.parse(computed.dataValues.computedCriteria!)).toEqual({
-                field: 'grade',
-                op: 'eq',
-                value: 12,
-            });
+        const group = await ownerClient.group.createGroup({
+            name: 'California Districts',
+            slug: 'ca-districts',
+            type: 'geographic',
+            description: undefined,
+            parentGroupId: null,
+            ownerEcosystemId: ownerEcosystem.id,
+            identityProfileId: undefined,
+            identityIssuanceEnabled: undefined,
+            membershipMode: 'EXPLICIT',
+            computedCriteria: undefined,
+            status: 'ACTIVE',
         });
 
-        it('enforces per-parent slug uniqueness for groups', async () => {
-            const root = await createGroup(baseInput);
-            await createGroup({
-                ...baseInput,
-                name: 'LAUSD',
-                slug: 'lausd',
-                parentGroupId: root.id,
-            });
+        await ownerClient.group.addGroupMember({ id: group.id, profileId: member.profileId });
 
-            await expect(
-                createGroup({
-                    ...baseInput,
-                    name: 'Duplicate LAUSD',
-                    slug: 'lausd',
-                    parentGroupId: root.id,
-                })
-            ).rejects.toBeDefined();
+        await expect(
+            strangerClient.group.updateGroup({ id: group.id, name: 'Nope' })
+        ).rejects.toThrow();
+        await expect(
+            wrongAdminClient.group.updateGroup({ id: group.id, name: 'Still nope' })
+        ).rejects.toThrow();
+        await expect(
+            memberClient.group.updateGroup({ id: group.id, name: 'Membership is not auth' })
+        ).rejects.toThrow();
+
+        const updated = await adminClient.group.updateGroup({
+            id: group.id,
+            name: 'Updated by admin',
+        });
+        expect(updated.name).toBe('Updated by admin');
+    });
+
+    it('writes membership provenance, rejects manual writes on COMPUTED groups, and materializes computed membership', async () => {
+        const owner = await seedProfile('owner', OWNER_DID);
+        const memberA = await seedProfile('member-a', 'did:key:z6MkMemberA');
+        const memberB = await seedProfile('member-b', 'did:key:z6MkMemberB');
+        const ecosystem = await createOwnerEcosystem(owner.profileId);
+
+        const explicit = await ownerClient.group.createGroup({
+            name: 'Explicit Group',
+            slug: 'explicit-group',
+            type: 'custom',
+            description: undefined,
+            parentGroupId: null,
+            ownerEcosystemId: ecosystem.id,
+            identityProfileId: undefined,
+            identityIssuanceEnabled: undefined,
+            membershipMode: 'EXPLICIT',
+            computedCriteria: undefined,
+            status: 'ACTIVE',
         });
 
-        it('rejects COMPUTED without criteria and EXPLICIT with criteria', async () => {
-            await expect(
-                createGroup({ ...baseInput, slug: 'bad-computed', membershipMode: 'COMPUTED' })
-            ).rejects.toBeDefined();
+        await ownerClient.group.addGroupMember({ id: explicit.id, profileId: memberA.profileId });
+        const memberships = await getGroupMemberships(explicit.id);
+        expect(memberships).toHaveLength(1);
+        expect(memberships[0]?.profileId).toBe(memberA.profileId);
+        expect(memberships[0]?.provenance).toBe('MANUAL');
 
-            await expect(
-                createGroup({
-                    ...baseInput,
-                    slug: 'bad-explicit',
-                    membershipMode: 'EXPLICIT',
-                    computedCriteria: { field: 'x' },
-                })
-            ).rejects.toBeDefined();
+        await ownerClient.group.removeGroupMember({
+            id: explicit.id,
+            profileId: memberA.profileId,
+        });
+        expect(await getGroupMemberships(explicit.id)).toEqual([]);
+
+        const computed = await ownerClient.group.createGroup({
+            name: 'Computed Group',
+            slug: 'computed-group',
+            type: 'cohort',
+            description: undefined,
+            parentGroupId: null,
+            ownerEcosystemId: ecosystem.id,
+            identityProfileId: undefined,
+            identityIssuanceEnabled: undefined,
+            membershipMode: 'COMPUTED',
+            computedCriteria: { profileIds: [memberA.profileId, memberB.profileId] },
+            status: 'ACTIVE',
         });
 
-        it('creates an OWNS edge when the owner Ecosystem exists', async () => {
-            const ecosystem = await createEcosystem({
-                name: 'CA DOE',
-                slug: 'ca-doe',
-                description: undefined,
-                parentEcosystemId: null,
-                ownerProfileId: 'owner-1',
-                settings: {},
+        await expect(
+            ownerClient.group.addGroupMember({ id: computed.id, profileId: memberA.profileId })
+        ).rejects.toThrow();
+        const materialized = await ownerClient.group.materializeComputedMembership({
+            id: computed.id,
+        });
+        expect(materialized.memberProfileIds.sort()).toEqual([
+            memberA.profileId,
+            memberB.profileId,
+        ]);
+
+        const computedMemberships = await getGroupMemberships(computed.id);
+        expect(computedMemberships.map(edge => edge.provenance)).toEqual(['COMPUTED', 'COMPUTED']);
+    });
+
+    it('moves group subtrees, recomputes caches, and rejects cycles and cross-ecosystem parents', async () => {
+        const owner = await seedProfile('owner', OWNER_DID);
+        const otherOwner = await seedProfile('wrong-admin', WRONG_ADMIN_DID);
+        const ownerEcosystem = await createOwnerEcosystem(owner.profileId);
+        const otherEcosystem = await createOtherEcosystem(otherOwner.profileId);
+
+        const root = await ownerClient.group.createGroup({
+            name: 'Root',
+            slug: 'root',
+            type: 'geographic',
+            description: undefined,
+            parentGroupId: null,
+            ownerEcosystemId: ownerEcosystem.id,
+            identityProfileId: undefined,
+            identityIssuanceEnabled: undefined,
+            membershipMode: 'EXPLICIT',
+            computedCriteria: undefined,
+            status: 'ACTIVE',
+        });
+        const branch = await ownerClient.group.createGroup({
+            name: 'Branch',
+            slug: 'branch',
+            type: 'administrative',
+            description: undefined,
+            parentGroupId: root.id,
+            ownerEcosystemId: ownerEcosystem.id,
+            identityProfileId: undefined,
+            identityIssuanceEnabled: undefined,
+            membershipMode: 'EXPLICIT',
+            computedCriteria: undefined,
+            status: 'ACTIVE',
+        });
+        const leaf = await ownerClient.group.createGroup({
+            name: 'Leaf',
+            slug: 'leaf',
+            type: 'custom',
+            description: undefined,
+            parentGroupId: branch.id,
+            ownerEcosystemId: ownerEcosystem.id,
+            identityProfileId: undefined,
+            identityIssuanceEnabled: undefined,
+            membershipMode: 'EXPLICIT',
+            computedCriteria: undefined,
+            status: 'ACTIVE',
+        });
+        const newRoot = await ownerClient.group.createGroup({
+            name: 'New Root',
+            slug: 'new-root',
+            type: 'geographic',
+            description: undefined,
+            parentGroupId: null,
+            ownerEcosystemId: ownerEcosystem.id,
+            identityProfileId: undefined,
+            identityIssuanceEnabled: undefined,
+            membershipMode: 'EXPLICIT',
+            computedCriteria: undefined,
+            status: 'ACTIVE',
+        });
+        const foreignParent = await createGroup({
+            name: 'Foreign Parent',
+            slug: 'foreign-parent',
+            type: 'custom',
+            description: undefined,
+            parentGroupId: null,
+            ownerEcosystemId: otherEcosystem.id,
+            identityProfileId: undefined,
+            identityIssuanceEnabled: undefined,
+            membershipMode: 'EXPLICIT',
+            computedCriteria: undefined,
+            status: 'ACTIVE',
+        });
+
+        const moved = await ownerClient.group.moveGroup({
+            id: branch.id,
+            parentGroupId: newRoot.id,
+        });
+        const movedLeaf = await getGroupById(leaf.id);
+
+        expect(moved.parentGroupId).toBe(newRoot.id);
+        expect(moved.pathIds).toEqual([newRoot.id, branch.id]);
+        expect(moved.rootGroupId).toBe(newRoot.id);
+        expect(movedLeaf?.pathIds).toEqual([newRoot.id, branch.id, leaf.id]);
+        expect(movedLeaf?.depth).toBe(2);
+
+        await expect(
+            ownerClient.group.moveGroup({ id: newRoot.id, parentGroupId: leaf.id })
+        ).rejects.toThrow();
+        await expect(
+            ownerClient.group.moveGroup({ id: branch.id, parentGroupId: foreignParent.id })
+        ).rejects.toThrow();
+    });
+
+    it('enforces identity attach 1:1, disable, detach, and transfer sequencing', async () => {
+        const owner = await seedProfile('owner', OWNER_DID);
+        const newOwner = await seedProfile('new-owner', 'did:key:z6MkNewOwner');
+        const managedA = await seedManagedProfile('managed-a');
+        await seedManagedProfile('managed-b');
+        const ecosystem = await createOwnerEcosystem(owner.profileId);
+        const targetEcosystem = await createOtherEcosystem(newOwner.profileId);
+
+        const group = await ownerClient.group.createGroup({
+            name: 'Issuer Group',
+            slug: 'issuer-group',
+            type: 'administrative',
+            description: undefined,
+            parentGroupId: null,
+            ownerEcosystemId: ecosystem.id,
+            identityProfileId: undefined,
+            identityIssuanceEnabled: undefined,
+            membershipMode: 'EXPLICIT',
+            computedCriteria: undefined,
+            status: 'ACTIVE',
+        });
+        const otherGroup = await ownerClient.group.createGroup({
+            name: 'Other Group',
+            slug: 'other-group',
+            type: 'custom',
+            description: undefined,
+            parentGroupId: null,
+            ownerEcosystemId: ecosystem.id,
+            identityProfileId: undefined,
+            identityIssuanceEnabled: undefined,
+            membershipMode: 'EXPLICIT',
+            computedCriteria: undefined,
+            status: 'ACTIVE',
+        });
+
+        const attached = await ownerClient.group.attachIdentity({
+            id: group.id,
+            identityProfileId: managedA.profileId,
+        });
+        expect(attached.identityProfileId).toBe(managedA.profileId);
+        expect(attached.identityIssuanceEnabled).toBe(true);
+
+        await expect(
+            ownerClient.group.attachIdentity({
+                id: otherGroup.id,
+                identityProfileId: managedA.profileId,
+            })
+        ).rejects.toThrow();
+        await expect(
+            ownerClient.group.transferGroupOwnership({
+                id: group.id,
+                targetEcosystemId: targetEcosystem.id,
+            })
+        ).rejects.toThrow();
+        await expect(ownerClient.group.detachIdentity({ id: group.id })).rejects.toThrow();
+
+        const disabled = await ownerClient.group.disableIdentityIssuance({ id: group.id });
+        expect(disabled.identityIssuanceEnabled).toBe(false);
+        const detached = await ownerClient.group.detachIdentity({ id: group.id });
+        expect(detached.identityProfileId).toBeUndefined();
+
+        const transferred = await ownerClient.group.transferGroupOwnership({
+            id: group.id,
+            targetEcosystemId: targetEcosystem.id,
+        });
+        expect(transferred.ownerEcosystemId).toBe(targetEcosystem.id);
+    });
+
+    it('allows only audited break-glass identity cleanup and transfer when the owner ecosystem is archived', async () => {
+        APP_STORE_ADMIN_PROFILE_IDS.push('platform-admin');
+        const archivedOwner = await seedProfile('owner', OWNER_DID);
+        const platformAdmin = await seedProfile('platform-admin', PLATFORM_ADMIN_DID);
+        const managed = await seedManagedProfile('managed-a');
+        const targetOwner = await seedProfile('target-owner', 'did:key:z6MkTargetOwner');
+        const archivedEcosystem = await createEcosystem({
+            name: 'Archived Owner',
+            slug: 'archived-owner',
+            description: undefined,
+            parentEcosystemId: null,
+            ownerProfileId: archivedOwner.profileId,
+            settings: {},
+            status: 'ARCHIVED',
+        });
+        const targetEcosystem = await createOtherEcosystem(targetOwner.profileId);
+        const group = await createGroup({
+            name: 'Transfer Me',
+            slug: 'transfer-me',
+            type: 'administrative',
+            description: undefined,
+            parentGroupId: null,
+            ownerEcosystemId: archivedEcosystem.id,
+            identityProfileId: managed.profileId,
+            identityIssuanceEnabled: true,
+            membershipMode: 'EXPLICIT',
+            computedCriteria: undefined,
+            status: 'ACTIVE',
+        });
+
+        await expect(
+            platformAdminClient.group.updateGroup({ id: group.id, name: 'Nope' })
+        ).rejects.toThrow();
+        await expect(
+            platformAdminClient.group.addGroupMember({
+                id: group.id,
+                profileId: platformAdmin.profileId,
+            })
+        ).rejects.toThrow();
+
+        const disabled = await platformAdminClient.group.disableIdentityIssuance({ id: group.id });
+        expect(disabled.identityIssuanceEnabled).toBe(false);
+        const detached = await platformAdminClient.group.detachIdentity({ id: group.id });
+        expect(detached.identityProfileId).toBeUndefined();
+        const transferred = await platformAdminClient.group.transferGroupOwnership({
+            id: group.id,
+            targetEcosystemId: targetEcosystem.id,
+        });
+        expect(transferred.ownerEcosystemId).toBe(targetEcosystem.id);
+    });
+
+    it('grants and revokes cross-ecosystem references without leaking transitive profile payload', async () => {
+        const owner = await seedProfile('owner', OWNER_DID);
+        await seedProfile('consumer', STRANGER_DID);
+        const member = await seedProfile('member-a', 'did:key:z6MkMemberA');
+        const ownerEcosystem = await createOwnerEcosystem(owner.profileId);
+        const consumerEcosystem = await createOtherEcosystem('consumer');
+        const group = await ownerClient.group.createGroup({
+            name: 'Shareable Group',
+            slug: 'shareable-group',
+            type: 'cohort',
+            description: 'Shared group',
+            parentGroupId: null,
+            ownerEcosystemId: ownerEcosystem.id,
+            identityProfileId: undefined,
+            identityIssuanceEnabled: undefined,
+            membershipMode: 'EXPLICIT',
+            computedCriteria: undefined,
+            status: 'ACTIVE',
+        });
+        await ownerClient.group.addGroupMember({ id: group.id, profileId: member.profileId });
+
+        await ownerClient.group.grantGroupReference({
+            id: group.id,
+            consumerEcosystemId: consumerEcosystem.id,
+            mode: 'SUMMARY',
+            expiresAt: null,
+        });
+
+        const summaryView = await getGroupReferenceView(group.id, consumerEcosystem.id);
+        expect(summaryView).toEqual({
+            group: {
+                id: group.id,
+                name: 'Shareable Group',
+                slug: 'shareable-group',
+                type: 'cohort',
+                description: 'Shared group',
                 status: 'ACTIVE',
-            });
-
-            const group = await createGroup({ ...baseInput, ownerEcosystemId: ecosystem.id });
-
-            const owned = await ecosystem.findRelationships({ alias: 'owns' });
-            expect(owned).toHaveLength(1);
-            expect(owned[0]!.target.id).toBe(group.id);
+                ownerEcosystemId: ownerEcosystem.id,
+            },
         });
+
+        await ownerClient.group.grantGroupReference({
+            id: group.id,
+            consumerEcosystemId: consumerEcosystem.id,
+            mode: 'ROSTER',
+            expiresAt: null,
+        });
+        const rosterView = await getGroupReferenceView(group.id, consumerEcosystem.id);
+        expect(rosterView?.memberProfileIds).toEqual([member.profileId]);
+        expect(Object.keys(rosterView?.group ?? {}).sort()).toEqual([
+            'description',
+            'id',
+            'name',
+            'ownerEcosystemId',
+            'slug',
+            'status',
+            'type',
+        ]);
+
+        const references = await getGroupReferences(group.id);
+        expect(references).toHaveLength(1);
+        expect(references[0]?.mode).toBe('ROSTER');
+
+        await ownerClient.group.revokeGroupReference({
+            id: group.id,
+            consumerEcosystemId: consumerEcosystem.id,
+        });
+        expect(await getGroupReferenceView(group.id, consumerEcosystem.id)).toBeNull();
     });
 
-    describe('read access layer', () => {
-        it('inflates computedCriteria and normalizes parentGroupId to null on read', async () => {
-            const created = await createGroup({
-                ...baseInput,
-                membershipMode: 'COMPUTED',
-                computedCriteria: { tag: 'title-i' },
-            });
-
-            const read = await getGroupById(created.id);
-
-            expect(read).not.toBeNull();
-            expect(read!.parentGroupId).toBeNull();
-            expect(read!.computedCriteria).toEqual({ tag: 'title-i' });
+    it('rejects slug collisions, singular ownership violations, and archived-group membership or identity writes', async () => {
+        const owner = await seedProfile('owner', OWNER_DID);
+        const member = await seedProfile('member-a', 'did:key:z6MkMemberA');
+        const managed = await seedManagedProfile('managed-a');
+        const otherOwner = await seedProfile('other-owner', 'did:key:z6MkOtherOwner');
+        const ecosystem = await createOwnerEcosystem(owner.profileId);
+        const otherEcosystem = await createOtherEcosystem(otherOwner.profileId);
+        const root = await ownerClient.group.createGroup({
+            name: 'Root',
+            slug: 'root',
+            type: 'geographic',
+            description: undefined,
+            parentGroupId: null,
+            ownerEcosystemId: ecosystem.id,
+            identityProfileId: undefined,
+            identityIssuanceEnabled: undefined,
+            membershipMode: 'EXPLICIT',
+            computedCriteria: undefined,
+            status: 'ACTIVE',
+        });
+        const a = await ownerClient.group.createGroup({
+            name: 'A',
+            slug: 'duplicate',
+            type: 'custom',
+            description: undefined,
+            parentGroupId: root.id,
+            ownerEcosystemId: ecosystem.id,
+            identityProfileId: undefined,
+            identityIssuanceEnabled: undefined,
+            membershipMode: 'EXPLICIT',
+            computedCriteria: undefined,
+            status: 'ACTIVE',
+        });
+        const b = await ownerClient.group.createGroup({
+            name: 'B',
+            slug: 'unique',
+            type: 'custom',
+            description: undefined,
+            parentGroupId: root.id,
+            ownerEcosystemId: ecosystem.id,
+            identityProfileId: undefined,
+            identityIssuanceEnabled: undefined,
+            membershipMode: 'EXPLICIT',
+            computedCriteria: undefined,
+            status: 'ACTIVE',
         });
 
-        it('lists groups owned by an ecosystem and direct child groups', async () => {
-            const root = await createGroup(baseInput);
-            await createGroup({ ...baseInput, slug: 'lausd', parentGroupId: root.id });
-            await createGroup({
-                ...baseInput,
-                slug: 'other-owner',
-                ownerEcosystemId: 'eco_other',
-            });
+        await expect(
+            ownerClient.group.updateGroup({ id: b.id, slug: 'duplicate' })
+        ).rejects.toThrow();
 
-            const owned = await getGroupsOwnedByEcosystem(OWNER_ECO);
-            expect(owned.map(g => g.slug).sort()).toEqual(['ca-districts', 'lausd']);
+        const archived = await ownerClient.group.archiveGroup({ id: a.id });
+        expect(archived.status).toBe('ARCHIVED');
+        await expect(
+            ownerClient.group.addGroupMember({ id: a.id, profileId: member.profileId })
+        ).rejects.toThrow();
+        await expect(
+            ownerClient.group.attachIdentity({ id: a.id, identityProfileId: managed.profileId })
+        ).rejects.toThrow();
 
-            const children = await getChildGroups(root.id);
-            expect(children.map(g => g.slug)).toEqual(['lausd']);
-        });
+        await neogma.queryRunner.run(
+            `MATCH (e:Ecosystem { id: $ecosystemId })
+             MATCH (g:Group { id: $groupId })
+             CREATE (e)-[:OWNS]->(g)`,
+            { ecosystemId: otherEcosystem.id, groupId: b.id }
+        );
+        await expect(enforceGroupInvariants(b.id)).rejects.toThrow();
     });
 
-    describe('read-only tRPC routes', () => {
-        it('rejects unauthenticated callers', async () => {
-            const created = await createGroup(baseInput);
+    it('emits audit events for every group write action', async () => {
+        APP_STORE_ADMIN_PROFILE_IDS.push('platform-admin');
+        const owner = await seedProfile('owner', OWNER_DID);
+        const platformAdmin = await seedProfile('platform-admin', PLATFORM_ADMIN_DID);
+        const member = await seedProfile('member-a', 'did:key:z6MkMemberA');
+        const managed = await seedManagedProfile('managed-a');
+        const targetOwner = await seedProfile('target-owner', 'did:key:z6MkTargetOwner');
+        const ecosystem = await createOwnerEcosystem(owner.profileId);
+        const consumerEcosystem = await createOtherEcosystem('consumer');
+        const transferTarget = await createOtherEcosystem(targetOwner.profileId);
 
-            await expect(noAuthClient.group.getGroup({ id: created.id })).rejects.toThrow();
+        const group = await ownerClient.group.createGroup({
+            name: 'Audited',
+            slug: 'audited',
+            type: 'custom',
+            description: undefined,
+            parentGroupId: null,
+            ownerEcosystemId: ecosystem.id,
+            identityProfileId: undefined,
+            identityIssuanceEnabled: undefined,
+            membershipMode: 'EXPLICIT',
+            computedCriteria: undefined,
+            status: 'ACTIVE',
+        });
+        const moveParent = await ownerClient.group.createGroup({
+            name: 'Move Parent',
+            slug: 'move-parent',
+            type: 'custom',
+            description: undefined,
+            parentGroupId: null,
+            ownerEcosystemId: ecosystem.id,
+            identityProfileId: undefined,
+            identityIssuanceEnabled: undefined,
+            membershipMode: 'EXPLICIT',
+            computedCriteria: undefined,
+            status: 'ACTIVE',
+        });
+        const movableGroup = await ownerClient.group.createGroup({
+            name: 'Movable',
+            slug: 'movable',
+            type: 'custom',
+            description: undefined,
+            parentGroupId: null,
+            ownerEcosystemId: ecosystem.id,
+            identityProfileId: undefined,
+            identityIssuanceEnabled: undefined,
+            membershipMode: 'EXPLICIT',
+            computedCriteria: undefined,
+            status: 'ACTIVE',
         });
 
-        it('getGroup returns the group by id', async () => {
-            const created = await createGroup(baseInput);
-
-            const result = await client.group.getGroup({ id: created.id });
-
-            expect(result?.id).toBe(created.id);
-            expect(result?.type).toBe('geographic');
+        await ownerClient.group.updateGroup({ id: group.id, name: 'Audited 2' });
+        await ownerClient.group.addGroupMember({ id: group.id, profileId: member.profileId });
+        await ownerClient.group.removeGroupMember({ id: group.id, profileId: member.profileId });
+        await ownerClient.group.moveGroup({ id: movableGroup.id, parentGroupId: moveParent.id });
+        await ownerClient.group.attachIdentity({
+            id: group.id,
+            identityProfileId: managed.profileId,
+        });
+        await ownerClient.group.disableIdentityIssuance({ id: group.id });
+        await ownerClient.group.detachIdentity({ id: group.id });
+        await ownerClient.group.grantGroupReference({
+            id: group.id,
+            consumerEcosystemId: consumerEcosystem.id,
+            mode: 'SUMMARY',
+            expiresAt: null,
+        });
+        await ownerClient.group.revokeGroupReference({
+            id: group.id,
+            consumerEcosystemId: consumerEcosystem.id,
+        });
+        await ownerClient.group.transferGroupOwnership({
+            id: group.id,
+            targetEcosystemId: transferTarget.id,
         });
 
-        it('getGroup throws NOT_FOUND for an unknown id', async () => {
-            await expect(client.group.getGroup({ id: 'grp_missing' })).rejects.toThrow();
-        });
+        const auditActions = [
+            ...(await getGroupAuditEvents(group.id)).map(event => event.action),
+            ...(await getGroupAuditEvents(movableGroup.id)).map(event => event.action),
+        ];
+        expect(auditActions).toEqual([
+            'group:create',
+            'group:update',
+            'group-member:add',
+            'group-member:remove',
+            'identity:attach',
+            'identity:disable',
+            'identity:detach',
+            'group-reference:grant',
+            'group-reference:revoke',
+            'group:transfer',
+            'group:create',
+            'group:move',
+        ]);
+        expect((await getGroupAuditEvents(moveParent.id)).map(event => event.action)).toEqual([
+            'group:create',
+        ]);
 
-        it('getGroupsOwnedByEcosystem returns owned groups', async () => {
-            await createGroup(baseInput);
-
-            const result = await client.group.getGroupsOwnedByEcosystem({
-                ecosystemId: OWNER_ECO,
-            });
-
-            expect(result.map(g => g.slug)).toEqual(['ca-districts']);
-        });
+        expect(platformAdmin.profileId).toBe('platform-admin');
     });
 });

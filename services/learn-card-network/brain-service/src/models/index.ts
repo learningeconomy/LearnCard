@@ -11,6 +11,7 @@ import { Tag } from './Tag';
 import { AppStoreListing } from './AppStoreListing';
 import { Integration } from './Integration';
 import { CredentialActivity } from './CredentialActivity';
+import { GroupAuditEvent } from './GroupAuditEvent';
 import { StatusList } from './StatusList';
 import { ContactMethod } from './ContactMethod';
 import { Ecosystem } from './Ecosystem';
@@ -21,6 +22,7 @@ void Tenant;
 
 // Ensure CredentialActivity model is registered by referencing it
 void CredentialActivity;
+void GroupAuditEvent;
 
 Credential.addRelationships({
     credentialReceived: {
@@ -177,10 +179,12 @@ const indexQueries = [
     'CREATE INDEX presentation_received_date_idx IF NOT EXISTS FOR ()-[r:PRESENTATION_RECEIVED]-() ON (r.date)',
     'CREATE INDEX app_store_listing_id_idx IF NOT EXISTS FOR (a:AppStoreListing) ON (a.listing_id)',
     'CREATE INDEX app_store_listing_status_idx IF NOT EXISTS FOR (a:AppStoreListing) ON (a.app_listing_status)',
+    'CREATE INDEX app_store_listing_kind_idx IF NOT EXISTS FOR (a:AppStoreListing) ON (a.kind)',
     'CREATE INDEX app_store_listing_category_idx IF NOT EXISTS FOR (a:AppStoreListing) ON (a.category)',
     'CREATE INDEX app_store_listing_promotion_idx IF NOT EXISTS FOR (a:AppStoreListing) ON (a.promotion_level)',
     'CREATE TEXT INDEX app_store_listing_name_text_idx IF NOT EXISTS FOR (a:AppStoreListing) ON (a.display_name)',
     'CREATE INDEX app_store_listing_slug_idx IF NOT EXISTS FOR (a:AppStoreListing) ON (a.slug)',
+    'CREATE CONSTRAINT listing_version_id_unique IF NOT EXISTS FOR (v:ListingVersion) REQUIRE (v.version_id) IS UNIQUE',
     'CREATE INDEX installs_listing_id_idx IF NOT EXISTS FOR ()-[r:INSTALLS]-() ON (r.listing_id)',
     'CREATE INDEX installs_installed_at_idx IF NOT EXISTS FOR ()-[r:INSTALLS]-() ON (r.installed_at)',
     'CREATE INDEX credential_activity_id_idx IF NOT EXISTS FOR (a:CredentialActivity) ON (a.id)',
@@ -203,6 +207,11 @@ const indexQueries = [
     'CREATE INDEX group_owner_idx IF NOT EXISTS FOR (g:Group) ON (g.ownerEcosystemId)',
     'CREATE INDEX group_type_idx IF NOT EXISTS FOR (g:Group) ON (g.type)',
     'CREATE CONSTRAINT group_slug_unique_in_parent IF NOT EXISTS FOR (g:Group) REQUIRE (g.parentGroupId, g.slug) IS UNIQUE',
+    'CREATE CONSTRAINT group_audit_event_id_unique IF NOT EXISTS FOR (e:GroupAuditEvent) REQUIRE (e.id) IS UNIQUE',
+    'CREATE INDEX group_audit_event_group_idx IF NOT EXISTS FOR (e:GroupAuditEvent) ON (e.groupId)',
+    'CREATE INDEX group_audit_event_ecosystem_idx IF NOT EXISTS FOR (e:GroupAuditEvent) ON (e.ecosystemId)',
+    'CREATE INDEX group_audit_event_actor_idx IF NOT EXISTS FOR (e:GroupAuditEvent) ON (e.actorProfileId)',
+    'CREATE INDEX group_audit_event_timestamp_idx IF NOT EXISTS FOR (e:GroupAuditEvent) ON (e.timestamp)',
     'CREATE CONSTRAINT tenant_id_unique IF NOT EXISTS FOR (t:Tenant) REQUIRE (t.tenantId) IS UNIQUE',
 ];
 
@@ -266,8 +275,10 @@ export * from './Skill';
 export * from './Tag';
 export * from './Integration';
 export * from './AppStoreListing';
+export * from './ListingVersion';
 export * from './CredentialActivity';
 export * from './StatusList';
 export * from './Ecosystem';
 export * from './Group';
+export * from './GroupAuditEvent';
 export * from './Tenant';

@@ -14,7 +14,7 @@ import {
     type BindingRepository,
     type ManagedIdentityMinter,
     type MembershipGranter,
-} from '@provisioning';
+} from '@identity-provisioning';
 
 const inMemoryJit = () => {
     const rows: ExternalIdentityBinding[] = [];

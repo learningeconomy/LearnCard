@@ -89,6 +89,7 @@ import {
     PromotionLevel,
     AppStoreListingValidator,
     AgeRating,
+    AppStoreListingKindEnum,
 } from 'types/app-store-listing';
 import type {
     AppStoreListingCreateType,
@@ -243,6 +244,7 @@ const AppStoreListingBaseSchema = z.object({
         }),
     full_description: safeContentValidator.pipe(z.string().min(1).max(5000)),
     icon_url: safeImageUrlValidator,
+    kind: AppStoreListingKindEnum.optional(),
     app_listing_status: AppListingStatus,
     launch_type: LaunchType,
     launch_config_json: jsonStringValidator,
@@ -1720,6 +1722,7 @@ export const appStoreRouter = t.router({
             // New listings always start as DRAFT with STANDARD promotion
             const listingInput = {
                 ...input.listing,
+                kind: input.listing.kind ?? 'APP',
                 app_listing_status: 'DRAFT',
                 promotion_level: 'STANDARD',
             } as AppStoreListingCreateType;
@@ -1843,10 +1846,20 @@ export const appStoreRouter = t.router({
                 ctx.user.profile.profileId
             );
 
+            if (typeof input.updates.kind !== 'undefined' && input.updates.kind !== listing.kind) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message:
+                        'App Store Listing kind cannot be changed by an ordinary metadata update',
+                });
+            }
+
+            const { kind: _ignoredKind, ...updatesWithoutKind } = input.updates;
+
             const storageUpdates = transformInputForStorage<
                 AppStoreListingUpdateType & { slug?: string }
             >({
-                ...input.updates,
+                ...updatesWithoutKind,
             });
 
             if (!listing.slug) {

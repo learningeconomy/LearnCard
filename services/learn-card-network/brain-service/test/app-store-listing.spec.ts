@@ -41,6 +41,7 @@ let userC: Awaited<ReturnType<typeof getUser>>;
 
 // For access layer tests - can set all fields including protected ones
 const makeListingInput = (overrides?: Record<string, any>) => ({
+    kind: 'APP' as const,
     display_name: 'Test App',
     tagline: 'A test application',
     full_description: 'This is a comprehensive test application for the app store',

@@ -21,6 +21,7 @@ import { normalizeAppSlug, isValidAppSlug } from '@helpers/slug.helpers';
 
 // Test helpers
 const makeListingInput = (overrides?: Record<string, any>) => ({
+    kind: 'APP' as const,
     display_name: 'Test App',
     tagline: 'A test application',
     full_description: 'This is a comprehensive test application for the app store',

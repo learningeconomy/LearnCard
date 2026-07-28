@@ -1,6 +1,10 @@
 import { v4 as uuid } from 'uuid';
 import { BindParam, QueryBuilder } from 'neogma';
 
+import {
+    DEFAULT_APP_STORE_LISTING_KIND,
+    normalizeAppStoreListing,
+} from '@helpers/app-store-listing.helpers';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
 import { AppStoreListing } from '@models';
 import { AppStoreListingCreateType, AppStoreListingType } from 'types/app-store-listing';
@@ -11,6 +15,7 @@ export const createAppStoreListing = async (
     const params = flattenObject({
         listing_id: input.listing_id ?? uuid(),
         slug: input.slug,
+        kind: input.kind ?? DEFAULT_APP_STORE_LISTING_KIND,
         display_name: input.display_name,
         tagline: input.tagline,
         full_description: input.full_description,
@@ -42,5 +47,7 @@ export const createAppStoreListing = async (
 
     const listing = result.records[0]?.get('listing').properties!;
 
-    return (inflateObject as any)(listing);
+    return normalizeAppStoreListing(
+        inflateObject(listing as Record<string, unknown>) as AppStoreListingType
+    );
 };

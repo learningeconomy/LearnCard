@@ -8,7 +8,7 @@ import {
     type BindingRepository,
     type ManagedIdentityMinter,
     type MembershipGranter,
-} from '@provisioning';
+} from '@identity-provisioning';
 
 const policy = TenantAuthPolicyValidator.parse({
     tenantId: 'lef',

@@ -16,6 +16,7 @@ import type { AppStoreListingCreateType } from 'types/app-store-listing';
 export const makeListingInput = (
     overrides?: Partial<AppStoreListingCreateType>
 ): AppStoreListingCreateType => ({
+    kind: 'APP',
     display_name: 'Dev Test App',
     tagline: 'A test application',
     full_description: 'Test application seeded for development',

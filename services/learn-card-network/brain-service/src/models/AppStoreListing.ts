@@ -3,6 +3,7 @@ import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
 import { neogma } from '@instance';
 
 import { Integration, IntegrationInstance } from './Integration';
+import { ListingVersion, ListingVersionInstance } from './ListingVersion';
 import { Profile, ProfileInstance } from './Profile';
 import { Boost, BoostInstance } from './Boost';
 import { Credential, CredentialInstance } from './Credential';
@@ -13,10 +14,12 @@ import {
     LaunchType,
     PromotionLevel,
     AgeRating,
+    AppStoreListingKindEnum,
 } from 'types/app-store-listing';
 
 export type AppStoreListingRelationships = {
     publishedBy: ModelRelatedNodesI<typeof Integration, IntegrationInstance>;
+    hasVersion: ModelRelatedNodesI<typeof ListingVersion, ListingVersionInstance>;
     submittedBy: ModelRelatedNodesI<
         typeof Profile,
         ProfileInstance,
@@ -86,6 +89,7 @@ export const AppStoreListing = ModelFactory<FlatAppStoreListingType, AppStoreLis
         schema: {
             listing_id: { type: 'string', required: true, uniqueItems: true },
             slug: { type: 'string', required: false, uniqueItems: true },
+            kind: { type: 'string', enum: AppStoreListingKindEnum.options, required: false },
             display_name: { type: 'string', required: true },
             tagline: { type: 'string', required: true },
             full_description: { type: 'string', required: true },
@@ -117,6 +121,7 @@ export const AppStoreListing = ModelFactory<FlatAppStoreListingType, AppStoreLis
         } as any,
         relationships: {
             publishedBy: { model: Integration, direction: 'in', name: 'PUBLISHES_LISTING' },
+            hasVersion: { model: ListingVersion, direction: 'out', name: 'HAS_VERSION' },
             submittedBy: {
                 model: Profile,
                 direction: 'in',

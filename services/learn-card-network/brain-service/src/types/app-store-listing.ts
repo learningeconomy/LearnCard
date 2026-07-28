@@ -19,9 +19,13 @@ export type PromotionLevelEnum = z.infer<typeof PromotionLevel>;
 export const AgeRating = z.enum(['4+', '9+', '12+', '17+']);
 export type AgeRatingEnum = z.infer<typeof AgeRating>;
 
+export const AppStoreListingKindEnum = z.enum(['APP', 'INTEGRATION', 'WALLET', 'BUNDLE']);
+export type AppStoreListingKind = z.infer<typeof AppStoreListingKindEnum>;
+
 export const AppStoreListingValidator = z.object({
     listing_id: z.string(),
     slug: z.string().optional(),
+    kind: AppStoreListingKindEnum,
     display_name: z.string(),
     tagline: z.string(),
     full_description: z.string(),
@@ -53,6 +57,7 @@ export const AppStoreListingCreateValidator = AppStoreListingValidator.omit({
     listing_id: true,
 }).extend({
     listing_id: z.string().optional(),
+    kind: AppStoreListingKindEnum.optional(),
 });
 export type AppStoreListingCreateType = z.infer<typeof AppStoreListingCreateValidator>;
 

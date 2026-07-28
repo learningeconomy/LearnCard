@@ -1,6 +1,6 @@
 import type { AuthProviderKind, ExternalIdentity, TenantAuthPolicy } from '@learncard/types';
 
-import type { JitProvisioner } from '@provisioning';
+import type { JitProvisioner } from '@identity-provisioning';
 
 import type {
     CallbackContext,

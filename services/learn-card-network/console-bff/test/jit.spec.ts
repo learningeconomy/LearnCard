@@ -11,7 +11,7 @@ import {
     type BindingRepository,
     type ManagedIdentityMinter,
     type MembershipGranter,
-} from '@provisioning';
+} from '@identity-provisioning';
 
 class FakeBindings implements BindingRepository {
     rows: ExternalIdentityBinding[] = [];

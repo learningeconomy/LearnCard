@@ -16,7 +16,7 @@ import {
     KmsManagedIdentityMinter,
     BrainServiceMembershipGranter,
     createMongoBindingRepository,
-} from '@provisioning';
+} from '@identity-provisioning';
 import {
     DidAuthProfileCreator,
     ServiceDidMembershipWriter,

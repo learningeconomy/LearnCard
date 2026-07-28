@@ -1,10 +1,14 @@
 import { BindParam, QueryBuilder } from 'neogma';
 import { int } from 'neo4j-driver';
 
+import { normalizeAppStoreListing } from '@helpers/app-store-listing.helpers';
 import { inflateObject } from '@helpers/objects.helpers';
 import { AppStoreListing } from '@models';
 import { AppStoreListingType } from 'types/app-store-listing';
 import { neogma } from '@instance';
+
+const inflateListing = (listing: Record<string, unknown>): AppStoreListingType =>
+    normalizeAppStoreListing(inflateObject(listing) as AppStoreListingType);
 
 export const readAppStoreListingById = async (
     listingId: string
@@ -19,7 +23,7 @@ export const readAppStoreListingById = async (
 
     if (!listing) return null;
 
-    return inflateObject<AppStoreListingType>(listing as any);
+    return inflateListing(listing as Record<string, unknown>);
 };
 
 export const readAppStoreListingBySlug = async (
@@ -35,7 +39,7 @@ export const readAppStoreListingBySlug = async (
 
     if (!listing) return null;
 
-    return inflateObject<AppStoreListingType>(listing as any);
+    return inflateListing(listing as Record<string, unknown>);
 };
 
 export const readAppStoreListingByIdOrSlug = async (
@@ -53,7 +57,7 @@ export const readAppStoreListingByIdOrSlug = async (
 
     if (!listing) return null;
 
-    return inflateObject<AppStoreListingType>(listing as any);
+    return inflateListing(listing as Record<string, unknown>);
 };
 
 export const getListingsForIntegration = async (
@@ -75,7 +79,7 @@ export const getListingsForIntegration = async (
 
     return result.records.map(record => {
         const listing = record.get('listing')?.properties;
-        return inflateObject<AppStoreListingType>(listing as any);
+        return inflateListing(listing as Record<string, unknown>);
     });
 };
 
@@ -150,7 +154,7 @@ export const getListedApps = async ({
 
     return result.records.map(record => {
         const listing = record.get('listing')?.properties;
-        return inflateObject<AppStoreListingType>(listing as any);
+        return inflateListing(listing as Record<string, unknown>);
     });
 };
 
@@ -176,7 +180,7 @@ export const searchAppStoreListings = async (
 
     return result.records.map(record => {
         const listing = record.get('listing')?.properties;
-        return inflateObject<AppStoreListingType>(listing as any);
+        return inflateListing(listing as Record<string, unknown>);
     });
 };
 
@@ -201,7 +205,7 @@ export const getInstalledAppsForProfile = async (
         const listing = record.get('listing')?.properties;
         const installed_at = record.get('installed_at');
         return {
-            ...inflateObject<AppStoreListingType>(listing as any),
+            ...inflateListing(listing as Record<string, unknown>),
             installed_at,
         };
     });
@@ -296,7 +300,7 @@ export const getListedAppsWithSubmitter = async ({
         const submitterEmail = record.get('submitterEmail');
         const submittedAt = record.get('submittedAt');
 
-        const inflatedListing = inflateObject<AppStoreListingType>(listing as any);
+        const inflatedListing = inflateListing(listing as any);
 
         // Include submitted_at from relationship or node fallback
         if (submittedAt) {

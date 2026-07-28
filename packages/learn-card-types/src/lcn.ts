@@ -1837,9 +1837,13 @@ export const AppStoreListingSubmitterValidator = z.object({
 
 export type AppStoreListingSubmitter = z.infer<typeof AppStoreListingSubmitterValidator>;
 
+export const AppStoreListingKindEnum = z.enum(['APP', 'INTEGRATION', 'WALLET', 'BUNDLE']);
+export type AppStoreListingKind = z.infer<typeof AppStoreListingKindEnum>;
+
 export const AppStoreListingValidator = z.object({
     listing_id: z.string(),
     slug: z.string().optional(),
+    kind: AppStoreListingKindEnum,
     display_name: z.string(),
     tagline: z.string(),
     full_description: z.string(),
@@ -1870,6 +1874,8 @@ export const AppStoreListingCreateValidator = AppStoreListingValidator.omit({
     listing_id: true,
     app_listing_status: true,
     promotion_level: true,
+}).extend({
+    kind: AppStoreListingKindEnum.optional(),
 });
 
 export type AppStoreListingCreateType = z.infer<typeof AppStoreListingCreateValidator>;

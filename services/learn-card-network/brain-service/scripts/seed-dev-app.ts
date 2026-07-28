@@ -453,6 +453,7 @@ async function seedListing(neogma: Neogma, config: ListingConfig): Promise<void>
         await run(
             `MATCH (l:AppStoreListing {listing_id: $listingId})
              SET l.promotion_level    = $promotionLevel,
+                 l.kind               = 'APP',
                  l.launch_config_json = $launchConfigJson,
                  l.launch_type        = $launchType,
                  l.display_name       = $displayName,
@@ -527,6 +528,7 @@ async function seedListing(neogma: Neogma, config: ListingConfig): Promise<void>
         `CREATE (l:AppStoreListing {
             listing_id: $listingId,
             slug: $slug,
+            kind: 'APP',
             display_name: $displayName,
             tagline: $tagline,
             full_description: $fullDescription,

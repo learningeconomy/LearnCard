@@ -11,7 +11,7 @@ import {
     type ProfileCreator,
     type MembershipWriter,
     type BindingCollectionLike,
-} from '@provisioning';
+} from '@identity-provisioning';
 
 describe('KmsManagedIdentityMinter', () => {
     it('mints a key + tenant-domain did:web and registers it so the DID doc resolves', async () => {

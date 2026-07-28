@@ -36,8 +36,8 @@
             "@session/*": ["src/session/*"],
             "@providers": ["src/providers/index.ts"],
             "@providers/*": ["src/providers/*"],
-            "@provisioning": ["src/provisioning/index.ts"],
-            "@provisioning/*": ["src/provisioning/*"],
+            "@identity-provisioning": ["src/identity-provisioning/index.ts"],
+            "@identity-provisioning/*": ["src/identity-provisioning/*"],
             "@helpers/*": ["src/helpers/*"],
             "types/*": ["src/types/*"]
         },

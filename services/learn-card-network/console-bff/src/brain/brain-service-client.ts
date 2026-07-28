@@ -2,7 +2,7 @@ import type { EcosystemRole, ProvisionableRole } from '@learncard/types';
 
 import type { KeyManagementService, ManagedKeyRef } from '@kms';
 
-import type { ProfileCreator, MembershipWriter } from '@provisioning';
+import type { ProfileCreator, MembershipWriter } from '@identity-provisioning';
 
 import { DidAuthBearerFactory } from './did-auth';
 

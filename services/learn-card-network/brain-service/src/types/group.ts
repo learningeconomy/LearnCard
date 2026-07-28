@@ -7,5 +7,6 @@ export const FlatGroupValidator = GroupValidator.omit({
 }).extend({
     parentGroupId: z.string().optional(),
     computedCriteria: z.string().optional(),
+    identityIssuanceEnabled: z.boolean().optional(),
 });
 export type FlatGroupType = z.infer<typeof FlatGroupValidator>;
