@@ -63,7 +63,6 @@ const ViewSharedBoost: React.FC<{
     const { uri: _uri, seed: _seed, pin: _pin } = queryString.parse(location.search);
     const [isFront, setIsFront] = useState(true);
     const [vc, setVC] = useState<VP>();
-    const [errMsg, setErrMsg] = useState<string | undefined | null>();
     const [verificationItems, setVerificationItems] = useState<VerificationItem[]>([]);
     const [lifecycleStatus, setLifecycleStatus] = useState<CredentialLifecycleStatus>('active');
     const [tryRefetch, setTryRefetch] = useState(false);
@@ -159,14 +158,14 @@ const ViewSharedBoost: React.FC<{
             }
             setLoading(false);
             return vc;
-        } catch (e) {
+        } catch (error) {
             setLoading(false);
-            setErrMsg(`Error: wrong PIN: ${e}`);
+            log.warn('Unable to open shared credential', error);
 
             presentAlert({
                 backdropDismiss: false,
                 cssClass: 'boost-confirmation-alert',
-                header: `Error fetching credential: ${e}`,
+                header: m['recovery.incorrectPassword'](),
                 buttons: [
                     {
                         text: 'OK',
@@ -194,7 +193,6 @@ const ViewSharedBoost: React.FC<{
             setBoost(undefined);
             setVC(undefined);
             setExistingEndorsements(null);
-            setErrMsg(undefined);
             setShareLinkInfo(`uri=${uri}&seed=${seed}&pin=${pin}`);
             void fetchCredential((uri as string).replace('localhost:', 'localhost%3A'));
         }
