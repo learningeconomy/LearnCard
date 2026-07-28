@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { BarcodeScanner, BarcodeFormat, LensFacing } from '@capacitor-mlkit/barcode-scanning';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 
 import ClaimBoost from '../../pages/claimBoost/ClaimBoost';
 import AddContactView, {
@@ -33,95 +33,143 @@ export const QRCodeScannerListener: React.FC = () => {
 
     const [loading, setLoading] = useState<boolean>(false);
 
-    const handleStartScanning = async () => {
-        return new Promise(async resolve => {
-            const listener = await BarcodeScanner?.addListener('barcodeScanned', async result => {
-                await listener.remove();
-                await BarcodeScanner.stopScan();
-                resolve(result.barcode);
-            });
-
-            await BarcodeScanner.startScan({
-                formats: [BarcodeFormat.QrCode],
-                lensFacing: LensFacing.Back,
-            });
-        });
-    };
-
-    const handleScan = async (qrCodeValue: string) => {
-        await handleCancelScanning();
-
-        try {
+    const handleScan = useCallback(
+        async (qrCodeValue: string) => {
             if (!qrCodeValue) return;
 
             setLoading(true);
-            const result = await route(qrCodeValue);
-            setLoading(false);
 
-            if (result.kind === 'open_contact') {
-                setContact(result.contact);
-                setIsOpen(true);
-                return;
-            }
-            if (result.kind === 'open_claim_boost') {
-                setBoost(result.boost);
-                setVC(null);
-                setIsClaimModalOpen(true);
-                return;
-            }
-            if (result.kind === 'open_claim_vc') {
-                setBoost(null);
-                setVC(result.vc);
-                setIsClaimModalOpen(true);
-                return;
-            }
-            if (result.kind === 'open_website') {
-                window.open(result.url, '_blank');
-                return;
-            }
-            if (result.kind === 'unrecognized') {
-                setContact(null);
-                setIsOpen(true);
-                return;
-            }
-            // 'routed' — the router already called history.push; nothing more to do.
-        } catch (error) {
-            log.error('scanner::error', error);
-            await handleCancelScanning();
-            setLoading(false);
+            try {
+                const result = await route(qrCodeValue);
 
-            presentToast(m['scanner.failed'](), {
-                type: ToastTypeEnum.Error,
-                hasDismissButton: true,
-            });
-        }
-    };
-
-    const handleCancelScanning = async () => {
-        document?.querySelector('#app-router')?.classList?.remove('scanner-active');
-        QRCodeScannerStore.set.showScanner(false);
-
-        await BarcodeScanner?.removeAllListeners();
-        await BarcodeScanner?.stopScan();
-    };
+                if (result.kind === 'open_contact') {
+                    setContact(result.contact);
+                    setIsOpen(true);
+                    return;
+                }
+                if (result.kind === 'open_claim_boost') {
+                    setBoost(result.boost);
+                    setVC(null);
+                    setIsClaimModalOpen(true);
+                    return;
+                }
+                if (result.kind === 'open_claim_vc') {
+                    setBoost(null);
+                    setVC(result.vc);
+                    setIsClaimModalOpen(true);
+                    return;
+                }
+                if (result.kind === 'open_website') {
+                    window.open(result.url, '_blank');
+                    return;
+                }
+                if (result.kind === 'unrecognized') {
+                    setContact(null);
+                    setIsOpen(true);
+                }
+                // 'routed' — the router already called history.push; nothing more to do.
+            } catch (error) {
+                log.error('scanner::error', error);
+                presentToast(m['scanner.failed'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+            } finally {
+                setLoading(false);
+            }
+        },
+        [presentToast, route]
+    );
 
     useEffect(() => {
-        if (Capacitor.isNativePlatform()) {
-            if (showScanner) {
-                handleStartScanning()
-                    .then(async (res: any) => {
-                        log.debug('scan::success', { rawValue: res?.rawValue });
-                        await handleScan(res?.rawValue);
-                    })
-                    .catch(async error => {
-                        log.error('scan::error', error);
-                        await handleCancelScanning();
-                    });
-            } else if (!showScanner) {
-                handleCancelScanning();
+        if (!Capacitor.isNativePlatform() || !showScanner) return;
+
+        let disposed = false;
+        let listener: PluginListenerHandle | null = null;
+        let stopPromise: Promise<void> | null = null;
+
+        const stopOwnedScan = (): Promise<void> => {
+            if (stopPromise) return stopPromise;
+
+            stopPromise = (async () => {
+                const activeListener = listener;
+                listener = null;
+
+                await activeListener?.remove();
+                await BarcodeScanner.stopScan();
+                document.querySelector('#app-router')?.classList.remove('scanner-active');
+            })();
+
+            return stopPromise;
+        };
+
+        const handleBarcodeScanned = async (rawValue: string) => {
+            if (disposed) return;
+
+            disposed = true;
+            log.debug('scan::success', { rawValue });
+
+            try {
+                await stopOwnedScan();
+            } catch (error) {
+                log.warn('scan::cleanup-error', error);
             }
-        }
-    }, [showScanner]);
+
+            QRCodeScannerStore.set.showScanner(false);
+            await handleScan(rawValue);
+        };
+
+        const startScanning = async () => {
+            try {
+                const registeredListener = await BarcodeScanner.addListener(
+                    'barcodeScanned',
+                    result => {
+                        void handleBarcodeScanned(result.barcode.rawValue);
+                    }
+                );
+
+                if (disposed) {
+                    await registeredListener.remove();
+                    return;
+                }
+
+                listener = registeredListener;
+                await BarcodeScanner.startScan({
+                    formats: [BarcodeFormat.QrCode],
+                    lensFacing: LensFacing.Back,
+                });
+
+                if (disposed) {
+                    await BarcodeScanner.stopScan();
+                    document.querySelector('#app-router')?.classList.remove('scanner-active');
+                }
+            } catch (error) {
+                if (disposed) return;
+
+                disposed = true;
+                log.error('scan::error', error);
+
+                try {
+                    await stopOwnedScan();
+                } catch (cleanupError) {
+                    log.warn('scan::cleanup-error', cleanupError);
+                }
+
+                QRCodeScannerStore.set.showScanner(false);
+                presentToast(m['scanner.failed'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
+            }
+        };
+
+        void startScanning();
+
+        return () => {
+            disposed = true;
+            void stopOwnedScan().catch(error => log.warn('scan::cleanup-error', error));
+        };
+    }, [handleScan, presentToast, showScanner]);
 
     return (
         <>
