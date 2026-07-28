@@ -6,7 +6,7 @@ const log = getLogger('context');
 import type { AnalyticsProvider, AnalyticsProviderName } from './types';
 import type { AnalyticsEventName, EventPayload } from './events';
 import { NoopProvider } from './providers/noop';
-import { getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
+import { getResolvedTenantConfig } from '../config/tenantConfigState';
 import {
     setAnalyticsProvider as setSendCredentialFlowProvider,
     setSendCredentialTelemetryEnabled,
