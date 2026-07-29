@@ -37,6 +37,7 @@ import {
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { ConsentFlowContractDetails, ConsentFlowTerms, LCNProfile } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 
 type ConsentFlowConfirmationProps = {
     contractDetails: ConsentFlowContractDetails;
@@ -82,6 +83,7 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
     const { presentToast } = useToast();
     const confirm = useConfirmation();
     const brandingConfig = useBrandingConfig();
+    const { track } = useAnalytics();
 
     const currentUser = useCurrentUser();
     const isSwitchedProfile = switchedProfileStore.use.isSwitchedProfile();
@@ -165,6 +167,9 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
         const { deleteContractCredentials = false } = options ?? {};
 
         withdrawConsent(termsUri).then(async () => {
+            track(AnalyticsEvents.CONSENT_FLOW_DECLINED, {
+                contractName: contractDetails.name,
+            });
             if (deleteContractCredentials) {
                 try {
                     await Promise.all(
@@ -173,7 +178,6 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
                         })
                     );
 
-                    // clear creds from newCredsStore
                     const credentialUris = contractCredentials?.map(
                         contractCred => contractCred.uri
                     );
