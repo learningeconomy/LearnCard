@@ -16,6 +16,7 @@ import { VC, VP } from '@learncard/types';
 import {
     getAchievementType,
     getDefaultCategoryForCredential,
+    unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { useHighlightedCredentials } from '../../../hooks/useHighlightedCredentials';
 import { getRoleFromCred, getScoutsNounForRole } from '../../../helpers/troop.helpers';
@@ -87,11 +88,15 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
         setSelectedImage(url);
     }, []);
 
+    const displayCredential = useMemo(
+        () => (credential ? (unwrapBoostCredential(credential as VC) as VC) : undefined),
+        [credential]
+    );
     const shouldUseHostCardPadding =
-        !credential ||
+        !displayCredential ||
         getVCDisplayCardVariant(
-            credential as VC,
-            getDefaultCategoryForCredential(credential as VC)
+            displayCredential,
+            getDefaultCategoryForCredential(displayCredential)
         ) !== 'ribbon';
 
     let claimStatusText;
@@ -133,7 +138,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                     <section className="w-full">
                         {credential && (
                             <VCDisplayCardWrapper2
-                                credential={credential}
+                                credential={displayCredential}
                                 hideNavButtons
                                 isFrontOverride={isFront}
                                 setIsFrontOverride={setIsFront}

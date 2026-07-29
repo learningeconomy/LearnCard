@@ -3,7 +3,8 @@ import type { VC } from '@learncard/types';
 import { getVCDisplayCardVariant } from '../VCDisplayCard2';
 import { LCCategoryEnum } from '../../../types';
 
-const credentialWithDisplayType = (displayType: string): VC => ({ display: { displayType } } as VC);
+const credentialWithDisplayType = (displayType: string): VC =>
+    ({ display: { displayType } } as unknown as VC);
 
 describe('getVCDisplayCardVariant', () => {
     it('uses the ribbon layout for a generic credential', () => {
@@ -16,6 +17,7 @@ describe('getVCDisplayCardVariant', () => {
             'certificate'
         );
         expect(getVCDisplayCardVariant(credentialWithDisplayType('id'))).toBe('id');
+        expect(getVCDisplayCardVariant(credentialWithDisplayType('ID'))).toBe('id');
     });
 
     it('uses category metadata when display metadata is absent', () => {

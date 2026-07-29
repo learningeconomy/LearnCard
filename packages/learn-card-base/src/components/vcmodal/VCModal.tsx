@@ -24,7 +24,10 @@ import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
 
 import redirectStore from 'learn-card-base/stores/redirectStore';
 import modalStateStore from 'learn-card-base/stores/modalStateStore';
-import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
+import {
+    getDefaultCategoryForCredential,
+    unwrapBoostCredential,
+} from 'learn-card-base/helpers/credentialHelpers';
 import { VC, CredentialRecord } from '@learncard/types';
 import { useAcceptCredentialMutation } from 'learn-card-base/react-query/mutations/mutations';
 
@@ -172,7 +175,8 @@ export const VCClaim: React.FC<{
     }
 
     const isCertificate = vc?.display?.displayType === 'certificate';
-    const shouldUseHostCardPadding = !vc || getVCDisplayCardVariant(vc) !== 'ribbon';
+    const shouldUseHostCardPadding =
+        !vc || getVCDisplayCardVariant(vc, getDefaultCategoryForCredential(vc)) !== 'ribbon';
 
     return (
         <IonPage>
@@ -354,9 +358,10 @@ export const VCModal = ({
         onDismiss?.();
     };
 
-    const isCertificate = vc?.display?.displayType === 'certificate';
+    const isCertificate = credential?.display?.displayType === 'certificate';
+    const category = cr?.category || getDefaultCategoryForCredential(credential);
     const shouldUseHostCardPadding =
-        !credential || getVCDisplayCardVariant(credential) !== 'ribbon';
+        !credential || getVCDisplayCardVariant(credential, category) !== 'ribbon';
 
     return (
         <IonPage>
