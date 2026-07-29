@@ -19,12 +19,14 @@ import { IonFooter, IonSpinner } from '@ionic/react';
 import SkillSearchSelector from './SkillSearchSelector';
 import { SelectedSkill } from './skillTypes';
 import * as m from '../../paraglide/messages.js';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 
 type SelfAssignSkillsModalProps = {};
 
 const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
     const { presentToast } = useToast();
     const { closeModal, newModal } = useModal();
+    const { track } = useAnalytics();
 
     const [isUpdating, setIsUpdating] = useState(false);
     const [selectedSkills, setSelectedSkills] = useState<SelectedSkill[]>([]);
@@ -93,6 +95,11 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
                     id: s.id,
                     proficiencyLevel: s.proficiency,
                 })),
+            });
+
+            track(AnalyticsEvents.PROFILE_ITEM_UPDATED, {
+                itemType: 'skill',
+                surface: 'self_assign_skills_modal',
             });
 
             presentToast(m['toasts.skills.savedSuccess'](), {

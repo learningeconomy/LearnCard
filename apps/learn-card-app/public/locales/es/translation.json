@@ -2595,6 +2595,26 @@
         "globalNetworkAdmin": "Administrador de red global",
         "nationalNetworkAdmin": "Administrador de red nacional"
     },
+    "feedback": {
+        "howWasThat": "¿Qué te pareció?",
+        "thanks": "¡Gracias por tu opinión!",
+        "bad": "Mal",
+        "okay": "Regular",
+        "great": "Genial",
+        "followup": {
+            "title": "¿Qué salió mal?",
+            "desc": "Tus comentarios nos ayudan a mejorar LearnCard.",
+            "reason": {
+                "confusing": "Confuso",
+                "slow": "Lento",
+                "broken": "Algo falló",
+                "other": "Otro"
+            },
+            "placeholder": "Cuéntanos más (opcional)",
+            "send": "Enviar comentarios",
+            "skip": "Omitir"
+        }
+    },
     "toasts": {
         "copied": "Copiado al portapapeles",
         "copyFailed": "No se pudo copiar al portapapeles",
@@ -2926,7 +2946,17 @@
         "unfinished": "Sin terminar",
         "learningOverview": "Resumen de aprendizaje",
         "finishSession": "Finalizar sesión",
-        "finish": "Finalizar"
+        "finish": "Finalizar",
+        "activeTitle": "Sesión en curso",
+        "activeFallbackTitle": "Tu sesión de IA actual",
+        "activeDescription": "\"{{title}}\" sigue activa. Si inicias una sesión nueva, finalizará.",
+        "resumeSession": "Reanudar sesión",
+        "resumingSession": "Reanudando...",
+        "checkingActiveSession": "Comprobando sesiones...",
+        "startNewSession": "Iniciar nueva sesión",
+        "startingNewSession": "Iniciando...",
+        "activeCheckFailedTitle": "Algo salió mal",
+        "activeCheckFailedDescription": "Intenta iniciar la sesión de nuevo."
     },
     "aiFeatureLinks": {
         "skillsHub": "Centro de habilidades"

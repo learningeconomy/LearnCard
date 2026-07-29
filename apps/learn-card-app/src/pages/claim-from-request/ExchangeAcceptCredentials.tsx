@@ -5,6 +5,7 @@ import { VC, VP, VerificationItem } from '@learncard/types';
 import { prettifyVerificationItems } from 'learn-card-base/helpers/verificationPrettifier';
 import { IonContent, IonPage, IonLoading } from '@ionic/react';
 import { Gift, Check, AlertCircle, Home, HelpCircle } from 'lucide-react';
+import { getVCDisplayCardVariant } from '@learncard/react';
 
 import { getLogger } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
@@ -32,6 +33,9 @@ import {
     useProfileSnapshotCapture,
     ACCOUNT_CREATED_AT_KEY,
     SESSION_START_KEY,
+    createFlowLifecycle,
+    newFlowId,
+    type FlowLifecycle,
 } from '@analytics';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -39,6 +43,7 @@ import {
     getAchievementType,
     getDefaultCategoryForCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
+import { getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 
 import { BoostEarnedCard } from '../../components/boost/boost-earned-card/BoostEarnedCard';
 import { publishWalletEvent } from '../pathways/events/walletEventBus';
@@ -94,6 +99,23 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     const { newModal } = useModal();
     const { isMobile } = useDeviceTypeByWidth();
     const flowStartedAt = useRef(Date.now());
+    const claimAttemptRef = useRef<FlowLifecycle | null>(null);
+    const presentedBatchKeyRef = useRef<string | null>(null);
+
+    const resolvePartnerId = (issuerId?: string) => {
+        const profileId = getUserHandleFromDid(issuerId ?? '');
+        if (profileId) return profileId;
+
+        try {
+            return issuerId ? new URL(issuerId).host || undefined : undefined;
+        } catch {
+            return undefined;
+        }
+    };
+
+    const getClaimErrorCode = (e: unknown): string =>
+        (e as { code?: string })?.code ??
+        (e instanceof Error && e.name !== 'Error' ? e.name : 'unknown');
 
     // Verify the (single) credential so the Details panel/sidebar shows real
     // Proof / Status / Expiration rows. Always run — the verification block is
@@ -123,6 +145,82 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const beginClaimAttempt = () => {
+        if (selectedCredentials.length === 0) return null;
+
+        const primaryCredential = selectedCredentials[0];
+        const issuerId =
+            typeof primaryCredential?.issuer === 'string'
+                ? primaryCredential.issuer
+                : primaryCredential?.issuer?.id;
+        const attempt = createFlowLifecycle();
+
+        claimAttemptRef.current = attempt;
+        track(AnalyticsEvents.CREDENTIAL_CLAIM_STARTED, {
+            flow_id: attempt.id,
+            entry_point: 'vc_api_request',
+            credential_type: getAchievementType(primaryCredential),
+            category: getDefaultCategoryForCredential(primaryCredential),
+            partner_id: resolvePartnerId(issuerId),
+            credential_count: selectedCredentials.length,
+        });
+
+        return attempt;
+    };
+
+    const completeClaimAttempt = (
+        eventName:
+            | typeof AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED
+            | typeof AnalyticsEvents.CREDENTIAL_CLAIM_FAILED
+            | typeof AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED,
+        errorCode?: string
+    ) => {
+        const attempt = claimAttemptRef.current;
+        const primaryCredential = selectedCredentials[0] ?? credentials[0];
+        if (!attempt || !primaryCredential || !attempt.terminate()) return;
+
+        const issuerId =
+            typeof primaryCredential.issuer === 'string'
+                ? primaryCredential.issuer
+                : primaryCredential.issuer?.id;
+
+        track(eventName, {
+            flow_id: attempt.id,
+            entry_point: 'vc_api_request',
+            credential_type: getAchievementType(primaryCredential),
+            category: getDefaultCategoryForCredential(primaryCredential),
+            partner_id: resolvePartnerId(issuerId),
+            credential_count: selectedCredentials.length,
+            duration_ms: attempt.durationMs(),
+            error_code: errorCode,
+        });
+
+        claimAttemptRef.current = null;
+    };
+
+    useEffect(() => {
+        if (credentials.length === 0 || isClaimed) return;
+
+        const batchKey = credentials.map(credential => credential?.id ?? 'unknown').join('|');
+        if (!batchKey || presentedBatchKeyRef.current === batchKey) return;
+
+        const primaryCredential = credentials[0];
+        const issuerId =
+            typeof primaryCredential?.issuer === 'string'
+                ? primaryCredential.issuer
+                : primaryCredential?.issuer?.id;
+
+        presentedBatchKeyRef.current = batchKey;
+        track(AnalyticsEvents.CREDENTIAL_CLAIM_PRESENTED, {
+            flow_id: newFlowId(),
+            entry_point: 'vc_api_request',
+            credential_type: getAchievementType(primaryCredential),
+            category: getDefaultCategoryForCredential(primaryCredential),
+            partner_id: resolvePartnerId(issuerId),
+            credential_count: credentials.length,
+        });
+    }, [credentials, isClaimed, track]);
+
     const handleClaim = async () => {
         if (selectedCredentials.length === 0) {
             presentToast(m['toasts.selectCredential'](), {
@@ -131,6 +229,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
             });
             return;
         }
+        beginClaimAttempt();
         setClaiming(true);
         // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
         capture();
@@ -203,6 +302,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
             });
 
             setIsClaimed(true);
+            completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED);
 
             presentToast(m['claim.accept.success']({ count: selectedCredentials.length }), {
                 type: ToastTypeEnum.Success,
@@ -211,6 +311,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
             onAccept({}, selectedCredentials.length);
         } catch (e) {
+            completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, getClaimErrorCode(e));
             log.error('Error claiming credential(s)', e);
             if (e instanceof Error && e?.message?.includes('exists')) {
                 presentToast(m['claim.accept.exists'](), {
@@ -485,7 +586,10 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                 <BoostFooterLayout
                     contentOwnsScroll
                     footerProps={{
-                        handleClose: () => history.push('/'),
+                        handleClose: () => {
+                            completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED);
+                            history.push('/');
+                        },
                         handleDetails: isMobile
                             ? () => openSingleCredentialDetails(credential)
                             : undefined,
@@ -496,11 +600,16 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                     }}
                 >
                     <div className="flex h-full bg-grayscale-100">
-                        <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0 bg-grayscale-100">
+                        <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0 bg-grayscale-500">
                             <section
-                                className={`px-6 w-full safe-area-top-margin overflow-y-auto max-h-full disable-scrollbars ${
-                                    Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'
-                                }`}
+                                className={`w-full safe-area-top-margin overflow-y-auto max-h-full disable-scrollbars ${
+                                    getVCDisplayCardVariant(
+                                        credential,
+                                        resolveDetailsCategoryType(credential)
+                                    ) !== 'ribbon'
+                                        ? 'px-6'
+                                        : ''
+                                } ${Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'}`}
                             >
                                 <div className="pb-4 vc-preview-modal-safe-area h-full w-full">
                                     {renderSingleCredentialCard(credential)}
@@ -532,7 +641,10 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
             <BoostFooterLayout
                 contentOwnsScroll
                 footerProps={{
-                    handleClose: () => history.push('/'),
+                    handleClose: () => {
+                        completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED);
+                        history.push('/');
+                    },
                     handleClaim,
                     claimBtnText,
                     disableClaimButton: claiming || isClaimed,

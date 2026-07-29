@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { useRenderMethodEnabled } from '../../../../hooks/useRenderMethodEnabled';
 
 import { IonPage } from '@ionic/react';
-import { VCDisplayCard2 } from '@learncard/react';
+import { getVCDisplayCardVariant, VCDisplayCard2 } from '@learncard/react';
 import * as m from '../../../../paraglide/messages.js';
 import { BoostPreviewTabsEnum } from '../../../boost-preview-tabs/boost-preview-tabs.helpers';
 import { boostPreviewStore } from 'learn-card-base';
@@ -34,8 +34,10 @@ import {
 import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
 
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
+import { getAchievementType } from 'learn-card-base/helpers/credentialHelpers';
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
+import { AnalyticsEvents, useAnalytics } from '@analytics';
 
 export type IssueHistory = {
     id?: string | number;
@@ -179,6 +181,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     isPreview = false,
 }) => {
     const enableRenderMethod = useRenderMethodEnabled();
+    const { track } = useAnalytics();
     const unwrappedCredential = unwrapBoostCredential(_credential);
     const { credentialWithEdits } = useGetCredentialWithEdits(unwrappedCredential);
     const renderMethod = enableRenderMethod ? getSvgMustacheRenderMethod(_credential as VC) : null;
@@ -206,6 +209,21 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
 
     const vcVerifications = useVerification(credential);
     const [isFront, setIsFront] = useState(true);
+    const viewedCredentialIdRef = useRef<string | undefined>(undefined);
+
+    useEffect(() => {
+        if (!isEarnedBoost || isPreview) return;
+
+        const viewedCredentialId = credential?.id;
+        if (!viewedCredentialId || viewedCredentialIdRef.current === viewedCredentialId) return;
+
+        viewedCredentialIdRef.current = viewedCredentialId;
+        track(AnalyticsEvents.CREDENTIAL_VIEWED, {
+            credential_type: getAchievementType(_credential),
+            category: categoryType,
+            surface: 'wallet',
+        });
+    }, [categoryType, credential?.id, isEarnedBoost, isPreview, track, _credential]);
 
     let verifications: VerificationItem[] = [];
     if (isClrChildCredential) {
@@ -234,6 +252,9 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
         enableRenderMethod &&
         Boolean(renderMethod) &&
         selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+    const shouldUseHostCardPadding =
+        isIssuerViewSelected ||
+        getVCDisplayCardVariant(credential, categoryType, formattedDisplayType) !== 'ribbon';
 
     const { isMobile } = useDeviceTypeByWidth();
 
@@ -351,14 +372,14 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                 <div className="flex h-full">
                     <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0">
                         <div
-                            className={`w-full px-2 flex flex-col items-center justify-center overflow-x-auto ${boostPreviewWrapperCustomClass} ${
+                            className={`w-full flex flex-col items-center justify-center overflow-x-auto ${boostPreviewWrapperCustomClass} ${
                                 isCertificate ? 'certificate-display-zoom' : ''
                             } ${isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''}`}
                         >
                             <section
-                                className={`px-6 w-full safe-area-top-margin overflow-y-auto max-h-full disable-scrollbars ${
-                                    Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'
-                                }`}
+                                className={`w-full safe-area-top-margin overflow-y-auto max-h-full disable-scrollbars ${
+                                    shouldUseHostCardPadding ? 'px-6' : ''
+                                } ${Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'}`}
                             >
                                 {isIssuerViewSelected && renderMethod ? (
                                     <RenderMethodDisplay

@@ -26,7 +26,6 @@ import {
     useGetCredentialsForSkills,
 } from 'learn-card-base';
 
-import { mapBoostsToSkills } from './skills.helpers';
 import { SubheaderTypeEnum } from '../../components/main-subheader/MainSubHeader.types';
 import AiFeatureLinks from '../../components/ai-feature-links/AiFeatureLinks';
 
@@ -102,19 +101,7 @@ const SkillsPage: React.FC = () => {
         isBoostsEmpty = false;
     }
 
-    const skillsMap = mapBoostsToSkills(allResolvedCreds);
-
-    // Calculate total count of skills and subskills
-    const totalSkills = Object.values(skillsMap).reduce(
-        (total, category) => total + (category?.length || 0),
-        0
-    );
-    const totalSubskills = Object.values(skillsMap).reduce(
-        (total, category) => total + (category?.totalSubskills || 0),
-        0
-    );
-
-    const total = (totalSkills || 0) + (totalSubskills || 0) + (alignments?.length || 0);
+    const total = alignments.length;
 
     const isHub = selectedTab === TabEnum.MY_HUB;
 

@@ -3,13 +3,14 @@ import queryString from 'query-string';
 import { useLocation, useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
+import { getVCDisplayCardVariant } from '@learncard/react';
 import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
 import { IonContent, IonPage, useIonAlert, IonHeader, IonToolbar, useIonModal } from '@ionic/react';
 import SharedBoostVerificationBlock, {
     SharedBoostVerificationBlockViewMode,
 } from './SharedBoostVerificationBlock';
-import Lottie from 'react-lottie-player';
-const HourGlass = '/lotties/hourglass.json';
+
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import MainHeader from '../main-header/MainHeader';
 import EndorsementRequestModal from '../boost-endorsements/EndorsementRequestModal/EndorsementRequestModal';
 import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';
@@ -215,6 +216,15 @@ const ViewSharedBoost: React.FC<{
     const lifecyclePillBg = lifecycleStatus === 'suspended' ? '#D97706' : '#DC2626';
     const lifecyclePillLabel =
         lifecycleStatus === 'suspended' ? m['issue.suspended']() : m['issue.revoked']();
+    const isRibbonDisplayCard =
+        sharedCredential && getVCDisplayCardVariant(sharedCredential as VC, category) === 'ribbon';
+    let previewHorizontalPaddingClass = 'px-[32px]';
+
+    if (category === 'ID') {
+        previewHorizontalPaddingClass = 'px-[12px]';
+    } else if (isRibbonDisplayCard) {
+        previewHorizontalPaddingClass = 'px-0';
+    }
 
     if (showEndorsementRequest) {
         return (
@@ -285,20 +295,13 @@ const ViewSharedBoost: React.FC<{
                     {loading && (
                         <div className="relative w-full h-full text-center flex flex-col items-center justify-center">
                             <div className="max-w-[200px] mt-[-50px]">
-                                <Lottie
-                                    loop
-                                    path={HourGlass}
-                                    play
-                                    style={{ width: '100%', height: '100%' }}
-                                />
+                                <LoadingSpinner />
                             </div>
                         </div>
                     )}
                     {boost && wallet && !loading && (
                         <section
-                            className={`relative w-full min-h-full text-left flex flex-col items-center justify-start pt-4 ${
-                                category === 'ID' ? 'px-[12px]' : 'px-[32px]'
-                            } ]`}
+                            className={`relative w-full min-h-full text-left flex flex-col items-center justify-start pt-4 ${previewHorizontalPaddingClass}`}
                         >
                             {/*
                                // TODO: FIX THE NAV BUTTON FOR CERTIFICATES

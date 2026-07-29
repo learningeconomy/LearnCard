@@ -2595,6 +2595,26 @@
         "globalNetworkAdmin": "Administrateur réseau mondial",
         "nationalNetworkAdmin": "Administrateur réseau national"
     },
+    "feedback": {
+        "howWasThat": "Comment ça s'est passé ?",
+        "thanks": "Merci pour votre retour !",
+        "bad": "Pas bien",
+        "okay": "Moyen",
+        "great": "Super",
+        "followup": {
+            "title": "Qu'est-ce qui n'a pas fonctionné ?",
+            "desc": "Vos retours nous aident à améliorer LearnCard.",
+            "reason": {
+                "confusing": "Déroutant",
+                "slow": "Lent",
+                "broken": "Quelque chose s'est cassé",
+                "other": "Autre"
+            },
+            "placeholder": "Dites-nous en plus (facultatif)",
+            "send": "Envoyer",
+            "skip": "Passer"
+        }
+    },
     "toasts": {
         "copied": "Copié dans le presse-papiers",
         "copyFailed": "Impossible de copier dans le presse-papiers",
@@ -2926,7 +2946,17 @@
         "unfinished": "Inachevé",
         "learningOverview": "Aperçu des apprentissages",
         "finishSession": "Terminer la session",
-        "finish": "Terminer"
+        "finish": "Terminer",
+        "activeTitle": "Session en cours",
+        "activeFallbackTitle": "Votre session d’IA actuelle",
+        "activeDescription": "« {{title}} » est toujours active. Démarrer une nouvelle session y mettra fin.",
+        "resumeSession": "Reprendre la session",
+        "resumingSession": "Reprise...",
+        "checkingActiveSession": "Vérification des sessions...",
+        "startNewSession": "Démarrer une nouvelle session",
+        "startingNewSession": "Démarrage...",
+        "activeCheckFailedTitle": "Un problème est survenu",
+        "activeCheckFailedDescription": "Essayez de redémarrer la session."
     },
     "aiFeatureLinks": {
         "skillsHub": "Pôle de compétences"

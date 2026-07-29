@@ -5,6 +5,7 @@ import { Capacitor } from '@capacitor/core';
 import { useRenderMethodEnabled } from '../../../../hooks/useRenderMethodEnabled';
 
 import { IonPage } from '@ionic/react';
+import { getVCDisplayCardVariant } from '@learncard/react';
 import RenderMethodDisplay from '../../../render-method/RenderMethodDisplay';
 import BoostDetailsSideBar from './BoostDetailsSideBar';
 import BoostDetailsSideMenu from './BoostDetailsSideMenu';
@@ -20,6 +21,7 @@ import {
 } from '../../../../helpers/clrRenderer.helpers';
 import { getDownloadableEvidence } from '../../../clr-transcript/clr.helpers';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
+import { getAchievementType } from 'learn-card-base/helpers/credentialHelpers';
 import { applyLifecycleStatusToVerifications } from 'learn-card-base/helpers/lifecycleVerification.helpers';
 
 import { VC, UnsignedVC, VerificationItem } from '@learncard/types';
@@ -33,6 +35,7 @@ import {
 } from 'learn-card-base';
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
+import { AnalyticsEvents, useAnalytics } from '@analytics';
 
 type IssueHistory = {
     id?: string | number;
@@ -113,8 +116,10 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     isPreview = false,
 }) => {
     const enableRenderMethod = useRenderMethodEnabled();
+    const { track } = useAnalytics();
     const { initWallet } = useWallet();
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
+    const viewedCredentialIdRef = React.useRef<string | undefined>(undefined);
     const renderMethod = enableRenderMethod ? getSvgMustacheRenderMethod(credential as VC) : null;
     const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
 
@@ -145,6 +150,20 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
 
         verify();
     }, [credential, isPreview]);
+
+    useEffect(() => {
+        if (!isEarnedBoost || isPreview) return;
+
+        const viewedCredentialId = credential?.id;
+        if (!viewedCredentialId || viewedCredentialIdRef.current === viewedCredentialId) return;
+
+        viewedCredentialIdRef.current = viewedCredentialId;
+        track(AnalyticsEvents.CREDENTIAL_VIEWED, {
+            credential_type: getAchievementType(credential),
+            category: categoryType,
+            surface: 'wallet',
+        });
+    }, [categoryType, credential, isEarnedBoost, isPreview, track]);
 
     useEffect(() => {
         if (!isFront) {
@@ -226,6 +245,19 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
         enableRenderMethod &&
         Boolean(renderMethod) &&
         selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+    const shouldUseHostCardPadding =
+        isIssuerViewSelected ||
+        getVCDisplayCardVariant(credential, categoryType, displayType) !== 'ribbon';
+    let previewWrapperPaddingClass = '';
+    let previewContentPaddingClass = '';
+
+    if (isMobile && isClrCredential) {
+        previewWrapperPaddingClass = 'px-0';
+        previewContentPaddingClass = '!p-0';
+    } else if (shouldUseHostCardPadding) {
+        previewWrapperPaddingClass = 'px-2';
+        previewContentPaddingClass = 'px-6';
+    }
 
     const bgImage = credential?.display?.backgroundImager;
     const showBackground = bgImage && isCertificate;
@@ -331,9 +363,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                 <div className="flex h-full">
                     <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0">
                         <div
-                            className={`w-full ${
-                                isMobile && isClrCredential ? 'px-0' : 'px-2'
-                            } flex flex-col items-center justify-center overflow-x-auto ${boostPreviewWrapperCustomClass} ${
+                            className={`w-full ${previewWrapperPaddingClass} flex flex-col items-center justify-center overflow-x-auto ${boostPreviewWrapperCustomClass} ${
                                 isCertificate ? 'certificate-display-zoom' : ''
                             } ${isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''}`}
                         >
@@ -342,7 +372,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                                     Capacitor.isNativePlatform() && !isClrCredential
                                         ? 'pt-0 safe-area-top-margin'
                                         : 'pt-[30px]'
-                                } ${isMobile && isClrCredential ? '!p-0' : 'px-6'}`}
+                                } ${previewContentPaddingClass}`}
                             >
                                 {credentialContent}
                             </section>
