@@ -36,11 +36,11 @@
         "@learncard/lca-api-service": "workspace:*",
         "@learncard/types": "workspace:*",
         "dts-bundle-generator": "^6.10.0",
-        "esbuild": "^0.27.1",
+        "esbuild": "^0.28.1",
         "rimraf": "^3.0.2",
         "shx": "^0.3.4",
         "typescript": "^5.5.4",
-        "vitest": "^1.4.0"
+        "vitest": "^4.1.10"
     },
     "dependencies": {
         "@trpc/client": "11.3.0"
