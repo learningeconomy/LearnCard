@@ -1,4 +1,4 @@
-import { BoostCMSAlignment } from './boost';
+import type { BoostCMSAlignment } from './boost';
 
 export const getFrameworkIdAndSkillIdFromUrl = (url: string) => {
     const frameworkIdMatch = url.match(/frameworks\/([^/]+)/);

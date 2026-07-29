@@ -1,55 +1,14 @@
 import { useGetCredentialsForSkills } from 'learn-card-base';
 import { useResolvedConsentFlowDataForDid } from 'learn-card-base';
-
-const WEF_GLOBAL_SKILLS_FRAMEWORK_ID = 'wef-global-skills-taxonomy';
-
-type SkillAlignment = {
-    targetName?: string;
-    targetUrl?: string;
-};
-
-type CredentialWithSkillAlignments = {
-    boostCredential?: {
-        credentialSubject?: {
-            achievement?: {
-                alignment?: SkillAlignment[];
-            };
-        };
-    };
-    credentialSubject?: {
-        achievement?: {
-            alignment?: SkillAlignment[];
-        };
-    };
-};
-
-const countWefSkills = (credentials: unknown[] | undefined): number => {
-    const skills = new Set<string>();
-
-    credentials?.forEach(credential => {
-        const resolvedCredential = credential as CredentialWithSkillAlignments;
-        const alignments =
-            resolvedCredential.boostCredential?.credentialSubject?.achievement?.alignment ??
-            resolvedCredential.credentialSubject?.achievement?.alignment ??
-            [];
-
-        alignments.forEach((alignment: { targetUrl?: string; targetName?: string }) => {
-            if (
-                alignment.targetUrl?.includes(`/frameworks/${WEF_GLOBAL_SKILLS_FRAMEWORK_ID}/`) &&
-                alignment.targetName
-            ) {
-                skills.add(alignment.targetUrl ?? alignment.targetName);
-            }
-        });
-    });
-
-    return skills.size;
-};
+import { useGlobalSkillFrameworks } from '../helpers/globalSkillFrameworks.helpers';
+import { countSkillsForFrameworks } from './skillAlignment.helpers';
 
 export const useSkillsCount = () => {
     const { data: allResolvedCreds } = useGetCredentialsForSkills();
+    const globalSkillFrameworks = useGlobalSkillFrameworks();
+    const frameworkIds = globalSkillFrameworks.map(framework => framework.frameworkId);
 
-    const total = countWefSkills(allResolvedCreds);
+    const total = countSkillsForFrameworks(allResolvedCreds, frameworkIds);
 
     return {
         totalSkills: total,
@@ -63,8 +22,10 @@ export const useSkillsCountByDid = (did: string) => {
         useResolvedConsentFlowDataForDid(did, {
             limit: 100,
         });
+    const globalSkillFrameworks = useGlobalSkillFrameworks();
+    const frameworkIds = globalSkillFrameworks.map(framework => framework.frameworkId);
 
-    const total = countWefSkills(allResolvedCreds);
+    const total = countSkillsForFrameworks(allResolvedCreds, frameworkIds);
 
     return {
         totalSkills: total,
