@@ -3,7 +3,7 @@ import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { VC, VP, VerificationItem } from '@learncard/types';
 import { prettifyVerificationItems } from 'learn-card-base/helpers/verificationPrettifier';
-import { IonContent, IonPage, IonFooter, IonLoading } from '@ionic/react';
+import { IonContent, IonPage, IonLoading } from '@ionic/react';
 import { Gift, Check, AlertCircle, Home, HelpCircle } from 'lucide-react';
 import { getVCDisplayCardVariant } from '@learncard/react';
 
@@ -12,7 +12,7 @@ import * as m from '../../paraglide/messages.js';
 const log = getLogger('exchange-accept-credentials');
 
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
-import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
+import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
 import BoostDetailsSideMenu from '../../components/boost/boostCMS/BoostPreview/BoostDetailsSideMenu';
 import BoostDetailsSideBar from '../../components/boost/boostCMS/BoostPreview/BoostDetailsSideBar';
 
@@ -382,7 +382,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     };
 
     const renderMultipleCredentials = () => (
-        <div className="min-h-full bg-grayscale-100 pb-[120px] font-poppins">
+        <div className="min-h-full bg-grayscale-100 font-poppins">
             <div className="max-w-4xl mx-auto px-4 py-6 animate-fade-in-up">
                 {/* Header */}
                 <div className="text-center mb-6">
@@ -583,52 +583,53 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
         return (
             <IonPage>
                 <IonLoading isOpen={claiming} message={m['claim.accept.claiming']()} />
-                <div className="flex h-full bg-grayscale-100">
-                    <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0 bg-grayscale-500">
-                        <section
-                            className={`w-full safe-area-top-margin overflow-y-auto max-h-full pb-32 disable-scrollbars ${
-                                getVCDisplayCardVariant(
-                                    credential,
-                                    resolveDetailsCategoryType(credential)
-                                ) !== 'ribbon'
-                                    ? 'px-6'
-                                    : ''
-                            } ${Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'}`}
-                        >
-                            <div className="pb-4 vc-preview-modal-safe-area h-full w-full">
-                                {renderSingleCredentialCard(credential)}
-                            </div>
+                <BoostFooterLayout
+                    contentOwnsScroll
+                    footerProps={{
+                        handleClose: () => {
+                            completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED);
+                            history.push('/');
+                        },
+                        handleDetails: isMobile
+                            ? () => openSingleCredentialDetails(credential)
+                            : undefined,
+                        handleClaim,
+                        claimBtnText,
+                        disableClaimButton: claiming || isClaimed,
+                        useFullCloseButton: !isMobile,
+                    }}
+                >
+                    <div className="flex h-full bg-grayscale-100">
+                        <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0 bg-grayscale-500">
+                            <section
+                                className={`w-full safe-area-top-margin overflow-y-auto max-h-full disable-scrollbars ${
+                                    getVCDisplayCardVariant(
+                                        credential,
+                                        resolveDetailsCategoryType(credential)
+                                    ) !== 'ribbon'
+                                        ? 'px-6'
+                                        : ''
+                                } ${Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'}`}
+                            >
+                                <div className="pb-4 vc-preview-modal-safe-area h-full w-full">
+                                    {renderSingleCredentialCard(credential)}
+                                </div>
+                            </section>
                         </section>
-                    </section>
 
-                    <footer className="w-full flex justify-center items-center ion-no-border absolute bottom-0 z-10">
-                        <BoostFooter
-                            handleClose={() => {
-                                completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED);
-                                history.push('/');
-                            }}
-                            handleDetails={
-                                isMobile ? () => openSingleCredentialDetails(credential) : undefined
-                            }
-                            handleClaim={handleClaim}
-                            claimBtnText={claimBtnText}
-                            disableClaimButton={claiming || isClaimed}
-                            useFullCloseButton={!isMobile}
-                        />
-                    </footer>
-
-                    {/* On desktop the Details footer button is hidden; show the
-                        persistent Details/Endorsements sidebar instead, matching
-                        the credential detail view (ClaimBoost/BoostPreview). */}
-                    {!isMobile && (
-                        <BoostDetailsSideBar
-                            credential={credential}
-                            categoryType={resolveDetailsCategoryType(credential)}
-                            verificationItems={verificationItems}
-                            renderMethodCredential={credential}
-                        />
-                    )}
-                </div>
+                        {/* On desktop the Details footer button is hidden; show the
+                            persistent Details/Endorsements sidebar instead, matching
+                            the credential detail view (ClaimBoost/BoostPreview). */}
+                        {!isMobile && (
+                            <BoostDetailsSideBar
+                                credential={credential}
+                                categoryType={resolveDetailsCategoryType(credential)}
+                                verificationItems={verificationItems}
+                                renderMethodCredential={credential}
+                            />
+                        )}
+                    </div>
+                </BoostFooterLayout>
             </IonPage>
         );
     }
@@ -637,24 +638,23 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     return (
         <IonPage>
             <IonLoading isOpen={claiming} message={'Claiming Credential(s)...'} />
-            <IonContent fullscreen color="grayscale-100" className="ion-padding">
-                {renderMultipleCredentials()}
-            </IonContent>
-            <IonFooter
-                mode="ios"
-                className="w-full flex justify-center items-center ion-no-border absolute bottom-0"
-            >
-                <BoostFooter
-                    handleClose={() => {
+            <BoostFooterLayout
+                contentOwnsScroll
+                footerProps={{
+                    handleClose: () => {
                         completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED);
                         history.push('/');
-                    }}
-                    handleClaim={handleClaim}
-                    claimBtnText={claimBtnText}
-                    disableClaimButton={claiming || isClaimed}
-                    useFullCloseButton={false}
-                />
-            </IonFooter>
+                    },
+                    handleClaim,
+                    claimBtnText,
+                    disableClaimButton: claiming || isClaimed,
+                    useFullCloseButton: false,
+                }}
+            >
+                <IonContent fullscreen color="grayscale-100" className="ion-padding h-full">
+                    {renderMultipleCredentials()}
+                </IonContent>
+            </BoostFooterLayout>
         </IonPage>
     );
 };

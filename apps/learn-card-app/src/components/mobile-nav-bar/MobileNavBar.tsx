@@ -91,7 +91,15 @@ const MobileNavBar: React.FC = () => {
                     <Routes />
                 </IonRouterOutlet>
                 {isLoggedIn && showNavBar(activePathname) ? (
-                    <IonTabBar slot="bottom" className="lc-footer-nav pb-[15px]">
+                    <IonTabBar
+                        slot="bottom"
+                        className="lc-footer-nav"
+                        style={{
+                            // Override Ionic's host padding with the design spacing plus
+                            // its live system-bar inset. This updates without a rerender.
+                            paddingBottom: 'calc(15px + var(--ion-safe-area-bottom, 0px))',
+                        }}
+                    >
                         {/*
                             tab prop is needed to prevent hard refresh...
                             set href to # to prevent id undefined errors & rerouting
