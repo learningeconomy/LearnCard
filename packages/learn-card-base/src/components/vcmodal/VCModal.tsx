@@ -359,7 +359,8 @@ export const VCModal = ({
     };
 
     const isCertificate = credential?.display?.displayType === 'certificate';
-    const category = cr?.category || getDefaultCategoryForCredential(credential);
+    const category =
+        cr?.category || (credential ? getDefaultCategoryForCredential(credential) : undefined);
     const shouldUseHostCardPadding =
         !credential || getVCDisplayCardVariant(credential, category) !== 'ribbon';
 
