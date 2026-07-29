@@ -42,12 +42,19 @@ const FitText: React.FC<FitTextProps> = ({
             const requiredWidth = textElement.scrollWidth;
             if (!availableWidth || !requiredWidth) return;
 
-            const fittedFontSize = Math.min(
+            let fittedFontSize = Math.min(
                 maxFontSize,
                 Math.max(minFontSize, Math.floor((availableWidth / requiredWidth) * maxFontSize))
             );
 
             textElement.style.fontSize = `${fittedFontSize}px`;
+
+            // Font metrics and browser rounding are not perfectly linear. Verify
+            // the estimate so a one-pixel overflow cannot silently clip a title.
+            while (textElement.scrollWidth > availableWidth && fittedFontSize > minFontSize) {
+                fittedFontSize -= 1;
+                textElement.style.fontSize = `${fittedFontSize}px`;
+            }
 
             // Preserve the single-line ribbon treatment whenever possible.
             // Extremely long titles may wrap only after reaching the minimum.
@@ -61,26 +68,33 @@ const FitText: React.FC<FitTextProps> = ({
 
         // Device rotation and responsive layouts change the container without
         // necessarily changing the text or receiving a window resize event.
-        let lastObservedWidth: number | undefined;
-        const resizeObserver = new ResizeObserver(([entry]) => {
-            const observedWidth = entry?.contentRect.width;
+        let resizeObserver: ResizeObserver | undefined;
+        if (typeof ResizeObserver !== 'undefined') {
+            let lastObservedWidth: number | undefined;
+            resizeObserver = new ResizeObserver(([entry]) => {
+                const observedWidth = entry?.contentRect.width;
 
-            if (observedWidth === undefined || observedWidth === lastObservedWidth) return;
+                if (observedWidth === undefined || observedWidth === lastObservedWidth) return;
 
-            lastObservedWidth = observedWidth;
-            fitText();
-        });
-        resizeObserver.observe(container);
+                lastObservedWidth = observedWidth;
+                fitText();
+            });
+            resizeObserver.observe(container);
+        }
 
         // Web fonts can alter the measured glyph width after the first layout.
         let isMounted = true;
-        document.fonts?.ready.then(() => {
-            if (isMounted) fitText();
-        });
+        document.fonts?.ready
+            .then(() => {
+                if (isMounted) fitText();
+            })
+            .catch(() => {
+                // The initial synchronous measurement remains a safe fallback.
+            });
 
         return () => {
             isMounted = false;
-            resizeObserver.disconnect();
+            resizeObserver?.disconnect();
         };
     }, [maxFontSize, minFontSize, text, width]);
 
@@ -90,7 +104,7 @@ const FitText: React.FC<FitTextProps> = ({
             style={{ width, maxWidth: '100%' }}
             className={`text-center ${className}`}
         >
-            <span className="block w-full whitespace-nowrap" ref={textRef}>
+            <span className="inline-block max-w-full whitespace-nowrap" ref={textRef}>
                 {text}
             </span>
         </div>

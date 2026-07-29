@@ -40,7 +40,10 @@ describe('FitText', () => {
             .mockImplementation(() => clientWidth);
         scrollWidthSpy = vi
             .spyOn(HTMLElement.prototype, 'scrollWidth', 'get')
-            .mockImplementation(() => scrollWidth);
+            .mockImplementation(function () {
+                const fontSize = Number.parseFloat(this.style.fontSize) || 100;
+                return (scrollWidth * fontSize) / 100;
+            });
     });
 
     afterEach(() => {
@@ -110,5 +113,28 @@ describe('FitText', () => {
 
         expect(textElement.style.fontSize).toBe('10px');
         expect(textElement.style.whiteSpace).toBe('normal');
+    });
+
+    test('keeps the maximum font size when the text fits', () => {
+        clientWidth = 350;
+        scrollWidth = 200;
+
+        const { getByText } = render(
+            <FitText text="Short title" width="100%" minFontSize={10} maxFontSize={32} />
+        );
+
+        expect(getByText('Short title').style.fontSize).toBe('32px');
+    });
+
+    test('still fits when ResizeObserver is unavailable', () => {
+        vi.stubGlobal('ResizeObserver', undefined);
+        clientWidth = 350;
+        scrollWidth = 200;
+
+        const { getByText } = render(
+            <FitText text="Short title" width="100%" minFontSize={10} maxFontSize={32} />
+        );
+
+        expect(getByText('Short title').style.fontSize).toBe('32px');
     });
 });

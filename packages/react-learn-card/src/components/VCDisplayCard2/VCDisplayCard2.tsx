@@ -194,9 +194,11 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
         // Keep the ribbon tails aligned when a long title makes the center
         // section taller than its normal single-line height.
         const updateHeaderHeight = () => setHeaderHeight(header.clientHeight || 79);
-        const resizeObserver = new ResizeObserver(updateHeaderHeight);
 
         updateHeaderHeight();
+        if (typeof ResizeObserver === 'undefined') return;
+
+        const resizeObserver = new ResizeObserver(updateHeaderHeight);
         resizeObserver.observe(header);
 
         return () => resizeObserver.disconnect();
