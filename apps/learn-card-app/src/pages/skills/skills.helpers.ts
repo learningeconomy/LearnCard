@@ -4,6 +4,7 @@ import {
     BoostCMSSubSkillEnum,
 } from '../../components/boost/boostCMS/boostCMSForms/boostCMSSkills/boostSkills';
 import { VC_WITH_URI } from 'learn-card-base';
+import { getFrameworkIdAndSkillIdFromUrl } from '../../components/boost/alignmentHelpers';
 
 export type SubskillMap = Record<string, number>;
 export interface SkillItem {
@@ -39,6 +40,38 @@ const getCredentialVc = (credential: CredentialLike): VC => {
     return 'vc' in credential ? credential.vc : credential;
 };
 
+type SkillAlignment = {
+    targetName?: string;
+    targetFramework?: string;
+    targetUrl?: string;
+    frameworkId?: string;
+};
+
+type CredentialWithAlignments = {
+    boostCredential?: {
+        credentialSubject?: {
+            achievement?: {
+                alignment?: SkillAlignment[];
+            };
+        };
+    };
+    credentialSubject?: {
+        achievement?: {
+            alignment?: SkillAlignment[];
+        };
+    };
+};
+
+const getCredentialAlignments = (credential: CredentialLike): SkillAlignment[] => {
+    const vc = getCredentialVc(credential) as unknown as CredentialWithAlignments;
+
+    return (
+        vc?.boostCredential?.credentialSubject?.achievement?.alignment ??
+        vc?.credentialSubject?.achievement?.alignment ??
+        []
+    );
+};
+
 export const mergeSkills = (...skills: Array<SkillShape[] | undefined>): SkillShape[] =>
     skills.flatMap(skillList => skillList ?? []);
 
@@ -71,9 +104,27 @@ export const categorizeSkills = (skills: SkillShape[]): CategorizedSkills => {
 };
 
 export const mapBoostsToSkills = (credentials: CredentialLike[] = []): CategorizedSkills | [] => {
-    // Legacy `credential.skills` are retained only for credential-detail rendering.
-    // Framework alignments are the source of truth for all aggregate skill views.
-    return [];
+    if (credentials.length === 0) return [];
+
+    const skills = credentials.flatMap(credential =>
+        getCredentialAlignments(credential).flatMap(alignment => {
+            if (!alignment.targetName) return [];
+
+            const { frameworkId } = getFrameworkIdAndSkillIdFromUrl(alignment.targetUrl ?? '');
+            const category =
+                alignment.targetFramework ?? alignment.frameworkId ?? frameworkId ?? 'Skills';
+
+            return [
+                {
+                    category,
+                    skill: alignment.targetName,
+                    subskills: [],
+                },
+            ];
+        })
+    );
+
+    return skills.length > 0 ? categorizeSkills(skills) : [];
 };
 
 export const filterBoostsBySkillCategory = (
