@@ -36,8 +36,12 @@ type VC = VC_WITH_URI['vc'];
 
 type CredentialLike = VC | VC_WITH_URI;
 
-const getCredentialVc = (credential: CredentialLike): VC => {
-    return 'vc' in credential ? credential.vc : credential;
+const getCredentialVc = (credential: unknown): VC => {
+    if (typeof credential === 'object' && credential !== null && 'vc' in credential) {
+        return (credential as VC_WITH_URI).vc;
+    }
+
+    return credential as VC;
 };
 
 type SkillAlignment = {
@@ -62,7 +66,7 @@ type CredentialWithAlignments = {
     };
 };
 
-const getCredentialAlignments = (credential: CredentialLike): SkillAlignment[] => {
+const getCredentialAlignments = (credential: unknown): SkillAlignment[] => {
     const vc = getCredentialVc(credential) as unknown as CredentialWithAlignments;
 
     return (
@@ -103,16 +107,28 @@ export const categorizeSkills = (skills: SkillShape[]): CategorizedSkills => {
     return categorizedSkills;
 };
 
-export const mapBoostsToSkills = (credentials: CredentialLike[] = []): CategorizedSkills | [] => {
+export const mapBoostsToSkills = (
+    credentials: unknown[] = [],
+    allowedFrameworkIds?: string[]
+): CategorizedSkills | [] => {
     if (credentials.length === 0) return [];
 
+    const allowedFrameworkIdSet = allowedFrameworkIds ? new Set(allowedFrameworkIds) : undefined;
     const skills = credentials.flatMap(credential =>
         getCredentialAlignments(credential).flatMap(alignment => {
             if (!alignment.targetName) return [];
 
             const { frameworkId } = getFrameworkIdAndSkillIdFromUrl(alignment.targetUrl ?? '');
-            const category =
-                alignment.targetFramework ?? alignment.frameworkId ?? frameworkId ?? 'Skills';
+            const alignmentFrameworkId = alignment.frameworkId ?? frameworkId;
+
+            if (
+                allowedFrameworkIdSet &&
+                (!alignmentFrameworkId || !allowedFrameworkIdSet.has(alignmentFrameworkId))
+            ) {
+                return [];
+            }
+
+            const category = alignment.targetFramework ?? alignmentFrameworkId ?? 'Skills';
 
             return [
                 {
@@ -323,24 +339,34 @@ export type AggregatedData = Array<
 >;
 
 export const getTopSkills = (data: AggregatedData, count: number) => {
-    return (
-        data
-            .flatMap(([, entries]) =>
-                // Flatten skills and subskills from each entry into a single array
-                entries.flatMap(entry => [
-                    // Add the main skill
-                    { name: entry.skill, count: entry.count, type: 'skill' },
-                    // Add all subskills
-                    ...Object.entries(entry.subskills).map(([name, count]) => ({
-                        name,
-                        count,
-                        type: 'subskill',
-                    })),
-                ])
-            )
-            // Sort by count in descending order to find the top skills
-            .sort((a, b) => b.count - a.count)
-            // Take the top N
-            .slice(0, count)
-    );
+    const skillsByNameAndType = new Map<
+        string,
+        { name: string; count: number; type: 'skill' | 'subskill' }
+    >();
+
+    data.forEach(([, entries]) => {
+        entries.forEach(entry => {
+            const skillKey = `skill:${entry.skill}`;
+            const existingSkill = skillsByNameAndType.get(skillKey);
+            skillsByNameAndType.set(skillKey, {
+                name: entry.skill,
+                count: (existingSkill?.count ?? 0) + entry.count,
+                type: 'skill',
+            });
+
+            Object.entries(entry.subskills).forEach(([name, subskillCount]) => {
+                const subskillKey = `subskill:${name}`;
+                const existingSubskill = skillsByNameAndType.get(subskillKey);
+                skillsByNameAndType.set(subskillKey, {
+                    name,
+                    count: (existingSubskill?.count ?? 0) + subskillCount,
+                    type: 'subskill',
+                });
+            });
+        });
+    });
+
+    return Array.from(skillsByNameAndType.values())
+        .sort((a, b) => b.count - a.count)
+        .slice(0, count);
 };

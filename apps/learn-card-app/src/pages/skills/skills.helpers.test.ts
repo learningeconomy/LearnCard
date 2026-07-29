@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { mapBoostsToSkills } from './skills.helpers';
+import { aggregateCategorizedEntries, getTopSkills, mapBoostsToSkills } from './skills.helpers';
 
 describe('mapBoostsToSkills', () => {
     it('aggregates framework alignments by target name', () => {
@@ -60,5 +60,72 @@ describe('mapBoostsToSkills', () => {
         ] as never[]);
 
         expect(result).toEqual([]);
+    });
+
+    it('only maps alignments from allowed frameworks', () => {
+        const credentials = [
+            {
+                credentialSubject: {
+                    achievement: {
+                        alignment: [
+                            {
+                                type: 'Alignment',
+                                targetName: 'Curiosity',
+                                targetFramework: 'WEF Global Skills',
+                                targetUrl:
+                                    'https://example.com/frameworks/wef-global-skills-taxonomy/skills/curiosity',
+                            },
+                            {
+                                type: 'Alignment',
+                                targetName: 'A long course learning outcome',
+                                targetFramework: 'Open Syllabus',
+                                targetUrl: 'https://example.com/opensyllabus/outcomes/123',
+                            },
+                        ],
+                    },
+                },
+            },
+        ];
+
+        const result = mapBoostsToSkills(credentials as never[], ['wef-global-skills-taxonomy']);
+
+        expect(Object.values(result).flatMap(entries => entries.map(entry => entry.skill))).toEqual(
+            ['Curiosity']
+        );
+    });
+});
+
+describe('getTopSkills', () => {
+    it('combines the same skill name across frameworks', () => {
+        const mappedSkills = mapBoostsToSkills([
+            {
+                credentialSubject: {
+                    achievement: {
+                        alignment: [
+                            {
+                                type: 'Alignment',
+                                targetName: 'Curiosity',
+                                targetFramework: 'WEF Global Skills',
+                            },
+                            {
+                                type: 'Alignment',
+                                targetName: 'Curiosity',
+                                targetFramework: 'Pathsmith Durable Skills',
+                            },
+                        ],
+                    },
+                },
+            },
+        ] as never[]);
+        const categorizedSkills = Object.entries(mappedSkills);
+        const aggregatedSkills = aggregateCategorizedEntries(categorizedSkills);
+
+        expect(getTopSkills(aggregatedSkills, 3)).toEqual([
+            {
+                name: 'Curiosity',
+                count: 2,
+                type: 'skill',
+            },
+        ]);
     });
 });
