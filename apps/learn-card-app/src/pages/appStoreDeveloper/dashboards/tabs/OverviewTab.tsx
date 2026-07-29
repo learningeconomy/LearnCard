@@ -25,7 +25,6 @@ interface OverviewTabProps {
     selectedListingId?: string;
     onListingFilterChange?: (listingId: string | undefined) => void;
     onNavigate: (tabId: string) => void;
-    refreshKey?: number;
 }
 
 export const OverviewTab: React.FC<OverviewTabProps> = ({
@@ -37,7 +36,6 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     selectedListingId,
     onListingFilterChange,
     onNavigate,
-    refreshKey,
 }) => {
     // Use the dashboard-level filter if provided, otherwise use local state
     const listingFilter = selectedListingId === undefined ? 'ALL' : selectedListingId || 'ALL';
@@ -190,7 +188,6 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                     appListings={appListings}
                     showFilter
                     showExport
-                    refreshKey={refreshKey}
                 />
             </div>
         </div>

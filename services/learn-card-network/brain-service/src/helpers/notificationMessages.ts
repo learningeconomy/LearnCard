@@ -47,7 +47,13 @@ export type NotificationMessageKey =
     | 'consentFlowTransactionUpdatedTerms'
     | 'consentFlowTransactionWithdrawn'
     | 'consentFlowTransactionSyncedSingle'
-    | 'consentFlowTransactionSyncedPlural';
+    | 'consentFlowTransactionSyncedPlural'
+    | 'credentialRevokedNamed'
+    | 'credentialRevokedUnnamed'
+    | 'credentialSuspendedNamed'
+    | 'credentialSuspendedUnnamed'
+    | 'credentialRestoredNamed'
+    | 'credentialRestoredUnnamed';
 
 type MessageTemplate = { title: string; body: string };
 type LocaleCatalog = Record<NotificationMessageKey, MessageTemplate>;
@@ -174,6 +180,30 @@ const en: LocaleCatalog = {
         title: 'New Consent Transaction',
         body: '{consenter} has synced {totalCredentials} credential(s) across {categoryCount} categories to {contractName}!',
     },
+    credentialRevokedNamed: {
+        title: 'Credential revoked',
+        body: 'Your credential "{credentialName}" was revoked by {issuer}.',
+    },
+    credentialRevokedUnnamed: {
+        title: 'Credential revoked',
+        body: 'Your credential was revoked by {issuer}.',
+    },
+    credentialSuspendedNamed: {
+        title: 'Credential suspended',
+        body: 'Your credential "{credentialName}" was suspended by {issuer}.',
+    },
+    credentialSuspendedUnnamed: {
+        title: 'Credential suspended',
+        body: 'Your credential was suspended by {issuer}.',
+    },
+    credentialRestoredNamed: {
+        title: 'Credential restored',
+        body: 'Your credential "{credentialName}" was restored by {issuer}.',
+    },
+    credentialRestoredUnnamed: {
+        title: 'Credential restored',
+        body: 'Your credential was restored by {issuer}.',
+    },
 };
 
 const es: LocaleCatalog = {
@@ -292,6 +322,30 @@ const es: LocaleCatalog = {
     consentFlowTransactionSyncedPlural: {
         title: 'Nueva transacción de consentimiento',
         body: '¡{consenter} ha sincronizado {totalCredentials} credenciales en {categoryCount} categorías con {contractName}!',
+    },
+    credentialRevokedNamed: {
+        title: 'Credencial revocada',
+        body: 'Tu credencial "{credentialName}" fue revocada por {issuer}.',
+    },
+    credentialRevokedUnnamed: {
+        title: 'Credencial revocada',
+        body: 'Tu credencial fue revocada por {issuer}.',
+    },
+    credentialSuspendedNamed: {
+        title: 'Credencial suspendida',
+        body: 'Tu credencial "{credentialName}" fue suspendida por {issuer}.',
+    },
+    credentialSuspendedUnnamed: {
+        title: 'Credencial suspendida',
+        body: 'Tu credencial fue suspendida por {issuer}.',
+    },
+    credentialRestoredNamed: {
+        title: 'Credencial restaurada',
+        body: 'Tu credencial "{credentialName}" fue restaurada por {issuer}.',
+    },
+    credentialRestoredUnnamed: {
+        title: 'Credencial restaurada',
+        body: 'Tu credencial fue restaurada por {issuer}.',
     },
 };
 
@@ -412,6 +466,30 @@ const fr: LocaleCatalog = {
         title: 'Nouvelle transaction de consentement',
         body: '{consenter} a synchronisé {totalCredentials} titres dans {categoryCount} catégories avec {contractName} !',
     },
+    credentialRevokedNamed: {
+        title: 'Titre révoqué',
+        body: 'Votre titre « {credentialName} » a été révoqué par {issuer}.',
+    },
+    credentialRevokedUnnamed: {
+        title: 'Titre révoqué',
+        body: 'Votre titre a été révoqué par {issuer}.',
+    },
+    credentialSuspendedNamed: {
+        title: 'Titre suspendu',
+        body: 'Votre titre « {credentialName} » a été suspendu par {issuer}.',
+    },
+    credentialSuspendedUnnamed: {
+        title: 'Titre suspendu',
+        body: 'Votre titre a été suspendu par {issuer}.',
+    },
+    credentialRestoredNamed: {
+        title: 'Titre rétabli',
+        body: 'Votre titre « {credentialName} » a été rétabli par {issuer}.',
+    },
+    credentialRestoredUnnamed: {
+        title: 'Titre rétabli',
+        body: 'Votre titre a été rétabli par {issuer}.',
+    },
 };
 
 const ar: LocaleCatalog = {
@@ -530,6 +608,30 @@ const ar: LocaleCatalog = {
     consentFlowTransactionSyncedPlural: {
         title: 'معاملة موافقة جديدة',
         body: 'قام {consenter} بمزامنة {totalCredentials} شهادة عبر {categoryCount} فئات مع {contractName}!',
+    },
+    credentialRevokedNamed: {
+        title: 'تم إلغاء الشهادة',
+        body: 'تم إلغاء شهادتك "{credentialName}" بواسطة {issuer}.',
+    },
+    credentialRevokedUnnamed: {
+        title: 'تم إلغاء الشهادة',
+        body: 'تم إلغاء شهادتك بواسطة {issuer}.',
+    },
+    credentialSuspendedNamed: {
+        title: 'تم تعليق الشهادة',
+        body: 'تم تعليق شهادتك "{credentialName}" بواسطة {issuer}.',
+    },
+    credentialSuspendedUnnamed: {
+        title: 'تم تعليق الشهادة',
+        body: 'تم تعليق شهادتك بواسطة {issuer}.',
+    },
+    credentialRestoredNamed: {
+        title: 'تمت استعادة الشهادة',
+        body: 'تمت استعادة شهادتك "{credentialName}" بواسطة {issuer}.',
+    },
+    credentialRestoredUnnamed: {
+        title: 'تمت استعادة الشهادة',
+        body: 'تمت استعادة شهادتك بواسطة {issuer}.',
     },
 };
 

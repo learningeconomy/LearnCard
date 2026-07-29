@@ -9,6 +9,19 @@ ion-split-pane {
   }
 }
 
+.scout-pass-side-menu-content {
+  &::part(scroll) {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  &::part(scroll)::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+}
+
 .scout-pass-side-menu-list {
   background: #18224e;
   padding: 0;

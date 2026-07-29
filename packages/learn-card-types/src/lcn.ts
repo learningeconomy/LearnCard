@@ -924,6 +924,9 @@ export const LCNNotificationTypeEnumValidator = z.enum([
     'GUARDIAN_APPROVED',
     'GUARDIAN_REJECTED',
     'APP_NOTIFICATION',
+    'CREDENTIAL_REVOKED',
+    'CREDENTIAL_SUSPENDED',
+    'CREDENTIAL_UNSUSPENDED',
 ]);
 
 export type LCNNotificationTypeEnum = z.infer<typeof LCNNotificationTypeEnumValidator>;
