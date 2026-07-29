@@ -3,7 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { useRenderMethodEnabled } from '../../../../hooks/useRenderMethodEnabled';
 
 import { IonPage } from '@ionic/react';
-import { VCDisplayCard2 } from '@learncard/react';
+import { getVCDisplayCardVariant, VCDisplayCard2 } from '@learncard/react';
 import * as m from '../../../../paraglide/messages.js';
 import { BoostPreviewTabsEnum } from '../../../boost-preview-tabs/boost-preview-tabs.helpers';
 import { boostPreviewStore } from 'learn-card-base';
@@ -252,6 +252,9 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
         enableRenderMethod &&
         Boolean(renderMethod) &&
         selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+    const shouldUseHostCardPadding =
+        isIssuerViewSelected ||
+        getVCDisplayCardVariant(credential, categoryType, formattedDisplayType) !== 'ribbon';
 
     const { isMobile } = useDeviceTypeByWidth();
 
@@ -359,14 +362,14 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
             <div className="flex h-full">
                 <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0">
                     <div
-                        className={`w-full px-2 flex flex-col items-center justify-center overflow-x-auto ${boostPreviewWrapperCustomClass} ${
+                        className={`w-full flex flex-col items-center justify-center overflow-x-auto ${boostPreviewWrapperCustomClass} ${
                             isCertificate ? 'certificate-display-zoom' : ''
                         } ${isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''}`}
                     >
                         <section
-                            className={`px-6 w-full safe-area-top-margin overflow-y-auto max-h-full pb-32 disable-scrollbars ${
-                                Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'
-                            }`}
+                            className={`w-full safe-area-top-margin overflow-y-auto max-h-full pb-32 disable-scrollbars ${
+                                shouldUseHostCardPadding ? 'px-6' : ''
+                            } ${Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'}`}
                         >
                             {isIssuerViewSelected && renderMethod ? (
                                 <RenderMethodDisplay

@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { getVCDisplayCardVariant } from '@learncard/react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('boost-claim-card');
 
@@ -430,6 +431,10 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
         enableRenderMethod &&
         Boolean(renderMethod) &&
         selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+    const shouldUseHostCardPadding =
+        !credential ||
+        isIssuerViewSelected ||
+        getVCDisplayCardVariant(displayCredential, category) !== 'ribbon';
 
     const credentialDisplay = (
         <VCDisplayCardWrapper2
@@ -505,11 +510,11 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                     </div>
                 )}
                 <section className="flex flex-1 h-full overflow-y-auto items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0">
-                    <section className="flex flex-col items-center justify-center px-2 w-full">
+                    <section className="flex flex-col items-center justify-center w-full">
                         <section
-                            className={`boost-preview-display px-6 w-full safe-area-top-margin max-h-full pb-32 disable-scrollbars ${
-                                Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'
-                            }`}
+                            className={`boost-preview-display w-full safe-area-top-margin max-h-full pb-32 disable-scrollbars ${
+                                shouldUseHostCardPadding ? 'px-6' : ''
+                            } ${Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'}`}
                         >
                             {credential && !selectedImage && (
                                 <>

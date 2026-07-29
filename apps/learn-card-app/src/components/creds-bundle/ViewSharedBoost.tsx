@@ -3,6 +3,7 @@ import queryString from 'query-string';
 import { useLocation, useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
+import { getVCDisplayCardVariant } from '@learncard/react';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import {
     IonContent,
@@ -224,6 +225,15 @@ const ViewSharedBoost: React.FC<{
     const lifecyclePillBg = lifecycleStatus === 'suspended' ? '#D97706' : '#DC2626';
     const lifecyclePillLabel =
         lifecycleStatus === 'suspended' ? m['issue.suspended']() : m['issue.revoked']();
+    const isRibbonDisplayCard =
+        sharedCredential && getVCDisplayCardVariant(sharedCredential as VC, category) === 'ribbon';
+    let previewHorizontalPaddingClass = 'px-[32px]';
+
+    if (category === 'ID') {
+        previewHorizontalPaddingClass = 'px-[12px]';
+    } else if (isRibbonDisplayCard) {
+        previewHorizontalPaddingClass = 'px-0';
+    }
 
     if (showEndorsementRequest) {
         return (
@@ -293,9 +303,7 @@ const ViewSharedBoost: React.FC<{
                 )}
                 {boost && wallet && !loading && (
                     <section
-                        className={`relative w-full h-full text-left flex flex-col items-center justify-start pt-4 overflow-y-scroll pb-[100px] ${
-                            category === 'ID' ? 'px-[12px]' : 'px-[32px]'
-                        } ]`}
+                        className={`relative w-full h-full text-left flex flex-col items-center justify-start pt-4 overflow-y-scroll pb-[100px] ${previewHorizontalPaddingClass}`}
                     >
                         {/* 
                            // TODO: FIX THE NAV BUTTON FOR CERTIFICATES  

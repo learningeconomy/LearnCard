@@ -5,6 +5,7 @@ import { VC, VP, VerificationItem } from '@learncard/types';
 import { prettifyVerificationItems } from 'learn-card-base/helpers/verificationPrettifier';
 import { IonContent, IonPage, IonFooter, IonLoading } from '@ionic/react';
 import { Gift, Check, AlertCircle, Home, HelpCircle } from 'lucide-react';
+import { getVCDisplayCardVariant } from '@learncard/react';
 
 import { getLogger } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
@@ -583,11 +584,16 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
             <IonPage>
                 <IonLoading isOpen={claiming} message={m['claim.accept.claiming']()} />
                 <div className="flex h-full bg-grayscale-100">
-                    <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0 bg-grayscale-100">
+                    <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0 bg-grayscale-500">
                         <section
-                            className={`px-6 w-full safe-area-top-margin overflow-y-auto max-h-full pb-32 disable-scrollbars ${
-                                Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'
-                            }`}
+                            className={`w-full safe-area-top-margin overflow-y-auto max-h-full pb-32 disable-scrollbars ${
+                                getVCDisplayCardVariant(
+                                    credential,
+                                    resolveDetailsCategoryType(credential)
+                                ) !== 'ribbon'
+                                    ? 'px-6'
+                                    : ''
+                            } ${Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'}`}
                         >
                             <div className="pb-4 vc-preview-modal-safe-area h-full w-full">
                                 {renderSingleCredentialCard(credential)}
