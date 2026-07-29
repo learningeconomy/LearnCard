@@ -377,7 +377,8 @@
  */
 .vc-display-card-ribbon-safe-area {
     box-sizing: border-box;
-    padding-inline: 38px;
+    /* Hosts that already reserve ribbon-tail space can set this custom property to 0px. */
+    padding-inline: var(--vc-display-card-ribbon-safe-area, 38px);
 }
 
 .vc-toggle-side-button {
