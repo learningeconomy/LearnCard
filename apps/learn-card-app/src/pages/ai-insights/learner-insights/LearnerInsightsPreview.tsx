@@ -23,6 +23,7 @@ import {
 } from '../../skills/skills.helpers';
 
 import { LCNProfile } from '@learncard/types';
+import { useGlobalSkillFrameworks } from '../../../helpers/globalSkillFrameworks.helpers';
 
 export const LearnerInsightsPreview: React.FC<{
     profile: LCNProfile;
@@ -31,6 +32,8 @@ export const LearnerInsightsPreview: React.FC<{
 }> = ({ profile, readStatus, status }) => {
     const { closeModal } = useModal();
     const { getThemedCategoryColors } = useTheme();
+    const globalSkillFrameworks = useGlobalSkillFrameworks();
+    const globalSkillFrameworkIds = globalSkillFrameworks.map(framework => framework.frameworkId);
 
     const colors = getThemedCategoryColors(CredentialCategoryEnum.aiInsight);
     const { backgroundSecondaryColor } = colors;
@@ -49,7 +52,7 @@ export const LearnerInsightsPreview: React.FC<{
 
     const aiInsightsCredential = byCategory?.[CredentialCategoryEnum.aiInsight]?.[0];
 
-    const skillsMap = mapBoostsToSkills(allResolvedCreds);
+    const skillsMap = mapBoostsToSkills(allResolvedCreds, globalSkillFrameworkIds);
     const categorizedSkills: [
         string,
         RawCategorizedEntry[] & { totalSkills: number; totalSubskills: number }

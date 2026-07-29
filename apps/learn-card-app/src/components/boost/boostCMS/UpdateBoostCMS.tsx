@@ -77,7 +77,6 @@ import { useLCAStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import BoostCMSAchievementTypeSelectorButton from './boostCMSForms/boostCMSAppearance/BoostCMSAchievementTypeSelectorButton';
 import BoostIDCardCMSMembersForm from './BoostIDCardCMS/BoostIDCardCMSForms/BoostIDCardCMSMembersForm';
 import BoostCMSDisplayTypeSelector from './boostCMSForms/boostCMSAppearance/BoostCMSDisplayTypeSelector';
-import BoostCMSSkillsAttachmentForm from './boostCMSForms/boostCMSSkills/BoostSkillAttachmentsForm';
 import BoostFrameworkSkillSelector from './boostCMSForms/boostCMSSkills/BoostFrameworkSkillSelector';
 import * as m from '../../../paraglide/messages.js';
 
@@ -178,7 +177,6 @@ const UpdateBoostCMS: React.FC = () => {
                   })
                 : [];
 
-            // Prefer OBv3 alignments if present on the VC; otherwise, derive from legacy skills
             const derivedAlignments = deriveAlignmentsFromVC(_boostVC);
 
             setState(prevState => {
@@ -224,7 +222,6 @@ const UpdateBoostCMS: React.FC = () => {
                         },
                     },
                     mediaAttachments: [...state?.mediaAttachments, ...boostVcAttachments],
-                    skills: [...state.skills, ...(_boostVC?.skills ?? [])],
                     alignments: derivedAlignments,
                     boostPermissions: {
                         canView:
@@ -742,7 +739,6 @@ const UpdateBoostCMS: React.FC = () => {
                     handleCategoryAndTypeChange={handleCategoryAndTypeChange}
                     disabled={isEditDisabled}
                 />
-                {/* <BoostCMSSkillsAttachmentForm state={state} setState={setState} /> */}
                 <BoostFrameworkSkillSelector
                     state={state}
                     setState={setState}
