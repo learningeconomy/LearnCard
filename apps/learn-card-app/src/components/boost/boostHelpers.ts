@@ -359,6 +359,7 @@ export const updateBoost = async (
     const updatedCredential = await wallet.invoke.newCredential({
         ...credentialPayload,
     });
+    const skills = extractSkillIdsFromAlignments(vcInput.alignments ?? []) ?? [];
 
     // Ensure OBv3 alignments live under credential.credentialSubject.achievement.alignment
     try {
@@ -377,6 +378,7 @@ export const updateBoost = async (
         category: vcInput?.basicInfo?.type,
         status: boostStatus,
         credential: updatedCredential,
+        skills,
         defaultPermissions: {
             canView:
                 typeof vcInput?.boostPermissions?.canView === 'boolean'
