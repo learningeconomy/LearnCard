@@ -414,11 +414,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                     </div>
                 )}
                 <section className="flex flex-1 h-full overflow-y-auto items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0">
-                    <section
-                        className={`flex flex-col items-center justify-center w-full ${
-                            shouldUseHostCardPadding ? 'px-2' : ''
-                        }`}
-                    >
+                    <section className="flex flex-col items-center justify-center w-full">
                         <section
                             className={`boost-preview-display w-full safe-area-top-margin max-h-full pb-32 disable-scrollbars ${
                                 shouldUseHostCardPadding ? 'px-6' : ''
