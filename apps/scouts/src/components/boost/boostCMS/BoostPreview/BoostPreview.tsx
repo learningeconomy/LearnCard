@@ -152,9 +152,11 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                 className={`flex items-center justify-center ion-padding boost-cms-preview transition-colors [&::part(scroll)]:px-0 gradient-mask-b-90`}
             >
                 <IonRow
-                    className={`flex flex-col items-center justify-center overflow-x-auto pb-32  ${boostPreviewWrapperCustomClass} ${
-                        isCertificate ? 'pt-14 md:pt-20' : ''
-                    } ${isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''}`}
+                    className={`flex flex-col items-center justify-center overflow-x-auto pb-32 ${boostPreviewWrapperCustomClass} ${
+                        shouldUseHostCardPadding ? 'px-1' : ''
+                    } ${isCertificate ? 'pt-14 md:pt-20' : ''} ${
+                        isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''
+                    }`}
                 >
                     <section
                         className={`w-full safe-area-top-margin ${
