@@ -484,7 +484,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
             <IonPage>
                 <IonLoading isOpen={claiming} message={m['claim.accept.claiming']()} />
                 <div className="flex h-full bg-grayscale-100">
-                    <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0 bg-grayscale-100">
+                    <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0 bg-grayscale-500">
                         <section
                             className={`w-full safe-area-top-margin overflow-y-auto max-h-full pb-32 disable-scrollbars ${
                                 getVCDisplayCardVariant(
