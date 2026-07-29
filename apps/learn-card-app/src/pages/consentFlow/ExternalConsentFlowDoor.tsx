@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('external-consent-flow-door');
 
@@ -66,6 +66,8 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
     const { logout: coordinatorLogout } = useAuthCoordinator();
     const { clearDB } = useSQLiteStorage();
     const { track } = useAnalytics();
+    const acceptedRef = useRef(false);
+    const cancelFiredRef = useRef(false);
     const { capture, snapshotRef } = useProfileSnapshotCapture();
     const { newModal } = useModal({
         desktop: ModalTypes.FullScreen,
@@ -110,6 +112,18 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                 contractName: contractDetails.name,
             });
         }
+    }, [contractDetails?.name]);
+
+    useEffect(() => {
+        return () => {
+            if (contractDetails && !acceptedRef.current && !cancelFiredRef.current) {
+                cancelFiredRef.current = true;
+                track(AnalyticsEvents.CONSENT_FLOW_CANCELLED, {
+                    contractName: contractDetails.name,
+                    step_id: 'landing',
+                });
+            }
+        };
     }, [contractDetails?.name]);
 
     // Handle navigation after user clicks Continue AND consent query completes
@@ -177,7 +191,14 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
             }
         };
 
-        handleNavigation();
+        handleNavigation().catch((error: unknown) => {
+            track(AnalyticsEvents.CONSENT_FLOW_FAILED, {
+                contractName: contractDetails?.name,
+                error_code:
+                    (error as { code?: string })?.code ??
+                    (error instanceof Error && error.name !== 'Error' ? error.name : 'unknown'),
+            });
+        });
     }, [
         userClickedContinue,
         consentedContractLoading,
@@ -297,6 +318,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                             type="button"
                             disabled={consentedContractLoading}
                             onClick={() => {
+                                acceptedRef.current = true;
                                 track(AnalyticsEvents.CONSENT_FLOW_ACCEPTED, {
                                     contractName: contractDetails?.name,
                                     alreadyConsented: !!consentedContract,

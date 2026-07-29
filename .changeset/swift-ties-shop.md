@@ -2,4 +2,4 @@
 "learn-card-app": patch
 ---
 
-feat: Feedback Prompts
+chore: Analytics
