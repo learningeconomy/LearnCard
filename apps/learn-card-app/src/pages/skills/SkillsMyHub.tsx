@@ -24,13 +24,15 @@ const SkillsMyHub: React.FC<SkillsMyHubProps> = ({}) => {
     ]);
     const [sortBy, setSortBy] = useState(SkillsHubSortOptionsEnum.recentlyAdded);
 
-    const { alignmentsAndSkills, frameworkIds, isLoading, error, refetch } = useAlignments({
-        searchInput,
-        filterBy,
-        sortBy,
-    });
+    const { alignments, alignmentsAndSkills, frameworkIds, isLoading, error, refetch } =
+        useAlignments({
+            searchInput,
+            filterBy,
+            sortBy,
+        });
 
-    const noSkills = alignmentsAndSkills?.length === 0;
+    const noSkills = alignments.length === 0;
+    const noResults = alignmentsAndSkills.length === 0;
     const showPlaceholder = isLoading;
 
     return (
@@ -49,7 +51,7 @@ const SkillsMyHub: React.FC<SkillsMyHubProps> = ({}) => {
                         frameworkIds={frameworkIds}
                     />
 
-                    {!noSkills && (
+                    {!noResults && (
                         <div className="flex flex-col gap-[10px] w-full">
                             {alignmentsAndSkills?.map(item => (
                                 <SkillDisplay key={item.targetUrl} skill={item} />
@@ -57,13 +59,19 @@ const SkillsMyHub: React.FC<SkillsMyHubProps> = ({}) => {
                         </div>
                     )}
 
-                    {noSkills && searchInput && (
+                    {noResults && searchInput && (
                         <p className="font-poppins text-[14px] text-grayscale-800 font-[700] text-left">
                             <TransP
                                 m={m['skills.myHub.noResultsFoundFor']}
                                 values={{ query: searchInput }}
                                 components={[<span className="italic" />]}
                             />
+                        </p>
+                    )}
+
+                    {noResults && !searchInput && !noSkills && (
+                        <p className="font-poppins text-sm text-grayscale-600 leading-relaxed">
+                            {m['common.searchResults.noResults']()}
                         </p>
                     )}
 
