@@ -37,8 +37,9 @@ export type SemanticSearchResult = {
 };
 
 const SEEDED_SKILL_FRAMEWORK_SOURCE_PREFIX = 'learncard://seed/skill-frameworks/';
+const WEF_GLOBAL_SKILLS_FRAMEWORK_ID = 'wef-global-skills-taxonomy';
 const SEEDED_GLOBAL_SKILL_FRAMEWORK_ORDER = [
-    'wef-global-skills-taxonomy',
+    WEF_GLOBAL_SKILLS_FRAMEWORK_ID,
     'pathsmith-durable-skills-starter-edition',
 ];
 // These timestamp-based ids mirror the seeded JSON fixtures in brain-service.
@@ -74,6 +75,13 @@ const SEEDED_GLOBAL_SKILL_FRAMEWORK_DEFAULT_SKILL_IDS: Record<string, string[]> 
         'skill-1772824804950-w4yyfkxzt',
         'skill-1772824804950-w96zstc5o',
     ],
+};
+
+const WEF_GLOBAL_SKILLS_FALLBACK: GlobalSkillFrameworkConfig = {
+    frameworkId: WEF_GLOBAL_SKILLS_FRAMEWORK_ID,
+    name: 'WEF Global Skills Taxonomy',
+    defaultSkillIds:
+        SEEDED_GLOBAL_SKILL_FRAMEWORK_DEFAULT_SKILL_IDS[WEF_GLOBAL_SKILLS_FRAMEWORK_ID],
 };
 
 const fetchAllAvailableFrameworks = async (
@@ -203,35 +211,25 @@ export const useGlobalSkillFrameworks = (): GlobalSkillFrameworkConfig[] => {
         enabled: useSeededFrameworks && isLoggedIn,
     });
 
-    return useMemo(
-        () =>
-            useSeededFrameworks
-                ? // Sort WEF Global Skills Taxonomy before Pathsmith
-                  [...seededFrameworks].sort((left, right) => {
-                      const leftIndex = SEEDED_GLOBAL_SKILL_FRAMEWORK_ORDER.indexOf(
-                          left.frameworkId
-                      );
-                      const rightIndex = SEEDED_GLOBAL_SKILL_FRAMEWORK_ORDER.indexOf(
-                          right.frameworkId
-                      );
+    return useMemo(() => {
+        const frameworks = useSeededFrameworks
+            ? [...seededFrameworks].sort((left, right) => {
+                  const leftIndex = SEEDED_GLOBAL_SKILL_FRAMEWORK_ORDER.indexOf(left.frameworkId);
+                  const rightIndex = SEEDED_GLOBAL_SKILL_FRAMEWORK_ORDER.indexOf(right.frameworkId);
 
-                      if (leftIndex === -1 && rightIndex === -1) {
-                          return left.name.localeCompare(right.name);
-                      }
+                  if (leftIndex === -1 && rightIndex === -1) {
+                      return left.name.localeCompare(right.name);
+                  }
 
-                      if (leftIndex === -1) {
-                          return 1;
-                      }
+                  if (leftIndex === -1) return 1;
+                  if (rightIndex === -1) return -1;
 
-                      if (rightIndex === -1) {
-                          return -1;
-                      }
+                  return leftIndex - rightIndex;
+              })
+            : normalizeGlobalSkillFrameworks(flags?.globalSkillFrameworks?.frameworks);
 
-                      return leftIndex - rightIndex;
-                  })
-                : normalizeGlobalSkillFrameworks(flags?.globalSkillFrameworks?.frameworks),
-        [flags?.globalSkillFrameworks, seededFrameworks, useSeededFrameworks]
-    );
+        return frameworks.length > 0 ? frameworks : [WEF_GLOBAL_SKILLS_FALLBACK];
+    }, [flags?.globalSkillFrameworks, seededFrameworks, useSeededFrameworks]);
 };
 
 export const useGlobalSemanticSearchSkills = (
