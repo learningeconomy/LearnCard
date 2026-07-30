@@ -3,6 +3,9 @@
 set -euo pipefail
 
 ROOT_DIR="$(git rev-parse --show-toplevel)"
+DIDKIT_DIR="${ROOT_DIR}/lib/didkit"
+DIDKIT_LOCKFILE="${DIDKIT_DIR}/Cargo.lock"
+DIDKIT_WASM_LOCKFILE="${ROOT_DIR}/packages/plugins/didkit/scripts/didkit-wasm.Cargo.lock"
 DIDKIT_WEB_DIR="${ROOT_DIR}/lib/didkit/lib/web"
 SOURCE_PKG_DIR="${DIDKIT_WEB_DIR}/pkg"
 TARGET_PKG_DIR="${ROOT_DIR}/packages/plugins/didkit/src/didkit/pkg"
@@ -22,9 +25,29 @@ if [ ! -d "${DIDKIT_WEB_DIR}" ]; then
     exit 1
 fi
 
+if [ ! -f "${DIDKIT_WASM_LOCKFILE}" ]; then
+    echo "Expected DIDKit WASM lockfile at ${DIDKIT_WASM_LOCKFILE}" >&2
+    exit 1
+fi
+
+if [ -e "${DIDKIT_LOCKFILE}" ]; then
+    echo "Unexpected upstream DIDKit lockfile at ${DIDKIT_LOCKFILE}" >&2
+    exit 1
+fi
+
+cp "${DIDKIT_WASM_LOCKFILE}" "${DIDKIT_LOCKFILE}"
+trap 'rm -f "${DIDKIT_LOCKFILE}"' EXIT
+
 (
     cd "${DIDKIT_WEB_DIR}"
-    wasm-pack build --target=web
+
+    if [ "${UPDATE_DIDKIT_WASM_LOCKFILE:-0}" = "1" ]; then
+        wasm-pack build --target=web
+        cp "${DIDKIT_LOCKFILE}" "${DIDKIT_WASM_LOCKFILE}"
+    else
+        wasm-pack build --target=web --locked
+    fi
+
     wasm-opt -Oz -o "${SOURCE_PKG_DIR}/tmp.wasm" "${SOURCE_PKG_DIR}/didkit_wasm_bg.wasm"
     mv "${SOURCE_PKG_DIR}/tmp.wasm" "${SOURCE_PKG_DIR}/didkit_wasm_bg.wasm"
 )
