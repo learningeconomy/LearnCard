@@ -135,6 +135,24 @@ export const feedbackGovernorStore = createStore('feedbackGovernor')<{
         sessionPromptCount += 1;
     },
 
+    /**
+     * Debug-panel only. Resets the module-scope session counter alongside the
+     * persisted state — clearing localStorage by hand leaves that counter set,
+     * which is the usual reason a prompt stubbornly refuses to reappear.
+     */
+    resetForDebug: () => {
+        sessionPromptCount = 0;
+
+        set.state(state => {
+            state.surfaces = {};
+            state.promptLog = [];
+            state.sentiment = { positiveCount: 0 };
+            state.sessionCount = 0;
+            state.lastSessionAt = 0;
+            state.review = { requestLog: [] };
+        });
+    },
+
     recordAdvocacyRequested: () => {
         set.state(state => {
             const now = Date.now();
