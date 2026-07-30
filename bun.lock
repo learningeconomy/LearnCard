@@ -733,6 +733,7 @@
       "version": "1.1.247",
       "bin": "dist/index.js",
       "dependencies": {
+        "@learncard/didkit-plugin": "workspace:*",
         "@learncard/init": "workspace:*",
         "@learncard/types": "workspace:*",
         "@rollup/plugin-json": "^4.1.0",

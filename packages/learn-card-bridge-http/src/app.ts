@@ -48,11 +48,6 @@ app.delete('/credentials/:id', async (_req: TypedRequest<{}>, res) => {
 
 app.post('/credentials/issue', async (req: TypedRequest<IssueEndpoint>, res) => {
     try {
-        // If incoming credential doesn't have an issuanceDate, default it to right now
-        if (req.body?.credential && !('issuanceDate' in (req.body?.credential ?? {}))) {
-            req.body.credential.issuanceDate = new Date().toISOString();
-        }
-
         const validationResult = await IssueEndpointValidator.spa(req.body);
 
         if (!validationResult.success) {
@@ -67,13 +62,22 @@ app.post('/credentials/issue', async (req: TypedRequest<IssueEndpoint>, res) => 
         }
 
         const validatedBody = validationResult.data;
+        const credential = validatedBody.credential;
+
+        if (!credential) return res.status(400).json('Invalid input: credential is required');
+
+        const contexts = Array.isArray(credential['@context'])
+            ? credential['@context']
+            : [credential['@context']];
+        const isV1Credential = contexts.includes('https://www.w3.org/2018/credentials/v1');
+        const credentialToIssue =
+            isV1Credential && !('issuanceDate' in credential)
+                ? { ...credential, issuanceDate: new Date().toISOString() }
+                : credential;
         const learnCard = await getLearnCard();
         const { credentialStatus, ...options } = validatedBody.options ?? {};
 
-        const issuedCredential = await learnCard.invoke.issueCredential(
-            validatedBody.credential,
-            options
-        );
+        const issuedCredential = await learnCard.invoke.issueCredential(credentialToIssue, options);
 
         return res.status(201).json(issuedCredential);
     } catch (error) {
@@ -118,11 +122,6 @@ app.post('/credentials/verify', async (req: TypedRequest<VerifyCredentialEndpoin
             );
             return res.status(400).json(verificationResult);
         }
-
-        // Pass a test for interop 🙃
-        verificationResult.checks = verificationResult.checks.filter(
-            check => check !== 'expiration'
-        );
 
         return res.status(200).json(verificationResult);
     } catch (error) {

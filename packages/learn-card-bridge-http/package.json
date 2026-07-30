@@ -5,13 +5,15 @@
     "main": "dist/index.js",
     "bin": "dist/index.js",
     "scripts": {
-        "serverless-deploy": "shx cp ../learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm && serverless deploy",
+        "serverless-deploy": "serverless deploy",
         "start": "rollup -c && node dist/index.js",
+        "start:local": "bun src/server.ts",
         "build": "rollup -c"
     },
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
     "license": "MIT",
     "dependencies": {
+        "@learncard/didkit-plugin": "workspace:*",
         "@learncard/init": "workspace:*",
         "@learncard/types": "workspace:*",
         "@rollup/plugin-json": "^4.1.0",

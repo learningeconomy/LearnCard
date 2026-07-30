@@ -12,6 +12,8 @@ custom:
     esbuild:
         packager: bun
         plugins: esbuildWasmPlugin.cjs
+        external:
+            - '@learncard/didkit-plugin'
     warmup:
         default:
             enabled: true

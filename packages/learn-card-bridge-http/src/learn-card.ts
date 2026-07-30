@@ -1,6 +1,5 @@
 import fs from 'fs/promises';
 import { initLearnCard, LearnCardFromSeed } from '@learncard/init';
-import didkit from './didkit_wasm_bg.wasm';
 
 export const getLearnCard = async (): Promise<LearnCardFromSeed['returnValue']> => {
     const seed = process.env.WALLET_SEED;
@@ -9,5 +8,11 @@ export const getLearnCard = async (): Promise<LearnCardFromSeed['returnValue']> 
         throw new Error('No seed set! Please make a .env file and set WALLET_SEED to your seed!');
     }
 
-    return initLearnCard({ seed, didkit });
+    return initLearnCard({
+        seed,
+        didkit: fs.readFile(
+            process.env.LOCAL_DIDKIT_PATH ??
+                require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
+        ),
+    });
 };
