@@ -1,6 +1,46 @@
+import { TRPCError } from '@trpc/server';
+import type { TRPC_ERROR_CODE_KEY } from '@trpc/server/rpc';
+
 import type { EcosystemRole, ProvisionableRole } from '@learncard/types';
 
 import type { BrainServiceTransport } from './brain-service-client';
+
+const UPSTREAM_ERROR_CODES = [
+    'PARSE_ERROR',
+    'BAD_REQUEST',
+    'INTERNAL_SERVER_ERROR',
+    'NOT_IMPLEMENTED',
+    'UNAUTHORIZED',
+    'FORBIDDEN',
+    'NOT_FOUND',
+    'METHOD_NOT_SUPPORTED',
+    'TIMEOUT',
+    'CONFLICT',
+    'PRECONDITION_FAILED',
+    'PAYLOAD_TOO_LARGE',
+    'UNPROCESSABLE_CONTENT',
+    'TOO_MANY_REQUESTS',
+    'CLIENT_CLOSED_REQUEST',
+] as const satisfies readonly TRPC_ERROR_CODE_KEY[];
+
+const toUpstreamErrorCode = (value: unknown): TRPC_ERROR_CODE_KEY => {
+    const match = UPSTREAM_ERROR_CODES.find(code => code === value);
+
+    return match ?? 'INTERNAL_SERVER_ERROR';
+};
+
+// brain-service signals governance outcomes through tRPC error codes (CONFLICT for a
+// stale plan/revision, FORBIDDEN for insufficient authority). Rethrowing a plain Error
+// here would collapse all of them into a 500, so the console could not tell an operator
+// "re-review the plan" apart from "the server crashed".
+const upstreamError = (
+    json: { error?: { message?: string; data?: { code?: unknown } } },
+    fallbackMessage: string
+): TRPCError =>
+    new TRPCError({
+        code: toUpstreamErrorCode(json.error?.data?.code),
+        message: json.error?.message || fallbackMessage,
+    });
 
 export type HttpBrainServiceTransportConfig = {
     baseUrl: string;
@@ -28,8 +68,7 @@ export class HttpBrainServiceTransport implements BrainServiceTransport {
             headers: { authorization: `Bearer ${bearer}` },
         });
         const json = await res.json();
-        if (!res.ok || json.error)
-            throw new Error(json.error?.message || `tRPC query failed: ${res.status}`);
+        if (!res.ok || json.error) throw upstreamError(json, `tRPC query failed: ${res.status}`);
         return json.result.data as T;
     }
 
@@ -40,8 +79,7 @@ export class HttpBrainServiceTransport implements BrainServiceTransport {
             body: JSON.stringify(input),
         });
         const json = await res.json();
-        if (!res.ok || json.error)
-            throw new Error(json.error?.message || `tRPC mutation failed: ${res.status}`);
+        if (!res.ok || json.error) throw upstreamError(json, `tRPC mutation failed: ${res.status}`);
         return json.result.data as T;
     }
 

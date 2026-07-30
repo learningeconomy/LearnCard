@@ -9,7 +9,7 @@
         "test:watch": "vitest --watch",
         "build": "shx rm -rf dist && tsc --p tsconfig.json",
         "typecheck": "tsc --noEmit",
-        "dev": "CONSOLE_BFF_DEV_INSECURE_AUTH=true bun --watch src/main.ts",
+        "dev": "BRAIN_SERVICE_URL=http://localhost:4000 CONSOLE_BFF_DEV_INSECURE_AUTH=true LOCAL_KMS_FILE=.local-kms.json bun --watch src/main.ts",
         "start": "bun src/main.ts",
         "dev:services": "docker compose -f docker-compose.dev.yml up -d",
         "dev:services:down": "docker compose -f docker-compose.dev.yml down"

@@ -2,7 +2,7 @@ import Redis from 'ioredis';
 import { MongoClient } from 'mongodb';
 
 import { loadConfig } from './config';
-import { getKeyManagementService } from '@kms';
+import { getKeyManagementService, LocalKeyManagementService, type ManagedKeyRef } from '@kms';
 import {
     DidDocumentService,
     createMongoKeyDirectory,
@@ -81,9 +81,63 @@ async function main(): Promise<void> {
     const serviceDid = didWebFromDomain(config.consoleDomain, config.serviceAlias);
     await directory.put(serviceDid, serviceKeyRef);
 
-    const transport: BrainServiceTransport = config.brainServiceUrl
-        ? new HttpBrainServiceTransport({ baseUrl: config.brainServiceUrl })
-        : new StubBrainServiceTransport();
+    // The directory is durable but the local KMS may not be, so a stored ref can
+    // outlive its key material. JIT will not re-mint for an already-known subject,
+    // which would otherwise wedge that identity permanently. Re-key in place so the
+    // managed DID — and any roles granted to it — survive.
+    const resolveKeyRef = async (did: string): Promise<ManagedKeyRef | null> => {
+        const ref = await directory.getKeyRef(did);
+
+        if (!ref) return null;
+
+        if (kms instanceof LocalKeyManagementService && !kms.hasKey(ref)) {
+            const adopted = await kms.adoptKey(ref);
+
+            await directory.put(did, adopted);
+            console.warn(
+                `[kms] re-keyed stale local KMS ref for ${did} (key ${ref.keyId} had no material)`
+            );
+
+            return adopted;
+        }
+
+        return ref;
+    };
+
+    const brainUrl = config.brainServiceUrl;
+    const useStubBrain = !brainUrl || brainUrl === 'stub';
+
+    if (useStubBrain) {
+        if (process.env.NODE_ENV === 'production') {
+            throw new Error(
+                'BRAIN_SERVICE_URL is required in production; refusing to start against the stub brain transport.'
+            );
+        }
+
+        // The stub answers every call with `{}` and HTTP 200, which looks like success
+        // to callers and shows up as empty/garbled UI rather than a connection error.
+        // Say so loudly instead of letting it be diagnosed downstream.
+        console.warn(
+            [
+                '',
+                '  ⚠  console-bff is using the STUB brain-service transport.',
+                '     Every brain-service call resolves to `{}` with HTTP 200 — nothing is',
+                '     persisted, and list endpoints do not return arrays.',
+                `     ${
+                    brainUrl === 'stub'
+                        ? 'Selected explicitly via BRAIN_SERVICE_URL=stub.'
+                        : 'BRAIN_SERVICE_URL is unset.'
+                }`,
+                '     Set BRAIN_SERVICE_URL=http://localhost:4000 to use a real brain-service.',
+                '',
+            ].join('\n')
+        );
+    }
+
+    const transport: BrainServiceTransport =
+        !brainUrl || brainUrl === 'stub'
+            ? new StubBrainServiceTransport()
+            : new HttpBrainServiceTransport({ baseUrl: brainUrl });
 
     const bindings = await createMongoBindingRepository(db);
 
@@ -94,7 +148,7 @@ async function main(): Promise<void> {
             profiles: new DidAuthProfileCreator({
                 kms,
                 transport,
-                keyRefFor: did => directory.getKeyRef(did),
+                keyRefFor: resolveKeyRef,
             }),
             consoleDomain: config.consoleDomain,
         }),
@@ -127,7 +181,7 @@ async function main(): Promise<void> {
     const app = buildServer({
         transport,
         kms,
-        keyRefFor: did => directory.getKeyRef(did),
+        keyRefFor: resolveKeyRef,
         authService,
         cookieSecret: config.cookieSecret,
         secureCookies: config.secureCookies,

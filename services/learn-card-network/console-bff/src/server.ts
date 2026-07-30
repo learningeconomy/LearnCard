@@ -23,7 +23,11 @@ export type ConsoleBffServerConfig = {
 };
 
 export function buildServer(config: ConsoleBffServerConfig): FastifyInstance {
-    const app = Fastify({ logger: true });
+    // tRPC's httpBatchLink puts every batched procedure name in one path segment
+    // ("a.b,a.c,a.d"), which blows past Fastify's default maxParamLength of 100 and
+    // makes the whole batch 404 — the client then reports it as an opaque
+    // "Unable to transform response from server".
+    const app = Fastify({ logger: true, maxParamLength: 5000 });
 
     app.register(cookie);
 

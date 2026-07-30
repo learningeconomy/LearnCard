@@ -34,3 +34,6 @@ yarn-error.log*
 
 # Sentry Auth Token
 .env.sentry-build-plugin
+
+# Dev-only persisted local KMS key material (LOCAL_KMS_FILE)
+.local-kms.json

@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { createPublicKey, createHash, verify as nodeVerify } from 'crypto';
+import { mkdtempSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 
 import { LocalKeyManagementService } from '@kms/local';
 import { getKeyManagementService } from '@kms/factory';
@@ -85,5 +88,70 @@ describe('getKeyManagementService', () => {
         expect(() =>
             getKeyManagementService({ KMS_PROVIDER: 'vault' } as unknown as NodeJS.ProcessEnv)
         ).toThrow();
+    });
+});
+
+describe('LocalKeyManagementService persistence', () => {
+    const tmpFile = () => join(mkdtempSync(join(tmpdir(), 'lc-kms-')), 'nested', 'local-kms.json');
+
+    it('resolves a key issued by a previous process when persisted', async () => {
+        const persistPath = tmpFile();
+
+        const first = new LocalKeyManagementService({ persistPath });
+        const ref = await first.generateSigningKey({ tenantId: 'lef', alias: 'root' });
+        const data = new Uint8Array([1, 2, 3, 4]);
+        const signature = await first.sign(ref, data);
+
+        const restarted = new LocalKeyManagementService({ persistPath });
+
+        expect(restarted.hasKey(ref)).toBe(true);
+
+        const jwk = await restarted.getPublicKeyJwk(ref);
+
+        expect(verifyEs256(jwk, data, signature)).toBe(true);
+    });
+
+    it('loses the key across restart when not persisted, which is what wedges a durable ref', async () => {
+        const ephemeral = new LocalKeyManagementService();
+        const ref = await ephemeral.generateSigningKey({ tenantId: 'lef', alias: 'root' });
+
+        expect(new LocalKeyManagementService().hasKey(ref)).toBe(false);
+    });
+
+    it('adopts a stale ref in place, keeping keyId so the directory entry stays valid', async () => {
+        const persistPath = tmpFile();
+        const orphanRef = await new LocalKeyManagementService().generateSigningKey({
+            tenantId: 'lef',
+            alias: 'root',
+        });
+
+        const fresh = new LocalKeyManagementService({ persistPath });
+
+        expect(fresh.hasKey(orphanRef)).toBe(false);
+
+        const adopted = await fresh.adoptKey(orphanRef);
+
+        expect(adopted.keyId).toBe(orphanRef.keyId);
+        expect(adopted.version).not.toBe(orphanRef.version);
+        expect(fresh.hasKey(adopted)).toBe(true);
+
+        const data = new Uint8Array([9, 9, 9]);
+        const signature = await fresh.sign(adopted, data);
+
+        expect(verifyEs256(await fresh.getPublicKeyJwk(adopted), data, signature)).toBe(true);
+        expect(new LocalKeyManagementService({ persistPath }).hasKey(adopted)).toBe(true);
+    });
+
+    it('refuses persistence in production', () => {
+        const previous = process.env.NODE_ENV;
+        process.env.NODE_ENV = 'production';
+
+        try {
+            expect(() => new LocalKeyManagementService({ persistPath: tmpFile() })).toThrow(
+                /dev-only/i
+            );
+        } finally {
+            process.env.NODE_ENV = previous;
+        }
     });
 });

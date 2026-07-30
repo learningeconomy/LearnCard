@@ -8,6 +8,8 @@
         "test": "vitest",
         "test:watch": "vitest --watch",
         "seed:dev-app": "bun scripts/seed-dev-app.ts",
+        "seed:education-os": "bun scripts/seed-education-os.ts",
+        "dev:bootstrap": "bun run backfill:listing-kind && bun run seed:education-os",
         "skill-frameworks": "bun scripts/skill-frameworks.ts",
         "backfill:ecosystems": "bun scripts/backfill-ecosystems.ts",
         "backfill:listing-kind": "bun scripts/backfill-listing-kind.ts",

@@ -12,7 +12,7 @@ export function getKeyManagementService(
         case 'aws-kms':
             return new AwsKmsKeyManagementService({ region: env.AWS_REGION });
         case 'local':
-            return new LocalKeyManagementService();
+            return new LocalKeyManagementService({ persistPath: env.LOCAL_KMS_FILE });
         default:
             throw new Error(`Unknown KMS_PROVIDER: ${provider}`);
     }

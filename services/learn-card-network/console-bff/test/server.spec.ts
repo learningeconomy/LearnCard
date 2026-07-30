@@ -84,3 +84,37 @@ describe('console-bff HTTP server', () => {
         await app.close();
     });
 });
+
+describe('console-bff tRPC batching', () => {
+    // httpBatchLink joins every procedure name into one path segment, so a modest
+    // batch easily exceeds Fastify's default maxParamLength of 100 and 404s.
+    it('routes a batched request whose joined procedure path exceeds 100 characters', async () => {
+        const app = buildServer({
+            ...stubSpineDeps(),
+            authService: stubAuthService(),
+            cookieSecret: COOKIE_SECRET,
+        });
+
+        const procedures = [
+            'installIntents.getInstallIntent',
+            'installIntents.getInstallIntentAuditEvents',
+            'installIntents.getInstallIntent',
+            'installIntents.getInstallIntentAuditEvents',
+        ].join(',');
+
+        expect(procedures.length).toBeGreaterThan(100);
+
+        const input = encodeURIComponent(
+            JSON.stringify(Object.fromEntries([0, 1, 2, 3].map(i => [i, { intentId: 'i1' }])))
+        );
+
+        const res = await app.inject({
+            method: 'GET',
+            url: `/trpc/${procedures}?batch=1&input=${input}`,
+        });
+
+        expect(res.statusCode).not.toBe(404);
+
+        await app.close();
+    });
+});

@@ -177,3 +177,49 @@ pre {
     padding: 16px;
     overflow: auto;
 }
+
+input,
+select {
+    padding: 9px 12px;
+    border-radius: 12px;
+    border: 1px solid #c5c8d3;
+    background: #fff;
+    color: #18224e;
+    font-size: 14px;
+    font-family: inherit;
+    min-width: 0;
+}
+
+input:disabled,
+select:disabled {
+    background: #f4f5f8;
+    color: #8b91a7;
+}
+
+.grid label {
+    color: #8b91a7;
+    align-self: center;
+}
+
+.actions {
+    align-items: center;
+}
+
+.actions label {
+    color: #8b91a7;
+    font-size: 14px;
+}
+
+.form-grid {
+    grid-template-columns: 210px 1fr;
+    align-items: center;
+}
+
+form .actions {
+    margin-top: 16px;
+    margin-bottom: 0;
+}
+
+form h3 {
+    margin-bottom: 4px;
+}

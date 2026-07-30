@@ -24,7 +24,15 @@ const craftDevPresentation = (holderDid: string): string => {
     return `${header}.${payload}.dev-signature`;
 };
 
-const freshHolderDid = (): string => `did:key:z6Mkdev${Math.random().toString(36).slice(2, 10)}`;
+// Stable on purpose: a random DID per login mints a new MEMBER profile every time,
+// and JIT may never grant OWNER/ADMIN (ADR-001 §3.10), so an out-of-band role grant
+// would be lost on every sign-out. VITE_DEV_FRESH_IDENTITY=true opts back out.
+const DEV_HOLDER_DID = 'did:key:z6MkdevconsoleLocalOperator';
+
+const holderDid = (): string =>
+    import.meta.env.VITE_DEV_FRESH_IDENTITY === 'true'
+        ? `did:key:z6Mkdev${Math.random().toString(36).slice(2, 10)}`
+        : DEV_HOLDER_DID;
 
 const stateFromRedirectUrl = (redirectUrl: string): string | null =>
     new URL(redirectUrl).searchParams.get('state');
@@ -47,7 +55,7 @@ export async function login(): Promise<{ profileId: string; expiresAt: string }>
 
     if (!state) throw new Error('login begin did not return a state');
 
-    const vp = craftDevPresentation(freshHolderDid());
+    const vp = craftDevPresentation(holderDid());
 
     const callbackRes = await fetch('/auth/callback', {
         method: 'POST',

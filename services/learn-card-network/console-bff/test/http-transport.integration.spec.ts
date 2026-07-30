@@ -88,3 +88,80 @@ describe('HttpBrainServiceTransport (against a mock brain-service)', () => {
         await expect(transport.requestChallenge('x')).rejects.toThrow();
     });
 });
+
+describe('HttpBrainServiceTransport upstream error codes', () => {
+    let errApp: FastifyInstance;
+    let errBaseUrl: string;
+
+    const trpcError = (code: string, message: string, httpStatus: number) => ({
+        error: { message, code: -32603, data: { code, httpStatus } },
+    });
+
+    beforeAll(async () => {
+        errApp = Fastify();
+
+        errApp.get('/trpc/stale.query', async (_req, reply) =>
+            reply
+                .status(409)
+                .send(trpcError('CONFLICT', 'Install intent status revision is stale.', 409))
+        );
+        errApp.post('/trpc/stale.mutation', async (_req, reply) =>
+            reply
+                .status(409)
+                .send(trpcError('CONFLICT', 'Install intent status revision is stale.', 409))
+        );
+        errApp.post('/trpc/forbidden.mutation', async (_req, reply) =>
+            reply
+                .status(403)
+                .send(trpcError('FORBIDDEN', 'Caller lacks the required ecosystem authority.', 403))
+        );
+        errApp.post('/trpc/uncoded.mutation', async (_req, reply) =>
+            reply.status(500).send({ error: { message: 'boom', code: -32603, data: {} } })
+        );
+
+        await errApp.listen({ port: 0, host: '127.0.0.1' });
+        const address = errApp.server.address();
+        const port = typeof address === 'object' && address ? address.port : 0;
+        errBaseUrl = `http://127.0.0.1:${port}`;
+    });
+
+    afterAll(async () => {
+        await errApp?.close();
+    });
+
+    it('preserves CONFLICT from a mutation so a stale revision is not reported as a 500', async () => {
+        const transport = new HttpBrainServiceTransport({ baseUrl: errBaseUrl });
+
+        await expect(transport.trpcMutation('bearer', 'stale.mutation', {})).rejects.toMatchObject({
+            code: 'CONFLICT',
+            message: 'Install intent status revision is stale.',
+        });
+    });
+
+    it('preserves CONFLICT from a query', async () => {
+        const transport = new HttpBrainServiceTransport({ baseUrl: errBaseUrl });
+
+        await expect(transport.trpcQuery('bearer', 'stale.query', {})).rejects.toMatchObject({
+            code: 'CONFLICT',
+        });
+    });
+
+    it('preserves FORBIDDEN so insufficient authority stays distinguishable', async () => {
+        const transport = new HttpBrainServiceTransport({ baseUrl: errBaseUrl });
+
+        await expect(
+            transport.trpcMutation('bearer', 'forbidden.mutation', {})
+        ).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+            message: 'Caller lacks the required ecosystem authority.',
+        });
+    });
+
+    it('falls back to INTERNAL_SERVER_ERROR when upstream sends no usable code', async () => {
+        const transport = new HttpBrainServiceTransport({ baseUrl: errBaseUrl });
+
+        await expect(
+            transport.trpcMutation('bearer', 'uncoded.mutation', {})
+        ).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR', message: 'boom' });
+    });
+});

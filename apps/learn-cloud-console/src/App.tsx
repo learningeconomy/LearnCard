@@ -105,7 +105,15 @@ export function App() {
                 </section>
             )}
 
-            {session && <InstallIntents />}
+            {session && (
+                <InstallIntents
+                    ecosystemIds={[
+                        ...new Set(
+                            session.effectiveAccess.ecosystemRoles.map(grant => grant.ecosystemId)
+                        ),
+                    ]}
+                />
+            )}
         </main>
     );
 }
