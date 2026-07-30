@@ -1,13 +1,27 @@
 import { createStore } from '@udecode/zustood';
 
-import type { FeedbackSurface } from '@analytics';
+import type { FeedbackSentiment, FeedbackSurface } from '@analytics';
 
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-const SURFACE_ANSWER_COOLDOWN_MS = 30 * 24 * 60 * 60 * 1000;
-const IGNORE_MUTE_MS = 90 * 24 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const WEEK_MS = 7 * DAY_MS;
+const YEAR_MS = 365 * DAY_MS;
+const SURFACE_ANSWER_COOLDOWN_MS = 30 * DAY_MS;
+const IGNORE_MUTE_MS = 90 * DAY_MS;
 const MAX_PROMPTS_PER_WEEK = 3;
 const MAX_PROMPTS_PER_SESSION = 1;
 const IGNORES_BEFORE_MUTE = 2;
+
+const ADVOCACY_COOLDOWN_MS = 90 * DAY_MS;
+const ADVOCACY_NEGATIVE_QUARANTINE_MS = 30 * DAY_MS;
+const ADVOCACY_SENTIMENT_SETTLE_MS = 7 * DAY_MS;
+const ADVOCACY_MIN_SESSIONS = 3;
+/**
+ * Deliberately 2, not Apple's hard cap of 3 per 365 days. The OS gives us
+ * no signal about whether a prompt was actually displayed, so we cannot
+ * reconcile our count with theirs — leaving one ask of headroom keeps us
+ * clear of the cap even if our bookkeeping drifts.
+ */
+const ADVOCACY_MAX_PER_YEAR = 2;
 
 export type FeedbackSurfaceState = {
     lastShownAt?: number;
@@ -16,7 +30,28 @@ export type FeedbackSurfaceState = {
     mutedUntil?: number;
 };
 
+export type AdvocacyDecision =
+    | 'eligible'
+    | 'not_enough_sessions'
+    | 'no_positive_sentiment'
+    | 'sentiment_too_recent'
+    | 'recent_negative'
+    | 'cooldown'
+    | 'yearly_cap';
+
 let sessionPromptCount = 0;
+
+/**
+ * The persisted store predates `requestLog` (it previously held a bare
+ * `requestCount`). Persistence merges shallowly, so a hydrated `review`
+ * from an older build replaces the default object entirely and arrives
+ * without `requestLog` — read it through here, never directly.
+ */
+const readRequestLog = (review: { requestLog?: number[] }): number[] => {
+    const now = Date.now();
+
+    return (review.requestLog ?? []).filter(t => now - t < YEAR_MS);
+};
 
 /**
  * Frequency governor for in-app feedback prompts. Every prompt consults
@@ -29,12 +64,16 @@ let sessionPromptCount = 0;
 export const feedbackGovernorStore = createStore('feedbackGovernor')<{
     surfaces: Record<string, FeedbackSurfaceState>;
     promptLog: number[];
-    review: { lastRequestedAt?: number; requestCount: number };
+    sentiment: { lastPositiveAt?: number; lastNegativeAt?: number; positiveCount: number };
+    sessionCount: number;
+    review: { lastRequestedAt?: number; requestLog: number[] };
 }>(
     {
         surfaces: {},
         promptLog: [],
-        review: { requestCount: 0 },
+        sentiment: { positiveCount: 0 },
+        sessionCount: 0,
+        review: { requestLog: [] },
     },
     { persist: { name: 'feedbackGovernor', enabled: true } }
 ).extendActions(set => ({
@@ -50,15 +89,39 @@ export const feedbackGovernorStore = createStore('feedbackGovernor')<{
         });
     },
 
-    recordAnswered: (surface: FeedbackSurface) => {
+    recordAnswered: (surface: FeedbackSurface, sentiment: FeedbackSentiment) => {
         set.state(state => {
+            const now = Date.now();
             const existing = state.surfaces[surface] ?? { ignoreCount: 0 };
+
             state.surfaces[surface] = {
                 ...existing,
-                lastAnsweredAt: Date.now(),
+                lastAnsweredAt: now,
                 ignoreCount: 0,
                 mutedUntil: undefined,
             };
+
+            if (sentiment === 'positive') {
+                state.sentiment.lastPositiveAt = now;
+                state.sentiment.positiveCount += 1;
+            } else {
+                state.sentiment.lastNegativeAt = now;
+            }
+        });
+    },
+
+    recordSession: () => {
+        set.state(state => {
+            state.sessionCount += 1;
+        });
+    },
+
+    recordAdvocacyRequested: () => {
+        set.state(state => {
+            const now = Date.now();
+
+            state.review.lastRequestedAt = now;
+            state.review.requestLog = [...readRequestLog(state.review), now];
         });
     },
 
@@ -102,4 +165,45 @@ export const canPromptForFeedback = (surface: FeedbackSurface): boolean => {
     }
 
     return true;
+};
+
+/**
+ * Decides whether the user has earned an advocacy ask (native OS review
+ * prompt, or the GitHub star card on web).
+ *
+ * Compliance-critical: `ADVOCACY_SENTIMENT_SETTLE_MS` enforces a gap
+ * between the sentiment answer and the ask. Google forbids asking any
+ * question before or while the review UI is presented, so chaining the
+ * prompt onto a positive tap in the same session would violate policy.
+ * Recorded sentiment may only act as silent, time-detached eligibility.
+ */
+export const resolveAdvocacyDecision = (): AdvocacyDecision => {
+    const now = Date.now();
+    const { sentiment, sessionCount, review } = {
+        sentiment: feedbackGovernorStore.get.sentiment(),
+        sessionCount: feedbackGovernorStore.get.sessionCount(),
+        review: feedbackGovernorStore.get.review(),
+    };
+
+    if (sessionCount < ADVOCACY_MIN_SESSIONS) return 'not_enough_sessions';
+
+    if (!sentiment.lastPositiveAt || sentiment.positiveCount < 1) return 'no_positive_sentiment';
+
+    if (now - sentiment.lastPositiveAt < ADVOCACY_SENTIMENT_SETTLE_MS)
+        return 'sentiment_too_recent';
+
+    if (
+        sentiment.lastNegativeAt &&
+        now - sentiment.lastNegativeAt < ADVOCACY_NEGATIVE_QUARANTINE_MS
+    ) {
+        return 'recent_negative';
+    }
+
+    if (review.lastRequestedAt && now - review.lastRequestedAt < ADVOCACY_COOLDOWN_MS) {
+        return 'cooldown';
+    }
+
+    if (readRequestLog(review).length >= ADVOCACY_MAX_PER_YEAR) return 'yearly_cap';
+
+    return 'eligible';
 };
