@@ -5,7 +5,13 @@ import { SESSION_COOKIE_NAME, readSessionCookie } from '@session';
 import type { ConsoleAuthService } from '../app';
 import type { ConsoleContext } from './trpc';
 
+import type { BrainServiceTransport } from '../brain';
+import type { KeyManagementService, ManagedKeyRef } from '@kms';
+
 export type CreateConsoleContextDeps = {
+    transport: BrainServiceTransport;
+    kms: KeyManagementService;
+    keyRefFor: (did: string) => Promise<ManagedKeyRef | null>;
     authService: ConsoleAuthService;
     cookieSecret: string;
 };
@@ -16,6 +22,11 @@ export function makeCreateConsoleContext(deps: CreateConsoleContextDeps) {
 
         const session = sessionId ? await deps.authService.getSession(sessionId) : null;
 
-        return { session };
+        return {
+            session,
+            transport: deps.transport,
+            kms: deps.kms,
+            keyRefFor: deps.keyRefFor,
+        };
     };
 }

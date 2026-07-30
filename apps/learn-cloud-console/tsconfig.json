@@ -15,10 +15,27 @@
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true,
-        "types": ["vite/client"],
+        "types": ["vite/client", "node"],
         "baseUrl": ".",
         "paths": {
-            "@console-bff/*": ["../../services/learn-card-network/console-bff/src/*"]
+            "@console-bff/*": ["../../services/learn-card-network/console-bff/src/*"],
+            "@brain-service/*": ["../../services/learn-card-network/brain-service/src/*"],
+            "@kms": ["../../services/learn-card-network/console-bff/src/kms/index.ts"],
+            "@kms/*": ["../../services/learn-card-network/console-bff/src/kms/*"],
+            "@did": ["../../services/learn-card-network/console-bff/src/did/index.ts"],
+            "@did/*": ["../../services/learn-card-network/console-bff/src/did/*"],
+            "@brain": ["../../services/learn-card-network/console-bff/src/brain/index.ts"],
+            "@brain/*": ["../../services/learn-card-network/console-bff/src/brain/*"],
+            "@session": ["../../services/learn-card-network/console-bff/src/session/index.ts"],
+            "@session/*": ["../../services/learn-card-network/console-bff/src/session/*"],
+            "@providers": ["../../services/learn-card-network/console-bff/src/providers/index.ts"],
+            "@providers/*": ["../../services/learn-card-network/console-bff/src/providers/*"],
+            "@identity-provisioning": [
+                "../../services/learn-card-network/console-bff/src/identity-provisioning/index.ts"
+            ],
+            "@identity-provisioning/*": [
+                "../../services/learn-card-network/console-bff/src/identity-provisioning/*"
+            ]
         }
     },
     "include": ["src"]

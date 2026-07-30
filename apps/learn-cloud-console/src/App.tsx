@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { getSession, login, logout, type DashboardSession } from './api';
 
+import { InstallIntents } from './InstallIntents';
+
 type Status = 'idle' | 'working';
 
 export function App() {
@@ -102,6 +104,8 @@ export function App() {
                     </details>
                 </section>
             )}
+
+            {session && <InstallIntents />}
         </main>
     );
 }

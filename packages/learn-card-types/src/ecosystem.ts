@@ -1,6 +1,8 @@
 import type {} from 'zod-openapi';
 import { z } from 'zod/v4';
 
+import { EntitlementPolicyValidator } from './education-os';
+
 export const EcosystemRoleEnum = z.enum(['OWNER', 'ADMIN', 'MEMBER', 'VIEWER']);
 export type EcosystemRole = z.infer<typeof EcosystemRoleEnum>;
 
@@ -58,6 +60,10 @@ export const EcosystemSettingsValidator = z
         ),
         catalogPolicy: EcosystemCatalogPolicyValidator.optional(),
         learnCloudPolicy: EcosystemLearnCloudPolicyValidator.optional(),
+        entitlementPolicies: z
+            .array(EntitlementPolicyValidator)
+            .optional()
+            .describe('EducationOS entitlement policy toggles for ecosystem governance.'),
     })
     .describe(
         'Typed Ecosystem settings. New config goes in a typed sub-schema, never a junk drawer.'

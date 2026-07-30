@@ -11,7 +11,7 @@ import { isVC2Format, checkAppInstallEligibility, calculateAgeFromDob } from '@l
 import type { ProfileType } from 'types/profile';
 
 import { neogma } from '@instance';
-import { t, openRoute, profileRoute, guardianGatedRoute } from '@routes';
+import { t, openRoute, profileRoute, guardianGatedRoute, didAndChallengeRoute } from '@routes';
 import { isAppStoreAdmin, APP_STORE_ADMIN_PROFILE_IDS } from 'src/constants/app-store';
 import type { CredentialIssuer } from '../types/issuer';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
@@ -121,6 +121,7 @@ import {
     getCredentialStatusForBoostAndProfile,
     getCredentialInstanceForBoostAndProfile,
 } from '@accesslayer/credential/read';
+import { getEcosystemById } from '@accesslayer/ecosystem/read';
 import {
     getContractTermsForProfile,
     getContractDetailsByUri,
@@ -133,6 +134,7 @@ import {
     handleGetCounterEvent,
     handleGetCountersEvent,
 } from '@helpers/app-counter.helpers';
+import { filterListingsByCatalogPolicy } from '@helpers/catalog-policy.helpers';
 
 // =============================================================================
 // VALIDATION HELPERS
@@ -2172,6 +2174,51 @@ export const appStoreRouter = t.router({
 
             const hasMore = results.length > limit;
             const rawRecords = hasMore ? results.slice(0, limit) : results;
+            const records = rawRecords.map(l =>
+                stripSensitiveFields(transformListingForResponse(l))
+            );
+            const cursor = hasMore ? rawRecords[rawRecords.length - 1]?.listing_id : undefined;
+
+            return { hasMore, cursor, records };
+        }),
+
+    browseListedAppsForEcosystem: didAndChallengeRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/app-store/browse/ecosystem/{ecosystemId}',
+                tags: ['App Store'],
+                summary: 'Browse App Store for an Ecosystem',
+                description:
+                    'Browse listed apps constrained by the Ecosystem catalog policy (allowedListings and requireEndorsement).',
+            },
+        })
+        .input(
+            z.object({
+                ecosystemId: z.string(),
+                limit: z.number().optional(),
+                cursor: z.string().optional(),
+                category: z.string().optional(),
+                promotionLevel: PromotionLevel.optional(),
+            })
+        )
+        .output(PaginatedAppStoreListingsValidator)
+        .query(async ({ input }) => {
+            const ecosystem = await getEcosystemById(input.ecosystemId);
+            if (!ecosystem)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Ecosystem not found' });
+
+            const limit = input.limit ?? 25;
+            const results = await getListedApps({
+                limit: limit + 5,
+                cursor: input.cursor,
+                category: input.category,
+                promotionLevel: input.promotionLevel,
+            });
+            const filtered = await filterListingsByCatalogPolicy(input.ecosystemId, results);
+            const hasMore = filtered.length > limit;
+            const rawRecords = hasMore ? filtered.slice(0, limit) : filtered;
             const records = rawRecords.map(l =>
                 stripSensitiveFields(transformListingForResponse(l))
             );

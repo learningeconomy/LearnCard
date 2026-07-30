@@ -77,6 +77,12 @@ class VerifyingBrainService implements BrainServiceTransport {
         this.profiles.push(body.profileId);
     }
 
+    async trpcQuery<T>(): Promise<T> {
+        return {} as T;
+    }
+    async trpcMutation<T>(): Promise<T> {
+        return {} as T;
+    }
     async grantProvisionedMembership(
         bearer: string,
         body: { ecosystemId: string; profileId: string; role: string }

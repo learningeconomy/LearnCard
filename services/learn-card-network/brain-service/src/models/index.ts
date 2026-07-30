@@ -17,12 +17,30 @@ import { ContactMethod } from './ContactMethod';
 import { Ecosystem } from './Ecosystem';
 import { Group } from './Group';
 import { Tenant } from './Tenant';
+import { InstallIntent } from './InstallIntent';
+import { Binding } from './Binding';
+import { IntegrationInstall } from './IntegrationInstall';
+import { AppAvailability } from './AppAvailability';
+import { WalletEnablement } from './WalletEnablement';
+import { WorkloadDeployment } from './WorkloadDeployment';
+import { RegistrySubscription } from './RegistrySubscription';
+import { InstallIntentAuditEvent } from './InstallIntentAuditEvent';
+import { ConsentDecisionRecord } from './ConsentDecisionRecord';
 
 void Tenant;
 
 // Ensure CredentialActivity model is registered by referencing it
 void CredentialActivity;
 void GroupAuditEvent;
+void InstallIntent;
+void Binding;
+void IntegrationInstall;
+void AppAvailability;
+void WalletEnablement;
+void WorkloadDeployment;
+void RegistrySubscription;
+void InstallIntentAuditEvent;
+void ConsentDecisionRecord;
 
 Credential.addRelationships({
     credentialReceived: {
@@ -213,6 +231,36 @@ const indexQueries = [
     'CREATE INDEX group_audit_event_actor_idx IF NOT EXISTS FOR (e:GroupAuditEvent) ON (e.actorProfileId)',
     'CREATE INDEX group_audit_event_timestamp_idx IF NOT EXISTS FOR (e:GroupAuditEvent) ON (e.timestamp)',
     'CREATE CONSTRAINT tenant_id_unique IF NOT EXISTS FOR (t:Tenant) REQUIRE (t.tenantId) IS UNIQUE',
+    'CREATE CONSTRAINT install_intent_id_unique IF NOT EXISTS FOR (i:InstallIntent) REQUIRE (i.intentId) IS UNIQUE',
+    'CREATE INDEX install_intent_ecosystem_idx IF NOT EXISTS FOR (i:InstallIntent) ON (i.ecosystemId)',
+    'CREATE INDEX install_intent_spec_revision_idx IF NOT EXISTS FOR (i:InstallIntent) ON (i.specRevision)',
+    'CREATE INDEX install_intent_status_revision_idx IF NOT EXISTS FOR (i:InstallIntent) ON (i.statusRevision)',
+    'CREATE INDEX install_intent_policy_revision_idx IF NOT EXISTS FOR (i:InstallIntent) ON (i.policyRevision)',
+    'CREATE CONSTRAINT binding_id_unique IF NOT EXISTS FOR (b:Binding) REQUIRE (b.bindingId) IS UNIQUE',
+    'CREATE INDEX binding_ecosystem_idx IF NOT EXISTS FOR (b:Binding) ON (b.ecosystemId)',
+    'CREATE INDEX binding_capability_idx IF NOT EXISTS FOR (b:Binding) ON (b.capability)',
+    'CREATE INDEX binding_revision_idx IF NOT EXISTS FOR (b:Binding) ON (b.revision)',
+    'CREATE CONSTRAINT integration_install_id_unique IF NOT EXISTS FOR (n:IntegrationInstall) REQUIRE (n.id) IS UNIQUE',
+    'CREATE INDEX integration_install_intent_idx IF NOT EXISTS FOR (n:IntegrationInstall) ON (n.intentId)',
+    'CREATE CONSTRAINT app_availability_id_unique IF NOT EXISTS FOR (n:AppAvailability) REQUIRE (n.id) IS UNIQUE',
+    'CREATE INDEX app_availability_intent_idx IF NOT EXISTS FOR (n:AppAvailability) ON (n.intentId)',
+    'CREATE CONSTRAINT wallet_enablement_id_unique IF NOT EXISTS FOR (n:WalletEnablement) REQUIRE (n.id) IS UNIQUE',
+    'CREATE INDEX wallet_enablement_intent_idx IF NOT EXISTS FOR (n:WalletEnablement) ON (n.intentId)',
+    'CREATE CONSTRAINT workload_deployment_id_unique IF NOT EXISTS FOR (n:WorkloadDeployment) REQUIRE (n.id) IS UNIQUE',
+    'CREATE INDEX workload_deployment_intent_idx IF NOT EXISTS FOR (n:WorkloadDeployment) ON (n.intentId)',
+    'CREATE CONSTRAINT registry_subscription_id_unique IF NOT EXISTS FOR (n:RegistrySubscription) REQUIRE (n.id) IS UNIQUE',
+    'CREATE INDEX registry_subscription_intent_idx IF NOT EXISTS FOR (n:RegistrySubscription) ON (n.intentId)',
+    'CREATE CONSTRAINT install_intent_audit_event_id_unique IF NOT EXISTS FOR (e:InstallIntentAuditEvent) REQUIRE (e.id) IS UNIQUE',
+    'CREATE INDEX install_intent_audit_event_intent_idx IF NOT EXISTS FOR (e:InstallIntentAuditEvent) ON (e.intentId)',
+    'CREATE INDEX install_intent_audit_event_ecosystem_idx IF NOT EXISTS FOR (e:InstallIntentAuditEvent) ON (e.ecosystemId)',
+    'CREATE INDEX install_intent_audit_event_actor_idx IF NOT EXISTS FOR (e:InstallIntentAuditEvent) ON (e.actorProfileId)',
+    'CREATE INDEX install_intent_audit_event_timestamp_idx IF NOT EXISTS FOR (e:InstallIntentAuditEvent) ON (e.timestamp)',
+    'CREATE CONSTRAINT consent_decision_record_id_unique IF NOT EXISTS FOR (r:ConsentDecisionRecord) REQUIRE (r.id) IS UNIQUE',
+    'CREATE INDEX consent_decision_record_binding_idx IF NOT EXISTS FOR (r:ConsentDecisionRecord) ON (r.bindingId)',
+    'CREATE INDEX consent_decision_record_resource_idx IF NOT EXISTS FOR (r:ConsentDecisionRecord) ON (r.resourceId)',
+    'CREATE INDEX consent_decision_record_ecosystem_idx IF NOT EXISTS FOR (r:ConsentDecisionRecord) ON (r.ecosystemId)',
+    'CREATE INDEX consent_decision_record_subject_idx IF NOT EXISTS FOR (r:ConsentDecisionRecord) ON (r.subjectProfileId)',
+    'CREATE INDEX consent_decision_record_timestamp_idx IF NOT EXISTS FOR (r:ConsentDecisionRecord) ON (r.occurredAt)',
 ];
 
 const wait = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
@@ -282,3 +330,12 @@ export * from './Ecosystem';
 export * from './Group';
 export * from './GroupAuditEvent';
 export * from './Tenant';
+export * from './InstallIntent';
+export * from './Binding';
+export * from './IntegrationInstall';
+export * from './AppAvailability';
+export * from './WalletEnablement';
+export * from './WorkloadDeployment';
+export * from './RegistrySubscription';
+export * from './InstallIntentAuditEvent';
+export * from './ConsentDecisionRecord';

@@ -30,6 +30,12 @@ class RecordingTransport implements BrainServiceTransport {
         this.profileCalls.push({ bearer, body });
     }
 
+    async trpcQuery<T>(): Promise<T> {
+        return {} as T;
+    }
+    async trpcMutation<T>(): Promise<T> {
+        return {} as T;
+    }
     async grantProvisionedMembership(
         bearer: string,
         body: { ecosystemId: string; profileId: string; role: EcosystemRole | ProvisionableRole }

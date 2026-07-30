@@ -21,6 +21,7 @@ import { activityRouter, ActivityRouter } from '@routes/activity';
 import { federationRouter, FederationRouter } from '@routes/federation';
 import { ecosystemsRouter, EcosystemsRouter } from '@routes/ecosystems';
 import { groupsRouter, GroupsRouter } from '@routes/groups';
+import { installIntentsRouter, InstallIntentsRouter } from '@routes/install-intents';
 
 /** For end-to-end testing, only available in test environment */
 import { testRouter, TestRouter } from '@routes/test';
@@ -53,6 +54,7 @@ export const appRouter = t.router<{
     federation: FederationRouter;
     ecosystem: EcosystemsRouter;
     group: GroupsRouter;
+    installIntent: InstallIntentsRouter;
     test?: TestRouter;
     bench?: BenchRouter;
 }>({
@@ -78,6 +80,7 @@ export const appRouter = t.router<{
     federation: federationRouter,
     ecosystem: ecosystemsRouter,
     group: groupsRouter,
+    installIntent: installIntentsRouter,
     test: process.env.IS_E2E_TEST ? testRouter : undefined,
     bench: process.env.ENABLE_BENCH_ROUTES ? benchRouter : undefined,
 });

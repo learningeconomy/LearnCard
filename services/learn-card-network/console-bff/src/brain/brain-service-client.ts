@@ -7,6 +7,8 @@ import type { ProfileCreator, MembershipWriter } from '@identity-provisioning';
 import { DidAuthBearerFactory } from './did-auth';
 
 export interface BrainServiceTransport {
+    trpcQuery<T>(bearer: string, path: string, input: unknown): Promise<T>;
+    trpcMutation<T>(bearer: string, path: string, input: unknown): Promise<T>;
     requestChallenge(bootstrapBearer: string): Promise<string>;
     createProfile(bearer: string, body: { profileId: string; displayName?: string }): Promise<void>;
     grantProvisionedMembership(
@@ -17,7 +19,7 @@ export interface BrainServiceTransport {
 
 const BOOTSTRAP_NONCE = 'bootstrap';
 
-async function authorizedCall<T>(
+export async function authorizedCall<T>(
     bearerFactory: DidAuthBearerFactory,
     transport: BrainServiceTransport,
     did: string,

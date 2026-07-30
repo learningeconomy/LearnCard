@@ -8,7 +8,13 @@ import { consoleRouter, makeCreateConsoleContext } from './trpc';
 
 import type { ConsoleAuthService } from './app';
 
+import type { BrainServiceTransport } from './brain';
+import type { KeyManagementService, ManagedKeyRef } from '@kms';
+
 export type ConsoleBffServerConfig = {
+    transport: BrainServiceTransport;
+    kms: KeyManagementService;
+    keyRefFor: (did: string) => Promise<ManagedKeyRef | null>;
     authService: ConsoleAuthService;
     cookieSecret: string;
     secureCookies?: boolean;
@@ -26,6 +32,9 @@ export function buildServer(config: ConsoleBffServerConfig): FastifyInstance {
         trpcOptions: {
             router: consoleRouter,
             createContext: makeCreateConsoleContext({
+                transport: config.transport,
+                kms: config.kms,
+                keyRefFor: config.keyRefFor,
                 authService: config.authService,
                 cookieSecret: config.cookieSecret,
             }),

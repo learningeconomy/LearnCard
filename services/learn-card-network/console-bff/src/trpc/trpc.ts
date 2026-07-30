@@ -1,7 +1,13 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 import type { DashboardSession } from '@learncard/types';
 
+import type { BrainServiceTransport } from '../brain';
+import type { KeyManagementService, ManagedKeyRef } from '@kms';
+
 export type ConsoleContext = {
+    transport: BrainServiceTransport;
+    kms: KeyManagementService;
+    keyRefFor: (did: string) => Promise<ManagedKeyRef | null>;
     session: DashboardSession | null;
 };
 

@@ -5,8 +5,17 @@ import type { DashboardSession } from '@learncard/types';
 import { buildServer } from '../src/server';
 import type { ConsoleAuthService } from '../src/app';
 import { SESSION_COOKIE_NAME, readSessionCookie } from '@session';
+import { StubBrainServiceTransport } from '../src/brain/stub-transport';
+import { LocalKeyManagementService } from '@kms/local';
 
 const COOKIE_SECRET = 'test-secret';
+
+// Required by ConsoleBffServerConfig but unexercised by these HTTP-surface tests.
+const stubSpineDeps = () => ({
+    transport: new StubBrainServiceTransport(),
+    kms: new LocalKeyManagementService(),
+    keyRefFor: async () => null,
+});
 
 const stubSession = (sessionId: string): DashboardSession => ({
     sessionId,
@@ -32,6 +41,7 @@ const stubAuthService = () =>
 describe('console-bff HTTP server', () => {
     it('sets a signed, httpOnly, secure, lax, path-scoped session cookie on callback', async () => {
         const app = buildServer({
+            ...stubSpineDeps(),
             authService: stubAuthService(),
             cookieSecret: COOKIE_SECRET,
             secureCookies: true,
@@ -61,7 +71,11 @@ describe('console-bff HTTP server', () => {
     });
 
     it('health check responds ok', async () => {
-        const app = buildServer({ authService: stubAuthService(), cookieSecret: COOKIE_SECRET });
+        const app = buildServer({
+            ...stubSpineDeps(),
+            authService: stubAuthService(),
+            cookieSecret: COOKIE_SECRET,
+        });
 
         const res = await app.inject({ method: 'GET', url: '/health' });
 

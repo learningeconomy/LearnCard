@@ -1,17 +1,31 @@
 import { createRequire } from 'module';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
 import { defineConfig } from 'vitest/config';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
 const require = createRequire(import.meta.url);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export default defineConfig({
     plugins: [tsconfigPaths({ root: '../../' }) as any],
+    resolve: {
+        alias: {
+            '@learncard/types': resolve(
+                __dirname,
+                '../../../packages/learn-card-types/src/index.ts'
+            ),
+        },
+    },
     test: {
         environment: 'node',
         globals: true,
         fileParallelism: false,
         globalSetup: './test-setup.ts',
-        alias: { '@instance': require.resolve('./test/helpers/mock-instance.ts') },
+        alias: {
+            '@instance': require.resolve('./test/helpers/mock-instance.ts'),
+        },
         exclude: [
             '**/node_modules/**',
             '**/dist/**',

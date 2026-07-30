@@ -125,6 +125,9 @@ async function main(): Promise<void> {
     });
 
     const app = buildServer({
+        transport,
+        kms,
+        keyRefFor: did => directory.getKeyRef(did),
         authService,
         cookieSecret: config.cookieSecret,
         secureCookies: config.secureCookies,
