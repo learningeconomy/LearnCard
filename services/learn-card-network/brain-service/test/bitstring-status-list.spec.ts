@@ -140,6 +140,14 @@ describe('Bitstring Status List issuance', () => {
         expect(await isStatusBitSet(getEntryForPurpose(credential, 'revocation'))).toBe(false);
     });
 
+    it('allocates BOTH revocation and suspension entries by default (no statusPurposes passed)', async () => {
+        const { credential } = await sendBoostWithStatus();
+        expect(getEntryForPurpose(credential, 'revocation').type).toBe('BitstringStatusListEntry');
+        expect(getEntryForPurpose(credential, 'suspension').type).toBe('BitstringStatusListEntry');
+        expect(await isStatusBitSet(getEntryForPurpose(credential, 'revocation'))).toBe(false);
+        expect(await isStatusBitSet(getEntryForPurpose(credential, 'suspension'))).toBe(false);
+    });
+
     it('allocates suspension entries when requested', async () => {
         const { credential } = await sendBoostWithStatus('suspension');
 

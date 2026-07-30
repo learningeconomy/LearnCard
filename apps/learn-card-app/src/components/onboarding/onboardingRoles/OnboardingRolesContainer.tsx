@@ -5,6 +5,7 @@ import OnboardingRoles from './OnboardingRoles';
 
 import { LearnCardRolesEnum } from '../onboarding.helpers';
 import { useModal } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 
 export const OnboardingRolesContainer = ({
     role,
@@ -27,7 +28,7 @@ export const OnboardingRolesContainer = ({
 
     return (
         <div className="px-4 py-6">
-            <OnboardingHeader text="Select what best describes you!" hideTitle />
+            <OnboardingHeader text={m['onboarding.selectRole.header']()} hideTitle />
             <OnboardingRoles role={_role} setRole={_setRole} />
 
             <div className="w-full flex items-center justify-center mt-6">
@@ -39,7 +40,7 @@ export const OnboardingRolesContainer = ({
                     }}
                     className={`py-[9px] pl-[20px] font-semibold pr-[15px] rounded-[30px] font-notoSans text-[17px] leading-[24px] max-h-[42px] tracking-[0.25px] text-grayscale-900 w-full flex gap-[5px] justify-center mr-2 shadow-button-bottom ${activeStyles}`}
                 >
-                    Save
+                    {m['common.save']()}
                 </button>
             </div>
         </div>

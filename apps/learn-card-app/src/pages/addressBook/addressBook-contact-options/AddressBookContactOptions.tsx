@@ -17,6 +17,7 @@ import ModalLayout from 'apps/learn-card-app/src/layout/ModalLayout';
 import { QRCodeScannerStore } from 'learn-card-base';
 
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
+import * as m from '../../../paraglide/messages.js';
 
 const AddressBookContactOptions: React.FC<{
     handleCloseModal: () => void;
@@ -87,12 +88,12 @@ const AddressBookContactOptions: React.FC<{
             await Clipboard.write({
                 string: `${getAppBaseUrl()}/connect?did=${walletDid}`,
             });
-            presentToast('Contact link copied to clipboard', {
+            presentToast(m['contacts.linkCopied'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy Contact link to clipboard', {
+            presentToast(m['contacts.linkCopyFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -102,7 +103,7 @@ const AddressBookContactOptions: React.FC<{
     const handleShare = async () => {
         if (Capacitor.isNativePlatform()) {
             await Share.share({
-                title: 'Add contact',
+                title: m['contacts.addContactDesc'](),
                 text: '',
                 url: `${getAppBaseUrl()}/connect?did=${walletDid}`,
                 dialogTitle: '',
@@ -127,7 +128,7 @@ const AddressBookContactOptions: React.FC<{
     }[] = [
         {
             id: 1,
-            title: 'Show Code',
+            title: m['contacts.showCode'](),
             icon: <QRCodeScanner className="ml-[5px] h-[30px] w-[30px] mr-2" />,
             onClick: () => {
                 presentCenterModal({
@@ -142,7 +143,7 @@ const AddressBookContactOptions: React.FC<{
     if (Capacitor.isNativePlatform()) {
         addressBookMenuOptions.push({
             id: 2,
-            title: 'Scan Code',
+            title: m['contacts.scanCode'](),
             icon: <Camera className="ml-[5px] h-[30px] w-[30px] mr-2" />,
             onClick: () => {
                 handleScan();
@@ -152,7 +153,7 @@ const AddressBookContactOptions: React.FC<{
 
     addressBookMenuOptions.push({
         id: 3,
-        title: 'Share Code',
+        title: m['contacts.shareCode'](),
         icon: <LinkChain className="ml-[5px] h-[30px] w-[30px] mr-2" />,
         onClick: () => {
             handleShare();
@@ -161,7 +162,7 @@ const AddressBookContactOptions: React.FC<{
 
     addressBookMenuOptions.push({
         id: 4,
-        title: 'Search',
+        title: m['common.search'](),
         icon: <Search className="ml-[5px] h-[24px] w-[25px] mr-2" />,
         onClick: () => {
             onSearchClick();

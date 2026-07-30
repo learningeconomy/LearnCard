@@ -24,12 +24,14 @@ export * from './components/QRCodeScannerOverlay/QRCodeScannerOverlay';
 export * from './components/QRCodeScannerOverlay/QRCodeScannerFooter';
 export * from './components/ErrorBoundary';
 export * from './components/push-notifications/PushNotificationListener';
+export * from './components/push-notifications/PushNotificationToast';
 export * from './components/earned-and-managed-tabs/EarnedAndManagedTabs';
 export * from './components/sharecreds/ShareCredentialsModal';
 export * from './components/boost/boostOptions/boostOptions';
 export * from './components/boost/boost';
 export * from './components/boost/BoostRecipients';
 export * from './components/boost/boostFooter/BoostFooter';
+export * from './components/boost/boostFooter/BoostFooterLayout';
 export * from './components/CredentialBadge/CredentialBadge';
 export * from './components/CredentialBadge/CredentialBadgeNew';
 export * from './components/CredentialBadge/CredentialCLRBadge';
@@ -60,6 +62,8 @@ export * from './components/shadcn/lib/utils';
 export * from './components/generic/Select';
 export * from './components/form-inputs';
 export * from './components/toast/Toast';
+export * from './components/loaders/LoadingSpinner';
+export * from './components/loaders/CredentialListSkeleton';
 
 export * from './utils/regexes';
 export * from './utils/pushUtilities';
@@ -101,6 +105,7 @@ export * from './config/tenantDefaults';
 export * from './config/resolveTenantConfig';
 export * from './config/TenantConfigProvider';
 export * from './config/brandingHelpers';
+export * from './storage/image-upload';
 export { SignInAdapterProvider, useSignInAdapter } from './providers/SignInAdapterProvider';
 export type { SignInAdapterProviderProps } from './providers/SignInAdapterProvider';
 export * from './hooks/useSocialLogins';
@@ -142,6 +147,7 @@ export * from './hooks/useSharedUrisInTerms';
 export * from './hooks/usePendingContractSync';
 export * from './hooks/useConsentedContracts';
 export * from './hooks/useLaunchDarklyIdentify';
+export * from './in-app-messages';
 
 export * from './SQL/useSQLiteInitWeb';
 export * from './SQL/sqliteInit';
@@ -186,6 +192,7 @@ export {
     suggestedTopics,
     topicCredentials,
     sessionEnded,
+    hasThreadEnded,
     planReady,
     planReadyThread,
     resetChatStores,
@@ -204,6 +211,7 @@ export {
 } from './stores/nanoStores/chatStore';
 
 export * from './helpers/credentialHelpers';
+export * from './helpers/credentialIngestion';
 export * from './helpers/credentials/queries';
 export * from './helpers/openid4vcErrors';
 export * from './helpers/faviconHelpers';
@@ -229,6 +237,7 @@ export * from './helpers/searchHelpers';
 export * from './helpers/urlHelpers';
 export * from './helpers/openAttachmentUrl';
 export * from './helpers/display.helpers';
+export * from './helpers/displayTags.helpers';
 export * from './helpers/youtube.helpers';
 export * from './helpers/vimeo.helpers';
 export * from './helpers/video.helpers';
@@ -242,7 +251,6 @@ export * from './types/boostAndCredentialMetadata';
 export * from './constants/gdprAgeLimits';
 export * from './constants/aiPassport';
 
-export * from './filestack/useFilestack';
 export * from './filestack/constants/filestack';
 export * from './filestack/images/filestack.helpers';
 export * from './types/sync-my-school';
@@ -259,6 +267,7 @@ export * from './react-query/mutations/mutation.helpers';
 export * from './react-query/queries/pins';
 export * from './react-query/mutations/pins';
 export * from './react-query/mutations/ai-passport';
+export * from './react-query/mutations/pruneConsentFlowDeletedCredentials';
 export * from './react-query/mutations/checklist';
 export * from './react-query/mutations/user-contact';
 export * from './react-query/mutations/firebase';

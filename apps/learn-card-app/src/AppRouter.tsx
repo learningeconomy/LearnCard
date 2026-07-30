@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { SplashScreen } from '@capacitor/splash-screen';
@@ -51,16 +51,17 @@ import { useFirebase } from './hooks/useFirebase';
 import { useSentryIdentify } from './constants/sentry';
 
 import { Modals, getLogger } from 'learn-card-base';
-import { useSetAnalyticsUserId, useAnalytics } from '@analytics';
+import { SharedI18nProvider } from './i18n/SharedI18nProvider';
+import { LocaleProfileSync } from './i18n/useSyncLocaleToProfile';
+import { useSetAnalyticsUserId, useAnalytics, useScreenView } from '@analytics';
 import { useAccountCreatedAndReturningSession } from '@analytics';
 import { useDeviceTypeByWidth } from 'learn-card-base';
+import { AI_ROUTES } from './constants/aiRoutes';
 import { useAutoVerifyContactMethodWithProofOfLogin } from './hooks/useAutoVerifyContactMethodWithProofOfLogin';
 import { useFinalizeInboxCredentials } from './hooks/useFinalizeInboxCredentials';
 import useConsentFlow from './pages/consentFlow/useConsentFlow';
 
 const log = getLogger('app-router');
-
-export const aiRoutes = ['/ai/topics', '/ai/sessions', '/chats'];
 
 const AppRouter: React.FC = () => {
     const { state: coordinatorState, walletReady } = useAppAuth();
@@ -134,6 +135,7 @@ const AppRouter: React.FC = () => {
     const history = useHistory();
     const location = useLocation();
     const isLoggedIn = useIsLoggedIn();
+    const isOnboardingOpen = redirectStore.use.isOnboardingOpen();
     const collapsed = useIsCollapsed();
     const { isMobile } = useDeviceTypeByWidth();
     const isChapiInteraction = useIsChapiInteraction();
@@ -149,7 +151,15 @@ const AppRouter: React.FC = () => {
     const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
 
     useEffect(() => {
-        if (!isLoggedIn || !currentUser || !isAiEnabled) return;
+        if (
+            !isLoggedIn ||
+            !currentUser ||
+            !isAiEnabled ||
+            isOnboardingOpen ||
+            currentLCNUserLoading ||
+            !currentLCNUser
+        )
+            return;
 
         void autoConsentLearnCardAi({
             enabled: true,
@@ -163,7 +173,10 @@ const AppRouter: React.FC = () => {
         currentUser?.name,
         currentUser?.profileImage,
         isAiEnabled,
+        isOnboardingOpen,
         isLoggedIn,
+        currentLCNUser,
+        currentLCNUserLoading,
     ]);
 
     const params = queryString.parse(location.search);
@@ -198,7 +211,9 @@ const AppRouter: React.FC = () => {
             '/chats',
             '/cli',
         ].includes(location.pathname) ||
-        (collapsed && aiRoutes.includes(location.pathname) && !isMobile) ||
+        (collapsed &&
+            AI_ROUTES.includes(location.pathname as (typeof AI_ROUTES)[number]) &&
+            !isMobile) ||
         location.pathname.includes('/app-store');
 
     const { newModal } = useModal();
@@ -340,12 +355,31 @@ const AppRouter: React.FC = () => {
             .catch(() => undefined);
     }, [enablePrefetch, isAiEnabled]);
 
+    // Warm the landing chunks immediately — while the boot loader or login
+    // form is still up, before auth resolves. The post-login redirect
+    // (→ /dashboard) and the post-boot mount of the refreshed route would
+    // otherwise only START downloading their chunk after navigation, leaving
+    // a white Suspense gap between the loader and the app on a cold cache.
+    // The full prefetch above stays gated on login; this is just the entry
+    // routes: the default landing pages plus wherever the URL already points.
+    const initialPathRef = useRef(window.location.pathname);
+    useEffect(() => {
+        import('./Routes')
+            .then(m => {
+                void m.ROUTE_PRELOAD['/dashboard']?.();
+                void m.ROUTE_PRELOAD['/wallet']?.();
+                void m.ROUTE_PRELOAD[initialPathRef.current]?.();
+            })
+            .catch(() => undefined);
+    }, []);
+
     const showScanner = QRCodeScannerStore.useTracked.showScanner();
     useLaunchDarklyIdentify({ debug: false });
     useSentryIdentify({ debug: false });
 
     useSetAnalyticsUserId({ debug: false });
     useAccountCreatedAndReturningSession(currentUser);
+    useScreenView();
     useAutoVerifyContactMethodWithProofOfLogin();
     useFinalizeInboxCredentials();
 
@@ -398,7 +432,13 @@ const AppRouter: React.FC = () => {
     // Backfill consent logic for existing users — skipped for minors (AI disabled)
     useEffect(() => {
         const handleBackfillConsent = async () => {
-            if (!currentLCNUserLoading && currentLCNUser && currentUser && isAiEnabled) {
+            if (
+                !isOnboardingOpen &&
+                !currentLCNUserLoading &&
+                currentLCNUser &&
+                currentUser &&
+                isAiEnabled
+            ) {
                 try {
                     // Use the reusable network consent mutation with backfill check
                     await networkConsentMutation.mutateAsync({
@@ -412,7 +452,7 @@ const AppRouter: React.FC = () => {
         };
 
         handleBackfillConsent();
-    }, [currentLCNUser, currentLCNUserLoading, currentUser, isAiEnabled]);
+    }, [currentLCNUser, currentLCNUserLoading, currentUser, isAiEnabled, isOnboardingOpen]);
 
     // NOTE: <Modals /> must stay mounted across the `initLoading` splash. During
     // new-user key setup the coordinator transitions needs_setup → deriving_key →
@@ -423,34 +463,41 @@ const AppRouter: React.FC = () => {
     // Keeping it as a persistent sibling of the loader/app content preserves the
     // live modal instance across the transition.
     return (
-        <GenericErrorBoundary>
-            {showOfflineBootGate ? (
-                <OfflineBootGate />
-            ) : initLoading ? (
-                <LoginLoadingPage />
-            ) : (
-                <div id="app-router" style={{ display: `${showScanner ? 'none' : 'block'}` }}>
-                    <IonSplitPane
-                        contentId="main"
-                        className={
-                            collapsed
-                                ? 'side-menu-split-pane-container-collapsed'
-                                : 'side-menu-split-pane-container-visible'
-                        }
-                    >
-                        <GenericErrorBoundary>
-                            {isLoggedIn && !hideSideMenu && (
-                                <SideMenu branding={BrandingEnum.learncard} />
-                            )}
-                            <div id="main" className="w-full">
-                                <MobileNavBar />
-                            </div>
-                        </GenericErrorBoundary>
-                    </IonSplitPane>
-                </div>
-            )}
-            <Modals />
-        </GenericErrorBoundary>
+        <SharedI18nProvider>
+            {/* Best-effort mirror of the active locale to the LCN profile
+                so the backend can localize server-sent notifications/emails.
+                Render-less; mounted here (inside the root LocaleProvider + the
+                authenticated subtree) so useLocale()/useGetProfile() work. */}
+            <LocaleProfileSync />
+            <GenericErrorBoundary>
+                {showOfflineBootGate ? (
+                    <OfflineBootGate />
+                ) : initLoading ? (
+                    <LoginLoadingPage />
+                ) : (
+                    <div id="app-router" style={{ display: `${showScanner ? 'none' : 'block'}` }}>
+                        <IonSplitPane
+                            contentId="main"
+                            className={
+                                collapsed
+                                    ? 'side-menu-split-pane-container-collapsed'
+                                    : 'side-menu-split-pane-container-visible'
+                            }
+                        >
+                            <GenericErrorBoundary>
+                                {isLoggedIn && !hideSideMenu && (
+                                    <SideMenu branding={BrandingEnum.learncard} />
+                                )}
+                                <div id="main" className="w-full">
+                                    <MobileNavBar />
+                                </div>
+                            </GenericErrorBoundary>
+                        </IonSplitPane>
+                    </div>
+                )}
+                <Modals />
+            </GenericErrorBoundary>
+        </SharedI18nProvider>
     );
 };
 

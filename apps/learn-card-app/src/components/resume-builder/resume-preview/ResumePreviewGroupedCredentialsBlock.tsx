@@ -9,6 +9,7 @@ import ResumePreviewCurrentJobSelector from './ResumePreviewCurrentJobSelector';
 import ResumePreviewSectionPlaceholder from './ResumePreviewSectionPlaceholder';
 
 import { RESUME_SECTIONS, ResumeSectionKey } from '../resume-builder.helpers';
+import { getSectionLabel } from '../resumeBuilderI18n';
 import { resumeBuilderStore } from '../../../stores/resumeBuilderStore';
 import { CredentialCategoryEnum } from 'learn-card-base';
 
@@ -51,7 +52,7 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
             data-pdf-hide
         >
             <h2 className="text-xs font-bold uppercase tracking-widest text-grayscale-500">
-                {section.label}
+                {getSectionLabel(sectionKey)}
             </h2>
             <IonIcon
                 icon={isCollapsed ? chevronDownOutline : chevronUpOutline}
@@ -81,7 +82,7 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
                 ) : (
                     <>
                         <h2 className="text-xs font-bold uppercase tracking-widest text-grayscale-500 border-solid border-b border-grayscale-100 pb-2.5">
-                            {section.label}
+                            {getSectionLabel(sectionKey)}
                         </h2>
                         <ResumePreviewSectionPlaceholder
                             category={sectionKey}
@@ -98,7 +99,7 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
         return (
             <div className="mb-6" data-pdf-break-anchor>
                 <h2 className="text-xs font-bold uppercase tracking-widest text-grayscale-500 border-solid border-b border-grayscale-100 pb-2.5">
-                    {section.label}
+                    {getSectionLabel(sectionKey)}
                 </h2>
                 {entries.map(entry => (
                     <div
@@ -127,7 +128,7 @@ const ResumePreviewGroupedCredentialsBlock: React.FC<{
                 sectionHeader
             ) : (
                 <h2 className="text-xs font-bold uppercase tracking-widest text-grayscale-500 border-solid border-b border-grayscale-100 pb-2.5">
-                    {section.label}
+                    {getSectionLabel(sectionKey)}
                 </h2>
             )}
             {isMobile && !readOnly && isCollapsed ? null : readOnly ? (

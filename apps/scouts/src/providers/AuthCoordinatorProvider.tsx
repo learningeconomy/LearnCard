@@ -60,6 +60,7 @@ import {
 } from 'learn-card-base';
 import currentUserStore from 'learn-card-base/stores/currentUserStore';
 import { walletStore } from 'learn-card-base/stores/walletStore';
+import { walletModeStore } from 'learn-card-base/stores/walletModeStore';
 import { pushUtilities } from 'learn-card-base/utils/pushUtilities';
 import { getRandomBaseColor } from 'learn-card-base/helpers/colorHelpers';
 import { getCurrentUserPrivateKey } from 'learn-card-base/helpers/privateKeyHelpers';
@@ -251,9 +252,17 @@ const ScoutsDeviceLinkOverlay: React.FC<{
 
 registerKeyDerivationFactory('sss', () => {
     const sss = getSSSConfig();
+    let tenantId: string | undefined;
+
+    try {
+        tenantId = getResolvedTenantConfig().tenantId;
+    } catch {
+        tenantId = undefined;
+    }
 
     return createSSSStrategy({
         serverUrl: sss.serverUrl,
+        tenantId,
         // On native Capacitor (iOS/Android), use encrypted SQLite instead of
         // IndexedDB to avoid iOS WKWebView IndexedDB eviction issues.
         // On web, use adaptive storage that routes to sessionStorage when the
@@ -825,6 +834,7 @@ const AuthSessionManager: React.FC<{
                 }
 
                 setWallet(newWallet);
+                walletModeStore.set.mode('full');
 
                 emitAuthSuccess(
                     'auth:wallet_ready',
@@ -882,6 +892,7 @@ const AuthSessionManager: React.FC<{
             setLcnProfile(null);
             setRecoveryMethodCount(null);
             walletInitRef.current = false;
+            walletModeStore.set.mode(null);
         }
     }, [coordinator.state.status, wallet]);
 
@@ -906,6 +917,7 @@ const AuthSessionManager: React.FC<{
                 currentUserStore.set.currentUserPK(null);
                 currentUserStore.set.currentUserIsLoggedIn(false);
                 walletStore.set.wallet(null);
+                walletModeStore.set.mode(null);
             }
         }, 1500);
 

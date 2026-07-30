@@ -2,6 +2,8 @@ import React from 'react';
 import numeral from 'numeral';
 import PreloadingLink from '../generic/PreloadingLink';
 
+import * as m from '../../paraglide/messages.js';
+
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import {
     currentUserStore,
@@ -9,6 +11,10 @@ import {
     walletStore,
     WalletSyncState,
 } from 'learn-card-base';
+import {
+    SideMenuLinksEnum,
+    getSideMenuLinkLabel,
+} from 'learn-card-base/components/sidemenu/sidemenuHelpers';
 import CustomSpinner from '../svgs/CustomSpinner';
 
 import { IonMenuToggle, IonList } from '@ionic/react';
@@ -17,6 +23,7 @@ import AiPassportPersonalizationContainer from '../ai-passport/AiPassportPersona
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useModal, ModalTypes } from 'learn-card-base';
 import { useDeviceTypeByWidth } from 'learn-card-base/hooks/useDeviceTypeByWidth';
+import useOpenNotifications from '../notifications/useOpenNotifications';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../theme/icons/index';
@@ -29,17 +36,25 @@ type SideMenuRootLinksProps = {
     branding: BrandingEnum;
 };
 
+type SideMenuIconProps = {
+    className?: string;
+    shadeColor?: string;
+    isCompleted?: boolean;
+    isSyncing?: boolean;
+};
+
 const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setActiveTab }) => {
     const { theme, getIconSet, getColorSet } = useTheme();
-    const iconSet = getIconSet(IconSetEnum.sideMenu);
+    const iconSet = getIconSet(IconSetEnum.sideMenu) as Record<string, React.FC<any>>;
     const colors = getColorSet(ColorSetEnum.sideMenu);
 
     const isWalletSyncing = walletStore.useTracked.syncState();
     const isSyncing = isWalletSyncing.status === WalletSyncState.Syncing;
     const isCompleted = isWalletSyncing.status === WalletSyncState.Completed;
 
-    let walletText = 'Passport';
-    if (isSyncing || isCompleted) walletText = isWalletSyncing?.text ?? 'Passport';
+    let walletText: string = m['sidemenu.links.passport']();
+    if (isSyncing || isCompleted)
+        walletText = isWalletSyncing?.text ?? m['sidemenu.links.passport']();
 
     let walletTextStyles = '';
     if (isSyncing) walletTextStyles = `${colors.syncingColor}`;
@@ -54,6 +69,7 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
     const dashboardAsHome = useDashboardAsHome();
 
     const { newModal } = useModal();
+    const openNotifications = useOpenNotifications();
 
     const handlePersonalizeMyAi = () => {
         newModal(
@@ -76,8 +92,13 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
 
     const isPathActive = (tab: string) => {
         const isAdminToolsActive = tab === '/admin-tools' && activeTab.startsWith(tab);
+        const isPassportActive =
+            tab === '/passport' &&
+            ['/passport', '/wallet', '/home'].some(
+                prefix => activeTab === prefix || activeTab.startsWith(prefix + '/')
+            );
 
-        if (tab === activeTab || isAdminToolsActive) return true;
+        if (tab === activeTab || isAdminToolsActive || isPassportActive) return true;
         return false;
     };
 
@@ -113,13 +134,13 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
     let rootLinks: any = null;
 
     rootLinks = walletLink?.map(link => {
-        if (link.label === 'Admin Tools' && !hasAdminAccess) return null;
+        if (link.id === SideMenuLinksEnum.adminTools && !hasAdminAccess) return null;
         if (link.path === '/dashboard' && !dashboardAsHome) return null;
         // Alerts lives in the header island on desktop; only show it in the
         // side menu on mobile (LC-1921).
         if (link.path === '/notifications' && !isMobile) return null;
 
-        const IconComponent = iconSet[link.id as keyof typeof iconSet];
+        const IconComponent = iconSet[link.id as keyof typeof iconSet] as React.FC<any>;
         const linkPath = link.path;
 
         const iconStyles = getIconStyles(linkPath);
@@ -132,11 +153,11 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
                 className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
             >
                 <IconComponent className={`${iconStyles}`} shadeColor={shadeColor} />
-                {link.label}
+                {getSideMenuLinkLabel(m, link)}
             </PreloadingLink>
         );
 
-        if (link.label === 'Personalize') {
+        if (link.id === SideMenuLinksEnum.personalize) {
             linkEl = (
                 <button
                     type="button"
@@ -144,16 +165,20 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
                     className={`cursor-pointer learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
                 >
                     <IconComponent className={`${iconStyles}`} shadeColor={shadeColor} />
-                    {link.label}
+                    {getSideMenuLinkLabel(m, link)}
                 </button>
             );
         }
 
         if (linkPath === '/notifications') {
+            // Alerts uses the shared open handler (same as the header button):
+            // right-side modal on web, and a route to the /notifications page on
+            // native — see useOpenNotifications.
             linkEl = (
-                <PreloadingLink
-                    to={linkPath}
-                    className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
+                <button
+                    type="button"
+                    onClick={() => openNotifications()}
+                    className={`cursor-pointer learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles}`}
                 >
                     <div className={`flex relative mr-[10px] text-[14px] ${textStyles}`}>
                         <IconComponent
@@ -169,8 +194,8 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
                         )}
                     </div>
 
-                    {link.label}
-                </PreloadingLink>
+                    {getSideMenuLinkLabel(m, link)}
+                </button>
             );
         }
 
@@ -180,30 +205,39 @@ const SideMenuRootLinks: React.FC<SideMenuRootLinksProps> = ({ activeTab, setAct
                     to={linkPath}
                     className={`learn-card-side-menu-secondary-list-item-link ${linkBackgroundStyles} ${textStyles} ${walletTextStyles}`}
                 >
-                    {(isSyncing || isCompleted) && (
-                        <div className="flex items-center justify-center absolute top-[12px] z-50 h-[28px] w-[28px] rounded-[10px]">
-                            {isSyncing && (
-                                <CustomSpinner
-                                    className={`${colors?.syncingColor} h-[18px] w-[18px]`}
-                                />
-                            )}
-                        </div>
-                    )}
-                    <IconComponent
-                        className={`${iconStyles}`}
-                        shadeColor={shadeColor}
-                        isCompleted={isCompleted}
-                        isSyncing={isSyncing}
-                    />
+                    <div className="relative mr-[10px] h-[35px] w-[35px] shrink-0">
+                        {(isSyncing || isCompleted) && (
+                            <div className="absolute inset-0 z-50 flex items-center justify-center rounded-[10px]">
+                                {isSyncing && (
+                                    <CustomSpinner
+                                        className={`${colors?.syncingColor} h-[18px] w-[18px]`}
+                                    />
+                                )}
+                            </div>
+                        )}
+                        <IconComponent
+                            className={`${iconStyles} h-[35px] w-[35px]`}
+                            shadeColor={shadeColor}
+                            isCompleted={isCompleted}
+                            isSyncing={isSyncing}
+                        />
+                    </div>
                     {walletText}
                 </PreloadingLink>
             );
         }
 
+        // Alerts opens a modal (web) or routes to /notifications (native); in
+        // neither case should it be marked as the active tab here — on web the
+        // visible page is unchanged, and on native the IonMenuToggle closes the
+        // menu on tap anyway.
+        const handleTabClick =
+            linkPath === '/notifications' ? undefined : () => setActiveTab(linkPath);
+
         return (
             <IonMenuToggle key={link.id} autoHide={false} className="w-full">
                 <div
-                    onClick={() => setActiveTab(linkPath)}
+                    onClick={handleTabClick}
                     className="flex items-center justify-center px-0 py-[3px]"
                 >
                     {linkEl}

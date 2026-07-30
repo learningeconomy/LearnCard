@@ -1,5 +1,6 @@
 import React from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import * as m from '../../paraglide/messages.js';
 
 import { ProfilePicture, useModal } from 'learn-card-base';
 import ShareTarget from './ShareTarget';
@@ -10,63 +11,63 @@ const DEFAULT_SHARE_TARGETS: {
     icon: string;
     comingSoon?: boolean;
 }[] = [
-        {
-            text: 'Share with Guardian',
-            contractUri:
-                'lc:network:network.learncard.com/trpc:contract:2e5a6eba-ffa8-4406-bae8-954c4da1a00a',
-            icon: '/assets/icon/circle-blue-umbrella.svg',
-            comingSoon: true,
-        },
-        {
-            text: 'Share with Teachers',
-            contractUri:
-                'lc:network:network.learncard.com/trpc:contract:2e5a6eba-ffa8-4406-bae8-954c4da1a00a',
-            icon: '/assets/icon/circle-red-apple.svg',
-            comingSoon: true,
-        },
-        {
-            text: 'Share with Schools',
-            contractUri:
-                'lc:network:network.learncard.com/trpc:contract:2e5a6eba-ffa8-4406-bae8-954c4da1a00a',
-            icon: '/assets/icon/circle-green-hat.svg',
-            comingSoon: true,
-        },
-        {
-            text: 'Share with Employers',
-            contractUri:
-                'lc:network:network.learncard.com/trpc:contract:2e5a6eba-ffa8-4406-bae8-954c4da1a00a',
-            icon: '/assets/icon/circle-purple-building.svg',
-            comingSoon: true,
-        },
-        {
-            text: 'Share with Mentors',
-            contractUri:
-                'lc:network:network.learncard.com/trpc:contract:2e5a6eba-ffa8-4406-bae8-954c4da1a00a',
-            icon: '/assets/icon/circle-lightblue-owl.svg',
-            comingSoon: true,
-        },
-        {
-            text: 'Share with Tutors',
-            contractUri:
-                'lc:network:network.learncard.com/trpc:contract:2e5a6eba-ffa8-4406-bae8-954c4da1a00a',
-            icon: '/assets/icon/circle-orange-book.svg',
-            comingSoon: true,
-        },
-        {
-            text: 'Share with Scholarships',
-            contractUri:
-                'lc:network:network.learncard.com/trpc:contract:2e5a6eba-ffa8-4406-bae8-954c4da1a00a',
-            icon: '/assets/icon/circle-teal-pig.svg',
-            comingSoon: true,
-        },
-        {
-            text: 'Share with My Friends',
-            contractUri:
-                'lc:network:network.learncard.com/trpc:contract:2e5a6eba-ffa8-4406-bae8-954c4da1a00a',
-            icon: '/assets/icon/circle-purple-butterflies.svg',
-            comingSoon: true,
-        },
-    ];
+    {
+        text: 'Share with Guardian',
+        contractUri:
+            'lc:network:network.learncard.com/trpc:contract:2e5a6eba-ffa8-4406-bae8-954c4da1a00a',
+        icon: '/assets/icon/circle-blue-umbrella.svg',
+        comingSoon: true,
+    },
+    {
+        text: 'Share with Teachers',
+        contractUri:
+            'lc:network:network.learncard.com/trpc:contract:2e5a6eba-ffa8-4406-bae8-954c4da1a00a',
+        icon: '/assets/icon/circle-red-apple.svg',
+        comingSoon: true,
+    },
+    {
+        text: 'Share with Schools',
+        contractUri:
+            'lc:network:network.learncard.com/trpc:contract:2e5a6eba-ffa8-4406-bae8-954c4da1a00a',
+        icon: '/assets/icon/circle-green-hat.svg',
+        comingSoon: true,
+    },
+    {
+        text: 'Share with Employers',
+        contractUri:
+            'lc:network:network.learncard.com/trpc:contract:2e5a6eba-ffa8-4406-bae8-954c4da1a00a',
+        icon: '/assets/icon/circle-purple-building.svg',
+        comingSoon: true,
+    },
+    {
+        text: 'Share with Mentors',
+        contractUri:
+            'lc:network:network.learncard.com/trpc:contract:2e5a6eba-ffa8-4406-bae8-954c4da1a00a',
+        icon: '/assets/icon/circle-lightblue-owl.svg',
+        comingSoon: true,
+    },
+    {
+        text: 'Share with Tutors',
+        contractUri:
+            'lc:network:network.learncard.com/trpc:contract:2e5a6eba-ffa8-4406-bae8-954c4da1a00a',
+        icon: '/assets/icon/circle-orange-book.svg',
+        comingSoon: true,
+    },
+    {
+        text: 'Share with Scholarships',
+        contractUri:
+            'lc:network:network.learncard.com/trpc:contract:2e5a6eba-ffa8-4406-bae8-954c4da1a00a',
+        icon: '/assets/icon/circle-teal-pig.svg',
+        comingSoon: true,
+    },
+    {
+        text: 'Share with My Friends',
+        contractUri:
+            'lc:network:network.learncard.com/trpc:contract:2e5a6eba-ffa8-4406-bae8-954c4da1a00a',
+        icon: '/assets/icon/circle-purple-butterflies.svg',
+        comingSoon: true,
+    },
+];
 
 type ShareMyLearnCardProps = {};
 
@@ -81,7 +82,7 @@ const ShareMyLearnCard: React.FC<ShareMyLearnCardProps> = () => {
             <section className="w-full flex flex-col items-center px-[20px] py-[30px] bg-white shadow-bottom rounded-[24px] max-w-[350px] basis-full">
                 <header className="flex items-center flex-col gap-[10px] border-solid border-b-[1px] border-grayscale-200 pb-[20px] w-full">
                     <span className="text-grayscale-900 font-poppins text-xl font-medium leading-[130%]">
-                        Share
+                        {m['common.share']()}
                     </span>
 
                     <div className="flex items-center justify-center">

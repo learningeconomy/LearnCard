@@ -35,7 +35,6 @@ import {
     LOGIN_REDIRECTS,
     lazyWithRetry,
     useGetUnreadUserNotifications,
-    useIsCurrentUserLCNUser,
     Modals,
     redirectStore,
     BrandingEnum,
@@ -44,7 +43,6 @@ import { tabRoutes } from './constants';
 
 import { useFirebase } from './hooks/useFirebase';
 import { useAppAuth } from './providers/AuthCoordinatorProvider';
-import { useJoinLCNetworkModal } from './components/network-prompts/hooks/useJoinLCNetworkModal';
 import { useLaunchDarklyIdentify } from 'learn-card-base/hooks/useLaunchDarklyIdentify';
 import { useIsChapiInteraction } from 'learn-card-base/stores/chapiStore';
 import { useSentryIdentify, initSentry } from './constants/sentry';
@@ -101,11 +99,7 @@ const AppRouter: React.FC = () => {
     const params = queryString.parse(location.search);
 
     // Custom hooks
-    const { data: currentLCNUser, isLoading: currentLCNUserLoading } = useIsCurrentUserLCNUser();
-    const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
-    const {
-        data: notificationsData,
-    } = useGetUnreadUserNotifications();
+    const { data: notificationsData } = useGetUnreadUserNotifications();
 
     const showScanner = QRCodeScannerStore.useTracked.showScanner();
 
@@ -137,13 +131,6 @@ const AppRouter: React.FC = () => {
             />
         );
     };
-
-
-    useEffect(() => {
-        if (!currentLCNUserLoading && currentLCNUser === false) {
-            handlePresentJoinNetworkModal();
-        }
-    }, [currentLCNUser, currentLCNUserLoading, handlePresentJoinNetworkModal]);
 
     const handleAppUrlOpen = async (data: { url: string }) => {
         const parsedUrl = new URL(data.url);
@@ -192,7 +179,8 @@ const AppRouter: React.FC = () => {
 
     const unreadCount = notificationsData?.notifications?.length || null;
 
-    const hideSideMenu = location.pathname === '/consent-flow' || location.pathname.includes('/login');
+    const hideSideMenu =
+        location.pathname === '/consent-flow' || location.pathname.includes('/login');
 
     return (
         <>

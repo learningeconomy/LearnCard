@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useToast, ToastTypeEnum } from 'learn-card-base';
+import React, { useEffect } from 'react';
+import { useToast, ToastTypeEnum, connectivityStore } from 'learn-card-base';
 import { useNetworkStatus } from './useNetworkStatus';
 
 export const NetworkListener = () => {
@@ -7,6 +7,10 @@ export const NetworkListener = () => {
     const { presentToast: present, dismissToast: dismiss } = useToast();
 
     useEffect(() => {
+        if (isConnected !== undefined) {
+            connectivityStore.set.report(isConnected);
+        }
+
         if (!isConnected && isConnected !== undefined) {
             present(
                 "Oops! It seems you've lost your connection. The app may not function properly and you will not be able to send boosts.",
@@ -19,7 +23,7 @@ export const NetworkListener = () => {
         } else if (isConnected) {
             dismiss();
         }
-    }, [isConnected]);
+    }, [isConnected, present, dismiss]);
 
     return <></>;
 };

@@ -2,6 +2,7 @@ import React from 'react';
 
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
+import { m } from '../../paraglide/messages.js';
 import LegalPageLayout from './LegalPageLayout';
 
 const TermsOfServicePage: React.FC = () => {
@@ -39,22 +40,46 @@ const TermsOfServicePage: React.FC = () => {
             </Section>
 
             <Section heading="How to Read These Terms (Simple Overview)">
-                <DefinitionList items={[
-                    { term: `${name} Wallet`, definition: 'Your personal learning and employment passport' },
-                    { term: 'LearnCloud', definition: 'Secure infrastructure that stores encrypted records and consent metadata' },
-                    { term: 'Consent Layer', definition: 'You decide what data connects to which apps, and for how long' },
-                    { term: 'App Ecosystem', definition: 'Optional third-party tools (education, jobs, productivity) you can connect' },
-                    { term: 'AI Features', definition: 'Optional tools to explore skills, learning, and pathways — not decision-makers' },
-                    { term: 'Our Role', definition: 'Infrastructure steward, not data owner, employer, or authority' },
-                    { term: 'Your Role', definition: 'Owner of your data and decisions' },
-                ]} />
+                <DefinitionList
+                    items={[
+                        {
+                            term: `${name} Wallet`,
+                            definition: 'Your personal learning and employment passport',
+                        },
+                        {
+                            term: 'LearnCloud',
+                            definition:
+                                'Secure infrastructure that stores encrypted records and consent metadata',
+                        },
+                        {
+                            term: m['legal.consentLayer'](),
+                            definition: m['legal.consentLayerDefinition'](),
+                        },
+                        {
+                            term: m['legal.appEcosystem'](),
+                            definition:
+                                'Optional third-party tools (education, jobs, productivity) you can connect',
+                        },
+                        {
+                            term: 'AI Features',
+                            definition:
+                                'Optional tools to explore skills, learning, and pathways — not decision-makers',
+                        },
+                        {
+                            term: 'Our Role',
+                            definition:
+                                'Infrastructure steward, not data owner, employer, or authority',
+                        },
+                        { term: 'Your Role', definition: 'Owner of your data and decisions' },
+                    ]}
+                />
             </Section>
 
             <Section heading="1. Agreement to These Terms">
                 <p>
-                    These Terms of Service (&quot;Terms&quot;) govern your access to and use of {name} and
-                    LearnCloud, including our websites, applications, APIs, and related services
-                    (collectively, the &quot;Services&quot;).
+                    These Terms of Service (&quot;Terms&quot;) govern your access to and use of{' '}
+                    {name} and LearnCloud, including our websites, applications, APIs, and related
+                    services (collectively, the &quot;Services&quot;).
                 </p>
 
                 <p>
@@ -64,8 +89,8 @@ const TermsOfServicePage: React.FC = () => {
 
                 <p>
                     If you are using {name} on behalf of a minor, school, district, or organization,
-                    you represent that you are authorized to do so and agree to these Terms on
-                    their behalf.
+                    you represent that you are authorized to do so and agree to these Terms on their
+                    behalf.
                 </p>
             </Section>
 
@@ -78,7 +103,9 @@ const TermsOfServicePage: React.FC = () => {
 
                 <p>{name} and LearnCloud are designed as public-good infrastructure to:</p>
                 <ul className="list-disc pl-5 space-y-1">
-                    <li>Enable individuals to hold and share their learning and employment records</li>
+                    <li>
+                        Enable individuals to hold and share their learning and employment records
+                    </li>
                     <li>Allow guardians and schools to manage access for minors</li>
                     <li>Support lifelong learning and workforce mobility</li>
                     <li>Prevent the sale or monetization of learner data</li>
@@ -94,9 +121,9 @@ const TermsOfServicePage: React.FC = () => {
                 </ul>
 
                 <p>
-                    We do not independently access, control, or use education records and act
-                    solely under the direction of learners, guardians, or educational institutions
-                    where applicable.
+                    We do not independently access, control, or use education records and act solely
+                    under the direction of learners, guardians, or educational institutions where
+                    applicable.
                 </p>
             </Section>
 
@@ -124,8 +151,8 @@ const TermsOfServicePage: React.FC = () => {
             <Section heading={`4. ${name}, LearnCloud, and the Ecosystem`}>
                 <p>
                     {name} is a digital wallet and passport for learning and employment data.
-                    LearnCloud provides secure infrastructure that supports storage, encryption,
-                    and consent-based access.
+                    LearnCloud provides secure infrastructure that supports storage, encryption, and
+                    consent-based access.
                 </p>
 
                 <p>Together, they function similarly to:</p>
@@ -145,9 +172,7 @@ const TermsOfServicePage: React.FC = () => {
                     <li>Their consent decisions</li>
                     <li>Their data connections</li>
                 </ul>
-                <p>
-                    Learning Economy does not claim ownership of learner credentials or records.
-                </p>
+                <p>Learning Economy does not claim ownership of learner credentials or records.</p>
 
                 <h4 className="font-semibold text-grayscale-800 mt-4">5.2 Platform License</h4>
                 <p>
@@ -194,9 +219,8 @@ const TermsOfServicePage: React.FC = () => {
                     <li>Subject to the third party&apos;s own terms and policies</li>
                 </ul>
                 <p>
-                    Learning Economy does not control or operate third-party applications and is
-                    not responsible for how connected systems use data once access has been
-                    authorized.
+                    Learning Economy does not control or operate third-party applications and is not
+                    responsible for how connected systems use data once access has been authorized.
                 </p>
             </Section>
 
@@ -211,14 +235,22 @@ const TermsOfServicePage: React.FC = () => {
                 <h4 className="font-semibold text-grayscale-800 mt-4">Important Clarifications</h4>
                 <ul className="list-disc pl-5 space-y-1">
                     <li>AI features are assistive and educational, not authoritative</li>
-                    <li>AI outputs do not constitute professional, legal, hiring, or certification advice</li>
-                    <li>Learning Economy does not permit learner data to be used to train AI models</li>
+                    <li>
+                        AI outputs do not constitute professional, legal, hiring, or certification
+                        advice
+                    </li>
+                    <li>
+                        Learning Economy does not permit learner data to be used to train AI models
+                    </li>
                     <li>
                         AI features may involve third-party providers operating under contractual
                         restrictions; however, retention or processing of AI inputs may be subject
                         to those providers&apos; policies, except where prohibited for K–12 users
                     </li>
-                    <li>AI features are subject to consent and may be restricted for minors or by schools</li>
+                    <li>
+                        AI features are subject to consent and may be restricted for minors or by
+                        schools
+                    </li>
                 </ul>
 
                 <p>
@@ -234,9 +266,15 @@ const TermsOfServicePage: React.FC = () => {
                 </p>
                 <p>Learning Economy:</p>
                 <ul className="list-disc pl-5 space-y-1">
-                    <li>Does not independently verify credential accuracy beyond cryptographic checks</li>
+                    <li>
+                        Does not independently verify credential accuracy beyond cryptographic
+                        checks
+                    </li>
                     <li>Does not guarantee acceptance, recognition, or outcomes</li>
-                    <li>Does not determine how credentials are interpreted or used by receiving parties</li>
+                    <li>
+                        Does not determine how credentials are interpreted or used by receiving
+                        parties
+                    </li>
                 </ul>
             </Section>
 
@@ -259,8 +297,8 @@ const TermsOfServicePage: React.FC = () => {
             <Section heading="11. Third-Party Services and Integrations">
                 <p>The Services may rely on third-party infrastructure or integrations.</p>
                 <p>
-                    Your use of third-party services is governed by their terms. Learning Economy
-                    is not responsible for third-party systems beyond our contractual obligations.
+                    Your use of third-party services is governed by their terms. Learning Economy is
+                    not responsible for third-party systems beyond our contractual obligations.
                 </p>
             </Section>
 
@@ -283,9 +321,7 @@ const TermsOfServicePage: React.FC = () => {
                     Our Privacy Policy describes how data is processed, protected, and controlled
                     and is incorporated by reference.
                 </p>
-                <p>
-                    Privacy, consent, and data minimization are foundational to the Services.
-                </p>
+                <p>Privacy, consent, and data minimization are foundational to the Services.</p>
             </Section>
 
             <Section heading="14. Data Retention and Deletion">
@@ -304,24 +340,20 @@ const TermsOfServicePage: React.FC = () => {
             </Section>
 
             <Section heading="15. Disclaimers">
-                <p>
-                    The Services are provided &quot;as is&quot; and &quot;as available.&quot;
-                </p>
+                <p>The Services are provided &quot;as is&quot; and &quot;as available.&quot;</p>
                 <p>
                     We do not guarantee uninterrupted availability or specific outcomes from use of
                     the Services.
                 </p>
                 <p>
-                    Nothing in these Terms limits rights that cannot be waived under applicable
-                    law.
+                    Nothing in these Terms limits rights that cannot be waived under applicable law.
                 </p>
             </Section>
 
             <Section heading="16. Limitation of Liability">
                 <p>
                     To the extent permitted by law, Learning Economy shall not be liable for
-                    indirect, incidental, or consequential damages arising from use of the
-                    Services.
+                    indirect, incidental, or consequential damages arising from use of the Services.
                 </p>
                 <p>
                     Some jurisdictions do not allow certain limitations, and those laws will apply
@@ -350,16 +382,19 @@ const TermsOfServicePage: React.FC = () => {
 
             <Section heading="19. Governing Law">
                 <p>
-                    These Terms are governed by the laws of the United States and the State in
-                    which Learning Economy Foundation is incorporated, without regard to
-                    conflict-of-law principles.
+                    These Terms are governed by the laws of the United States and the State in which
+                    Learning Economy Foundation is incorporated, without regard to conflict-of-law
+                    principles.
                 </p>
             </Section>
 
             <Section heading="20. Contact Information">
                 <p>Learning Economy Foundation, LLC</p>
                 <p>
-                    <a href="mailto:privacy@learningeconomy.io" className="underline hover:text-grayscale-900">
+                    <a
+                        href="mailto:privacy@learningeconomy.io"
+                        className="underline hover:text-grayscale-900"
+                    >
                         privacy@learningeconomy.io
                     </a>
                 </p>
@@ -374,7 +409,10 @@ export default TermsOfServicePage;
 // Local helper components
 // ---------------------------------------------------------------------------
 
-const Section: React.FC<{ heading: string; children: React.ReactNode }> = ({ heading, children }) => (
+const Section: React.FC<{ heading: string; children: React.ReactNode }> = ({
+    heading,
+    children,
+}) => (
     <section className="space-y-3">
         <h2 className="text-lg font-semibold text-grayscale-900">{heading}</h2>
         {children}

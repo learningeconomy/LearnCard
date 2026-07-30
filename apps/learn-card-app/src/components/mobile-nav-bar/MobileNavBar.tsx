@@ -29,6 +29,9 @@ import useTheme from '../../theme/hooks/useTheme';
 import { IconSetEnum, NavbarIcons } from '../../theme/icons';
 import { ColorSetEnum } from '../../theme/colors';
 
+import * as m from '../../paraglide/messages.js';
+import { getNavBarLinkLabel } from './mobileNavBarI18n';
+
 export enum MobileNavBarLinks {
     dashboard = 'dashboard',
     wallet = 'wallet',
@@ -73,8 +76,9 @@ const MobileNavBar: React.FC = () => {
     const isSyncing = isWalletSyncing.status === WalletSyncState.Syncing;
     const isCompleted = isWalletSyncing.status === WalletSyncState.Completed;
 
-    let walletText = 'Passport';
-    if (isSyncing || isCompleted) walletText = isWalletSyncing?.text ?? 'Passport';
+    let walletText: string = m['sidemenu.links.passport']();
+    if (isSyncing || isCompleted)
+        walletText = isWalletSyncing?.text ?? m['sidemenu.links.passport']();
 
     let walletTextStyles = 'mt-[3px]';
     if (isSyncing) walletTextStyles = `${colors?.syncingColor} mt-[3px] pb-[2px]`;
@@ -87,7 +91,15 @@ const MobileNavBar: React.FC = () => {
                     <Routes />
                 </IonRouterOutlet>
                 {isLoggedIn && showNavBar(activePathname) ? (
-                    <IonTabBar slot="bottom" className="lc-footer-nav pb-[15px]">
+                    <IonTabBar
+                        slot="bottom"
+                        className="lc-footer-nav"
+                        style={{
+                            // Override Ionic's host padding with the design spacing plus
+                            // its live system-bar inset. This updates without a rerender.
+                            paddingBottom: 'calc(15px + var(--ion-safe-area-bottom, 0px))',
+                        }}
+                    >
                         {/*
                             tab prop is needed to prevent hard refresh...
                             set href to # to prevent id undefined errors & rerouting
@@ -128,7 +140,7 @@ const MobileNavBar: React.FC = () => {
                                                     : colors?.inactiveColor
                                             }`}
                                         >
-                                            {link.label}
+                                            {getNavBarLinkLabel(link)}
                                         </IonLabel>
                                     </IonTabButton>
                                 );
@@ -187,7 +199,7 @@ const MobileNavBar: React.FC = () => {
                                                     : colors?.inactiveColor
                                             }`}
                                         >
-                                            {link.label}
+                                            {getNavBarLinkLabel(link)}
                                         </IonLabel>
                                     </IonTabButton>
                                 );

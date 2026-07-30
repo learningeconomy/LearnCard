@@ -18,6 +18,10 @@ export const usePassportActivities = (filters: PassportActivityFilters = {}) => 
             return wallet.invoke.getMyActivities({
                 limit: PAGE_SIZE,
                 cursor: pageParam,
+                // Collapse each credential's event chain (created → delivered →
+                // claimed …) to a single row at its latest status, so the feed is
+                // one entry per credential rather than one per lifecycle event.
+                groupByLatestStatus: true,
                 ...filters,
             });
         },

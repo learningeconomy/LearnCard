@@ -121,7 +121,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
         const wallet = await initWallet();
 
         if (!currentLCNUser && !currentLCNUserLoading) {
-            handlePresentJoinNetworkModal();
+            void handlePresentJoinNetworkModal({ forceOpen: true });
         }
 
         setLoading(true);

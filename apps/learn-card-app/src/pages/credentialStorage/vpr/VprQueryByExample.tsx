@@ -21,8 +21,8 @@ import {
 } from '../../../helpers/contract.helpers';
 
 import { getUniqueId } from 'learn-card-base/helpers/credentials/ids';
-import Lottie from 'react-lottie-player';
-const HourGlass = '/lotties/hourglass.json';
+
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 
 import { chapiStore, redirectStore } from 'learn-card-base';
 
@@ -42,6 +42,7 @@ import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import { filterMaybes } from '@learncard/helpers';
 import type { CredentialRequestEvent } from '@learncard/chapi-plugin';
 import type { VP } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
 
 export type VprQueryByExampleProps = {
     event?: CredentialRequestEvent;
@@ -151,8 +152,12 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
     const renderCredentialList = vcsToDisplay?.map(credential => {
         if (!credential.record?.uri) return <></>;
 
-        const categoryImgUrl =
-            categoryMetadata[credential.category as CredentialCategoryEnum].defaultImageSrc;
+        // record.category can be an arbitrary string (e.g. custom contract categories),
+        // so fall back to Achievement metadata when it isn't a known category.
+        const categoryImgUrl = (
+            categoryMetadata[credential.category as CredentialCategoryEnum] ??
+            categoryMetadata[CredentialCategoryEnum.achievement]
+        ).defaultImageSrc;
         const uniqueId = credential.vc ? getUniqueId(credential.vc) : credential.record.uri;
 
         return (
@@ -226,18 +231,13 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
                             }
                         >
                             {credentialsLoading
-                                ? 'Loading verifiable credentials...'
+                                ? m['common.loadingVerifiableCredentials']()
                                 : 'Select the verifiable credentials you would like to share.'}
                         </h2>
                         {credentialsLoading && (
                             <div className="relative w-full text-center flex flex-col items-center justify-center">
                                 <div className="max-w-[500px]">
-                                    <Lottie
-                                        loop
-                                        path={HourGlass}
-                                        play
-                                        style={{ width: '100%', height: '100%' }}
-                                    />
+                                    <LoadingSpinner />
                                 </div>
                             </div>
                         )}
@@ -298,7 +298,7 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
                         )}
                         {!credentialsLoading && allRecords.length === 0 && (
                             <section className="flex relative flex-col achievements-list-container pt-[10px] px-[20px] text-center justify-center">
-                                <strong>No credentials to share.</strong>
+                                <strong>{m['share.noCredentialsToShare']()}</strong>
                                 <button
                                     type="button"
                                     className="bg-rose-600 rounded-full text-white font-bold border px-4 py-2 w-full max-w-[200px]"

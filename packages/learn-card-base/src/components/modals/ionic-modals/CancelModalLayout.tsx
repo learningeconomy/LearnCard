@@ -4,10 +4,13 @@ import { useScreenWidth } from 'learn-card-base';
 
 import { IonContent, IonRow, IonCol } from '@ionic/react';
 
+import { useT } from '../../../i18n';
+
 const ModalLayoutActionButton: React.FC<{ handleOnClick: () => void; buttonText?: string }> = ({
     handleOnClick,
-    buttonText = 'Close',
+    buttonText,
 }) => {
+    const t = useT();
     return (
         <IonRow className="flex w-full items-center justify-center">
             <IonCol className="mt-2 flex w-full max-w-[400px] items-center justify-center rounded-[20px] bg-white">
@@ -15,7 +18,7 @@ const ModalLayoutActionButton: React.FC<{ handleOnClick: () => void; buttonText?
                     onClick={handleOnClick}
                     className="text-grayscale-900 flex flex-1 items-center justify-center py-1 text-lg font-notoSans"
                 >
-                    {buttonText}
+                    {buttonText ?? t('common.close')}
                 </button>
             </IonCol>
         </IonRow>

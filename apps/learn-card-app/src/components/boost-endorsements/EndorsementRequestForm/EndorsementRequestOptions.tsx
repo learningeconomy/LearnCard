@@ -23,6 +23,7 @@ import {
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 import { EndorsementRequestState } from './endorsement-request.helpers';
 import { VC } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
 
 const schema = zod.object({
     email: zod.string().email(),
@@ -84,7 +85,7 @@ export const EndorsementRequestOptions: React.FC<{
     const copyItem = async () => {
         await Clipboard.write({ string: shareLink });
 
-        presentToast(`Link copied to clipboard`, {
+        presentToast(m['toasts.boost.endorsementLinkCopied'](), {
             hasDismissButton: true,
         });
     };
@@ -152,7 +153,7 @@ export const EndorsementRequestOptions: React.FC<{
             setIsSendingEmail(false);
         } catch (error) {
             setIsSendingEmail(false);
-            presentToast(`Failed to send endorsement request`, {
+            presentToast(m['toasts.boost.endorsementRequestFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -163,7 +164,7 @@ export const EndorsementRequestOptions: React.FC<{
         <>
             <div className="w-full flex flex-col items-start justify-start py-4 px-4 cursor-pointer bg-white rounded-[20px] mt-2 shadow-bottom-2-4 gap-4">
                 <p className="text-[17px] text-grayscale-900 text-left mb-2">
-                    How do you want to send it?
+                    {m['endorsement.request.options.howToSend']()}
                 </p>
 
                 <button
@@ -171,7 +172,9 @@ export const EndorsementRequestOptions: React.FC<{
                     onClick={copyItem}
                     className="text-[17px] text-center flex items-center justify-center rounded-full px-[16px] py-[12px] bg-grayscale-900 text-white w-full cursor-pointer"
                 >
-                    {isGeneratingShareLink ? 'Generating...' : 'Copy Link'}{' '}
+                    {isGeneratingShareLink
+                        ? m['endorsement.request.options.generating']()
+                        : m['endorsement.request.options.copyLink']()}{' '}
                     <CopyStack className="ml-2 h-[24px] w-[24px]" />
                 </button>
                 <button
@@ -179,18 +182,19 @@ export const EndorsementRequestOptions: React.FC<{
                     onClick={presentShareBoostLink}
                     className="text-[17px] text-center flex items-center justify-center rounded-full px-[16px] py-[12px] bg-grayscale-900 text-white w-full cursor-pointer"
                 >
-                    Get Code <QRCodeScanner className="ml-2 h-[24px] w-[24px]" />
+                    {m['endorsement.request.options.getCode']()}{' '}
+                    <QRCodeScanner className="ml-2 h-[24px] w-[24px]" />
                 </button>
             </div>
             <div className="w-full flex flex-col items-start justify-start py-4 px-4 cursor-pointer bg-white rounded-[20px] mt-4 shadow-bottom-2-4">
                 <p className="text-[17px] text-grayscale-900 text-left mb-2">
-                    What would you like to say?
+                    {m['endorsement.request.options.whatToSay']()}
                 </p>
                 <IonTextarea
                     autocapitalize="on"
                     value={endorsementRequest?.text}
                     onIonInput={e => handleStateChange('text', e.detail.value)}
-                    placeholder="Message..."
+                    placeholder={m['endorsement.request.options.messagePlaceholder']()}
                     className={`bg-grayscale-100 font-poppins text-grayscale-800 rounded-[15px] px-[16px] py-[8px] text-[17px] mb-1`}
                 />
                 <div className="w-full flex items-center justify-center px-4 py-4">
@@ -203,7 +207,7 @@ export const EndorsementRequestOptions: React.FC<{
                             setErrors({});
                             handleStateChange('email', e.detail.value!);
                         }}
-                        placeholder="Email"
+                        placeholder={m['endorsement.request.options.emailPlaceholder']()}
                         type="text"
                         className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base ${
                             errors?.email ? 'border-rose-500 border-[1px] border-solid' : ''
@@ -219,7 +223,9 @@ export const EndorsementRequestOptions: React.FC<{
                     onClick={handleSendEmailShareLink}
                     className="text-[17px] text-center flex items-center justify-center rounded-full px-[16px] py-[12px] bg-grayscale-900 text-white w-full cursor-pointer mt-4"
                 >
-                    {isSendingEmail ? 'Sending...' : 'Send Email Request'}{' '}
+                    {isSendingEmail
+                        ? m['endorsement.request.options.sending']()
+                        : m['endorsement.request.options.sendEmail']()}{' '}
                     <Mail className="ml-2 h-[24px] w-[24px]" />
                 </button>
             </div>

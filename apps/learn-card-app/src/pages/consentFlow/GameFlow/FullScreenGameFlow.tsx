@@ -15,6 +15,7 @@ import CreateFamilyGamePrompt from './CreateFamilyGamePrompt';
 import ReturnToGamePrompt from './ReturnToGamePrompt';
 
 import { ConsentFlowContractDetails, LCNProfile } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
 
 enum GameFlowStep {
     landing = 'landing',
@@ -136,7 +137,7 @@ const FullScreenGameFlow: React.FC<FullScreenGameFlowProps> = ({ contractDetails
         ),
         [GameFlowStep.whosPlaying]: (
             <AccountSwitcherModal
-                title="Who's Playing?"
+                title={m['consentFlow.selectPlayer']()}
                 showFooter
                 handlePlayerSwitchOverride={user => {
                     setSelectedUser(user);

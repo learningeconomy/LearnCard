@@ -8,12 +8,13 @@ import { IonCol, IonRow, IonInput } from '@ionic/react';
 import FileIcon from 'learn-card-base/svgs/FileIcon';
 
 import useTheme from '../../../../../theme/hooks/useTheme';
-import { useFilestack, UploadRes } from 'learn-card-base';
+import { useImageUpload, UploadRes } from 'learn-card-base';
 
 import { VIEWER_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { boostMediaOptions, BoostMediaOptionsEnum } from '../../../boost';
 import { BoostCMSMediaAttachment, BoostCMSMediaState } from 'learn-card-base';
 import { getTopmostCancelPortal } from './boostCMSMedia.helpers';
+import * as m from '../../../../../paraglide/messages.js';
 
 type BoostCMSMediaDocumentUploadProps = {
     state: BoostCMSMediaState;
@@ -64,7 +65,7 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
             })
         );
     };
-    const { handleFileSelect: handleDocumentSelect, isLoading: uploadLoading } = useFilestack({
+    const { handleFileSelect: handleDocumentSelect, isLoading: uploadLoading } = useImageUpload({
         fileType: VIEWER_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
@@ -89,7 +90,7 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
                 <IonInput
                     autocapitalize="on"
                     className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
-                    placeholder="Title"
+                    placeholder={m['boost.cms.media.titlePlaceholder']()}
                     type="text"
                     value={state?.documents?.[currentIndex]?.title}
                     onIonInput={e => {
@@ -123,7 +124,9 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
 
                     {uploadProgress !== false && (
                         <p className="font-medium text-[#FF3636]">
-                            {uploadProgress?.toString?.()}% uploaded
+                            {m['boost.cms.media.uploadedPercent']({
+                                percent: uploadProgress?.toString?.(),
+                            })}
                         </p>
                     )}
                 </div>
@@ -139,7 +142,7 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
                                 }}
                                 className={`flex flex-1 items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide`}
                             >
-                                Save
+                                {m['common.save']()}
                             </button>
 
                             {documentSrc && (
@@ -147,7 +150,7 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
                                     onClick={handleDocumentSelect}
                                     className="flex flex-1 items-center justify-center bg-grayscale-900 rounded-full px-[18px] py-[12px] text-white font-poppins text-xl w-full shadow-lg normal tracking-wide"
                                 >
-                                    Change Doc
+                                    {m['boost.cms.media.changeDoc']()}
                                 </button>
                             )}
                         </div>
@@ -166,7 +169,7 @@ const BoostCMSMediaDocumentUpload: React.FC<BoostCMSMediaDocumentUploadProps> = 
                                 }}
                                 className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full h-full shadow-bottom mt-[10px]"
                             >
-                                Back
+                                {m['common.close']()}
                             </button>
                         </div>
                     </div>,

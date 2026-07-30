@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../paraglide/messages.js';
 
 import {
     useGetBoostSkills,
@@ -211,7 +212,7 @@ export const VerifiableDataSummary: React.FC<{ category: string; dataKey: string
 
     return (
         <p className="text-[13px] leading-[18px] text-grayscale-600 text-left self-start">
-            {isLoading ? 'Loading shared data…' : formatSummaryForCategory(category, data)}
+            {isLoading ? m['common.loadingSharedData']() : formatSummaryForCategory(category, data)}
         </p>
     );
 };
@@ -251,7 +252,7 @@ export const SelfAssignedSkillsSummary: React.FC = () => {
 
     return (
         <p className="text-[13px] leading-[18px] text-grayscale-600 text-left self-start">
-            {boostLoading || skillsLoading ? 'Loading shared data…' : summary}
+            {boostLoading || skillsLoading ? m['common.loadingSharedData']() : summary}
         </p>
     );
 };

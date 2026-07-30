@@ -3,6 +3,7 @@ import queryString from 'query-string';
 import { useLocation, useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
+import { getVCDisplayCardVariant } from '@learncard/react';
 
 import {
     useIonAlert,
@@ -14,9 +15,7 @@ import {
     IonRow,
 } from '@ionic/react';
 
-import Lottie from 'react-lottie-player';
-// @ts-ignore
-import HourGlass from '../../assets/lotties/hourglass.json';
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import MainHeader from '../main-header/MainHeader';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBranding';
@@ -36,9 +35,8 @@ import { getWallpaperBackgroundStyles, isTroopCredential } from '../../helpers/t
 import { BrandingEnum, useGetProfile, useIsLoggedIn, useModal, ModalTypes } from 'learn-card-base';
 import { VC, VerificationItem, VP } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
+import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 const log = getLogger('view-shared-boost');
-
-const websiteLink = 'https://pass.scout.org/login';
 
 const ViewSharedBoost: React.FC = () => {
     const history = useHistory();
@@ -148,6 +146,8 @@ const ViewSharedBoost: React.FC = () => {
     }, [pin, tryRefetch]);
 
     const openWebsite = async () => {
+        const websiteLink = `${getAppBaseUrl()}/login`;
+
         if (Capacitor.isNativePlatform()) {
             await Browser?.open({ url: websiteLink });
         } else {
@@ -158,6 +158,15 @@ const ViewSharedBoost: React.FC = () => {
     const redirectHome = () => history.push('/');
 
     const troopBackgroundStyles = getWallpaperBackgroundStyles(undefined, boost as any);
+    const isRibbonDisplayCard = boost && getVCDisplayCardVariant(boost, category) === 'ribbon';
+    let previewHorizontalPaddingClass = 'px-[32px]';
+
+    if (category === 'ID') {
+        previewHorizontalPaddingClass = 'px-[12px]';
+    } else if (isRibbonDisplayCard) {
+        previewHorizontalPaddingClass = 'px-0';
+    }
+
     const troopIdComponent = isFront ? (
         <ViewTroopIdTemplate
             idMainText={issueeProfile?.displayName}
@@ -221,20 +230,13 @@ const ViewSharedBoost: React.FC = () => {
                 {loading && (
                     <div className="relative w-full h-full text-center flex flex-col items-center justify-center">
                         <div className="max-w-[200px] mt-[-50px]">
-                            <Lottie
-                                loop
-                                animationData={HourGlass}
-                                play
-                                style={{ width: '100%', height: '100%' }}
-                            />
+                            <LoadingSpinner />
                         </div>
                     </div>
                 )}
                 {boost && wallet && !loading && (
                     <section
-                        className={`relative w-full h-full text-left flex flex-col items-center justify-start pt-4 overflow-y-scroll pb-[100px] ${
-                            category === 'ID' ? 'px-[12px]' : 'px-[32px]'
-                        } ]`}
+                        className={`relative w-full h-full text-left flex flex-col items-center justify-start pt-4 overflow-y-scroll pb-[100px] ${previewHorizontalPaddingClass}`}
                         style={isTroopId ? troopBackgroundStyles : undefined}
                     >
                         {/* 

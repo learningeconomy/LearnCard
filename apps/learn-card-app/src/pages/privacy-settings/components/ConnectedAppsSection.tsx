@@ -7,6 +7,7 @@ import {
     type ConsentedContract,
 } from '../../../components/data-sharing/ManageDataSharingModal';
 import GlassCard from './GlassCard';
+import * as m from '../../../paraglide/messages.js';
 
 type ConnectedAppsSectionProps = {
     contracts: ConsentedContract[];
@@ -18,10 +19,15 @@ type GroupKey = 'ai' | 'school' | 'app';
 
 const GROUP_THRESHOLD = 8;
 
-const GROUP_LABELS: Record<GroupKey, string> = {
-    ai: 'AI & assistants',
-    school: 'Schools',
-    app: 'Apps',
+const groupLabel = (key: GroupKey): string => {
+    switch (key) {
+        case 'ai':
+            return m['dataShareCenter.groups.ai']();
+        case 'school':
+            return m['dataShareCenter.groups.school']();
+        default:
+            return m['dataShareCenter.groups.app']();
+    }
 };
 
 const GROUP_ORDER: GroupKey[] = ['ai', 'school', 'app'];
@@ -60,7 +66,6 @@ const ConnectedAppsSection: React.FC<ConnectedAppsSectionProps> = ({
         for (const contract of filtered) buckets[classifyContract(contract)].push(contract);
         return GROUP_ORDER.map(key => ({
             key,
-            label: GROUP_LABELS[key],
             items: buckets[key],
         })).filter(group => group.items.length > 0);
     }, [filtered]);
@@ -72,10 +77,10 @@ const ConnectedAppsSection: React.FC<ConnectedAppsSectionProps> = ({
         >
             <div className="px-1 mb-2">
                 <h3 className="text-[15px] font-semibold text-grayscale-900">
-                    Connected apps &amp; services
+                    {m['dataShareCenter.connectedApps.heading']()}
                 </h3>
                 <p className="text-sm text-grayscale-600">
-                    Everyone you&apos;ve let in. Tap any to see what they can do — or turn it off.
+                    {m['dataShareCenter.connectedApps.subtitle']()}
                 </p>
             </div>
 
@@ -84,7 +89,7 @@ const ConnectedAppsSection: React.FC<ConnectedAppsSectionProps> = ({
                     <SearchInput
                         value={query}
                         onChange={setQuery}
-                        placeholder="Search apps & services"
+                        placeholder={m['dataShareCenter.connectedApps.searchPlaceholder']()}
                         className="!bg-white border border-grayscale-300 rounded-[14px] shadow-[0_2px_10px_rgba(24,34,78,0.06)]"
                     />
                 </div>
@@ -94,16 +99,20 @@ const ConnectedAppsSection: React.FC<ConnectedAppsSectionProps> = ({
                 {isEmpty ? (
                     <div className="flex flex-col items-center justify-center px-6 py-10 text-center">
                         <Shield className="w-11 h-11 text-grayscale-300 mb-3" />
-                        <p className="text-grayscale-700 font-medium">No apps yet</p>
+                        <p className="text-grayscale-700 font-medium">
+                            {m['dataShareCenter.connectedApps.emptyTitle']()}
+                        </p>
                         <p className="text-sm text-grayscale-500 mt-1">
-                            When you connect an app, it&apos;ll show up here.
+                            {m['dataShareCenter.connectedApps.emptySubtitle']()}
                         </p>
                     </div>
                 ) : filtered.length === 0 ? (
                     <div className="flex flex-col items-center justify-center px-6 py-10 text-center">
-                        <p className="text-grayscale-600 font-medium">No matches</p>
+                        <p className="text-grayscale-600 font-medium">
+                            {m['dataShareCenter.connectedApps.noMatches']()}
+                        </p>
                         <p className="text-sm text-grayscale-500 mt-1">
-                            Nothing matches &ldquo;{query}&rdquo;.
+                            {m['dataShareCenter.connectedApps.noMatchesFor']({ query })}
                         </p>
                     </div>
                 ) : useGroups ? (
@@ -114,7 +123,7 @@ const ConnectedAppsSection: React.FC<ConnectedAppsSectionProps> = ({
                                 className="border-b border-grayscale-100 last:border-b-0"
                             >
                                 <p className="px-5 pt-4 pb-1 text-xs font-semibold tracking-wider text-grayscale-500 uppercase">
-                                    {group.label}
+                                    {groupLabel(group.key)}
                                 </p>
                                 <div className="flex flex-col gap-1 p-2 pt-1">
                                     {group.items.map(contract => (

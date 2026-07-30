@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import _ from 'lodash-es';
 
+import { m } from '../../../paraglide/messages.js';
+
 import RequestInsightsCard from '../request-insights/RequestInsightsCard';
 import LearnerInsightsSearch from './LearnerInsightsSearch';
 import AiInsightsUserCard from '../AiInsightsUserCard';
@@ -149,7 +151,7 @@ const LearnerInsights: React.FC = () => {
                     <section className="flex flex-col items-center justify-center my-[30px]">
                         <FloatingBottleIcon />
                         <p className="font-poppins text-[17px] font-normal text-grayscale-900 mt-[10px]">
-                            No Search Results
+                            {m['aiInsights.noSearchResults']()}
                         </p>
                     </section>
                 )}

@@ -175,18 +175,14 @@ export const useAppListingLaunch = (
                 case 'iframe': {
                     const url = launchConfig.url as string;
 
-                    // Must open as a FullScreen modal. `EmbedIframeModal`'s
-                    // root is `<IonPage>` with `<IonContent fullscreen>`
-                    // wrapping an `<iframe style={{ width: '100%', height:
-                    // '100%' }}>` — rendering inside the default Center
-                    // container (600×75vh) collapses the IonPage to
-                    // `opacity: 0` via Ionic's default `.ion-page-invisible`
-                    // styling, which is what the user sees as "screen
-                    // blurs but no iframe appears." Same class of bug as
-                    // `AppStoreDetailModal`; same fix.
-                    //
-                    // `hideButton: true` because the iframe modal has its
-                    // own close X inside the IonHeader.
+                    // Must be Right, matching the dashboard/launchpad entry
+                    // points for this same modal. NOT FullScreen:
+                    // `#full-screen-modal` adds `padding-top:
+                    // env(safe-area-inset-top)`, which double-stacks with the
+                    // inset EmbedIframeModal's own IonHeader handles (oversized
+                    // top margin on native). NOT the default Center: it
+                    // collapses the IonPage via Ionic's `.ion-page-invisible`.
+                    // `hideButton: true` — the modal has its own close X.
                     newModal(
                         <EmbedIframeModal
                             embedUrl={url}
@@ -198,7 +194,7 @@ export const useAppListingLaunch = (
                             isInstalled
                         />,
                         { hideButton: true, onClose: opts?.onClose },
-                        { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                        { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
                     );
 
                     return;

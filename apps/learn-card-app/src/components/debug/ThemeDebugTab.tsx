@@ -1,13 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import {
-    Palette,
-    Layout,
-    Image,
-    Navigation,
-    Copy,
-    Check,
-    Tag,
-} from 'lucide-react';
+import { Palette, Layout, Image, Navigation, Copy, Check, Tag } from 'lucide-react';
 
 import { useTenantConfig } from 'learn-card-base/config/TenantConfigProvider';
 
@@ -46,8 +38,7 @@ const ColorSwatch: React.FC<{ label: string; color: string }> = ({ label, color 
 // Theme Debug Tab
 // ---------------------------------------------------------------------------
 
-const isThemeEvent = (e: ConfigDebugEvent): boolean =>
-    e.type.startsWith('theme:');
+const isThemeEvent = (e: ConfigDebugEvent): boolean => e.type.startsWith('theme:');
 
 export const ThemeDebugTab: React.FC = () => {
     const config = useTenantConfig();
@@ -60,7 +51,7 @@ export const ThemeDebugTab: React.FC = () => {
     );
 
     useEffect(() => {
-        const unsubscribe = subscribeToConfigDebugEvents((event) => {
+        const unsubscribe = subscribeToConfigDebugEvents(event => {
             if (event.id === 'clear') {
                 setEvents([]);
             } else if (isThemeEvent(event)) {
@@ -153,7 +144,9 @@ export const ThemeDebugTab: React.FC = () => {
         try {
             await navigator.clipboard.writeText(JSON.stringify(theme, null, 2));
             setCopied('theme-json', theme);
-        } catch { /* ignore */ }
+        } catch {
+            /* ignore */
+        }
     }, [theme, setCopied]);
 
     return (
@@ -170,10 +163,37 @@ export const ThemeDebugTab: React.FC = () => {
                 </div>
 
                 <KVRow label="Theme ID" value={theme.id} copied={copied} onCopy={setCopied} />
-                <KVRow label="Display Name" value={theme.displayName} mono={false} copied={copied} onCopy={setCopied} />
-                <KVRow label="Internal Name" value={theme.name} copied={copied} onCopy={setCopied} />
-                <KVRow label="Default View Mode" value={theme.defaults.viewMode} copied={copied} onCopy={setCopied} />
-                <KVRow label="Theme Switching" value={switchingEnabled} copied={copied} onCopy={setCopied} />
+                <KVRow
+                    label="Display Name"
+                    value={theme.displayName}
+                    mono={false}
+                    copied={copied}
+                    onCopy={setCopied}
+                />
+                <KVRow
+                    label="Internal Name"
+                    value={theme.name}
+                    copied={copied}
+                    onCopy={setCopied}
+                />
+                <KVRow
+                    label="Passport View Mode"
+                    value={theme.defaults.passportViewMode}
+                    copied={copied}
+                    onCopy={setCopied}
+                />
+                <KVRow
+                    label="Credential View Mode"
+                    value={theme.defaults.credentialViewMode}
+                    copied={copied}
+                    onCopy={setCopied}
+                />
+                <KVRow
+                    label="Theme Switching"
+                    value={switchingEnabled}
+                    copied={copied}
+                    onCopy={setCopied}
+                />
             </div>
 
             {/* ── Registered & Allowed Themes ── */}
@@ -186,35 +206,56 @@ export const ThemeDebugTab: React.FC = () => {
                     </span>
                 }
             >
-                <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-1 mb-1">Registered Themes</p>
+                <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-1 mb-1">
+                    Registered Themes
+                </p>
 
-                {registeredThemes.map((id) => {
+                {registeredThemes.map(id => {
                     const isActive = id === activeThemeId;
                     const isAllowed = allowedThemes.includes(id);
                     const t = loadThemeSchema(id);
 
                     return (
-                        <div key={id} className="flex items-center justify-between text-[10px] py-[3px] border-t border-gray-700/40">
+                        <div
+                            key={id}
+                            className="flex items-center justify-between text-[10px] py-[3px] border-t border-gray-700/40"
+                        >
                             <div className="flex items-center gap-1.5">
-                                <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-purple-400' : 'bg-gray-600'}`} />
-                                <span className={isActive ? 'text-purple-400 font-semibold' : 'text-gray-400'}>{t.displayName}</span>
+                                <div
+                                    className={`w-1.5 h-1.5 rounded-full ${
+                                        isActive ? 'bg-purple-400' : 'bg-gray-600'
+                                    }`}
+                                />
+                                <span
+                                    className={
+                                        isActive ? 'text-purple-400 font-semibold' : 'text-gray-400'
+                                    }
+                                >
+                                    {t.displayName}
+                                </span>
                                 <span className="text-gray-600 font-mono text-[8px]">({id})</span>
                             </div>
 
                             <div className="flex items-center gap-1">
                                 {isActive && (
-                                    <span className="text-[8px] px-1 py-0.5 rounded bg-purple-500/20 text-purple-400 font-medium">active</span>
+                                    <span className="text-[8px] px-1 py-0.5 rounded bg-purple-500/20 text-purple-400 font-medium">
+                                        active
+                                    </span>
                                 )}
 
                                 {!isAllowed && (
-                                    <span className="text-[8px] px-1 py-0.5 rounded bg-red-500/20 text-red-400 font-medium">not allowed</span>
+                                    <span className="text-[8px] px-1 py-0.5 rounded bg-red-500/20 text-red-400 font-medium">
+                                        not allowed
+                                    </span>
                                 )}
                             </div>
                         </div>
                     );
                 })}
 
-                <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-2.5 mb-1">Tenant Allowed</p>
+                <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-2.5 mb-1">
+                    Tenant Allowed
+                </p>
 
                 <div className="text-[10px] text-gray-400">
                     {allowedThemes.join(', ') || '(none specified — all allowed)'}
@@ -231,8 +272,11 @@ export const ThemeDebugTab: React.FC = () => {
                     </span>
                 }
             >
-                {theme.categories.map((cat) => (
-                    <div key={cat.categoryId} className="flex items-center justify-between text-[10px] py-[3px] border-t border-gray-700/40">
+                {theme.categories.map(cat => (
+                    <div
+                        key={cat.categoryId}
+                        className="flex items-center justify-between text-[10px] py-[3px] border-t border-gray-700/40"
+                    >
                         <span className="text-gray-400">{cat.labels.plural}</span>
                         <span className="text-gray-600 font-mono text-[9px]">{cat.categoryId}</span>
                     </div>
@@ -240,13 +284,12 @@ export const ThemeDebugTab: React.FC = () => {
             </Section>
 
             {/* ── Color Palette ── */}
-            <Section
-                title="Color Palette"
-                icon={<Palette className="w-3 h-3 text-gray-500" />}
-            >
+            <Section title="Color Palette" icon={<Palette className="w-3 h-3 text-gray-500" />}>
                 {launchPadColors && (
                     <>
-                        <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-1 mb-1">Launch Pad</p>
+                        <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-1 mb-1">
+                            Launch Pad
+                        </p>
 
                         {Object.entries(launchPadColors).map(([key, color]) => (
                             <ColorSwatch key={key} label={key} color={color} />
@@ -256,14 +299,20 @@ export const ThemeDebugTab: React.FC = () => {
 
                 {categoryColorEntries.map(({ category, colors }) => (
                     <React.Fragment key={category}>
-                        <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-2 mb-1">{category}</p>
+                        <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-2 mb-1">
+                            {category}
+                        </p>
 
-                        {Object.entries(colors).slice(0, 4).map(([key, color]) => (
-                            <ColorSwatch key={key} label={key} color={color} />
-                        ))}
+                        {Object.entries(colors)
+                            .slice(0, 4)
+                            .map(([key, color]) => (
+                                <ColorSwatch key={key} label={key} color={color} />
+                            ))}
 
                         {Object.keys(colors).length > 4 && (
-                            <span className="text-[8px] text-gray-600">+{Object.keys(colors).length - 4} more</span>
+                            <span className="text-[8px] text-gray-600">
+                                +{Object.keys(colors).length - 4} more
+                            </span>
                         )}
                     </React.Fragment>
                 ))}
@@ -282,7 +331,9 @@ export const ThemeDebugTab: React.FC = () => {
                 >
                     {iconPaletteEntries.map(({ key, palette }) => (
                         <React.Fragment key={key}>
-                            <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-1 mb-1">{key}</p>
+                            <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-1 mb-1">
+                                {key}
+                            </p>
 
                             {Object.entries(palette).map(([pKey, pVal]) => (
                                 <ColorSwatch key={pKey} label={pKey} color={pVal} />
@@ -293,23 +344,31 @@ export const ThemeDebugTab: React.FC = () => {
             )}
 
             {/* ── Navigation ── */}
-            <Section
-                title="Navigation"
-                icon={<Navigation className="w-3 h-3 text-gray-500" />}
-            >
-                <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-1 mb-1">Navbar ({theme.navbar.length})</p>
+            <Section title="Navigation" icon={<Navigation className="w-3 h-3 text-gray-500" />}>
+                <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-1 mb-1">
+                    Navbar ({theme.navbar.length})
+                </p>
 
-                {theme.navbar.map((link) => (
-                    <div key={link.id} className="flex items-center justify-between text-[10px] py-[3px] border-t border-gray-700/40">
+                {theme.navbar.map(link => (
+                    <div
+                        key={link.id}
+                        className="flex items-center justify-between text-[10px] py-[3px] border-t border-gray-700/40"
+                    >
                         <span className="text-gray-400">{link.label}</span>
                         <span className="text-gray-600 font-mono text-[9px]">{link.path}</span>
                     </div>
                 ))}
 
-                <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-2.5 mb-1">Side Menu ({theme.sideMenuRootLinks.length + theme.sideMenuSecondaryLinks.length})</p>
+                <p className="text-[9px] font-semibold text-gray-500 uppercase tracking-wider mt-2.5 mb-1">
+                    Side Menu (
+                    {theme.sideMenuRootLinks.length + theme.sideMenuSecondaryLinks.length})
+                </p>
 
-                {theme.sideMenuRootLinks.map((link) => (
-                    <div key={link.id} className="flex items-center justify-between text-[10px] py-[3px] border-t border-gray-700/40">
+                {theme.sideMenuRootLinks.map(link => (
+                    <div
+                        key={link.id}
+                        className="flex items-center justify-between text-[10px] py-[3px] border-t border-gray-700/40"
+                    >
                         <span className="text-gray-400">{link.label}</span>
                         <span className="text-gray-600 font-mono text-[9px]">{link.path}</span>
                     </div>
@@ -319,10 +378,15 @@ export const ThemeDebugTab: React.FC = () => {
                     <>
                         <p className="text-[8px] text-gray-600 mt-1.5 mb-0.5">Secondary</p>
 
-                        {theme.sideMenuSecondaryLinks.map((link) => (
-                            <div key={link.id} className="flex items-center justify-between text-[10px] py-[3px] border-t border-gray-700/40">
+                        {theme.sideMenuSecondaryLinks.map(link => (
+                            <div
+                                key={link.id}
+                                className="flex items-center justify-between text-[10px] py-[3px] border-t border-gray-700/40"
+                            >
                                 <span className="text-gray-400">{link.label}</span>
-                                <span className="text-gray-600 font-mono text-[9px]">{link.path}</span>
+                                <span className="text-gray-600 font-mono text-[9px]">
+                                    {link.path}
+                                </span>
                             </div>
                         ))}
                     </>
@@ -336,7 +400,14 @@ export const ThemeDebugTab: React.FC = () => {
                     icon={<Layout className="w-3 h-3 text-gray-500" />}
                 >
                     {Object.entries(theme.styles).map(([key, val]) => (
-                        <KVRow key={key} label={key} value={typeof val === 'object' ? JSON.stringify(val) : String(val)} mono={false} copied={copied} onCopy={setCopied} />
+                        <KVRow
+                            key={key}
+                            label={key}
+                            value={typeof val === 'object' ? JSON.stringify(val) : String(val)}
+                            mono={false}
+                            copied={copied}
+                            onCopy={setCopied}
+                        />
                     ))}
                 </Section>
             )}
@@ -363,13 +434,18 @@ export const ThemeDebugTab: React.FC = () => {
 
                     <div className="flex items-center gap-1">
                         <button
-                            onClick={(e) => { e.stopPropagation(); handleCopyThemeJson(); }}
+                            onClick={e => {
+                                e.stopPropagation();
+                                handleCopyThemeJson();
+                            }}
                             className="p-1 rounded hover:bg-gray-600 transition-colors"
                             title="Copy full theme JSON"
                         >
-                            {copied === 'theme-json'
-                                ? <Check className="w-3 h-3 text-emerald-400" />
-                                : <Copy className="w-3 h-3 text-gray-500" />}
+                            {copied === 'theme-json' ? (
+                                <Check className="w-3 h-3 text-emerald-400" />
+                            ) : (
+                                <Copy className="w-3 h-3 text-gray-500" />
+                            )}
                         </button>
                     </div>
                 </button>

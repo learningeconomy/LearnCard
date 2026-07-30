@@ -1,5 +1,7 @@
 import React, { useMemo, useRef, useCallback } from 'react';
 
+import { m } from '../../../paraglide/messages.js';
+
 import AiSessionTopicItem from './AiSessionTopicItem';
 import AiSessionTopicItemSkeleton from './AiSessionTopicItemSkeleton';
 import AiSessionsTabs from '../AiSessionTopicsTabs/AiSessionTopicsTabs';
@@ -191,7 +193,7 @@ export const AiSessionTopics: React.FC<AiSessionTopicsProps> = ({
                                 <div className="w-full flex items-center justify-center z-10 mt-4">
                                     <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t-[1px] border-solid border-grayscale-200 pt-2">
                                         <p className="text-grayscale-800 text-base font-normal font-notoSans">
-                                            No results found for{' '}
+                                            {m['ai.noResultsFor']()}{' '}
                                             <span className="text-black italic">{searchInput}</span>
                                         </p>
                                     </div>
@@ -221,7 +223,7 @@ export const AiSessionTopics: React.FC<AiSessionTopicsProps> = ({
                         <div className="w-full flex items-center justify-center z-10">
                             <div className="w-full max-w-[550px] flex items-center justify-center px-2 pt-4">
                                 <p className="text-grayscale-800 text-base font-semibold font-notoSans">
-                                    No topics yet
+                                    {m['ai.noTopics']()}
                                 </p>
                             </div>
                         </div>

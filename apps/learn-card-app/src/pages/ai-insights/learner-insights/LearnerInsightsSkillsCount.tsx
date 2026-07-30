@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 import { useSkillsCountByDid } from '../../../hooks/useSkillsCount';
 import { LCNProfile } from '@learncard/types';
@@ -8,7 +9,8 @@ export const LearnerInsightsSkillsCount: React.FC<{ profile: LCNProfile }> = ({ 
 
     return (
         <span>
-            {isLoadingResolved ? 'Loading...' : total || 0} {total === 1 ? 'Skill' : 'Skills'}
+            {isLoadingResolved ? m['common.loading']() : total || 0}{' '}
+            {total === 1 ? m['common.skill']() : m['common.skills']()}
         </span>
     );
 };

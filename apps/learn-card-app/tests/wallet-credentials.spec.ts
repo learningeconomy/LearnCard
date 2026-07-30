@@ -87,8 +87,12 @@ test.describe('Wallet Credentials', () => {
         // opens the boost flow from /launchpad (see its doc comment).
         await openBoostTemplateSelector(page);
 
-        // Select the first available template
-        await page.getByText('LearnCard Template').first().click({ timeout: 30_000 });
+        // Select the first available template (branding-derived subtitle since
+        // LC-1558 — match the suffix, not a literal name). See test.helpers.ts.
+        await page
+            .getByText(/Template$/)
+            .first()
+            .click({ timeout: 30_000 });
 
         // Fill in credential title
         await page.getByRole('textbox', { name: /0\// }).fill(TEST_CREDENTIAL_TITLE);

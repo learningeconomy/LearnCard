@@ -18,10 +18,7 @@ import type { UnsignedVP, VP } from '@learncard/types';
 
 import { getOpenID4VCPlugin } from './plugin';
 import { requestW3cVc } from './dcql';
-import type {
-    OpenID4VCDependentLearnCard,
-    OpenID4VCPluginMethods,
-} from './types';
+import type { OpenID4VCDependentLearnCard, OpenID4VCPluginMethods } from './types';
 
 /* ---------------------------- mock LearnCard ------------------------------ */
 
@@ -105,11 +102,13 @@ interface FakeDcqlVerifier {
     clientId: string;
 }
 
-const buildFakeDcqlVerifier = (opts: {
-    nonce?: string;
-    state?: string;
-    queryId?: string;
-} = {}): FakeDcqlVerifier => {
+const buildFakeDcqlVerifier = (
+    opts: {
+        nonce?: string;
+        state?: string;
+        queryId?: string;
+    } = {}
+): FakeDcqlVerifier => {
     const nonce = opts.nonce ?? 'dcql-nonce-1234';
     const state = opts.state ?? 'dcql-state-5678';
     const queryId = opts.queryId ?? 'degree';
@@ -161,7 +160,8 @@ const buildFakeDcqlVerifier = (opts: {
         // mirrors what Sphereon/EUDI do in production.
         if (record.vpTokenObject) {
             const verified: NonNullable<DcqlVerifierRecord['verifiedPerQuery']> = {};
-            for (const [id, presentation] of Object.entries(record.vpTokenObject)) {
+            for (const [id, entry] of Object.entries(record.vpTokenObject)) {
+                const presentation = Array.isArray(entry) ? entry[0] : entry;
                 if (typeof presentation !== 'string') continue;
                 if (!/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(presentation)) {
                     continue;
@@ -183,7 +183,9 @@ const buildFakeDcqlVerifier = (opts: {
 
                 if (payload.nonce !== nonce) {
                     throw new Error(
-                        `FakeDcqlVerifier: nonce mismatch for query ${id} (got ${String(payload.nonce)})`
+                        `FakeDcqlVerifier: nonce mismatch for query ${id} (got ${String(
+                            payload.nonce
+                        )})`
                     );
                 }
 
@@ -238,10 +240,7 @@ function base64url(s: string): string {
         .replace(/=+$/, '');
 }
 
-const getPlugin = (
-    mock: MockLearnCardHandle,
-    fetchImpl: typeof fetch
-): OpenID4VCPluginMethods => {
+const getPlugin = (mock: MockLearnCardHandle, fetchImpl: typeof fetch): OpenID4VCPluginMethods => {
     const plugin = getOpenID4VCPlugin(mock.learnCard, { fetch: fetchImpl });
     const bound = {} as OpenID4VCPluginMethods;
     for (const [name, fn] of Object.entries(plugin.methods)) {
@@ -283,7 +282,7 @@ describe('OpenID4VC plugin — DCQL e2e', () => {
         // vp_token decoded as the object-shape DCQL response.
         expect(record.vpTokenObject).toEqual(
             expect.objectContaining({
-                degree: expect.any(String), // jwt_vp_json compact JWS
+                degree: [expect.any(String)], // array of jwt_vp_json compact JWS
             })
         );
 
@@ -299,10 +298,10 @@ describe('OpenID4VC plugin — DCQL e2e', () => {
         const verifier = buildFakeDcqlVerifier();
         const plugin = getPlugin(mock, verifier.fetchImpl);
 
-        const { request, selection, dcqlSelection } =
-            await plugin.prepareVerifiablePresentation(verifier.authRequestUri, [
-                { credential: universityDegreeJwt },
-            ]);
+        const { request, selection, dcqlSelection } = await plugin.prepareVerifiablePresentation(
+            verifier.authRequestUri,
+            [{ credential: universityDegreeJwt }]
+        );
 
         expect(request.dcql_query).toBeDefined();
         expect(dcqlSelection).toBeDefined();

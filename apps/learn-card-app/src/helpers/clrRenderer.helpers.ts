@@ -1,3 +1,4 @@
+import { formatLocaleDate } from '../i18n/formatters';
 /** A directly mapped CLR/OB value with provenance metadata for traceable rendering. */
 export type SourceMappedField<T> = {
     value: T;
@@ -252,7 +253,7 @@ export const formatClrDate = (value: string): string => {
     if (!ISO_DATE_RE.test(value)) return value;
     const date = new Date(value);
     if (isNaN(date.getTime())) return value;
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    return formatLocaleDate(date, { year: 'numeric', month: 'short', day: 'numeric' });
 };
 
 // Creates a fully traced value so UI and debug views can link rendered data back to source fields.

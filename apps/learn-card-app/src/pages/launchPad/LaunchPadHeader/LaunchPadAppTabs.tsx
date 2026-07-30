@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
+import * as m from '../../../paraglide/messages.js';
+
 import { useTheme } from '../../../theme/hooks/useTheme';
 import { ColorSetEnum } from '../../../theme/colors/index';
 import { StyleSetEnum } from '../../../theme/styles/index';
@@ -17,6 +19,22 @@ export enum LaunchPadTabEnum {
     plugins = 'Plugins',
     all = 'All',
 }
+
+/**
+ * Direct map from tab enum values to Paraglide message functions.
+ */
+const TAB_MESSAGE_MAP: Record<LaunchPadTabEnum, () => string> = {
+    [LaunchPadTabEnum.myApps]: m['launchpad.tabs.myApps'],
+    [LaunchPadTabEnum.ai]: m['launchpad.tabs.ai'],
+    [LaunchPadTabEnum.learning]: m['launchpad.tabs.learning'],
+    [LaunchPadTabEnum.games]: m['launchpad.tabs.games'],
+    [LaunchPadTabEnum.tools]: m['launchpad.tabs.tools'],
+    [LaunchPadTabEnum.employment]: m['launchpad.tabs.employment'],
+    [LaunchPadTabEnum.credentials]: m['launchpad.tabs.credentials'],
+    [LaunchPadTabEnum.other]: m['launchpad.tabs.other'],
+    [LaunchPadTabEnum.plugins]: m['launchpad.tabs.plugins'],
+    [LaunchPadTabEnum.all]: m['launchpad.tabs.all'],
+};
 
 type LaunchPadAppTabsProps = {
     tab: LaunchPadTabEnum;
@@ -125,7 +143,7 @@ const LaunchPadAppTabs: React.FC<LaunchPadAppTabsProps> = ({ tab, setTab }) => {
                                 : 'border-transparent text-grayscale-600 xs:text-[12px]'
                         }`}
                     >
-                        {option}
+                        {TAB_MESSAGE_MAP[option]()}
                     </button>
                 );
             })}

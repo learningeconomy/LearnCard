@@ -4,6 +4,7 @@ import { AlertCircle, BadgeCheck, Check, Copy, Loader2 } from 'lucide-react';
 import { getLogger } from 'learn-card-base';
 
 import type { CredentialIdentity } from './useCredentialIdentity';
+import * as m from '../../../paraglide/messages.js';
 
 const log = getLogger('json-studio');
 
@@ -20,9 +21,9 @@ const friendlyJsonError = (text: string, error: unknown): string => {
     if (positionMatch) {
         const position = Number(positionMatch[1]);
         const line = text.slice(0, position).split('\n').length;
-        return `Invalid JSON on line ${line}.`;
+        return m['issueFlow.invalidJsonLine']({ line });
     }
-    return 'This isn’t valid JSON yet.';
+    return m['issueFlow.invalidJson']();
 };
 
 const IdentityBadge: React.FC<{ identity: CredentialIdentity }> = ({ identity }) => {
@@ -32,7 +33,9 @@ const IdentityBadge: React.FC<{ identity: CredentialIdentity }> = ({ identity })
         return (
             <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-grayscale-100 border border-grayscale-200">
                 <Loader2 className="w-3.5 h-3.5 text-grayscale-500 animate-spin" />
-                <span className="text-xs font-medium text-grayscale-600">Checking…</span>
+                <span className="text-xs font-medium text-grayscale-600">
+                    {m['issueFlow.checking']()}
+                </span>
             </span>
         );
     }
@@ -49,7 +52,9 @@ const IdentityBadge: React.FC<{ identity: CredentialIdentity }> = ({ identity })
     return (
         <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100">
             <BadgeCheck className="w-3.5 h-3.5 text-emerald-500" />
-            <span className="text-xs font-medium text-emerald-700">Valid · {identity.label}</span>
+            <span className="text-xs font-medium text-emerald-700">
+                {m['issueFlow.valid']()} · {identity.label}
+            </span>
         </span>
     );
 };
@@ -76,7 +81,7 @@ export const JsonStudio: React.FC<JsonStudioProps> = ({
             try {
                 const parsed = JSON.parse(value);
                 if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-                    onParseError('A credential must be a JSON object.');
+                    onParseError(m['issueFlow.mustBeJsonObject']());
                     return;
                 }
                 onParseError(null);
@@ -138,7 +143,7 @@ export const JsonStudio: React.FC<JsonStudioProps> = ({
                     ) : (
                         <Copy className="w-3.5 h-3.5" />
                     )}
-                    {copied ? 'Copied' : 'Copy'}
+                    {copied ? m['issueFlow.copied']() : m['issueFlow.copy']()}
                 </button>
             </div>
             <textarea
@@ -157,8 +162,7 @@ export const JsonStudio: React.FC<JsonStudioProps> = ({
                 }`}
             />
             <p className="mt-2 text-xs text-grayscale-400 leading-relaxed">
-                Edit the credential directly. We’ll keep the issuer and recipient in sync when you
-                issue.
+                {m['issueFlow.jsonStudioHint']()}
             </p>
         </div>
     );

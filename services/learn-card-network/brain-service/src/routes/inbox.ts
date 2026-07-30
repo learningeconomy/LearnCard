@@ -17,7 +17,11 @@ import {
 } from '@learncard/types';
 import { claimIntoInbox, issueToInbox } from '@helpers/inbox.helpers';
 import { prepareCredentialFromBoost, getBoostUri } from '@helpers/boost.helpers';
-import { hasMustacheVariables, renderBoostTemplate, parseRenderedTemplate } from '@helpers/template.helpers';
+import {
+    hasMustacheVariables,
+    renderBoostTemplate,
+    parseRenderedTemplate,
+} from '@helpers/template.helpers';
 import { getProfileByVerifiedContactMethod } from '@accesslayer/contact-method/relationships/read';
 import { getBoostByUri, getBoostsForProfile } from '@accesslayer/boost/read';
 import {
@@ -71,6 +75,8 @@ import { getProfileForInboxCredential } from '@accesslayer/inbox-credential/read
 
 import { updateProfile } from '@accesslayer/profile/update';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { getNotificationMessage } from '@helpers/notificationMessages';
+import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import { logCredentialSent } from '@helpers/activity.helpers';
 import { finalizeInboxCredentialsForProfile } from '@helpers/finalize-inbox.helpers';
 import { parseCredentialMeta } from '@helpers/credential-meta.helpers';
@@ -125,7 +131,10 @@ export const inboxRouter = t.router({
                     guardianEmail,
                     ttlHours
                 );
-                const approvalUrl = generateGuardianApprovalUrl(token, ctx.tenant?.emailBranding?.appUrl);
+                const approvalUrl = generateGuardianApprovalUrl(
+                    token,
+                    ctx.tenant?.emailBranding?.appUrl
+                );
 
                 // Send email via delivery service
                 const deliveryService = getDeliveryService({ type: 'email', value: guardianEmail });
@@ -147,6 +156,8 @@ export const inboxRouter = t.router({
                         ...(template?.model || {}),
                     },
                     branding: ctx.tenant?.emailBranding,
+                    // Guardian email may not have a profile; fall back to the inviting child's locale.
+                    locale: resolveRecipientLocale(profile),
                     // messageStream: 'guardian-approval',
                 });
 
@@ -214,10 +225,10 @@ export const inboxRouter = t.router({
                     type: LCNNotificationTypeEnumValidator.enum.PROFILE_PARENT_APPROVED,
                     to: requester,
                     from: requester,
-                    message: {
-                        title: 'Account Approved',
-                        body: 'Your account has been approved by your parent or guardian.',
-                    },
+                    message: getNotificationMessage(
+                        'parentAccountApproved',
+                        resolveRecipientLocale(requester)
+                    ),
                 });
 
                 // Send email notification to the approved user
@@ -242,6 +253,7 @@ export const inboxRouter = t.router({
                                 },
                             },
                             branding: ctx.tenant?.emailBranding,
+                            locale: resolveRecipientLocale(requester),
                         });
                     } catch (emailError) {
                         // Log error but don't fail the approval
@@ -312,10 +324,10 @@ export const inboxRouter = t.router({
                     type: LCNNotificationTypeEnumValidator.enum.PROFILE_PARENT_APPROVED,
                     to: requester,
                     from: requester,
-                    message: {
-                        title: 'Account Approved',
-                        body: 'Your account has been approved by your parent or guardian.',
-                    },
+                    message: getNotificationMessage(
+                        'parentAccountApproved',
+                        resolveRecipientLocale(requester)
+                    ),
                 });
 
                 // Send email notification to the approved user
@@ -340,6 +352,7 @@ export const inboxRouter = t.router({
                                 },
                             },
                             branding: ctx.tenant?.emailBranding,
+                            locale: resolveRecipientLocale(requester),
                         });
                     } catch (emailError) {
                         // Log error but don't fail the approval
@@ -540,7 +553,9 @@ export const inboxRouter = t.router({
             }
 
             if (!signingAuthorityRel) {
-                signingAuthorityRel = await getPrimarySigningAuthorityForIntegration(integration.id);
+                signingAuthorityRel = await getPrimarySigningAuthorityForIntegration(
+                    integration.id
+                );
             }
 
             if (!signingAuthorityRel) {
@@ -571,7 +586,9 @@ export const inboxRouter = t.router({
                 if (!matchingBoosts.length) {
                     throw new TRPCError({
                         code: 'NOT_FOUND',
-                        message: `No template found with name "${(credential as any).name}" for this integration`,
+                        message: `No template found with name "${
+                            (credential as any).name
+                        }" for this integration`,
                     });
                 }
 
@@ -786,17 +803,29 @@ export const inboxRouter = t.router({
                     expired: 'This approval link has expired.',
                     already_used: 'This approval link has already been used.',
                 };
-                throw new TRPCError({ code: 'BAD_REQUEST', message: errorMessages[validation.reason] });
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: errorMessages[validation.reason],
+                });
             }
 
             const { inboxCredentialId, guardianEmail } = validation.data;
             if (!inboxCredentialId) {
-                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Token is not a credential-scoped approval token.' });
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Token is not a credential-scoped approval token.',
+                });
             }
 
-            const inboxCredential = await getInboxCredentialByIdAndGuardianEmail(inboxCredentialId, guardianEmail);
+            const inboxCredential = await getInboxCredentialByIdAndGuardianEmail(
+                inboxCredentialId,
+                guardianEmail
+            );
             if (!inboxCredential) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential not found for this token.' });
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Credential not found for this token.',
+                });
             }
 
             const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
@@ -862,12 +891,18 @@ export const inboxRouter = t.router({
                     expired: 'This approval link has expired.',
                     already_used: 'This approval link has already been used.',
                 };
-                throw new TRPCError({ code: 'BAD_REQUEST', message: errorMessages[validation.reason] });
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: errorMessages[validation.reason],
+                });
             }
 
             const { inboxCredentialId, guardianEmail } = validation.data;
             if (!inboxCredentialId) {
-                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Token is not a credential-scoped approval token.' });
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Token is not a credential-scoped approval token.',
+                });
             }
 
             // Find or create a ContactMethod for the guardian's email
@@ -890,6 +925,8 @@ export const inboxRouter = t.router({
             );
 
             const deliveryService = getDeliveryService({ type: 'email', value: guardianEmail });
+            // Guardian email may not yet belong to a profile; resolve locale best-effort, else 'en'.
+            const guardianOtpProfile = await getProfileByContactMethod(guardianContactMethod.id);
             await deliveryService.send({
                 contactMethod: { type: 'email', value: guardianEmail },
                 templateId: 'guardian-email-otp',
@@ -897,6 +934,7 @@ export const inboxRouter = t.router({
                     verificationCode: otpCode,
                 },
                 branding: ctx.tenant?.emailBranding,
+                locale: resolveRecipientLocale(guardianOtpProfile),
                 messageStream: 'universal-inbox',
             });
 
@@ -927,33 +965,56 @@ export const inboxRouter = t.router({
                     expired: 'This approval link has expired.',
                     already_used: 'This approval link has already been used.',
                 };
-                throw new TRPCError({ code: 'BAD_REQUEST', message: errorMessages[validation.reason] });
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: errorMessages[validation.reason],
+                });
             }
 
             const { inboxCredentialId, guardianEmail } = validation.data;
             if (!inboxCredentialId) {
-                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Token is not a credential-scoped approval token.' });
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Token is not a credential-scoped approval token.',
+                });
             }
 
             // Validate OTP — proves the guardian controls guardianEmail
             const otpContactMethodId = await validateContactMethodVerificationToken(otpCode);
             if (!otpContactMethodId) {
-                throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid or expired verification code.' });
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Invalid or expired verification code.',
+                });
             }
             const otpContactMethod = await getContactMethodById(otpContactMethodId);
-            if (!otpContactMethod || otpContactMethod.value.toLowerCase() !== guardianEmail.toLowerCase()) {
-                throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Verification code does not match guardian email.' });
+            if (
+                !otpContactMethod ||
+                otpContactMethod.value.toLowerCase() !== guardianEmail.toLowerCase()
+            ) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Verification code does not match guardian email.',
+                });
             }
 
-            const inboxCredential = await getInboxCredentialByIdAndGuardianEmail(inboxCredentialId, guardianEmail);
+            const inboxCredential = await getInboxCredentialByIdAndGuardianEmail(
+                inboxCredentialId,
+                guardianEmail
+            );
             if (!inboxCredential) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential not found for this token.' });
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Credential not found for this token.',
+                });
             }
 
             if (inboxCredential.guardianStatus !== 'AWAITING_GUARDIAN') {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
-                    message: `Credential is already ${inboxCredential.guardianStatus?.toLowerCase().replace(/_/g, ' ')}.`,
+                    message: `Credential is already ${inboxCredential.guardianStatus
+                        ?.toLowerCase()
+                        .replace(/_/g, ' ')}.`,
                 });
             }
 
@@ -974,12 +1035,18 @@ export const inboxRouter = t.router({
                 if (existingCm && !existingCm.isVerified) {
                     await updateContactMethod(existingCm.id, { isVerified: true });
                 }
-                const guardianProfile = existingCm ? await getProfileByContactMethod(existingCm.id) : null;
+                const guardianProfile = existingCm
+                    ? await getProfileByContactMethod(existingCm.id)
+                    : null;
                 if (guardianProfile) {
                     const childProfile = await getProfileForInboxCredential(inboxCredentialId);
                     if (childProfile) {
-                        const existingManagers = await getProfilesThatManageAProfile(childProfile.profileId);
-                        const alreadyManages = existingManagers.some(m => m.profileId === guardianProfile.profileId);
+                        const existingManagers = await getProfilesThatManageAProfile(
+                            childProfile.profileId
+                        );
+                        const alreadyManages = existingManagers.some(
+                            m => m.profileId === guardianProfile.profileId
+                        );
                         if (!alreadyManages) {
                             const manager = await createProfileManager({
                                 displayName: guardianProfile.displayName ?? 'Guardian',
@@ -997,12 +1064,17 @@ export const inboxRouter = t.router({
                     }
                 }
             } catch (err) {
-                console.error('[approveGuardianCredential] Failed to auto-link existing guardian account:', err);
+                console.error(
+                    '[approveGuardianCredential] Failed to auto-link existing guardian account:',
+                    err
+                );
             }
 
             // Notify the student
             try {
-                const studentContactMethod = await getContactMethodForInboxCredential(inboxCredentialId);
+                const studentContactMethod = await getContactMethodForInboxCredential(
+                    inboxCredentialId
+                );
                 if (studentContactMethod) {
                     const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
                     const deliveryService = getDeliveryService(studentContactMethod);
@@ -1017,10 +1089,16 @@ export const inboxRouter = t.router({
                     });
                 }
             } catch (err) {
-                console.error('[approveGuardianCredential] Failed to send student notification:', err);
+                console.error(
+                    '[approveGuardianCredential] Failed to send student notification:',
+                    err
+                );
             }
 
-            return { message: 'Credential approved. The recipient can now claim it.', alreadyLinked };
+            return {
+                message: 'Credential approved. The recipient can now claim it.',
+                alreadyLinked,
+            };
         }),
 
     // Open route: guardian rejects a credential (requires OTP verification)
@@ -1047,33 +1125,56 @@ export const inboxRouter = t.router({
                     expired: 'This approval link has expired.',
                     already_used: 'This approval link has already been used.',
                 };
-                throw new TRPCError({ code: 'BAD_REQUEST', message: errorMessages[validation.reason] });
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: errorMessages[validation.reason],
+                });
             }
 
             const { inboxCredentialId, guardianEmail } = validation.data;
             if (!inboxCredentialId) {
-                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Token is not a credential-scoped approval token.' });
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Token is not a credential-scoped approval token.',
+                });
             }
 
             // Validate OTP — proves the guardian controls guardianEmail
             const otpContactMethodId = await validateContactMethodVerificationToken(otpCode);
             if (!otpContactMethodId) {
-                throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid or expired verification code.' });
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Invalid or expired verification code.',
+                });
             }
             const otpContactMethod = await getContactMethodById(otpContactMethodId);
-            if (!otpContactMethod || otpContactMethod.value.toLowerCase() !== guardianEmail.toLowerCase()) {
-                throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Verification code does not match guardian email.' });
+            if (
+                !otpContactMethod ||
+                otpContactMethod.value.toLowerCase() !== guardianEmail.toLowerCase()
+            ) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Verification code does not match guardian email.',
+                });
             }
 
-            const inboxCredential = await getInboxCredentialByIdAndGuardianEmail(inboxCredentialId, guardianEmail);
+            const inboxCredential = await getInboxCredentialByIdAndGuardianEmail(
+                inboxCredentialId,
+                guardianEmail
+            );
             if (!inboxCredential) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential not found for this token.' });
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Credential not found for this token.',
+                });
             }
 
             if (inboxCredential.guardianStatus !== 'AWAITING_GUARDIAN') {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
-                    message: `Credential is already ${inboxCredential.guardianStatus?.toLowerCase().replace(/_/g, ' ')}.`,
+                    message: `Credential is already ${inboxCredential.guardianStatus
+                        ?.toLowerCase()
+                        .replace(/_/g, ' ')}.`,
                 });
             }
 
@@ -1085,7 +1186,9 @@ export const inboxRouter = t.router({
 
             // Notify the student
             try {
-                const studentContactMethod = await getContactMethodForInboxCredential(inboxCredentialId);
+                const studentContactMethod = await getContactMethodForInboxCredential(
+                    inboxCredentialId
+                );
                 if (studentContactMethod) {
                     const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
                     const deliveryService = getDeliveryService(studentContactMethod);
@@ -1100,7 +1203,10 @@ export const inboxRouter = t.router({
                     });
                 }
             } catch (err) {
-                console.error('[rejectGuardianCredential] Failed to send student notification:', err);
+                console.error(
+                    '[rejectGuardianCredential] Failed to send student notification:',
+                    err
+                );
             }
 
             return { message: 'Credential rejected.' };
@@ -1157,16 +1263,24 @@ export const inboxRouter = t.router({
             if (inboxCredential.guardianStatus !== 'AWAITING_GUARDIAN') {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
-                    message: `Credential is already ${inboxCredential.guardianStatus?.toLowerCase().replace(/_/g, ' ')}.`,
+                    message: `Credential is already ${inboxCredential.guardianStatus
+                        ?.toLowerCase()
+                        .replace(/_/g, ' ')}.`,
                 });
             }
 
             const childProfile = await getProfileForInboxCredential(inboxCredentialId);
             if (!childProfile) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Child profile not found for this credential.' });
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Child profile not found for this credential.',
+                });
             }
 
-            const manages = await doesProfileManageProfile(guardianProfile.profileId, childProfile.profileId);
+            const manages = await doesProfileManageProfile(
+                guardianProfile.profileId,
+                childProfile.profileId
+            );
             if (!manages) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
@@ -1183,7 +1297,9 @@ export const inboxRouter = t.router({
 
             // Notify the student via email
             try {
-                const studentContactMethod = await getContactMethodForInboxCredential(inboxCredentialId);
+                const studentContactMethod = await getContactMethodForInboxCredential(
+                    inboxCredentialId
+                );
                 if (studentContactMethod) {
                     const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
                     const deliveryService = getDeliveryService(studentContactMethod);
@@ -1198,28 +1314,37 @@ export const inboxRouter = t.router({
                     });
                 }
             } catch (err) {
-                console.error('[approveGuardianCredentialInApp] Failed to send student email:', err);
+                console.error(
+                    '[approveGuardianCredentialInApp] Failed to send student email:',
+                    err
+                );
             }
 
             // Notify the student via in-app notification
             try {
                 const studentProfile = await getProfileForInboxCredential(inboxCredentialId);
                 if (studentProfile) {
-                    const { credentialName, achievementType } = parseCredentialMeta(inboxCredential.credential);
+                    const { credentialName, achievementType } = parseCredentialMeta(
+                        inboxCredential.credential
+                    );
 
                     await addNotificationToQueue({
                         type: LCNNotificationTypeEnumValidator.enum.GUARDIAN_APPROVED,
                         to: studentProfile,
                         from: guardianProfile,
-                        message: {
-                            title: 'Credential Approved',
-                            body: `Your guardian approved "${credentialName ?? 'a credential'}" for you.`,
-                        },
+                        message: getNotificationMessage(
+                            'guardianApproved',
+                            resolveRecipientLocale(studentProfile),
+                            { credentialName: credentialName ?? 'a credential' }
+                        ),
                         data: { inboxCredentialId, credentialName, achievementType },
                     });
                 }
             } catch (err) {
-                console.error('[approveGuardianCredentialInApp] Failed to send student notification:', err);
+                console.error(
+                    '[approveGuardianCredentialInApp] Failed to send student notification:',
+                    err
+                );
             }
 
             return { success: true };
@@ -1251,16 +1376,24 @@ export const inboxRouter = t.router({
             if (inboxCredential.guardianStatus !== 'AWAITING_GUARDIAN') {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
-                    message: `Credential is already ${inboxCredential.guardianStatus?.toLowerCase().replace(/_/g, ' ')}.`,
+                    message: `Credential is already ${inboxCredential.guardianStatus
+                        ?.toLowerCase()
+                        .replace(/_/g, ' ')}.`,
                 });
             }
 
             const childProfile = await getProfileForInboxCredential(inboxCredentialId);
             if (!childProfile) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Child profile not found for this credential.' });
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Child profile not found for this credential.',
+                });
             }
 
-            const manages = await doesProfileManageProfile(guardianProfile.profileId, childProfile.profileId);
+            const manages = await doesProfileManageProfile(
+                guardianProfile.profileId,
+                childProfile.profileId
+            );
             if (!manages) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
@@ -1274,7 +1407,9 @@ export const inboxRouter = t.router({
 
             // Notify the student via email
             try {
-                const studentContactMethod = await getContactMethodForInboxCredential(inboxCredentialId);
+                const studentContactMethod = await getContactMethodForInboxCredential(
+                    inboxCredentialId
+                );
                 if (studentContactMethod) {
                     const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
                     const deliveryService = getDeliveryService(studentContactMethod);
@@ -1296,21 +1431,27 @@ export const inboxRouter = t.router({
             try {
                 const studentProfile = await getProfileForInboxCredential(inboxCredentialId);
                 if (studentProfile) {
-                    const { credentialName, achievementType } = parseCredentialMeta(inboxCredential.credential);
+                    const { credentialName, achievementType } = parseCredentialMeta(
+                        inboxCredential.credential
+                    );
 
                     await addNotificationToQueue({
                         type: LCNNotificationTypeEnumValidator.enum.GUARDIAN_REJECTED,
                         to: studentProfile,
                         from: guardianProfile,
-                        message: {
-                            title: 'Credential Rejected',
-                            body: `Your guardian did not approve "${credentialName ?? 'a credential'}".`,
-                        },
+                        message: getNotificationMessage(
+                            'guardianRejected',
+                            resolveRecipientLocale(studentProfile),
+                            { credentialName: credentialName ?? 'a credential' }
+                        ),
                         data: { inboxCredentialId, credentialName, achievementType },
                     });
                 }
             } catch (err) {
-                console.error('[rejectGuardianCredentialInApp] Failed to send student notification:', err);
+                console.error(
+                    '[rejectGuardianCredentialInApp] Failed to send student notification:',
+                    err
+                );
             }
 
             return { success: true };

@@ -9,6 +9,7 @@ import CopyStack from '../../components/svgs/CopyStack';
 
 import { useWallet, useModal, ModalTypes, useToast, ToastTypeEnum } from 'learn-card-base';
 import useTheme from '../../theme/hooks/useTheme';
+import * as m from '../../paraglide/messages.js';
 
 const SigningAuthoritiesPage: React.FC = () => {
     const [name, setName] = useState<string>('');
@@ -178,7 +179,7 @@ const SigningAuthoritiesPage: React.FC = () => {
                 {loading && (
                     <div className="max-w-[500px] w-full h-[200px] flex flex-col gap-[5px] items-center justify-center">
                         <IonSpinner color="dark" />
-                        <span>Loading...</span>
+                        <span>{m['common.loading']()}</span>
                     </div>
                 )}
                 {!loading && signingAuthorities?.length >= 1 && (

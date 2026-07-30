@@ -4,6 +4,15 @@
 
 See root `CLAUDE.md` for app entry point, state management, routing, and UI overview.
 
+## Internationalization (i18n)
+
+Translations run on Paraglide JS (`m['key']()` + `TransP` for inline markup),
+catalogs in `public/locales/{en,es,fr,ar}/`. **Before adding or editing any
+translated string, read [`src/i18n/AGENTS.md`](src/i18n/AGENTS.md)** — it covers
+the conventions and the non-obvious gotchas (never compare against translated
+strings, plurals compile to separate functions, RTL, no duplicate `m` imports),
+the shared-package `useT()` story, and the `hideLanguageSelector` LaunchDarkly flag.
+
 ## Multi-Tenant Configuration & Theming
 
 The app supports multiple tenants (LearnCard, VetPass, etc.) from a single codebase via JSON-driven config and themes.

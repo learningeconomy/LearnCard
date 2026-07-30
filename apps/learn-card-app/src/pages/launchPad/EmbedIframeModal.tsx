@@ -5,7 +5,13 @@ import { X } from 'lucide-react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('embed-iframe-modal');
 
-import { useModal, useDeviceTypeByWidth, useIsOffline, connectivityStore } from 'learn-card-base';
+import {
+    useModal,
+    useDeviceTypeByWidth,
+    useIsOffline,
+    connectivityStore,
+    appendQueryParams,
+} from 'learn-card-base';
 import { Network } from '@capacitor/network';
 import { AppEmbedOfflineState } from './AppEmbedOfflineState';
 import { IonPage, IonContent, IonToast, IonHeader, IonToolbar } from '@ionic/react';
@@ -104,9 +110,9 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
                 // Verify the constructed URL hasn't escaped to a different origin
                 if (base.origin !== expectedOrigin) return;
 
-                iframeRef.current.src = `${base.toString()}?lc_host_override=${encodeURIComponent(
-                    window.location.origin
-                )}`;
+                iframeRef.current.src = appendQueryParams(base.toString(), {
+                    lc_host_override: window.location.origin,
+                });
             } catch {
                 // embedUrl is invalid — do not navigate
             }
@@ -166,7 +172,9 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
         debug: false, // Disable detailed logging
     });
 
-    const embedUrlWithOverride = `${embedUrl}?lc_host_override=${window.location.origin}`;
+    const embedUrlWithOverride = appendQueryParams(embedUrl, {
+        lc_host_override: window.location.origin,
+    });
 
     return (
         <IonPage className="h-full w-full">

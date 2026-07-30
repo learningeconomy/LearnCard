@@ -6,6 +6,7 @@ const log = getLogger('connect-page');
 import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
 
+import * as m from '../../paraglide/messages.js';
 import { useWallet, usePathQuery, useIsLoggedIn } from 'learn-card-base';
 import { generatePK } from '../../helpers/privateKeyHelpers';
 
@@ -108,7 +109,7 @@ const ConnectPage: React.FC = () => {
                 {loading && (
                     <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
                         <IonSpinner color="black" />
-                        <p className="mt-2 font-bold text-lg">Loading...</p>
+                        <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                     </section>
                 )}
                 {!loading && !lcNetworkProfile && (

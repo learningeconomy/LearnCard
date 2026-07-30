@@ -110,6 +110,12 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
                 enum: Object.values(LearnCardRolesEnum),
             },
             approved: { type: 'boolean', required: false },
+            // Per-user UI locale (BCP-47 primary subtag: en/es/fr/ar) used to
+            // localize server-sent notifications. Must be declared here or
+            // neogma model reads (e.g. Profile.findRelationships) strip it from
+            // `.dataValues`, silently falling back to 'en' — only raw
+            // QueryBuilder reads would carry it. See getRecipientLocale.helpers.
+            locale: { type: 'string', required: false },
         },
         relationships: {
             connectionRequested: { model: 'self', direction: 'out', name: 'CONNECTION_REQUESTED' },

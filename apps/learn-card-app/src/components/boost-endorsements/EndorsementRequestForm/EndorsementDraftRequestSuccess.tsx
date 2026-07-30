@@ -26,6 +26,7 @@ import {
     EndorsementModeEnum,
 } from '../boost-endorsement.helpers';
 import { convertAttachmentsToEvidence } from '../EndorsementForm/endorsement-state.helpers';
+import * as m from '../../../paraglide/messages.js';
 
 export const EndorsementDraftRequestSuccess: React.FC<{
     credential: VC;
@@ -180,12 +181,13 @@ export const EndorsementDraftRequestSuccess: React.FC<{
         <>
             {isLoading ? (
                 <h1 className="text-center text-[22px] font-semibold text-grayscale-900">
-                    Sending
-                    <br /> Endorsement...
+                    {m['endorsement.request.draft.sendingPre']()}
+                    <br /> {m['endorsement.request.draft.sendingPost']()}
                 </h1>
             ) : (
                 <h1 className="text-center text-[22px] font-semibold text-grayscale-900">
-                    Thanks! <br /> Endorsement Sent!
+                    {m['endorsement.request.draft.sentPre']()} <br />{' '}
+                    {m['endorsement.request.draft.sentPost']()}
                 </h1>
             )}
 
@@ -195,7 +197,7 @@ export const EndorsementDraftRequestSuccess: React.FC<{
                         className={`flex items-center justify-between px-2 py-1 rounded-[5px] bg-grayscale-100`}
                     >
                         <p className="text-xs flex items-center font-semibold text-grayscale-700 uppercase">
-                            Waiting for review by {_issueeName}
+                            {m['endorsement.request.draft.waitingReview']({ name: _issueeName })}
                         </p>
                     </div>
                 </div>
@@ -207,14 +209,15 @@ export const EndorsementDraftRequestSuccess: React.FC<{
         endorsementStatusEl = (
             <>
                 <h1 className="text-center text-[22px] font-semibold text-grayscale-900">
-                    Thanks! <br /> Endorsement Approved!
+                    {m['endorsement.request.draft.approvedPre']()} <br />{' '}
+                    {m['endorsement.request.draft.approvedPost']()}
                 </h1>
                 <div className="w-full flex items-center justify-center px-4">
                     <div
                         className={`flex items-center justify-between px-2 py-1 rounded-[5px] bg-grayscale-100`}
                     >
                         <p className="text-xs flex items-center font-semibold text-grayscale-700 uppercase">
-                            Approved by {_issueeName}
+                            {m['endorsement.request.draft.approvedBy']({ name: _issueeName })}
                         </p>
                     </div>
                 </div>

@@ -1,6 +1,8 @@
 import React from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
+import * as m from '../../../paraglide/messages.js';
+
 import CustomSpinner from '../../svgs/CustomSpinner';
 import SlimCaretRight from '../../svgs/SlimCaretRight';
 import CheckListContainer from '../checklist/CheckListContainer';
@@ -8,13 +10,7 @@ import useLCNGatedAction from '../../network-prompts/hooks/useLCNGatedAction';
 
 import { useTheme } from '../../../theme/hooks/useTheme';
 
-import {
-    useModal,
-    ModalTypes,
-    useGetCheckListStatus,
-    checklistStore,
-    checklistItems,
-} from 'learn-card-base';
+import { useModal, ModalTypes, checklistStore } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 type CheckListButtonMode = 'default' | 'inline' | 'sidemenu';
@@ -25,7 +21,6 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
 }) => {
     const flags = useFlags();
     const { newModal } = useModal();
-    const { completedItems } = useGetCheckListStatus();
     const { gate } = useLCNGatedAction();
     const brandingConfig = useBrandingConfig();
 
@@ -38,8 +33,6 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
     const { resume, certificate, transcript, diploma, rawVC } =
         checklistStore.useTracked.isParsing();
     const isParsing = resume || certificate || transcript || diploma || rawVC;
-    const optimizedPercent =
-        checklistItems.length > 0 ? Math.round((completedItems / checklistItems.length) * 100) : 0;
 
     const { resume: pendingResume, transcript: pendingTranscript } =
         checklistStore.useTracked.pendingReview();
@@ -59,13 +52,12 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
 
     if (!flags?.enableOnboardingChecklist) return null;
 
-    const progressBarFill = primaryColor ? `bg-${primaryColor}` : 'bg-emerald-600';
+    const helperCopy = m['passport.buildMyLearnCard.helper']();
 
     if (mode === 'sidemenu') {
-        // Theme color family (e.g. `indigo` / `blue`) drives the card tint +
-        // progress track per the LC-1921 colorful/neutral Side Nav variants.
-        // Strip only the trailing shade so multi-word families survive
-        // (e.g. `baltic-blue-500` → `baltic-blue`, not `baltic`).
+        // Theme color family (e.g. `indigo` / `blue`) drives the card tint per the LC-1921
+        // colorful/neutral Side Nav variants. Strip only the trailing shade so multi-word
+        // families survive (e.g. `baltic-blue-500` → `baltic-blue`, not `baltic`).
         const family = primaryColor?.replace(/-\d+$/, '') || 'indigo';
 
         return (
@@ -87,27 +79,19 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                 </div>
                 <div className="flex flex-col gap-[5px] flex-1 min-w-0">
                     <div className="flex flex-col">
-                        <span className="text-[16px] font-poppins text-grayscale-900 leading-[normal]">
-                            Build My {brandingConfig.name}
+                        <span className="text-[15px] font-poppins text-grayscale-900 leading-[normal] text-left">
+                            {m['passport.buildMyLearnCard.title']({ brand: brandingConfig.name })}
                         </span>
-                        <span className="text-[12px] font-poppins font-medium text-grayscale-600 leading-[normal]">
+                        <span className="text-[11px] font-poppins font-medium text-grayscale-600 leading-[normal]">
                             {isParsing
-                                ? 'Processing documents...'
+                                ? m['passport.buildMyLearnCard.processing']()
                                 : hasPendingReview
-                                ? `${pendingReviewCount} ready for review`
-                                : `${optimizedPercent}% Optimized`}
+                                ? m['passport.buildMyLearnCard.pendingReview']({
+                                      count: pendingReviewCount,
+                                  })
+                                : helperCopy}
                         </span>
                     </div>
-                    {!isParsing && !hasPendingReview && (
-                        <div
-                            className={`w-full h-[5px] rounded-[10px] overflow-hidden bg-${family}-200`}
-                        >
-                            <div
-                                className={`h-full rounded-[10px] ${progressBarFill}`}
-                                style={{ width: `${Math.max(optimizedPercent, 2)}%` }}
-                            />
-                        </div>
-                    )}
                 </div>
             </div>
         );
@@ -148,11 +132,11 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                 </div>
 
                 <h5
-                    className={`text-[17px] leading-[130%] font-poppins font-[600] text-center ${
+                    className={`text-[17px] leading-[130%] font-poppins font-[600] text-left ${
                         featuredCardTextColor ?? 'text-grayscale-900'
                     }`}
                 >
-                    Build My {brandingConfig.name}
+                    {m['passport.buildMyLearnCard.title']({ brand: brandingConfig.name })}
                 </h5>
 
                 {isParsing ? (
@@ -161,33 +145,22 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                             featuredCardTextColor ? 'text-white/70' : 'text-grayscale-700'
                         }`}
                     >
-                        Processing documents...
+                        {m['passport.buildMyLearnCard.processing']()}
                     </p>
                 ) : hasPendingReview ? (
                     <p className="mt-2 text-[13px] leading-[130%] text-amber-600 font-poppins font-semibold text-center">
-                        {pendingReviewCount} credential{pendingReviewCount !== 1 ? 's' : ''} ready
-                        for review
+                        {m['passport.buildMyLearnCard.pendingReview']({
+                            count: pendingReviewCount,
+                        })}
                     </p>
                 ) : (
-                    <div className="mt-3">
-                        <div
-                            className={`w-full h-[10px] rounded-full overflow-hidden ${
-                                featuredCardTextColor ? 'bg-white/20' : 'bg-grayscale-200'
-                            }`}
-                        >
-                            <div
-                                className={`h-full rounded-full ${progressBarFill}`}
-                                style={{ width: `${Math.max(optimizedPercent, 2)}%` }}
-                            />
-                        </div>
-                        <p
-                            className={`mt-2 text-xs leading-[130%] font-poppins text-center ${
-                                featuredCardTextColor ? 'text-white/70' : 'text-grayscale-600'
-                            }`}
-                        >
-                            {optimizedPercent}% optimized
-                        </p>
-                    </div>
+                    <p
+                        className={`mt-2 text-[13px] leading-[130%] font-poppins text-center ${
+                            featuredCardTextColor ? 'text-white/70' : 'text-grayscale-700'
+                        }`}
+                    >
+                        {helperCopy}
+                    </p>
                 )}
             </div>
         );
@@ -222,11 +195,11 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                 </div>
                 <div className="flex flex-col">
                     <h5
-                        className={`text-[17px] font-poppins font-[600] leading-[130%] ${
+                        className={`text-[17px] font-poppins font-[600] leading-[130%] text-left ${
                             featuredCardTextColor ?? 'text-grayscale-900'
                         }`}
                     >
-                        Build My {brandingConfig.name}
+                        {m['passport.buildMyLearnCard.title']({ brand: brandingConfig.name })}
                     </h5>
                     {isParsing ? (
                         <p
@@ -234,12 +207,13 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                                 featuredCardTextColor ?? 'text-grayscale-900'
                             }`}
                         >
-                            Processing documents...
+                            {m['passport.buildMyLearnCard.processing']()}
                         </p>
                     ) : hasPendingReview ? (
                         <p className="text-[14px] text-amber-600 font-poppins font-semibold">
-                            {pendingReviewCount} credential{pendingReviewCount !== 1 ? 's' : ''}{' '}
-                            ready for review
+                            {m['passport.buildMyLearnCard.pendingReview']({
+                                count: pendingReviewCount,
+                            })}
                         </p>
                     ) : (
                         <p
@@ -247,9 +221,7 @@ export const CheckListButton: React.FC<{ className?: string; mode?: CheckListBut
                                 featuredCardTextColor ?? 'text-grayscale-900'
                             }`}
                         >
-                            <span className="font-semibold">{completedItems}</span> of{' '}
-                            <span className="font-semibold">{checklistItems.length}</span> Steps
-                            Completed
+                            {helperCopy}
                         </p>
                     )}
                 </div>

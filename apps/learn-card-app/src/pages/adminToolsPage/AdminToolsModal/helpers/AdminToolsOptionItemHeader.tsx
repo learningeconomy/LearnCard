@@ -1,6 +1,11 @@
 import React from 'react';
 
-import { AdminToolOption } from '../admin-tools.helpers';
+import {
+    AdminToolOption,
+    getAdminToolTitle,
+    getAdminToolDescription,
+    getAdminToolActionLabel,
+} from '../admin-tools.helpers';
 
 import { useTheme } from '../../../../theme/hooks/useTheme';
 
@@ -15,10 +20,10 @@ export const AdminToolsOptionItemHeader: React.FC<{
     return (
         <div className={`flex flex-col items-start justify-center w-full ion-padding ${className}`}>
             <h4 className="text-lg text-grayscale-900 font-notoSans text-left mb-2">
-                {option?.title}
+                {option && getAdminToolTitle(option)}
             </h4>
             <p className="text-sm text-grayscale-600 font-notoSans text-left mb-4">
-                {option?.description}
+                {option && getAdminToolDescription(option)}
             </p>
 
             {option?.actionLabel && onClick && (
@@ -29,7 +34,7 @@ export const AdminToolsOptionItemHeader: React.FC<{
                         isDisabled ? 'opacity-50' : ''
                     }`}
                 >
-                    {option.actionLabel}
+                    {getAdminToolActionLabel(option)}
                 </button>
             )}
         </div>

@@ -34,6 +34,8 @@ import {
     unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 
+import * as m from '../../../paraglide/messages.js';
+
 const EMPTY_CREDENTIAL_PREVIEW: UnsignedVC = {
     '@context': [],
     type: [],
@@ -210,11 +212,11 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                                         onClick={openCredentialPreview}
                                         className="max-w-full cursor-pointer bg-transparent border-none p-0 text-left text-sm font-semibold text-grayscale-800 leading-tight break-words hover:underline hover:underline-offset-2"
                                     >
-                                        {title || 'Credential'}
+                                        {title || m['passport.resumeBuilder.credential']()}
                                     </button>
                                 ) : (
                                     <span className="text-sm font-semibold text-grayscale-800 leading-tight break-words">
-                                        {title || 'Credential'}
+                                        {title || m['passport.resumeBuilder.credential']()}
                                     </span>
                                 )}
                                 <div className="mt-1 sm:mt-0 min-w-0">
@@ -284,7 +286,9 @@ const ResumePreviewCredentialToTextBlock: React.FC<{
                                                 {isDescriptionField ? (
                                                     <ResumePreviewEditableTextBlock
                                                         value={field.value}
-                                                        placeholder="Add a description..."
+                                                        placeholder={m[
+                                                            'passport.resumeBuilder.addDescription'
+                                                        ]()}
                                                         isEditing
                                                         isSelfAttested={
                                                             field.source === 'selfAttested'

@@ -4,10 +4,7 @@ import {
     PresentationDefinition,
     VpError,
 } from './types';
-import {
-    verifyAndDecodeRequestObject,
-    DidResolver,
-} from './request-object';
+import { verifyAndDecodeRequestObject, DidResolver } from './request-object';
 import { deriveClientIdPrefix } from './client-id-prefix';
 import { parseDcqlQuery } from '../dcql/parse';
 import type { DcqlQuery } from '../dcql/types';
@@ -28,14 +25,9 @@ import type { DcqlQuery } from '../dcql/types';
  * parameter in the URI is spec-mandated to be ignored in favor of the
  * JWS claims, so we punt immediately without validating them here.
  */
-export const parseAuthorizationRequestUri = (
-    input: string
-): ParsedAuthorizationRequest => {
+export const parseAuthorizationRequestUri = (input: string): ParsedAuthorizationRequest => {
     if (typeof input !== 'string' || input.trim().length === 0) {
-        throw new VpError(
-            'invalid_uri',
-            'Authorization Request URI must be a non-empty string'
-        );
+        throw new VpError('invalid_uri', 'Authorization Request URI must be a non-empty string');
     }
 
     const params = extractSearchParams(input);
@@ -46,10 +38,7 @@ export const parseAuthorizationRequestUri = (
     const requestUri = params.get('request_uri');
     if (typeof requestUri === 'string' && requestUri.length > 0) {
         if (!isHttpsUrl(requestUri)) {
-            throw new VpError(
-                'invalid_uri',
-                'request_uri must be an absolute https:// URL'
-            );
+            throw new VpError('invalid_uri', 'request_uri must be an absolute https:// URL');
         }
 
         return { kind: 'by_reference_request_uri', requestUri, rawParams: params };
@@ -167,16 +156,21 @@ export const resolveAuthorizationRequest = async (
         request = parsed.request;
     } else {
         const urlClientId = parsed.rawParams.get('client_id') ?? undefined;
-        const urlClientIdScheme =
-            parsed.rawParams.get('client_id_scheme') ?? undefined;
+        const urlClientIdScheme = parsed.rawParams.get('client_id_scheme') ?? undefined;
+
+        // OID4VP 1.0 §5.10: honor `request_uri_method=post`. Only the
+        // by_reference_request_uri path fetches a URL, so POST + wallet_nonce
+        // apply there; the inline `request` JWS path ignores them.
+        const isUriRef = parsed.kind === 'by_reference_request_uri';
+        const requestUriMethod = parseRequestUriMethod(parsed.rawParams.get('request_uri_method'));
+        const walletNonce =
+            isUriRef && requestUriMethod === 'post' ? randomWalletNonce() : undefined;
 
         request = await verifyAndDecodeRequestObject({
-            requestUri:
-                parsed.kind === 'by_reference_request_uri'
-                    ? parsed.requestUri
-                    : undefined,
-            inlineJwt:
-                parsed.kind === 'by_reference_request_jwt' ? parsed.jwt : undefined,
+            requestUri: isUriRef ? parsed.requestUri : undefined,
+            inlineJwt: parsed.kind === 'by_reference_request_jwt' ? parsed.jwt : undefined,
+            requestUriMethod,
+            walletNonce,
             urlClientId,
             urlClientIdScheme,
             fetchImpl,
@@ -212,6 +206,21 @@ export const resolveAuthorizationRequest = async (
  * same variety of shapes (scheme://?..., scheme:?..., https://.../?...,
  * bare `?...`, bare `key=value`).
  */
+/**
+ * Fresh, cryptographically-random `wallet_nonce` for a §5.10 POST request_uri.
+ * 16 bytes of Web Crypto randomness, hex-encoded (ASCII-URL-safe).
+ */
+const randomWalletNonce = (): string => {
+    const c = (globalThis as { crypto?: Crypto }).crypto;
+    if (!c)
+        throw new VpError('invalid_uri', 'Web Crypto API not available to generate wallet_nonce');
+    const bytes = new Uint8Array(16);
+    c.getRandomValues(bytes);
+    let hex = '';
+    for (let i = 0; i < bytes.length; i++) hex += bytes[i]!.toString(16).padStart(2, '0');
+    return hex;
+};
+
 const extractSearchParams = (input: string): URLSearchParams => {
     const queryStart = input.indexOf('?');
 
@@ -320,11 +329,9 @@ const buildRequestFromParams = (params: URLSearchParams): AuthorizationRequest =
         try {
             parsed = JSON.parse(dcqlQueryRaw);
         } catch (e) {
-            throw new VpError(
-                'invalid_json',
-                'dcql_query query parameter was not valid JSON',
-                { cause: e }
-            );
+            throw new VpError('invalid_json', 'dcql_query query parameter was not valid JSON', {
+                cause: e,
+            });
         }
         dcqlQuery = parseDcqlQuery(parsed);
     }
@@ -373,6 +380,10 @@ const buildRequestFromParams = (params: URLSearchParams): AuthorizationRequest =
         }
     }
 
+    const transactionData = parseTransactionData(params.get('transaction_data'));
+    const verifierInfo = parseVerifierInfo(params.get('verifier_info'));
+    const requestUriMethod = parseRequestUriMethod(params.get('request_uri_method'));
+
     // Preserve unknown params so the caller can echo them into the
     // direct_post response (state-like extensions, custom claims, etc.).
     const known = new Set([
@@ -390,6 +401,9 @@ const buildRequestFromParams = (params: URLSearchParams): AuthorizationRequest =
         'client_metadata',
         'client_metadata_uri',
         'scope',
+        'transaction_data',
+        'verifier_info',
+        'request_uri_method',
     ]);
 
     const extra: Record<string, string> = {};
@@ -408,10 +422,12 @@ const buildRequestFromParams = (params: URLSearchParams): AuthorizationRequest =
     // and Request-Object-mode aligned: plugin code downstream can
     // rely on `client_id_scheme` being a normalized prefix in both
     // paths, regardless of which encoding the verifier picked.
-    const { prefix: derivedPrefix } = deriveClientIdPrefix(
-        clientId,
-        params.get('client_id_scheme') ?? undefined
-    );
+    const derived = deriveClientIdPrefix(clientId, params.get('client_id_scheme') ?? undefined);
+
+    const derivedPrefix = resolveUnsignedClientIdPrefix(derived, clientId, {
+        responseUri,
+        redirectUri,
+    });
 
     return {
         client_id: clientId,
@@ -428,8 +444,161 @@ const buildRequestFromParams = (params: URLSearchParams): AuthorizationRequest =
         client_metadata: clientMetadata,
         client_metadata_uri: params.get('client_metadata_uri') ?? undefined,
         scope,
+        transaction_data: transactionData,
+        verifier_info: verifierInfo,
+        request_uri_method: requestUriMethod,
         ...(Object.keys(extra).length > 0 ? { extra } : {}),
     };
+};
+
+/**
+ * Parse the OID4VP 1.0 §5.1 `transaction_data` parameter: a JSON array of
+ * base64url strings. Kept encoded; the presentation layer decides whether it
+ * can honor the transaction (§8.4) or must reject (§8.5). Throws
+ * `invalid_transaction_data` for a structurally malformed parameter.
+ */
+const parseTransactionData = (raw: string | null): string[] | undefined => {
+    if (raw === null) return undefined;
+
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(raw);
+    } catch (e) {
+        throw new VpError('invalid_transaction_data', 'transaction_data was not valid JSON', {
+            cause: e,
+        });
+    }
+
+    if (
+        !Array.isArray(parsed) ||
+        parsed.length === 0 ||
+        !parsed.every(x => typeof x === 'string')
+    ) {
+        throw new VpError(
+            'invalid_transaction_data',
+            'transaction_data MUST be a non-empty array of base64url-encoded strings'
+        );
+    }
+
+    return parsed as string[];
+};
+
+/**
+ * Parse the OID4VP 1.0 §5.11 `verifier_info` parameter: a JSON array of
+ * attestation objects. Passed through for consent/policy layers; unknown
+ * entries are the caller's to ignore per §5.11.
+ */
+const parseVerifierInfo = (raw: string | null): unknown[] | undefined => {
+    if (raw === null) return undefined;
+
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(raw);
+    } catch (e) {
+        throw new VpError('invalid_json', 'verifier_info was not valid JSON', { cause: e });
+    }
+
+    if (!Array.isArray(parsed)) {
+        throw new VpError('invalid_json', 'verifier_info MUST be a JSON array');
+    }
+
+    return parsed;
+};
+
+/**
+ * Parse the OID4VP 1.0 §5.10 `request_uri_method` parameter. Case-sensitive
+ * `get` / `post`; anything else is `invalid_request_uri_method` (§8.5).
+ */
+const parseRequestUriMethod = (raw: string | null): 'get' | 'post' | undefined => {
+    if (raw === null) return undefined;
+    if (raw !== 'get' && raw !== 'post') {
+        throw new VpError(
+            'invalid_request_uri_method',
+            `request_uri_method must be 'get' or 'post' (case-sensitive), got '${raw}'`
+        );
+    }
+    return raw;
+};
+
+/**
+ * Client-id prefixes whose trust model REQUIRES a verified signature:
+ * an unsigned by-value Authorization Request claiming one of these is a
+ * spoof by construction (OID4VP 1.0 §5.9 mandates a signed Request
+ * Object for them), so it's rejected at the door. `redirect_uri` and
+ * `pre-registered` are the only prefixes valid without a signature.
+ */
+const SIGNED_REQUEST_ONLY_PREFIXES: ReadonlySet<string> = new Set([
+    'did',
+    'x509_san_dns',
+    'x509_hash',
+    'verifier_attestation',
+    'https',
+]);
+
+/**
+ * Security perimeter for UNSIGNED by-value Authorization Requests
+ * (signed Request Objects enforce this separately in
+ * `request-object.ts`). Three rules:
+ *
+ * 1. A bare `https://...` client_id with no explicit scheme is
+ *    surfaced as `pre-registered`, not `https` — that's the draft-22
+ *    default for an absent `client_id_scheme` AND the 1.0 rule for a
+ *    prefix-less client_id (federation requires the explicit
+ *    `openid_federation:` form). Labeling it `https` would falsely
+ *    imply a signature-verified federation identity. [pex-compat]
+ * 2. Signature-requiring prefixes are rejected — without a JWS there
+ *    is nothing binding the request to the claimed DID / cert / URL,
+ *    so an attacker deep link could impersonate a trusted verifier
+ *    while pointing `response_uri` at itself.
+ * 3. `redirect_uri` client-ids must match the response target
+ *    (§5.9.1: the identity IS the redirect target). The canonical
+ *    `redirect_uri:<value>` form requires exact equality; the legacy
+ *    `client_id_scheme=redirect_uri` param form only requires
+ *    same-origin, because deployed draft-22 verifiers routinely use
+ *    distinct paths for client_id and response_uri. [pex-compat]
+ */
+const resolveUnsignedClientIdPrefix = (
+    derived: ReturnType<typeof deriveClientIdPrefix>,
+    clientId: string,
+    target: { responseUri?: string; redirectUri?: string }
+): ReturnType<typeof deriveClientIdPrefix>['prefix'] => {
+    if (derived.prefix === 'https' && derived.inferred) return 'pre-registered';
+
+    if (SIGNED_REQUEST_ONLY_PREFIXES.has(derived.prefix)) {
+        throw new VpError(
+            'invalid_client_id_scheme',
+            `Unsigned Authorization Request uses client-id prefix "${derived.prefix}", which requires a signed Request Object (OID4VP 1.0 §5.9); only redirect_uri and pre-registered are valid unsigned`
+        );
+    }
+
+    if (derived.prefix === 'redirect_uri') {
+        const responseTarget = target.responseUri ?? target.redirectUri;
+        const isCanonicalForm = clientId.startsWith('redirect_uri:');
+
+        if (isCanonicalForm) {
+            if (derived.value !== responseTarget) {
+                throw new VpError(
+                    'invalid_client_id_scheme',
+                    `redirect_uri client-id "${derived.value}" does not equal the request's response target "${responseTarget}" (OID4VP 1.0 §5.9.1)`
+                );
+            }
+        } else if (responseTarget && !isSameOrigin(derived.value, responseTarget)) {
+            throw new VpError(
+                'invalid_client_id_scheme',
+                `client_id_scheme=redirect_uri client-id "${derived.value}" is not same-origin with the request's response target "${responseTarget}"`
+            );
+        }
+    }
+
+    return derived.prefix;
+};
+
+const isSameOrigin = (a: string, b: string): boolean => {
+    try {
+        return new URL(a).origin === new URL(b).origin;
+    } catch {
+        return false;
+    }
 };
 
 /**

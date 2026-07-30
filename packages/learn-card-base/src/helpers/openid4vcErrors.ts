@@ -83,7 +83,8 @@ const VCI_ERROR_MAP: Record<string, FriendlyErrorInfo> = {
         kind: 'transport',
         title: 'Couldn’t reach issuer',
         description: 'We couldn’t download the issuer’s configuration.',
-        suggestion: 'Check your connection or try again later. The issuer may be temporarily offline.',
+        suggestion:
+            'Check your connection or try again later. The issuer may be temporarily offline.',
     },
     metadata_invalid: {
         kind: 'request_invalid',
@@ -101,7 +102,8 @@ const VCI_ERROR_MAP: Record<string, FriendlyErrorInfo> = {
         kind: 'request_invalid',
         title: 'Issuer rejected the request',
         description: 'The issuer wouldn’t exchange the offer for an access token.',
-        suggestion: 'The offer may have expired or the transaction code is wrong. Request a new offer.',
+        suggestion:
+            'The offer may have expired or the transaction code is wrong. Request a new offer.',
     },
     token_response_invalid: {
         kind: 'request_invalid',
@@ -119,7 +121,8 @@ const VCI_ERROR_MAP: Record<string, FriendlyErrorInfo> = {
         kind: 'request_invalid',
         title: 'Issuer wouldn’t issue',
         description: 'The issuer rejected the credential request.',
-        suggestion: 'The offer may have expired or the issuer is having problems. Try requesting a new offer.',
+        suggestion:
+            'The offer may have expired or the issuer is having problems. Try requesting a new offer.',
     },
     credential_response_invalid: {
         kind: 'request_invalid',
@@ -136,8 +139,10 @@ const VCI_ERROR_MAP: Record<string, FriendlyErrorInfo> = {
     unsupported_format: {
         kind: 'format_gap',
         title: 'Credential format not supported',
-        description: 'This credential uses a format LearnCard doesn’t support yet (likely SD-JWT-VC or mDoc).',
-        suggestion: 'We’re building support for this — let us know you hit this so we can prioritize.',
+        description:
+            'This credential uses a format LearnCard doesn’t support yet (likely SD-JWT-VC or mDoc).',
+        suggestion:
+            'We’re building support for this — let us know you hit this so we can prioritize.',
     },
     tx_code_required: {
         kind: 'request_invalid',
@@ -197,7 +202,8 @@ const OFFER_PARSE_ERROR_MAP: Record<string, FriendlyErrorInfo> = {
         kind: 'request_invalid',
         title: 'Invalid offer data',
         description: 'The credential offer contains data we couldn’t parse.',
-        suggestion: 'Ask the issuer to send the offer again — their service may have generated a malformed payload.',
+        suggestion:
+            'Ask the issuer to send the offer again — their service may have generated a malformed payload.',
     },
     missing_offer: {
         kind: 'request_invalid',
@@ -226,7 +232,8 @@ const OFFER_PARSE_ERROR_MAP: Record<string, FriendlyErrorInfo> = {
     both_offer_and_uri: {
         kind: 'request_invalid',
         title: 'Ambiguous offer link',
-        description: 'The link contains both an inline offer and a remote offer URL, which isn’t allowed.',
+        description:
+            'The link contains both an inline offer and a remote offer URL, which isn’t allowed.',
         suggestion: 'Ask the issuer for a corrected link.',
     },
 };
@@ -252,7 +259,8 @@ const VP_ERROR_MAP: Record<string, FriendlyErrorInfo> = {
         kind: 'request_invalid',
         title: 'Invalid presentation request',
         description: 'The verifier sent a request we couldn’t parse.',
-        suggestion: 'Ask the verifier for a new request — their service may have generated a malformed payload.',
+        suggestion:
+            'Ask the verifier for a new request — their service may have generated a malformed payload.',
     },
     fetch_failed: {
         kind: 'transport',
@@ -275,7 +283,8 @@ const VP_ERROR_MAP: Record<string, FriendlyErrorInfo> = {
     no_match: {
         kind: 'request_invalid',
         title: 'No matching credentials',
-        description: 'You don’t have any credentials in your wallet that match what the verifier is asking for.',
+        description:
+            'You don’t have any credentials in your wallet that match what the verifier is asking for.',
         suggestion: 'You may need to obtain the requested credential before you can present it.',
     },
     incomplete_match: {
@@ -347,8 +356,10 @@ const VP_ERROR_MAP: Record<string, FriendlyErrorInfo> = {
     unknown_credential_format: {
         kind: 'format_gap',
         title: 'Credential format not supported',
-        description: 'The verifier is asking for a credential format LearnCard doesn’t produce yet (likely SD-JWT-VC or mDoc).',
-        suggestion: 'We’re building support for this — let us know you hit this so we can prioritize.',
+        description:
+            'The verifier is asking for a credential format LearnCard doesn’t produce yet (likely SD-JWT-VC or mDoc).',
+        suggestion:
+            'We’re building support for this — let us know you hit this so we can prioritize.',
     },
     invalid_jwt_vc: {
         kind: 'wallet',
@@ -371,13 +382,16 @@ const VP_ERROR_MAP: Record<string, FriendlyErrorInfo> = {
     both_pex_and_dcql: {
         kind: 'request_invalid',
         title: 'Ambiguous request',
-        description: 'The verifier sent two competing query types in one request, which isn’t allowed.',
-        suggestion: 'Ask the verifier to send a corrected request — their service may be misconfigured.',
+        description:
+            'The verifier sent two competing query types in one request, which isn’t allowed.',
+        suggestion:
+            'Ask the verifier to send a corrected request — their service may be misconfigured.',
     },
     both_definition_and_uri: {
         kind: 'request_invalid',
         title: 'Ambiguous request',
-        description: 'The verifier sent both an inline and a remote presentation definition, which isn’t allowed.',
+        description:
+            'The verifier sent both an inline and a remote presentation definition, which isn’t allowed.',
         suggestion: 'Ask the verifier to send a corrected request.',
     },
     request_object_not_supported: {
@@ -404,6 +418,14 @@ const VP_ERROR_MAP: Record<string, FriendlyErrorInfo> = {
         description: 'The request was missing a freshness token (nonce).',
         suggestion: 'Ask the verifier to send a corrected request.',
     },
+    invalid_client_id_scheme: {
+        kind: 'trust_gap',
+        title: 'Can’t verify this app’s identity',
+        description:
+            'The verifier claimed an identity that requires a signed request, but sent an unsigned one — so their identity can’t be confirmed.',
+        suggestion:
+            'For your safety, LearnCard won’t share credentials with apps it can’t identify. Contact the verifier through a trusted channel.',
+    },
 };
 
 /**
@@ -426,13 +448,16 @@ const REQUEST_OBJECT_ERROR_MAP: Record<string, FriendlyErrorInfo> = {
         kind: 'trust_gap',
         title: 'Verifier identity unverifiable',
         description: 'The verifier didn’t tell us how to confirm who they are.',
-        suggestion: 'For your safety, LearnCard won’t share credentials with apps it can’t identify. Contact the verifier through a trusted channel.',
+        suggestion:
+            'For your safety, LearnCard won’t share credentials with apps it can’t identify. Contact the verifier through a trusted channel.',
     },
     unsupported_client_id_scheme: {
         kind: 'trust_gap',
         title: 'Can’t verify this app’s identity',
-        description: 'For your safety, LearnCard only shares credentials with apps it can cryptographically confirm. We don’t yet know how to verify this app’s identity.',
-        suggestion: 'If this is a verifier you trust, let us know — we’re building support for more identity schemes.',
+        description:
+            'For your safety, LearnCard only shares credentials with apps it can cryptographically confirm. We don’t yet know how to verify this app’s identity.',
+        suggestion:
+            'If this is a verifier you trust, let us know — we’re building support for more identity schemes.',
     },
     client_id_mismatch: {
         kind: 'trust_gap',
@@ -443,8 +468,10 @@ const REQUEST_OBJECT_ERROR_MAP: Record<string, FriendlyErrorInfo> = {
     request_signature_invalid: {
         kind: 'trust_gap',
         title: 'Verifier signature invalid',
-        description: 'We couldn’t verify the verifier’s identity — their request signature didn’t check out.',
-        suggestion: 'Don’t share credentials. Contact the verifier through a trusted channel to confirm.',
+        description:
+            'We couldn’t verify the verifier’s identity — their request signature didn’t check out.',
+        suggestion:
+            'Don’t share credentials. Contact the verifier through a trusted channel to confirm.',
     },
     request_signer_untrusted: {
         kind: 'trust_gap',
@@ -461,7 +488,8 @@ const REQUEST_OBJECT_ERROR_MAP: Record<string, FriendlyErrorInfo> = {
     unsafe_mode_rejected: {
         kind: 'trust_gap',
         title: 'Unsafe request rejected',
-        description: 'This wallet is configured to require signed requests, but the verifier sent an unsigned one.',
+        description:
+            'This wallet is configured to require signed requests, but the verifier sent an unsigned one.',
         suggestion: 'Ask the verifier to send a signed request.',
     },
 
@@ -493,7 +521,8 @@ const REQUEST_OBJECT_ERROR_MAP: Record<string, FriendlyErrorInfo> = {
     cert_san_mismatch: {
         kind: 'trust_gap',
         title: 'Verifier domain mismatch',
-        description: 'The verifier’s certificate doesn’t cover the domain it’s claiming to act for.',
+        description:
+            'The verifier’s certificate doesn’t cover the domain it’s claiming to act for.',
         suggestion: 'Don’t share credentials. The verifier’s setup is misconfigured.',
     },
 };
@@ -543,11 +572,11 @@ export const getFriendlyOpenID4VCError = (err: unknown): FriendlyErrorInfo => {
         // Some plugin code paths attach `code` without setting a custom `name`.
         // Fall back to looking the code up across all maps.
         return (
-            VCI_ERROR_MAP[candidate.code]
-            ?? OFFER_PARSE_ERROR_MAP[candidate.code]
-            ?? VP_ERROR_MAP[candidate.code]
-            ?? REQUEST_OBJECT_ERROR_MAP[candidate.code]
-            ?? GENERIC
+            VCI_ERROR_MAP[candidate.code] ??
+            OFFER_PARSE_ERROR_MAP[candidate.code] ??
+            VP_ERROR_MAP[candidate.code] ??
+            REQUEST_OBJECT_ERROR_MAP[candidate.code] ??
+            GENERIC
         );
     }
 
@@ -562,10 +591,10 @@ const mapByMessage = (message: string): FriendlyErrorInfo => {
     const lower = message.toLowerCase();
 
     if (
-        lower.includes('failed to fetch')
-        || lower.includes('network')
-        || lower.includes('econn')
-        || lower.includes('timeout')
+        lower.includes('failed to fetch') ||
+        lower.includes('network') ||
+        lower.includes('econn') ||
+        lower.includes('timeout')
     ) {
         return NETWORK;
     }

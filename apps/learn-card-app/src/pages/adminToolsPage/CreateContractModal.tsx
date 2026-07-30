@@ -31,7 +31,7 @@ import {
     useModal,
     useToast,
     useWallet,
-    useFilestack,
+    useImageUpload,
     useSigningAuthority,
     useGetCurrentLCNUser,
     isValidISOString,
@@ -309,7 +309,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
         }
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data: UploadRes) => {
             updateSlice('image', data?.url);

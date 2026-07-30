@@ -7,6 +7,7 @@ import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 
 import { BoostCMSState } from '../../../boost';
 import Plus from 'learn-card-base/svgs/Plus';
+import * as m from '../../../../../paraglide/messages.js';
 
 const BoostCMSAdminsForm: React.FC<{
     state: BoostCMSState;
@@ -34,7 +35,9 @@ const BoostCMSAdminsForm: React.FC<{
     return (
         <IonRow className="w-full bg-white flex flex-col items-center justify-center max-w-[600px] ion-padding mt-4 rounded-[20px]">
             <IonCol size="12" className="w-full bg-white flex items-center justify-between">
-                <h1 className="text-grayscale-900 font-medium text-xl p-0 m-0">Assign Admins</h1>
+                <h1 className="text-grayscale-900 font-medium text-xl p-0 m-0">
+                    {m['boost.cms.admins.title']()}
+                </h1>
                 <button
                     onClick={() => setShowAbout(!showAbout)}
                     className="flex items-center justify-center text-grayscale-800 rounded-full bg-white w-12 h-12 shadow-3xl"

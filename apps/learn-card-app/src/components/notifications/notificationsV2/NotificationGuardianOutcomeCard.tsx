@@ -2,10 +2,12 @@ import React from 'react';
 import { useHistory } from 'react-router-dom';
 import moment from 'moment';
 import { ErrorBoundary } from '@sentry/react';
-import { UserProfilePicture } from 'learn-card-base';
+import { UserProfilePicture, useModal } from 'learn-card-base';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import X from 'learn-card-base/svgs/X';
 import { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
+import * as m from '../../../paraglide/messages.js';
+import { notificationCardStyles } from './types';
 import { clearFinalizeCache } from '../../../hooks/useFinalizeInboxCredentials';
 import autoVerifyStore from '../../../stores/autoVerifyStore';
 import { getCategoryRouteForAchievementType } from '../../../helpers/categoryRoutes';
@@ -22,11 +24,12 @@ const NotificationGuardianOutcomeCard: React.FC<NotificationGuardianOutcomeCardP
     onRead,
 }) => {
     const history = useHistory();
+    const { closeAllModals } = useModal();
     const transactionDate = notification.sent;
     const formattedDate = moment(transactionDate).format('MMM D, YYYY h:mma');
 
     const accentColor = variant === 'approved' ? 'text-emerald-600' : 'text-red-500';
-    const statusText = variant === 'approved' ? 'Approved' : 'Not Approved';
+    const statusText = variant === 'approved' ? m['alerts.approved']() : m['alerts.notApproved']();
 
     const handleClick = async () => {
         await onRead?.();
@@ -40,6 +43,7 @@ const NotificationGuardianOutcomeCard: React.FC<NotificationGuardianOutcomeCardP
             // Navigate to the credential's category page if we know the type, otherwise wallet
             const achievementType = notification?.data?.achievementType as string | undefined;
             const route = getCategoryRouteForAchievementType(achievementType);
+            closeAllModals();
             history.push(route ?? '/wallet');
         }
     };
@@ -47,14 +51,14 @@ const NotificationGuardianOutcomeCard: React.FC<NotificationGuardianOutcomeCardP
     return (
         <ErrorBoundary
             fallback={
-                <div className="flex min-h-[120px] justify-start max-w-[600px] items-start relative w-full py-[10px] px-[10px] bg-white my-[15px]">
+                <div className={notificationCardStyles.fallbackShell}>
                     Unable to load notification
                 </div>
             }
         >
             <div
                 onClick={handleClick}
-                className="flex min-h-[120px] justify-start max-w-[600px] items-start relative w-full py-[10px] px-[10px] bg-white my-[15px] cursor-pointer"
+                className={`${notificationCardStyles.shell} min-h-[120px] cursor-pointer`}
             >
                 <div className="notification-card-left-side px-[0px] flex cursor-pointer shrink-0">
                     <div className="overflow-hidden cursor-pointer w-[90px] h-[90px] flex items-start notification-card-thumbnail">
@@ -70,18 +74,18 @@ const NotificationGuardianOutcomeCard: React.FC<NotificationGuardianOutcomeCardP
                 <div className="flex flex-col justify-center items-start relative w-full">
                     <div className="text-left ml-3 flex flex-col items-start justify-start w-full">
                         <h4
-                            className="cursor-pointer font-semibold tracking-wide line-clamp-2 text-grayscale-900 text-[14px] pr-[20px] notification-card-title"
+                            className={`cursor-pointer ${notificationCardStyles.title}`}
                             data-testid="notification-title"
                         >
                             {notification.message?.body}
                         </h4>
                         <p
-                            className={`font-bold p-0 mt-[10px] leading-none tracking-wide text-[12px] ${accentColor} notification-card-type-text`}
+                            className={`${notificationCardStyles.meta} mt-[10px] ${accentColor}`}
                             data-testid="notification-type"
                         >
                             {statusText}{' '}
                             {transactionDate && (
-                                <span className="text-grayscale-600 normal-case font-normal text-[12px]">
+                                <span className={notificationCardStyles.date}>
                                     • {formattedDate}
                                 </span>
                             )}
@@ -89,12 +93,18 @@ const NotificationGuardianOutcomeCard: React.FC<NotificationGuardianOutcomeCardP
 
                         <div className="relative flex items-center mt-3 w-full">
                             {variant === 'approved' ? (
-                                <div className="notification-claim-btn flex items-center justify-center flex-1 rounded-[24px] border-2 border-solid border-emerald-600 text-emerald-600 bg-white font-semibold py-2 px-3 tracking-wide text-[13px]">
-                                    View Credential <Checkmark className="h-[24px] p-0 m-0" />
+                                <div
+                                    className={`${notificationCardStyles.primaryButton} border-emerald-600 text-emerald-600 bg-white`}
+                                >
+                                    {m['alerts.viewCredential']()}{' '}
+                                    <Checkmark className="h-[24px] p-0 m-0" />
                                 </div>
                             ) : (
-                                <div className="notification-claim-btn flex items-center justify-center flex-1 rounded-[24px] border-2 border-solid border-grayscale-300 text-grayscale-500 bg-white font-semibold py-2 px-3 tracking-wide text-[13px]">
-                                    Rejected <X className="h-[14px] w-[14px] ml-1" />
+                                <div
+                                    className={`${notificationCardStyles.primaryButton} border-grayscale-300 text-grayscale-500 bg-white`}
+                                >
+                                    {m['alerts.rejected']()}{' '}
+                                    <X className="h-[14px] w-[14px] ml-1" />
                                 </div>
                             )}
                         </div>

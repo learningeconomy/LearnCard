@@ -11,8 +11,12 @@ import {
     RESULT_STATUS_VALUES,
     readResultState,
     writeResult,
+    resultTypeLabel,
+    resultTypePlaceholder,
+    resultStatusLabel,
     type ResultType,
 } from './resultField';
+import * as m from '../../../paraglide/messages.js';
 
 interface ResultFieldEditorProps {
     template: OBv3CredentialTemplate;
@@ -79,7 +83,7 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
             <div>
                 <div className="flex items-center justify-between mb-1.5">
                     <label className="text-xs font-medium text-grayscale-700">
-                        Grade or result
+                        {m['issueFlow.fields.gradeOrResult']()}
                     </label>
                     {isDynamic ? (
                         <button
@@ -88,7 +92,7 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                             className="flex items-center gap-1 text-xs font-medium text-grayscale-500 hover:text-grayscale-900 transition-colors"
                         >
                             <X className="w-3 h-3" />
-                            Use a fixed value
+                            {m['issueFlow.fields.useFixed']()}
                         </button>
                     ) : canMakeDynamic ? (
                         <button
@@ -97,7 +101,7 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                             className="flex items-center gap-1 text-xs font-medium text-emerald-700 hover:text-emerald-800 transition-colors"
                         >
                             <Variable className="w-3 h-3" />
-                            Personalize per recipient
+                            {m['issueFlow.fields.personalize']()}
                         </button>
                     ) : null}
                 </div>
@@ -115,7 +119,7 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                                         : 'bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200'
                                 }`}
                             >
-                                {option.label}
+                                {resultTypeLabel(option)}
                             </button>
                         );
                     })}
@@ -127,7 +131,7 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                     <Variable className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span className="text-sm font-medium text-emerald-800">{`{{${RESULT_VARIABLE_NAME}}}`}</span>
                     <span className="ml-auto text-xs text-grayscale-500">
-                        Set per recipient below
+                        {m['issueFlow.fields.setPerRecipient']()}
                     </span>
                 </div>
             ) : selectedType === 'Status' ? (
@@ -136,10 +140,10 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                     onChange={e => setValue(e.target.value)}
                     className={INPUT_CLASS}
                 >
-                    <option value="">Select a status…</option>
+                    <option value="">{m['issueFlow.fields.selectStatus']()}</option>
                     {RESULT_STATUS_VALUES.map(status => (
                         <option key={status} value={status}>
-                            {status.replace(/([A-Z])/g, ' $1').trim()}
+                            {resultStatusLabel(status)}
                         </option>
                     ))}
                 </select>
@@ -148,7 +152,7 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                     type="text"
                     value={state.value}
                     onChange={e => setValue(e.target.value)}
-                    placeholder={activeOption.placeholder}
+                    placeholder={resultTypePlaceholder(activeOption)}
                     className={INPUT_CLASS}
                 />
             )}
@@ -157,7 +161,7 @@ export const ResultFieldEditor: React.FC<ResultFieldEditorProps> = ({
                 <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-100 rounded-xl">
                     <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
                     <span className="text-xs text-amber-700 leading-relaxed">
-                        Pick a grade type above so this result is saved in a standard format.
+                        {m['issueFlow.fields.pickGradeType']()}
                     </span>
                 </div>
             )}

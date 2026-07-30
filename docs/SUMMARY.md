@@ -125,6 +125,7 @@
     -   [Credential Lifecycle](core-concepts/credentials-and-data/credential-lifecycle.md)
     -   [Credential Status & Bitstring Status Lists](core-concepts/credentials-and-data/credential-status-and-bitstring-status-lists.md)
     -   [Schemas, Types, & Categories](core-concepts/credentials-and-data/achievement-types-and-categories.md)
+    -   [Display Hint Tags (`lc:` convention)](core-concepts/credentials-and-data/display-hint-tags.md)
     -   [Building Verifiable Credentials](core-concepts/credentials-and-data/building-verifiable-credentials.md)
     -   [Boost Credentials](core-concepts/credentials-and-data/boost-credentials.md)
     -   [Getting Started with Boosts](core-concepts/credentials-and-data/getting-started-with-boosts.md)

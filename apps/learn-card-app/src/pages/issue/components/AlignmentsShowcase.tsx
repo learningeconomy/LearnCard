@@ -3,6 +3,7 @@ import { Target, ExternalLink, X, ShieldCheck } from 'lucide-react';
 
 import type { AlignmentTemplate } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import { isSkillAlignment } from './skillAlignment';
+import * as m from '../../../paraglide/messages.js';
 
 interface AlignmentsShowcaseProps {
     alignments: AlignmentTemplate[];
@@ -29,7 +30,9 @@ export const AlignmentsShowcase: React.FC<AlignmentsShowcaseProps> = ({ alignmen
 
     const renderRow = (alignment: AlignmentTemplate, isVerified: boolean) => {
         const name =
-            alignment.targetName?.value || alignment.targetCode?.value || 'Framework alignment';
+            alignment.targetName?.value ||
+            alignment.targetCode?.value ||
+            m['issueFlow.frameworkAlignment']();
         const url = alignment.targetUrl?.value;
 
         return (
@@ -49,7 +52,7 @@ export const AlignmentsShowcase: React.FC<AlignmentsShowcaseProps> = ({ alignmen
                         {isVerified && (
                             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 shrink-0 mt-0.5">
                                 <ShieldCheck className="w-3 h-3" />
-                                Verified
+                                {m['issueFlow.verified']()}
                             </span>
                         )}
                     </div>
@@ -69,7 +72,7 @@ export const AlignmentsShowcase: React.FC<AlignmentsShowcaseProps> = ({ alignmen
                             type="button"
                             onClick={() => onRemove(alignment.id)}
                             className="text-grayscale-400 hover:text-grayscale-700 transition-colors"
-                            aria-label="Remove alignment"
+                            aria-label={m['issueFlow.removeAlignment']()}
                         >
                             <X className="w-4 h-4" />
                         </button>
@@ -105,17 +108,21 @@ export const AlignmentsShowcase: React.FC<AlignmentsShowcaseProps> = ({ alignmen
             <div>
                 <div className="flex items-center gap-2">
                     <Target className="w-5 h-5 text-grayscale-900" />
-                    <h3 className="text-base font-semibold text-grayscale-900">Alignments</h3>
+                    <h3 className="text-base font-semibold text-grayscale-900">
+                        {m['issueFlow.alignmentsTitle']()}
+                    </h3>
                 </div>
                 <p className="text-sm text-grayscale-600 leading-relaxed mt-1">
-                    External standards and frameworks this credential maps to.
+                    {m['issueFlow.alignmentsSubtitle']()}
                 </p>
             </div>
 
             <div className="space-y-4">
                 {credentialEngine.length > 0 && (
                     <div className="space-y-2">
-                        <p className="text-xs font-medium text-grayscale-500">Verified source</p>
+                        <p className="text-xs font-medium text-grayscale-500">
+                            {m['issueFlow.verifiedSource']()}
+                        </p>
                         <div className="space-y-2">
                             {credentialEngine.map(a => renderRow(a, true))}
                         </div>
@@ -125,7 +132,7 @@ export const AlignmentsShowcase: React.FC<AlignmentsShowcaseProps> = ({ alignmen
                 {other.length > 0 && (
                     <div className="space-y-2">
                         <p className="text-xs font-medium text-grayscale-500">
-                            Occupations &amp; programs
+                            {m['issueFlow.occupationsPrograms']()}
                         </p>
                         <div className="space-y-2">{other.map(a => renderRow(a, false))}</div>
                     </div>

@@ -10,8 +10,8 @@ import FrameworkSearchResults from './FrameworkSearchResults';
 
 import { SetState } from 'packages/shared-types/dist';
 import { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
-import { conditionalPluralize } from 'learn-card-base';
 import { SkillFrameworkNode, SkillFrameworkNodeWithSearchInfo } from '../../components/boost/boost';
+import * as m from '../../paraglide/messages.js';
 
 type BrowseFrameworkMultiColumnHeaderProps = {
     handleBack: () => void;
@@ -105,7 +105,7 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                             className="w-[40px] h-[40px] shrink-0 text-grayscale-800"
                         />
                         <span className="text-[22px] font-poppins font-[600] leading-[24px] text-grayscale-900">
-                            Add {conditionalPluralize(selectedSkills?.length || 0, 'Skill')}
+                            {m['skills.addSkillsCount']({ count: selectedSkills?.length || 0 })}
                         </span>
                     </div>
                 )}
@@ -114,7 +114,7 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                         <IonInput
                             ref={inputRef}
                             className="bg-grayscale-100 text-grayscale-800 rounded-[10px] ion-padding font-poppins text-[14px] w-full !pr-[24px]"
-                            placeholder="Search framework..."
+                            placeholder={m['skills.framework.searchPlaceholder']()}
                             value={search}
                             onIonInput={e => {
                                 const value = e.detail.value || '';
@@ -195,10 +195,18 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                                         disabled={!changesExist && !isApproveFlow}
                                     >
                                         {isApproveFlow && (
-                                            <>{useShortText ? 'Approve' : 'Approve Framework'}</>
+                                            <>
+                                                {useShortText
+                                                    ? m['skills.frameworks.approve']()
+                                                    : m['skills.frameworks.approveFramework']()}
+                                            </>
                                         )}
                                         {!isApproveFlow && (
-                                            <>{useShortText ? 'Save' : 'Save Framework'}</>
+                                            <>
+                                                {useShortText
+                                                    ? m['common.save']()
+                                                    : m['skills.frameworks.saveFramework']()}
+                                            </>
                                         )}
                                     </button>
                                 </>
@@ -210,7 +218,7 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                                         className="bg-emerald-700 disabled:bg-grayscale-200 text-white font-[600] flex items-center justify-center rounded-[30px] px-[20px] py-[7px] font-poppins text-[17px] line-clamp-1 flex-1 h-full"
                                         disabled={disableSave}
                                     >
-                                        Save
+                                        {m['common.save']()}
                                     </button>
                                 </>
                             )}
@@ -224,7 +232,9 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                                             version={3}
                                             className="w-[25px] h-[25px] shrink-0"
                                         />
-                                        {useShortText ? 'Edit' : 'Edit Framework'}
+                                        {useShortText
+                                            ? m['skills.frameworks.editShort']()
+                                            : m['skills.frameworks.edit']()}
                                     </button>
                                     <button
                                         onClick={openManageJsonModal}

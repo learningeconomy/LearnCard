@@ -43,6 +43,8 @@ import { acceptCredential, getCredentialUri } from './credential.helpers';
 import { getLearnCard } from './learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
+import { getNotificationMessage } from './notificationMessages';
+import { resolveRecipientLocale } from './getRecipientLocale.helpers';
 import { BoostStatus, getBoostOwnerProfile } from 'types/boost';
 import { getDidWeb } from './did.helpers';
 import { DbTermsType } from 'types/consentflowcontract';
@@ -298,9 +300,7 @@ export const issueCertifiedBoost = async (
     ownerProfileId: string
 ): Promise<VC | JWE | false> => {
     return trace('certification', 'issueCertifiedBoost', async () => {
-        const learnCard = await trace('init', 'getLearnCard', () =>
-            getLearnCard(undefined, true)
-        );
+        const learnCard = await trace('init', 'getLearnCard', () => getLearnCard(undefined, true));
 
         let lcnDID = `did:web:${domain}`;
 
@@ -555,10 +555,11 @@ export const sendBoost = async ({
                             type: LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
                             to: to,
                             from: fromProfile,
-                            message: {
-                                title: 'Boost Received',
-                                body: `${getIssuerDisplayName(from)} has boosted you!`,
-                            },
+                            message: getNotificationMessage(
+                                'boostReceived',
+                                resolveRecipientLocale(to),
+                                { issuer: getIssuerDisplayName(from) }
+                            ),
                             data: {
                                 vcUris: [boostUri!],
                             },

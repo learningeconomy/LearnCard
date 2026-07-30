@@ -1,7 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
-import { useModal, useGetPaginatedBoostChildren, ModalTypes, pluralize } from 'learn-card-base';
+import {
+    useModal,
+    useCountBoostChildren,
+    useGetPaginatedBoostChildren,
+    ModalTypes,
+    pluralize,
+} from 'learn-card-base';
 
 import X from '../../components/svgs/X';
 import Plus from 'learn-card-base/svgs/Plus';
@@ -25,15 +31,13 @@ const troopParentLevelToChildDepth = {
 };
 
 type NetworkListDisplayProps = {
-    count: number | undefined;
-    networkName: string;
+    networkName?: string;
     globalNetworkName?: string;
     uri: string;
     parentLevel: TroopParentLevel;
 };
 
 const NetworkListDisplay: React.FC<NetworkListDisplayProps> = ({
-    count,
     networkName,
     uri,
     parentLevel = TroopParentLevel.national,
@@ -54,6 +58,10 @@ const NetworkListDisplay: React.FC<NetworkListDisplayProps> = ({
     };
 
     const [search, setSearch] = useState<string>('');
+
+    const { data: count } = useCountBoostChildren(uri, troopParentLevelToChildDepth[parentLevel], {
+        type: AchievementTypes.Network,
+    });
 
     const getCredentialMeta = () => {
         return {

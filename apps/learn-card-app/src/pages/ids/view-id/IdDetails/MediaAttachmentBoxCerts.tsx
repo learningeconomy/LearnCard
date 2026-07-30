@@ -13,6 +13,7 @@ import { Lightbox, LightboxItem } from '@learncard/react';
 import { getMediaBaseUrl } from 'learn-card-base/helpers/urlHelpers';
 
 import {
+    getAttachmentSource,
     getFileMetadata as getFileMetadataHelper,
     getVideoMetadata as getVideoMetadataHelper,
 } from 'learn-card-base/helpers/attachment.helpers';
@@ -91,7 +92,11 @@ const getAttachmentDownloadName = (
     if (documentResource?.downloadName) return documentResource.downloadName;
 
     const safeTitle = (title || 'attachment').replace(/[^\w.\-]/g, '_');
-    return `${safeTitle}${metadata?.fileExtension ? `.${metadata.fileExtension}` : ''}`;
+    const extension = metadata?.fileExtension;
+    const alreadyHasExtension =
+        extension && safeTitle.toLowerCase().endsWith(`.${extension.toLowerCase()}`);
+
+    return extension && !alreadyHasExtension ? `${safeTitle}.${extension}` : safeTitle;
 };
 
 type MediaAttachmentsBoxProps = {
@@ -184,7 +189,11 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
         ...item,
         type: allowedTypes.includes(item.type as any) ? (item.type as Attachment['type']) : 'link',
     }));
-    const combinedAttachments = [...(attachments ?? []), ...safeEvidenceAttachments];
+    const normalizedAttachments = (attachments ?? []).map(attachment => ({
+        ...attachment,
+        url: getAttachmentSource(attachment) ?? '',
+    }));
+    const combinedAttachments = [...normalizedAttachments, ...safeEvidenceAttachments];
     const lightboxItems = combinedAttachments.filter(
         a => a.type === 'photo' || a.type === 'video'
     ) as LightboxItem[];

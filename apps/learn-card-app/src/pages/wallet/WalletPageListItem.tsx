@@ -1,12 +1,34 @@
 import React from 'react';
 import { IonSpinner } from '@ionic/react';
 
+import * as m from '../../paraglide/messages.js';
+
 import DotIcon from 'learn-card-base/svgs/DotIcon';
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 
-import { conditionalPluralize, CredentialCategoryEnum } from 'learn-card-base';
+import { CredentialCategoryEnum } from 'learn-card-base';
 
 import { useTheme } from '../../theme/hooks/useTheme';
+
+/**
+ * CredentialCategoryEnum → wallet.categories.* translation lookup.
+ * Mirrors the map in WalletPageSquare.tsx; lets the list-view Passport
+ * tile read the same translated title as the grid-view square.
+ */
+const CATEGORY_TITLE: Partial<Record<CredentialCategoryEnum, () => string>> = {
+    [CredentialCategoryEnum.aiTopic]: m['wallet.categories.aiSessions'],
+    [CredentialCategoryEnum.aiPathway]: m['wallet.categories.aiPathways'],
+    [CredentialCategoryEnum.aiInsight]: m['wallet.categories.aiInsights'],
+    [CredentialCategoryEnum.skill]: m['wallet.categories.skills'],
+    [CredentialCategoryEnum.socialBadge]: m['wallet.categories.socialBadges'],
+    [CredentialCategoryEnum.achievement]: m['wallet.categories.achievements'],
+    [CredentialCategoryEnum.learningHistory]: m['wallet.categories.studies'],
+    [CredentialCategoryEnum.accomplishment]: m['wallet.categories.portfolio'],
+    [CredentialCategoryEnum.accommodation]: m['wallet.categories.assistance'],
+    [CredentialCategoryEnum.workHistory]: m['wallet.categories.experiences'],
+    [CredentialCategoryEnum.family]: m['wallet.categories.families'],
+    [CredentialCategoryEnum.id]: m['wallet.categories.ids'],
+};
 
 type WalletPageListItemProps = {
     handleItemClick: (categoryType: CredentialCategoryEnum) => void;
@@ -39,10 +61,13 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
         <p className={`font-poppins text-[14px] ${passportCardTextColor ?? 'text-grayscale-900'}`}>
             {loading ? (
                 <div className="flex items-center gap-[5px]">
-                    <IonSpinner name="crescent" className="h-[14px] w-[14px]" /> Items
+                    <IonSpinner name="crescent" className="h-[14px] w-[14px]" />{' '}
+                    {m['wallet.items']()}
                 </div>
+            ) : count === 1 ? (
+                m['wallet.itemCountOne']({ count })
             ) : (
-                conditionalPluralize(count, 'Item')
+                m['wallet.itemCountOther']({ count })
             )}
         </p>
     );
@@ -58,7 +83,9 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
         <div
             role="button"
             onClick={() => handleItemClick(categoryType)}
-            className={`flex gap-[10px] w-full rounded-[15px] p-[10px] shadow-bottom-2-6 border-[3px] border-white ${!passportCardBgColor ? `bg-${primaryColor}` : ''}`}
+            className={`flex gap-[10px] w-full rounded-[15px] p-[10px] shadow-bottom-2-6 border-[3px] border-white ${
+                !passportCardBgColor ? `bg-${primaryColor}` : ''
+            }`}
             style={passportCardBgColor ? { backgroundColor: passportCardBgColor } : undefined}
         >
             <div className="flex items-center justify-center relative">
@@ -70,8 +97,12 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
             </div>
 
             <div className="flex flex-col items-start justify-center">
-                <p className={`font-poppins text-[17px] font-[600] leading-[130%] ${passportCardTextColor ?? 'text-grayscale-900'}`}>
-                    {walletPageItem.labels.plural}
+                <p
+                    className={`font-poppins text-[17px] font-[600] leading-[130%] ${
+                        passportCardTextColor ?? 'text-grayscale-900'
+                    }`}
+                >
+                    {CATEGORY_TITLE[walletPageItem.categoryId]?.() ?? walletPageItem.labels.plural}
                 </p>
                 {countDisplay}
             </div>

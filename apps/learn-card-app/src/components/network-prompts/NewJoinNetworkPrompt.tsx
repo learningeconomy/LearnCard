@@ -28,11 +28,12 @@ import HeaderBranding from 'learn-card-base/components/headerBranding/HeaderBran
 import ErrorLogout from './ErrorLogout';
 import Pencil from '../svgs/Pencil';
 
-import { useFilestack, UploadRes } from 'learn-card-base';
+import { useImageUpload, UploadRes } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
 import { getAuthToken } from 'learn-card-base/helpers/authHelpers';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
+import { m } from '../../paraglide/messages.js';
 
 import useTheme from '../../theme/hooks/useTheme';
 
@@ -114,7 +115,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
         setUploadProgress(false);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
@@ -488,7 +489,7 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                             className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-emerald-700 font-poppins text-xl w-full shadow-lg normal disabled:opacity-70"
                             disabled={isLoading}
                         >
-                            {isLoading ? 'Loading...' : "Let's Go!"}
+                            {isLoading ? m['common.loading']() : m['common.letsGo']()}
                         </button>
                     </IonRow>
                 </div>
@@ -496,11 +497,13 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                 <IonRow className="flex items-center justify-center mt-4 w-full">
                     <IonCol className="flex flex-col items-center justify-center text-center">
                         <p className="text-center text-sm font-normal px-16 text-grayscale-600">
-                            You own your own data.
+                            {m['legal.dataOwnership']()}
                             <br />
                             All connections are encrypted.
                         </p>
-                        <button className={`text-${primaryColor} font-bold`}>Learn More</button>
+                        <button className={`text-${primaryColor} font-bold`}>
+                            {m['common.learnMore']()}
+                        </button>
                     </IonCol>
                 </IonRow>
 
@@ -510,14 +513,14 @@ const NewJoinNetworkPrompt: React.FC<NewJoinNetworkPromptProps> = ({ handleClose
                             onClick={openPP}
                             className={`text-${primaryColor} font-bold text-sm`}
                         >
-                            Privacy Policy
+                            {m['legal.privacyPolicy']()}
                         </button>
                         <span className={`text-${primaryColor} font-bold text-sm`}>•</span>
                         <button
                             onClick={openToS}
                             className={`text-${primaryColor} font-bold text-sm`}
                         >
-                            Terms of Service
+                            {m['legal.termsOfService']()}
                         </button>
                     </IonCol>
                 </IonRow>

@@ -12,6 +12,20 @@ import styles from 'rollup-plugin-styles';
 
 const packageJson = require('./package.json');
 
+/**
+ * Force singleton-bearing modules into their own shared chunk. With multiple
+ * entry points (src/index.ts + every component index.ts) and no manualChunks,
+ * rollup duplicates small modules across entry chunks — which is fatal for
+ * `src/i18n` because each copy runs its own `createContext()`, yielding multiple
+ * I18nContext instances. The app mounts the provider on one instance while the
+ * rendered components (VerificationsBox, etc.) read another → `useT` silently
+ * falls back to English. Keeping i18n in a single chunk guarantees one context.
+ */
+const manualChunks = id => {
+    if (id.includes('/src/i18n/')) return 'i18n';
+    return undefined;
+};
+
 export default [
     {
         input: ['src/index.ts', ...glob.sync('src/?(components)/**/index.ts')],
@@ -22,12 +36,14 @@ export default [
                 sourcemap: true,
                 exports: 'named',
                 assetFileNames: '[name]-[hash][extname]',
+                manualChunks,
             },
             {
                 dir: packageJson.module,
                 format: 'esm',
                 sourcemap: true,
                 assetFileNames: '[name]-[hash][extname]',
+                manualChunks,
             },
         ],
         plugins: [

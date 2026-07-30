@@ -34,6 +34,7 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         cloudService: 'https://cloud.learncard.com/trpc',
         lcaApi: 'https://api.learncard.app/trpc',
         xapi: undefined,
+        notificationsEndpoint: 'https://api.learncard.app/api/notifications/send',
         aiService: 'https://api.learncloud.ai',
         corsProxyApiKey: undefined,
     },
@@ -59,6 +60,13 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
             enableEmailBackupShare: true,
             requireEmailForPhoneUsers: false,
         },
+    },
+
+    storage: {
+        provider: 'filestack',
+        apiKey: 'A7RsW3VzfSNO2TCsFJ6Eiz',
+        cdnDomain: 'cdn.filestackcontent.com',
+        apiDomain: 'www.filestackapi.com',
     },
 
     branding: {
@@ -108,6 +116,11 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         posthogHost: undefined,
     },
 
+    registries: {
+        badgePackUrls: ['https://peerbadges.com/api/public/badges.json'],
+        badgePackAssets: [],
+    },
+
     links: {
         appStoreUrl: 'https://apps.apple.com/us/app/learncard/id1635841898',
         playStoreUrl: 'https://play.google.com/store/apps/details?id=com.learncard.app',
@@ -143,6 +156,11 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
             'openid-credential-offer',
             'openid4vp',
         ],
+    },
+
+    i18n: {
+        defaultLanguage: 'en',
+        supportedLanguages: ['en'],
     },
 };
 

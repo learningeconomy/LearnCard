@@ -4,7 +4,8 @@ import { useHistory } from 'react-router-dom';
 import {
     useModal,
     useToast,
-    useFilestack,
+    useImageUpload,
+    isKnownImageUploadUrl,
     useGetProfile,
     useCreateBoost,
     useConfirmation,
@@ -125,7 +126,7 @@ const BulkBoostImportPage: React.FC = () => {
     //   row index -> image status
     const [imageTracking, setImageTracking] = useState<ImageTrackingType>(new Map());
 
-    const { uploadImageFromUrl, singleImageUpload } = useFilestack({
+    const { uploadImageFromUrl, singleImageUpload } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (url, _file, data) => {},
     });
@@ -460,14 +461,14 @@ const BulkBoostImportPage: React.FC = () => {
             // Process batch using Promise.all for parallel processing
             await Promise.all(
                 csvData.map(async (data, index) => {
-                    // upload images if they're not already in filestack
+                    // upload images if they're not already in configured image storage
                     let badgeThumb = data[DataKeys.image];
-                    if (badgeThumb && !badgeThumb.includes('filestack')) {
+                    if (badgeThumb && !isKnownImageUploadUrl(badgeThumb)) {
                         badgeThumb = await uploadImageFromUrl(badgeThumb);
                     }
 
                     let bgImage = data[DataKeys.backgroundImage];
-                    if (bgImage && !bgImage.includes('filestack')) {
+                    if (bgImage && !isKnownImageUploadUrl(bgImage)) {
                         bgImage = await uploadImageFromUrl(bgImage);
                     }
 

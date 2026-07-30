@@ -8,6 +8,7 @@ import IntroSlides from './components/intro-slides/IntroSlides';
 import { IonApp, setupIonicReact } from '@ionic/react';
 
 import { lazyWithRetry, useIsLoggedIn } from 'learn-card-base';
+import { useEnforceVisibleLocale } from './i18n/useLanguageSelectorConfig';
 import firstStartupStore, {
     useIntroSlidesCompleted,
 } from 'learn-card-base/stores/firstStartupStore';
@@ -52,6 +53,9 @@ const LazyFullApp = lazyWithRetry(() => import('./FullApp'));
 
 const App: React.FC = () => {
     useIntroSlidesCompleted();
+    // Falls the active locale back to a visible language if the
+    // hideLanguageSelector flag hides the one the user is currently viewing.
+    useEnforceVisibleLocale();
     const introSlidesCompleted = firstStartupStore.get.introSlidesCompleted();
     const isLoggedIn = useIsLoggedIn();
     const isNativePlatform = Capacitor?.isNativePlatform() ?? false;

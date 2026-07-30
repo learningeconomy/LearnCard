@@ -68,6 +68,7 @@ import {
     LearnCardRolesEnum,
     LearnCardRoles,
 } from '../../../components/onboarding/onboarding.helpers';
+import { getRoleTitle } from '../../../components/onboarding/onboardingRoles/onboardingRolesI18n';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 import {
     useWallet,
@@ -88,6 +89,38 @@ import {
 import { getGreetingAndEmoji } from './launchPadHeader.helpers';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import AddToPassportMenu from '../../../components/add-to-passport/AddToPassportMenu';
+import * as m from '../../../paraglide/messages.js';
+
+// Translation map: internal ID → translated display label
+const ACTION_LABELS: Record<string, () => string> = {
+    'Add to LearnCard': () => m['launchpad.actions.addToLearnCard'](),
+    'Build My LearnCard': () => m['launchpad.actions.buildMyLearnCard'](),
+    'New AI Tutoring Session': () => m['launchpad.actions.newAiTutoringSession'](),
+    'Understand My Skills': () => m['launchpad.actions.understandMySkills'](),
+    'Customize AI Sessions': () => m['launchpad.actions.customizeAiSessions'](),
+    'Share Insights with Teacher': () => m['launchpad.actions.shareInsightsWithTeacher'](),
+    'View Learner Insights': () => m['launchpad.actions.viewLearnerInsights'](),
+    'Request Learner Insights': () => m['launchpad.actions.requestLearnerInsights'](),
+    'Issue Credential': () => m['launchpad.actions.issueCredential'](),
+    'Create Credential': () => m['launchpad.actions.createCredential'](),
+    'Edit Skills Frameworks': () => m['launchpad.actions.editSkillsFrameworks'](),
+    'Manage Skills Frameworks': () => m['launchpad.actions.manageSkillsFrameworks'](),
+    'Create Family': () => m['launchpad.actions.createFamily'](),
+    'View Family': () => m['launchpad.actions.viewFamily'](),
+    'Boost Child': () => m['launchpad.actions.boostChild'](),
+    'Add Child': () => m['launchpad.actions.addChild'](),
+    'Switch Child': () => m['launchpad.actions.switchChild'](),
+    'View Child Insights': () => m['launchpad.actions.viewChildInsights'](),
+    'Create API Token': () => m['launchpad.actions.createApiToken'](),
+    'Create Signing Authority': () => m['launchpad.actions.createSigningAuthority'](),
+    'Create ConsentFlow': () => m['launchpad.actions.createConsentFlow'](),
+    'Switch Network': () => m['launchpad.actions.switchNetwork'](),
+    'Read Docs': () => m['launchpad.actions.readDocs'](),
+    'Import Credentials': () => m['launchpad.actions.importCredentials'](),
+    'Create Organization': () => m['launchpad.actions.createOrganization'](),
+    'Switch Account': () => m['launchpad.actions.switchAccount'](),
+    'Claim Credential': () => m['launchpad.actions.claimCredential'](),
+};
 
 import { getLogger } from 'learn-card-base';
 const log = getLogger('launch-pad-action-modal');
@@ -432,7 +465,9 @@ const ActionButton: React.FC<{
                 <span className="mr-2 pb-[5px]">
                     {getIconForActionButton(label, { buildMyLCIcon, AiInsightsIcon })}
                 </span>{' '}
-                {label === 'Build My LearnCard' ? `Build My ${brandingConfig.name}` : label}
+                {label === 'Build My LearnCard'
+                    ? `Build My ${brandingConfig.name}`
+                    : ACTION_LABELS[label]?.() ?? label}
             </div>
         </button>
     );
@@ -488,7 +523,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         } catch (e) {
             setOptimisticRole(null);
             setRole((lcNetworkProfile?.role as LearnCardRolesEnum) ?? LearnCardRolesEnum.learner);
-            presentToast('Unable to update role', {
+            presentToast(m['launchpad.modal.unableToUpdateRole'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -508,9 +543,9 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             log.error('Failed to refresh profile cache after role change', e);
         }
 
-        const newRoleTitle = LearnCardRoles.find(r => r.type === newRole)?.title ?? 'Learner';
-        presentToast(`You're now a ${newRoleTitle}.`, {
-            title: 'Role updated',
+        const newRoleTitle = getRoleTitle(newRole);
+        presentToast(m['launchpad.modal.nowRole']({ role: newRoleTitle }), {
+            title: m['launchpad.modal.roleUpdated'](),
             type: ToastTypeEnum.Success,
             hasDismissButton: true,
             hasCheckmark: true,
@@ -539,7 +574,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
         isChildProfile ? LearnCardRolesEnum.learner : role ?? LearnCardRolesEnum.learner
     ) as LearnCardRolesEnum;
 
-    const roleLabel = LearnCardRoles.find(r => r.type === activeRole)?.title ?? 'Learner';
+    const roleLabel = getRoleTitle(activeRole);
     const roleIconSrc = roleIcons[activeRole];
     const roleIconBgStyle: React.CSSProperties = { backgroundColor: iconBgColors[activeRole] };
 
@@ -714,7 +749,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
             const wallet = await initWallet();
 
             if (!wallet || !currentLCNUser) {
-                presentToast('Unable to open Request Insights', {
+                presentToast(m['launchpad.modal.unableToOpenRequestInsights'](), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
@@ -751,7 +786,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                 }
             );
         } catch (e) {
-            presentToast('Unable to open Request Insights', {
+            presentToast(m['launchpad.modal.unableToOpenRequestInsights'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -830,12 +865,14 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                                                     >
                                                         <img
                                                             src={roleIcons[roleItem.type]}
-                                                            alt={`${roleItem.title} icon`}
+                                                            alt={`${getRoleTitle(
+                                                                roleItem.type
+                                                            )} icon`}
                                                             className="h-[20px] w-[20px] object-contain"
                                                         />
                                                     </span>
                                                     <span className="flex-1 text-left">
-                                                        {roleItem.title}
+                                                        {getRoleTitle(roleItem.type)}
                                                     </span>
                                                     {isSelected && (
                                                         <Checkmark className="w-[15px] h-[15px] text-[#2A2F55]" />
@@ -880,7 +917,7 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                         actionModalCardTextColor ? { color: actionModalCardTextColor } : undefined
                     }
                 >
-                    What would you like to do?
+                    {m['launchpad.modal.whatWouldYouLikeToDo']()}
                 </h3>
             </div>
 
@@ -952,7 +989,9 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                             version="2"
                             className="w-[26px] h-[26px] min-w-[26px] min-h-[26px]"
                         />
-                        <span className="text-base font-poppins font-semibold">Passport</span>
+                        <span className="text-base font-poppins font-semibold">
+                            {m['launchpad.passport']()}
+                        </span>
                     </button>
                     <button
                         type="button"
@@ -970,7 +1009,9 @@ const LaunchPadActionModal: React.FC<{ showFooterNav?: boolean }> = ({ showFoote
                             version="2"
                             className="w-[26px] h-[26px] min-w-[26px] min-h-[26px]"
                         />
-                        <span className="text-base font-poppins font-semibold">Launchpad</span>
+                        <span className="text-base font-poppins font-semibold">
+                            {m['launchpad.launchpad']()}
+                        </span>
                     </button>
                 </div>
             )}

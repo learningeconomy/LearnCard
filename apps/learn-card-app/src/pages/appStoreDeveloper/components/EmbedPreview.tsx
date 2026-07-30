@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
 
+import * as m from '../../../paraglide/messages.js';
+
 import { init as initEmbed } from '@learncard/embed-sdk';
 import { clearFinalizeCache } from '../../../hooks/useFinalizeInboxCredentials';
 import { autoVerifyStore } from '../../../stores/autoVerifyStore';
@@ -57,7 +59,9 @@ export const EmbedPreview: React.FC<EmbedPreviewProps> = ({
 
         // Clear stored session so switching templates starts a fresh claim flow
         const storageKey = `lcEmbed:v1:${publishableKey || 'anon'}`;
-        try { localStorage.removeItem(storageKey); } catch {}
+        try {
+            localStorage.removeItem(storageKey);
+        } catch {}
 
         try {
             initEmbed({
@@ -84,25 +88,46 @@ export const EmbedPreview: React.FC<EmbedPreviewProps> = ({
                     clearFinalizeCache();
                     autoVerifyStore.set.markVerifySuccess();
                     // Open the local wallet directly — walletUrl: '' suppresses SDK's auto-open
-                    window.open(window.location.origin + '/wallet', '_blank', 'noopener,noreferrer');
+                    window.open(
+                        window.location.origin + '/wallet',
+                        '_blank',
+                        'noopener,noreferrer'
+                    );
                 },
             });
             setIsLoaded(true);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to load embed SDK');
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : m['developerPortal.components.embedPreview.failedToLoad']()
+            );
         }
 
         return () => {
             if (el) el.innerHTML = '';
         };
-    }, [publishableKey, partnerName, issuerName, issuerLogoUrl, credentialKey, brandingKey, requestBackgroundIssuance, apiBaseUrl, walletName, brandMark]);
+    }, [
+        publishableKey,
+        partnerName,
+        issuerName,
+        issuerLogoUrl,
+        credentialKey,
+        brandingKey,
+        requestBackgroundIssuance,
+        apiBaseUrl,
+        walletName,
+        brandMark,
+    ]);
 
     return (
         <div className="border rounded-lg bg-gray-50 p-6">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">Live Preview</h4>
+            <h4 className="text-sm font-medium text-gray-700 mb-3">
+                {m['developerPortal.components.embedPreview.livePreview']()}
+            </h4>
 
             <p className="text-xs text-gray-500 mb-4">
-                This is the actual claim button your users will see. Click it to test the full flow.
+                {m['developerPortal.components.embedPreview.livePreviewDesc']()}
             </p>
 
             {error && (
@@ -114,7 +139,7 @@ export const EmbedPreview: React.FC<EmbedPreviewProps> = ({
             {!isLoaded && !error && (
                 <div className="flex items-center gap-2 text-sm text-gray-400">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Loading preview...
+                    {m['developerPortal.components.embedPreview.loadingPreview']()}
                 </div>
             )}
         </div>

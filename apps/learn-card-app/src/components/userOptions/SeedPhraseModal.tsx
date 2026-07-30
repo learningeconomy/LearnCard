@@ -7,6 +7,7 @@ import { Clipboard } from '@capacitor/clipboard';
 import { ToastTypeEnum, useToast } from 'learn-card-base/hooks/useToast';
 
 import useTheme from '../../theme/hooks/useTheme';
+import * as m from '../../paraglide/messages.js';
 
 const SeedPhraseModal: React.FC<{}> = () => {
     const { colors } = useTheme();
@@ -21,20 +22,20 @@ const SeedPhraseModal: React.FC<{}> = () => {
         newModal(
             <div className="p-[20px]">
                 <p className="text-[16px] font-poppins font-medium mb-[10px] text-grayscale-900">
-                    Are you sure you want to copy this to clipboard?
+                    {m['profile.seed.copyConfirm']()}
                 </p>
                 <div className="flex justify-end items-end">
                     <button
                         className="text-[#0054E9] font-medium font-poppins leading-[150%] mr-[10px]"
                         onClick={copySeedPhrase}
                     >
-                        Confirm
+                        {m['profile.export.confirm']()}
                     </button>
                     <button
                         className="text-[#0054E9] font-medium font-poppins leading-[150%] mr-[10px]"
                         onClick={closeModal}
                     >
-                        Cancel
+                        {m['profile.export.cancel']()}
                     </button>
                 </div>
             </div>,
@@ -46,11 +47,11 @@ const SeedPhraseModal: React.FC<{}> = () => {
         closeModal();
         try {
             await Clipboard.write({ string: currentUser?.privateKey });
-            presentToast('Seed Phrase copied to clipboard', {
+            presentToast(m['profile.seed.copiedToast'](), {
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy seed phrase to clipboard', {
+            presentToast(m['profile.seed.copyFailedToast'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -60,7 +61,9 @@ const SeedPhraseModal: React.FC<{}> = () => {
     return (
         <section className="h-full pb-[100px]">
             <div className="flex flex-col p-6 w-full bg-white rounded-[30px]">
-                <h2 className="flex text-[16px] font-semibold">Your Seed Phrase:</h2>
+                <h2 className="flex text-[16px] font-semibold">
+                    {m['profile.seed.yourSeedPhrase']()}
+                </h2>
                 <IonRow className="flex items-center justify-center w-full bg-grayscale-100 mt-4 mb-4 rounded-[15px]">
                     <IonCol className="w-full flex items-center justify-between px-4 py-3 rounded-2xl">
                         <div className="w-[90%] flex justify-start items-center text-left">
@@ -89,7 +92,7 @@ const SeedPhraseModal: React.FC<{}> = () => {
                     rel="noreferrer"
                     href="https://docs.learncard.com/core-concepts/identities-and-keys/seed-phrases#the-critical-importance-of-securing-your-seed"
                 >
-                    How to store your seed phrase safely?
+                    {m['profile.seed.howToStore']()}
                 </a>
             </div>
 
@@ -99,13 +102,13 @@ const SeedPhraseModal: React.FC<{}> = () => {
                     className="flex items-center justify-center bg-indigo-500 text-white text-lg font-notoSans py-2 rounded-[20px] font-semibold w-full h-full disabled:opacity-50"
                 >
                     <KeyIcon className="w-[20px] mr-[5px]" />
-                    {revealed ? 'Hide My Seed' : 'Reveal My Seed'}
+                    {revealed ? m['profile.seed.hide']() : m['profile.seed.reveal']()}
                 </button>
                 <button
                     onClick={closeModal}
                     className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full h-full shadow-bottom mt-[10px]"
                 >
-                    Close
+                    {m['profile.close']()}
                 </button>
             </div>
         </section>

@@ -2,6 +2,7 @@ import React from 'react';
 
 import { IonFooter, IonToolbar } from '@ionic/react';
 import { FamilyCMSEditorModeEnum } from '../familyCMSState';
+import { m } from '../../../paraglide/messages.js';
 
 export const FamilyCMSFooter: React.FC<{
     handleCreateFamily: () => void;
@@ -17,7 +18,8 @@ export const FamilyCMSFooter: React.FC<{
         }
     };
 
-    const actionButtonText = editorMode === FamilyCMSEditorModeEnum.create ? 'Create' : 'Save';
+    const actionButtonText =
+        editorMode === FamilyCMSEditorModeEnum.create ? m['common.create']() : m['common.save']();
 
     return (
         <>
@@ -32,7 +34,7 @@ export const FamilyCMSFooter: React.FC<{
                                 onClick={handleCloseModal}
                                 className="bg-white font-poppins text-grayscale-900 text-lg rounded-full py-[12px] w-full mr-2 shadow-soft-bottom"
                             >
-                                Cancel
+                                {m['common.cancel']()}
                             </button>
                             <button
                                 onClick={handleOnClick}

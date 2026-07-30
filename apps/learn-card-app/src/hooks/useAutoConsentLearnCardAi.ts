@@ -1,6 +1,10 @@
 import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { getLogger } from 'learn-card-base';
+import {
+    ensureCredentialIngestion,
+    getLogger,
+    type CredentialIngestionSource,
+} from 'learn-card-base';
 const log = getLogger('use-auto-consent-learn-card-ai');
 
 import { CurrentUser, useWallet, useCurrentUser, useWithdrawConsent } from 'learn-card-base';
@@ -14,11 +18,16 @@ import {
 } from '../components/ai-passport-apps/aiPassport-apps.helpers';
 import {
     getAllCredentialUrisForCategory,
-    getFullTermsForContract,
+    getMinimumTermsForContract,
 } from '../helpers/contract.helpers';
 
 let autoConsentInFlight: Promise<boolean> | null = null;
 let withdrawConsentInFlight: Promise<boolean> | null = null;
+const triggerCredentialIngestion = (did: string, source: CredentialIngestionSource): void => {
+    void ensureCredentialIngestion(did, source).catch(error => {
+        log.warn('Failed to start credential indexing', error);
+    });
+};
 
 type AutoConsentOptions = {
     enabled: boolean;
@@ -55,6 +64,8 @@ export const useAutoConsentLearnCardAi = () => {
 
                     if (!learnCardAiContractUri) return false;
 
+                    await consentWallet.invoke.getProfile();
+
                     const consentedContracts = await getOrFetchConsentedContracts(
                         queryClient,
                         consentWallet
@@ -65,7 +76,10 @@ export const useAutoConsentLearnCardAi = () => {
                             consent?.status !== 'withdrawn'
                     );
 
-                    if (alreadyConsented) return true;
+                    if (alreadyConsented) {
+                        triggerCredentialIngestion(consentWallet.id.did(), 'app_open');
+                        return true;
+                    }
 
                     const contractDetails = await consentWallet.invoke.getContract(
                         learnCardAiContractUri
@@ -84,7 +98,7 @@ export const useAutoConsentLearnCardAi = () => {
                         ...(currentUser ?? {}),
                         ...(userOverrides ?? {}),
                     };
-                    const terms = getFullTermsForContract(contractDetails.contract, consentUser);
+                    const terms = getMinimumTermsForContract(contractDetails.contract, consentUser);
 
                     const categoriesWithLiveSync = Object.keys(terms.read.credentials.categories);
                     for (const category of categoriesWithLiveSync) {
@@ -126,6 +140,7 @@ export const useAutoConsentLearnCardAi = () => {
                     });
 
                     await queryClient.invalidateQueries({ queryKey: ['useConsentedContracts'] });
+                    triggerCredentialIngestion(consentWallet.id.did(), 'consent');
 
                     return true;
                 } catch (error) {
@@ -148,6 +163,7 @@ export const useAutoConsentLearnCardAi = () => {
                         );
 
                         if (recoveredConsent) {
+                            triggerCredentialIngestion(recoveryWallet.id.did(), 'app_open');
                             return true;
                         }
                     } catch {

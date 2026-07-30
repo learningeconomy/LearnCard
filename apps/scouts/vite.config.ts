@@ -2,16 +2,19 @@ import path from 'path';
 
 import GlobalPolyfill from '@esbuild-plugins/node-globals-polyfill';
 import { defineConfig, loadEnv } from 'vite';
+import type { UserConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import react from '@vitejs/plugin-react-swc';
 import svgr from 'vite-plugin-svgr';
 import stdlibbrowser from 'node-stdlib-browser';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 
-export default defineConfig(async ({ mode }) => {
+export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '');
+    const cacheDir = env.VITE_DOCKER_SOURCE === 'true' ? '.vite-docker' : '.vite-local';
 
     return {
+        cacheDir,
         plugins: [
             react(),
             svgr(),
@@ -37,6 +40,7 @@ export default defineConfig(async ({ mode }) => {
                 : 'undefined',
             API_URL: env.API_URL ? JSON.stringify(env.API_URL) : 'undefined',
             __PACKAGE_VERSION__: JSON.stringify(process.env.npm_package_version),
+            __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
             'process.version': '"1.0.0"',
             'process.env': env,
             IS_PRODUCTION: env.NODE_ENV === 'production',
@@ -99,5 +103,5 @@ export default defineConfig(async ({ mode }) => {
                 },
             },
         },
-    };
+    } as UserConfig;
 });

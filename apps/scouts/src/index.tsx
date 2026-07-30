@@ -3,10 +3,11 @@ import { Buffer } from 'buffer';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { asyncWithLDProvider } from 'launchdarkly-react-client-sdk';
-import { LAUNCH_DARKLY_CONFIG } from './constants/launchDarkly';
-import { resolveTenantConfig, TenantConfigProvider } from 'learn-card-base';
+import { ANONYMOUS_CONTEXT } from './constants/launchDarkly';
+import { TenantConfigProvider } from 'learn-card-base';
 
 import App from './App';
+import { bootstrapTenantConfig } from './config/bootstrapTenantConfig';
 
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import reportWebVitals from './reportWebVitals';
@@ -18,6 +19,8 @@ const log = getLogger('index');
 (window as any).Buffer = Buffer;
 
 (async () => {
+    const tenantConfig = await bootstrapTenantConfig();
+
     // notifyAppReady
     const capGoApp = await CapacitorUpdater.notifyAppReady();
     const capGoBundle = capGoApp.bundle;
@@ -32,9 +35,10 @@ const log = getLogger('index');
     // initialize & hide splash screen
     SplashScreen.hide();
 
-    const tenantConfig = await resolveTenantConfig();
-
-    const LDProvider = await asyncWithLDProvider(LAUNCH_DARKLY_CONFIG);
+    const LDProvider = await asyncWithLDProvider({
+        clientSideID: tenantConfig.observability.launchDarklyClientId,
+        context: ANONYMOUS_CONTEXT,
+    });
     const container = document.getElementById('root');
     if (container) {
         const root = createRoot(container);

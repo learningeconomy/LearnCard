@@ -1,9 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useHistory } from 'react-router-dom';
+import type { UnsignedVC } from '@learncard/types';
+import { useHistory, useLocation } from 'react-router-dom';
 import { useIonAlert } from '@ionic/react';
+import { useQueryClient } from '@tanstack/react-query';
 
 import {
     buildSimpleTemplate,
+    getCurrentLCNUserDid,
     issueViaBoost,
 } from '../../components/simple-send/simpleSend.helpers';
 import { getTypeByObv3, type CredentialTypeEntry } from './components/credentialTypeCatalog';
@@ -30,7 +33,10 @@ import {
     type OBv3CredentialTemplate,
 } from '../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 
-import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
+import {
+    getDefaultCategoryForCredential,
+    getFallBackImage,
+} from 'learn-card-base/helpers/credentialHelpers';
 import { CATEGORY_TO_ROUTE } from '../../helpers/categoryRoutes';
 import type { CredentialCategoryEnum } from 'learn-card-base';
 
@@ -42,6 +48,16 @@ import { useCredentialIdentity } from './components/useCredentialIdentity';
 import { mergeSkillAlignments, type ResolvedSkill } from './components/skillAlignment';
 import type { SelectedSkill } from '../skills/skillTypes';
 import { IssueCredentialView } from './IssueCredentialView';
+import {
+    ACCOUNT_CREATED_AT_KEY,
+    AnalyticsEvents,
+    newFlowId,
+    ProfileBuildMethod,
+    SESSION_START_KEY,
+    useAnalytics,
+    useProfileSnapshotCapture,
+} from '../../analytics';
+import * as m from '../../paraglide/messages.js';
 
 const log = getLogger('issue-page');
 
@@ -88,14 +104,40 @@ const clearSuccessSnapshot = (): void => {
     }
 };
 
+const hasAchievementImage = (subject: unknown): boolean => {
+    if (!subject || typeof subject !== 'object' || Array.isArray(subject)) return false;
+
+    const image = (subject as Record<string, unknown>).image;
+    const imageRecord =
+        image && typeof image === 'object' && !Array.isArray(image)
+            ? (image as Record<string, unknown>)
+            : undefined;
+    const imageValue = imageRecord && imageRecord.value !== undefined ? imageRecord.value : image;
+
+    return (
+        typeof imageValue === 'string' ||
+        Boolean(
+            imageValue &&
+                typeof imageValue === 'object' &&
+                (imageValue as Record<string, unknown>).id
+        )
+    );
+};
+
 const IssueCredentialPage: React.FC = () => {
     const history = useHistory();
-    const { initWallet } = useWallet();
+    const { initWallet, addVCtoWallet } = useWallet();
+    const queryClient = useQueryClient();
     const { presentToast } = useToast();
     const { currentLCNUser } = useGetCurrentLCNUser();
     const { getRegisteredSigningAuthority, getRegisteredSigningAuthorities } =
         useSigningAuthority();
     const [presentAlert] = useIonAlert();
+    const { track } = useAnalytics();
+    const { capture: captureProfileSnapshot, snapshotRef: profileSnapshotRef } =
+        useProfileSnapshotCapture();
+    const location = useLocation<{ entryPoint?: string } | undefined>();
+    const issueEntryPoint = location.state?.entryPoint;
 
     const initialSnapshot = useMemo(() => readSuccessSnapshot(), []);
 
@@ -247,17 +289,17 @@ const IssueCredentialPage: React.FC = () => {
         : provenance.label || 'an external source';
 
     const missingHint = !template
-        ? 'Pick a type to begin'
+        ? m['issueFlow.gate.pickType']()
         : jsonError
-        ? 'Fix the JSON to continue'
+        ? m['issueFlow.gate.fixJson']()
         : viewingJson && identity.status === 'invalid'
         ? identity.reason
         : !jsonOnly && !nameValid
-        ? 'Add a name to continue'
+        ? m['issueFlow.gate.addName']()
         : !allVariablesFilled
         ? `Fill in ${unfilledCount} detail${unfilledCount === 1 ? '' : 's'} to continue`
         : !recipientValid
-        ? 'Add a recipient to continue'
+        ? m['issueFlow.gate.addRecip']()
         : null;
 
     const handleSelectType = useCallback((entry: CredentialTypeEntry) => {
@@ -369,33 +411,6 @@ const IssueCredentialPage: React.FC = () => {
             return obj;
         };
 
-        let credentialSubjectName: string | undefined;
-        let credentialSubjectImage: string | undefined;
-        let showIssuerImage = true;
-
-        // getImageUrlFromCredential ranks credentialSubject.image above
-        // achievement.image, so a recipient photo would hide the badge artwork.
-        // The issued credential never sets credentialSubject.image; only inject
-        // it here when there's no badge image, keeping the preview faithful.
-        const hasBadgeImage = Boolean(ach?.image?.value);
-
-        if (recipientMode === 'self') {
-            credentialSubjectName = currentLCNUser?.displayName || issuerName;
-            credentialSubjectImage = hasBadgeImage ? undefined : issuerImage;
-        } else if (
-            recipientMode === 'people' &&
-            recipients.length === 1 &&
-            recipients[0].kind === 'profile'
-        ) {
-            credentialSubjectName = recipients[0].displayName;
-            credentialSubjectImage = hasBadgeImage ? undefined : recipients[0].image;
-        } else {
-            // No specific recipient yet (link / anyone / email / multiple): don't
-            // let the badge fall back to the issuer's photo — show the category's
-            // default artwork instead so the issuer isn't mistaken for the holder.
-            showIssuerImage = false;
-        }
-
         const filledJson = fill(json) as Record<string, unknown>;
         const rawSubject = filledJson.credentialSubject;
         // A custom VC may carry an array (or absent) credentialSubject; only the
@@ -405,10 +420,57 @@ const IssueCredentialPage: React.FC = () => {
                 ? (rawSubject as Record<string, unknown>)
                 : undefined;
 
+        const previewCategory =
+            getDefaultCategoryForCredential(filledJson as UnsignedVC) || 'Achievement';
+        const fallbackImage = getFallBackImage(previewCategory);
+        const selfIssuedDid = getCurrentLCNUserDid(currentLCNUser?.profileId);
+
+        let credentialSubjectName: string | undefined;
+        let showIssuerImage = true;
+
+        // getImageUrlFromCredential ranks credentialSubject.image above
+        // achievement.image, so a recipient photo would hide the badge artwork.
+        // The issued credential never sets credentialSubject.image; only inject
+        // it here when there's no badge image, keeping the preview faithful.
+        const hasBadgeImage = hasAchievementImage(filledJson) || hasAchievementImage(ach);
+        const specificProfileRecipient =
+            recipientMode === 'people' &&
+            recipients.length === 1 &&
+            recipients[0].kind === 'profile'
+                ? recipients[0]
+                : undefined;
+        const hasSpecificRecipient = recipientMode === 'self' || Boolean(specificProfileRecipient);
+        const imageForSubject = hasSpecificRecipient
+            ? hasBadgeImage
+                ? undefined
+                : fallbackImage
+            : fallbackImage;
+
+        if (recipientMode === 'self') {
+            credentialSubjectName = currentLCNUser?.displayName || issuerName;
+        } else if (
+            recipientMode === 'people' &&
+            recipients.length === 1 &&
+            recipients[0].kind === 'profile'
+        ) {
+            credentialSubjectName = recipients[0].displayName;
+        } else {
+            // No specific recipient yet (link / anyone / email / multiple): don't
+            // let the badge fall back to the issuer's photo — show the category's
+            // default artwork instead so the issuer isn't mistaken for the holder.
+            showIssuerImage = false;
+        }
+
+        if (subjectObject) {
+            const previewSubjectDid =
+                recipientMode === 'self' ? selfIssuedDid : specificProfileRecipient?.did;
+            if (previewSubjectDid) subjectObject.id = previewSubjectDid;
+        }
+
         return {
             ...filledJson,
             issuer: {
-                id: currentLCNUser?.did || 'did:web:preview',
+                id: recipientMode === 'self' && selfIssuedDid ? selfIssuedDid : 'did:web:preview',
                 name: issuerName,
                 ...(showIssuerImage && issuerImage ? { image: issuerImage } : {}),
             },
@@ -416,7 +478,7 @@ const IssueCredentialPage: React.FC = () => {
                 ? {
                       ...subjectObject,
                       ...(credentialSubjectName ? { name: credentialSubjectName } : {}),
-                      ...(credentialSubjectImage ? { image: credentialSubjectImage } : {}),
+                      ...(imageForSubject ? { image: imageForSubject } : {}),
                   }
                 : rawSubject,
             validFrom: new Date().toISOString(),
@@ -425,8 +487,8 @@ const IssueCredentialPage: React.FC = () => {
         template,
         issuerName,
         issuerImage,
-        currentLCNUser?.did,
         currentLCNUser?.displayName,
+        currentLCNUser?.profileId,
         recipientMode,
         recipients,
         previewValues,
@@ -436,13 +498,41 @@ const IssueCredentialPage: React.FC = () => {
         if (!template || !canIssue) return;
         setError(null);
         setIsSubmitting(true);
+
+        const issueFlowId = newFlowId();
+        const issueStartedAt = Date.now();
+        const templateJson = templateToJson(template);
+        const analyticsCredentialType = ach?.achievementType?.value;
+        const analyticsCategory =
+            getDefaultCategoryForCredential(templateJson as UnsignedVC) || undefined;
+        const analyticsRecipientCount = recipientMode === 'people' ? recipients.length : undefined;
+
+        track(AnalyticsEvents.CREDENTIAL_ISSUE_STARTED, {
+            flow_id: issueFlowId,
+            recipient_mode: recipientMode,
+            credential_type: analyticsCredentialType,
+            category: analyticsCategory,
+            recipient_count: analyticsRecipientCount,
+            has_skills: resolvedSkills.length > 0,
+            used_dynamic_variables: dynamicVars.length > 0,
+            entry_point: issueEntryPoint,
+        });
+
         try {
             const wallet = await initWallet();
-            const jsonLd = await validateCredentialJsonLd(templateToJson(template), {
+            const jsonLd = await validateCredentialJsonLd(templateJson, {
                 allowRemoteContexts: true,
             });
             if (!jsonLd.valid) {
                 log.warn('issue.validation_failed', { errors: jsonLd.errors });
+                track(AnalyticsEvents.CREDENTIAL_ISSUE_FAILED, {
+                    flow_id: issueFlowId,
+                    recipient_mode: recipientMode,
+                    step_id: 'jsonld_validation',
+                    credential_type: analyticsCredentialType,
+                    category: analyticsCategory,
+                    duration_ms: Date.now() - issueStartedAt,
+                });
                 setError({
                     message:
                         "Some details on this credential aren't valid yet. Please review and try again.",
@@ -482,28 +572,106 @@ const IssueCredentialPage: React.FC = () => {
                 await getRegisteredSigningAuthority(wallet);
             }
 
+            captureProfileSnapshot();
+
             const result = await withTransientRetry(() =>
                 issueViaBoost(wallet, template, {
                     mode: recipientMode,
                     recipients,
                     linkOptions,
-                    currentLCNUser,
+                    currentLCNUser: currentLCNUser ?? undefined,
                     claimLinkSA,
                     variableValues,
                     variableValuesByRecipient: recipientTemplateData,
                 })
             );
 
-            presentToast('Credential issued.', {
+            if (recipientMode === 'self') {
+                if (!result.credentialUri) {
+                    throw new Error(m['issueFlow.saveFailed']());
+                }
+
+                await addVCtoWallet({ uri: result.credentialUri });
+
+                await queryClient.invalidateQueries({
+                    queryKey: ['useConsentedContracts'],
+                });
+                await queryClient.invalidateQueries({ queryKey: ['useConsentFlowData'] });
+                await queryClient.invalidateQueries({
+                    queryKey: ['useConsentFlowDataForDid'],
+                });
+                await queryClient.invalidateQueries({
+                    queryKey: ['useConsentFlowDataForDidByCategory'],
+                });
+                await queryClient.invalidateQueries({
+                    queryKey: ['useResolvedConsentFlowDataForDid'],
+                });
+            }
+
+            presentToast(m['issueFlow.toastIssued'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
-            setIssuedUri(result.credentialUri);
+            setIssuedUri(result.credentialUri ?? null);
             if (result.claimLink) {
                 setClaimLink(result.claimLink);
             }
+
+            track(AnalyticsEvents.CREDENTIAL_ISSUE_SUCCEEDED, {
+                flow_id: issueFlowId,
+                recipient_mode: recipientMode,
+                credential_type: analyticsCredentialType,
+                category: analyticsCategory,
+                recipient_count: analyticsRecipientCount,
+                duration_ms: Date.now() - issueStartedAt,
+            });
+
+            if (recipientMode === 'self') {
+                track(AnalyticsEvents.SELF_BOOST, {
+                    category: analyticsCategory,
+                    boostType: analyticsCredentialType,
+                    method: 'Issue Page',
+                    msSinceMethodStarted: Date.now() - issueStartedAt,
+                });
+
+                const now = Date.now();
+                track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                    method: ProfileBuildMethod.SelfIssue,
+                    itemType: 'credential',
+                    itemCount: 1,
+                    totalItemsAfter: profileSnapshotRef.current.credentialCount + 1,
+                    msSinceAccountCreated:
+                        now - Number(localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now),
+                    msSinceSessionStart:
+                        now - Number(localStorage.getItem(SESSION_START_KEY) ?? now),
+                });
+            } else if (recipientMode === 'people') {
+                track(AnalyticsEvents.SEND_BOOST, {
+                    category: analyticsCategory,
+                    boostType: analyticsCredentialType,
+                    method: 'Issue Page',
+                    msSinceMethodStarted: Date.now() - issueStartedAt,
+                });
+            } else if (recipientMode === 'link') {
+                track(AnalyticsEvents.GENERATE_CLAIM_LINK, {
+                    category: analyticsCategory,
+                    boostType: analyticsCredentialType,
+                    method: 'Issue Page',
+                });
+            }
         } catch (e) {
             log.error('issue.failed', e);
+            track(AnalyticsEvents.CREDENTIAL_ISSUE_FAILED, {
+                flow_id: issueFlowId,
+                recipient_mode: recipientMode,
+                step_id: 'issuance',
+                error_code:
+                    (e as { code?: string })?.code ??
+                    (e instanceof Error && e.name !== 'Error' ? e.name : undefined),
+                credential_type: analyticsCredentialType,
+                category: analyticsCategory,
+                duration_ms: Date.now() - issueStartedAt,
+            });
             setError(getFriendlyIssueError(e, recipientMode));
         } finally {
             setIsSubmitting(false);
@@ -521,6 +689,15 @@ const IssueCredentialPage: React.FC = () => {
         presentToast,
         getRegisteredSigningAuthorities,
         getRegisteredSigningAuthority,
+        // addVCtoWallet, // not memoized, so this would recreate handleIssue on every render
+        queryClient,
+        track,
+        ach,
+        resolvedSkills,
+        dynamicVars,
+        captureProfileSnapshot,
+        profileSnapshotRef,
+        issueEntryPoint,
     ]);
 
     useEffect(() => {
@@ -579,12 +756,16 @@ const IssueCredentialPage: React.FC = () => {
     const handleIssueAnother = useCallback(() => {
         if (claimLink && !linkConsumed) {
             presentAlert({
-                header: 'Discard this link?',
+                header: m['issueFlow.discard.title'](),
                 message:
                     "You haven't copied or shared this claim link yet. If you start over, it'll be cleared.",
                 buttons: [
-                    { text: 'Keep', role: 'cancel' },
-                    { text: 'Discard', role: 'destructive', handler: () => reset() },
+                    { text: m['issueFlow.discard.keep'](), role: 'cancel' },
+                    {
+                        text: m['issueFlow.discard.discard'](),
+                        role: 'destructive',
+                        handler: () => reset(),
+                    },
                 ],
             });
             return;
@@ -600,7 +781,7 @@ const IssueCredentialPage: React.FC = () => {
     const handleViewWallet = useCallback(() => {
         clearSuccessSnapshot();
         const category = previewCredential
-            ? getDefaultCategoryForCredential(previewCredential as any)
+            ? getDefaultCategoryForCredential(previewCredential as UnsignedVC)
             : undefined;
         const route =
             recipientMode === 'self' && category

@@ -12,6 +12,9 @@ import type { NotificationType } from 'packages/plugins/lca-api-plugin/src/types
 
 import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEarnedCard';
 
+import * as m from '../../../paraglide/messages.js';
+import { useLocale } from '../../../i18n';
+
 type ActivityRecord = {
     id: string;
     uri: string;
@@ -67,19 +70,19 @@ type ActionableItem = {
 const titleForNotificationType = (type: string): string => {
     switch (type) {
         case 'CONNECTION_REQUEST':
-            return 'New connection request';
+            return m['dashboard.activity.notifConnectionRequest']();
         case 'CREDENTIAL_RECEIVED':
-            return 'Credential received';
+            return m['dashboard.activity.notifCredentialReceived']();
         case 'BOOST_RECEIVED':
-            return 'New credential available';
+            return m['dashboard.activity.notifBoostReceived']();
         case 'PRESENTATION_REQUEST':
-            return 'Presentation requested';
+            return m['dashboard.activity.notifPresentationRequest']();
         case 'DEVICE_LINK_REQUEST':
-            return 'Device link request';
+            return m['dashboard.activity.notifDeviceLinkRequest']();
         case 'GUARDIAN_APPROVAL_PENDING':
-            return 'Guardian approval needed';
+            return m['dashboard.activity.notifGuardianApproval']();
         default:
-            return 'New notification';
+            return m['dashboard.activity.notifDefault']();
     }
 };
 
@@ -106,7 +109,7 @@ const SkeletonRow: React.FC<{ index: number }> = ({ index }) => (
 const MeanwhileTips: React.FC<{ tips: EmptyTip[] }> = ({ tips }) => (
     <div className="mt-auto pt-3 border-t border-grayscale-100 flex flex-col gap-1">
         <p className="text-[11px] font-medium tracking-wider text-grayscale-400 uppercase px-1 mb-1">
-            Meanwhile
+            {m['dashboard.activity.meanwhile']()}
         </p>
         {tips.map(tip => {
             const TipIcon = tip.Icon;
@@ -197,14 +200,16 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
 }) => {
     const history = useHistory();
 
+    const locale = useLocale();
+
     const actionableItems = useMemo<ActionableItem[]>(() => {
         const out: ActionableItem[] = [];
 
         for (const conn of pendingConnections) {
-            const name = conn.displayName?.trim() || 'Someone';
+            const name = conn.displayName?.trim() || m['dashboard.activity.someone']();
             out.push({
                 key: `conn-${conn.profileId ?? name}`,
-                title: `${name} wants to connect`,
+                title: m['dashboard.activity.wantsToConnect']({ name }),
                 imageUrl: conn.image?.trim() || undefined,
                 timestamp: Date.now(),
                 onClick: () => history.push('/contacts/requests'),
@@ -212,10 +217,10 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
         }
 
         for (const req of pendingContractRequests) {
-            const name = req.profile?.displayName?.trim() || 'An app';
+            const name = req.profile?.displayName?.trim() || m['dashboard.activity.anApp']();
             out.push({
                 key: `contract-${req.profile?.profileId ?? name}`,
-                title: `${name} requested data access`,
+                title: m['dashboard.activity.requestedDataAccess']({ name }),
                 subtitle: req.contract?.name,
                 imageUrl: req.profile?.image?.trim() || undefined,
                 timestamp: Date.now(),
@@ -248,7 +253,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
         }
 
         return out;
-    }, [pendingConnections, pendingContractRequests, notifications, history]);
+    }, [pendingConnections, pendingContractRequests, notifications, history, locale]);
 
     const actionableTotal = actionableItems.length;
     const visibleActionable = actionableItems.slice(0, MAX_ACTIONABLE);
@@ -265,7 +270,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
         return (
             <section className="bg-white rounded-[20px] p-5 desktop:p-6 shadow-soft-bottom border border-grayscale-200 animate-fade-in-up flex flex-col desktop:min-h-[420px]">
                 <h2 className="text-xs font-medium tracking-wider text-grayscale-500 uppercase mb-3">
-                    Activity
+                    {m['dashboard.activity.title']()}
                 </h2>
                 <div className="flex flex-col items-center text-center py-6 desktop:py-8">
                     <span
@@ -286,10 +291,11 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                             <path d="M10 21a2 2 0 0 0 4 0" />
                         </svg>
                     </span>
-                    <p className="text-sm font-semibold text-grayscale-900">No alerts right now</p>
+                    <p className="text-sm font-semibold text-grayscale-900">
+                        {m['dashboard.activity.emptyTitle']()}
+                    </p>
                     <p className="mt-1 text-xs text-grayscale-500 leading-relaxed max-w-[260px]">
-                        We&apos;ll let you know here when someone wants to connect or send you a
-                        credential.
+                        {m['dashboard.activity.emptySubtitle']()}
                     </p>
                 </div>
                 {emptyTips.length > 0 && <MeanwhileTips tips={emptyTips} />}
@@ -300,7 +306,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
     return (
         <section className="bg-white rounded-[20px] p-4 shadow-soft-bottom border border-grayscale-200 animate-fade-in-up flex flex-col">
             <h2 className="text-xs font-medium tracking-wider text-grayscale-500 uppercase mb-2">
-                Activity
+                {m['dashboard.activity.title']()}
             </h2>
 
             {hasActionable && (
@@ -314,8 +320,10 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                         className="self-start text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors mt-0.5"
                     >
                         {actionableTotal > MAX_ACTIONABLE
-                            ? `View ${actionableTotal - MAX_ACTIONABLE} more →`
-                            : 'View all pending →'}
+                            ? m['dashboard.activity.viewMore']({
+                                  count: actionableTotal - MAX_ACTIONABLE,
+                              })
+                            : m['dashboard.activity.viewAllPending']()}
                     </button>
                 </div>
             )}
@@ -363,7 +371,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                         onClick={() => history.push('/wallet')}
                         className="self-start text-xs font-medium text-grayscale-600 hover:text-grayscale-900 transition-colors mt-1"
                     >
-                        View all in passport →
+                        {m['dashboard.activity.viewAllPassport']()}
                     </button>
                 </div>
             )}

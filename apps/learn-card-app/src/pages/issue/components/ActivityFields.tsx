@@ -2,9 +2,15 @@ import React from 'react';
 
 import type { OBv3CredentialTemplate } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import type { ActivityField } from './credentialTypeCatalog';
-import { getDescriptor } from './fieldDescriptors';
+import {
+    getDescriptor,
+    descriptorLabel,
+    descriptorPlaceholder,
+    descriptorOptionLabel,
+} from './fieldDescriptors';
 import { ResultFieldEditor } from './ResultFieldEditor';
 import { TemplatableField } from './TemplatableField';
+import * as m from '../../../paraglide/messages.js';
 
 interface ActivityFieldsProps {
     fields: ActivityField[];
@@ -51,12 +57,12 @@ export const ActivityFields: React.FC<ActivityFieldsProps> = ({
                     return (
                         <TemplatableField
                             key={field}
-                            label={descriptor.label}
+                            label={descriptorLabel(descriptor)}
                             field={descriptor.getField(template)}
                             variableName={field}
                             canMakeDynamic={canMakeDynamic}
                             variant={descriptor.input === 'number' ? 'number' : 'input'}
-                            placeholder={descriptor.placeholder}
+                            placeholder={descriptorPlaceholder(descriptor)}
                             onChange={next =>
                                 onChangeTemplate(descriptor.setField!(template, next))
                             }
@@ -66,17 +72,20 @@ export const ActivityFields: React.FC<ActivityFieldsProps> = ({
 
                 return (
                     <div key={field}>
-                        <label className={LABEL_CLASS}>{descriptor.label}</label>
+                        <label className={LABEL_CLASS}>{descriptorLabel(descriptor)}</label>
                         {descriptor.input === 'select' ? (
                             <select
                                 value={value}
                                 onChange={e => onChange(e.target.value)}
                                 className={INPUT_CLASS}
                             >
-                                <option value="">{descriptor.placeholder ?? 'Select…'}</option>
+                                <option value="">
+                                    {descriptorPlaceholder(descriptor) ??
+                                        m['issueFlow.fields.selectDefault']()}
+                                </option>
                                 {(descriptor.options ?? []).map(opt => (
                                     <option key={opt.value} value={opt.value}>
-                                        {opt.label}
+                                        {descriptorOptionLabel(descriptor, opt)}
                                     </option>
                                 ))}
                             </select>
@@ -92,7 +101,7 @@ export const ActivityFields: React.FC<ActivityFieldsProps> = ({
                                 inputMode={descriptor.input === 'number' ? 'decimal' : undefined}
                                 value={value}
                                 onChange={e => onChange(e.target.value)}
-                                placeholder={descriptor.placeholder}
+                                placeholder={descriptorPlaceholder(descriptor)}
                                 className={INPUT_CLASS}
                             />
                         )}

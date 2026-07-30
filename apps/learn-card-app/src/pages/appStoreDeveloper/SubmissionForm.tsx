@@ -3,6 +3,9 @@ import { useHistory, useLocation, useParams } from 'react-router-dom';
 import { IonPage, IonContent, IonSpinner } from '@ionic/react';
 import { ArrowLeft, ArrowRight, Send, Loader2, AlertCircle, Save, FileEdit } from 'lucide-react';
 
+import * as m from '../../paraglide/messages.js';
+import { mDynamic } from '../../i18n/mDynamic';
+
 import { useModal, ModalTypes } from 'learn-card-base';
 
 import { useDeveloperPortal } from './useDeveloperPortal';
@@ -18,10 +21,26 @@ import { AppPreviewModal } from './components/AppPreviewModal';
 import type { AppStoreListingCreate, ExtendedAppStoreListing } from './types';
 
 const STEPS = [
-    { id: 1, title: 'App Details', description: 'Basic information about your app' },
-    { id: 2, title: 'Launch Type', description: 'How your app integrates' },
-    { id: 3, title: 'Configuration', description: 'Technical settings' },
-    { id: 4, title: 'Review', description: 'Submit for approval' },
+    {
+        id: 1,
+        titleKey: 'developerPortal.submissionForm.steps.appDetails.title',
+        descriptionKey: 'developerPortal.submissionForm.steps.appDetails.description',
+    },
+    {
+        id: 2,
+        titleKey: 'developerPortal.submissionForm.steps.launchType.title',
+        descriptionKey: 'developerPortal.submissionForm.steps.launchType.description',
+    },
+    {
+        id: 3,
+        titleKey: 'developerPortal.submissionForm.steps.configuration.title',
+        descriptionKey: 'developerPortal.submissionForm.steps.configuration.description',
+    },
+    {
+        id: 4,
+        titleKey: 'developerPortal.submissionForm.steps.review.title',
+        descriptionKey: 'developerPortal.submissionForm.steps.review.description',
+    },
 ];
 
 interface LocationState {
@@ -43,6 +62,15 @@ const SubmissionForm: React.FC = () => {
 
     // Get listing from route state (passed from DeveloperPortal) or fetch if not available
     const listingFromState = location.state?.listing;
+
+    // Not memoized: m[...]() resolves the active locale at call time, so freezing
+    // this with useMemo([]) would leave the step labels stuck in the mount-time
+    // locale after a runtime language switch.
+    const resolvedSteps = STEPS.map(s => ({
+        id: s.id,
+        title: mDynamic(s.titleKey),
+        description: mDynamic(s.descriptionKey),
+    }));
 
     const { useListing, useCreateListing, useUpdateListing, useSubmitForReview } =
         useDeveloperPortal();
@@ -308,7 +336,11 @@ const SubmissionForm: React.FC = () => {
             setIsDraftSaved(true);
             return true;
         } catch (error) {
-            setSubmitError(error instanceof Error ? error.message : 'Failed to save draft');
+            setSubmitError(
+                error instanceof Error
+                    ? error.message
+                    : m['developerPortal.submissionForm.failedToSaveDraft']()
+            );
             setIsSavingDraft(false);
             return false;
         }
@@ -366,7 +398,11 @@ const SubmissionForm: React.FC = () => {
             setIsSubmitting(false);
             setIsSubmitted(true);
         } catch (error) {
-            setSubmitError(error instanceof Error ? error.message : 'Failed to submit listing');
+            setSubmitError(
+                error instanceof Error
+                    ? error.message
+                    : m['developerPortal.submissionForm.failedToSubmit']()
+            );
             setIsSubmitting(false);
         }
     };
@@ -402,20 +438,25 @@ const SubmissionForm: React.FC = () => {
                         </div>
                         <h2 className="text-xl font-semibold text-gray-700 mb-2">
                             {isPendingReview
-                                ? 'Changes Saved!'
+                                ? m['developerPortal.submissionForm.changesSaved']()
                                 : isEditMode
-                                ? 'Draft Updated!'
-                                : 'Draft Saved!'}
+                                ? m['developerPortal.submissionForm.draftUpdated']()
+                                : m['developerPortal.submissionForm.draftSaved']()}
                         </h2>
                         <p className="text-gray-500 text-sm mb-6">
-                            Your app "{formData.display_name}" has been{' '}
-                            {isEditMode ? 'updated' : 'saved as a draft'}.
+                            {isEditMode
+                                ? m['developerPortal.submissionForm.appUpdated']({
+                                      appName: formData.display_name,
+                                  })
+                                : m['developerPortal.submissionForm.appSavedAsDraft']({
+                                      appName: formData.display_name,
+                                  })}
                         </p>
                         <button
                             onClick={navigateToDashboard}
                             className="px-6 py-2.5 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                         >
-                            View My Listings
+                            {m['developerPortal.submissionForm.viewMyListings']()}
                         </button>
                     </div>
                 </IonContent>
@@ -425,24 +466,26 @@ const SubmissionForm: React.FC = () => {
     if (isSubmitted)
         return (
             <IonPage>
-                <AppStoreHeader title="Submission Received" />
+                <AppStoreHeader title={m['developerPortal.submissionForm.submissionReceived']()} />
                 <IonContent className="ion-padding">
                     <div className="max-w-lg mx-auto text-center py-12">
                         <div className="w-16 h-16 mx-auto mb-5 bg-emerald-100 rounded-full flex items-center justify-center">
                             <Send className="w-8 h-8 text-emerald-600" />
                         </div>
                         <h2 className="text-xl font-semibold text-gray-700 mb-2">
-                            Submission Received!
+                            {m['developerPortal.submissionForm.submissionReceived']()}
                         </h2>
                         <p className="text-gray-500 text-sm mb-6">
-                            Your app "{formData.display_name}" has been submitted for review.
+                            {m['developerPortal.submissionForm.appSubmittedForReview']({
+                                appName: formData.display_name,
+                            })}
                         </p>
                         <div className="flex gap-3 justify-center">
                             <button
                                 onClick={navigateToDashboard}
                                 className="px-6 py-2.5 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                             >
-                                View My Listings
+                                {m['developerPortal.submissionForm.viewMyListings']()}
                             </button>
                             <button
                                 onClick={() => {
@@ -452,7 +495,7 @@ const SubmissionForm: React.FC = () => {
                                 }}
                                 className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                             >
-                                Submit Another App
+                                {m['developerPortal.submissionForm.submitAnotherApp']()}
                             </button>
                         </div>
                     </div>
@@ -470,16 +513,18 @@ const SubmissionForm: React.FC = () => {
                         className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-5 text-sm"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        Back to Dashboard
+                        {m['developerPortal.submissionForm.backToDashboard']()}
                     </button>
                     <div className="mb-8">
-                        <StepIndicator steps={STEPS} currentStep={currentStep} />
+                        <StepIndicator steps={resolvedSteps} currentStep={currentStep} />
                     </div>
                     {submitError && (
                         <div className="mb-5 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
                             <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                             <div>
-                                <p className="text-sm font-medium text-red-800">Error</p>
+                                <p className="text-sm font-medium text-red-800">
+                                    {m['developerPortal.submissionForm.error']()}
+                                </p>
                                 <p className="text-sm text-red-700 mt-0.5">{submitError}</p>
                             </div>
                         </div>
@@ -514,7 +559,7 @@ const SubmissionForm: React.FC = () => {
                             }`}
                         >
                             <ArrowLeft className="w-4 h-4" />
-                            Back
+                            {m['developerPortal.submissionForm.back']()}
                         </button>
                         <div className="flex gap-3">
                             {hasMinimumDataForDraft() && (
@@ -530,16 +575,16 @@ const SubmissionForm: React.FC = () => {
                                     {isSavingDraft ? (
                                         <>
                                             <Loader2 className="w-4 h-4 animate-spin" />
-                                            Saving...
+                                            {m['developerPortal.submissionForm.savingDraft']()}
                                         </>
                                     ) : (
                                         <>
                                             <Save className="w-4 h-4" />
                                             {isPendingReview
-                                                ? 'Save Changes'
+                                                ? m['developerPortal.submissionForm.saveChanges']()
                                                 : isEditMode
-                                                ? 'Update Draft'
-                                                : 'Save Draft'}
+                                                ? m['developerPortal.submissionForm.updateDraft']()
+                                                : m['developerPortal.submissionForm.saveDraft']()}
                                         </>
                                     )}
                                 </button>
@@ -550,7 +595,7 @@ const SubmissionForm: React.FC = () => {
                                     disabled={currentStep === 2 && !formData.launch_type}
                                     className="flex items-center gap-2 px-5 py-2 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors disabled:opacity-50"
                                 >
-                                    Continue
+                                    {m['developerPortal.submissionForm.continue']()}
                                     <ArrowRight className="w-4 h-4" />
                                 </button>
                             ) : (
@@ -563,11 +608,13 @@ const SubmissionForm: React.FC = () => {
                                         {isSubmitting ? (
                                             <>
                                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                                Submitting...
+                                                {m['developerPortal.submissionForm.submitting']()}
                                             </>
                                         ) : (
                                             <>
-                                                Submit for Review
+                                                {m[
+                                                    'developerPortal.components.partnerDashboard.submitForReview'
+                                                ]()}
                                                 <Send className="w-4 h-4" />
                                             </>
                                         )}

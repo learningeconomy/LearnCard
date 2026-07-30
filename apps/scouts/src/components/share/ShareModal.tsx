@@ -9,6 +9,7 @@ import CopyStack from '../svgs/CopyStack';
 
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 import { getLogger } from 'learn-card-base';
+import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 const log = getLogger('share-modal');
 
 const ShareModal: React.FC<{
@@ -32,7 +33,9 @@ const ShareModal: React.FC<{
             } = await wallet?.invoke?.generateInvite();
 
             try {
-                const _inviteLink = `https://pass.scout.org/invite?challenge=${generatedInvite?.challenge}&profileId=${generatedInvite?.profileId}`;
+                const _inviteLink = `${getAppBaseUrl()}/invite?challenge=${
+                    generatedInvite?.challenge
+                }&profileId=${generatedInvite?.profileId}`;
                 setInviteLink(_inviteLink);
                 setLoading(false);
             } catch (e) {
@@ -51,7 +54,7 @@ const ShareModal: React.FC<{
 
         try {
             await Clipboard.write({
-                string: `https://pass.scout.org/connect?did=${wallet?.id?.did()}`,
+                string: `${getAppBaseUrl()}/connect?did=${wallet?.id?.did()}`,
             });
             presentToast('Profile link copied to clipboard', {
                 type: ToastTypeEnum.Success,
@@ -89,7 +92,7 @@ const ShareModal: React.FC<{
             await Share.share({
                 title: 'Add contact',
                 text: '',
-                url: `https://pass.scout.org/connect?did=${wallet?.id?.did()}`,
+                url: `${getAppBaseUrl()}/connect?did=${wallet?.id?.did()}`,
                 dialogTitle: '',
             });
         } else {

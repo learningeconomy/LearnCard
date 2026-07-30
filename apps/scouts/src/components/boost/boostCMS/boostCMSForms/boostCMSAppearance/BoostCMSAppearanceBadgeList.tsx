@@ -1,16 +1,22 @@
 import React, { useState } from 'react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 
-import { useFilestack, UploadRes, LCAStylesPackRegistryEntry, useModal, ModalTypes } from 'learn-card-base';
+import {
+    useImageUpload,
+    UploadRes,
+    LCAStylesPackRegistryEntry,
+    useModal,
+    ModalTypes,
+} from 'learn-card-base';
 import { useScoutPassStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
 import { IonCol, IonGrid, IonRow, IonSpinner } from '@ionic/react';
 import TransparentGrid from 'learn-card-base/assets/images/transparent-grid.png';
 import Camera from 'learn-card-base/svgs/Camera';
-import HourGlass from '../../../../../assets/lotties/hourglass.json';
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import TrashBin from '../../../../svgs/TrashBin';
-import Lottie from 'react-lottie-player';
+
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 import { CATEGORY_TO_SUBCATEGORY_LIST } from '../../../boost-options/boostOptions';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
@@ -66,14 +72,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
     disabled?: boolean;
     boostUserType: BoostUserTypeEnum;
     setActiveForm: SetState<BoostCMSActiveAppearanceForm>;
-}> = ({
-    state,
-    setState,
-    handleCloseModal,
-    disabled = false,
-    boostUserType,
-    setActiveForm,
-}) => {
+}> = ({ state, setState, handleCloseModal, disabled = false, boostUserType, setActiveForm }) => {
     const { newModal } = useModal();
     const flags = useFlags();
     const { credentials } = useHighlightedCredentials();
@@ -82,9 +81,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
     const isAdmin = credentials.some(cred => {
         const subject = cred?.credentialSubject;
         if (!subject || Array.isArray(subject)) return false;
-        return ['ext:GlobalID', 'ext:NetworkID'].includes(
-            subject?.achievement?.achievementType
-        );
+        return ['ext:GlobalID', 'ext:NetworkID'].includes(subject?.achievement?.achievementType);
     });
 
     const { data: boostAppearanceBadgeList, isLoading } = useScoutPassStylesPackRegistry();
@@ -128,7 +125,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
         setActiveForm(BoostCMSActiveAppearanceForm.appearanceForm);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
@@ -164,9 +161,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                 className="rounded-full p-0 text-base font-semibold bg-white text-grayscale-800 px-3 py-2 flex items-center justify-center border border-gray-300 w-[180px] relative"
             >
                 <span>All</span>
-                <CaretLeft
-                    className="h-auto w-[5px] text-grayscale-800 rotate-[-90deg] absolute right-3"
-                />
+                <CaretLeft className="h-auto w-[5px] text-grayscale-800 rotate-[-90deg] absolute right-3" />
             </button>
         );
     } else {
@@ -181,9 +176,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                     <IconComponent className={`h-[20px] w-[20px] text-${color}`} />
                     <span>{title}</span>
                 </div>
-                <CaretLeft
-                    className="h-auto w-[5px] text-grayscale-800 rotate-[-90deg] absolute right-3"
-                />
+                <CaretLeft className="h-auto w-[5px] text-grayscale-800 rotate-[-90deg] absolute right-3" />
             </button>
         );
     }
@@ -194,19 +187,16 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                 {isLoading ? (
                     <div className="flex flex-col w-full h-full items-center justify-center">
                         <div className="max-w-[160px] m-auto flex justify-center">
-                            <Lottie
-                                loop
-                                animationData={HourGlass}
-                                play
-                                style={{ width: '100%', height: '100%' }}
-                            />
+                            <LoadingSpinner />
                         </div>
                         <p className="mt-2 font-mouse text-3xl">Loading...</p>
                     </div>
                 ) : (
                     <div className="w-full max-w-3xl mx-auto px-4 flex flex-wrap items-start justify-center">
                         <div className="w-full flex items-center justify-between bg-white px-4 py-3 mb-4 rounded-lg shadow-sm">
-                            <p className="text-grayscale-900 font-semibold text-base whitespace-nowrap mr-2">Style Pack</p>
+                            <p className="text-grayscale-900 font-semibold text-base whitespace-nowrap mr-2">
+                                Style Pack
+                            </p>
                             {categoryButton}
                         </div>
                         {/* Allow admins to upload custom images even when CMS customization is disabled */}
@@ -230,10 +220,17 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                                 />
                                 {imageUploadLoading && (
                                     <div className="absolute z-50 flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
-                                        <IonSpinner name="crescent" color="dark" className="scale-[1.75]" />
+                                        <IonSpinner
+                                            name="crescent"
+                                            color="dark"
+                                            className="scale-[1.75]"
+                                        />
                                     </div>
                                 )}
-                                <button onClick={handleDeleteImageUploaded} className="trash-button">
+                                <button
+                                    onClick={handleDeleteImageUploaded}
+                                    className="trash-button"
+                                >
                                     <TrashBin className="trash-icon" />
                                 </button>
                             </div>
@@ -248,7 +245,11 @@ export const BoostCMSAppearanceBadgeList: React.FC<{
                                     alt="transparent grid"
                                 />
                                 <div className="absolute flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-3xl min-w-[70px] min-h-[70px] user-image-upload-inprogress">
-                                    <IonSpinner name="crescent" color="dark" className="scale-[1.75]" />
+                                    <IonSpinner
+                                        name="crescent"
+                                        color="dark"
+                                        className="scale-[1.75]"
+                                    />
                                 </div>
                             </div>
                         )}

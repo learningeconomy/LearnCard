@@ -13,6 +13,7 @@ export type UnrecognizedReason =
     | 'malformed_url'
     | 'unknown_scheme'
     | 'invalid_vc'
+    | 'interaction_unavailable'
     | 'unknown_format';
 
 /**
@@ -90,10 +91,7 @@ export const normalizeClaimInputHost = (host: string): string => {
  * tenant domain, push the URL as-is" behavior for query-classified
  * kinds that the parser would otherwise hide as `boost-claim` etc.
  */
-export const isTenantHttpsUrl = (
-    url: string,
-    config: ParseClaimInputConfig = {}
-): boolean => {
+export const isTenantHttpsUrl = (url: string, config: ParseClaimInputConfig = {}): boolean => {
     let parsed: URL;
     try {
         parsed = new URL(url);
@@ -135,7 +133,9 @@ export const parseClaimInput = (
     const customSchemes = (config.customSchemes ?? DEFAULT_CUSTOM_SCHEMES).map(s =>
         s.toLowerCase()
     );
-    const httpsHostnames = (config.httpsDomains ?? DEFAULT_HTTPS_DOMAINS).map(normalizeClaimInputHost);
+    const httpsHostnames = (config.httpsDomains ?? DEFAULT_HTTPS_DOMAINS).map(
+        normalizeClaimInputHost
+    );
 
     let parsedUrl: URL | null = null;
     try {

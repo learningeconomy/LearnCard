@@ -199,10 +199,10 @@ export type BoostCategoryMetadata = {
 // ! MUST ALIGN WITH -> learn-card-base/src/components/issueVC -> constants.ts -> { AchievementTypes }
 export const boostCategoryMetadata: Record<BoostCategoryOptionsEnum, BoostCategoryMetadata> = {
     [BoostCategoryOptionsEnum.socialBadge]: {
-        displayName: 'Boost',
-        title: 'Boosts',
-        titleSingular: 'Boost',
-        plural: 'Boosts',
+        displayName: 'Badge',
+        title: 'Badges',
+        titleSingular: 'Badge',
+        plural: 'Badges',
 
         // scouts
         subTitle: 'Social Boost',

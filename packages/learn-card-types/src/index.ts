@@ -18,4 +18,5 @@ export * from './helpers';
 export * from './queries';
 export * from './auth';
 export * from './bitstring-status-list';
+export * from './inAppMessages';
 export * from './education-os';

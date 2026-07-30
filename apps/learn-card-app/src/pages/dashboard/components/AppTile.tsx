@@ -2,6 +2,8 @@ import React from 'react';
 
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
 
+import * as m from '../../../paraglide/messages.js';
+
 import { useAppLaunch } from '../hooks/useAppLaunch';
 
 const FALLBACK_ICON = 'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb';
@@ -46,14 +48,18 @@ const AppTile: React.FC<AppTileProps> = ({
             style={{ animationDelay: `${animationDelayMs}ms` }}
             aria-label={
                 suggested
-                    ? `Open ${listing.display_name} — suggested app`
-                    : `Open ${listing.display_name}${
-                          unreadCount > 0
-                              ? `, ${unreadCount} unread notification${
-                                    unreadCount === 1 ? '' : 's'
-                                }`
-                              : ''
-                      }`
+                    ? m['dashboard.appTile.openSuggested']({ name: listing.display_name })
+                    : unreadCount > 0
+                    ? unreadCount === 1
+                        ? m['dashboard.appTile.openUnreadOne']({
+                              name: listing.display_name,
+                              count: unreadCount,
+                          })
+                        : m['dashboard.appTile.openUnreadMany']({
+                              name: listing.display_name,
+                              count: unreadCount,
+                          })
+                    : m['dashboard.appTile.open']({ name: listing.display_name })
             }
         >
             <span className="relative block">
@@ -78,7 +84,7 @@ const AppTile: React.FC<AppTileProps> = ({
                         className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-grayscale-900 text-white text-[9px] font-semibold tracking-wide uppercase border-2 border-white shadow-soft-bottom"
                         aria-hidden
                     >
-                        New
+                        {m['dashboard.appTile.new']()}
                     </span>
                 )}
             </span>

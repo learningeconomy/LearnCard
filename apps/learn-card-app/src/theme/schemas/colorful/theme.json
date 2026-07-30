@@ -3,7 +3,8 @@
     "displayName": "Colorful",
     "iconSet": "colorful",
     "defaults": {
-        "viewMode": "grid"
+        "passportViewMode": "list",
+        "credentialViewMode": "card"
     },
     "colors": {
         "categories": {

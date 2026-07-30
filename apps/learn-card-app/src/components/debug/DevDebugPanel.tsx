@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bug, X, Shield, Settings, Palette, GitBranch, WifiOff } from 'lucide-react';
+import { Bug, X, Shield, Settings, Palette, GitBranch, WifiOff, MessageSquare } from 'lucide-react';
 
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 
@@ -9,12 +9,13 @@ import { ConfigDebugTab } from './ConfigDebugTab';
 import { ThemeDebugTab } from './ThemeDebugTab';
 import { PathwaysDebugTab } from './PathwaysDebugTab';
 import { OfflineDebugTab } from './OfflineDebugTab';
+import { InAppMessagesDebugTab } from './InAppMessagesDebugTab';
 
 // ---------------------------------------------------------------------------
 // Tab definitions
 // ---------------------------------------------------------------------------
 
-type TabId = 'auth' | 'config' | 'theme' | 'pathways' | 'offline';
+type TabId = 'auth' | 'config' | 'theme' | 'pathways' | 'offline' | 'messages';
 
 interface TabDef {
     id: TabId;
@@ -28,6 +29,7 @@ const TABS: TabDef[] = [
     { id: 'theme', label: 'Theme', icon: <Palette className="w-3 h-3" /> },
     { id: 'pathways', label: 'Pathways', icon: <GitBranch className="w-3 h-3" /> },
     { id: 'offline', label: 'Offline', icon: <WifiOff className="w-3 h-3" /> },
+    { id: 'messages', label: 'Messages', icon: <MessageSquare className="w-3 h-3" /> },
 ];
 
 // ---------------------------------------------------------------------------
@@ -127,6 +129,7 @@ export const DevDebugPanel: React.FC = () => {
                         {activeTab === 'theme' && <ThemeDebugTab />}
                         {activeTab === 'pathways' && <PathwaysDebugTab />}
                         {activeTab === 'offline' && <OfflineDebugTab />}
+                        {activeTab === 'messages' && <InAppMessagesDebugTab />}
                     </div>
 
                     {/* ── Footer ── */}

@@ -4,6 +4,7 @@ import X from 'learn-card-base/svgs/X';
 
 import { useModal } from 'learn-card-base';
 import useTheme from '../../theme/hooks/useTheme';
+import * as m from '../../paraglide/messages.js';
 
 import SkinnyCaretRight from 'learn-card-base/svgs/SkinnyCaretRight';
 
@@ -68,7 +69,7 @@ const ConsentFlowFooter: React.FC<ConsentFlowFooterProps> = ({
                         }`}
                     >
                         {showFullBackButton ? (
-                            'Back'
+                            m['common.back']()
                         ) : (
                             <SkinnyCaretRight className="text-grayscale-900 h-[45px] w-[45px] rotate-180" />
                         )}

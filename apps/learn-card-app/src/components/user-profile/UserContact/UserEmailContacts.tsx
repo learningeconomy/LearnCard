@@ -8,6 +8,7 @@ import UserEmailContactItem from './UserEmailContactItem';
 import { EMAIL_REGEX, useGetMyContactMethods, useAddContactMethod } from 'learn-card-base';
 
 import useTheme from '../../../theme/hooks/useTheme';
+import * as m from '../../../paraglide/messages.js';
 import { IconSetEnum } from '../../../theme/icons';
 
 type ContactMethodType =
@@ -101,8 +102,8 @@ export const UserEmailContacts: React.FC = () => {
     }, [contactMethods]);
 
     return (
-        <div className="w-full items-center justify-center flex flex-col pb-6 px-2">
-            <div className="w-full flex items-start justify-center flex-col gap-2">
+        <div className="w-full h-full flex flex-col px-2">
+            <div className="shrink-0 bg-white pt-2 pb-3">
                 <div className="w-full flex flex-col flex-1 items-center justify-between mb-2">
                     <div className="w-full flex items-center justify-center">
                         <div className="w-full flex items-center justify-start">
@@ -116,7 +117,7 @@ export const UserEmailContacts: React.FC = () => {
                                     setErrors({});
                                 }}
                                 value={email}
-                                placeholder="Email"
+                                placeholder={m['profile.email.placeholder']()}
                                 type="text"
                             />
                         </div>
@@ -142,7 +143,9 @@ export const UserEmailContacts: React.FC = () => {
                         </p>
                     )}
                 </div>
+            </div>
 
+            <div className="flex-1 min-h-0 overflow-y-auto pb-6 flex flex-col gap-2">
                 {emails?.length > 0 ? (
                     emails.map(emailItem => (
                         <UserEmailContactItem
@@ -155,7 +158,7 @@ export const UserEmailContacts: React.FC = () => {
                     <section className="w-full flex flex-col items-center justify-center my-[30px]">
                         <FloatingBottleIcon />
                         <p className="font-poppins text-[17px] font-normal text-grayscale-900 mt-[10px]">
-                            No emails added yet.
+                            {m['profile.email.noEmails']()}
                         </p>
                     </section>
                 )}

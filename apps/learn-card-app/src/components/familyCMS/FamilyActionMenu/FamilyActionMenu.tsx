@@ -19,6 +19,7 @@ import {
     useModal,
 } from 'learn-card-base';
 import { useIonModal } from '@ionic/react';
+import { m } from '../../../paraglide/messages.js';
 
 import { FamilyChildAccount, FamilyCMSEditorModeEnum } from '../familyCMSState';
 import { LCNProfile, VC } from '@learncard/types';
@@ -82,7 +83,7 @@ export const FamilyActionMenu: React.FC<{
             ? [
                   {
                       id: 1,
-                      title: 'Edit Family',
+                      title: m['family.actionMenu.editFamily'](),
                       icon: <Pencil className="text-grayscale-900" />,
                       onClick: () => {
                           closeModal();
@@ -91,7 +92,9 @@ export const FamilyActionMenu: React.FC<{
                   },
                   {
                       id: 2,
-                      title: `Add a ${dependentTitle?.singular}`,
+                      title: m['family.invite.addMember']({
+                          title: dependentTitle?.singular || m['family.members.child'](),
+                      }),
                       icon: <AddUser version="2" className="text-grayscale-900" />,
                       onClick: () => {
                           closeModal();
@@ -109,7 +112,9 @@ export const FamilyActionMenu: React.FC<{
                   },
                   {
                       id: 3,
-                      title: `Invite a ${guardianTitle?.singular}`,
+                      title: m['family.invite.inviteMember']({
+                          title: guardianTitle?.singular || m['family.members.guardian'](),
+                      }),
                       icon: <AddUser version="2" className="text-grayscale-900" />,
                       onClick: () => {
                           closeModal();
@@ -147,7 +152,7 @@ export const FamilyActionMenu: React.FC<{
         //     : []),
         {
             id: 4,
-            title: 'Share Family',
+            title: m['family.actionMenu.shareFamily'](),
             icon: <ReplyIcon version="2" className="text-grayscale-900" />,
             onClick: () => {
                 closeModal();

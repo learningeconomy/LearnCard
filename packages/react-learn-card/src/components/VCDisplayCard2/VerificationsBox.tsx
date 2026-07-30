@@ -5,6 +5,7 @@ import InfoIcon from '../svgs/InfoIcon';
 import InfoBox from './InfoBox';
 
 import { VerificationItem } from '@learncard/types';
+import { useT } from '../../i18n';
 
 type VerificationsBoxProps = {
     verificationItems: VerificationItem[];
@@ -12,11 +13,12 @@ type VerificationsBoxProps = {
 
 const VerificationsBox: React.FC<VerificationsBoxProps> = ({ verificationItems }) => {
     const [showInfo, setShowInfo] = useState(false);
+    const t = useT();
 
     return (
         <div className="verifications-box bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full relative">
             <h3 className="text-[20px] leading-[20px] text-grayscale-900">
-                Credential Verifications
+                {t('verification.title')}
             </h3>
             <button
                 className="absolute top-[17px] right-[17px]"
@@ -28,10 +30,7 @@ const VerificationsBox: React.FC<VerificationsBoxProps> = ({ verificationItems }
                 <InfoIcon color={showInfo ? '#6366F1' : undefined} />
             </button>
             {showInfo && (
-                <InfoBox
-                    text="Credential verifications check the cryptographic proof of digital credentials to ensure their authenticity and accuracy."
-                    handleClose={() => setShowInfo(false)}
-                />
+                <InfoBox text={t('verification.infoText')} handleClose={() => setShowInfo(false)} />
             )}
 
             {verificationItems.map((verification, index) => (

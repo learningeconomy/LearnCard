@@ -3,7 +3,7 @@
 > Promise-based JavaScript SDK for secure cross-origin communication between partner apps and LearnCard
 
 {% hint style="info" %}
-**Last verified against `@learncard/partner-connect` v0.2.16.** When in doubt, the runtime types in `packages/learn-card-partner-connect-sdk/src/types.ts` and the Zod validators in `@learncard/types` (`packages/learn-card-types/src/lcn.ts`) are the source of truth.
+**The runtime types in `packages/learn-card-partner-connect-sdk/src/types.ts` and the Zod validators in `@learncard/types` (`packages/learn-card-types/src/lcn.ts`) are the source of truth.**
 {% endhint %}
 
 The Partner Connect SDK transforms complex `postMessage` communication into clean, modern Promise-based functions. It handles the entire cross-origin message lifecycle, including request queuing, origin validation, and timeout management.
@@ -16,6 +16,7 @@ The Partner Connect SDK transforms complex `postMessage` communication into clea
 -   **🧹 Clean**: Abstracts away all postMessage implementation details
 -   **📦 Lightweight**: Zero runtime dependencies, ~8KB minified
 -   **🛡️ Robust**: Built-in timeout handling and structured error management
+-   **🧪 Standalone-ready**: Runs and demos on its own via automatic mock mode — no host required
 
 ## Installation
 
@@ -134,6 +135,27 @@ interface PartnerConnectOptions {
      * @default 30000
      */
     requestTimeout?: number;
+
+    /**
+     * Automatic standalone mock mode.
+     * 'auto' (default) mocks only when no LearnCard host is present AND the
+     * page runs on a local dev host; 'standalone' mocks whenever no host is
+     * present, on any origin; true always mocks; false never mocks.
+     * @default 'auto'
+     */
+    mock?: boolean | 'auto' | 'standalone';
+
+    /**
+     * Mock behavior overrides (UI, logging, persistence, fake DID, namespace).
+     */
+    mockOptions?: MockHostOptions;
+
+    /**
+     * Wait (ms) for the host presence probe when embedded in a frame whose
+     * parent can't be confirmed as LearnCard.
+     * @default 1500
+     */
+    hostProbeTimeout?: number;
 }
 ```
 
@@ -848,6 +870,89 @@ Clean up the SDK and remove event listeners.
 learnCard.destroy();
 ```
 
+#### `isEmbedded()`
+
+Check whether your app is running inside LearnCard (an iframe) or on its own. Use it to change behavior — for example, showing an "Open in LearnCard" prompt when standalone — without writing your own detection.
+
+**Returns:** `boolean` (`false` during server-side rendering)
+
+```typescript
+import { isEmbedded } from '@learncard/partner-connect';
+
+if (isEmbedded()) {
+    // Inside LearnCard — SDK talks to the real host.
+} else {
+    // Standalone — show a preview banner, or rely on mock mode (below).
+}
+```
+
+Also available as `PartnerConnect.isEmbedded()` (static) and `learnCard.isEmbedded()` (instance).
+
+## Standalone / Mock Mode
+
+The SDK only does real work when it's embedded inside LearnCard — that's what answers its requests. Run your app on its own (local dev, a preview deploy, tests) and there's nothing to answer. Standalone calls that aren't mocked reject immediately with `LC_NOT_EMBEDDED` (instead of hanging until the request timeout), plus a one-time console hint.
+
+Mock mode fixes this automatically in local development. Whenever no LearnCard host is present and your app runs on a local dev host (`localhost`, `127.0.0.1`, `[::1]`, `*.localhost`, `*.local`), the SDK stands in for LearnCard so your app stays fully usable:
+
+-   **Every method shows a branded toast** describing what would happen once embedded — e.g. `sendCredential` → _"✅ In LearnCard, the user would receive **[name]** here"_, `incrementCounter` → _"Counter **coins** → **10**"_, `launchFeature` → _"Would open **/wallet**"_. Strong, visible feedback for every call.
+-   `requestConsent(...)` grants automatically and shows a "mock consent" toast; counters (`incrementCounter` / `getCounter` / `getCounters`) save to the browser and survive reloads.
+-   Identical or polled calls coalesce into one toast with a ×N counter, so nothing spams the screen.
+-   `requestIdentity`, notifications, learner context, and sync status return sensible placeholder data.
+-   Everything is also logged to the console with a `[LearnCard SDK · MOCK]` prefix.
+
+No flags, no separate build in local dev. Your app is demo-able locally and behaves exactly the same against the real host once embedded.
+
+{% hint style="warning" %}
+**`'auto'` never mocks on production or remote preview origins.** A real user opening your app's URL directly must never receive a fabricated identity or auto-granted consent. For remote deploy previews (Netlify, Lovable, Vercel, …) that should demo standalone anywhere but use the real host once embedded, opt in with `mock: 'standalone'`. For CI and tests that should always mock, use `mock: true`.
+{% endhint %}
+
+| `mock`             | Standalone, local dev | Standalone, remote origin     | Embedded in LearnCard |
+| ------------------ | --------------------- | ----------------------------- | --------------------- |
+| `'auto'` (default) | mock                  | fail fast (`LC_NOT_EMBEDDED`) | real host             |
+| `'standalone'`     | mock                  | mock                          | real host             |
+| `true`             | mock                  | mock                          | mock                  |
+| `false`            | fail fast             | fail fast                     | real host             |
+
+If your app is embedded in something that isn't LearnCard (a cross-origin Storybook canvas, a preview shell), calls don't hang: the SDK mocks on local dev hosts and otherwise rejects fast with `LC_NOT_EMBEDDED`. When the parent can't be identified (Firefox, or a same-origin localhost wrapper), a one-time side-effect-free presence probe decides — the SDK only mocks if no host answers within `hostProbeTimeout` (default 1500 ms).
+
+Every mocked call shows a labeled toast and a `[LearnCard SDK · MOCK]` console log, so it's clear the SDK is simulating rather than talking to a real host. For a production build meant to run only inside LearnCard, set `mock: false` — standalone calls then reject immediately with `LC_NOT_EMBEDDED`.
+
+```typescript
+// Mocks in local dev when standalone; real host when embedded in LearnCard.
+const learnCard = createPartnerConnect();
+
+await learnCard.sendCredential({ templateAlias: 'course-completion' });
+```
+
+**Overrides:**
+
+```typescript
+createPartnerConnect({ mock: 'standalone' }); // mock when no host, on any origin; real when embedded
+createPartnerConnect({ mock: true }); // always mock, even embedded (CI, tests)
+createPartnerConnect({ mock: false }); // never mock (standalone → LC_NOT_EMBEDDED)
+createPartnerConnect({
+    mockOptions: {
+        ui: true, // toasts/banners (default true)
+        log: true, // console logging (default true)
+        persist: true, // save counters to the browser (default true)
+        namespace: 'my-app-mock', // storage namespace for mock data
+        // Seed data for demos / happy-path UI:
+        identity: { did: 'did:web:example.com:me', name: 'Ada' },
+        credentials: [{ templateAlias: 'course-completion', name: 'Algebra 101' }],
+        counters: { coins: 50 },
+    },
+});
+```
+
+Use `learnCard.isMocked()` to check whether an instance is currently mocking.
+
+The mock keeps a small session store, so **reads reflect writes**: after
+`sendCredential(...)`, calls like `checkUserHasCredential`, `getTemplateRecipients`,
+`requestLearnerContext`, and `askCredentialSearch` return that credential — so
+happy-path UI actually lights up standalone. Use `mockOptions.credentials` /
+`identity` / `counters` to pre-populate state without performing an action first.
+Mock credentials are marked `_mock: true` and are never cryptographically valid.
+
 ## Security Model
 
 The Partner Connect SDK implements comprehensive security measures:
@@ -932,16 +1037,17 @@ interface LearnCardError {
 
 ### Error Codes
 
-| Code                   | Description                         |
-| ---------------------- | ----------------------------------- |
-| `LC_TIMEOUT`           | Request timed out                   |
-| `LC_UNAUTHENTICATED`   | User not logged in                  |
-| `USER_REJECTED`        | User declined the request           |
-| `CREDENTIAL_NOT_FOUND` | Requested credential doesn't exist  |
-| `UNAUTHORIZED`         | User lacks permission               |
-| `TEMPLATE_NOT_FOUND`   | Template doesn't exist              |
-| `SDK_NOT_INITIALIZED`  | SDK not properly initialized        |
-| `SDK_DESTROYED`        | SDK was destroyed before completion |
+| Code                   | Description                                                |
+| ---------------------- | ---------------------------------------------------------- |
+| `LC_TIMEOUT`           | Request timed out                                          |
+| `LC_NOT_EMBEDDED`      | Not embedded in a LearnCard host (standalone, not mocking) |
+| `LC_UNAUTHENTICATED`   | User not logged in                                         |
+| `USER_REJECTED`        | User declined the request                                  |
+| `CREDENTIAL_NOT_FOUND` | Requested credential doesn't exist                         |
+| `UNAUTHORIZED`         | User lacks permission                                      |
+| `TEMPLATE_NOT_FOUND`   | Template doesn't exist                                     |
+| `SDK_NOT_INITIALIZED`  | SDK not properly initialized                               |
+| `SDK_DESTROYED`        | SDK was destroyed before completion                        |
 
 ### Error Handling Patterns
 
@@ -1288,6 +1394,14 @@ interface RequestConsentOptions {
     redirect?: boolean;
 }
 
+interface MockHostOptions {
+    ui?: boolean; // show toasts/banners (default true)
+    log?: boolean; // console logging (default true)
+    persist?: boolean; // save counters to the browser (default true)
+    did?: string; // fake identity DID
+    namespace?: string; // storage namespace for mock data
+}
+
 interface RequestLearnerContextOptions {
     includeCredentials?: boolean;
     includePersonalData?: boolean;
@@ -1354,6 +1468,7 @@ interface SendAiSessionCredentialResponse {
 
 type ErrorCode =
     | 'LC_TIMEOUT'
+    | 'LC_NOT_EMBEDDED'
     | 'LC_UNAUTHENTICATED'
     | 'CREDENTIAL_NOT_FOUND'
     | 'USER_REJECTED'

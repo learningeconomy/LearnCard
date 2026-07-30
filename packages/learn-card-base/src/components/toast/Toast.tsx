@@ -55,12 +55,18 @@ export const Toast = () => {
                         transition: { duration: 0.2, ease: 'easeInOut' },
                     }}
                     style={{ zIndex }}
-                    className={`fixed top-4 !left-1/2 !-translate-x-1/2 !w-full !px-4 pointer-events-none safe-area-top-margin`}
+                    className={`fixed top-4 right-4 left-auto w-auto phone:left-0 phone:right-0 phone:w-full phone:px-4 pointer-events-none safe-area-top-margin`}
                 >
                     <div
-                        style={{ backgroundColor: isError ? '#f43f5e' : '#FBFBFC' }}
-                        className={`max-w-[600px] mx-auto rounded-[15px] shadow-[0_2px_4px_0_rgba(0,_0,_0,_0.25)] border-2 border-white py-2 px-4 pointer-events-auto relative ${
-                            isError ? 'hover:bg-rose-600' : 'hover:bg-grayscale-100'
+                        style={{
+                            backgroundColor: isError
+                                ? 'rgba(244, 63, 94, 0.85)'
+                                : 'rgba(251, 251, 252, 0.72)',
+                            backdropFilter: 'blur(20px) saturate(180%)',
+                            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                        }}
+                        className={`w-[380px] max-w-[calc(100vw-2rem)] phone:w-full phone:max-w-[600px] phone:mx-auto rounded-[18px] border border-white/60 shadow-[0_8px_30px_0_rgba(0,_0,_0,_0.12)] py-2.5 px-4 pointer-events-auto relative transition-[background-color] ${
+                            isError ? 'hover:bg-rose-600/90' : 'hover:bg-white/80'
                         }`}
                     >
                         {isCustomComponent ? (

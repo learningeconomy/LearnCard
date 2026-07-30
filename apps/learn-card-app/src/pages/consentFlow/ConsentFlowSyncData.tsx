@@ -13,6 +13,7 @@ import { oauth2ReducerArgStore } from '../sync-my-school/ExternalAuthServiceProv
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import PostConsentFlowSyncCard from '../launchPad/PostConsentFlowSyncCard';
 import { useRegistryState } from '../../hooks/useRegistryEntryState';
+import * as m from '../../paraglide/messages.js';
 
 // Deprecated - ConsentFlow happens on LaunchPad now
 const ConsentFlowSyncData: React.FC = () => {
@@ -85,7 +86,7 @@ const ConsentFlowSyncData: React.FC = () => {
 
                     <div className="flex flex-col gap-[10px] items-center">
                         <span className="text-grayscale-900 text-[20px] font-poppins font-[600] leading-[160%]">
-                            Sync My Data
+                            {m['consentFlow.syncMyData']()}
                         </span>
                         <span className="text-grayscale-800 text-[17px] font-poppins text-center">
                             Connect Your Learning and Employment Data
@@ -132,7 +133,7 @@ const ConsentFlowSyncData: React.FC = () => {
                             type="button"
                             disabled={!contractDetails || !allSynced}
                         >
-                            Next
+                            {m['common.next']()}
                         </button>
                     </footer>
                 </section>
@@ -178,7 +179,7 @@ const ConsentFlowSyncData: React.FC = () => {
                         } else history.push('/home');
                     }}
                 >
-                    Close
+                    {m['common.close']()}
                 </button>
             </section>
         </IonContent>

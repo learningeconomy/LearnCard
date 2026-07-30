@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatLocaleDate } from '../../i18n/formatters';
 
 import { CertificateDisplayIcon } from 'learn-card-base';
 
@@ -17,7 +18,7 @@ const ClrProgramsSection: React.FC<{
         const date = new Date(earnedAt);
         if (Number.isNaN(date.getTime())) return ` • ${earnedAt}`;
 
-        return ` • ${date.toLocaleDateString('en-US', {
+        return ` • ${formatLocaleDate(date, {
             year: 'numeric',
             month: 'long',
             day: 'numeric',

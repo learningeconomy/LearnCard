@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import Lottie from 'react-lottie-player';
+
 import {
     useGetBoosts,
     useGetResolvedBoosts,
@@ -25,9 +25,11 @@ import {
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
 
-const HourGlass = '/lotties/hourglass.json';
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import GearPlusIcon from 'learn-card-base/svgs/GearPlusIcon';
 import BoostSelectCategoryMenu from './BoostSelectCategoryMenu';
+import * as m from '../../../paraglide/messages.js';
+import { localizeCategoryTitle } from '../../../i18n/categoryTitle';
 
 const PATH_TO_CATEGORY = {
     learninghistory: BoostCategoryOptionsEnum.learningHistory,
@@ -163,7 +165,7 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
                         }}
                     >
                         <Wand color="#FFFFFF" opacity="full" className="mr-[10px]" />
-                        AI Boost Wizard
+                        AI Badge Wizard
                     </button>
                 </IonCol>
             </IonRow>
@@ -222,7 +224,13 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
                             <div className="flex flex-col w-full h-full items-center justify-center">
                                 <div className="max-w-[160px] m-auto flex justify-center  min-h-[50px]"></div>
                                 <p className="mt-2 font-poppins text-xl text-grayscale-900">
-                                    No Boosts yet!
+                                    {m['boost.template.noneYet']({
+                                        type: localizeCategoryTitle(
+                                            selectedVCType === BoostCategoryOptionsEnum.all
+                                                ? 'Boosts'
+                                                : title
+                                        ),
+                                    })}
                                 </p>
                             </div>
                         )}
@@ -232,12 +240,7 @@ const BoostSelectMenu: React.FC<BoostSelectMenuProps> = ({
                         {boostsLoading && !boosts && (
                             <div className="flex flex-col w-full h-full items-center justify-center">
                                 <div className="max-w-[150px] min-h-[150px]">
-                                    <Lottie
-                                        loop
-                                        path={HourGlass}
-                                        play
-                                        style={{ width: '100%', height: '100%' }}
-                                    />
+                                    <LoadingSpinner />
                                 </div>
                             </div>
                         )}

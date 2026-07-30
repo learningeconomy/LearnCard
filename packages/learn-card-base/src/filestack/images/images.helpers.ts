@@ -1,31 +1,65 @@
 import * as filestack from './filestack.helpers';
 import * as unsplash from './unsplash.helpers';
 import { createResource, Resource } from './Resource';
+import { DefaultMetadata, type ImageMetadata } from './imageMetadata';
+export { DefaultMetadata, getUrlsFromSrcSet, type ImageMetadata } from './imageMetadata';
+import { DEFAULT_LEARNCARD_TENANT_CONFIG } from '../../config/tenantDefaults';
+import { getImageUploadProvider } from '../../storage/image-upload';
 
 const Providers = { filestack, unsplash };
+const getUrlHost = (url?: string): string | undefined => {
+    if (!url) return;
+
+    try {
+        return new URL(url).host;
+    } catch {
+        return;
+    }
+};
+
+const isFilestackCdnUrl = (url?: string): boolean =>
+    getUrlHost(url) === DEFAULT_LEARNCARD_TENANT_CONFIG.storage.cdnDomain;
+
+const isUnsplashUrl = (url: string): boolean => getUrlHost(url) === 'images.unsplash.com';
+
+const getImageProviderForUrl = (url?: string) => {
+    const activeProvider = getImageUploadProvider();
+
+    if (activeProvider.ownsUrl(url)) return activeProvider;
+
+    if (isFilestackCdnUrl(url)) {
+        return getImageUploadProvider(DEFAULT_LEARNCARD_TENANT_CONFIG.storage);
+    }
+
+    return null;
+};
 
 export const getProvider = (url?: string): keyof typeof Providers | null => {
-    if (url?.includes('cdn.filestackcontent.com')) return 'filestack';
+    if (getImageProviderForUrl(url)?.name === 'filestack') return 'filestack';
 
-    if (url?.includes('images.unsplash.com')) return 'unsplash';
+    if (url && isUnsplashUrl(url)) return 'unsplash';
 
     return null;
 };
 
 export const changeQuality = (url: string, quality: number): string => {
-    const provider = getProvider(url);
+    const imageProvider = getImageProviderForUrl(url);
 
-    if (!provider) return url;
+    if (imageProvider) return imageProvider.changeQuality(url, quality);
 
-    return Providers[provider].changeQuality(url, quality);
+    if (isUnsplashUrl(url)) return unsplash.changeQuality(url, quality);
+
+    return url;
 };
 
 export const fixUrl = (url: string, mimetype?: string, webp = false): string => {
-    const provider = getProvider(url);
+    const imageProvider = getImageProviderForUrl(url);
 
-    if (!provider) return url;
+    if (imageProvider) return imageProvider.fixUrl(url, mimetype, webp);
 
-    return Providers[provider].fixUrl(url, mimetype, webp);
+    if (isUnsplashUrl(url)) return unsplash.fixUrl(url, mimetype, webp);
+
+    return url;
 };
 
 export const generateSrcSet = (
@@ -33,11 +67,13 @@ export const generateSrcSet = (
     resolutions: number[],
     options: { mimetype?: string; fix?: boolean; webp?: boolean } = {}
 ): string => {
-    const provider = getProvider(url);
+    const imageProvider = getImageProviderForUrl(url);
 
-    if (!provider) return url;
+    if (imageProvider) return imageProvider.generateSrcSet(url, resolutions, options);
 
-    return Providers[provider].generateSrcSet(url, resolutions, options);
+    if (isUnsplashUrl(url)) return unsplash.generateSrcSet(url, resolutions, options);
+
+    return url;
 };
 
 export const resizeAndChangeQuality = (
@@ -46,59 +82,28 @@ export const resizeAndChangeQuality = (
     quality: number,
     options: { mimetype?: string; fix?: boolean; webp?: boolean } = {}
 ): string => {
-    const provider = getProvider(url);
+    const imageProvider = getImageProviderForUrl(url);
 
-    if (!provider) return url;
+    if (imageProvider) return imageProvider.resizeAndChangeQuality(url, size, quality, options);
 
-    return Providers[provider].resizeAndChangeQuality(url, size, quality, options);
-};
+    if (isUnsplashUrl(url)) {
+        return unsplash.resizeAndChangeQuality(url, size, quality, options);
+    }
 
-export type ImageMetadata = {
-    filename: string;
-    mimetype: string;
-    size: number;
-    uploaded: number;
-    writeable: boolean;
-    height: number;
-    width: number;
-};
-
-export const DefaultMetadata: ImageMetadata = {
-    filename: '',
-    mimetype: '',
-    size: 1,
-    uploaded: 1,
-    writeable: false,
-    height: 1,
-    width: 1,
+    return url;
 };
 
 export const getMetadata = async (url: string): Promise<ImageMetadata> => {
-    const provider = getProvider(url);
+    const imageProvider = getImageProviderForUrl(url);
 
-    if (!provider) return DefaultMetadata;
+    if (imageProvider) return imageProvider.getMetadata(url);
 
-    return Providers[provider].getMetadata(url);
+    if (isUnsplashUrl(url)) return unsplash.getMetadata(url);
+
+    return DefaultMetadata;
 };
 
 export const DEFAULT_RESOLUTIONS = [200, 400, 600];
-
-/**
- * Gets an array of URLs from a srcSet string
- *
- * @param srcSet HTML srcSet string (e.g. 'test.com/img 100w, test.com/img2 200w')
- *
- * @return URLs
- */
-export const getUrlsFromSrcSet = (srcSet: string): [string, string][] => {
-    return srcSet.split(/,? /).reduce<[string, string][]>((accumulator, current, index, array) => {
-        if (index % 2 === 0) return accumulator;
-
-        accumulator.push([array[index - 1], current]);
-
-        return accumulator;
-    }, []);
-};
 
 // Simple cache object to keep track of images already seen/loaded
 const cache = new Map<string, any>();
@@ -160,18 +165,9 @@ export function getFilestackPreviewUrl(
     url: string,
     options?: { width?: number; height?: number }
 ): string {
-    const match = url.match(/filestackcontent\.com\/(?:\w+=.*\/)?([a-zA-Z0-9]+)/);
-    const handle = match?.[1];
+    const imageProvider = getImageProviderForUrl(url);
 
-    if (!handle) throw new Error('Invalid Filestack URL');
+    if (!imageProvider) return url;
 
-    const transformations = ['output=format:jpg'];
-
-    if (options?.width || options?.height) {
-        const width = options.width ?? 300;
-        const height = options.height ?? 200;
-        transformations.push(`resize=width:${width},height:${height}`);
-    }
-
-    return `https://cdn.filestackcontent.com/${transformations.join('/')}/${handle}`;
+    return imageProvider.getPreviewUrl(url, options);
 }

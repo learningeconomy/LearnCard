@@ -1,7 +1,7 @@
 import { renderSms } from '@learncard/email-templates';
 import type { SmsTemplateId } from '@learncard/email-templates';
 
-import { Notification } from "../delivery.service";
+import { Notification } from '../delivery.service';
 
 /** Map brain-service templateIds to the SMS template IDs in @learncard/email-templates. */
 const SMS_TEMPLATE_MAP: Record<string, SmsTemplateId> = {
@@ -17,9 +17,15 @@ export const getSmsBody = (notification: Notification): string | undefined => {
 
     const { credential, issuer, claimUrl, verificationToken, recipient } = templateModel ?? {};
 
-    const smsData = smsTemplateId === 'inbox-claim'
-        ? { claimUrl, recipient, issuer, credential }
-        : { verificationToken };
+    const smsData =
+        smsTemplateId === 'inbox-claim'
+            ? { claimUrl, recipient, issuer, credential }
+            : { verificationToken };
 
-    return renderSms(smsTemplateId, notification.branding ?? {}, smsData as any);
-}
+    return renderSms(
+        smsTemplateId,
+        notification.branding ?? {},
+        smsData as any,
+        notification.locale
+    );
+};

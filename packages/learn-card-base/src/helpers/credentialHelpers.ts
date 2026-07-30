@@ -39,6 +39,7 @@ import { BoostCMSMediaAttachment, BoostEvidenceSpec } from 'learn-card-base/comp
 import { getVideoMetadata } from './video.helpers';
 import { getFileMetadata } from './attachment.helpers';
 import { getLogger } from '../logging/logger';
+import { parseLcTags } from './displayTags.helpers';
 const log = getLogger('credential-helpers');
 
 type CredentialType =
@@ -141,7 +142,7 @@ export const CATEGORY_MAP: Record<
 > = {
     Achievement: 'Achievement',
     Award: 'Achievement',
-    Badge: 'Achievement',
+    Badge: 'Social Badge',
     CommunityService: 'Achievement',
     MovieTicketCredential: 'Achievement',
 
@@ -538,6 +539,11 @@ export const getDefaultCategoryForCredential = (
     options?: { skipValidation?: boolean }
 ): CredentialCategory => {
     const _credential = unwrapBoostCredential(credential);
+
+    // An explicit `lc:category` display-hint tag is a deliberate issuer choice and takes priority over all type inference below.
+    const lcCategory = parseLcTags(getCredentialSubjectAchievement(_credential)?.tag).category;
+    if (lcCategory) return lcCategory as CredentialCategory;
+
     // course meta VC is a metaversity specific case for now
     if (isCourseMetaVC(_credential)) return 'Learning History';
     if (isEntryVC(_credential) && _credential.id.split('|')[0] === 'course') return 'Hidden';
@@ -790,7 +796,7 @@ export const getFallBackImage = (credCategory: string) => {
     if (credCategory === 'Work History')
         return 'https://cdn.filestackcontent.com/5r2T383T0mic3wrSbi3W';
     if (credCategory === 'Social Badge')
-        return 'https://cdn.filestackcontent.com/ynPzjedXTn2JBUNQHeEm';
+        return 'https://cdn.filestackcontent.com/DRPwxXjSWKl6TTkd2OCF';
     if (credCategory === 'Learning History')
         return 'https://cdn.filestackcontent.com/OSTqZlxSCe6B62jwPm7O';
     if (credCategory === 'Accomplishment')
@@ -1442,17 +1448,50 @@ export const convertEvidenceToAttachments = (evidence: BoostEvidenceSpec[]): Boo
     });
 };
 
-// ! small helper to handle the transition from attachments to evidence
-// ! existing attachments will take higher precedence over evidence
+type RawArtifactAttachmentSource = {
+    data?: unknown;
+    fileName?: unknown;
+    fileSize?: unknown;
+    fileType?: unknown;
+};
+
+const convertRawArtifactToAttachment = (
+    rawArtifact: unknown
+): BoostCMSMediaAttachment | undefined => {
+    if (!rawArtifact || typeof rawArtifact !== 'object') return undefined;
+
+    const artifact = rawArtifact as RawArtifactAttachmentSource;
+    if (typeof artifact.data !== 'string' || artifact.data.length === 0) return undefined;
+
+    const fileName = typeof artifact.fileName === 'string' ? artifact.fileName : undefined;
+    const fileSize = typeof artifact.fileSize === 'string' ? artifact.fileSize : undefined;
+    const fileType = typeof artifact.fileType === 'string' ? artifact.fileType : undefined;
+    const normalizedFileType = fileType?.toUpperCase();
+    const type = ['PNG', 'JPG', 'JPEG', 'WEBP'].includes(normalizedFileType ?? '')
+        ? 'photo'
+        : 'document';
+
+    return {
+        title: fileName ?? null,
+        fileName,
+        fileSize,
+        fileType,
+        type,
+        url: artifact.data,
+    };
+};
+
+/**
+ * Returns published attachments first, then legacy evidence, and finally an embedded raw artifact.
+ */
 export const getExistingAttachmentsOrEvidence = (
     attachments: BoostCMSMediaAttachment[],
-    evidence: BoostEvidenceSpec[]
+    evidence: BoostEvidenceSpec[],
+    rawArtifact?: unknown
 ): BoostCMSMediaAttachment[] => {
-    const existingAttachments = attachments?.length > 0;
-    const existingEvidence = evidence?.length > 0;
+    if (attachments?.length > 0) return attachments;
+    if (evidence?.length > 0) return convertEvidenceToAttachments(evidence);
 
-    if (existingAttachments) return attachments;
-    if (!existingAttachments && existingEvidence) return convertEvidenceToAttachments(evidence);
-
-    return [];
+    const rawArtifactAttachment = convertRawArtifactToAttachment(rawArtifact);
+    return rawArtifactAttachment ? [rawArtifactAttachment] : [];
 };

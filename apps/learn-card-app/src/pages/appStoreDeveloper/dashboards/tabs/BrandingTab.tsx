@@ -1,3 +1,5 @@
+import * as m from '../../../../paraglide/messages.js';
+import { mDynamic } from '../../../../i18n/mDynamic';
 import React, { useState, useEffect } from 'react';
 import {
     Palette,
@@ -11,7 +13,7 @@ import {
     CreditCard,
 } from 'lucide-react';
 
-import { useFilestack, useWallet, useGetCurrentLCNUser } from 'learn-card-base';
+import { useImageUpload, useWallet, useGetCurrentLCNUser } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
@@ -40,12 +42,42 @@ interface BrandingTabProps {
 }
 
 const DEFAULT_COLORS = [
-    { name: 'Cyan', primary: '#06B6D4', accent: '#2DD4BF' },
-    { name: 'Blue', primary: '#3B82F6', accent: '#60A5FA' },
-    { name: 'Violet', primary: '#8B5CF6', accent: '#A78BFA' },
-    { name: 'Emerald', primary: '#10B981', accent: '#34D399' },
-    { name: 'Rose', primary: '#F43F5E', accent: '#FB7185' },
-    { name: 'Amber', primary: '#F59E0B', accent: '#FBBF24' },
+    {
+        name: 'Cyan',
+        nameKey: 'developerPortal.dashboards.tabs.branding.colors.cyan',
+        primary: '#06B6D4',
+        accent: '#2DD4BF',
+    },
+    {
+        name: 'Blue',
+        nameKey: 'developerPortal.dashboards.tabs.branding.colors.blue',
+        primary: '#3B82F6',
+        accent: '#60A5FA',
+    },
+    {
+        name: 'Violet',
+        nameKey: 'developerPortal.dashboards.tabs.branding.colors.violet',
+        primary: '#8B5CF6',
+        accent: '#A78BFA',
+    },
+    {
+        name: 'Emerald',
+        nameKey: 'developerPortal.dashboards.tabs.branding.colors.emerald',
+        primary: '#10B981',
+        accent: '#34D399',
+    },
+    {
+        name: 'Rose',
+        nameKey: 'developerPortal.dashboards.tabs.branding.colors.rose',
+        primary: '#F43F5E',
+        accent: '#FB7185',
+    },
+    {
+        name: 'Amber',
+        nameKey: 'developerPortal.dashboards.tabs.branding.colors.amber',
+        primary: '#F59E0B',
+        accent: '#FBBF24',
+    },
 ];
 
 const DEFAULT_WALLPAPERS = [
@@ -115,7 +147,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
     }, [currentLCNUser, branding]);
 
     const { handleFileSelect: handleProfileImageUpload, isLoading: profileImageUploading } =
-        useFilestack({
+        useImageUpload({
             fileType: IMAGE_MIME_TYPES,
             onUpload: (_url, _file, data) => {
                 setImage(data?.url || '');
@@ -124,7 +156,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
         });
 
     const { handleFileSelect: handleIdBackgroundUpload, isLoading: idBackgroundUploading } =
-        useFilestack({
+        useImageUpload({
             fileType: IMAGE_MIME_TYPES,
             onUpload: (_url, _file, data) => {
                 setDisplay(prev => ({ ...prev, idBackgroundImage: data?.url || '' }));
@@ -207,10 +239,16 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-lg font-semibold text-gray-800">Branding</h2>
+                    <h2 className="text-lg font-semibold text-gray-800">
+                        {m['developerPortal.dashboards.tabs.branding.title']()}
+                    </h2>
                     <p className="text-sm text-gray-500">
-                        Customize how your organization appears on credentials
-                        {isDirty && <span className="text-amber-500 ml-2">(unsaved changes)</span>}
+                        {m['developerPortal.dashboards.tabs.branding.description']()}
+                        {isDirty && (
+                            <span className="text-amber-500 ml-2">
+                                {m['developerPortal.dashboards.tabs.branding.unsavedChanges']()}
+                            </span>
+                        )}
                     </p>
                 </div>
 
@@ -224,7 +262,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                     ) : (
                         <Save className="w-4 h-4" />
                     )}
-                    Save Changes
+                    {m['developerPortal.dashboards.tabs.branding.saveChanges']()}
                 </button>
             </div>
 
@@ -236,8 +274,12 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-gray-800">Profile Image</h3>
-                        <p className="text-sm text-gray-500">Your organization's logo</p>
+                        <h3 className="font-semibold text-gray-800">
+                            {m['developerPortal.dashboards.tabs.branding.profileImage']()}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                            {m['developerPortal.dashboards.tabs.branding.profileImageDesc']()}
+                        </p>
                     </div>
                 </div>
 
@@ -246,7 +288,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                         <div className="relative">
                             <img
                                 src={image}
-                                alt="Profile"
+                                alt={m['developerPortal.dashboards.tabs.branding.profile']()}
                                 className="w-24 h-24 object-cover bg-white border border-gray-200 rounded-xl"
                             />
 
@@ -271,14 +313,16 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                             ) : (
                                 <>
                                     <Upload className="w-6 h-6" />
-                                    <span className="text-xs">Upload</span>
+                                    <span className="text-xs">
+                                        {m['developerPortal.dashboards.tabs.branding.upload']()}
+                                    </span>
                                 </>
                             )}
                         </button>
                     )}
 
                     <div className="flex-1 text-sm text-gray-500">
-                        <p>Recommended: Square image, at least 256x256px</p>
+                        <p>{m['developerPortal.dashboards.tabs.branding.imageRecommended']()}</p>
                     </div>
                 </div>
             </div>
@@ -291,9 +335,11 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-gray-800">Profile Information</h3>
+                        <h3 className="font-semibold text-gray-800">
+                            {m['developerPortal.dashboards.tabs.branding.profileInformation']()}
+                        </h3>
                         <p className="text-sm text-gray-500">
-                            How your organization appears to others
+                            {m['developerPortal.dashboards.tabs.branding.profileInformationDesc']()}
                         </p>
                     </div>
                 </div>
@@ -301,7 +347,8 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                 <div className="space-y-3">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Display Name <span className="text-red-500">*</span>
+                            {m['developerPortal.dashboards.tabs.branding.displayName']()}{' '}
+                            <span className="text-red-500">*</span>
                         </label>
 
                         <input
@@ -318,7 +365,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Short Bio
+                            {m['developerPortal.dashboards.tabs.branding.shortBio']()}
                         </label>
 
                         <input
@@ -328,14 +375,16 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                                 setShortBio(e.target.value);
                                 setIsDirty(true);
                             }}
-                            placeholder="A brief tagline or description"
+                            placeholder={m[
+                                'developerPortal.dashboards.tabs.branding.shortBioPlaceholder'
+                            ]()}
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
                         />
                     </div>
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Full Bio
+                            {m['developerPortal.dashboards.tabs.branding.fullBio']()}
                         </label>
 
                         <textarea
@@ -344,7 +393,9 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                                 setBio(e.target.value);
                                 setIsDirty(true);
                             }}
-                            placeholder="A longer description of your organization..."
+                            placeholder={m[
+                                'developerPortal.dashboards.tabs.branding.fullBioPlaceholder'
+                            ]()}
                             rows={3}
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none resize-none"
                         />
@@ -360,9 +411,11 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-gray-800">Card Colors</h3>
+                        <h3 className="font-semibold text-gray-800">
+                            {m['developerPortal.dashboards.tabs.branding.cardColors']()}
+                        </h3>
                         <p className="text-sm text-gray-500">
-                            Customize your contact card appearance
+                            {m['developerPortal.dashboards.tabs.branding.cardColorsDesc']()}
                         </p>
                     </div>
                 </div>
@@ -383,14 +436,16 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                                 style={{ backgroundColor: color.primary }}
                             />
 
-                            <span className="text-xs text-gray-600">{color.name}</span>
+                            <span className="text-xs text-gray-600">{mDynamic(color.nameKey)}</span>
                         </button>
                     ))}
                 </div>
 
                 <div className="flex gap-3">
                     <div className="flex-1">
-                        <label className="block text-xs text-gray-500 mb-1">Card Background</label>
+                        <label className="block text-xs text-gray-500 mb-1">
+                            {m['developerPortal.dashboards.tabs.branding.cardBackground']()}
+                        </label>
 
                         <div className="flex items-center gap-2">
                             <input
@@ -422,7 +477,9 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                     </div>
 
                     <div className="flex-1">
-                        <label className="block text-xs text-gray-500 mb-1">Accent Color</label>
+                        <label className="block text-xs text-gray-500 mb-1">
+                            {m['developerPortal.dashboards.tabs.branding.accentColor']()}
+                        </label>
 
                         <div className="flex items-center gap-2">
                             <input
@@ -457,9 +514,13 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-gray-800">Card Background</h3>
+                        <h3 className="font-semibold text-gray-800">
+                            {m['developerPortal.dashboards.tabs.branding.cardBackgroundImage']()}
+                        </h3>
                         <p className="text-sm text-gray-500">
-                            Optional background image for your card
+                            {m[
+                                'developerPortal.dashboards.tabs.branding.cardBackgroundImageDesc'
+                            ]()}
                         </p>
                     </div>
                 </div>
@@ -514,7 +575,9 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
 
             {/* Preview */}
             <div className="p-4 bg-gray-50 rounded-xl">
-                <p className="text-sm font-medium text-gray-700 mb-3">Preview</p>
+                <p className="text-sm font-medium text-gray-700 mb-3">
+                    {m['developerPortal.dashboards.tabs.branding.preview']()}
+                </p>
 
                 <div
                     className="p-4 rounded-xl relative overflow-hidden"
@@ -535,7 +598,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                         {image ? (
                             <img
                                 src={image}
-                                alt="Profile"
+                                alt={m['developerPortal.dashboards.tabs.branding.profile']()}
                                 className="w-12 h-12 object-cover rounded-full bg-white"
                             />
                         ) : (
@@ -546,11 +609,17 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
 
                         <div>
                             <p className="font-semibold text-white">
-                                {displayName || 'Your Organization'}
+                                {displayName ||
+                                    m[
+                                        'developerPortal.dashboards.tabs.branding.yourOrganization'
+                                    ]()}
                             </p>
 
                             <p className="text-sm text-white/80">
-                                {shortBio || 'Organization tagline'}
+                                {shortBio ||
+                                    m[
+                                        'developerPortal.dashboards.tabs.branding.organizationTagline'
+                                    ]()}
                             </p>
                         </div>
                     </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('external-consent-flow-door');
 
@@ -29,6 +29,7 @@ import { SocialLoginTypes } from 'learn-card-base/hooks/useSocialLogins';
 import { auth } from '../../firebase/firebase';
 import { getLoginRedirectUrl } from '../../config/bootstrapTenantConfig';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
+import { m } from '../../paraglide/messages.js';
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
@@ -65,6 +66,8 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
     const { logout: coordinatorLogout } = useAuthCoordinator();
     const { clearDB } = useSQLiteStorage();
     const { track } = useAnalytics();
+    const acceptedRef = useRef(false);
+    const cancelFiredRef = useRef(false);
     const { capture, snapshotRef } = useProfileSnapshotCapture();
     const { newModal } = useModal({
         desktop: ModalTypes.FullScreen,
@@ -109,6 +112,18 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                 contractName: contractDetails.name,
             });
         }
+    }, [contractDetails?.name]);
+
+    useEffect(() => {
+        return () => {
+            if (contractDetails && !acceptedRef.current && !cancelFiredRef.current) {
+                cancelFiredRef.current = true;
+                track(AnalyticsEvents.CONSENT_FLOW_CANCELLED, {
+                    contractName: contractDetails.name,
+                    step_id: 'landing',
+                });
+            }
+        };
     }, [contractDetails?.name]);
 
     // Handle navigation after user clicks Continue AND consent query completes
@@ -176,7 +191,14 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
             }
         };
 
-        handleNavigation();
+        handleNavigation().catch((error: unknown) => {
+            track(AnalyticsEvents.CONSENT_FLOW_FAILED, {
+                contractName: contractDetails?.name,
+                error_code:
+                    (error as { code?: string })?.code ??
+                    (error instanceof Error && error.name !== 'Error' ? error.name : 'unknown'),
+            });
+        });
     }, [
         userClickedContinue,
         consentedContractLoading,
@@ -239,7 +261,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                         color="grayscale-900"
                         className="scale-[2] mb-8 mt-6"
                     />
-                    <p className="font-poppins text-grayscale-900">Loading...</p>
+                    <p className="font-poppins text-grayscale-900">{m['common.loading']()}</p>
                 </div>
             </IonPage>
         );
@@ -296,6 +318,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                             type="button"
                             disabled={consentedContractLoading}
                             onClick={() => {
+                                acceptedRef.current = true;
                                 track(AnalyticsEvents.CONSENT_FLOW_ACCEPTED, {
                                     contractName: contractDetails?.name,
                                     alreadyConsented: !!consentedContract,
@@ -392,7 +415,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                                 onClick={openPP}
                                 className={`text-${primaryColor} font-[600] text-[12px]`}
                             >
-                                Privacy Policy
+                                {m['legal.privacyPolicy']()}
                             </button>
                             <span className="text-grayscale-600 font-bold text-[12px]">
                                 &nbsp;•&nbsp;
@@ -401,7 +424,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                                 onClick={openToS}
                                 className={`text-${primaryColor} font-[600] text-[12px]`}
                             >
-                                Terms of Service
+                                {m['legal.termsOfService']()}
                             </button>
                         </IonCol>
                     </IonRow>

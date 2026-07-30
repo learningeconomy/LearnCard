@@ -15,10 +15,10 @@ describe('AppGrid', () => {
         expect(screen.getByText('child-b')).toBeTruthy();
     });
 
-    it('uses a 3-column mobile / 4-column desktop grid', () => {
+    it('uses a 3-column phone / 4-column tablet-and-up grid', () => {
         const { container } = render(<AppGrid heading="More Apps">{null}</AppGrid>);
         const grid = container.querySelector('[data-testid="app-grid"]')!;
         expect(grid.className).toContain('grid-cols-3');
-        expect(grid.className).toContain('md:grid-cols-4');
+        expect(grid.className).toContain('sm:grid-cols-4');
     });
 });

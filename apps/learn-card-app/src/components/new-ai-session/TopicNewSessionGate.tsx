@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
+import { m } from '../../paraglide/messages.js';
+
 import { useHistory } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { IonSpinner } from '@ionic/react';
@@ -178,7 +180,7 @@ const TopicNewSessionGate: React.FC<Props> = ({
                 />
             </div>
             <p className="text-grayscale-800 font-poppins font-semibold text-[16px] m-0">
-                Spinning up your session...
+                {m['ai.spinningUpSession']()}
             </p>
         </div>
     );

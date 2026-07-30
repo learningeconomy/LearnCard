@@ -20,6 +20,8 @@ import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContrac
 
 import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
 import { useAnalytics } from '../../analytics';
+import * as m from '../../paraglide/messages.js';
+import { useLocale } from '../../i18n';
 import DataSharingCenterView from './DataSharingCenterView';
 import type {
     ConnectionRequestsValue,
@@ -79,7 +81,7 @@ const PrivacySettingsPage: React.FC = () => {
                 await wallet?.invoke?.updateProfile(updates);
                 await refetchUser?.();
             } catch (error: any) {
-                presentToast(error?.message ?? 'Unable to update privacy settings.', {
+                presentToast(error?.message ?? m['settings.privacy.unableToUpdate'](), {
                     type: ToastTypeEnum.Error,
                 });
             } finally {
@@ -107,6 +109,8 @@ const PrivacySettingsPage: React.FC = () => {
             consent?.status !== 'withdrawn'
     );
 
+    const locale = useLocale();
+
     const vm = useMemo<DataSharingCenterViewModel>(() => {
         const analyticsEnabled = preferences?.analyticsEnabled ?? !isMinor;
         const bugReportsEnabled = preferences?.bugReportsEnabled ?? !isMinor;
@@ -121,7 +125,7 @@ const PrivacySettingsPage: React.FC = () => {
                       checked: false,
                       disabled: true,
                       showConsentWarning: false,
-                      lockedNote: 'Turned off to keep you safe. A guardian can enable this.',
+                      lockedNote: m['dataShareCenter.aiLockedNote'](),
                       onToggle: handleAiToggle,
                       onRetryConsent: () => handleAiToggle(true),
                   }
@@ -161,9 +165,7 @@ const PrivacySettingsPage: React.FC = () => {
                 analyticsEnabled,
                 bugReportsEnabled,
                 disabled: isMinor,
-                lockedNote: isMinor
-                    ? 'Turned off to keep you safe. A guardian can change this.'
-                    : undefined,
+                lockedNote: isMinor ? m['dataShareCenter.diagLockedNote']() : undefined,
                 onToggleAnalytics: enabled => {
                     updatePreferences({ analyticsEnabled: enabled });
                     setAnalyticsEnabled(enabled);
@@ -193,6 +195,8 @@ const PrivacySettingsPage: React.FC = () => {
         handleProfileUpdate,
         updatePreferences,
         setAnalyticsEnabled,
+        ,
+        locale,
     ]);
 
     return (

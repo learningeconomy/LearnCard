@@ -3,6 +3,7 @@ import { useHistory } from 'react-router-dom';
 
 import { IonSpinner } from '@ionic/react';
 import Share from '../../components/svgs/Share';
+import * as m from '../../paraglide/messages.js';
 import AdminPageStructure from './AdminPageStructure';
 import CreateContractModal from './CreateContractModal';
 import ViewContractDataModal from './ViewContractDataModal';
@@ -43,7 +44,7 @@ const ManageConsentFlowContractsPage: React.FC = () => {
             {currentLCNUserLoading && (
                 <div className="w-[500px] h-[200px] flex flex-col gap-[5px] items-center justify-center">
                     <IonSpinner color="dark" />
-                    <span>Loading...</span>
+                    <span>{m['common.loading']()}</span>
                 </div>
             )}
             {!currentLCNUserLoading && (
@@ -96,7 +97,7 @@ const ManageConsentFlowContractsPage: React.FC = () => {
                             {contractsLoading && (
                                 <div className="w-[500px] h-[200px] flex flex-col gap-[5px] items-center justify-center">
                                     <IonSpinner color="dark" />
-                                    <span>Loading Contracts...</span>
+                                    <span>{m['common.loadingContracts']()}</span>
                                 </div>
                             )}
                         </>

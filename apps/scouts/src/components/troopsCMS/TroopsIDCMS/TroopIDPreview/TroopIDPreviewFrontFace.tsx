@@ -23,7 +23,7 @@ export const TroopIDPreviewFrontFace: React.FC<{
     } else if (isInNetworkViewMode) {
         title = 'National Admin Name';
     } else if (isInTroopViewMode && isInLeaderViewMode) {
-        title = 'Leader Name';
+        title = 'Troop Leader Name';
     } else if (isInTroopViewMode && isInMemberViewMode) {
         title = 'Scout Name';
     }
@@ -39,7 +39,7 @@ export const TroopIDPreviewFrontFace: React.FC<{
     }
 
     return (
-        <div className="rounded-t-[20px] rounded-b-[20px] shadow-box-bottom overflow-hidden flex flex-col">
+        <div className="rounded-t-[20px] rounded-b-[20px] shadow-box-bottom overflow-hidden flex flex-col text-grayscale-900">
             <div className="w-full flex items-center justify-center flex-col bg-white bg-opacity-70 backdrop-blur-[10px] rounded-t-[20px]">
                 <div className="w-full py-4 max-w-[335px]">
                     <TroopID
@@ -68,7 +68,7 @@ export const TroopIDPreviewFrontFace: React.FC<{
                         <br />
                         by {name}
                     </span>
-                    <h4 className="text-[14px] font-notoSans font-semibold text-gray-900">
+                    <h4 className="text-[14px] font-notoSans font-semibold text-grayscale-900">
                         {network?.basicInfo?.name}
                     </h4>
                 </div>

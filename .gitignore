@@ -36,7 +36,6 @@ node_modules
 # No trailing slash: also matches a stray .claude symlink, not just a directory
 .claude
 .codex/
-.vexp/
 .superpowers/
 docs/superpowers/plans/
 docs/superpowers/specs/
@@ -53,3 +52,9 @@ services/learn-card-network/*/didkit-native-layer/
 .netlify
 # Local environment configuration
 .envrc
+services/learn-card-network/lca-api/.env.scouts
+/apps/scouts/.vite-local
+/apps/scouts/.vite-docker
+
+# Sisyphus agent working directory (local only)
+.sisyphus/

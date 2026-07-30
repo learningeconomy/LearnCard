@@ -11,6 +11,7 @@ import { IonItem } from '@ionic/react';
 import AiPassportAppProfileContainer from '../../components/ai-passport-apps/AiPassportAppProfileContainer';
 
 import { LaunchPadFilterOptionsEnum } from './LaunchPadSearch/launchpad-search.helpers';
+import * as m from '../../paraglide/messages.js';
 
 import useTheme from '../../theme/hooks/useTheme';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
@@ -54,13 +55,20 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
     };
 
     const handleButtonClick = () => {
+        const action = isConnected && !isAiApp ? 'open' : 'connect';
         track(AnalyticsEvents.LAUNCHPAD_APP_CLICKED, {
             appName: app.name,
             appId: app.id,
-            action: isConnected && !isAiApp ? 'open' : 'connect',
+            action,
             appType: app.type,
         });
-        if (isConnected && !isAiApp) {
+        if (action === 'open') {
+            track(AnalyticsEvents.LAUNCHPAD_APP_OPENED, {
+                appName: app.name,
+                appId: app.id,
+                appType: app.type,
+                entry_point: 'list_item',
+            });
             app.handleView?.();
         } else {
             handleConnect(app);
@@ -102,7 +110,7 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
                                 }
                                 className={buttonClass}
                             >
-                                Launch
+                                {m['launchpad.appCard.launch']()}
                             </button>
                         </div>
                     )}
@@ -110,20 +118,24 @@ const LaunchPadAppListItem: React.FC<LaunchPadAppListItemProps> = ({ app, filter
                     {!app?.embedUrl && app?.comingSoon && (
                         <div className="flex app-connect-btn-container items-center">
                             <button disabled className={connectedButtonClass}>
-                                Soon
+                                {m['launchpad.appCard.soon']()}
                             </button>
                         </div>
                     )}
 
                     {!app?.embedUrl && !app?.comingSoon && (
                         <div className="flex app-connect-btn-container items-center">
-                            {isLoading && <button className={buttonClass}>Loading...</button>}
+                            {isLoading && (
+                                <button className={buttonClass}>
+                                    {m['launchpad.appCard.loading']()}
+                                </button>
+                            )}
                             {!isLoading && (
                                 <button
                                     onClick={handleButtonClick}
                                     className={isConnected ? connectedButtonClass : buttonClass}
                                 >
-                                    {isConnected ? 'Open' : 'Connect'}
+                                    {isConnected ? m['common.open']() : m['common.connect']()}
                                 </button>
                             )}
                         </div>

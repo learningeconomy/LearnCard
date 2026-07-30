@@ -159,7 +159,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
             >
                 <div className="flex flex-col gap-[5px] w-full">
                     <div className="flex flex-col items-center text-grayscale-900">
-                        {issueeName && (
+                        {issueeName && !customBodyCardComponent && (
                             <>
                                 <span className="flex flex-wrap items-baseline justify-center gap-1 text-[16px] leading-[150%] font-jacques max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
                                     {!issueeDisplay.isMissing && issueeDisplay.isDidValue ? (

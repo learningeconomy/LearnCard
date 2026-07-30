@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { auth } from '../../firebase/firebase';
 import { updateProfile } from 'firebase/auth';
 import { z } from 'zod';
@@ -12,7 +12,6 @@ import { getLogger } from 'learn-card-base';
 const log = getLogger('user-profile-update-form');
 
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
-import { useSafeArea } from 'learn-card-base/hooks/useSafeArea';
 import { ToastTypeEnum, useToast } from 'learn-card-base/hooks/useToast';
 import {
     SocialLoginTypes,
@@ -28,7 +27,7 @@ import {
     useDeviceTypeByWidth,
 } from 'learn-card-base';
 
-import { IonCol, IonRow, IonInput, IonSpinner, IonDatetime } from '@ionic/react';
+import { IonSpinner } from '@ionic/react';
 import Pencil from '../svgs/Pencil';
 import TrashBin from '../svgs/TrashBin';
 import InfoIcon from '../svgs/InfoIcon';
@@ -38,14 +37,13 @@ import ExclamationPoint from '../svgs/ExclamationPoint';
 import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import DeleteUserConfirmationPrompt from '../userOptions/DeleteUserConfirmationPrompt';
 import ExportSeedPhraseModal from '../userOptions/ExportSeedPhraseModal';
-import BoostTextSkeleton from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
 import OnboardingRoleItem from '../onboarding/onboardingRoles/OnboardingRoleItem';
 import OnboardingRolesContainer from '../onboarding/onboardingRoles/OnboardingRolesContainer';
 import CountrySelectorModal from '../onboarding/onboardingNetworkForm/components/CountrySelectorModal';
 import IssuerStatusCard from './IssuerStatusCard';
 import countries from '../../constants/countries.json';
 
-import { useFilestack, UploadRes } from 'learn-card-base';
+import { useImageUpload, UploadRes } from 'learn-card-base';
 
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
@@ -55,6 +53,12 @@ import { calculateAge } from 'learn-card-base/helpers/dateHelpers';
 import { JoinNetworkModalWrapper } from '../network-prompts/hooks/useJoinLCNetworkModal';
 import { LearnCardRoles, LearnCardRolesEnum } from '../onboarding/onboarding.helpers';
 import { useGetAiInsightsServicesContract } from '../../pages/ai-insights/learner-insights/learner-insights.helpers';
+
+import { Bell } from 'lucide-react';
+import GlassCard from '../../pages/privacy-settings/components/GlassCard';
+import TextInput from 'learn-card-base/components/form-inputs/TextInput';
+import { useTheme } from '../../theme/hooks/useTheme';
+import * as m from '../../paraglide/messages.js';
 
 const StateValidator = z.object({
     name: z
@@ -86,7 +90,8 @@ type UserProfileUpdateFormProps = {
     showNetworkModal?: boolean;
     showNotificationsModal?: boolean;
     handleChapiInfo: () => void;
-    children?: any;
+    onOpenNotifications?: () => void;
+    showNotificationsRow?: boolean;
 };
 
 const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
@@ -98,21 +103,23 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     showNetworkModal = false,
     showNotificationsModal = true,
     handleChapiInfo,
-    children,
+    onOpenNotifications,
+    showNotificationsRow,
 }) => {
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.Cancel,
     });
     const { initWallet, installChapi } = useWallet();
+    const queryClient = useQueryClient();
     const authToken = getAuthToken();
     const currentUser = useCurrentUser();
     const { updateCurrentUser } = useSQLiteStorage();
     const { presentToast } = useToast();
-    const sectionPortal = document.getElementById('section-cancel-portal');
-    const safeArea = useSafeArea();
     const brandingConfig = useBrandingConfig();
-    const { isDesktop, isMobile } = useDeviceTypeByWidth();
+    const { isDesktop } = useDeviceTypeByWidth();
+    const { getColorSet } = useTheme();
+    const primaryColor = getColorSet('defaults')?.primary || '#4f46e5';
 
     const [name, setName] = useState<string | null | undefined>(currentUser?.name ?? '');
     const [photo, setPhoto] = useState<string | null | undefined>(currentUser?.profileImage ?? '');
@@ -125,7 +132,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
 
     const [uploadProgress, setUploadProgress] = useState<number | false>(false);
 
-    const { data: lcNetworkProfile, isLoading: profileLoading } = useGetProfile();
+    const { data: lcNetworkProfile } = useGetProfile();
 
     const [dob, setDob] = useState<string | null | undefined>(lcNetworkProfile?.dob ?? '');
     const [country, setCountry] = useState<string | undefined>(lcNetworkProfile?.country ?? '');
@@ -161,7 +168,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
         setUploadProgress(false);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
@@ -248,6 +255,11 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
             });
             log.info('updatedProfile::res', updatedProfile);
 
+            // useGetProfile caches for 5 min and expects mutations to invalidate it.
+            // Without this, the reopened form (and displayName/image synced via
+            // useGetCurrentLCNUser) shows stale values, making saves appear to "not stick".
+            await queryClient.invalidateQueries({ queryKey: ['getProfile'] });
+
             if (role === LearnCardRolesEnum.teacher) {
                 getAiInsightsContractUri().catch(err => {
                     log.info('getAiInsightsContractUri::error', err);
@@ -266,11 +278,10 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         </div>
                     </div>
                     <h2 className="text-[22px] font-bold text-grayscale-900 mb-2 font-poppins">
-                        Get an Adult
+                        {m['profile.getAnAdult']()}
                     </h2>
                     <p className="text-grayscale-700 text-[17px] leading-[24px] px-[10px]">
-                        You'll need a parent or guardian to set up a Family Account before you can
-                        join.
+                        {m['profile.needParentGuardian']()}
                     </p>
                 </div>
                 <div className="flex gap-3 w-full">
@@ -279,14 +290,14 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         onClick={closeModal}
                         className="flex-1 py-[10px] text-[20px] bg-white rounded-[40px] text-grayscale-900 shadow-box-bottom border border-grayscale-200"
                     >
-                        Back
+                        {m['profile.back']()}
                     </button>
                     <button
                         type="button"
                         onClick={closeModal}
                         className="flex-1 py-[10px] text-[20px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
                     >
-                        I'm an Adult
+                        {m['profile.imAnAdult']()}
                     </button>
                 </div>
             </div>,
@@ -335,6 +346,10 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
             await handleLCNetworkProfileUpdate();
 
             setIsLoading(false);
+            presentToast(m['profile.saved'](), {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
             handleCloseModal();
             // ! APPLE HOT FIX
         } else {
@@ -363,6 +378,10 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         await handleLCNetworkProfileUpdate();
 
                         setIsLoading(false);
+                        presentToast(m['profile.saved'](), {
+                            type: ToastTypeEnum.Success,
+                            hasDismissButton: true,
+                        });
                         handleCloseModal();
                         if (showNetworkModal) {
                             presentNetworkModal();
@@ -384,6 +403,10 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         handleStorageUpdate();
 
                         setIsLoading(false);
+                        presentToast(m['profile.saved'](), {
+                            type: ToastTypeEnum.Success,
+                            hasDismissButton: true,
+                        });
                         handleCloseModal();
                         if (showNetworkModal) {
                             presentNetworkModal();
@@ -392,6 +415,10 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                 } catch (error) {
                     setIsLoading(false);
                     log.info('updateProfile::error', error);
+                    presentToast(m['profile.saveFail'](), {
+                        type: ToastTypeEnum.Error,
+                        hasDismissButton: true,
+                    });
                 }
             }
         }
@@ -402,11 +429,27 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
             await Clipboard.write({
                 string: walletDid,
             });
-            presentToast('DID copied to clipboard', {
+            presentToast(m['profile.didCopied'](), {
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy DID to clipboard', {
+            presentToast(m['profile.didCopyFailed'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        }
+    };
+
+    const handleConnectChapi = async () => {
+        try {
+            await installChapi();
+            presentToast(m['chapi.connected'](), {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
+        } catch (e) {
+            log.info('installChapi::error', e);
+            presentToast(m['chapi.connFail'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -419,326 +462,449 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
         handleUpdateUser();
     };
 
-    let bottomPosition = safeArea.bottom;
-    if (Capacitor.isNativePlatform()) bottomPosition = safeArea.bottom > 0 ? safeArea.bottom : 20;
-
     return (
-        <>
-            <IonRow class="w-full">
-                <IonCol>
-                    <p className="text-grayscale-900 font-poppins m-0 flex h-full w-full items-center justify-center text-center text-xl font-bold">
-                        {title}
-                    </p>
-                </IonCol>
-                <IonCol size="12" className="flex items-center justify-center">
-                    <div className="bg-grayscale-100/40 relative m-0 flex items-center justify-between rounded-[40px] object-fill p-0 pb-[3px] pr-[10px] pt-[3px]">
+        <div className="h-full flex flex-col relative bg-grayscale-50/50">
+            {/* Aurora Background */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+                <div className="absolute -top-[20%] -left-[10%] w-[70%] h-[70%] rounded-full bg-indigo-400/10 blur-[120px]" />
+                <div className="absolute top-[40%] -right-[20%] w-[60%] h-[60%] rounded-full bg-emerald-400/10 blur-[100px]" />
+                <div className="absolute -bottom-[20%] left-[20%] w-[80%] h-[80%] rounded-full bg-rose-400/10 blur-[120px]" />
+            </div>
+
+            <div className="relative z-10 flex-1 overflow-y-auto safe-area-top-margin pb-6">
+                {/* Identity Header */}
+                <div className="flex flex-col items-center justify-center pt-8 pb-6 px-6">
+                    <div className="relative mb-4">
                         <ProfilePicture
-                            customContainerClass="flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden border-white border-solid border-2 text-white font-medium text-xl min-w-[70px] min-h-[70px]"
-                            customImageClass="flex justify-center items-center h-[70px] w-[70px] rounded-full overflow-hidden object-cover border-white border-solid border-2 min-w-[70px] min-h-[70px]"
+                            customContainerClass="flex justify-center items-center h-[100px] w-[100px] rounded-full overflow-hidden border-4 border-white shadow-lg text-white font-medium text-3xl min-w-[100px] min-h-[100px] bg-grayscale-100"
+                            customImageClass="flex justify-center items-center h-[100px] w-[100px] rounded-full overflow-hidden object-cover border-4 border-white min-w-[100px] min-h-[100px]"
                             customSize={500}
                             overrideSrc={photo?.length > 0}
                             overrideSrcURL={photo}
                         >
                             {imageUploadLoading && (
-                                <div className="user-image-upload-inprogress absolute flex h-[70px] min-h-[70px] w-[70px] min-w-[70px] items-center justify-center overflow-hidden rounded-full border-2 border-solid border-white text-xl font-medium text-white">
-                                    <IonSpinner
-                                        name="crescent"
-                                        color="dark"
-                                        className="scale-[1.75]"
-                                    />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-full">
+                                    <IonSpinner name="crescent" color="light" />
                                 </div>
                             )}
                         </ProfilePicture>
                         <button
                             onClick={handleImageSelect}
                             type="button"
-                            className="text-grayscale-900 ml-3 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg"
+                            className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md border border-grayscale-100 text-grayscale-700 hover:bg-grayscale-50 transition-colors"
                         >
-                            <Pencil className="h-[60%]" />
+                            <Pencil className="h-4 w-4" />
                         </button>
                     </div>
-                </IonCol>
-            </IonRow>
 
-            <div className="flex-grow flex items-center justify-center py-2">{children}</div>
-
-            {!Capacitor.isNativePlatform() && (
-                <div className="w-full flex items-center justify-between px-6">
-                    <button
-                        onClick={installChapi}
-                        className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-grayscale-900 font-poppins text-xl w-[85%] shadow-lg"
-                    >
-                        <HandshakeIcon className="mr-2" /> Connect Handler
-                    </button>
-                    <button
-                        onClick={() => handleChapiInfo()}
-                        className="flex items-center justify-center text-grayscale-900 text-xl"
-                    >
-                        <InfoIcon />
-                    </button>
-                </div>
-            )}
-
-            <div className="w-full px-6 mt-4">
-                <IssuerStatusCard walletDid={walletDid} />
-            </div>
-
-            <form
-                onSubmit={e => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    handleUpdateUser();
-                }}
-                className="flex flex-col items-center justify-center w-full px-6 mt-4"
-            >
-                <IonRow className="flex flex-col items-center justify-center w-full">
-                    {profileLoading && (
-                        <BoostTextSkeleton
-                            containerClassName="w-full min-h-[52px] h-[52px] rounded-[15px] mb-4"
-                            skeletonStyles={{ width: '100%', height: '100%', borderRadius: '15px' }}
-                        />
+                    <h2 className="text-2xl font-bold text-grayscale-900 font-poppins text-center mb-1">
+                        {name || m['profile.yourName']()}
+                    </h2>
+                    {lcNetworkProfile?.profileId && !hasParentSwitchedProfile && (
+                        <p className="text-grayscale-500 font-medium text-[15px]">
+                            @{lcNetworkProfile.profileId}
+                        </p>
                     )}
-                    {lcNetworkProfile &&
-                        lcNetworkProfile?.profileId &&
-                        !profileLoading &&
-                        !hasParentSwitchedProfile && (
-                            <IonInput
-                                autocapitalize="on"
-                                className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mb-4 !opacity-70`}
-                                value={`@${lcNetworkProfile?.profileId}`}
-                                placeholder="User ID"
-                                type="text"
-                                disabled={true}
-                            />
-                        )}
-                    <div className="flex flex-col items-center justify-center w-full mb-2">
-                        <IonInput
-                            autocapitalize="on"
-                            className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base ${
-                                errors.name ? 'login-input-email-error' : ''
-                            }`}
-                            onIonInput={e => setName(e.detail.value)}
-                            value={name}
-                            placeholder="Full Name"
-                            type="text"
-                        />
-                        {errors.name && (
-                            <p className="p-0 m-0 w-full text-left mt-1 text-red-600">
-                                {errors.name}
-                            </p>
-                        )}
-                    </div>
+                </div>
 
-                    {lcNetworkProfile && (
-                        <>
-                            <div className="flex flex-col items-center justify-center w-full mb-2 mt-2">
-                                <DatePickerInput
-                                    value={dob || ''}
-                                    onChange={(newDob: string) => {
-                                        setErrors(prev => ({ ...prev, dob: undefined }));
-                                        setDob(newDob);
-                                    }}
-                                    error={errors?.dob?.[0]}
-                                    isMobile={!isDesktop}
-                                    label={`Date of Birth ${
-                                        hasParentSwitchedProfile ? '(disabled)' : ''
-                                    }`}
-                                    disabled={hasParentSwitchedProfile}
+                <form onSubmit={handleSubmit} className="flex flex-col gap-6 px-4 sm:px-6">
+                    {/* PROFILE SECTION */}
+                    <div className="flex flex-col gap-2">
+                        <h3 className="text-[13px] font-semibold uppercase tracking-wide text-grayscale-500 px-2">
+                            {m['profile.profile']()}
+                        </h3>
+                        <GlassCard className="p-4 flex flex-col gap-4">
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-[14px] font-medium text-grayscale-700 px-1">
+                                    {m['profile.fullName']()}
+                                </label>
+                                <TextInput
+                                    value={name}
+                                    onChange={setName}
+                                    placeholder={m['profile.namePlace']()}
+                                    className={errors.name ? 'ring-1 ring-red-500' : ''}
                                 />
-
-                                {dob && !Number.isNaN(calculateAge(dob)) && (
-                                    <p className="p-0 m-0 w-full text-left mt-1 text-grayscale-700 text-xs">
-                                        Age: {calculateAge(dob)}
-                                    </p>
-                                )}
-
-                                {errors?.dob && (
-                                    <p className="p-0 m-0 w-full text-left mt-1 text-red-600 text-xs">
-                                        {errors?.dob}
-                                    </p>
+                                {errors.name && (
+                                    <p className="text-red-500 text-xs px-1">{errors.name}</p>
                                 )}
                             </div>
 
-                            {/* Country selector */}
-                            <div className="flex flex-col items-center justify-center w-full mt-2">
+                            {lcNetworkProfile && (
+                                <>
+                                    <div className="border-t border-grayscale-200/60" />
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-[14px] font-medium text-grayscale-700 px-1">
+                                            {m['profile.dateOfBirth']()}{' '}
+                                            {hasParentSwitchedProfile
+                                                ? m['profile.disabled']()
+                                                : ''}
+                                        </label>
+                                        <DatePickerInput
+                                            value={dob || ''}
+                                            onChange={(newDob: string) => {
+                                                setErrors(prev => ({ ...prev, dob: undefined }));
+                                                setDob(newDob);
+                                            }}
+                                            error={errors?.dob?.[0]}
+                                            isMobile={!isDesktop}
+                                            disabled={hasParentSwitchedProfile}
+                                        />
+                                        {dob && !Number.isNaN(calculateAge(dob)) && (
+                                            <p className="text-grayscale-500 text-xs px-1">
+                                                {m['profile.age']()} {calculateAge(dob)}
+                                            </p>
+                                        )}
+                                        {errors?.dob && (
+                                            <p className="text-red-500 text-xs px-1">
+                                                {errors.dob}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="border-t border-grayscale-200/60" />
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-[14px] font-medium text-grayscale-700 px-1">
+                                            {m['profile.countryLbl']()}
+                                        </label>
+                                        <button
+                                            type="button"
+                                            className="w-full flex items-center justify-between bg-grayscale-100/80 hover:bg-grayscale-100 transition-colors rounded-[10px] px-4 py-3 text-left"
+                                            onClick={e => {
+                                                e.preventDefault();
+                                                newModal(
+                                                    <CountrySelectorModal
+                                                        selected={country}
+                                                        onSelect={code => {
+                                                            setCountry(code);
+                                                            closeModal();
+                                                        }}
+                                                    />,
+                                                    {
+                                                        sectionClassName:
+                                                            '!bg-transparent !border-none !shadow-none !rounded-none',
+                                                    },
+                                                    {
+                                                        desktop: ModalTypes.Center,
+                                                        mobile: ModalTypes.Center,
+                                                    }
+                                                );
+                                            }}
+                                        >
+                                            {country ? (
+                                                <span className="text-grayscale-900 text-[14px] flex items-center gap-3">
+                                                    <img
+                                                        src={`https://flagcdn.com/36x27/${country.toLowerCase()}.png`}
+                                                        alt={`${
+                                                            (countries as Record<string, string>)[
+                                                                country
+                                                            ]
+                                                        } flag`}
+                                                        className="w-[24px] h-[18px] object-cover rounded-sm shadow-sm"
+                                                    />
+                                                    {(countries as Record<string, string>)[country]}
+                                                </span>
+                                            ) : (
+                                                <span className="text-grayscale-500 text-[14px]">
+                                                    {m['profile.country']()}
+                                                </span>
+                                            )}
+                                        </button>
+                                    </div>
+
+                                    <div className="border-t border-grayscale-200/60" />
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-[14px] font-medium text-grayscale-700 px-1">
+                                            {m['profile.role']()}
+                                        </label>
+                                        <div className="bg-grayscale-100/80 rounded-[10px] p-1">
+                                            <OnboardingRoleItem
+                                                role={role}
+                                                roleItem={
+                                                    LearnCardRoles?.find(r => r.type === role) ??
+                                                    null
+                                                }
+                                                setRole={() => {}}
+                                                handleEdit={() => {
+                                                    newModal(
+                                                        <OnboardingRolesContainer
+                                                            role={role}
+                                                            setRole={setRole}
+                                                        />,
+                                                        {
+                                                            sectionClassName:
+                                                                '!max-w-[600px] !mx-auto !max-h-[90%]',
+                                                        },
+                                                        {
+                                                            mobile: ModalTypes.Center,
+                                                            desktop: ModalTypes.Center,
+                                                        }
+                                                    );
+                                                }}
+                                                showDescription={false}
+                                            />
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </GlassCard>
+                    </div>
+
+                    {/* PREFERENCES SECTION */}
+                    {showNotificationsRow && Capacitor.isNativePlatform() && (
+                        <div className="flex flex-col gap-2">
+                            <h3 className="text-[13px] font-semibold uppercase tracking-wide text-grayscale-500 px-2">
+                                {m['profile.prefs']()}
+                            </h3>
+                            <GlassCard className="flex flex-col">
                                 <button
                                     type="button"
-                                    className={`w-full flex items-center justify-between bg-grayscale-100 text-grayscale-500 rounded-[15px] font-poppins font-normal px-[16px] py-[16px] tracking-wider text-base`}
+                                    onClick={() => onOpenNotifications?.()}
+                                    className="flex items-center justify-between px-5 py-4 hover:bg-grayscale-50/50 transition-colors rounded-[20px]"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <Bell className="w-5 h-5 text-grayscale-500" />
+                                        <div className="flex flex-col items-start">
+                                            <span className="text-[15px] font-medium text-grayscale-900">
+                                                {m['profile.notifs']()}
+                                            </span>
+                                            <span className="text-sm text-grayscale-500">
+                                                {m['profile.notifsSub']()}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="text-grayscale-400">
+                                        <svg
+                                            width="24"
+                                            height="24"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        >
+                                            <path d="m9 18 6-6-6-6" />
+                                        </svg>
+                                    </div>
+                                </button>
+                            </GlassCard>
+                        </div>
+                    )}
+
+                    {/* NETWORK & IDENTITY SECTION */}
+                    <div className="flex flex-col gap-2">
+                        <h3 className="text-[13px] font-semibold uppercase tracking-wide text-grayscale-500 px-2">
+                            {m['profile.netId']()}
+                        </h3>
+                        <GlassCard className="p-4 flex flex-col gap-4">
+                            {email && !hasParentSwitchedProfile && (
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-[14px] font-medium text-grayscale-700 px-1">
+                                        {m['profile.emailAddress']()}
+                                    </label>
+                                    <TextInput
+                                        value={email}
+                                        onChange={() => {}}
+                                        disabled={true}
+                                        type="email"
+                                        className="opacity-70"
+                                    />
+                                </div>
+                            )}
+
+                            {phone && (
+                                <>
+                                    {email && !hasParentSwitchedProfile && (
+                                        <div className="border-t border-grayscale-200/60" />
+                                    )}
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-[14px] font-medium text-grayscale-700 px-1">
+                                            {m['profile.phoneNumber']()}
+                                        </label>
+                                        <TextInput
+                                            value={phone}
+                                            onChange={() => {}}
+                                            disabled={true}
+                                            type="tel"
+                                            className="opacity-70"
+                                        />
+                                    </div>
+                                </>
+                            )}
+
+                            {walletDid && (
+                                <>
+                                    {(email || phone) && (
+                                        <div className="border-t border-grayscale-200/60" />
+                                    )}
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-[14px] font-medium text-grayscale-700 px-1">
+                                            {m['profile.didLabel']({ brand: brandingConfig.name })}
+                                        </label>
+                                        <div className="flex items-center justify-between bg-grayscale-100/80 rounded-[10px] px-4 py-3">
+                                            <p className="text-grayscale-900 text-[14px] truncate mr-4 font-mono text-sm">
+                                                {walletDid}
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={copyToClipBoard}
+                                                className="text-grayscale-500 hover:text-grayscale-900 transition-colors shrink-0"
+                                            >
+                                                <CopyStack className="w-5 h-5" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </GlassCard>
+                        <IssuerStatusCard walletDid={walletDid} />
+                    </div>
+
+                    {/* SECURITY SECTION */}
+                    <div className="flex flex-col gap-2">
+                        <h3 className="text-[13px] font-semibold uppercase tracking-wide text-grayscale-500 px-2">
+                            {m['profile.security']()}
+                        </h3>
+                        <GlassCard className="flex flex-col">
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    newModal(<ExportSeedPhraseModal />, {
+                                        sectionClassName: '!max-w-[450px]',
+                                    })
+                                }
+                                className="flex items-center justify-between px-5 py-4 hover:bg-grayscale-50/50 transition-colors rounded-t-[20px]"
+                            >
+                                <div className="flex flex-col items-start">
+                                    <span className="text-[15px] font-medium text-grayscale-900">
+                                        {m['profile.exportSeedPhrase']()}
+                                    </span>
+                                    <span className="text-sm text-grayscale-500">
+                                        {m['profile.exportSub']()}
+                                    </span>
+                                </div>
+                                <div className="text-grayscale-400">
+                                    <svg
+                                        width="24"
+                                        height="24"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    >
+                                        <path d="m9 18 6-6-6-6" />
+                                    </svg>
+                                </div>
+                            </button>
+
+                            {!Capacitor.isNativePlatform() && (
+                                <>
+                                    <div className="border-t border-grayscale-200/60 mx-5" />
+                                    <div className="flex items-center justify-between px-5 py-4 hover:bg-grayscale-50/50 transition-colors rounded-b-[20px]">
+                                        <div className="flex flex-col items-start flex-1 mr-4">
+                                            <span className="text-[15px] font-medium text-grayscale-900">
+                                                {m['profile.connectingHandler']()}
+                                            </span>
+                                            <span className="text-sm text-grayscale-500">
+                                                {m['profile.connectSub']()}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleChapiInfo()}
+                                                className="text-grayscale-400 hover:text-grayscale-600 p-2"
+                                            >
+                                                <InfoIcon />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={handleConnectChapi}
+                                                className="flex items-center justify-center text-grayscale-700 bg-grayscale-100 hover:bg-grayscale-200 rounded-full px-4 py-2 text-sm font-medium transition-colors"
+                                            >
+                                                <HandshakeIcon className="mr-2 w-4 h-4" />{' '}
+                                                {m['profile.connect']()}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </GlassCard>
+                    </div>
+
+                    {/* DANGER ZONE */}
+                    {showDeleteAccountButton && !hasParentSwitchedProfile && (
+                        <div className="flex flex-col gap-2">
+                            <h3 className="text-[13px] font-semibold uppercase tracking-wide text-rose-500 px-2">
+                                {m['profile.danger']()}
+                            </h3>
+                            <GlassCard className="flex flex-col border-rose-100 ring-rose-500/10">
+                                <button
+                                    type="button"
                                     onClick={e => {
+                                        e.stopPropagation();
                                         e.preventDefault();
                                         newModal(
-                                            <CountrySelectorModal
-                                                selected={country}
-                                                onSelect={code => {
-                                                    setCountry(code);
-                                                    closeModal();
-                                                }}
-                                            />,
-                                            {
-                                                sectionClassName:
-                                                    '!bg-transparent !border-none !shadow-none !rounded-none',
-                                            },
-                                            {
-                                                desktop: ModalTypes.Center,
-                                                mobile: ModalTypes.Center,
-                                            }
-                                        );
-                                    }}
-                                    aria-label="Country"
-                                >
-                                    {country ? (
-                                        <span className="text-grayscale-700 text-[14px] flex items-center gap-[10px]">
-                                            <img
-                                                src={`https://flagcdn.com/36x27/${country.toLowerCase()}.png`}
-                                                alt={`${
-                                                    (countries as Record<string, string>)[country]
-                                                } flag`}
-                                                className="w-[36px] h-[27px] object-cover"
+                                            <DeleteUserConfirmationPrompt
+                                                handleCloseModal={() => closeModal()}
+                                                showCloseButton={true}
+                                                showFixedFooter={false}
+                                                handleLogout={(
+                                                    e: React.MouseEvent<
+                                                        HTMLButtonElement,
+                                                        MouseEvent
+                                                    >
+                                                ) => onLogout(e)}
                                             />
-                                            {(countries as Record<string, string>)[country]}
-                                        </span>
-                                    ) : (
-                                        <span className="text-grayscale-500 text-[14px]">
-                                            Country
-                                        </span>
-                                    )}
-                                </button>
-                            </div>
-
-                            {/* Role selector */}
-                            <div className="w-full flex items-center justify-center my-2">
-                                <OnboardingRoleItem
-                                    role={role}
-                                    roleItem={LearnCardRoles?.find(r => r.type === role) ?? null}
-                                    setRole={() => {}}
-                                    handleEdit={() => {
-                                        newModal(
-                                            <OnboardingRolesContainer
-                                                role={role}
-                                                setRole={setRole}
-                                            />,
-                                            {
-                                                sectionClassName:
-                                                    '!max-w-[600px] !mx-auto !max-h-[90%]',
-                                            },
-                                            {
-                                                mobile: ModalTypes.Center,
-                                                desktop: ModalTypes.Center,
-                                            }
                                         );
                                     }}
-                                    showDescription={false}
-                                />
-                            </div>
-                        </>
-                    )}
-
-                    {walletDid && (
-                        <IonRow className="flex items-center justify-center w-full bg-grayscale-100 mb-4 rounded-[15px] mt-2">
-                            <IonCol className="w-full flex items-center justify-between px-4 rounded-2xl">
-                                <div className="w-[80%] flex flex-col justify-center items-start text-left">
-                                    <p className="text-grayscale-500 font-medium text-sm">
-                                        {brandingConfig.name} Number (DID)
-                                    </p>
-                                    <p className="w-full text-grayscale-900 line-clamp-1 tracking-widest">
-                                        {walletDid}
-                                    </p>
-                                </div>
-                                <div
-                                    onClick={copyToClipBoard}
-                                    className="w-[20%] flex items-center justify-end"
+                                    className="flex items-center justify-between px-5 py-4 hover:bg-rose-50/50 transition-colors rounded-[20px] group"
                                 >
-                                    <CopyStack className="w-[32px] h-[32px] text-grayscale-900" />
-                                </div>
-                            </IonCol>
-                        </IonRow>
+                                    <div className="flex flex-col items-start">
+                                        <span className="text-[15px] font-medium text-rose-600 group-hover:text-rose-700">
+                                            {m['profile.deleteAccount']()}
+                                        </span>
+                                        <span className="text-sm text-rose-400/80">
+                                            {m['profile.deleteSub']()}
+                                        </span>
+                                    </div>
+                                    <div className="text-rose-400 group-hover:text-rose-500">
+                                        <TrashBin className="w-5 h-5" />
+                                    </div>
+                                </button>
+                            </GlassCard>
+                        </div>
                     )}
-                    {email && !hasParentSwitchedProfile && (
-                        <IonInput
-                            autocapitalize="on"
-                            className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mb-4 !opacity-70`}
-                            onIonInput={e => setEmail(e.detail.value)}
-                            value={email}
-                            placeholder="Email address"
-                            type="email"
-                            disabled={true}
-                        />
-                    )}
-                    {phone && (
-                        <IonInput
-                            autocapitalize="on"
-                            className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base mb-4 !opacity-70`}
-                            onIonInput={e => setPhone(e.detail.value)}
-                            value={phone}
-                            placeholder="Phone Number"
-                            type="tel"
-                            disabled={true}
-                        />
-                    )}
-                </IonRow>
-                <button
-                    type="button"
-                    onClick={e =>
-                        newModal(<ExportSeedPhraseModal />, { sectionClassName: '!max-w-[450px]' })
-                    }
-                    className="flex items-center justify-center bg-white rounded-full px-[18px] py-[12px] text-grayscale-900 font-poppins text-xl w-full shadow-lg normal mb-[10px]"
-                >
-                    Export Seed Phrase
-                </button>
-                {showDeleteAccountButton && !hasParentSwitchedProfile && (
-                    <IonRow className="w-full flex items-center justify-center">
-                        <button
-                            type="button"
-                            onClick={e => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                newModal(
-                                    <DeleteUserConfirmationPrompt
-                                        handleCloseModal={() => closeModal()}
-                                        showCloseButton={true}
-                                        showFixedFooter={false}
-                                        handleLogout={(
-                                            e: React.MouseEvent<HTMLButtonElement, MouseEvent>
-                                        ) => onLogout(e)}
-                                    />
-                                );
-                            }}
-                            className="flex items-center justify-center bg-white rounded-full px-[18px] py-[12px] text-grayscale-900 font-poppins text-xl w-full shadow-lg normal"
-                        >
-                            <TrashBin className="ml-[5px] h-[30px] w-[30px] mr-2" />
-                            Delete Account
-                        </button>
-                    </IonRow>
-                )}
-            </form>
-            {sectionPortal &&
-                createPortal(
-                    <div
-                        className={`flex justify-center items-center relative max-w-[500px] !border-none ${
-                            isMobile ? 'min-h-[120px]' : 'h-full'
-                        }`}
-                        style={{
-                            bottom: `${bottomPosition}px`,
-                        }}
-                    >
-                        <button
-                            disabled={isLoading}
-                            onClick={handleSubmit}
-                            className="bg-grayscale-900 text-white text-[17px] py-1.5 rounded-[30px] font-poppins font-semibold w-full h-[50px] flex justify-center items-center shadow-[0px_2px_3px_rgba(0,0,0,0.25)] mr-[5px]"
-                        >
-                            {isLoading ? 'Saving...' : 'Save'}
-                        </button>
+                </form>
+            </div>
 
-                        <button
-                            onClick={closeModal}
-                            className="bg-white text-grayscale-800 text-[17px] font-poppins py-1.5 rounded-[30px] w-full h-[50px] shadow-[0px_4px_4px_rgba(0,0,0,0.25)]"
-                        >
-                            Close
-                        </button>
-                    </div>,
-                    sectionPortal
-                )}
-        </>
+            {/* Sticky Footer */}
+            <div
+                className="shrink-0 relative z-20 bg-white/80 backdrop-blur-xl border-t border-grayscale-200/50"
+                style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+            >
+                <div className="max-w-[600px] mx-auto px-6 py-4 flex items-center gap-3">
+                    <button
+                        type="button"
+                        onClick={closeModal}
+                        className="flex-1 bg-white text-grayscale-800 text-[17px] font-poppins font-medium py-3 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-grayscale-100 hover:bg-grayscale-50 transition-colors"
+                    >
+                        {m['common.back']()}
+                    </button>
+                    <button
+                        type="button"
+                        disabled={isLoading}
+                        onClick={handleSubmit}
+                        className="flex-1 text-white text-[17px] font-poppins font-semibold py-3 rounded-full shadow-[0_4px_12px_rgba(79,70,229,0.25)] hover:opacity-90 transition-opacity disabled:opacity-70 disabled:cursor-not-allowed"
+                        style={{ backgroundColor: primaryColor }}
+                    >
+                        {isLoading ? m['profile.saving']() : m['profile.save']()}
+                    </button>
+                </div>
+            </div>
+        </div>
     );
 };
 

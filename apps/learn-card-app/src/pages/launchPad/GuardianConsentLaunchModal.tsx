@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('guardian-consent-launch-modal');
 
+import * as m from '../../paraglide/messages.js';
 import { IonSpinner } from '@ionic/react';
 import { ConsentFlowContractDetails, ConsentFlowTerms, LCNProfile } from '@learncard/types';
 import { useImmer } from 'use-immer';
@@ -224,7 +225,7 @@ const GuardianConsentLaunchModal: React.FC<GuardianConsentLaunchModalProps> = ({
         return (
             <div className="min-h-[400px] flex flex-col items-center justify-center bg-white rounded-[20px] p-8">
                 <IonSpinner name="crescent" className="w-8 h-8 mb-4" />
-                <p className="text-grayscale-600">Loading...</p>
+                <p className="text-grayscale-600">{m['common.loading']()}</p>
             </div>
         );
     }

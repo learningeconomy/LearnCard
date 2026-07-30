@@ -3,6 +3,7 @@ import { useHistory } from 'react-router-dom';
 import { App, URLOpenListenerEvent } from '@capacitor/app';
 import { PluginListenerHandle } from '@capacitor/core';
 import { getLogger } from 'learn-card-base';
+import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
 
 const log = getLogger('scouts/app-url-listener');
 
@@ -14,7 +15,7 @@ export const AppUrlListener: React.FC = () => {
             'https://app.scoutpass.org',
             'https://scoutpass.org',
             'https://scoutpass.netlify.app',
-            'https://pass.scout.org',
+            getAppBaseUrl(),
         ],
         []
     );

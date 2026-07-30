@@ -23,6 +23,7 @@ import { useWallet, SelectedCredsStoreState, useToast, ToastTypeEnum } from 'lea
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import ShareBoostsBundle from './ShareBoostsBundle';
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
+import * as m from '../../paraglide/messages.js';
 
 export const baseUrl = getAppBaseUrl().replace(/^https?:\/\//, '');
 
@@ -218,11 +219,11 @@ const ShareBoostsBundleModal = ({
             await Clipboard.write({
                 string: link,
             });
-            presentToast('Verified resume link copied to clipboard', {
+            presentToast(m['toasts.resume.verifiedResumeLinkCopied'](), {
                 type: ToastTypeEnum.Success,
             });
         } catch (err) {
-            presentToast('Unable to copy verified resume link to clipboard', {
+            presentToast(m['toasts.resume.verifiedResumeLinkCopyFailed'](), {
                 type: ToastTypeEnum.Error,
             });
         }

@@ -1,4 +1,7 @@
 import React from 'react';
+import { formatLocaleDate } from '../../../i18n/formatters';
+
+import { m } from '../../../paraglide/messages.js';
 
 import { IonSpinner } from '@ionic/react';
 import VerifiedBadge from 'learn-card-base/svgs/VerifiedBadge';
@@ -81,11 +84,11 @@ export const AiSessionItem: React.FC<{
     const subtitleTutor = sessionApp?.name || session?.record?.app || 'AI Tutor';
     const sessionImage = sessionApp?.img || session?.vc?.image || topicVc?.image;
     const dateLabel = isCompleted
-        ? new Date(session?.vc?.issuanceDate ?? Date.now()).toLocaleDateString('en-US', {
+        ? formatLocaleDate(new Date(session?.vc?.issuanceDate ?? Date.now()), {
               month: 'short',
               day: 'numeric',
           })
-        : 'Unfinished';
+        : m['ai.unfinished']();
 
     return (
         <button
@@ -109,7 +112,7 @@ export const AiSessionItem: React.FC<{
                 </div>
                 <div className="flex flex-col items-start w-full min-w-0">
                     <p className="w-full text-grayscale-900 text-[17px] leading-tight font-poppins font-semibold text-left line-clamp-1 ml-3">
-                        {getAiSessionTitle(sessionCredential as any) || 'Untitled Session'}
+                        {getAiSessionTitle(sessionCredential as any) || m['ai.untitledSession']()}
                     </p>
                     <p className="text-grayscale-600 text-sm font-poppins text-left line-clamp-1 ml-3">
                         <span className="font-semibold text-grayscale-700">{subtitleTopic}</span>

@@ -404,7 +404,7 @@ const handleToken = async (
 
     return writeJson(res, 200, {
         access_token: accessToken,
-        token_type: 'bearer',
+        token_type: 'Bearer',
         expires_in: 300,
         c_nonce: offer.cNonce,
         c_nonce_expires_in: 300,
@@ -432,11 +432,14 @@ const handleCredential = async (
     }
 
     const body = await readJson(req);
-    const proofJwt = body?.proof?.jwt;
+    // Accept the OID4VCI 1.0 `proofs: { jwt: [...] }` shape and the legacy
+    // Draft 13 singular `proof: { jwt }` shape (the wallet supports both).
+    const proofJwt = body?.proofs?.jwt?.[0] ?? body?.proof?.jwt;
     if (typeof proofJwt !== 'string') {
         return writeJson(res, 400, {
             error: 'invalid_proof',
-            error_description: 'Expected body.proof.jwt to be a JWS compact string',
+            error_description:
+                'Expected proofs.jwt[0] (1.0) or proof.jwt (Draft 13) as a compact JWS',
         });
     }
 
@@ -468,8 +471,7 @@ const handleCredential = async (
     offer.issuedCompact = compact;
 
     return writeJson(res, 200, {
-        format: 'dc+sd-jwt',
-        credential: compact,
+        credentials: [{ credential: compact }],
     });
 };
 

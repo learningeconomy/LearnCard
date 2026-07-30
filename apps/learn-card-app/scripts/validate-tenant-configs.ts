@@ -73,6 +73,7 @@ const TENANT_UNIQUE_FIELDS: UniqueFieldCheck[] = [
     { path: 'observability.userflowToken', label: 'Userflow Token' },
     { path: 'links.appStoreUrl', label: 'App Store URL' },
     { path: 'links.playStoreUrl', label: 'Play Store URL' },
+    { path: 'storage.apiKey', label: 'Filestack API Key' },
 ];
 
 const getNestedValue = (obj: Record<string, unknown>, path: string): unknown =>
@@ -94,6 +95,13 @@ const checkInheritedDefaults = (tenant: string, merged: Record<string, unknown>)
     const defaults = DEFAULT_LEARNCARD_TENANT_CONFIG as unknown as Record<string, unknown>;
 
     for (const field of TENANT_UNIQUE_FIELDS) {
+        if (
+            field.path === 'storage.apiKey' &&
+            getNestedValue(merged, 'storage.provider') !== 'filestack'
+        ) {
+            continue;
+        }
+
         const mergedVal = getNestedValue(merged, field.path);
         const defaultVal = getNestedValue(defaults, field.path);
 

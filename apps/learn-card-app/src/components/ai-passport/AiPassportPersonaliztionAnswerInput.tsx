@@ -10,6 +10,8 @@ import PersonalizationInputModal from './helpers/PersonalizationInputModal';
 
 import { ModalTypes, useDeviceTypeByWidth, useModal } from 'learn-card-base';
 
+import { getPersonalizedPlaceholder } from './helpers/personalizationI18n';
+
 export const AIPassportPersonalizationAnswerInput: React.FC<{
     question: PersonalizedQuestionType;
     handleSetAnswer: (questionType: PersonalizedQuestionEnum, answer: string) => void;
@@ -18,7 +20,10 @@ export const AIPassportPersonalizationAnswerInput: React.FC<{
     const [answer, setAnswer] = useState<string>('');
 
     const questionType = question?.type;
-    const placeholderText = question.inputPlaceholderText;
+    // Translate the placeholder at the render layer keyed by question type;
+    // the English `inputPlaceholderText` stays in the data file untouched.
+    const placeholderText =
+        getPersonalizedPlaceholder(questionType) || question.inputPlaceholderText;
 
     const minWidth =
         questionType === PersonalizedQuestionEnum.favFictionalCharacter

@@ -1,6 +1,7 @@
 import { UnsignedVP } from '@learncard/types';
 
 import { inferCredentialFormat } from './select';
+import { vpBaseContextFor } from './context';
 import type {
     CandidateCredential,
     PresentationSubmission,
@@ -253,7 +254,7 @@ export const buildPresentation = (options: BuildPresentationOptions): PreparedPr
     const makeId = options.makeId ?? defaultMakeId;
 
     const unsignedVp: UnsignedVP = {
-        '@context': ['https://www.w3.org/2018/credentials/v1'],
+        '@context': [vpBaseContextFor(normalized.map(n => n.credential))],
         id: options.presentationId ?? `urn:uuid:${makeUuidV4(makeId)}`,
         type: ['VerifiablePresentation'],
         holder,

@@ -21,6 +21,7 @@ import {
     SkillChip,
 } from './skillBrowserShared';
 import { SkillBrowserModal } from './SkillBrowserModal';
+import * as m from '../../../paraglide/messages.js';
 
 interface SkillsSectionProps {
     selectedSkills: SelectedSkill[];
@@ -212,9 +213,11 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
     return (
         <section className={`${CARD_CLASS} space-y-4`}>
             <div>
-                <h3 className="text-base font-semibold text-grayscale-900">Skills</h3>
+                <h3 className="text-base font-semibold text-grayscale-900">
+                    {m['issueFlow.skillsTitle']()}
+                </h3>
                 <p className="text-sm text-grayscale-600 leading-relaxed mt-1">
-                    Search competencies to align this credential to a framework.
+                    {m['issueFlow.skillsSubtitle']()}
                 </p>
             </div>
 
@@ -247,7 +250,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
                                 type="button"
                                 onClick={() => handleRemoveSkill(chip.frameworkId, chip.id)}
                                 className="text-white/70 hover:text-white transition-colors shrink-0"
-                                aria-label={`Remove ${chip.name}`}
+                                aria-label={m['issueFlow.removeSkill']({ name: chip.name })}
                             >
                                 <X className="w-3.5 h-3.5" />
                             </button>
@@ -262,7 +265,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
                     type="text"
                     value={query}
                     onChange={e => setQuery(e.target.value)}
-                    placeholder="Search by skill, goal, or job…"
+                    placeholder={m['skills.search.searchPlaceholder']()}
                     className="w-full py-3 pl-10 pr-10 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                 />
                 {query && (
@@ -270,7 +273,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
                         type="button"
                         onClick={() => setQuery('')}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-grayscale-400 hover:text-grayscale-700 transition-colors"
-                        aria-label="Clear search"
+                        aria-label={m['issueFlow.clearSearch']()}
                     >
                         <X className="w-4 h-4" />
                     </button>
@@ -280,12 +283,14 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
             {hasQuery && semanticLoading ? (
                 <div className="flex items-center gap-2 text-sm text-grayscale-500 py-1">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Searching…
+                    {m['issueFlow.searching']()}
                 </div>
             ) : suggestions.length > 0 ? (
                 <div className="space-y-2">
                     {!hasQuery && (
-                        <p className="text-xs font-medium text-grayscale-500">Suggested</p>
+                        <p className="text-xs font-medium text-grayscale-500">
+                            {m['issueFlow.suggested']()}
+                        </p>
                     )}
                     <div className="flex flex-wrap gap-2">
                         {suggestions.map(node => (
@@ -302,7 +307,9 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
                     </div>
                 </div>
             ) : hasQuery ? (
-                <p className="text-sm text-grayscale-500 py-1">No matching skills.</p>
+                <p className="text-sm text-grayscale-500 py-1">
+                    {m['issueFlow.noMatchingSkills']()}
+                </p>
             ) : null}
 
             <button
@@ -311,7 +318,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
                 className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-full bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200 font-medium text-sm transition-colors"
             >
                 <Layers className="w-4 h-4" />
-                Browse all frameworks
+                {m['issueFlow.browseAllFrameworks']()}
             </button>
         </section>
     );

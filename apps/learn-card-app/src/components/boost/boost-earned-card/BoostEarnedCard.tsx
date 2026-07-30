@@ -51,6 +51,7 @@ import { VC, VerificationItem } from '@learncard/types';
 import { LCR } from 'learn-card-base/types/credential-records';
 import { ID_CARD_DISPLAY_TYPES } from 'learn-card-base/helpers/credentials/ids';
 import { getDefaultDisplayType } from '../boostHelpers';
+import { useCredentialStatus } from 'src/hooks/useCredentialStatus';
 
 type BoostEarnedCardProps = {
     credential?: VC;
@@ -122,11 +123,16 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     const credential = resolvedCredential || _credential;
     const isBoost = credential && isBoostCredential(credential);
 
+    // Lazily verify this credential's revoked/suspended status (cached by URI, fail-open).
+    const lifecycleStatus = useCredentialStatus(credential, record?.uri);
+
     let cred = credential && unwrapBoostCredential(credential);
     const { credentialWithEdits } = useGetCredentialWithEdits(cred);
     cred = credentialWithEdits ?? cred;
 
-    const type = categoryMetadata[categoryType].walletSubtype;
+    const categoryInfo =
+        categoryMetadata[categoryType] ?? categoryMetadata['Achievement' as CredentialCategory];
+    const type = categoryInfo.walletSubtype;
 
     let {
         issuerName,
@@ -162,6 +168,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         idAccentColor,
         backgroundImage,
         backgroundColor,
+        accentColor,
 
         loading: vcInfoLoading,
     } = useGetVCInfo(cred, categoryType);
@@ -183,8 +190,8 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     const showNewItemIndicator = newCredsForCategory?.includes(record?.uri) ?? false;
     const clrTranscriptIssuerInfo = isClrCredential && cred ? getClrTranscriptIssuerInfo(cred) : {};
 
-    const color = categoryMetadata[categoryType].color;
-    const darkColor = categoryMetadata[categoryType].darkColor;
+    const color = categoryInfo.color;
+    const darkColor = categoryInfo.darkColor;
     const { getThemedCategory } = useTheme();
     const colors = getThemedCategory(categoryType as CredentialCategoryEnum)?.colors;
     const indicatorColor = colors?.indicatorColor;
@@ -272,6 +279,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             issuerOverride: issuerName,
             issueeOverride: issueeName,
             verificationItems,
+            lifecycleStatus,
             handleCloseModal: () => closeModal(),
             handleShareBoost: () => presentShareBoostLink(),
             onDotsClick: () => {
@@ -325,6 +333,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             issuerOverride: issuerName,
             issueeOverride: issueeName,
             verificationItems,
+            lifecycleStatus,
             handleShareBoost: () => presentShareBoostLink(),
             handleCloseModal: () => closeModal(),
             subjectImageComponent: subjectProfileImageElement,
@@ -362,7 +371,9 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             newCredsStore.set.removeCreds([record?.uri]);
         }
 
-        if (isBoost) {
+        // CLR transcripts only render in NonBoostPreview; a boost-wrapped CLR
+        // (isBoost === true) must be excluded here or it renders as a plain boost.
+        if (isBoost && !isClrCredential) {
             newModal(<BoostPreview {...props} showEndorsementBadge />, {
                 backgroundImage: bgImage,
             });
@@ -404,6 +415,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         return (
             <ErrorBoundary fallback={<div>Something went wrong</div>}>
                 <BoostGenericCardWrapper
+                    lifecycleStatus={lifecycleStatus}
                     innerOnClick={
                         cred && !showSkeleton
                             ? () => {
@@ -444,6 +456,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                 showBackgroundImage
                                 backgroundImage={backgroundImage}
                                 backgroundColor={backgroundColor}
+                                accentColor={accentColor}
                                 badgeContainerCustomClass="mt-[0px] mb-[8px]"
                                 badgeCircleCustomClass={`!w-[116px] h-[116px] mt-1 ${
                                     isAwardDisplay ? 'mt-[17px]' : 'shadow-3xl'
@@ -473,6 +486,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     relativeDate={relativeDate}
                     compact={compact}
                     isCLR={isClrCredential}
+                    trustedVerifierOnly
                 />
             </ErrorBoundary>
         );
@@ -491,6 +505,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     }`}
                 >
                     <BoostGenericCardWrapper
+                        lifecycleStatus={lifecycleStatus}
                         innerOnClick={() => handleClick('innerOnClick')}
                         onCheckClick={() => handleClick('onCheckClick')}
                         showChecked={showChecked}
@@ -517,6 +532,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                     showBackgroundImage
                                     backgroundImage={backgroundImage}
                                     backgroundColor={backgroundColor}
+                                    accentColor={accentColor}
                                     badgeContainerCustomClass="mt-[0px] mb-[8px]"
                                     badgeCircleCustomClass={`!w-[116px] h-[116px] mt-1 ${
                                         isAwardDisplay ? 'mt-[17px]' : 'shadow-3xl'
@@ -545,6 +561,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                         relativeDate={relativeDate}
                         compact={compact}
                         isCLR={isClrCredential}
+                        trustedVerifierOnly
                     />
                 </IonCol>
             </ErrorBoundary>
@@ -565,6 +582,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                 className={`flex justify-center items-center relative ${isCardView ? '' : 'p-0'}`}
             >
                 <BoostGenericCardWrapper
+                    lifecycleStatus={lifecycleStatus}
                     innerOnClick={
                         cred && !showSkeleton
                             ? () => {
@@ -619,6 +637,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                 showBackgroundImage
                                 backgroundImage={backgroundImage}
                                 backgroundColor={backgroundColor}
+                                accentColor={accentColor}
                                 badgeContainerCustomClass="mt-[0px] mb-[8px]"
                                 badgeCircleCustomClass={`!w-[116px] h-[116px] mt-1 ${
                                     isAwardDisplay ? 'mt-[17px] mb-[-22px]' : 'shadow-3xl'
@@ -658,6 +677,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     relativeDate={relativeDate}
                     compact={compact}
                     isCLR={isClrCredential}
+                    trustedVerifierOnly
                 />
             </IonCol>
         </ErrorBoundary>

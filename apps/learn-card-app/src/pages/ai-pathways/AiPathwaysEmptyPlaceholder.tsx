@@ -7,6 +7,7 @@ import CheckListButton from '../../components/learncard/checklist/CheckListButto
 import useTheme from '../../theme/hooks/useTheme';
 import { useIsLoggedIn } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import * as m from '../../paraglide/messages.js';
 
 export const AiPathwaysEmptyPlaceholder: React.FC = () => {
     const history = useHistory();
@@ -16,11 +17,11 @@ export const AiPathwaysEmptyPlaceholder: React.FC = () => {
     const primaryColor = colors?.defaults?.primaryColor;
 
     let title = isLoggedIn
-        ? 'No Pathways yet.'
-        : `Join ${brandingConfig?.name}\nto unlock Pathways`;
+        ? m['aiPathways.discovery.noPathwaysYet']()
+        : m['aiPathways.discovery.joinToUnlock']({ brand: brandingConfig?.name ?? '' });
     const text = isLoggedIn
-        ? `Build your ${brandingConfig?.name} to unlock personalized pathways to discover career routes and learning experiences aligned with your skills.`
-        : 'Pathways connect your skills to relevant courses, careers, salaries, and learning content.';
+        ? m['aiPathways.discovery.buildToUnlock']({ brand: brandingConfig?.name ?? '' })
+        : m['aiPathways.discovery.connectDescription']();
 
     return (
         <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 px-[15px] py-[18px] rounded-[15px]">
@@ -40,7 +41,7 @@ export const AiPathwaysEmptyPlaceholder: React.FC = () => {
                         }}
                         className={`p-[11px] bg-${primaryColor} rounded-full text-white flex-1 font-poppins text-[17px] font-semibold w-full`}
                     >
-                        Join {brandingConfig?.name}
+                        {m['aiPathways.discovery.joinBrand']({ brand: brandingConfig?.name ?? '' })}
                     </button>
                 )}
             </div>

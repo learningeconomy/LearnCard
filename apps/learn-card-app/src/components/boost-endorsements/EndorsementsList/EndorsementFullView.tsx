@@ -27,6 +27,7 @@ import {
 } from 'learn-card-base';
 import { hasEndorsedCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
+import * as m from '../../../paraglide/messages.js';
 import { UserProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 
 export const EndorsementFullView: React.FC<{
@@ -199,10 +200,12 @@ export const EndorsementFullView: React.FC<{
                                     showEndorsement ? 'text-emerald-500' : 'text-grayscale-600'
                                 }`}
                             >
-                                {showEndorsement ? 'Active' : 'Hidden'}
+                                {showEndorsement
+                                    ? m['endorsement.fullview.active']()
+                                    : m['endorsement.fullview.hidden']()}
                             </p>
                             <h1 className="text-sm font-semibold text-grayscale-900">
-                                Show Endorsement?
+                                {m['endorsement.fullview.showEndorsement']()}
                             </h1>
                         </div>
 
@@ -227,7 +230,7 @@ export const EndorsementFullView: React.FC<{
                         className={`flex items-center justify-between px-2 py-1 rounded-[5px] bg-grayscale-100`}
                     >
                         <p className="text-xs flex items-center font-semibold text-grayscale-700 uppercase">
-                            Not public • Waiting for review
+                            {m['endorsement.fullview.notPublicWaiting']()}
                         </p>
                     </div>
                 </div>
@@ -242,7 +245,7 @@ export const EndorsementFullView: React.FC<{
                             className={`mr-1 ${endorserIconStyles}`}
                             fill={endorserFill}
                         />{' '}
-                        Endorsed on {date}
+                        {m['endorsement.fullview.endorsedOn']({ date })}
                     </p>
                 </div>
 
@@ -297,7 +300,9 @@ export const EndorsementFullView: React.FC<{
             <div
                 className={`flex flex-col items-start justify-start w-full gap-1 px-4 ${hiddenStyles}`}
             >
-                <p className="text-xs font-medium text-grayscale-600">Endorsement</p>
+                <p className="text-xs font-medium text-grayscale-600">
+                    {m['endorsement.fullview.endorsement']()}
+                </p>
                 <p className="text-sm text-grayscale-900 line-clamp-3 text-left italic">
                     "{endorsement?.description}"
                 </p>
@@ -306,7 +311,9 @@ export const EndorsementFullView: React.FC<{
             <div
                 className={`flex flex-col items-start justify-start w-full gap-1 px-4 ${hiddenStyles}`}
             >
-                <p className="text-xs font-medium text-grayscale-600">Qualifications</p>
+                <p className="text-xs font-medium text-grayscale-600">
+                    {m['endorsement.fullview.qualifications']()}
+                </p>
                 <p className="text-sm text-grayscale-900 line-clamp-3 text-left italic">
                     "{endorsement?.qualification || endorsementComment}"
                 </p>
@@ -316,7 +323,9 @@ export const EndorsementFullView: React.FC<{
                 <div
                     className={`flex flex-col items-start justify-start w-full gap-1 px-4 ${hiddenStyles}`}
                 >
-                    <p className="text-xs font-medium text-grayscale-600 mb-1">Supporting Media</p>
+                    <p className="text-xs font-medium text-grayscale-600 mb-1">
+                        {m['endorsement.fullview.supportingMedia']()}
+                    </p>
                     <IonRow className="w-full flex flex-col items-center justify-center gap-2">
                         {attachments?.map((attachment, index) => {
                             return (

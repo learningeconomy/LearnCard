@@ -1,4 +1,5 @@
 import type { RecipientMode } from './components/recipientTypes';
+import * as m from '../../paraglide/messages.js';
 
 export interface IssueError {
     message: string;
@@ -30,54 +31,50 @@ export const getFriendlyIssueError = (error: unknown, mode: RecipientMode): Issu
 
     if (/network|fetch|connection|offline/i.test(msg)) {
         return {
-            message: 'Connection issue. Check your internet and try again.',
+            message: m['issueFlow.err.network'](),
             canRetry: true,
         };
     }
 
     if (/timeout|timed out/i.test(msg)) {
-        return { message: 'That took longer than expected. Please try again.', canRetry: true };
+        return { message: m['issueFlow.err.timeout'](), canRetry: true };
     }
 
     if (/unauthor|\b401\b|\b403\b|forbidden|not signed in|session/i.test(msg)) {
         return {
-            message: 'Your session may have expired. Sign in again and try once more.',
+            message: m['issueFlow.err.session'](),
             canRetry: true,
         };
     }
 
     if (/\b5\d\d\b|internal server|bad gateway|unavailable|lca-api returned/i.test(msg)) {
-        return { message: 'Our servers hit a snag. Please try again in a moment.', canRetry: true };
+        return { message: m['issueFlow.err.server'](), canRetry: true };
     }
 
     if (/signing authority|claim link|generateclaimlink/i.test(msg)) {
         return {
             message:
-                mode === 'link'
-                    ? "We couldn't create a shareable link. Please try again."
-                    : "We couldn't set up issuing for your account. Please try again.",
+                mode === 'link' ? m['issueFlow.err.linkFail']() : m['issueFlow.err.setupFail'](),
             canRetry: true,
         };
     }
 
     if (mode === 'people' && /profile|recipient|not found|does not exist|no such/i.test(msg)) {
         return {
-            message:
-                "We couldn't reach one of your recipients. Double-check the names or emails and try again.",
+            message: m['issueFlow.err.recipient'](),
             canRetry: true,
         };
     }
 
     if (/invalid|validation|not a credential|schema|expansion|malformed/i.test(msg)) {
         return {
-            message:
-                "Some details on this credential aren't valid yet. Please review and try again.",
+            message: m['issueFlow.err.invalid'](),
             canRetry: false,
         };
     }
 
     return {
-        message: 'Something went wrong issuing your credential. Please try again.',
+        message: m['issueFlow.err.generic'](),
         canRetry: true,
     };
 };
