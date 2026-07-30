@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import {
     SkillTreeNode as _SkillTreeNode,
     SkillTreeNodeValidator as _SkillTreeNodeValidator,
@@ -6,6 +8,8 @@ import {
 } from '@learncard/types';
 
 export type SkillTreeNode = _SkillTreeNode;
-export const SkillTreeNodeValidator = _SkillTreeNodeValidator;
-export const PaginatedSkillTreeValidator = _PaginatedSkillTreeValidator;
+export const SkillTreeNodeValidator: z.ZodType<_SkillTreeNode> = _SkillTreeNodeValidator;
+
+export const PaginatedSkillTreeValidator: z.ZodType<_PaginatedSkillTree> =
+    _PaginatedSkillTreeValidator;
 export type PaginatedSkillTree = _PaginatedSkillTree;

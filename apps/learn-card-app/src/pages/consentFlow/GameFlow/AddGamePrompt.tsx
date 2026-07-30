@@ -6,6 +6,7 @@ import { IonSpinner } from '@ionic/react';
 import GamePromptHeader from './GamePromptHeader';
 
 import { ConsentFlowContractDetails } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
 
 type AddGamePromptProps = {
     contractDetails?: ConsentFlowContractDetails;
@@ -32,7 +33,7 @@ export const AddGamePrompt: React.FC<AddGamePromptProps> = ({
         return (
             <div className="w-full flex flex-col items-center justify-center min-h-[300px]">
                 <IonSpinner name="crescent" color="grayscale-900" className="scale-[2] mb-8 mt-6" />
-                <p className="font-poppins text-grayscale-900">Loading...</p>
+                <p className="font-poppins text-grayscale-900">{m['common.loading']()}</p>
             </div>
         );
     }
@@ -86,7 +87,13 @@ export const AddGamePrompt: React.FC<AddGamePromptProps> = ({
                         <span className="text-[14px]">(disabled for preview)</span>
                     </div>
                 )}
-                {!isPreview && <>{isFromGame ? "I'm an Adult" : 'Select Player'}</>}
+                {!isPreview && (
+                    <>
+                        {isFromGame
+                            ? m['consentFlow.selectPlayer']()
+                            : m['consentFlow.selectPlayer']()}
+                    </>
+                )}
             </button>
             <button
                 onClick={() => {
@@ -101,7 +108,7 @@ export const AddGamePrompt: React.FC<AddGamePromptProps> = ({
                 type="button"
                 className="w-full py-[10px] text-[20px] bg-white rounded-[40px] text-grayscale-900 shadow-box-bottom"
             >
-                {isFromGame ? 'Back to Game' : 'Cancel'}
+                {isFromGame ? m['common.back']() : m['common.cancel']()}
             </button>
         </div>
     );

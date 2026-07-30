@@ -1,4 +1,6 @@
 import React from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('ai-session-suggestion-list-item');
 
 import LockSimple from 'learn-card-base/svgs/LockSimple';
 import AiSessionAppSelector from '../../new-ai-session/AiSessionAppSelector/AiSessionAppSelector';
@@ -9,7 +11,7 @@ import { LaunchPadAppListItem } from 'learn-card-base';
 const AiSessionSuggestionsListItem: React.FC<{ topic: AiSessionTopic }> = ({ topic }) => {
     const handleStartSession = (app: LaunchPadAppListItem) => {
         // TODO: Implement start session
-        console.log(app);
+        log.info(app);
     };
 
     return (

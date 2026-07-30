@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useHistory } from 'react-router';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('connect-page');
 
 import { IonContent, IonPage, IonSpinner } from '@ionic/react';
 import MainHeader from '../../components/main-header/MainHeader';
 
+import * as m from '../../paraglide/messages.js';
 import { useWallet, usePathQuery, useIsLoggedIn } from 'learn-card-base';
 import { generatePK } from '../../helpers/privateKeyHelpers';
 
@@ -49,7 +52,7 @@ const ConnectPage: React.FC = () => {
         }
 
         if (!profileId && !userDid) {
-            console.log('no handle or userDid detected!');
+            log.info('no handle or userDid detected!');
             setLoading(false);
             return;
         }
@@ -58,11 +61,11 @@ const ConnectPage: React.FC = () => {
             try {
                 const profile = await wallet?.invoke?.getProfile(profileId);
                 handleFetchedProfile(profile);
-                console.log('handle::profile', profile);
+                log.info('handle::profile', profile);
                 setLoading(false);
                 return;
             } catch (err) {
-                console.log('getLCNeworkProfile::err', err);
+                log.info('getLCNeworkProfile::err', err);
                 setLoading(false);
                 return;
             }
@@ -81,11 +84,11 @@ const ConnectPage: React.FC = () => {
                 try {
                     const profile = await wallet?.invoke?.getProfile(profileId);
                     handleFetchedProfile(profile);
-                    console.log('userDid::profile', profile);
+                    log.info('userDid::profile', profile);
                     setLoading(false);
                     return;
                 } catch (err) {
-                    console.log('getLCNeworkProfile::err', err);
+                    log.info('getLCNeworkProfile::err', err);
                     setLoading(false);
                     return;
                 }
@@ -106,7 +109,7 @@ const ConnectPage: React.FC = () => {
                 {loading && (
                     <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
                         <IonSpinner color="black" />
-                        <p className="mt-2 font-bold text-lg">Loading...</p>
+                        <p className="mt-2 font-bold text-lg">{m['common.loading']()}</p>
                     </section>
                 )}
                 {!loading && !lcNetworkProfile && (

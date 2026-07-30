@@ -8,6 +8,7 @@ import { vcV1WithStatus } from './vc-v1/with-status';
 import { vcV2Basic } from './vc-v2/basic';
 import { vcV2WithEvidence } from './vc-v2/with-evidence';
 import { vcV2MultipleSubjects } from './vc-v2/multiple-subjects';
+import { vcV2RenderMethodExample } from './render-method/render-method-example';
 
 // OBv3
 import { obv3MinimalBadge } from './obv3/minimal-badge';
@@ -52,6 +53,8 @@ import { vcV2MembershipCredential } from './vc-v2/membership-credential';
 import { vcV2LicenseCredential } from './vc-v2/license-credential';
 
 import { clrGreatPlainsFull } from './clr/great-plains-full';
+import { clrWestbridgeFull } from './clr/westbridge-full';
+import { clrCompetencyAligned } from './clr/competency-aligned';
 
 // ---------------------------------------------------------------------------
 // All fixtures — collected for auto-registration
@@ -66,6 +69,7 @@ export const ALL_FIXTURES: CredentialFixture[] = [
     vcV2Basic,
     vcV2WithEvidence,
     vcV2MultipleSubjects,
+    vcV2RenderMethodExample,
 
     // OBv3
     obv3MinimalBadge,
@@ -108,6 +112,8 @@ export const ALL_FIXTURES: CredentialFixture[] = [
     vcV2MembershipCredential,
     vcV2LicenseCredential,
     clrGreatPlainsFull,
+    clrWestbridgeFull,
+    clrCompetencyAligned,
 ];
 
 // Re-export individual fixtures for direct import
@@ -117,6 +123,7 @@ export {
     vcV2Basic,
     vcV2WithEvidence,
     vcV2MultipleSubjects,
+    vcV2RenderMethodExample,
     obv3MinimalBadge,
     obv3FullBadge,
     obv3WithAlignment,
@@ -147,4 +154,6 @@ export {
     vcV2MembershipCredential,
     vcV2LicenseCredential,
     clrGreatPlainsFull,
+    clrWestbridgeFull,
+    clrCompetencyAligned,
 };

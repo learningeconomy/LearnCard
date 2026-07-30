@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import * as m from '../../../paraglide/messages.js';
 import { IonCol, IonRow } from '@ionic/react';
 
 import useSocialLogins from 'learn-card-base/hooks/useSocialLogins';
@@ -33,8 +34,8 @@ export const SocialLoginsButtons: React.FC<{
 }) => {
     const { colors, theme } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
-    const loginBgColor = theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#059669';
-
+    const loginBgColor =
+        theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#059669';
     const socialLogins = useSocialLogins(branding);
 
     const handleActiveLoginType = () => {
@@ -91,7 +92,12 @@ export const SocialLoginsButtons: React.FC<{
                     </div>
                     {showSocialLogins && (
                         <p className="border-b-[1px] border-solid border-[#EFF0F5] leading-[0.1em] w-full text-center my-[40px]">
-                            <span className="py-0 px-[10px] text-white" style={{ backgroundColor: loginBgColor }}>OR</span>
+                            <span
+                                className="py-0 px-[10px] text-white"
+                                style={{ backgroundColor: loginBgColor }}
+                            >
+                                {m['login.social.or']()}
+                            </span>
                         </p>
                     )}
                 </div>

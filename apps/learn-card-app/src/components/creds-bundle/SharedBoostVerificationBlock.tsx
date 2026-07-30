@@ -24,6 +24,7 @@ import SharedBoostVerificationItem from './SharedBoostVerificationItem';
 
 import { VC, VerificationItem, VerificationStatusEnum } from '@learncard/types';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
+import * as m from '../../paraglide/messages.js';
 
 export const getColorForVerificationStatus = (
     status: (typeof VerificationStatusEnum)[keyof typeof VerificationStatusEnum]
@@ -184,7 +185,9 @@ const SharedBoostVerificationBlock: React.FC<{
                         <div className={innerContainerStyles}>
                             <div className="w-full ion-padding bg-white rounded-[12px] pt-6 pb-8 shadow-bottom">
                                 <button className="w-full flex items-center justify-between mb-2">
-                                    <p className="text-grayscale-900">Credential Verifications </p>
+                                    <p className="text-grayscale-900">
+                                        {m['verification.title']()}{' '}
+                                    </p>
 
                                     <button type="button">
                                         <InfoIcon
@@ -213,7 +216,9 @@ const SharedBoostVerificationBlock: React.FC<{
                                             className="w-full rounded-[12px] text-left mt-2 text-[#2F99F0] font-poppins font-[400] mb-2"
                                             onClick={() => setViewJson(!viewJson)}
                                         >
-                                            {viewJson ? 'Hide' : 'View'} json
+                                            {viewJson
+                                                ? m['verification.hideJson']()
+                                                : m['verification.viewJson']()}
                                         </button>
                                         <button onClick={copyToClipBoard} type="button">
                                             <CopyStack className="text-[#2F99F0] w-[24px] h-[24px]" />
@@ -288,7 +293,7 @@ const SharedBoostVerificationBlock: React.FC<{
                 </div>
 
                 <button className="w-full flex items-center justify-between mb-2">
-                    <p className="text-grayscale-900">Credential Verifications </p>
+                    <p className="text-grayscale-900">{m['verification.title']()} </p>
 
                     <button type="button">
                         <InfoIcon fill="#A8ACBD" className="text-white w-[25px] h-[25px]" />

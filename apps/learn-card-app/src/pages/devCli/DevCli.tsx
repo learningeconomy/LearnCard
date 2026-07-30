@@ -1,9 +1,21 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { IonPage, IonContent, IonHeader, IonToolbar, IonTitle, IonButtons, IonBackButton, IonButton, IonIcon } from '@ionic/react';
+import {
+    IonPage,
+    IonContent,
+    IonHeader,
+    IonToolbar,
+    IonTitle,
+    IonButtons,
+    IonBackButton,
+    IonButton,
+    IonIcon,
+} from '@ionic/react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import '@xterm/xterm/css/xterm.css';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('dev-cli');
 
 import { useWallet } from 'learn-card-base/hooks/useWallet';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
@@ -169,7 +181,9 @@ const DevCli: React.FC = () => {
                     while ((match = CLICKABLE_ID_REGEX.exec(line)) !== null) {
                         // Write text before the identifier
                         if (match.index > lastIndex) {
-                            term.write(`\x1b[${colorCode}m${line.slice(lastIndex, match.index)}\x1b[0m`);
+                            term.write(
+                                `\x1b[${colorCode}m${line.slice(lastIndex, match.index)}\x1b[0m`
+                            );
                         }
 
                         // Write the identifier with appropriate color and underline
@@ -191,115 +205,128 @@ const DevCli: React.FC = () => {
         }
     }, []);
 
-    const executeCommand = useCallback(async (command: string) => {
-        const term = terminalInstanceRef.current;
-        const learnCard = learnCardRef.current;
+    const executeCommand = useCallback(
+        async (command: string) => {
+            const term = terminalInstanceRef.current;
+            const learnCard = learnCardRef.current;
 
-        if (!term) return;
+            if (!term) return;
 
-        const trimmedCommand = command.trim();
+            const trimmedCommand = command.trim();
 
-        if (!trimmedCommand) {
-            writePrompt();
-            return;
-        }
+            if (!trimmedCommand) {
+                writePrompt();
+                return;
+            }
 
-        // Add to history
-        if (historyRef.current[historyRef.current.length - 1] !== trimmedCommand) {
-            historyRef.current.push(trimmedCommand);
-        }
+            // Add to history
+            if (historyRef.current[historyRef.current.length - 1] !== trimmedCommand) {
+                historyRef.current.push(trimmedCommand);
+            }
 
-        historyIndexRef.current = -1;
+            historyIndexRef.current = -1;
 
-        // Handle built-in commands
-        if (trimmedCommand === 'help') {
-            writeLine(HELP_TEXT, '33');
-            writePrompt();
-            return;
-        }
+            // Handle built-in commands
+            if (trimmedCommand === 'help') {
+                writeLine(HELP_TEXT, '33');
+                writePrompt();
+                return;
+            }
 
-        if (trimmedCommand === 'clear') {
-            term.clear();
-            writePrompt();
-            return;
-        }
+            if (trimmedCommand === 'clear') {
+                term.clear();
+                writePrompt();
+                return;
+            }
 
-        if (trimmedCommand === 'did') {
-            if (learnCard) {
-                try {
-                    const did = learnCard.id.did();
+            if (trimmedCommand === 'did') {
+                if (learnCard) {
+                    try {
+                        const did = learnCard.id.did();
+                        term.write('\r\n');
+                        writeLine(did, '32');
+                    } catch (e) {
+                        term.write('\r\n');
+                        writeLine(`Error: ${e instanceof Error ? e.message : String(e)}`, '31');
+                    }
+                } else {
                     term.write('\r\n');
-                    writeLine(did, '32');
-                } catch (e) {
-                    term.write('\r\n');
-                    writeLine(`Error: ${e instanceof Error ? e.message : String(e)}`, '31');
+                    writeLine('LearnCard not initialized', '31');
                 }
-            } else {
-                term.write('\r\n');
-                writeLine('LearnCard not initialized', '31');
+
+                writePrompt();
+                return;
             }
 
-            writePrompt();
-            return;
-        }
-
-        if (trimmedCommand === 'profile') {
-            if (learnCard) {
-                try {
-                    const profile = await learnCard.invoke.getProfile();
+            if (trimmedCommand === 'profile') {
+                if (learnCard) {
+                    try {
+                        const profile = await learnCard.invoke.getProfile();
+                        term.write('\r\n');
+                        writeLine(formatOutput(profile), '32');
+                    } catch (e) {
+                        term.write('\r\n');
+                        writeLine(`Error: ${e instanceof Error ? e.message : String(e)}`, '31');
+                    }
+                } else {
                     term.write('\r\n');
-                    writeLine(formatOutput(profile), '32');
-                } catch (e) {
-                    term.write('\r\n');
-                    writeLine(`Error: ${e instanceof Error ? e.message : String(e)}`, '31');
+                    writeLine('LearnCard not initialized', '31');
                 }
-            } else {
+
+                writePrompt();
+                return;
+            }
+
+            if (trimmedCommand === 'credentials') {
                 term.write('\r\n');
-                writeLine('LearnCard not initialized', '31');
+                writeLine(
+                    'Credential Categories: Achievement, ID, Learning History, Work History, Social Badge, Accommodation',
+                    '33'
+                );
+                writePrompt();
+                return;
+            }
+
+            // Execute as JavaScript
+            try {
+                // Create a function that has access to learnCard, initLearnCard, types, copy, and _
+                const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+
+                const fn = new AsyncFunction(
+                    'learnCard',
+                    'initLearnCard',
+                    'didkit',
+                    'types',
+                    'copy',
+                    '_',
+                    `return (${trimmedCommand})`
+                );
+
+                const result = await fn(
+                    learnCard,
+                    initLearnCard,
+                    didkit,
+                    types,
+                    copyToClipboard,
+                    lastResultRef.current
+                );
+
+                // Store result for next command (unless it's a copy result message)
+                if (typeof result !== 'string' || !result.startsWith('Copied ')) {
+                    lastResultRef.current = result;
+                }
+
+                term.write('\r\n');
+                writeLine(formatOutput(result), '32');
+            } catch (e) {
+                term.write('\r\n');
+                writeLine(`Error: ${e instanceof Error ? e.message : String(e)}`, '31');
             }
 
             writePrompt();
-            return;
-        }
-
-        if (trimmedCommand === 'credentials') {
-            term.write('\r\n');
-            writeLine('Credential Categories: Achievement, ID, Learning History, Work History, Social Badge, Accommodation', '33');
-            writePrompt();
-            return;
-        }
-
-        // Execute as JavaScript
-        try {
-            // Create a function that has access to learnCard, initLearnCard, types, copy, and _
-            const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
-
-            const fn = new AsyncFunction(
-                'learnCard',
-                'initLearnCard',
-                'didkit',
-                'types',
-                'copy',
-                '_',
-                `return (${trimmedCommand})`
-            );
-
-            const result = await fn(learnCard, initLearnCard, didkit, types, copyToClipboard, lastResultRef.current);
-
-            // Store result for next command (unless it's a copy result message)
-            if (typeof result !== 'string' || !result.startsWith('Copied ')) {
-                lastResultRef.current = result;
-            }
-
-            term.write('\r\n');
-            writeLine(formatOutput(result), '32');
-        } catch (e) {
-            term.write('\r\n');
-            writeLine(`Error: ${e instanceof Error ? e.message : String(e)}`, '31');
-        }
-
-        writePrompt();
-    }, [writeLine, writePrompt, copyToClipboard]);
+        },
+        [writeLine, writePrompt, copyToClipboard]
+    );
 
     // Initialize terminal
     useEffect(() => {
@@ -401,7 +428,11 @@ const DevCli: React.FC = () => {
                         text: id,
                         activate: () => {
                             navigator.clipboard.writeText(id).then(() => {
-                                setCopyNotification(`Copied ${label}: ${id.slice(0, 35)}${id.length > 35 ? '...' : ''}`);
+                                setCopyNotification(
+                                    `Copied ${label}: ${id.slice(0, 35)}${
+                                        id.length > 35 ? '...' : ''
+                                    }`
+                                );
                                 setTimeout(() => setCopyNotification(null), 2000);
                             });
                         },
@@ -420,7 +451,7 @@ const DevCli: React.FC = () => {
         window.addEventListener('resize', handleResize);
 
         // Handle input
-        term.onData((data) => {
+        term.onData(data => {
             const code = data.charCodeAt(0);
 
             // Enter key
@@ -531,14 +562,19 @@ const DevCli: React.FC = () => {
                     }, 150);
                 }
             } catch (e) {
-                console.error('Failed to initialize LearnCard:', e);
+                log.error('Failed to initialize LearnCard:', e);
 
                 const term = terminalInstanceRef.current;
 
                 if (term) {
                     writeLine(WELCOME_MESSAGE, '36');
                     term.write('\r\n');
-                    writeLine(`Warning: LearnCard initialization failed - ${e instanceof Error ? e.message : String(e)}`, '33');
+                    writeLine(
+                        `Warning: LearnCard initialization failed - ${
+                            e instanceof Error ? e.message : String(e)
+                        }`,
+                        '33'
+                    );
                     writePrompt();
 
                     // Force scroll after initial content with delay for layout
@@ -612,75 +648,84 @@ const DevCli: React.FC = () => {
         return result;
     }, []);
 
-    const handleExecuteChain = useCallback(async (chain: Chain): Promise<{ stepId: string; result?: string; error?: string }[]> => {
-        const learnCard = learnCardRef.current;
-        const term = terminalInstanceRef.current;
+    const handleExecuteChain = useCallback(
+        async (chain: Chain): Promise<{ stepId: string; result?: string; error?: string }[]> => {
+            const learnCard = learnCardRef.current;
+            const term = terminalInstanceRef.current;
 
-        if (!learnCard || !term) {
-            return chain.steps.map(step => ({ stepId: step.id, error: 'Terminal or wallet not ready' }));
-        }
+            if (!learnCard || !term) {
+                return chain.steps.map(step => ({
+                    stepId: step.id,
+                    error: 'Terminal or wallet not ready',
+                }));
+            }
 
-        const results: { stepId: string; result?: string; error?: string }[] = [];
-        let lastResult: unknown = undefined;
-
-        term.write('\r\n');
-        writeLine('━━━ Running Chain: ' + chain.name + ' ━━━', '33');
-
-        for (let i = 0; i < chain.steps.length; i++) {
-            const step = chain.steps[i];
-            const command = getStepCommand(step);
+            const results: { stepId: string; result?: string; error?: string }[] = [];
+            let lastResult: unknown = undefined;
 
             term.write('\r\n');
-            writeLine(`Step ${i + 1}: ${command.substring(0, 60)}${command.length > 60 ? '...' : ''}`, '36');
+            writeLine('━━━ Running Chain: ' + chain.name + ' ━━━', '33');
 
-            if (!command.trim()) {
-                results.push({ stepId: step.id, error: 'Empty command' });
-                writeLine('  Error: Empty command', '31');
-                continue;
-            }
+            for (let i = 0; i < chain.steps.length; i++) {
+                const step = chain.steps[i];
+                const command = getStepCommand(step);
 
-            try {
-                const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
-
-                const fn = new AsyncFunction(
-                    'learnCard',
-                    'types',
-                    'copy',
-                    '_',
-                    `return (${command})`
+                term.write('\r\n');
+                writeLine(
+                    `Step ${i + 1}: ${command.substring(0, 60)}${command.length > 60 ? '...' : ''}`,
+                    '36'
                 );
 
-                const result = await fn(learnCard, types, copyToClipboard, lastResult);
-                lastResult = result;
-
-                const formatted = formatOutput(result);
-                results.push({ stepId: step.id, result: formatted });
-
-                writeLine('  ✓ Success', '32');
-
-                // Show truncated output
-                const lines = formatted.split('\n');
-
-                if (lines.length > 3) {
-                    writeLine('  ' + lines[0], '32');
-                    writeLine('  ' + lines[1], '32');
-                    writeLine('  ... (' + (lines.length - 2) + ' more lines)', '90');
-                } else {
-                    lines.forEach(line => writeLine('  ' + line, '32'));
+                if (!command.trim()) {
+                    results.push({ stepId: step.id, error: 'Empty command' });
+                    writeLine('  Error: Empty command', '31');
+                    continue;
                 }
-            } catch (e) {
-                const errorMsg = e instanceof Error ? e.message : String(e);
-                results.push({ stepId: step.id, error: errorMsg });
-                writeLine('  ✗ Error: ' + errorMsg, '31');
+
+                try {
+                    const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+
+                    const fn = new AsyncFunction(
+                        'learnCard',
+                        'types',
+                        'copy',
+                        '_',
+                        `return (${command})`
+                    );
+
+                    const result = await fn(learnCard, types, copyToClipboard, lastResult);
+                    lastResult = result;
+
+                    const formatted = formatOutput(result);
+                    results.push({ stepId: step.id, result: formatted });
+
+                    writeLine('  ✓ Success', '32');
+
+                    // Show truncated output
+                    const lines = formatted.split('\n');
+
+                    if (lines.length > 3) {
+                        writeLine('  ' + lines[0], '32');
+                        writeLine('  ' + lines[1], '32');
+                        writeLine('  ... (' + (lines.length - 2) + ' more lines)', '90');
+                    } else {
+                        lines.forEach(line => writeLine('  ' + line, '32'));
+                    }
+                } catch (e) {
+                    const errorMsg = e instanceof Error ? e.message : String(e);
+                    results.push({ stepId: step.id, error: errorMsg });
+                    writeLine('  ✗ Error: ' + errorMsg, '31');
+                }
             }
-        }
 
-        term.write('\r\n');
-        writeLine('━━━ Chain Complete ━━━', '33');
-        writePrompt();
+            term.write('\r\n');
+            writeLine('━━━ Chain Complete ━━━', '33');
+            writePrompt();
 
-        return results;
-    }, [copyToClipboard, getStepCommand, writeLine, writePrompt]);
+            return results;
+        },
+        [copyToClipboard, getStepCommand, writeLine, writePrompt]
+    );
 
     return (
         <IonPage className="cli-page">
@@ -714,10 +759,7 @@ const DevCli: React.FC = () => {
 
                     <div className="terminal-wrapper">
                         <div className="terminal-padding-wrapper">
-                            <div
-                                ref={terminalRef}
-                                className="dev-cli-terminal"
-                            />
+                            <div ref={terminalRef} className="dev-cli-terminal" />
                         </div>
 
                         {copyNotification && (
@@ -741,15 +783,18 @@ const DevCli: React.FC = () => {
                                 <h2>Welcome to the LearnCard CLI</h2>
 
                                 <p className="welcome-intro">
-                                    This is a <strong>developer tool</strong> for exploring and testing the LearnCard API.
-                                    If you're not sure why you're here, you probably don't need this tool!
+                                    This is a <strong>developer tool</strong> for exploring and
+                                    testing the LearnCard API. If you're not sure why you're here,
+                                    you probably don't need this tool!
                                 </p>
 
                                 <div className="welcome-section">
                                     <h4>🎯 What you can do here</h4>
 
                                     <ul>
-                                        <li>Execute JavaScript commands with your LearnCard wallet</li>
+                                        <li>
+                                            Execute JavaScript commands with your LearnCard wallet
+                                        </li>
                                         <li>Issue, verify, and manage credentials</li>
                                         <li>Test network operations and boost workflows</li>
                                         <li>Build and run command chains for automation</li>
@@ -760,10 +805,20 @@ const DevCli: React.FC = () => {
                                     <h4>📚 Getting started</h4>
 
                                     <ul>
-                                        <li><code>learnCard</code> — Your wallet instance</li>
-                                        <li><code>help</code> — Show available commands</li>
-                                        <li>Use the <strong>Command Builder</strong> (left) to explore the API</li>
-                                        <li>Use the <strong>Chain Builder</strong> (right) to automate workflows</li>
+                                        <li>
+                                            <code>learnCard</code> — Your wallet instance
+                                        </li>
+                                        <li>
+                                            <code>help</code> — Show available commands
+                                        </li>
+                                        <li>
+                                            Use the <strong>Command Builder</strong> (left) to
+                                            explore the API
+                                        </li>
+                                        <li>
+                                            Use the <strong>Chain Builder</strong> (right) to
+                                            automate workflows
+                                        </li>
                                     </ul>
                                 </div>
 
@@ -771,18 +826,25 @@ const DevCli: React.FC = () => {
                                     <h4>⚠️ Important</h4>
 
                                     <p>
-                                        This CLI executes real commands against your wallet.
-                                        Actions like issuing credentials or sending data to the network <strong>cannot be undone</strong>.
-                                        Only run commands you understand.
+                                        This CLI executes real commands against your wallet. Actions
+                                        like issuing credentials or sending data to the network{' '}
+                                        <strong>cannot be undone</strong>. Only run commands you
+                                        understand.
                                     </p>
                                 </div>
 
                                 <div className="welcome-actions">
-                                    <button onClick={() => dismissWelcome(true)} className="welcome-btn-tutorial">
+                                    <button
+                                        onClick={() => dismissWelcome(true)}
+                                        className="welcome-btn-tutorial"
+                                    >
                                         📖 Start Tutorial
                                     </button>
 
-                                    <button onClick={() => dismissWelcome(false)} className="welcome-btn">
+                                    <button
+                                        onClick={() => dismissWelcome(false)}
+                                        className="welcome-btn"
+                                    >
                                         Skip, I know what I'm doing
                                     </button>
                                 </div>

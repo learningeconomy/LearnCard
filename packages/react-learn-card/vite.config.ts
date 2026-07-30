@@ -1,8 +1,4 @@
-import { defineConfig } from 'vitest/config';
-import tsconfigPaths from 'vite-tsconfig-paths';
-
-export default defineConfig({
-    plugins: [tsconfigPaths({ root: '.' }) as any],
+export default {
     test: {
         environment: 'happy-dom',
         globals: true,
@@ -15,4 +11,4 @@ export default defineConfig({
             '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build}.config.*',
         ],
     },
-});
+};

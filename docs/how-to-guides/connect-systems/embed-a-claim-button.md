@@ -12,9 +12,9 @@ This is for **external websites** that want to award credentials to visitors. If
 
 ## Prerequisites
 
-- A LearnCard developer account with an **Embed** integration created in the [Developer Dashboard](https://learncard.app)
-- At least one **credential template** attached to that integration
-- Your integration's **publishable key** (`pk_...`)
+-   A LearnCard developer account with an **Embed** integration created in the [Developer Dashboard](https://learncard.app)
+-   At least one **credential template** attached to that integration
+-   Your integration's **publishable key** (`pk_...`)
 
 ## Step 1: Create Your Integration & Template
 
@@ -26,17 +26,22 @@ This is for **external websites** that want to award credentials to visitors. If
 
 {% tabs %}
 {% tab title="Script Tag (CDN)" %}
+
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@learncard/embed-sdk@latest/dist/learncard.js"></script>
 ```
+
 {% endtab %}
 {% tab title="npm/ESM" %}
+
 ```bash
 npm install @learncard/embed-sdk
 ```
+
 ```js
 import { init } from '@learncard/embed-sdk';
 ```
+
 {% endtab %}
 {% endtabs %}
 
@@ -49,12 +54,12 @@ Add a target element and call `init()`:
 <div id="claim-credential"></div>
 
 <script>
-  LearnCard.init({
-    publishableKey: 'pk_your_key_here',
-    target: '#claim-credential',
-    credential: { name: 'Your Template Name' },
-    partnerName: 'Your Organization Name',
-  });
+    LearnCard.init({
+        publishableKey: 'pk_your_key_here',
+        target: '#claim-credential',
+        credential: { name: 'Your Template Name' },
+        partnerName: 'Your Organization Name',
+    });
 </script>
 ```
 
@@ -64,16 +69,16 @@ The credential name must match a template you created in the dashboard. The SDK 
 
 ```js
 LearnCard.init({
-  publishableKey: 'pk_your_key_here',
-  target: '#claim-credential',
-  credential: { name: 'Course Completion' },
-  partnerName: 'Learning Economy Academy',
-  branding: {
-    primaryColor: '#1F51FF',        // Button + stepper color
-    accentColor: '#0F3BD9',         // Hover states
-    partnerLogoUrl: 'https://your-org.com/logo.png',
-    walletUrl: 'https://app.learncard.com',
-  },
+    publishableKey: 'pk_your_key_here',
+    target: '#claim-credential',
+    credential: { name: 'Course Completion' },
+    partnerName: 'Learning Economy Academy',
+    branding: {
+        primaryColor: '#1F51FF', // Button + stepper color
+        accentColor: '#0F3BD9', // Hover states
+        partnerLogoUrl: 'https://your-org.com/logo.png',
+        walletUrl: 'https://app.learncard.com',
+    },
 });
 ```
 
@@ -83,19 +88,19 @@ By default, after claiming, the SDK opens the wallet in a new tab (deep-linked t
 
 ```js
 LearnCard.init({
-  publishableKey: 'pk_your_key_here',
-  target: '#claim-credential',
-  credential: { name: 'Course Completion' },
-  onSuccess: ({ credentialId, handoffUrl }) => {
-    // Runs in addition to the wallet auto-open
-    document.getElementById('success-message').style.display = 'block';
-  },
+    publishableKey: 'pk_your_key_here',
+    target: '#claim-credential',
+    credential: { name: 'Course Completion' },
+    onSuccess: ({ credentialId, handoffUrl }) => {
+        // Runs in addition to the wallet auto-open
+        document.getElementById('success-message').style.display = 'block';
+    },
 });
 ```
 
 To suppress the automatic wallet redirect entirely, set `branding.walletUrl: ''`:
 
-```js
+````js
 LearnCard.init({
   publishableKey: 'pk_your_key_here',
   target: '#claim-credential',
@@ -142,7 +147,7 @@ LearnCard.init({
     </script>
   </body>
 </html>
-```
+````
 
 ## Claim Flow
 
@@ -182,16 +187,16 @@ Use the included embed example to test without a real backend:
 
 ```bash
 # From repo root
-pnpm --filter @learncard/embed-sdk build
-cd examples/embed-example && pnpm dev
+bun --filter @learncard/embed-sdk run build
+cd examples/embed-example && bun run dev
 ```
 
-| URL | Mode |
-|-----|------|
-| `http://localhost:4321` | Stub mode — no backend, flows all the way to success |
-| `?pk=pk_xxx` | Live network |
-| `?pk=pk_xxx&template=My+Template` | Live network + template by name |
-| `?pk=pk_xxx&api=http://localhost:4000/api&template=My+Template` | Fully local |
+| URL                                                             | Mode                                                 |
+| --------------------------------------------------------------- | ---------------------------------------------------- |
+| `http://localhost:4321`                                         | Stub mode — no backend, flows all the way to success |
+| `?pk=pk_xxx`                                                    | Live network                                         |
+| `?pk=pk_xxx&template=My+Template`                               | Live network + template by name                      |
+| `?pk=pk_xxx&api=http://localhost:4000/api&template=My+Template` | Fully local                                          |
 
 ## Troubleshooting
 
@@ -206,6 +211,6 @@ In local dev, check your brain-service logs — OTP codes are printed there when
 
 ## See Also
 
-- [Embed SDK Reference](../../sdks/embed-sdk.md)
-- [Embed Code Tab (Dashboard)](../../how-to-guides/connect-systems/connect-a-website.md)
-- [Connect an Embedded App](connect-an-embedded-app.md) — for apps inside LearnCard
+-   [Embed SDK Reference](../../sdks/embed-sdk.md)
+-   [Embed Code Tab (Dashboard)](../../how-to-guides/connect-systems/connect-a-website.md)
+-   [Connect an Embedded App](connect-an-embedded-app.md) — for apps inside LearnCard

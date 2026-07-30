@@ -16,6 +16,8 @@ import Search from 'learn-card-base/svgs/Search';
 import CaretDown from 'learn-card-base/svgs/CaretDown';
 import { IonInput, IonSpinner } from '@ionic/react';
 import BoostTemplateListItem from '../../../components/boost/boost-template/BoostTemplateListItem';
+import * as m from '../../../paraglide/messages.js';
+import { getBoostCategoryLabel } from '../../../helpers/boostCategoryLabel';
 
 const escapeRegex = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -42,7 +44,7 @@ const CategorySelectorModal: React.FC<{
         <div className="flex flex-col w-full h-full bg-white p-5">
             <div className="flex justify-between items-center mb-4 border-b border-grayscale-200 pb-4">
                 <h2 className="text-[22px] font-poppins font-semibold text-grayscale-900">
-                    Select Category
+                    {m['boost.selectCategory']()}
                 </h2>
                 <button
                     onClick={closeModal}
@@ -73,7 +75,7 @@ const CategorySelectorModal: React.FC<{
                                 <Icon className="w-6 h-6" />
                             </div>
                             <span className="font-poppins font-medium text-grayscale-900 text-lg">
-                                {meta.title}
+                                {getBoostCategoryLabel(category, meta.title)}
                             </span>
                         </button>
                     );
@@ -179,7 +181,7 @@ const IssueManagedBoostSelector: React.FC = () => {
             <div className="flex flex-col p-5 border-b border-grayscale-200 bg-white z-10">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-[22px] font-poppins font-semibold text-grayscale-900">
-                        Issue Credential
+                        {m['launchpad.actions.issueCredential']()}
                     </h2>
                     <button
                         type="button"
@@ -202,7 +204,7 @@ const IssueManagedBoostSelector: React.FC = () => {
                                 <CategoryIcon className="w-6 h-6" />
                             </div>
                             <span className={`text-${metaTextColor} font-medium text-lg`}>
-                                {categoryMeta.title}
+                                {getBoostCategoryLabel(selectedCategory, categoryMeta.title)}
                             </span>
                         </div>
                         <CaretDown className="w-4 h-4 text-grayscale-600" />
@@ -219,7 +221,7 @@ const IssueManagedBoostSelector: React.FC = () => {
                         <IonInput
                             type="text"
                             value={searchInput}
-                            placeholder="Search templates..."
+                            placeholder={m['boost.searchBoosts']()}
                             onIonInput={e => setSearchInput(e.detail.value || '')}
                             className="bg-grayscale-50 text-grayscale-900 rounded-[15px] !p-[5px] !font-notoSans text-[16px] !pl-[44px] --padding-start=44px border border-grayscale-200"
                         />
@@ -241,7 +243,9 @@ const IssueManagedBoostSelector: React.FC = () => {
 
                     {!boostsLoading && displayBoosts.length === 0 && (
                         <div className="text-center text-grayscale-500 font-poppins mt-10">
-                            {debouncedSearchInput ? 'No results found' : 'No templates found'}
+                            {debouncedSearchInput
+                                ? m['common.searchResults.noResults']()
+                                : m['launchpad.emptyStates.noTemplates']()}
                         </div>
                     )}
 

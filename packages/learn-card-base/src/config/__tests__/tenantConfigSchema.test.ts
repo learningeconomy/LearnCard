@@ -18,6 +18,11 @@ describe('tenantConfigSchema', () => {
         expect(result.apis.brainService).toContain('network.learncard.com');
         expect(result.auth.provider).toBe('firebase');
         expect(result.auth.keyDerivation).toBe('sss');
+        expect(result.storage.provider).toBe('filestack');
+        if (result.storage.provider === 'filestack') {
+            expect(result.storage.apiKey).toBe('A7RsW3VzfSNO2TCsFJ6Eiz');
+            expect(result.storage.cdnDomain).toBe('cdn.filestackcontent.com');
+        }
         expect(result.branding.name).toBe('LearnCard');
         expect(result.features.aiFeatures).toBe(true);
         expect(result.observability.launchDarklyClientId).toBeTruthy();
@@ -73,6 +78,30 @@ describe('tenantConfigSchema', () => {
         expect(result.features.aiFeatures).toBe(true);
         expect(result.features.analytics).toBe(true);
         expect(result.observability.analyticsProvider).toBe('noop');
+        expect(result.storage.provider).toBe('filestack');
+    });
+
+    it('accepts S3 storage config and preserves extra fields', () => {
+        const withS3Storage = {
+            ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+            storage: {
+                provider: 's3',
+                uploadEndpoint: 'https://uploads.example.com/images',
+                cdnDomain: 'cdn.mytenant.app',
+                bucket: 'mytenant-images',
+                customField: 'preserved',
+            },
+        };
+
+        const result = tenantConfigSchema.parse(withS3Storage);
+
+        expect(result.storage.provider).toBe('s3');
+        if (result.storage.provider === 's3') {
+            expect(result.storage.uploadEndpoint).toBe('https://uploads.example.com/images');
+            expect(result.storage.cdnDomain).toBe('cdn.mytenant.app');
+            expect(result.storage.bucket).toBe('mytenant-images');
+            expect((result.storage as Record<string, unknown>).customField).toBe('preserved');
+        }
     });
 
     it('rejects config with missing required fields', () => {
@@ -145,7 +174,9 @@ describe('tenantConfigSchema', () => {
 
         const result = tenantConfigSchema.parse(withExtra);
 
-        expect((result.apis as Record<string, unknown>).customEndpoint).toBe('https://custom.example.com');
+        expect((result.apis as Record<string, unknown>).customEndpoint).toBe(
+            'https://custom.example.com'
+        );
     });
 });
 

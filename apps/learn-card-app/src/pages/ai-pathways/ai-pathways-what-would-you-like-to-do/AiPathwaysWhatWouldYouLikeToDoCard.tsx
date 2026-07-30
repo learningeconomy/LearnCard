@@ -62,7 +62,7 @@ const AiPathwaysWhatWouldYouLikeToDoCard: React.FC = () => {
 
                 <button
                     onClick={() => openExplorePathwaysModal({ query: searchQuery })}
-                    className="p-[11px] bg-teal-400 font-semibold rounded-full text-white flex-1 font-poppins text-[17px]"
+                    className="p-[11px] bg-teal-500 font-semibold rounded-full text-white flex-1 font-poppins text-[17px]"
                 >
                     Explore Pathways
                 </button>

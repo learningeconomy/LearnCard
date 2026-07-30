@@ -21,6 +21,8 @@ custom:
     config:
         CACHE_INSTANCE_SIZE: cache.t2.micro
     esbuild:
+        # serverless-esbuild does not support Bun as a Lambda artifact packager.
+        # Bun remains the repo installer/runner; pnpm is used only for packaging externals.
         packager: pnpm
         plugins: esbuildPlugins.cjs
         bundle: true
@@ -127,6 +129,17 @@ functions:
             - httpApi: GET /skills/{skillId}
             - httpApi: GET /frameworks/{frameworkId}
             - httpApi: GET /frameworks/{frameworkId}/skills/{skillId}
+
+    statusLists:
+        handler: lambda.statusListsHandler
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - httpApi: GET /status-lists/{id}
+            - httpApi: OPTIONS /status-lists/{id}
 
 resources:
     Resources:

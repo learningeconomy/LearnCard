@@ -1,7 +1,8 @@
 import React from 'react';
 import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
-import { conditionalPluralize, useCountSkillsInFramework } from 'learn-card-base';
+import { useCountSkillsInFramework } from 'learn-card-base';
 import { isOpenSaltFramework } from '../../helpers/opensalt.helpers';
+import * as m from '../../paraglide/messages.js';
 
 type FrameworkSkillsCountProps = {
     frameworkId?: string;
@@ -42,8 +43,8 @@ const FrameworkSkillsCount: React.FC<FrameworkSkillsCountProps> = ({
             {includeSkillWord ? (
                 <span className={`${textClassName} font-poppins font-[600]`}>
                     {countToUse !== undefined
-                        ? conditionalPluralize(countToUse, 'skill')
-                        : '... skills'}
+                        ? m['skills.skillsCount']({ count: countToUse })
+                        : m['skills.loadingSkills']()}
                 </span>
             ) : (
                 <span className="font-poppins font-[600]">{countToUse ?? '...'}</span>

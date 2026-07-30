@@ -17,12 +17,22 @@ export const isValidISOString = (dateString: string) => {
     return moment(dateString, moment.ISO_8601, true).isValid();
 };
 
+export const isFutureDate = (date: string | Date, now: Date = new Date()): boolean => {
+    const dateMoment =
+        typeof date === 'string' ? moment(date, moment.ISO_8601, true) : moment(date);
+
+    if (!dateMoment.isValid()) return false;
+
+    return dateMoment.isAfter(moment(now));
+};
+
 // Returns the age in whole years, or NaN if the input is invalid.
 export const calculateAge = (dob: string | Date, now: Date = new Date()): number => {
-    const dobMoment =
-        typeof dob === 'string' ? moment(dob, moment.ISO_8601, true) : moment(dob);
+    const dobMoment = typeof dob === 'string' ? moment(dob, moment.ISO_8601, true) : moment(dob);
 
     if (!dobMoment.isValid()) return Number.NaN;
+
+    if (dobMoment.isAfter(moment(now))) return Number.NaN;
 
     return moment(now).diff(dobMoment, 'years');
 };

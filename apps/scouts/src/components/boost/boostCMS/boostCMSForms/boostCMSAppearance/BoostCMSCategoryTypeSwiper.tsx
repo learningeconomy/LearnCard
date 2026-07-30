@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation } from 'swiper';
+import { Navigation } from 'swiper/modules';
 
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import { useScreenWidth, BoostCategoryOptionsEnum } from 'learn-card-base';

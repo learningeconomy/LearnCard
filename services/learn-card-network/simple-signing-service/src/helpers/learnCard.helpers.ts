@@ -1,4 +1,6 @@
+import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 
 import { generateLearnCard, LearnCard } from '@learncard/core';
 import { DIDKitPlugin, DidMethod, getDidKitPlugin } from '@learncard/didkit-plugin';
@@ -11,7 +13,20 @@ import { DynamicLoaderPlugin } from '@learncard/dynamic-loader-plugin';
 import { getLRUCache } from '@cache/in-memory-lru';
 import { getSigningAuthorityForDid } from '@accesslayer/signing-authority/read';
 
-const didkit = readFile(require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'));
+// The DIDKit WASM is copied next to the compiled handler at build time (see
+// esbuildPlugins.cjs). The Lambda bundle's node_modules layout doesn't match what
+// require.resolve expects (the package is a hoisted workspace symlink), so prefer the
+// co-located copy and fall back to package resolution for local dev / Docker.
+const DIDKIT_WASM_SPECIFIER = '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm';
+
+const resolveDidkitWasmPath = (): string => {
+    const colocated = join(__dirname, 'didkit_wasm_bg.wasm');
+    if (existsSync(colocated)) return colocated;
+
+    return require.resolve(DIDKIT_WASM_SPECIFIER);
+};
+
+const didkit = readFile(resolveDidkitWasmPath());
 
 export type EmptyLearnCard = LearnCard<[DIDKitPlugin, ExpirationPlugin, LearnCardPlugin]>;
 
@@ -64,20 +79,20 @@ export const getLearnCard = async (
     const emptyLc = await generateLearnCard();
 
     const baseLc = allowRemoteContexts
-        ? await (await emptyLc.addPlugin(DynamicLoaderPlugin)).addPlugin(
-              await getDidKitPlugin(await didkit, allowRemoteContexts)
-          )
+        ? await (
+              await emptyLc.addPlugin(DynamicLoaderPlugin)
+          ).addPlugin(await getDidKitPlugin(await didkit, allowRemoteContexts))
         : await emptyLc.addPlugin(await getDidKitPlugin(await didkit));
 
-    const didkeyLc = await baseLc.addPlugin(
-        await getDidKeyPlugin<DidMethod>(baseLc, seed, 'key')
-    );
+    const didkeyLc = await baseLc.addPlugin(await getDidKeyPlugin<DidMethod>(baseLc, seed, 'key'));
 
     const didkeyAndVCLc = await didkeyLc.addPlugin(getVCPlugin(didkeyLc));
 
     const expirationLc = await didkeyAndVCLc.addPlugin(expirationPlugin(didkeyAndVCLc));
 
-    const learnCard = await expirationLc.addPlugin(getLearnCardPlugin(expirationLc)) as SeedLearnCard;
+    const learnCard = (await expirationLc.addPlugin(
+        getLearnCardPlugin(expirationLc)
+    )) as SeedLearnCard;
 
     learnCardsCache.add(cacheKey, learnCard);
 

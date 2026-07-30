@@ -1,10 +1,29 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
-import { TextEncoder, TextDecoder as NodeTextDecoder } from 'util';
+import { TextEncoder, TextDecoder as NodeTextDecoder } from 'node:util';
+import { createMockLogger } from './src/test-utils/mockLearnCardBaseLogger';
 
-// Polyfill for Node.js environment
-global.TextEncoder = TextEncoder;
-global.TextDecoder = NodeTextDecoder as unknown as typeof TextDecoder;
+const defineGlobalValue = <T>(key: string, value: T): void => {
+    Object.defineProperty(globalThis, key, {
+        configurable: true,
+        writable: true,
+        value,
+    });
+
+    if (typeof window !== 'undefined') {
+        Object.defineProperty(window, key, {
+            configurable: true,
+            writable: true,
+            value,
+        });
+    }
+};
+
+// Polyfill for Node.js/jsdom environment.
+defineGlobalValue('TextEncoder', TextEncoder);
+defineGlobalValue('TextDecoder', NodeTextDecoder as unknown as typeof TextDecoder);
+
+defineGlobalValue('mockLearnCardBaseLogger', createMockLogger);
 
 // Define global constants that are normally set by webpack DefinePlugin
 (global as any).LCN_API_URL = 'http://localhost:4000/api';
@@ -14,17 +33,18 @@ global.TextDecoder = NodeTextDecoder as unknown as typeof TextDecoder;
 (global as any).API_URL = 'http://localhost:5100/trpc';
 (global as any).IS_PRODUCTION = false;
 
-// Mock window.matchMedia
-Object.defineProperty(window, 'matchMedia', {
-    writable: true,
-    value: vi.fn().mockImplementation(query => ({
-        matches: false,
-        media: query,
-        onchange: null,
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-    })),
-});
+if (typeof window !== 'undefined') {
+    Object.defineProperty(window, 'matchMedia', {
+        writable: true,
+        value: vi.fn().mockImplementation(query => ({
+            matches: false,
+            media: query,
+            onchange: null,
+            addListener: vi.fn(),
+            removeListener: vi.fn(),
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            dispatchEvent: vi.fn(),
+        })),
+    });
+}

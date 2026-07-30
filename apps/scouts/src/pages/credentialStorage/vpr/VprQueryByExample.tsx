@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { initLearnCard } from '@learncard/init';
 
 import { useWallet, useCurrentUser, chapiStore, redirectStore } from 'learn-card-base';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('vpr-query-by-example');
 
 import {
     IonPage,
@@ -88,7 +90,7 @@ const VprQueryByExample: React.FC = ({ event, currentUser }) => {
             chapiStore.set.isChapiInteraction(null);
             redirectStore.set.authRedirect(null);
         } catch (e) {
-            console.error(e);
+            log.error(e);
         }
 
         const sharedCredentials = vcs.filter((vc, index) => selectedVcs.includes(index));
@@ -123,7 +125,7 @@ const VprQueryByExample: React.FC = ({ event, currentUser }) => {
             chapiStore.set.isChapiInteraction(null);
             redirectStore.set.authRedirect(null);
         } catch (e) {
-            console.error(e);
+            log.error(e);
         }
         event.respondWith(Promise.resolve(null));
     };

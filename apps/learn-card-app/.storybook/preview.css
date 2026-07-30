@@ -1,0 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    font-family: 'Poppins', 'Lucida Sans', Geneva, Verdana, sans-serif;
+}
+
+/* The Ionic CSS imported into the preview sets `body { position: fixed;
+   overflow: hidden }`, which pins the story body and clips any content taller
+   than the viewport. Storybook puts its layout class on that same <body>, so we
+   unpin each layout and give the body its own scroll. `position: static` is the
+   load-bearing line — without it Ionic's fixed positioning keeps clipping. */
+.sb-main-fullscreen,
+.sb-main-padded,
+.sb-main-centered {
+    position: static !important;
+    overflow-y: auto !important;
+    height: 100vh !important;
+}
+
+/* Safe centering falls back to top-alignment when content is taller than the
+   viewport, so the top of tall centered stories stays reachable. */
+.sb-main-centered {
+    align-items: safe center !important;
+}
+
+/* Many components animate in with `animate-fade-in-up` (0.5s, starts at
+   opacity:0). Play functions assert immediately, so mid-animation elements read
+   as opacity:0 and fail `toBeVisible()`. The @storybook/test-runner disables
+   animations via test-runner.ts, but Chromatic runs play functions itself and
+   never applies that hook — so the durations must be zeroed here, in the preview
+   CSS that Chromatic actually loads, to keep interaction tests deterministic. */
+*,
+*::before,
+*::after {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+}

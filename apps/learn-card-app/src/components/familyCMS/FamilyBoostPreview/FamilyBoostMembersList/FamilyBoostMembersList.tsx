@@ -3,6 +3,7 @@ import AddUser from '../../../svgs/AddUser';
 import FamilyBoostMembersListItem from './FamilyBoostMemberListItem';
 import ThreeDots from 'learn-card-base/svgs/ThreeDots';
 import FamilyBoostInviteModalOptions from '../FamilyBoostInviteModal/FamilyBoostInviteModalOptions';
+import { m } from '../../../../paraglide/messages.js';
 
 import {
     ModalTypes,
@@ -106,7 +107,7 @@ export const FamilyBoostMembersList: React.FC<{
             <div className="w-full flex items-start justify-center flex-col">
                 <div className="w-full flex items-center justify-between">
                     <h3 className="font-poppins text-xl font-normal text-grayscale-800">
-                        {totalMembersCount} Members
+                        {m['family.members.count']({ count: totalMembersCount })}
                     </h3>
 
                     {!hasSwitedProfiles && (
@@ -135,7 +136,7 @@ export const FamilyBoostMembersList: React.FC<{
                                 : 'text-grayscale-700'
                         }`}
                     >
-                        All
+                        {m['family.members.all']()}
                     </button>
 
                     {childrenCount > 0 && (
@@ -149,8 +150,8 @@ export const FamilyBoostMembersList: React.FC<{
                         >
                             {childrenCount}{' '}
                             {childrenCount === 1
-                                ? dependentTitle?.singular
-                                : dependentTitle?.plural}
+                                ? dependentTitle?.singular || m['family.members.child']()
+                                : dependentTitle?.plural || m['family.members.children']()}
                         </button>
                     )}
 
@@ -163,7 +164,9 @@ export const FamilyBoostMembersList: React.FC<{
                         }`}
                     >
                         {guardiansCount}{' '}
-                        {guardiansCount === 1 ? guardianTitle?.singular : guardianTitle?.plural}
+                        {guardiansCount === 1
+                            ? guardianTitle?.singular || m['family.members.guardian']()
+                            : guardianTitle?.plural || m['family.members.guardians']()}
                     </button>
                 </div>
 

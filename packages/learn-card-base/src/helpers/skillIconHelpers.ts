@@ -1,5 +1,7 @@
 import type { SkillFramework, SkillFrameworkNode } from '../components/boost/boost';
 import type { SkillTreeNode } from '@learncard/types';
+import { getLogger } from '../logging/logger';
+const log = getLogger('skill-icon-helpers');
 
 /**
  * Recursively collects skill names from a tree of SkillFrameworkNodes (frontend format)
@@ -133,7 +135,7 @@ export const annotateBackendSkillsWithIcons = async (
                 });
                 return true;
             } catch (e) {
-                console.error(`Failed to update icon for skill ${skill.id}:`, e);
+                log.error(`Failed to update icon for skill ${skill.id}:`, e);
                 return false;
             }
         })

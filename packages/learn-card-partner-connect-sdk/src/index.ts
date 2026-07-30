@@ -19,6 +19,7 @@
  */
 
 import { PartnerConnectError } from './types';
+import { MockHost } from './mock-host';
 import type {
     PartnerConnectOptions,
     IdentityResponse,
@@ -39,6 +40,7 @@ import type {
     TemplateRecipientsResponse,
     RequestLearnerContextOptions,
     LearnerContextResponse,
+    SyncStatus,
     SendAiSessionCredentialInput,
     SendAiSessionCredentialResponse,
     AppNotificationInput,
@@ -55,8 +57,74 @@ import type {
 } from './types';
 
 // Re-export the class as a value plus all type exports.
+// `MockHost` is an internal implementation detail (constructed via
+// `createPartnerConnect({ mock, mockOptions })`); only its options type is public.
 export { PartnerConnectError } from './types';
 export type * from './types';
+
+/** Maximum time to poll for sync completion before giving up (10 minutes) */
+const SYNC_STATUS_POLL_MAX_DURATION_MS = 10 * 60 * 1000;
+
+/** Default wait for the host presence probe (see `hostProbeTimeout`). */
+const DEFAULT_HOST_PROBE_TIMEOUT_MS = 1500;
+
+/**
+ * Whether a hostname is a local development host. `mock: 'auto'` only ever
+ * activates on these, so a standalone page on a production or preview origin
+ * never silently fabricates identity, consent, or credentials.
+ */
+const isLocalDevHost = (hostname: string): boolean =>
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '[::1]' ||
+    hostname === '::1' ||
+    hostname.endsWith('.localhost') ||
+    hostname.endsWith('.local');
+
+/**
+ * Who is on the other side of our iframe boundary, as far as we can tell:
+ * - 'learncard': ancestor origin matches a configured host pattern — real host.
+ * - 'foreign': ancestor origin is known and matches nothing — an unrelated
+ *   wrapper (Storybook manager on another origin, preview shells, …). No
+ *   LearnCard host will ever answer.
+ * - 'ambiguous': not embedded-verifiable — the ancestor origin is unavailable
+ *   (Firefox) or only matches the native-app localhost heuristic, which any
+ *   local wrapper (e.g. Storybook on localhost:6006) also matches.
+ */
+type ParentKind = 'learncard' | 'foreign' | 'ambiguous';
+
+/**
+ * Detect whether the current page is running inside an embedded iframe.
+ *
+ * Returns `true` when the SDK is embedded (e.g. inside the LearnCard host) and
+ * `false` when running as a standalone top-level page. Safe to call in any
+ * environment: returns `false` during server-side rendering (no `window`).
+ *
+ * Partner apps can use this to change behavior without writing their own frame
+ * detection — for example, showing a "Open in LearnCard" prompt when standalone.
+ *
+ * @example
+ * ```typescript
+ * import { isEmbedded } from '@learncard/partner-connect';
+ *
+ * if (isEmbedded()) {
+ *   // Running inside LearnCard — use the SDK against the real host.
+ * } else {
+ *   // Standalone — show a preview banner, or rely on automatic mock mode.
+ * }
+ * ```
+ */
+export function isEmbedded(): boolean {
+    if (typeof window === 'undefined') return false;
+
+    try {
+        // A cross-origin parent still lets us compare WindowProxy references;
+        // when access is blocked entirely the throw means we ARE embedded.
+        return window.self !== window.top;
+    } catch {
+        return true;
+    }
+}
 
 /**
  * LearnCard Partner Connect SDK class
@@ -93,6 +161,16 @@ export class PartnerConnect {
     private pendingRequests: Map<string, PendingRequest>;
     private messageListener: ((event: MessageEvent) => void) | null = null;
     private isInitialized = false;
+    private syncCompleteCallbacks: Set<(status: SyncStatus) => void> = new Set();
+    private syncStatusPollId: ReturnType<typeof setInterval> | null = null;
+    private mockHost: MockHost | null = null;
+    private embedded = false;
+    private warnedNoHost = false;
+    private hostProbeTimeout: number = DEFAULT_HOST_PROBE_TIMEOUT_MS;
+    /** Whether a real LearnCard host is believed to be listening. */
+    private hostReachable = false;
+    /** Pending probe decision; requests queue behind it when set. */
+    private activation: Promise<void> | null = null;
 
     constructor(options?: PartnerConnectOptions) {
         // Normalize hostOrigin to an array for whitelist validation
@@ -111,9 +189,148 @@ export class PartnerConnect {
         this.protocol = options?.protocol || 'LEARNCARD_V1';
         this.requestTimeout = options?.requestTimeout || 30000;
         this.allowNativeAppOrigins = options?.allowNativeAppOrigins ?? true;
+        this.hostProbeTimeout = options?.hostProbeTimeout ?? DEFAULT_HOST_PROBE_TIMEOUT_MS;
         this.pendingRequests = new Map();
         this.configureActiveOrigin();
         this.setupMessageListener();
+        this.embedded = isEmbedded();
+
+        this.configureMockActivation(options);
+    }
+
+    /**
+     * Decide whether this instance talks to a real host, simulates one, or
+     * fails fast — the resolution of the `mock` option against the runtime
+     * embed context. See the `mock` option docs for the contract.
+     */
+    private configureMockActivation(options?: PartnerConnectOptions): void {
+        const mockSetting = options?.mock ?? 'auto';
+
+        if (mockSetting === true) {
+            this.mockHost = new MockHost(options?.mockOptions);
+            return;
+        }
+
+        // Whether this origin may fall back to mocking when no host answers:
+        // 'standalone' anywhere, 'auto' only on local dev hosts (a standalone
+        // production page must never fabricate identity or consent), false
+        // nowhere.
+        const canAutoMock =
+            mockSetting === 'standalone' || (mockSetting === 'auto' && this.isLocalDevContext());
+
+        if (!this.embedded) {
+            // Standalone page: no host can answer. hostReachable stays false,
+            // so un-mocked calls fail fast with LC_NOT_EMBEDDED.
+            if (canAutoMock) {
+                this.mockHost = new MockHost(options?.mockOptions);
+            }
+            return;
+        }
+
+        switch (this.classifyParent()) {
+            case 'learncard':
+                this.hostReachable = true;
+                return;
+
+            case 'foreign':
+                // Known non-LearnCard wrapper (e.g. cross-origin Storybook):
+                // never postMessage into the 30s timeout. Mock where allowed,
+                // fail fast everywhere else.
+                if (canAutoMock) {
+                    this.mockHost = new MockHost(options?.mockOptions);
+                }
+                return;
+
+            case 'ambiguous':
+                if (canAutoMock) {
+                    // Could be a real (local/native) LearnCard host or an
+                    // unrelated wrapper. Ask: if the host answers a cheap
+                    // side-effect-free probe, stay real; otherwise mock.
+                    this.hostReachable = true;
+                    this.activation = this.probeHost(options);
+                } else {
+                    // Mocking is off the table here anyway — preserve the
+                    // long-standing assumption that an unverifiable parent
+                    // is the real host.
+                    this.hostReachable = true;
+                }
+                return;
+        }
+    }
+
+    private isLocalDevContext(): boolean {
+        if (typeof window === 'undefined') return false;
+        return isLocalDevHost(window.location.hostname);
+    }
+
+    private classifyParent(): ParentKind {
+        const ancestorOrigin = this.readAncestorOrigin();
+
+        if (!ancestorOrigin) return 'ambiguous';
+
+        // Trust requires an explicit configured pattern match. The native-app
+        // heuristic (any localhost origin) is NOT enough to call the parent
+        // LearnCard — Storybook's manager frame matches it too.
+        if (this.matchesConfiguredOrigin(ancestorOrigin)) return 'learncard';
+        if (this.allowNativeAppOrigins && this.isOriginNativeApp(ancestorOrigin)) {
+            return 'ambiguous';
+        }
+
+        return 'foreign';
+    }
+
+    private matchesConfiguredOrigin(origin: string): boolean {
+        return this.hostOrigins.some(entry => PartnerConnect.matchesOriginPattern(origin, entry));
+    }
+
+    /**
+     * One-time host presence probe for the ambiguous-parent case. Sends a
+     * side-effect-free `GET_SYNC_STATUS`; an answer proves a live LearnCard
+     * host (responses are origin-checked), a timeout means nobody is
+     * listening and the mock takes over. Requests issued while the probe is
+     * in flight queue behind the decision instead of racing it.
+     */
+    private probeHost(options?: PartnerConnectOptions): Promise<void> {
+        return this.postToHost('GET_SYNC_STATUS', undefined, this.hostProbeTimeout)
+            .then(() => {
+                this.activation = null;
+            })
+            .catch(() => {
+                this.activation = null;
+                if (this.isInitialized) {
+                    this.hostReachable = false;
+                    this.mockHost = new MockHost(options?.mockOptions);
+                    console.warn(
+                        '[LearnCard SDK] Embedded in a frame, but no LearnCard host answered ' +
+                            `within ${this.hostProbeTimeout}ms — activating standalone mock mode. ` +
+                            'If a real local host was just slow to boot, raise `hostProbeTimeout`.'
+                    );
+                }
+            });
+    }
+
+    /**
+     * Whether this SDK instance is running inside an embedded iframe.
+     * Instance-level convenience wrapper around the standalone {@link isEmbedded}.
+     */
+    public isEmbedded(): boolean {
+        return isEmbedded();
+    }
+
+    /**
+     * Whether the current page is running inside an embedded iframe.
+     * Static convenience wrapper around the standalone {@link isEmbedded}.
+     */
+    public static isEmbedded(): boolean {
+        return isEmbedded();
+    }
+
+    /**
+     * Whether this instance is currently simulating the LearnCard host locally
+     * instead of talking to a real host over `postMessage`.
+     */
+    public isMocked(): boolean {
+        return this.mockHost !== null;
     }
 
     /**
@@ -288,10 +505,7 @@ export class PartnerConnect {
             // Replace the wildcard labels with a syntactically-valid host so
             // URL() can parse it; we validate the real shape ourselves below.
             patternUrl = new URL(
-                pattern.replace(
-                    PartnerConnect.WILDCARD_REGEX,
-                    PartnerConnect.WILDCARD_PLACEHOLDER
-                )
+                pattern.replace(PartnerConnect.WILDCARD_REGEX, PartnerConnect.WILDCARD_PLACEHOLDER)
             );
             candidateUrl = new URL(candidate);
         } catch {
@@ -383,6 +597,14 @@ export class PartnerConnect {
                 return;
             }
 
+            // Only responses may settle a pending request. Without this, an
+            // echoed/looped-back copy of our own outbound request (same
+            // requestId, no type) would evict the entry and leave the caller
+            // hanging with its timeout already cleared.
+            if (data.type !== 'SUCCESS' && data.type !== 'ERROR') {
+                return;
+            }
+
             // Look up the pending request
             const pending = this.pendingRequests.get(data.requestId);
             if (!pending) {
@@ -420,30 +642,76 @@ export class PartnerConnect {
     }
 
     /**
-     * Send a message to the parent window and return a Promise
+     * Send a message to the parent window and return a Promise. While a host
+     * presence probe is pending, requests queue behind its decision so they
+     * are answered by whichever side (real host or mock) actually exists.
      */
     private sendMessage<T = unknown>(action: string, payload?: unknown): Promise<T> {
+        if (this.activation) {
+            return this.activation.then(() => this.dispatchMessage<T>(action, payload));
+        }
+
+        return this.dispatchMessage<T>(action, payload);
+    }
+
+    private dispatchMessage<T = unknown>(action: string, payload?: unknown): Promise<T> {
         if (!this.isInitialized) {
             return Promise.reject(
                 new PartnerConnectError('SDK_NOT_INITIALIZED', 'SDK is not initialized')
             );
         }
 
+        if (this.mockHost) {
+            return this.mockHost
+                .handle(action, payload)
+                .then(data => data as T)
+                .catch(error => {
+                    throw PartnerConnectError.from(error);
+                });
+        }
+
+        // No reachable host and not mocking (standalone page, or embedded in
+        // a non-LearnCard wrapper): no host will ever answer this message, so
+        // fail immediately with an actionable error instead of hanging until
+        // the request timeout fires.
+        if (!this.hostReachable) {
+            if (!this.warnedNoHost) {
+                this.warnedNoHost = true;
+                console.error(
+                    '[LearnCard SDK] No LearnCard host is present (the app is standalone or ' +
+                        'inside a non-LearnCard frame), so SDK calls cannot complete. Embed ' +
+                        'your app in LearnCard, or pass `mock: true` to simulate the host ' +
+                        'during standalone development. Use isEmbedded() to branch your UI ' +
+                        'before calling.'
+                );
+            }
+
+            return Promise.reject(
+                new PartnerConnectError(
+                    'LC_NOT_EMBEDDED',
+                    `Cannot ${action}: the app is not embedded in a LearnCard host.`
+                )
+            );
+        }
+
+        return this.postToHost<T>(action, payload, this.requestTimeout);
+    }
+
+    private postToHost<T = unknown>(action: string, payload: unknown, timeout: number): Promise<T> {
         return new Promise<T>((resolve, reject) => {
             const requestId = this.generateRequestId(action);
 
-            // Set up timeout
             const timeoutId = setTimeout(() => {
                 if (this.pendingRequests.has(requestId)) {
                     this.pendingRequests.delete(requestId);
                     reject(
                         new PartnerConnectError(
                             'LC_TIMEOUT',
-                            `Request ${action} timed out after ${this.requestTimeout}ms`
+                            `Request ${action} timed out after ${timeout}ms`
                         )
                     );
                 }
-            }, this.requestTimeout);
+            }, timeout);
 
             // Store the pending request
             this.pendingRequests.set(requestId, {
@@ -769,10 +1037,18 @@ export class PartnerConnect {
      * const context = await learnCard.requestLearnerContext({
      *   includeCredentials: true,
      *   includePersonalData: true,
+     *   waitForSync: true,
      *   format: 'prompt',
      *   instructions: 'Focus on technical skills and certifications',
      *   detailLevel: 'expanded'
      * });
+     *
+     * if (context.status === 'syncing') {
+     *   const unsubscribe = learnCard.onSyncComplete(async () => {
+     *     const readyContext = await learnCard.requestLearnerContext({ waitForSync: true });
+     *     unsubscribe();
+     *   });
+     * }
      *
      * // Use in AI system prompt
      * const systemPrompt = `You are a helpful tutor. ${context.prompt}`;
@@ -782,16 +1058,88 @@ export class PartnerConnect {
      * console.log('Credentials count:', context.raw?.credentials.length);
      * ```
      */
-    public requestLearnerContext(
+    public async requestLearnerContext(
         options?: RequestLearnerContextOptions
     ): Promise<LearnerContextResponse> {
-        return this.sendMessage<LearnerContextResponse>('REQUEST_LEARNER_CONTEXT', {
+        const startedAt = performance.now();
+        const response = await this.sendMessage<LearnerContextResponse>('REQUEST_LEARNER_CONTEXT', {
             includeCredentials: options?.includeCredentials ?? true,
             includePersonalData: options?.includePersonalData ?? false,
             format: options?.format ?? 'prompt',
             instructions: options?.instructions,
             detailLevel: options?.detailLevel ?? 'compact',
+            waitForSync: options?.waitForSync ?? false,
         });
+
+        response.metadata ??= {};
+        response.metadata.timings ??= { totalMs: 0 };
+        response.metadata.timings.sdkRoundTripMs = performance.now() - startedAt;
+
+        return response;
+    }
+
+    /**
+     * Get the current LearnCard background data sync status.
+     */
+    public getSyncStatus(): Promise<SyncStatus> {
+        return this.sendMessage<SyncStatus>('GET_SYNC_STATUS');
+    }
+
+    /**
+     * Register a callback that fires when LearnCard reports background sync has reached a
+     * terminal state ('ready' or 'error'). Check `status.status` to distinguish the two.
+     * Polling stops once a terminal state is reached, all callbacks unsubscribe, or the
+     * poll exceeds its maximum duration (reported to callbacks as an 'error' status).
+     * Returns an unsubscribe function.
+     */
+    public onSyncComplete(callback: (status: SyncStatus) => void): () => void {
+        this.syncCompleteCallbacks.add(callback);
+
+        if (!this.syncStatusPollId) {
+            const pollStartedAt = Date.now();
+
+            const stopPolling = () => {
+                if (this.syncStatusPollId) {
+                    clearInterval(this.syncStatusPollId);
+                    this.syncStatusPollId = null;
+                }
+            };
+
+            this.syncStatusPollId = setInterval(() => {
+                if (Date.now() - pollStartedAt > SYNC_STATUS_POLL_MAX_DURATION_MS) {
+                    stopPolling();
+                    const timeoutStatus: SyncStatus = {
+                        status: 'error',
+                        progress: {
+                            totalCredentials: 0,
+                            completedCredentials: 0,
+                            failedCredentials: 0,
+                            retryCount: 0,
+                        },
+                        lastError: 'Timed out waiting for sync to complete',
+                    };
+                    this.syncCompleteCallbacks.forEach(cb => cb(timeoutStatus));
+                    return;
+                }
+
+                this.getSyncStatus()
+                    .then(status => {
+                        if (status.status !== 'ready' && status.status !== 'error') return;
+
+                        stopPolling();
+                        this.syncCompleteCallbacks.forEach(cb => cb(status));
+                    })
+                    .catch(() => undefined);
+            }, 1000);
+        }
+
+        return () => {
+            this.syncCompleteCallbacks.delete(callback);
+            if (this.syncCompleteCallbacks.size === 0 && this.syncStatusPollId) {
+                clearInterval(this.syncStatusPollId);
+                this.syncStatusPollId = null;
+            }
+        };
     }
 
     /**
@@ -903,6 +1251,18 @@ export class PartnerConnect {
         }
 
         this.pendingRequests.clear();
+
+        if (this.syncStatusPollId) {
+            clearInterval(this.syncStatusPollId);
+            this.syncStatusPollId = null;
+        }
+        this.syncCompleteCallbacks.clear();
+
+        if (this.mockHost) {
+            this.mockHost.destroy();
+            this.mockHost = null;
+        }
+
         this.isInitialized = false;
     }
 }

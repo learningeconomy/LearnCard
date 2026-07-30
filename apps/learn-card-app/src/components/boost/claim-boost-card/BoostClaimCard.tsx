@@ -1,15 +1,30 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { getVCDisplayCardVariant } from '@learncard/react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-claim-card');
 
 import { IonSpinner, useIonAlert, IonPage } from '@ionic/react';
+import { useRenderMethodEnabled } from '../../../hooks/useRenderMethodEnabled';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
-import Lottie from 'react-lottie-player';
-const HourGlass = '/lotties/hourglass.json';
-import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
+import RenderMethodDisplay from '../../render-method/RenderMethodDisplay';
+
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
+import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
 import BoostDetailsSideMenu from '../boostCMS/BoostPreview/BoostDetailsSideMenu';
 import BoostDetailsSideBar from '../boostCMS/BoostPreview/BoostDetailsSideBar';
-import { useAnalytics, AnalyticsEvents } from '@analytics';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    ProfileBuildMethod,
+    useProfileSnapshotCapture,
+    ACCOUNT_CREATED_AT_KEY,
+    SESSION_START_KEY,
+    createFlowLifecycle,
+    newFlowId,
+    type FlowLifecycle,
+} from '@analytics';
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
 import { useGetResolvedCredential, useToast, ToastTypeEnum } from 'learn-card-base';
 
@@ -20,6 +35,7 @@ import {
     useWallet,
     ModalTypes,
     useDeviceTypeByWidth,
+    boostPreviewStore,
 } from 'learn-card-base';
 import { LCNNotification, VC, VP, VerificationItem } from '@learncard/types';
 import {
@@ -30,11 +46,16 @@ import {
     isClrCredential,
     getClrLinkedCredentials,
     getClrLinkedCredentialCounts,
+    unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
+import { getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 import ClrAchievementsSummaryBox from '../boostLinkedCredentials/ClrAchievementsSummaryBox';
 import BoostLinkedCredentialsBox from '../boostLinkedCredentials/BoostLinkedCredentialsBox';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import ViewEndorsementRequest from '../../boost-endorsements/EndorsementRequestForm/ViewEndorsementRequest';
+import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
+import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
+import * as m from '../../../paraglide/messages.js';
 
 type BoostClaimCardProps = {
     credential: VC | VP;
@@ -49,6 +70,7 @@ type BoostClaimCardProps = {
     onDismiss?: () => void;
     notification?: LCNNotification;
     hideEndorsementRequestCard?: boolean;
+    lifecycleStatus?: 'active' | 'revoked' | 'suspended';
 };
 
 export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
@@ -62,6 +84,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     onDismiss,
     notification,
     hideEndorsementRequestCard,
+    lifecycleStatus,
 }) => {
     const history = useHistory();
     const isLoggedIn = useIsLoggedIn();
@@ -94,6 +117,10 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     }, [credential]);
 
     const { track } = useAnalytics();
+    const { capture, snapshotRef } = useProfileSnapshotCapture();
+    const flowStartedAt = useRef(Date.now());
+    const claimAttemptRef = useRef<FlowLifecycle | null>(null);
+    const presentedCredentialKeyRef = useRef<string | null>(null);
 
     const [isFront, setIsFront] = useState(true);
     const [isClaimLoading, setIsClaimLoading] = useState(false);
@@ -105,12 +132,28 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
         isSuccess: acceptCredentialSuccess,
     } = useAcceptCredentialMutation();
     const { addVCtoWallet } = useWallet();
+    const enableRenderMethod = useRenderMethodEnabled();
 
     const [presentAlert, dismissAlert] = useIonAlert();
     const { presentToast } = useToast();
 
     const category = getDefaultCategoryForCredential(credential);
     const achievementType = getAchievementType(credential);
+    const issuerId =
+        typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
+    const partnerId = (() => {
+        const profileId = getUserHandleFromDid(issuerId ?? '');
+        if (profileId) return profileId;
+
+        try {
+            return issuerId ? new URL(issuerId).host || undefined : undefined;
+        } catch {
+            return undefined;
+        }
+    })();
+    const renderMethod = enableRenderMethod ? getSvgMustacheRenderMethod(credential as VC) : null;
+    const selectedDisplayView = boostPreviewStore.useTracked.selectedDisplayView();
+    const displayCredential = unwrapBoostCredential(credential as VC) as VC;
 
     const _isClr = isClrCredential(credential);
     const linkedCredentialCount = _isClr ? getClrLinkedCredentialCounts(credential) : 0;
@@ -142,11 +185,105 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
 
     const _isEndorsement = isEndorsementCredential(credential) ?? false;
 
+    const getClaimErrorCode = (e: unknown): string =>
+        (e as { code?: string })?.code ??
+        (e instanceof Error && e.name !== 'Error' ? e.name : 'unknown');
+
+    // A credential that fails verification because it's revoked can't be claimed
+    // (the backend rejects acceptCredential with "Credential has been revoked").
+    const isRevoked = vcVerifications.some(
+        (v: any) =>
+            v?.status !== 'Success' &&
+            /revoked/i.test(`${v?.message ?? ''} ${v?.details ?? ''} ${v?.check ?? ''}`)
+    );
+
+    const beginClaimAttempt = () => {
+        const attempt = createFlowLifecycle();
+        claimAttemptRef.current = attempt;
+
+        track(AnalyticsEvents.CREDENTIAL_CLAIM_STARTED, {
+            flow_id: attempt.id,
+            entry_point: 'claim_modal',
+            credential_type: achievementType,
+            category,
+            partner_id: partnerId,
+            credential_count: 1,
+        });
+
+        return attempt;
+    };
+
+    const completeClaimAttempt = (
+        eventName:
+            | typeof AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED
+            | typeof AnalyticsEvents.CREDENTIAL_CLAIM_FAILED
+            | typeof AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED,
+        extraProps?: { error_code?: string }
+    ) => {
+        const attempt = claimAttemptRef.current;
+        if (!attempt || !attempt.terminate()) return;
+
+        track(eventName, {
+            flow_id: attempt.id,
+            entry_point: 'claim_modal',
+            credential_type: achievementType,
+            category,
+            partner_id: partnerId,
+            credential_count: 1,
+            duration_ms: attempt.durationMs(),
+            ...extraProps,
+        });
+
+        claimAttemptRef.current = null;
+    };
+
+    useEffect(() => {
+        const presentedKey = credential?.id ?? credentialUri ?? notification?.id ?? null;
+        if (
+            !credential ||
+            isClaimed ||
+            !presentedKey ||
+            presentedCredentialKeyRef.current === presentedKey
+        ) {
+            return;
+        }
+
+        presentedCredentialKeyRef.current = presentedKey;
+        track(AnalyticsEvents.CREDENTIAL_CLAIM_PRESENTED, {
+            flow_id: newFlowId(),
+            entry_point: 'claim_modal',
+            credential_type: achievementType,
+            category,
+            partner_id: partnerId,
+            credential_count: 1,
+        });
+    }, [
+        credential,
+        isClaimed,
+        credentialUri,
+        notification?.id,
+        track,
+        achievementType,
+        category,
+        partnerId,
+    ]);
+
     const handleBoostCredential = async (visibility?: boolean) => {
         const wallet = await initWallet();
 
+        if (isRevoked) {
+            presentToast(m['claim.revokedToast'](), {
+                duration: 4000,
+                type: ToastTypeEnum.Error,
+            });
+            return;
+        }
+
         if (!acceptCredentialLoading && !isClaimLoading && !isClaimed) {
+            beginClaimAttempt();
             setIsClaimLoading(true);
+            // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
+            capture();
             try {
                 mutate(
                     { uri: credentialUri, metadata: notification?.data?.metadata },
@@ -168,11 +305,29 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                     category: category,
                                     boostType: achievementType,
                                     method: 'Notification',
+                                    msSinceMethodStarted: Date.now() - flowStartedAt.current,
+                                });
+                                completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED);
+
+                                const now = Date.now();
+                                const sessionStart = Number(
+                                    localStorage.getItem(SESSION_START_KEY) ?? now
+                                );
+                                const accountCreatedAt = Number(
+                                    localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
+                                );
+                                track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                                    method: ProfileBuildMethod.Notification,
+                                    itemType: 'credential',
+                                    itemCount: 1,
+                                    totalItemsAfter: snapshotRef.current.credentialCount + 1,
+                                    msSinceAccountCreated: now - accountCreatedAt,
+                                    msSinceSessionStart: now - sessionStart,
                                 });
                             }
 
                             setIsClaimed(true);
-                            presentToast(`Successfully claimed Credential!`, {
+                            presentToast(m['toasts.credentialClaimed'](), {
                                 duration: 3000,
                                 type: ToastTypeEnum.Success,
                             });
@@ -188,17 +343,32 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
 
                             closeModal();
                         },
+                        onError(err: any) {
+                            completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, {
+                                error_code: getClaimErrorCode(err),
+                            });
+                            setIsClaimLoading(false);
+                            presentToast(
+                                m['claim.failedToClaim']({
+                                    message: err?.message ?? m['claim.pleaseTryAgain'](),
+                                }),
+                                { duration: 4000, type: ToastTypeEnum.Error }
+                            );
+                        },
                     }
                 );
             } catch (err) {
-                console.log('acceptCredential::error', err?.message);
+                completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, {
+                    error_code: getClaimErrorCode(err),
+                });
+                log.info('acceptCredential::error', err?.message);
                 presentAlert({
                     backdropDismiss: false,
                     cssClass: 'boost-confirmation-alert',
-                    header: `There was an error: ${err?.message}`,
+                    header: m['claim.errorWithMessage']({ message: err?.message ?? '' }),
                     buttons: [
                         {
-                            text: 'Okay',
+                            text: m['contacts.okay'](),
                             role: 'cancel',
                             handler: () => {
                                 dismissAlert();
@@ -220,21 +390,33 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     const selectedCredential = credential;
 
     let claimStatusText;
-    const disableClaimButton = acceptCredentialLoading || isClaimLoading || isClaimed;
+    const disableClaimButton = acceptCredentialLoading || isClaimLoading || isClaimed || isRevoked;
 
     if (!isClaimLoading && isLoggedIn && credential && isClaimed) {
-        claimStatusText = 'Claimed';
-        if (isFamily) claimStatusText = 'Joined';
+        claimStatusText = m['contacts.claimed']();
+        if (isFamily) claimStatusText = m['contacts.joined']();
     }
     if (isClaimLoading && isLoggedIn) {
-        claimStatusText = 'Saving...';
-        if (isFamily) claimStatusText = 'Joining...';
+        claimStatusText = m['contacts.saving']();
+        if (isFamily) claimStatusText = m['contacts.joining']();
     }
 
     if (!isClaimLoading && isLoggedIn && credential && !isClaimed) {
-        claimStatusText = 'Accept';
-        if (isFamily) claimStatusText = 'Join';
+        claimStatusText = m['common.accept']();
+        if (isFamily) claimStatusText = m['contacts.joinBoost']();
     }
+
+    if (isRevoked) {
+        claimStatusText = m['common.revoked']();
+    }
+
+    useEffect(() => {
+        boostPreviewStore.set.updateSelectedDisplayView(
+            enableRenderMethod && renderMethod
+                ? BoostPreviewDisplayViewEnum.Issuer
+                : BoostPreviewDisplayViewEnum.Default
+        );
+    }, [credential?.id, renderMethod?.template, enableRenderMethod]);
 
     useEffect(() => {
         if (!isFront) {
@@ -244,6 +426,44 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
             }
         }
     }, [isFront]);
+
+    const isIssuerViewSelected =
+        enableRenderMethod &&
+        Boolean(renderMethod) &&
+        selectedDisplayView === BoostPreviewDisplayViewEnum.Issuer;
+    const shouldUseHostCardPadding =
+        !credential ||
+        isIssuerViewSelected ||
+        getVCDisplayCardVariant(displayCredential, category) !== 'ribbon';
+
+    const credentialDisplay = (
+        <VCDisplayCardWrapper2
+            credential={credential}
+            hideNavButtons
+            lifecycleStatus={lifecycleStatus}
+            // isFrontOverride={isFront}
+            setIsFrontOverride={setIsFront}
+            onMediaClick={handleImageClick}
+            customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+            bottomButton={
+                isID ? (
+                    <button
+                        onClick={e => {
+                            e.stopPropagation();
+                            handleBoostCredential();
+                        }}
+                        className="bg-teal-400 rounded-[30px] w-full p-[7px] font-poppins text-white text-[17px] font-[600] leading-[24px] tracking-[0.25px] mt-[10px] disabled:opacity-60"
+                        disabled={disableClaimButton}
+                    >
+                        {claimStatusText}
+                    </button>
+                ) : undefined
+            }
+            hideFrontFaceDetails={false}
+            claimStatusText={claimStatusText}
+            handleClaim={handleBoostCredential}
+        />
+    );
 
     const openDetailsSideModal = () => {
         if (vcVerifications.length === 0) {
@@ -256,6 +476,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                 verificationItems={vcVerifications}
                 hideEndorsementRequestCard={hideEndorsementRequestCard}
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                renderMethodCredential={credential as VC}
             />,
             {
                 className: '!bg-transparent',
@@ -280,105 +501,88 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
 
     return (
         <IonPage className="flex items-center justify-center boost-cms-preview">
-            <div className="flex h-full w-full">
-                {isClaimLoading && (
-                    <div className="absolute w-full h-full top-0 left-0 z-[10001] flex items-center justify-center flex-col boost-loading-wrapper">
-                        <div className="w-[180px] h-full m-auto mt-[5px] flex items-center justify-center">
-                            <Lottie
-                                loop
-                                path={HourGlass}
-                                play
-                                style={{ width: '180px', height: '180px' }}
-                            />
+            <BoostFooterLayout
+                contentOwnsScroll
+                footerProps={{
+                    handleClose: () => {
+                        completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED);
+                        onDismiss?.();
+                        closeModal();
+                    },
+                    handleDetails: isMobile ? () => openDetailsSideModal() : undefined,
+                    handleClaim: handleBoostCredential,
+                    claimBtnText: claimStatusText,
+                    disableClaimButton,
+                    isIdClaim: isID,
+                    useFullCloseButton: !isMobile,
+                }}
+            >
+                <div className="flex h-full w-full">
+                    {isClaimLoading && (
+                        <div className="absolute w-full h-full top-0 left-0 z-[10001] flex items-center justify-center flex-col boost-loading-wrapper">
+                            <div className="w-[180px] h-full m-auto mt-[5px] flex items-center justify-center">
+                                <LoadingSpinner size="xl" label="Loading credential" />
+                            </div>
                         </div>
-                    </div>
-                )}
-                <section className="flex flex-1 h-full overflow-y-auto items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0">
-                    <section className="flex flex-col items-center justify-center px-2 w-full">
-                        <section
-                            className={`boost-preview-display px-6 w-full safe-area-top-margin max-h-full pb-32 disable-scrollbars ${
-                                Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'
-                            }`}
-                        >
-                            {credential && !selectedImage && (
-                                <VCDisplayCardWrapper2
-                                    credential={credential}
-                                    hideNavButtons
-                                    // isFrontOverride={isFront}
-                                    setIsFrontOverride={setIsFront}
-                                    onMediaClick={handleImageClick}
-                                    customLinkedCredentialsComponent={
-                                        customLinkedCredentialsComponent
-                                    }
-                                    bottomButton={
-                                        isID ? (
-                                            <button
-                                                onClick={e => {
-                                                    e.stopPropagation();
-                                                    handleBoostCredential();
-                                                }}
-                                                className="bg-teal-400 rounded-[30px] w-full p-[7px] font-poppins text-white text-[17px] font-[600] leading-[24px] tracking-[0.25px] mt-[10px] disabled:opacity-60"
-                                                disabled={disableClaimButton}
-                                            >
-                                                {claimStatusText}
-                                            </button>
-                                        ) : undefined
-                                    }
-                                    hideFrontFaceDetails={false}
-                                    claimStatusText={claimStatusText}
-                                    handleClaim={handleBoostCredential}
-                                />
-                            )}
-                            {selectedImage && (
-                                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                                    <div className="relative max-w-full max-h-[80vh]">
-                                        <img
-                                            src={selectedImage}
-                                            alt="Full size attachment"
-                                            className="max-w-full max-h-[80vh] object-contain"
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                            {!credential && isLoading && (
-                                <section className="flippy-wrapper-container">
-                                    <section className="flex overflow-hidden flex-col items-center justify-between relative max-w-[400px] h-[100%] max-h-[600px] min-h-[600px] p-7 w-full rounded-3xl shadow-3xl bg-white vc-display-card-full-container">
-                                        <div className="w-full flex-grow h-full flex items-center justify-center bg-white">
-                                            <section className="loading-spinner-container flex flex-col items-center justify-center h-[100%] w-full opacity-50 ">
-                                                <IonSpinner color="dark" />
-                                            </section>
+                    )}
+                    <section className="flex flex-1 h-full overflow-y-auto items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0">
+                        <section className="flex flex-col items-center justify-center w-full">
+                            <section
+                                className={`boost-preview-display w-full safe-area-top-margin max-h-full disable-scrollbars ${
+                                    shouldUseHostCardPadding ? 'px-6' : ''
+                                } ${Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'}`}
+                            >
+                                {credential && !selectedImage && (
+                                    <>
+                                        {isIssuerViewSelected && renderMethod ? (
+                                            <RenderMethodDisplay
+                                                vc={displayCredential}
+                                                renderMethod={renderMethod}
+                                                fallback={credentialDisplay}
+                                                className="w-full"
+                                            />
+                                        ) : (
+                                            credentialDisplay
+                                        )}
+                                    </>
+                                )}
+                                {selectedImage && (
+                                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                                        <div className="relative max-w-full max-h-[80vh]">
+                                            <img
+                                                src={selectedImage}
+                                                alt={m['claim.fullSizeAttachment']()}
+                                                className="max-w-full max-h-[80vh] object-contain"
+                                            />
                                         </div>
+                                    </div>
+                                )}
+                                {!credential && isLoading && (
+                                    <section className="flippy-wrapper-container">
+                                        <section className="flex overflow-hidden flex-col items-center justify-between relative max-w-[400px] h-[100%] max-h-[600px] min-h-[600px] p-7 w-full rounded-3xl shadow-3xl bg-white vc-display-card-full-container">
+                                            <div className="w-full flex-grow h-full flex items-center justify-center bg-white">
+                                                <section className="loading-spinner-container flex flex-col items-center justify-center h-[100%] w-full opacity-50 ">
+                                                    <IonSpinner color="dark" />
+                                                </section>
+                                            </div>
+                                        </section>
                                     </section>
-                                </section>
-                            )}
+                                )}
+                            </section>
                         </section>
                     </section>
-                </section>
-                <footer className="w-full flex justify-center items-center ion-no-border absolute bottom-0 z-10">
-                    <BoostFooter
-                        handleClose={() => {
-                            onDismiss?.();
-                            closeModal();
-                        }}
-                        handleDetails={isMobile ? () => openDetailsSideModal() : undefined}
-                        // handleBack={!isFront ? () => setIsFront(!isFront) : undefined}
-                        handleClaim={handleBoostCredential}
-                        claimBtnText={claimStatusText}
-                        disableClaimButton={disableClaimButton}
-                        isIdClaim={isID}
-                        useFullCloseButton={!isMobile}
-                    />
-                </footer>
-                {!isMobile && (
-                    <BoostDetailsSideBar
-                        credential={selectedCredential}
-                        // categoryType={categoryType}
-                        verificationItems={vcVerifications}
-                        hideEndorsementRequestCard={hideEndorsementRequestCard}
-                        customLinkedCredentialsComponent={customLinkedCredentialsComponent}
-                    />
-                )}
-            </div>
+                    {!isMobile && (
+                        <BoostDetailsSideBar
+                            credential={selectedCredential}
+                            // categoryType={categoryType}
+                            verificationItems={vcVerifications}
+                            hideEndorsementRequestCard={hideEndorsementRequestCard}
+                            customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                            renderMethodCredential={credential as VC}
+                        />
+                    )}
+                </div>
+            </BoostFooterLayout>
         </IonPage>
     );
 };

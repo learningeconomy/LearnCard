@@ -85,15 +85,28 @@ const BottomSheetModal: ModalContainer = ({ component, options, open }) => {
         event.currentTarget.setPointerCapture(event.pointerId);
     };
 
+    // Push the safe-area inset onto the <section> rather than the outer <aside>.
+    // The aside is `justify-content: flex-end`, so padding-bottom there would push
+    // the white sheet UP by the inset (~34px on iPhones with a home indicator),
+    // leaving the dimmer visible underneath. Putting the padding on the section
+    // lets its white background extend all the way to the device bottom while
+    // still keeping interactive content above the home indicator.
+    const sectionStyle: React.CSSProperties = {
+        paddingBottom: `${safeAreaBottom}px`,
+        ...(isDragging
+            ? {
+                  transform: `translateY(${dragOffset}px)`,
+                  transition: 'none',
+              }
+            : null),
+    };
+
     return (
         <aside
             id="cancel-modal"
             className={`bottom-sheet-modal ${optionalClass} ${open ? 'open' : 'closed'} ${
                 options?.hideDimmer ? 'hide-dimmer' : ''
             }`}
-            style={{
-                paddingBottom: `${safeAreaBottom}px`,
-            }}
         >
             {!options?.hideDimmer && (
                 <button
@@ -109,14 +122,7 @@ const BottomSheetModal: ModalContainer = ({ component, options, open }) => {
                 className={`bottom-sheet-modal-section ${optionalClass} ${
                     options?.widen ? 'widen' : ''
                 } ${options?.addShadow ? 'add-shadow' : ''} ${sectionClass}`}
-                style={
-                    isDragging
-                        ? {
-                              transform: `translateY(${dragOffset}px)`,
-                              transition: 'none',
-                          }
-                        : undefined
-                }
+                style={sectionStyle}
             >
                 <div className="bottom-sheet-modal-handle-wrap">
                     <div

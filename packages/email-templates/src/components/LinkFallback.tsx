@@ -7,23 +7,31 @@
 import { Text, Link, Hr } from '@react-email/components';
 import * as React from 'react';
 
+import { SHARED, resolveCatalogLocale } from '../i18n';
+
 interface LinkFallbackProps {
     href: string;
+    /** Recipient locale (BCP-47). Defaults to English. */
+    locale?: string;
 }
 
-export const LinkFallback: React.FC<LinkFallbackProps> = ({ href }) => (
-    <>
-        <Hr style={divider} />
+export const LinkFallback: React.FC<LinkFallbackProps> = ({ href, locale }) => {
+    const chrome = SHARED[resolveCatalogLocale(locale)];
 
-        <Text style={hint}>
-            If you have trouble with the button above, copy and paste this link into your browser:
-        </Text>
+    return (
+        <>
+            <Hr style={divider} />
 
-        <Text style={linkText}>
-            <Link href={href} style={link}>{href}</Link>
-        </Text>
-    </>
-);
+            <Text style={hint}>{chrome.linkFallbackHint}</Text>
+
+            <Text style={linkText}>
+                <Link href={href} style={link}>
+                    {href}
+                </Link>
+            </Text>
+        </>
+    );
+};
 
 const divider: React.CSSProperties = {
     borderColor: '#e5e7eb',

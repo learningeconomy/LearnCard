@@ -9,6 +9,8 @@ import { isSupportedPersonalField } from '../../helpers/contract.helpers';
 import { isRegExp } from 'lodash-es';
 
 import useTheme from '../../theme/hooks/useTheme';
+import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import * as m from '../../paraglide/messages.js';
 
 type ContractPermissionsAndDetailsTextProps = {
     contractDetails: ConsentFlowContractDetails;
@@ -27,6 +29,7 @@ const ContractPermissionsAndDetailsText: React.FC<ContractPermissionsAndDetailsT
 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
+    const brandingConfig = useBrandingConfig();
 
     const isRequestingToRead =
         Object.keys(contractDetails.contract.read.credentials.categories ?? {}).length > 0;
@@ -50,7 +53,9 @@ const ContractPermissionsAndDetailsText: React.FC<ContractPermissionsAndDetailsT
                     <>
                         <span className="font-notoSans">
                             {' '}
-                            {isPostConsent ? 'has requested' : 'is requesting'} access to{' '}
+                            {isPostConsent
+                                ? m['consentFlow.terms.requestedAccessTo']()
+                                : m['consentFlow.terms.requestingAccessTo']()}{' '}
                         </span>
                         <HumanReadableContractTerms contractDetails={contractDetails} />
                     </>
@@ -58,7 +63,9 @@ const ContractPermissionsAndDetailsText: React.FC<ContractPermissionsAndDetailsT
                 {!isRequestingAccess && (
                     <span className="font-notoSans">
                         {' '}
-                        is not requesting to read or write anything to your LearnCard
+                        {m['consentFlow.terms.notRequesting']({
+                            brand: brandingConfig?.name ?? '',
+                        })}
                     </span>
                 )}
             </div>
@@ -74,7 +81,7 @@ const ContractPermissionsAndDetailsText: React.FC<ContractPermissionsAndDetailsT
                     className={`w-fit font-notoSans text-[14px] font-[600] underline text-${primaryColor}`}
                     onClick={() => openExternalLink(app?.privacyPolicyUrl as string)}
                 >
-                    Developer's Privacy Policy
+                    {m['consentFlow.terms.developerPrivacyPolicy']()}
                 </button>
             )}
         </>

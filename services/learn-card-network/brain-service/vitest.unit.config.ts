@@ -6,6 +6,14 @@ export default defineConfig({
     test: {
         environment: 'node',
         globals: true,
-        include: ['test/uri-helpers.spec.ts', 'test/oidc-jwt.spec.ts'],
+        include: [
+            'test/uri-helpers.spec.ts',
+            'test/oidc-jwt.spec.ts',
+            'test/notificationMessages.spec.ts',
+            'src/helpers/posthog.helpers.test.ts',
+            'src/helpers/rateLimit.helpers.test.ts',
+            'src/helpers/percentile.helpers.test.ts',
+            'src/helpers/perf.test.ts',
+        ],
     },
 });

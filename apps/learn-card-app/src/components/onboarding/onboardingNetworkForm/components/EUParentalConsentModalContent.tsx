@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
+import * as m from '../../../../paraglide/messages.js';
+import { TransP } from '../../../../i18n/TransP';
 import { IonInput } from '@ionic/react';
 import { useWallet } from 'learn-card-base';
 import WarningCircle from '../../../svgs/WarningCircle';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('e-u-parental-consent-modal-content');
 
 // Basic email validation via native input + simple regex handled via UI
 const EMAIL_REGEX = /[^@\s]+@[^@\s]+\.[^@\s]+/;
@@ -11,13 +15,20 @@ export type EUParentalConsentModalContentProps = {
     dob?: string | null | undefined;
     country?: string | undefined;
     onClose: () => void;
+    onComplete?: () => void;
+    /**
+     * Optional override for how the guardian email is submitted. When provided, the modal
+     * calls this instead of sending the approval email directly. The onboarding age-gate flow
+     * uses it to *defer* the send, since the user's network profile (which the approval is
+     * keyed to) doesn't exist yet — the email is sent later, after createProfile.
+     */
+    onSubmit?: (guardianEmail: string) => void | Promise<void>;
 };
 
 const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps> = ({
-    name,
-    dob,
-    country,
     onClose,
+    onComplete,
+    onSubmit,
 }) => {
     const { initWallet } = useWallet();
 
@@ -28,34 +39,26 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
 
     const handleSend = async () => {
         if (!EMAIL_REGEX.test(email.trim())) {
-            setError(' Please enter a valid email.');
+            setError(m['onboarding.consent.eu.error.invalidEmail']());
             return;
         }
 
         setError('');
         setLoading(true);
         try {
-            const wallet = await initWallet();
-            if (!wallet) throw new Error('Wallet not initialized');
+            if (onSubmit) {
+                await onSubmit(email.trim());
+            } else {
+                const wallet = await initWallet();
+                if (!wallet) throw new Error('Wallet not initialized');
 
-            const response = await wallet.invoke.sendGuardianApprovalEmail({
-                guardianEmail: email.trim(),
-            });
+                await wallet.invoke.sendGuardianApprovalEmail({ guardianEmail: email.trim() });
+            }
 
-            const payload = {
-                email: email.trim(),
-                name: name ?? '',
-                dob: dob ?? '',
-                country: country ?? '',
-                createdAt: new Date().toISOString(),
-                approvalUrl: response?.approvalUrl,
-            };
-
-            localStorage.setItem('eu_parental_consent_request', JSON.stringify(payload));
             setSent(true);
         } catch (e) {
-            console.error('Failed to send guardian approval email:', e);
-            setError(' Failed to send consent request. Please try again.');
+            log.error('Failed to send guardian approval email:', e);
+            setError(m['onboarding.consent.eu.error.sendFailed']());
         } finally {
             setLoading(false);
         }
@@ -72,15 +75,15 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                 {!sent ? (
                     <>
                         <h2 className="text-[22px] font-semibold text-grayscale-900 mb-2 font-noto">
-                            Parental Consent Required
+                            {m['onboarding.consent.eu.heading']()}
                         </h2>
                         <p className="text-grayscale-700 text-[17px] leading-[24px] px-[10px]">
-                            Please enter your parent's email so we can send them a consent request.
+                            {m['onboarding.consent.eu.description']()}
                         </p>
                         <div className="mt-3">
                             <IonInput
                                 type="email"
-                                placeholder="Parent's email"
+                                placeholder={m['onboarding.consent.eu.placeholder']()}
                                 value={email}
                                 onIonInput={e => {
                                     setError('');
@@ -101,12 +104,14 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                 ) : (
                     <>
                         <h2 className="text-[22px] font-semibold text-grayscale-900 mb-2 font-noto">
-                            Request Sent
+                            {m['onboarding.consent.eu.sent.heading']()}
                         </h2>
                         <p className="text-grayscale-700 text-[17px] leading-[24px] px-[10px]">
-                            We sent a consent request to{' '}
-                            <span className="font-semibold">{email}</span>. We'll notify you once
-                            it's approved.
+                            <TransP
+                                m={m['onboarding.consent.eu.sent.description']}
+                                values={{ email }}
+                                components={[<span className="font-semibold" key="e" />]}
+                            />
                         </p>
                     </>
                 )}
@@ -118,7 +123,7 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                         onClick={onClose}
                         className=" shadow-button-bottom flex-1 py-[10px] text-[17px] bg-white rounded-[40px] text-grayscale-900 shadow-box-bottom border border-grayscale-200"
                     >
-                        Back
+                        {m['onboarding.back']()}
                     </button>
                     {!sent ? (
                         <button
@@ -127,15 +132,24 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                             disabled={loading}
                             className=" shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
                         >
-                            {loading ? 'Sending...' : 'Send Request'}
+                            {loading
+                                ? m['onboarding.consent.eu.sending']()
+                                : m['onboarding.consent.eu.sendRequest']()}
                         </button>
                     ) : (
                         <button
                             type="button"
-                            onClick={onClose}
+                            onClick={() => {
+                                // onComplete (age-gate flow) closes the modal itself and then
+                                // advances onboarding. Only fall back to onClose when there's no
+                                // onComplete (re-prompt callers) — calling both closes one modal
+                                // too many and tears down the underlying onboarding modal.
+                                if (onComplete) onComplete();
+                                else onClose();
+                            }}
                             className=" shadow-button-bottom font-semibold flex-1 py-[10px] text-[17px] bg-emerald-700 rounded-[40px] text-white shadow-box-bottom"
                         >
-                            Done
+                            {m['common.done']()}
                         </button>
                     )}
                 </div>

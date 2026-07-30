@@ -1,5 +1,7 @@
 import React from 'react';
 import moment from 'moment';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('history-box');
 
 export enum HistoryTypeEnum {
     issued = 'Issued',
@@ -45,7 +47,7 @@ const HistoryBox: React.FC<HistoryBoxProps> = ({ history }) => {
                                 </span>
                                 {idUri && (
                                     <button
-                                        onClick={() => console.log('TODO View ID')}
+                                        onClick={() => log.debug('TODO View ID')}
                                         className="text-sp-blue-ocean font-notoSans text-[14px] font-[600]"
                                     >
                                         View ID

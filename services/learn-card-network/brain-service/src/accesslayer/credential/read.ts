@@ -64,11 +64,10 @@ export const getReceivedCredentialsForProfile = async (
           )
         : matchQuery;
 
-    // Filter out revoked credentials
+    // Filter out revoked credentials. New issuer-controlled statuses live on CREDENTIAL_SENT;
+    // received.status remains as a legacy fallback for older records.
     const query = fromQuery.raw(
-        `${
-            hasFromFilter ? 'AND' : 'WHERE'
-        } (received.status IS NULL OR received.status <> "revoked")`
+        `${hasFromFilter ? 'AND' : 'WHERE'} coalesce(sent.status, received.status, "") <> "revoked"`
     );
 
     const results = convertQueryResultToPropertiesObjectArray<{
@@ -169,7 +168,12 @@ export const getIncomingCredentialsForProfile = async (
         `MATCH (source)-[relationship:CREDENTIAL_SENT {to: $profileId}]->(credential:Credential)
          WHERE (source:Profile OR source:AppStoreListing)
            AND NOT (credential)-[:CREDENTIAL_RECEIVED]->()
-           ${from && from.length > 0 ? 'AND ((source:Profile AND source.profileId IN $from) OR (source:AppStoreListing AND source.listing_id IN $from))' : ''}
+           AND coalesce(relationship.status, "") <> "revoked"
+           ${
+               from && from.length > 0
+                   ? 'AND ((source:Profile AND source.profileId IN $from) OR (source:AppStoreListing AND source.listing_id IN $from))'
+                   : ''
+           }
          RETURN source, relationship, credential
          ORDER BY relationship.date DESC
          LIMIT ${safeLimit}`,
@@ -206,7 +210,7 @@ export interface CredentialStatusForBoostAndProfile {
     credential: CredentialInstance;
     sentDate?: string;
     receivedDate?: string;
-    status: 'pending' | 'claimed' | 'revoked';
+    status: 'pending' | 'claimed' | 'revoked' | 'suspended';
 }
 
 export const getCredentialStatusForBoostAndProfile = async (
@@ -239,15 +243,22 @@ export const getCredentialStatusForBoostAndProfile = async (
     }
 
     const sentProps = inflateRelationshipProperties(
-        ((record.get('sent') as { properties?: Record<string, unknown> })?.properties ?? {})
+        (record.get('sent') as { properties?: Record<string, unknown> })?.properties ?? {}
     );
     const receivedNode = record.get('received') as { properties?: Record<string, unknown> } | null;
     const receivedProps = receivedNode?.properties
         ? inflateRelationshipProperties(receivedNode.properties)
         : undefined;
 
-    const rawStatus = receivedProps?.status;
-    const status = rawStatus === 'revoked' ? 'revoked' : receivedProps ? 'claimed' : 'pending';
+    const rawStatus = sentProps.status ?? receivedProps?.status;
+    const status =
+        rawStatus === 'revoked'
+            ? 'revoked'
+            : rawStatus === 'suspended'
+            ? 'suspended'
+            : receivedProps
+            ? 'claimed'
+            : 'pending';
 
     return {
         credential,
@@ -255,6 +266,56 @@ export const getCredentialStatusForBoostAndProfile = async (
         receivedDate: receivedProps?.date as string | undefined,
         status,
     };
+};
+
+/**
+ * Returns the authoritative lifecycle status ('active' | 'revoked' | 'suspended') for a
+ * holder's credentials, keyed by the URI the caller passed in.
+ *
+ * This is the source of truth the issuer view and activity feed already use: the status
+ * is tracked on the CREDENTIAL_SENT (`{ to: profileId }`) / CREDENTIAL_RECEIVED
+ * relationship, set directly by the revoke/suspend routes. It is more reliable than
+ * client-side verifyCredential, whose WASM status-list check enforces revocation but does
+ * not surface a set suspension bit. URIs that don't resolve to a credential the holder
+ * received are simply omitted from the result (caller can fall back to verification).
+ */
+export const getLifecycleStatusesForCredentialUris = async (
+    profileId: string,
+    uris: string[]
+): Promise<Record<string, 'active' | 'revoked' | 'suspended'>> => {
+    const idToUri = new Map<string, string>();
+    for (const uri of uris) {
+        try {
+            idToUri.set(getIdFromUri(uri), uri);
+        } catch {
+            // Unparseable URI — skip it; the caller falls back to client verification.
+        }
+    }
+    if (idToUri.size === 0) return {};
+
+    const result = await neogma.queryRunner.run(
+        `UNWIND $ids AS cid
+         MATCH (credential:Credential { id: cid })
+         OPTIONAL MATCH (sender)-[sent:CREDENTIAL_SENT { to: $profileId }]->(credential)
+             WHERE (sender:Profile OR sender:AppStoreListing)
+         OPTIONAL MATCH (credential)-[received:CREDENTIAL_RECEIVED]->(:Profile { profileId: $profileId })
+         WITH cid, sent, received
+         WHERE sent IS NOT NULL OR received IS NOT NULL
+         WITH cid, coalesce(sent.status, received.status) AS status
+         RETURN cid, status`,
+        { profileId, ids: [...idToUri.keys()] }
+    );
+
+    const statuses: Record<string, 'active' | 'revoked' | 'suspended'> = {};
+    for (const record of result.records) {
+        const cid = record.get('cid') as string;
+        const uri = idToUri.get(cid);
+        if (!uri) continue;
+        const raw = record.get('status') as string | null;
+        statuses[uri] =
+            raw === 'revoked' ? 'revoked' : raw === 'suspended' ? 'suspended' : 'active';
+    }
+    return statuses;
 };
 
 /**
@@ -276,6 +337,22 @@ export const getCredentialInstanceForBoostAndProfile = async (
 };
 
 /**
+ * Check whether a credential is an instance of a given boost (via the INSTANCE_OF relationship).
+ */
+export const isCredentialInstanceOfBoost = async (
+    credentialId: string,
+    boostId: string
+): Promise<boolean> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (cred:Credential { id: $credId })-[:INSTANCE_OF]->(boost:Boost { id: $boostId })
+         RETURN cred LIMIT 1`,
+        { credId: credentialId, boostId }
+    );
+
+    return result.records.length > 0;
+};
+
+/**
  * Get all credential URIs that have been revoked for a specific profile.
  * This is used by the frontend to sync and remove revoked credentials from the learn-cloud index.
  */
@@ -283,30 +360,25 @@ export const getRevokedCredentialUrisForProfile = async (
     domain: string,
     profile: ProfileType
 ): Promise<string[]> => {
-    const results = convertQueryResultToPropertiesObjectArray<{
-        credential: CredentialType;
-    }>(
-        await new QueryBuilder()
-            .match({
-                related: [
-                    { identifier: 'credential', model: Credential },
-                    {
-                        ...Credential.getRelationshipByAlias('credentialReceived'),
-                        identifier: 'received',
-                    },
-                    {
-                        identifier: 'profile',
-                        model: Profile,
-                        where: { profileId: profile.profileId },
-                    },
-                ],
-            })
-            .where('received.status = "revoked"')
-            .return('credential')
-            .run()
+    const result = await neogma.queryRunner.run(
+        `MATCH (source)-[sent:CREDENTIAL_SENT {to: $profileId}]->(credential:Credential)
+         WHERE (source:Profile OR source:AppStoreListing) AND sent.status = "revoked"
+         RETURN DISTINCT credential
+         UNION
+         MATCH (credential:Credential)-[received:CREDENTIAL_RECEIVED]->(:Profile {profileId: $profileId})
+         WHERE received.status = "revoked"
+         RETURN DISTINCT credential`,
+        { profileId: profile.profileId }
     );
 
-    return results.map(({ credential }) => getCredentialUri(credential.id, domain));
+    return result.records.map(record => {
+        const credential = inflateObject<CredentialType>(
+            ((record.get('credential') as { properties?: Record<string, unknown> })?.properties ??
+                {}) as CredentialType
+        );
+
+        return getCredentialUri(credential.id, domain);
+    });
 };
 
 /**
@@ -368,7 +440,7 @@ export const getCredentialsByIssuer = async (
         // Filter out revoked credentials unless includeRevoked is true
         if (!includeRevoked) {
             paginatedQuery = paginatedQuery.where(
-                `(received.status IS NULL OR received.status <> "revoked")`
+                `coalesce(sent.status, received.status, "") <> "revoked"`
             );
         }
 
@@ -398,7 +470,7 @@ export const getCredentialsByIssuer = async (
                 uri: getCredentialUri(credential.id, domain),
                 to: sentProps.to as string,
                 date: sentProps.date as string,
-                status: receivedProps?.status as string | undefined,
+                status: (sentProps.status ?? receivedProps?.status) as string | undefined,
             };
         });
 
@@ -449,7 +521,7 @@ export const getCredentialsByIssuer = async (
         // Filter out revoked credentials unless includeRevoked is true
         if (!includeRevoked) {
             paginatedQuery = paginatedQuery.where(
-                `(received.status IS NULL OR received.status <> "revoked")`
+                `coalesce(sent.status, received.status, "") <> "revoked"`
             );
         }
 
@@ -479,7 +551,7 @@ export const getCredentialsByIssuer = async (
                 uri: getCredentialUri(credential.id, domain),
                 to: sentProps.to as string,
                 date: sentProps.date as string,
-                status: receivedProps?.status as string | undefined,
+                status: (sentProps.status ?? receivedProps?.status) as string | undefined,
             };
         });
 

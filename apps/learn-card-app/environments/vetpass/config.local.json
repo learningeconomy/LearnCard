@@ -14,7 +14,8 @@
         }
     },
     "features": {
-        "analytics": false
+        "analytics": false,
+        "useSeededSkillFrameworks": true
     },
     "observability": {
         "sentryEnv": "development"

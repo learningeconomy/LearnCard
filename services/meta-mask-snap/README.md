@@ -10,13 +10,14 @@ The LearnCard MetaMask Snap allows MetaMask users to view, issue, verify, presen
 via the LearnCard SDK. It allows dapps to use these methods without gaining access to the user's sensitive key material.
 
 ## Documentation
+
 All LearnCard documentation can be found at:
 https://app.gitbook.com/o/6uDv1QDlxaaZC7i8EaGb/s/FXvEJ9j3Vf3FW5Nc557n/
 
 ## Install
 
 ```bash
-pnpm i @learncard/meta-mask-snap
+bun add @learncard/meta-mask-snap
 ```
 
 ## Usage
@@ -35,16 +36,14 @@ import detectEthereumProvider from '@metamask/detect-provider';
 
 const provider = await detectEthereumProvider();
 
-const isFlask = (
-    await provider?.request({ method: 'web3_clientVersion' })
-)?.includes('flask');
+const isFlask = (await provider?.request({ method: 'web3_clientVersion' }))?.includes('flask');
 
 if (!isFlask) throw new Error('Must use MetaMask Flask!'); // or explain to users how to download MetaMask Flask!
 
 await provider.request({
     method: 'wallet_enable',
     params: [{ wallet_snap: { 'npm:@learncard/meta-mask-snap': {} } }],
-})
+});
 ```
 
 ### Validation, Serialization, and Deserialization
@@ -65,6 +64,7 @@ const vc = await sendRequest({ method: 'issueCredential': credential: testVc });
 ### Issuing/Verifying Credentials and Presentations
 
 #### Issue a credential
+
 ```js
 // Grab a test VC, or create your own!
 const unsignedVc = await sendRequest({ method: 'getTestVc' });
@@ -73,6 +73,7 @@ const vc = await sendRequest({ method: 'issueCredential': credential: unsignedVc
 ```
 
 #### Verify a credential
+
 ```js
 const result = await sendRequest({ method: 'verifyCredential': credential: vc });
 
@@ -80,11 +81,13 @@ console.log('Verification Results: ', result);
 ```
 
 #### Issue a presentation
+
 ```js
 const vp = await sendRequest({ method: 'issuePresentation': credential: vc });
 ```
 
 #### Verify a presentation
+
 ```js
 const result = await sendRequest({ method: 'verifyPresentation': credential: vp });
 
@@ -95,6 +98,7 @@ else console.log('This presentation is valid!');
 ```
 
 ## Contributing
+
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
 Please make sure to update tests as appropriate.
@@ -102,7 +106,6 @@ Please make sure to update tests as appropriate.
 ## Who is Learning Economy Foundation?
 
 **[Learning Economy Foundation (LEF)](https://www.learningeconomy.io)** is a 501(c)(3) non-profit organization leveraging global standards and web3 protocols to bring quality skills and equal opportunity to every human on earth, and address the persistent inequities that exist around the globe in education and employment. We help you build the future of education and work with:
-
 
 ## License
 

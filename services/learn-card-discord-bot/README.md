@@ -18,8 +18,8 @@ REDIS_PW=<redis_pw>
 Run:
 
 ```
-pnpm build
-pnpm start
+bun run build
+bun run start
 ```
 
 Or:

@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { v4 as uuid } from 'uuid';
 
+import * as m from '../paraglide/messages.js';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-upload-file');
+
 import {
     checklistStore,
     useUploadFileMutation,
@@ -16,12 +20,13 @@ import {
     useModal,
     ToastTypeEnum,
     getCategoryForCredential,
-    useSyncAllCredentialsToContractsMutation,
     categoryMetadata,
+    useSyncAllCredentialsToContractsMutation,
 } from 'learn-card-base';
 import { useAiInsightCredentialMutation } from 'learn-card-base/hooks/useAiInsightCredential';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { useUploadVcFromText } from './useUploadVcFromText';
+import { addCertificateAttachment } from './certificateAttachment';
 
 export type RawArtifactType = {
     id: string;
@@ -46,10 +51,7 @@ const TYPE_LABEL: Record<UploadTypesEnum, string> = {
     [UploadTypesEnum.RawVC]: 'Credential',
 };
 
-const formatTypeLabel = (
-    type: UploadTypesEnum,
-    { plural = false }: { plural?: boolean } = {}
-) => {
+const formatTypeLabel = (type: UploadTypesEnum, { plural = false }: { plural?: boolean } = {}) => {
     const base = TYPE_LABEL[type] ?? type;
     return plural ? `${base}s` : base;
 };
@@ -79,10 +81,22 @@ const SUCCESS_TOAST_OPTIONS = {
     autoDismiss: false,
 } as const;
 
+const FILE_UPLOAD_ERROR_TOAST_OPTIONS = {
+    hasDismissButton: true,
+    type: ToastTypeEnum.Error,
+    hasX: true,
+    duration: 5000,
+} as const;
+
 const TOAST_PAUSE_MS = 100;
 
+// Stable, user-facing copy for inline file errors. Raw parser / validation / storage
+// details are logged, never rendered.
+const FRIENDLY_FILE_ERROR =
+    'We could not add that credential. Please check the file and try again.';
+
 export const getFileInfo = (file: File) => {
-    const match = file.name.match(/\.([0-9a-z]+)(?=[?#])?|(\.)(?:[\w]+)$/i);
+    const match = file.name.match(/\.([0-9a-z]+)(?:[?#].*)?$/i);
     const extension = match?.[1]?.toLowerCase() ?? 'unknown';
 
     const typeMap: Record<string, string> = {
@@ -91,6 +105,10 @@ export const getFileInfo = (file: File) => {
         doc: 'DOC',
         docx: 'DOCX',
         json: 'JSON',
+        png: 'PNG',
+        jpg: 'JPG',
+        jpeg: 'JPEG',
+        webp: 'WEBP',
     };
 
     const type = typeMap[extension] || extension.toUpperCase();
@@ -137,7 +155,9 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
     const [isUploading, setIsUploading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [parsedCredentials, setParsedCredentials] = useState<Array<{ vc: any; metadata?: { name?: string; category?: string } }>>([]);
+    const [parsedCredentials, setParsedCredentials] = useState<
+        Array<{ vc: any; metadata?: { name?: string; category?: string } }>
+    >([]);
 
     const fetchNewContractCredentials = () =>
         queryClient.refetchQueries({
@@ -145,10 +165,12 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
         });
 
     const getFile = async (event: React.ChangeEvent<HTMLInputElement>, uploadType: string) => {
+        setIsUploading(true);
+        setBase64Data('');
+        setRawArtifactCredential(null);
+        setFile(null);
+
         try {
-            setIsUploading(true);
-            setBase64Data('');
-            setRawArtifactCredential(null);
             const wallet = await initWallet();
             const walletDid = wallet?.id?.did();
             const file = event.target.files?.[0];
@@ -156,19 +178,21 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             if (!file || !walletDid) return;
 
             const fileInfo = getFileInfo(file);
-            setFile(fileInfo);
-
-            const base64Data = await toBase64(file);
-            if (base64Data) setBase64Data(base64Data);
 
             const rawArtifactCredential = await createRawArtifactVC(file, walletDid, uploadType);
+            setFile(fileInfo);
+            setBase64Data(rawArtifactCredential.rawArtifact.data);
             setRawArtifactCredential(rawArtifactCredential);
-            setIsUploading(false);
 
             return { fileInfo, rawArtifactCredential };
         } catch (error) {
+            log.error('getFile::error', error);
+            presentToast(m['passport.buildMyLearnCard.uploadError.singleMessage'](), {
+                ...FILE_UPLOAD_ERROR_TOAST_OPTIONS,
+                title: m['passport.buildMyLearnCard.uploadError.title'](),
+            });
+        } finally {
             setIsUploading(false);
-            console.log('getFile::error', error);
         }
     };
 
@@ -177,32 +201,78 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
         e: React.ChangeEvent<HTMLInputElement>,
         uploadType: UploadTypesEnum
     ) => {
+        setIsUploading(true);
+        setBase64Datas([]);
+        setRawArtifactCredentials([]);
+        setFiles([]);
+
         try {
-            setIsUploading(true);
-            setBase64Datas([]);
-            setRawArtifactCredentials([]);
             const wallet = await initWallet();
             const walletDid = wallet?.id?.did();
-            const files = e.target.files;
+            const selectedFiles = e.target.files;
 
-            if (!files || !walletDid) return;
+            if (!selectedFiles || !walletDid) return;
 
-            const fileInfos = Array.from(files).map(file => getFileInfo(file));
-            setFiles(fileInfos);
+            const fileArray = Array.from(selectedFiles);
+            const uploadResults = await Promise.all(
+                fileArray.map(async file => {
+                    try {
+                        const rawArtifactCredential = await createRawArtifactVC(
+                            file,
+                            walletDid,
+                            uploadType
+                        );
 
-            const _base64Datas = await Promise.all(Array.from(files).map(toBase64));
-            if (_base64Datas) setBase64Datas(_base64Datas);
-
-            const rawArtifactCredentials = await Promise.all(
-                Array.from(files).map(file => createRawArtifactVC(file, walletDid, uploadType))
+                        return {
+                            fileInfo: getFileInfo(file),
+                            base64Data: rawArtifactCredential.rawArtifact.data,
+                            rawArtifactCredential,
+                        };
+                    } catch (error) {
+                        log.error('getFiles::file-error', error);
+                        return null;
+                    }
+                })
             );
+            const successfulUploads = uploadResults.filter(result => result !== null);
+            const failedCount = fileArray.length - successfulUploads.length;
+            const fileInfos = successfulUploads.map(result => result.fileInfo);
+            const rawArtifactCredentials = successfulUploads.map(
+                result => result.rawArtifactCredential
+            );
+
+            setFiles(fileInfos);
+            setBase64Datas(successfulUploads.map(result => result.base64Data));
             setRawArtifactCredentials(rawArtifactCredentials);
-            setIsUploading(false);
+
+            if (failedCount > 0) {
+                const hadPartialSuccess = successfulUploads.length > 0;
+                presentToast(
+                    hadPartialSuccess
+                        ? failedCount === 1
+                            ? m['passport.buildMyLearnCard.uploadError.partialSingleMessage']()
+                            : m['passport.buildMyLearnCard.uploadError.partialMultipleMessage']({
+                                  count: failedCount,
+                              })
+                        : m['passport.buildMyLearnCard.uploadError.multipleMessage'](),
+                    {
+                        ...FILE_UPLOAD_ERROR_TOAST_OPTIONS,
+                        title: hadPartialSuccess
+                            ? m['passport.buildMyLearnCard.uploadError.partialTitle']()
+                            : m['passport.buildMyLearnCard.uploadError.title'](),
+                    }
+                );
+            }
 
             return { fileInfos, rawArtifactCredentials };
         } catch (error) {
+            log.error('getFiles::error', error);
+            presentToast(m['passport.buildMyLearnCard.uploadError.multipleMessage'](), {
+                ...FILE_UPLOAD_ERROR_TOAST_OPTIONS,
+                title: m['passport.buildMyLearnCard.uploadError.title'](),
+            });
+        } finally {
             setIsUploading(false);
-            console.log('getFiles::error', error);
         }
     };
 
@@ -223,47 +293,62 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
             const fileArray = Array.from(files);
             const credentialsByCategory: Partial<Record<CredentialCategory, string[]>> = {};
-            const totalUploads = fileArray.length;
-            let failedUploads = 0;
+            let filesWithFailures = 0;
+            let addedTotal = 0;
+            let failedTotal = 0;
 
-            const results = await Promise.all(
+            const nestedResults = await Promise.all(
                 fileArray.map(async file => {
+                    const fileInfo = getFileInfo(file);
                     try {
-                        const fileInfo = getFileInfo(file);
-                        try {
-                            const result = (await uploadVcFromText(file, {
-                                fileInfo,
-                                uploadType,
-                            }))!!;
+                        const aggregate = (await uploadVcFromText(file, {
+                            fileInfo,
+                            uploadType,
+                        }))!!;
 
-                            if (result.success && result.credentialUri && result.category) {
-                                if (!credentialsByCategory[result.category]) {
-                                    credentialsByCategory[result.category] = [];
+                        addedTotal += aggregate.addedCount;
+                        failedTotal += aggregate.failedCount;
+                        if (aggregate.failedCount > 0 || aggregate.addedCount === 0)
+                            filesWithFailures += 1;
+
+                        const entries = aggregate.results
+                            .filter(r => r.success && r.credentialUri && r.category)
+                            .map(r => {
+                                if (!credentialsByCategory[r.category!]) {
+                                    credentialsByCategory[r.category!] = [];
                                 }
-                                credentialsByCategory[result.category]?.push(result.credentialUri);
+                                credentialsByCategory[r.category!]?.push(r.credentialUri!);
 
-                                const storedVC = result.storedVC as { id: string } | undefined;
+                                const storedVC = r.storedVC as { id: string } | undefined;
                                 return {
-                                    credentialUri: result.credentialUri,
+                                    credentialUri: r.credentialUri!,
                                     fileInfo,
                                     id: storedVC?.id || crypto.randomUUID(),
-                                    category: result.category,
+                                    category: r.category!,
                                 };
-                            } else {
-                                onFail?.(result.error);
-                                throw new Error(result.error || 'Failed to upload file');
-                            }
-                        } catch (err) {
-                            console.error('Error uploading file:', err);
-                            throw err;
+                            });
+
+                        // Only surface inline file errors when nothing was added from this
+                        // file. On partial success the summary toast already reports failures,
+                        // so avoid double-signaling (inline error box + toast). Keep the raw
+                        // reasons in logs; show stable friendly copy in the UI.
+                        if (aggregate.errors.length > 0 && aggregate.addedCount === 0) {
+                            log.error('File VC upload failed', aggregate.errors);
+                            onFail?.([FRIENDLY_FILE_ERROR]);
                         }
-                    } catch (innerErr) {
-                        failedUploads++;
-                        console.error('❌ Error processing file:', innerErr);
-                        return null;
+
+                        return entries;
+                    } catch (err) {
+                        failedTotal += 1;
+                        filesWithFailures += 1;
+                        log.error('❌ Error processing file:', err);
+                        onFail?.([FRIENDLY_FILE_ERROR]);
+                        return [];
                     }
                 })
             );
+
+            const results = nestedResults.flat();
 
             if (Object.keys(credentialsByCategory).length > 0) {
                 addNewCreds(credentialsByCategory);
@@ -271,30 +356,24 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
             const categories = Object.keys(credentialsByCategory);
             const filenames = fileArray.map(f => f.name);
-            const successCount = totalUploads - failedUploads;
+            const successCount = addedTotal;
 
             setTimeout(() => {
-                if (failedUploads === 0) {
+                if (failedTotal === 0 && filesWithFailures === 0) {
                     const fileList = formatFileNameList(filenames);
                     const categoryList = formatCategoryList(categories);
                     if (successCount === 1) {
-                        presentToast(
-                            `Successfully added to ${categoryList}.`,
-                            {
-                                title: `Credential ${fileList} Successfully Added`,
-                                ...SUCCESS_TOAST_OPTIONS,
-                            }
-                        );
+                        presentToast(`Successfully added to ${categoryList}.`, {
+                            title: `Credential ${fileList} Successfully Added`,
+                            ...SUCCESS_TOAST_OPTIONS,
+                        });
                     } else {
-                        presentToast(
-                            `Successfully added to ${categoryList}.`,
-                            {
-                                title: `${successCount} credentials added from ${fileList}`,
-                                ...SUCCESS_TOAST_OPTIONS,
-                            }
-                        );
+                        presentToast(`Successfully added to ${categoryList}.`, {
+                            title: `${successCount} credentials added from ${fileList}`,
+                            ...SUCCESS_TOAST_OPTIONS,
+                        });
                     }
-                } else if (failedUploads === totalUploads) {
+                } else if (addedTotal === 0) {
                     presentToast(`All uploads failed. Please try again.`, {
                         title: 'Upload Failed',
                         hasDismissButton: true,
@@ -304,9 +383,9 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                     });
                 } else {
                     presentToast(
-                        `${
-                            totalUploads - failedUploads
-                        } of ${totalUploads} uploaded. Some files failed.`,
+                        `${addedTotal} credential${
+                            addedTotal === 1 ? '' : 's'
+                        } added. Some credentials failed.`,
                         {
                             title: 'Partial Upload',
                             hasDismissButton: true,
@@ -318,9 +397,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                 }
             }, TOAST_PAUSE_MS);
 
-            refetchCheckListStatus().catch(err =>
-                console.error('refetchCheckListStatus failed', err)
-            );
+            refetchCheckListStatus().catch(err => log.error('refetchCheckListStatus failed', err));
             setIsUploading(false);
             checklistStore.set.updateIsParsing(uploadType, false);
 
@@ -343,7 +420,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                     duration: 5000,
                 });
             }, 500);
-            console.error('getJsonFiles::error', error);
+            log.error('getJsonFiles::error', error);
         }
     };
 
@@ -380,20 +457,22 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             return { vc, credentialUri };
         } catch (error) {
             setIsSaving(false);
-            console.log('saveFile::error', error);
+            log.error('saveFile::error', error);
         }
     };
 
     /**
      * Parse a single file without storing anything. Call storeSelectedCredentials after user review.
      */
-    const fetchParsedCredentials = async (fileType: UploadTypesEnum): Promise<Array<{ vc: any; metadata?: any }>> => {
+    const fetchParsedCredentials = async (
+        fileType: UploadTypesEnum
+    ): Promise<Array<{ vc: any; metadata?: any }>> => {
         try {
             checklistStore.set.updateIsParsing(fileType, true);
             const wallet = await initWallet();
             const did = wallet?.id?.did();
             if (!base64Data) {
-                console.warn('fetchParsedCredentials: no file data, call getFile() first');
+                log.warn('fetchParsedCredentials: no file data, call getFile() first');
                 checklistStore.set.updateIsParsing(fileType, false);
                 return [];
             }
@@ -404,7 +483,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             return results;
         } catch (error) {
             checklistStore.set.updateIsParsing(fileType, false);
-            console.error('fetchParsedCredentials::error', error);
+            log.error('fetchParsedCredentials::error', error);
             throw error;
         }
     };
@@ -412,7 +491,9 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
     /**
      * Parse multiple files (e.g. transcripts) without storing anything.
      */
-    const fetchParsedCredentialsFromFiles = async (fileType: UploadTypesEnum): Promise<Array<{ vc: any; metadata?: any }>> => {
+    const fetchParsedCredentialsFromFiles = async (
+        fileType: UploadTypesEnum
+    ): Promise<Array<{ vc: any; metadata?: any }>> => {
         try {
             checklistStore.set.updateIsParsing(fileType, true);
             const wallet = await initWallet();
@@ -421,7 +502,11 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
             const allVcs: Array<{ vc: any; metadata?: any }> = [];
             for (const rawVC of rawArtifactCredentials) {
-                const vcs = await uploadFile({ did, file: rawVC?.rawArtifact?.data ?? '', fileType });
+                const vcs = await uploadFile({
+                    did,
+                    file: rawVC?.rawArtifact?.data ?? '',
+                    fileType,
+                });
                 allVcs.push(...(vcs?.vcs ?? []));
             }
 
@@ -430,7 +515,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             return allVcs;
         } catch (error) {
             checklistStore.set.updateIsParsing(fileType, false);
-            console.error('fetchParsedCredentialsFromFiles::error', error);
+            log.error('fetchParsedCredentialsFromFiles::error', error);
             throw error;
         }
     };
@@ -461,9 +546,16 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                 const wallet = await initWallet();
                 const issuedVCs = await Promise.all(
                     selectedVcs.map(async vc => {
-                        const issuedVc = await wallet.invoke.issueCredential(vc);
-                        const { credentialUri: uri, category } =
-                            await storeAndAddVCToWallet(issuedVc);
+                        const credentialWithAttachment = addCertificateAttachment(
+                            vc,
+                            rawArtifactVc
+                        );
+                        const issuedVc = await wallet.invoke.issueCredential(
+                            credentialWithAttachment
+                        );
+                        const { credentialUri: uri, category } = await storeAndAddVCToWallet(
+                            issuedVc
+                        );
                         return { uri, category };
                     })
                 );
@@ -482,9 +574,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             }
 
             // Background sync — don't block toast on these
-            refetchCheckListStatus().catch(err =>
-                console.error('refetchCheckListStatus failed', err)
-            );
+            refetchCheckListStatus().catch(err => log.error('refetchCheckListStatus failed', err));
             syncAll.mutate();
             aiInsightMutation.mutate();
             setParsedCredentials([]);
@@ -502,24 +592,25 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             setTimeout(() => {
                 if (totalCredentials === 0) {
                     presentToast(
-                        `No credentials could be extracted from ${fileCount > 1 ? 'these files' : 'this file'}.`,
+                        `No credentials could be extracted from ${
+                            fileCount > 1 ? 'these files' : 'this file'
+                        }.`,
                         {
                             title: `${typeLabel} ${fileList} saved`,
                             ...SUCCESS_TOAST_OPTIONS,
                         }
                     );
                 } else {
-                    presentToast(
-                        `Successfully added to ${categoryList}.`,
-                        {
-                            title: `${totalCredentials} credential${totalCredentials > 1 ? 's' : ''} parsed from ${fileList}`,
-                            ...SUCCESS_TOAST_OPTIONS,
-                        }
-                    );
+                    presentToast(`Successfully added to ${categoryList}.`, {
+                        title: `${totalCredentials} credential${
+                            totalCredentials > 1 ? 's' : ''
+                        } parsed from ${fileList}`,
+                        ...SUCCESS_TOAST_OPTIONS,
+                    });
                 }
             }, TOAST_PAUSE_MS);
         } catch (error) {
-            console.error('storeSelectedCredentials::error', error);
+            log.error('storeSelectedCredentials::error', error);
             setTimeout(() => {
                 presentToast(`Something went wrong saving your credentials.`, {
                     title: 'Error',
@@ -547,24 +638,32 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             if (vcs?.vcs?.length > 0) {
                 const issuedVCs = await Promise.all(
                     vcs.vcs.map(async ({ vc }) => {
-                        const issuedVc = await wallet.invoke.issueCredential(vc);
-                        const { credentialUri: uri, category } =
-                            await storeAndAddVCToWallet(issuedVc);
+                        const credentialWithAttachment = addCertificateAttachment(
+                            vc,
+                            rawArtifactCredential
+                        );
+                        const issuedVc = await wallet.invoke.issueCredential(
+                            credentialWithAttachment
+                        );
+                        const { credentialUri: uri, category } = await storeAndAddVCToWallet(
+                            issuedVc
+                        );
                         return { uri, category };
                     })
                 );
 
                 // Group VCs by category and update the store
-                recordsByCategory = issuedVCs.reduce<
-                    Partial<Record<CredentialCategory, string[]>>
-                >((records, { category, uri }) => {
-                    if (!uri) return records;
+                recordsByCategory = issuedVCs.reduce<Partial<Record<CredentialCategory, string[]>>>(
+                    (records, { category, uri }) => {
+                        if (!uri) return records;
 
-                    const key = category;
-                    const existing = records[key] ?? [];
-                    records[key] = [...existing, uri];
-                    return records;
-                }, {});
+                        const key = category;
+                        const existing = records[key] ?? [];
+                        records[key] = [...existing, uri];
+                        return records;
+                    },
+                    {}
+                );
 
                 // Update the store with the new credentials
                 newCredsStore.set.addNewCreds(recordsByCategory);
@@ -574,9 +673,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             const categories = Object.keys(recordsByCategory);
 
             // Background sync — don't block toast on these
-            refetchCheckListStatus().catch(err =>
-                console.error('refetchCheckListStatus failed', err)
-            );
+            refetchCheckListStatus().catch(err => log.error('refetchCheckListStatus failed', err));
             syncAll.mutate();
             aiInsightMutation.mutate();
             checklistStore.set.updateIsParsing(fileType, false);
@@ -589,26 +686,22 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
             setTimeout(() => {
                 if (totalCredentials === 0) {
-                    presentToast(
-                        `No credentials could be extracted from this file.`,
-                        {
-                            title: `${typeLabel} ${fileList} saved`,
-                            ...SUCCESS_TOAST_OPTIONS,
-                        }
-                    );
+                    presentToast(`No credentials could be extracted from this file.`, {
+                        title: `${typeLabel} ${fileList} saved`,
+                        ...SUCCESS_TOAST_OPTIONS,
+                    });
                 } else {
-                    presentToast(
-                        `Successfully added to ${categoryList}.`,
-                        {
-                            title: `${totalCredentials} credential${totalCredentials > 1 ? 's' : ''} parsed from ${fileList}`,
-                            ...SUCCESS_TOAST_OPTIONS,
-                        }
-                    );
+                    presentToast(`Successfully added to ${categoryList}.`, {
+                        title: `${totalCredentials} credential${
+                            totalCredentials > 1 ? 's' : ''
+                        } parsed from ${fileList}`,
+                        ...SUCCESS_TOAST_OPTIONS,
+                    });
                 }
             }, TOAST_PAUSE_MS);
         } catch (error) {
             checklistStore.set.updateIsParsing(fileType, false);
-            console.error('handleSaveResume::error', error);
+            log.error('handleSaveResume::error', error);
             setTimeout(() => {
                 presentToast(`Something went wrong uploading your ${fileType}.`, {
                     title: 'Error',
@@ -663,7 +756,13 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                         if (fname) filenamesWithCreds.push(fname);
                         const issuedVCs = await Promise.all(
                             vcs.vcs.map(async ({ vc }) => {
-                                const issuedVc = await wallet.invoke.issueCredential(vc);
+                                const credentialWithAttachment = addCertificateAttachment(
+                                    vc,
+                                    rawVC
+                                );
+                                const issuedVc = await wallet.invoke.issueCredential(
+                                    credentialWithAttachment
+                                );
                                 const { credentialUri: uri, category } =
                                     await storeAndAddVCToWallet(issuedVc);
                                 return { uri, category };
@@ -687,8 +786,12 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
                         // Merge into aggregate for the toast
                         for (const [cat, uris] of Object.entries(recordsByCategory)) {
-                            const existing = aggregateRecordsByCategory[cat as CredentialCategory] ?? [];
-                            aggregateRecordsByCategory[cat as CredentialCategory] = [...existing, ...uris];
+                            const existing =
+                                aggregateRecordsByCategory[cat as CredentialCategory] ?? [];
+                            aggregateRecordsByCategory[cat as CredentialCategory] = [
+                                ...existing,
+                                ...uris,
+                            ];
                         }
                     } else if (fname) {
                         filenamesWithoutCreds.push(fname);
@@ -696,7 +799,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
                     onFileSettled();
                 } catch (error) {
-                    console.error('Error processing file:', error);
+                    log.error('Error processing file:', error);
                     onFileSettled();
                     // Continue with next file even if one fails
                 }
@@ -709,11 +812,9 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
             // Background sync — don't block toast on these
             fetchNewContractCredentials().catch(err =>
-                console.error('fetchNewContractCredentials failed', err)
+                log.error('fetchNewContractCredentials failed', err)
             );
-            refetchCheckListStatus().catch(err =>
-                console.error('refetchCheckListStatus failed', err)
-            );
+            refetchCheckListStatus().catch(err => log.error('refetchCheckListStatus failed', err));
             syncAll.mutate();
             aiInsightMutation.mutate();
             closeModal();
@@ -728,7 +829,9 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             setTimeout(() => {
                 if (totalCredentials === 0) {
                     presentToast(
-                        `No credentials could be extracted from ${fileCount > 1 ? 'these files' : 'this file'}.`,
+                        `No credentials could be extracted from ${
+                            fileCount > 1 ? 'these files' : 'this file'
+                        }.`,
                         {
                             title: `${typeLabel} ${fileList} saved`,
                             ...SUCCESS_TOAST_OPTIONS,
@@ -739,17 +842,16 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                         filenamesWithoutCreds.length > 0
                             ? ` No credentials were parsed from ${fileListWithoutCreds}.`
                             : '';
-                    presentToast(
-                        `Successfully added to ${categoryList}.${tail}`,
-                        {
-                            title: `${totalCredentials} credential${totalCredentials > 1 ? 's' : ''} parsed from ${fileListWithCreds}`,
-                            ...SUCCESS_TOAST_OPTIONS,
-                        }
-                    );
+                    presentToast(`Successfully added to ${categoryList}.${tail}`, {
+                        title: `${totalCredentials} credential${
+                            totalCredentials > 1 ? 's' : ''
+                        } parsed from ${fileListWithCreds}`,
+                        ...SUCCESS_TOAST_OPTIONS,
+                    });
                 }
             }, TOAST_PAUSE_MS);
         } catch (error) {
-            console.error('Error in parseFiles:', error);
+            log.error('Error in parseFiles:', error);
             checklistStore.set.updateIsParsing(fileType, false);
             setTimeout(() => {
                 presentToast(`Something went wrong uploading your ${fileType}.`, {

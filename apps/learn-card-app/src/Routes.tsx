@@ -5,16 +5,20 @@ import {
     DIDAuthModal,
     VCClaimModalController,
     useIsLoggedIn,
-    lcRoutes as tabRoutes,
     lazyWithRetry,
     ChunkBoundary,
 } from 'learn-card-base';
+
+import { usePathwaysEnabled } from './pages/pathways/hooks/usePathwaysEnabled';
+import { useDashboardAsHome } from './pages/dashboard/hooks/useDashboardAsHome';
 import * as Sentry from '@sentry/react';
 
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
 
 const WalletPage = lazyWithRetry(() => import('./pages/wallet/WalletPage'));
+const DashboardPage = lazyWithRetry(() => import('./pages/dashboard/DashboardPage'));
 const LaunchPad = lazyWithRetry(() => import('./pages/launchPad/LaunchPad'));
+const MyAppsLanding = lazyWithRetry(() => import('./pages/myApps/MyAppsLanding'));
 const EmbedAppFullScreen = lazyWithRetry(() => import('./pages/launchPad/EmbedAppFullScreen'));
 const AppListingPage = lazyWithRetry(() => import('./pages/launchPad/AppListingPage'));
 const NotificationsPage = lazyWithRetry(
@@ -42,16 +46,17 @@ const CredentialStorageGet = lazyWithRetry(
 const AddressBook = lazyWithRetry(() => import('./pages/addressBook/AddressBook'));
 const BoostCMS = lazyWithRetry(() => import('./components/boost/boostCMS/BoostCMS'));
 const UpdateBoostCMS = lazyWithRetry(() => import('./components/boost/boostCMS/UpdateBoostCMS'));
+const IssueCredentialPage = lazyWithRetry(() => import('./pages/issue/IssueCredentialPage'));
+const BoostAFriendPage = lazyWithRetry(() => import('./pages/boostAFriend/BoostAFriendPage'));
 const SkillsPage = lazyWithRetry(() => import('./pages/skills/SkillsPage'));
 const AiInsights = lazyWithRetry(() => import('./pages/ai-insights/AiInsights'));
 const PrivacySettingsPage = lazyWithRetry(
     () => import('./pages/privacy-settings/PrivacySettingsPage')
 );
 const ResumeBuilderPage = lazyWithRetry(() => import('./pages/resume-builder/ResumeBuilderPage'));
-const VerifySharedResume = lazyWithRetry(
-    () => import('./pages/resume-builder/VerifySharedResume')
-);
+const VerifySharedResume = lazyWithRetry(() => import('./pages/resume-builder/VerifySharedResume'));
 const AiPathways = lazyWithRetry(() => import('./pages/ai-pathways/AiPathways'));
+const PathwaysShell = lazyWithRetry(() => import('./pages/pathways/PathwaysShell'));
 const ViewCredsBundle = lazyWithRetry(() => import('./components/creds-bundle/ViewCredsBundle'));
 const ViewSharedBoost = lazyWithRetry(() => import('./components/creds-bundle/ViewSharedBoost'));
 const MembershipPage = lazyWithRetry(() => import('./pages/membership/MembershipPage'));
@@ -91,9 +96,14 @@ const ClaimFromDashboard = lazyWithRetry(
     () => import('./pages/claim-from-dashboard/ClaimFromDashboard')
 );
 const ClaimFromRequest = lazyWithRetry(() => import('./pages/claim-from-request/ClaimFromRequest'));
+const Oid4vciExchange = lazyWithRetry(() => import('./pages/oid4vci/Oid4vciExchange'));
+const Oid4vpExchange = lazyWithRetry(() => import('./pages/oid4vp/Oid4vpExchange'));
 const InteractionsPage = lazyWithRetry(() => import('./pages/interactions/InteractionsPage'));
 const GuardianCredentialApprovalPage = lazyWithRetry(
     () => import('./pages/interactions/GuardianCredentialApprovalPage')
+);
+const GuardianAccountApprovalPage = lazyWithRetry(
+    () => import('./pages/interactions/GuardianAccountApprovalPage')
 );
 const LoginWithSeed = lazyWithRetry(() => import('./pages/hidden/LoginWithSeed'));
 const FamilyPage = lazyWithRetry(() => import('./pages/familyPage/FamilyPage'));
@@ -153,6 +163,9 @@ const LearnerContextPromptTestPage = lazyWithRetry(
 );
 
 const DevCli = lazyWithRetry(() => import('./pages/devCli/DevCli'));
+const ClrTranscriptRendererDemo = lazyWithRetry(
+    () => import('./pages/dev/ClrTranscriptRendererDemo')
+);
 const AiPathwaysDiscovery = lazyWithRetry(
     () => import('./pages/ai-pathways/ai-pathways-discovery/AiPathwaysDiscovery')
 );
@@ -190,6 +203,15 @@ export const Routes: React.FC = () => {
     const isLoggedIn = useIsLoggedIn();
     const location = useLocation<{ background: any }>();
     const flags = useFlags();
+    // Pathways v2 visibility — see `usePathwaysEnabled` for the
+    // tenant + LaunchDarkly layering. Same hook is used by the side
+    // menu so the route and the nav link can't drift.
+    const pathwaysEnabled = usePathwaysEnabled();
+    // Dashboard-as-home gate — see `useDashboardAsHome`. When off, the `/`
+    // post-login redirect lands on `/wallet` (legacy home) exactly as before;
+    // the `/dashboard` route stays mounted regardless so existing deep links
+    // (e.g. consent-flow `?connected=true` returns) never 404.
+    const dashboardAsHome = useDashboardAsHome();
 
     // The `backgroundLocation` state is the location that we were at when one of
     // it's what is displayed in the background when we open the modal route
@@ -224,10 +246,12 @@ export const Routes: React.FC = () => {
                             path="/share-creds/:uri/:seed"
                             component={ViewCredsBundle}
                         />
+                        <PrivateRoute exact path="/dashboard" component={DashboardPage} />
                         <PrivateRoute exact path="/home" component={WalletPage} />
                         <PrivateRoute exact path="/wallet" component={WalletPage} />
                         <PrivateRoute exact path="/passport" component={WalletPage} />
-                        <PrivateRoute exact path="/launchpad" component={LaunchPad} />
+                        <PrivateRoute exact path="/launchpad" component={MyAppsLanding} />
+                        <PrivateRoute exact path="/launchpad/browse" component={LaunchPad} />
                         <PrivateRoute exact path="/apps/:appId" component={EmbedAppFullScreen} />
                         <SentryRoute exact path="/app/:listingId" component={AppListingPage} />
 
@@ -276,6 +300,16 @@ export const Routes: React.FC = () => {
                             path="/ai/pathways/discovery"
                             component={AiPathwaysDiscovery}
                         />
+                        {/*
+                         * Pathways v2 — greenfield alongside the existing
+                         * /ai/pathways feature. Gated by `usePathwaysEnabled`
+                         * (tenant `features.pathways` AND LaunchDarkly
+                         * `enableJourneys`, both default off). See
+                         * pages/pathways/docs/architecture.md.
+                         */}
+                        {pathwaysEnabled && (
+                            <PrivateRoute path="/pathways" component={PathwaysShell} />
+                        )}
                         <PrivateRoute
                             exact
                             path="/learninghistory"
@@ -283,6 +317,8 @@ export const Routes: React.FC = () => {
                         />
                         <PrivateRoute exact path="/boost" component={BoostCMS} />
                         <PrivateRoute exact path="/boost/update" component={UpdateBoostCMS} />
+                        <PrivateRoute exact path="/issue" component={IssueCredentialPage} />
+                        <PrivateRoute exact path="/boost-a-friend" component={BoostAFriendPage} />
                         <PrivateRoute exact path="/test" component={VprQueryByExample} />
                         <SentryRoute exact path="/wallet-worker" component={WalletServiceWorker} />
                         <PrivateRoute exact path="/store" component={CredentialStorage} />
@@ -361,8 +397,15 @@ export const Routes: React.FC = () => {
                             path="/interactions/guardian-credential-approval/:token"
                             component={GuardianCredentialApprovalPage}
                         />
+                        <SentryRoute
+                            exact
+                            path="/interactions/guardian-approval/:token"
+                            component={GuardianAccountApprovalPage}
+                        />
                         <SentryRoute path="/interactions/*" component={InteractionsPage} />
                         <SentryRoute exact path="/request" component={ClaimFromRequest} />
+                        <SentryRoute exact path="/oid4vci" component={Oid4vciExchange} />
+                        <SentryRoute exact path="/oid4vp" component={Oid4vpExchange} />
 
                         <SentryRoute
                             exact
@@ -393,7 +436,7 @@ export const Routes: React.FC = () => {
                             path="/"
                             render={() =>
                                 isLoggedIn ? (
-                                    <Redirect to={tabRoutes.tab1} />
+                                    <Redirect to={dashboardAsHome ? '/dashboard' : '/wallet'} />
                                 ) : (
                                     <Redirect to="/login" />
                                 )
@@ -407,6 +450,11 @@ export const Routes: React.FC = () => {
                         <Route exact path="/hidden/seed" component={LoginWithSeed} />
 
                         <PrivateRoute exact path="/cli" component={DevCli} />
+                        <SentryRoute
+                            exact
+                            path="/dev/clr-transcript"
+                            component={ClrTranscriptRendererDemo}
+                        />
                     </Switch>
                 </GenericErrorBoundary>
             </Suspense>
@@ -415,12 +463,7 @@ export const Routes: React.FC = () => {
 };
 
 /** Paths gated behind the AI feature flag — only prefetch when enabled. */
-const AI_GATED_PATHS = new Set([
-    '/ai/insights',
-    '/ai/pathways',
-    '/ai/topics',
-    '/ai/sessions',
-]);
+const AI_GATED_PATHS = new Set(['/ai/insights', '/ai/pathways', '/ai/topics', '/ai/sessions']);
 
 /**
  * Path-keyed preload map for routes reachable from the wallet, side menu, and
@@ -433,6 +476,7 @@ const AI_GATED_PATHS = new Set([
  * not worth eagerly downloading for end users.
  */
 export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
+    '/dashboard': () => DashboardPage.preload(),
     // Wallet (Passport) — same chunk for all three aliases.
     '/passport': () => WalletPage.preload(),
     '/wallet': () => WalletPage.preload(),
@@ -455,11 +499,14 @@ export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
     '/ai/topics': () => AiSessionTopicsContainer.preload(),
     '/ai/sessions': () => AiSessionsContainer.preload(),
     // Side menu root links.
-    '/launchpad': () => LaunchPad.preload(),
+    '/launchpad': () => MyAppsLanding.preload(),
+    '/launchpad/browse': () => LaunchPad.preload(),
     '/contacts': () => AddressBook.preload(),
     '/notifications': () => NotificationsPage.preload(),
     // Mobile navbar / wallet header.
     '/boost': () => BoostCMS.preload(),
+    '/issue': () => IssueCredentialPage.preload(),
+    '/boost-a-friend': () => BoostAFriendPage.preload(),
     // Other commonly side-menu-linked routes.
     '/privacy-and-data': () => PrivacySettingsPage.preload(),
     '/resume-builder': () => ResumeBuilderPage.preload(),
@@ -477,10 +524,8 @@ interface PrefetchOptions {
  * caller indicates the user doesn't have AI access.
  */
 export const prefetchRoutes = ({ aiEnabled = true }: PrefetchOptions = {}): void => {
-    const ric: typeof window.requestIdleCallback | undefined =
-        (window as any).requestIdleCallback;
-    const schedule = (cb: () => void) =>
-        ric ? ric(cb, { timeout: 2000 }) : setTimeout(cb, 200);
+    const ric: typeof window.requestIdleCallback | undefined = (window as any).requestIdleCallback;
+    const schedule = (cb: () => void) => (ric ? ric(cb, { timeout: 2000 }) : setTimeout(cb, 200));
 
     schedule(() => {
         Object.entries(ROUTE_PRELOAD).forEach(([path, fn]) => {

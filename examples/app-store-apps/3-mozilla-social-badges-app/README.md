@@ -6,46 +6,51 @@ A modern web app powered by the LearnCard Partner Connect SDK that enables the M
 
 ## 🌟 Features
 
-- **Issue Social Badges**: Recognize community members for their contributions
-- **Boost Templates**: Pre-configured badge templates for common contributions
-- **Mozilla Branding**: Clean, modern design aligned with Mozilla's visual identity
-- **LearnCard Integration**: Powered by verifiable credentials and the open web
-- **Zero Backend**: Static site with serverless functions
+-   **Issue Social Badges**: Recognize community members for their contributions
+-   **Boost Templates**: Pre-configured badge templates for common contributions
+-   **Mozilla Branding**: Clean, modern design aligned with Mozilla's visual identity
+-   **LearnCard Integration**: Powered by verifiable credentials and the open web
+-   **Zero Backend**: Static site with serverless functions
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-- Node.js 20+ and pnpm installed
-- A LearnCard account (create one at [learncard.app](https://learncard.app))
+-   Node.js 20+ and Bun installed
+-   A LearnCard account (create one at [learncard.app](https://learncard.app))
 
 ### Installation
 
 1. **Install dependencies** (from repository root):
-   ```bash
-   pnpm install
-   ```
+
+    ```bash
+    bun install
+    ```
 
 2. **Set up environment variables**:
-   ```bash
-   cd examples/app-store-apps/3-mozilla-social-badges-app
-   cp .env.example .env
-   ```
+
+    ```bash
+    cd examples/app-store-apps/3-mozilla-social-badges-app
+    cp .env.example .env
+    ```
 
 3. **Generate a secure issuer seed**:
-   ```bash
-   openssl rand -hex 32
-   ```
-   
-   Add this to your `.env` file:
-   ```
-   LEARNCARD_ISSUER_SEED=your_generated_seed_here
-   ```
+
+    ```bash
+    openssl rand -hex 32
+    ```
+
+    Add this to your `.env` file:
+
+    ```
+    LEARNCARD_ISSUER_SEED=your_generated_seed_here
+    ```
 
 4. **Start the development server**:
-   ```bash
-   pnpm run dev
-   ```
+
+    ```bash
+    bun run dev
+    ```
 
 5. **Open your browser** to `http://localhost:4321`
 
@@ -65,12 +70,12 @@ Social Badges uses LearnCard's built-in boost feature to enable community recogn
 
 Six pre-configured Mozilla-themed badges:
 
-- 🦊 **Firefox Champion** - Advocates for browser choice, privacy, and an open web
-- 🌐 **Open Web Builder** - Contributes to open web standards and technologies
-- 🛡️ **Privacy Guardian** - Champions privacy, security, and data protection
-- 📚 **MDN Contributor** - Improves web documentation and learning resources
-- 🤝 **Community Leader** - Builds and nurtures Mozilla communities worldwide
-- 🎨 **Design Pioneer** - Creates beautiful, accessible web experiences
+-   🦊 **Firefox Champion** - Advocates for browser choice, privacy, and an open web
+-   🌐 **Open Web Builder** - Contributes to open web standards and technologies
+-   🛡️ **Privacy Guardian** - Champions privacy, security, and data protection
+-   📚 **MDN Contributor** - Improves web documentation and learning resources
+-   🤝 **Community Leader** - Builds and nurtures Mozilla communities worldwide
+-   🎨 **Design Pioneer** - Creates beautiful, accessible web experiences
 
 ### Technical Flow
 
@@ -82,27 +87,27 @@ Six pre-configured Mozilla-themed badges:
 
 ## 🔧 Technology Stack
 
-- **Astro** - Modern static site framework with server actions
-- **LearnCard Partner Connect SDK** - Frontend wallet integration
-- **@learncard/init** - Backend credential issuance and boost management
-- **Astro Actions** - Type-safe server-side API endpoints
-- **Netlify** - Serverless deployment platform
-- **Mozilla Design System** - Typography, colors, and branding
+-   **Astro** - Modern static site framework with server actions
+-   **LearnCard Partner Connect SDK** - Frontend wallet integration
+-   **@learncard/init** - Backend credential issuance and boost management
+-   **Astro Actions** - Type-safe server-side API endpoints
+-   **Netlify** - Serverless deployment platform
+-   **Mozilla Design System** - Typography, colors, and branding
 
 ## 📖 Learn More
 
-- [LearnCard Documentation](https://docs.learncard.com)
-- [Partner Connect SDK Guide](https://docs.learncard.com/partner-connect)
-- [Mozilla Design System](https://protocol.mozilla.org/)
+-   [LearnCard Documentation](https://docs.learncard.com)
+-   [Partner Connect SDK Guide](https://docs.learncard.com/partner-connect)
+-   [Mozilla Design System](https://protocol.mozilla.org/)
 
 ## 🌍 About Mozilla Social Badges
 
 Mozilla Social Badges is a demonstration of how verifiable credentials can power community recognition and reputation systems on the open web. By issuing badges as verifiable credentials, we ensure that:
 
-- **You own your badges** - Not locked into any platform
-- **Privacy-first** - Share what you want, when you want
-- **Interoperable** - Work across apps and platforms
-- **Verifiable** - Cryptographically signed and tamper-proof
+-   **You own your badges** - Not locked into any platform
+-   **Privacy-first** - Share what you want, when you want
+-   **Interoperable** - Work across apps and platforms
+-   **Verifiable** - Cryptographically signed and tamper-proof
 
 ## 📄 License
 

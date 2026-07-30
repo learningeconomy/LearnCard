@@ -51,6 +51,17 @@ ion-modal.center-modal {
     }
 }
 
+.data-sharing-modal-shell {
+    max-width: 450px !important;
+    width: 100% !important;
+    height: 80vh !important;
+    max-height: 80vh !important;
+    overflow: hidden !important;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
 ion-modal.mobile-modal {
     &::part(content) {
         border-top-right-radius: 24px;

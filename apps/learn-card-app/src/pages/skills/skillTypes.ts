@@ -9,6 +9,7 @@ export enum SkillLevel {
 
 export type SelectedSkill = {
     id: string;
+    frameworkId: string;
     proficiency: SkillLevel;
 };
 

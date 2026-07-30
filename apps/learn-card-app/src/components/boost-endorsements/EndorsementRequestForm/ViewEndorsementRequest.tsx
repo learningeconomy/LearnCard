@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('view-endorsement-request');
 
 import { useIonAlert } from '@ionic/react';
 import EndorsementFormHeader from '../EndorsementForm/EndorsementFormHeader';
@@ -16,6 +18,7 @@ import { useGetCredentialWithEdits } from 'learn-card-base';
 import { getBespokeLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import { EndorsementModeEnum } from '../boost-endorsement.helpers';
 import { LCNNotification } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
 
 const ViewEndorsementRequest: React.FC<{
     sharedLink: { seed: string; pin: string; uri: string };
@@ -87,20 +90,20 @@ const ViewEndorsementRequest: React.FC<{
             presentAlert({
                 backdropDismiss: false,
                 cssClass: 'boost-confirmation-alert',
-                header: `Error fetching credential: ${e}`,
+                header: m['endorsement.viewRequest.errorFetching']({ error: String(e) }),
                 buttons: [
                     {
-                        text: 'OK',
+                        text: m['endorsement.viewRequest.ok'](),
                         role: 'confirm',
                         handler: async () => {
                             setTryRefetch(!tryRefetch);
                         },
                     },
                     {
-                        text: 'Cancel',
+                        text: m['common.cancel'](),
                         role: 'cancel',
                         handler: () => {
-                            console.log('Cancel clicked');
+                            log.info('Cancel clicked');
                         },
                     },
                 ],

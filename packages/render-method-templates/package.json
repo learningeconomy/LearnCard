@@ -1,0 +1,12 @@
+{
+    "name": "@learncard/render-method-templates",
+    "version": "1.0.0",
+    "description": "SVG Mustache templates for LearnCard W3C renderMethod",
+    "private": true,
+    "author": "Learning Economy Foundation (www.learningeconomy.io)",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/learningeconomy/LearnCard.git"
+    }
+}

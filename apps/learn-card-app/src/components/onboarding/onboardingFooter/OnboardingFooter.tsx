@@ -1,4 +1,5 @@
 import React from 'react';
+import * as m from '../../../paraglide/messages.js';
 
 import { IonFooter, IonToolbar } from '@ionic/react';
 
@@ -12,10 +13,13 @@ export const OnboardingFooter: React.FC<{
     setStep?: (step: OnboardingStepsEnum) => void;
     text?: string;
     onClick?: () => void;
+    onBack?: () => void;
+    isLoading?: boolean;
     showDisclaimer?: boolean;
     showBackButton?: boolean;
     showCloseButton?: boolean;
     overrideSkip?: () => void;
+    showSkipButton?: boolean;
     disabled?: boolean;
 }> = ({
     step = OnboardingStepsEnum,
@@ -23,14 +27,18 @@ export const OnboardingFooter: React.FC<{
     setStep,
     text = 'Continue',
     onClick,
+    onBack,
+    isLoading = false,
     showDisclaimer = false,
     showBackButton = false,
     showCloseButton = false,
     overrideSkip,
+    showSkipButton = true,
     disabled,
 }) => {
     const { closeModal } = useModal();
-    const isDisabled = (disabled ?? false) || (step === OnboardingStepsEnum.selectRole && !role);
+    const isDisabled =
+        isLoading || (disabled ?? false) || (step === OnboardingStepsEnum.selectRole && !role);
     const activeStyles = isDisabled
         ? 'bg-grayscale-200 text-grayscale-500 cursor-not-allowed'
         : 'bg-emerald-700 text-white';
@@ -42,8 +50,18 @@ export const OnboardingFooter: React.FC<{
     };
 
     const handleGoBack = () => {
+        if (onBack) {
+            onBack();
+            return;
+        }
+
         if (step === OnboardingStepsEnum.joinNetwork) {
             setStep?.(OnboardingStepsEnum.selectRole);
+            return;
+        }
+
+        if (step === OnboardingStepsEnum.selectRole) {
+            setStep?.(OnboardingStepsEnum.privacyData);
         }
     };
 
@@ -56,7 +74,7 @@ export const OnboardingFooter: React.FC<{
                             onClick={closeModal}
                             className=" py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] leading-[24px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] justify-center mr-2"
                         >
-                            Close
+                            {m['common.close']()}
                         </button>
                     </div>
                 </div>
@@ -75,7 +93,7 @@ export const OnboardingFooter: React.FC<{
                                     onClick={handleGoBack}
                                     className=" py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] leading-[24px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] justify-center mr-2"
                                 >
-                                    Back
+                                    {m['onboarding.back']()}
                                 </button>
                             )}
 
@@ -90,16 +108,25 @@ export const OnboardingFooter: React.FC<{
                                 }}
                                 className={`py-[9px] pl-[20px] font-semibold pr-[15px] rounded-[30px] font-notoSans text-[17px] leading-[24px] max-h-[42px] tracking-[0.25px] text-grayscale-900 w-full flex gap-[5px] justify-center mr-2 shadow-button-bottom ${activeStyles}`}
                             >
-                                {text}
+                                {isLoading ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        {text}
+                                    </span>
+                                ) : (
+                                    text
+                                )}
                             </button>
                         </div>
 
-                        <button
-                            className="text-grayscale-500 my-4 font-poppins text-base"
-                            onClick={overrideSkip ? overrideSkip : closeModal}
-                        >
-                            Skip For Now
-                        </button>
+                        {showSkipButton && (
+                            <button
+                                className="text-grayscale-500 my-4 font-poppins text-base"
+                                onClick={overrideSkip ? overrideSkip : closeModal}
+                            >
+                                {m['onboarding.skipForNow']()}
+                            </button>
+                        )}
                     </div>
                 </div>
             </IonToolbar>

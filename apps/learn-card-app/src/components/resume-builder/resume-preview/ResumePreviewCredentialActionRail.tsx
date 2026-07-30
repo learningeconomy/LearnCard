@@ -5,6 +5,8 @@ import { IonReorder } from '@ionic/react';
 import TrashBin from '../../svgs/TrashBin';
 import VerticalArrowsIcon from '../../svgs/VerticalArrowsIcon';
 
+import * as m from '../../../paraglide/messages.js';
+
 type ResumePreviewCredentialActionRailProps = {
     onDelete: () => void;
 };
@@ -17,8 +19,8 @@ const ResumePreviewCredentialActionRail: React.FC<ResumePreviewCredentialActionR
             <button
                 onClick={onDelete}
                 className="leading-none"
-                title="Deselect credential"
-                aria-label="Deselect credential"
+                title={m['passport.resumeBuilder.deselectCredential']()}
+                aria-label={m['passport.resumeBuilder.deselectCredential']()}
             >
                 <TrashBin className="h-[20px] w-[20px] text-grayscale-700" version="2" />
             </button>

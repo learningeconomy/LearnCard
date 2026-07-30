@@ -1,7 +1,9 @@
 import { z } from 'zod';
-import { SkillStatusEnum, SkillValidator, SkillType } from '@learncard/types';
+import { SkillStatusEnum, SkillValidator } from '@learncard/types';
+import type { SkillType } from '@learncard/types';
 
-export { SkillStatusEnum, SkillValidator, SkillType };
+export { SkillStatusEnum, SkillValidator };
+export type { SkillType };
 
 export const FlatSkillValidator = SkillValidator.extend({
     parentId: z.string().optional(),

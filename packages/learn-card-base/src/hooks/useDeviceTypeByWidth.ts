@@ -1,4 +1,6 @@
 import useScreenWidth from './useScreenWidth';
+import { getLogger } from '../logging/logger';
+const log = getLogger('use-device-type-by-width');
 
 const MOBILE_WIDTH_CUTOFF = 991;
 
@@ -9,8 +11,8 @@ const MOBILE_WIDTH_CUTOFF = 991;
  *
  * const { isMobile, isDesktop } = useDeviceTypeByWidth(); // This will rerender the component when resizing the window
  *
- * if (isMobile) console.log('Mobile width!');
- * else console.log('Not mobile width');
+ * if (isMobile) log.debug('Mobile width!');
+ * else log.debug('Not mobile width');
  *
  * To skip re-rendering on resize, pass true like so:
  * useDeviceTypeByWidth(doesNotNeedToReRenderOnResize);

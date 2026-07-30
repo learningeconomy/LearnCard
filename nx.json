@@ -1,45 +1,32 @@
 {
-  "npmScope": "learncard",
-  "tasksRunnerOptions": {
-    "default": {
-      "runner": "nx/tasks-runners/default",
-      "options": {
-        "cacheDirectory": ".nx-cache",
-        "cacheableOperations": [
-          "build",
-          "test"
-        ]
-      }
-    }
-  },
-  "targetDefaults": {
-    "start": {
-      "dependsOn": [
-        "^build"
-      ]
+    "npmScope": "learncard",
+    "cli": {
+        "packageManager": "bun"
     },
-    "dev": {
-      "dependsOn": [
-        "^build"
-      ]
+    "tasksRunnerOptions": {
+        "default": {
+            "runner": "nx/tasks-runners/default",
+            "options": {
+                "cacheDirectory": ".nx-cache",
+                "cacheableOperations": ["build", "test"]
+            }
+        }
     },
-    "build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "{projectRoot}/dist"
-      ]
+    "targetDefaults": {
+        "start": {
+            "dependsOn": ["^build"]
+        },
+        "dev": {
+            "dependsOn": ["^build"]
+        },
+        "build": {
+            "dependsOn": ["^build"],
+            "outputs": ["{projectRoot}/dist"]
+        },
+        "test": {
+            "dependsOn": ["^build", "^test"],
+            "outputs": ["{projectRoot}/coverage"]
+        }
     },
-    "test": {
-      "dependsOn": [
-        "^build",
-        "^test"
-      ],
-      "outputs": [
-        "{projectRoot}/coverage"
-      ]
-    }
-  },
-  "defaultBase": "main"
+    "defaultBase": "main"
 }

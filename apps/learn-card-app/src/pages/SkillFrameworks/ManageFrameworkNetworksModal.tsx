@@ -12,6 +12,9 @@ import CaretDown from 'apps/learn-card-app/src/components/svgs/CaretDown';
 // import ScoutsTroopIcon from 'apps/learn-card-app/src/assets/icons/ScoutsTroopIcon';
 import { insertParamsToFilestackUrl } from 'learn-card-base';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('manage-framework-networks-modal');
+
 type ManageFrameworkNetworksModalProps = {
     frameworkId: string;
 };
@@ -116,7 +119,7 @@ const ManageFrameworkNetworksModal: React.FC<ManageFrameworkNetworksModalProps> 
             closeModal();
         },
         onError: error => {
-            console.error('Failed to update networks:', error);
+            log.error('Failed to update networks:', error);
             alert('Failed to update networks. Please try again.');
         },
     });

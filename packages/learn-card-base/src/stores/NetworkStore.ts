@@ -4,6 +4,7 @@ import {
     LEARNCLOUD_URL,
     LEARNCARD_NETWORK_URL,
     LEARNCARD_NETWORK_API_URL,
+    LEARNCARD_AI_URL,
 } from 'learn-card-base/constants/Networks';
 
 import type { TenantApiConfig } from 'learn-card-base/config/tenantConfig';
@@ -14,6 +15,7 @@ export const networkStore = createStore('networkStore')<{
     cloudUrl: string;
     xapiUrl: string;
     apiEndpoint: string;
+    notificationsEndpoint: string;
     aiServiceUrl: string;
     tenantId: string;
 }>(
@@ -23,7 +25,8 @@ export const networkStore = createStore('networkStore')<{
         cloudUrl: LEARNCLOUD_URL,
         xapiUrl: '',
         apiEndpoint: LCA_API_ENDPOINT,
-        aiServiceUrl: 'https://api.learncloud.ai',
+        notificationsEndpoint: 'https://api.learncard.app/api/notifications/send',
+        aiServiceUrl: LEARNCARD_AI_URL,
         tenantId: '',
     },
     { persist: { name: 'networkStore', enabled: true } }
@@ -42,7 +45,10 @@ export const initNetworkStoreFromTenant = (apis: TenantApiConfig, tenantId?: str
     networkStore.set.cloudUrl(apis.cloudService);
     networkStore.set.xapiUrl(apis.xapi ?? apis.cloudService.replace(/\/trpc\/?$/, '/xapi'));
     networkStore.set.apiEndpoint(apis.lcaApi);
-    networkStore.set.aiServiceUrl(apis.aiService ?? 'https://api.learncloud.ai');
+    networkStore.set.notificationsEndpoint(
+        apis.notificationsEndpoint ?? apis.lcaApi.replace(/\/trpc\/?$/, '/api/notifications/send')
+    );
+    networkStore.set.aiServiceUrl(apis.aiService ?? LEARNCARD_AI_URL);
 
     if (tenantId) networkStore.set.tenantId(tenantId);
 };

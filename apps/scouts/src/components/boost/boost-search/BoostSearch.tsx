@@ -18,10 +18,12 @@ import { UnsignedVC, VC } from '@learncard/types';
 
 import Lottie from 'react-lottie-player';
 import PurpGhost from '../../../assets/lotties/purpghost.json';
-import HourGlass from '../../../assets/lotties/hourglass.json';
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import boostSearchStore from '../../../stores/boostSearchStore';
 import { ScoutsRoleEnum } from '../../../stores/troopPageStore';
 import { MemberTabsEnum } from '../../../pages/troop/TroopPageMembersBox';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-search');
 
 type BoostSearchProps = {
     handleCloseModal: () => void;
@@ -108,7 +110,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
             setConnections(connections);
             setLoading(false);
         } catch (e) {
-            console.log('getConnections::error', e);
+            log.debug('getConnections::error', e);
             setLoading(false);
         }
     };
@@ -136,7 +138,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
 
     let contactCount = search && search?.length > 0 ? searchResults?.length : connections?.length;
 
-    let showHourGlassLoading = loading && !searchLoading;
+    let showInitialLoading = loading && !searchLoading;
     let showConnectionsList = !loading && connections.length > 0 && !search;
     let showNoSearchEmptyState =
         !loading && connections.length === 0 && search?.length === 0 && !searchLoading;
@@ -155,7 +157,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
     if (!ignoreBoostSearchRestriction) {
         if (isTroopLeader) {
             contactCount = scouts?.length ?? 0;
-            showHourGlassLoading = scoutsLoading;
+            showInitialLoading = scoutsLoading;
             showConnectionsList = (scouts?.length ?? 0) > 0;
             showNoSearchEmptyState = !scoutsLoading && scouts?.length === 0 && search?.length === 0;
             showSearchLoader = false; // Uses filter, not network profile search, so always false
@@ -168,7 +170,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
         }
         if (isNetworkAdmin) {
             contactCount = networkMembers?.length ?? 0;
-            showHourGlassLoading = networkLoading;
+            showInitialLoading = networkLoading;
             showConnectionsList = (networkMembers?.length ?? 0) > 0;
             showNoSearchEmptyState =
                 !networkLoading && networkMembers?.length === 0 && search?.length === 0;
@@ -222,15 +224,10 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                 </IonToolbar>
             </IonHeader>
             <IonContent className="h-full">
-                {showHourGlassLoading && (
+                {showInitialLoading && (
                     <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full mt-[80px]">
                         <div className="max-w-[150px]">
-                            <Lottie
-                                loop
-                                animationData={HourGlass}
-                                play
-                                style={{ width: '100%', height: '100%' }}
-                            />
+                            <LoadingSpinner />
                         </div>
                     </section>
                 )}
@@ -261,12 +258,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                 {showSearchLoader && (
                     <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full mt-[80px]">
                         <div className="max-w-[150px]">
-                            <Lottie
-                                loop
-                                animationData={HourGlass}
-                                play
-                                style={{ width: '100%', height: '100%' }}
-                            />
+                            <LoadingSpinner />
                         </div>
                     </section>
                 )}

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import z from 'zod';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('create-signing-authority-modal');
 
 import { IonInput } from '@ionic/react';
 
@@ -69,7 +71,7 @@ const CreateSigningAuthorityModal: React.FC<{ fetchSigningAuthorities: () => voi
             fetchSigningAuthorities();
             closeModal();
         } catch (err) {
-            console.error('Registration error:', err);
+            log.error('Registration error:', err);
             setErrorMessage('Failed to create signing authority.');
         } finally {
             setLoading(false);
@@ -82,7 +84,8 @@ const CreateSigningAuthorityModal: React.FC<{ fetchSigningAuthorities: () => voi
                 Create Signing Authority
             </h1>
             <p className="text-sm text-grayscale-500 mb-[16px]">
-                A signing authority cryptographically signs your credentials so recipients can verify they came from you.
+                A signing authority cryptographically signs your credentials so recipients can
+                verify they came from you.
             </p>
             {errorMessage && (
                 <div className="w-full rounded-[15px] bg-red-100 px-4 py-2 mb-[10px]">

@@ -1,0 +1,87 @@
+name: Validate Published Package Contracts
+
+# Runs publint + @arethetypeswrong/cli against every published @learncard/*
+# package's actual built `dist/`. Designed to catch the kind of packaging
+# regressions that internal CI misses but that break external consumers the
+# moment a release hits npm — the same class of bug as the `workspace:*`
+# leakage incident and the @learncard/init ESM-named-export regression.
+#
+# Two layers:
+#   1. publint  — static manifest + dist validation (missing exports map,
+#                 file paths that don't resolve, type condition ordering,
+#                 ESM file with CJS extension, etc.)
+#   2. attw     — build package tarballs + resolve through every TypeScript
+#                 module resolution mode (node10, node16, bundler) and consumer
+#                 style (ESM import, CJS require).
+#
+# Failure modes:
+#   - Gating packages (default set) → CI fails
+#   - Advisory packages (see ADVISORY_ONLY in scripts/validate-packages.mjs)
+#     → diagnostics printed, exit zero
+#
+# Runs on every PR + push to main. The validation script runs publint + attw
+# (the latter validates generated package tarballs) across ~36 packages with a
+# bounded concurrency pool; combined with the up-front `bun run build`, budget ~10-15 min.
+
+on:
+    pull_request:
+        types: [opened, synchronize]
+    push:
+        branches: [main]
+    workflow_dispatch:
+
+jobs:
+    validate-packages:
+        name: publint + attw
+        runs-on: ubuntu-latest
+        timeout-minutes: 25
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v7
+
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
+
+            - name: Build publishable packages
+              run: >
+                  bunx nx run-many -t build -p
+                  core
+                  credential-library
+                  lca-api-client
+                  lca-api-plugin
+                  cli
+                  helpers
+                  init
+                  partner-connect-sdk
+                  types
+                  sss-key-manager
+                  claimable-boosts-plugin
+                  chapi-plugin
+                  ceramic-plugin
+                  crypto-plugin
+                  didkey-plugin
+                  didkit-plugin
+                  didkit-plugin-node
+                  did-web-plugin
+                  dynamic-loader-plugin
+                  encryption-plugin
+                  ethereum-plugin
+                  expiration-plugin
+                  idx-plugin
+                  learn-card-plugin
+                  learn-cloud-plugin
+                  ler-rs-plugin
+                  linked-claims-plugin
+                  network-plugin
+                  open-badge-v2-plugin
+                  openid4vc-plugin
+                  render-method-plugin
+                  sd-jwt-vc-plugin
+                  simple-signing-plugin
+                  vc-api-plugin
+                  vc-plugin
+                  vc-templates-plugin
+                  vpqr-plugin
+
+            - name: Validate package contracts
+              run: bun scripts/validate-packages.mjs

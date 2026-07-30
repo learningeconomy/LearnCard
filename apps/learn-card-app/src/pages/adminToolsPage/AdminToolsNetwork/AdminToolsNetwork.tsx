@@ -2,7 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { IonRadio, IonRadioGroup, IonInput } from '@ionic/react';
 import { useQueryClient } from '@tanstack/react-query';
 import _ from 'lodash-es';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('admin-tools-network');
 
+import * as m from '../../../paraglide/messages.js';
 import GenericLoader from '../../../components/generic/GenericLoader';
 import AdminToolsModalFooter from '../AdminToolsModal/AdminToolsModalFooter';
 import AdminToolsOptionItemHeader from '../AdminToolsModal/helpers/AdminToolsOptionItemHeader';
@@ -40,17 +43,17 @@ export const networkOptionsList: NetworkOption[] = [
     { label: 'Custom', endpoint: '', type: NetworkOptionsEnum.custom },
 ];
 
-export const networkSwitchMessages = [
-    'Dialing into the new network…',
-    'Calibrating data streams…',
-    'Authenticating secure connection…',
-    'Establishing encrypted handshake…',
-    'Routing packets through the new endpoint…',
-    'Syncing with updated storage cluster…',
-    'Optimizing transfer protocols…',
-    'Verifying network credentials…',
-    'Loading configuration settings…',
-    'Finalizing secure link…',
+export const getNetworkSwitchMessages = () => [
+    m['adminTools.networkSwitch.dialing'](),
+    m['adminTools.networkSwitch.calibrating'](),
+    m['adminTools.networkSwitch.authenticating'](),
+    m['adminTools.networkSwitch.handshake'](),
+    m['adminTools.networkSwitch.routing'](),
+    m['adminTools.networkSwitch.syncing'](),
+    m['adminTools.networkSwitch.optimizing'](),
+    m['adminTools.networkSwitch.verifying'](),
+    m['common.loadingConfiguration'](),
+    m['adminTools.networkSwitch.finalizing'](),
 ];
 
 const AdminToolsNetworkOption: React.FC<{ option: AdminToolOption; showFooter?: boolean }> = ({
@@ -92,7 +95,7 @@ const AdminToolsNetworkOption: React.FC<{ option: AdminToolOption; showFooter?: 
     const handleSwitchNetwork = async (switchStorage: boolean) => {
         try {
             newModal(
-                <GenericLoader overrideText={_.shuffle(networkSwitchMessages)} />,
+                <GenericLoader overrideText={_.shuffle(getNetworkSwitchMessages())} />,
                 {
                     disableCloseHandlers: true,
                 },
@@ -132,7 +135,7 @@ const AdminToolsNetworkOption: React.FC<{ option: AdminToolOption; showFooter?: 
             closeAllModals();
         } catch (error) {
             closeModal();
-            console.error(error);
+            log.error(error);
         }
     };
 

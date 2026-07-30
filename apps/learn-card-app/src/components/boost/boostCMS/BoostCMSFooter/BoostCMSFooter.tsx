@@ -5,6 +5,7 @@ import { IonToolbar, IonRow, IonCol, IonFooter, IonSpinner } from '@ionic/react'
 
 import { BoostUserTypeEnum } from '../../boost-options/boostOptions';
 
+import * as m from '../../../../paraglide/messages.js';
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import { BoostCMSStepsEnum } from '../../boost';
 import { BoostCategoryOptionsEnum, boostCategoryMetadata } from 'learn-card-base';
@@ -111,12 +112,12 @@ const BoostCMSFooter: React.FC<{
                                             className="scale-[1] mr-1"
                                         />{' '}
                                         <p className="w-full line-clamp-1 font-poppins normal tracking-wide">
-                                            Loading...
+                                            {m['common.loading']()}
                                         </p>
                                     </>
                                 ) : (
                                     <p className="w-full line-clamp-1 font-poppins normal tracking-wide">
-                                        Issue
+                                        {m['boost.issue']()}
                                     </p>
                                 )}
                             </button>

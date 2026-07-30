@@ -28,6 +28,10 @@ type CredentialRelationshipProps = {
     metadata?: Record<string, unknown>;
     activityId?: string;
     integrationId?: string;
+    status?: 'revoked' | 'suspended';
+    revokedAt?: string;
+    suspendedAt?: string;
+    unsuspendedAt?: string;
 } & Record<string, unknown>;
 
 export type ProfileRelationships = {
@@ -106,6 +110,12 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
                 enum: Object.values(LearnCardRolesEnum),
             },
             approved: { type: 'boolean', required: false },
+            // Per-user UI locale (BCP-47 primary subtag: en/es/fr/ar) used to
+            // localize server-sent notifications. Must be declared here or
+            // neogma model reads (e.g. Profile.findRelationships) strip it from
+            // `.dataValues`, silently falling back to 'en' — only raw
+            // QueryBuilder reads would carry it. See getRecipientLocale.helpers.
+            locale: { type: 'string', required: false },
         },
         relationships: {
             connectionRequested: { model: 'self', direction: 'out', name: 'CONNECTION_REQUESTED' },
@@ -129,6 +139,19 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
                 properties: {
                     to: { property: 'to', schema: { type: 'string', required: true } },
                     date: { property: 'date', schema: { type: 'string', required: true } },
+                    status: { property: 'status', schema: { type: 'string', required: false } },
+                    revokedAt: {
+                        property: 'revokedAt',
+                        schema: { type: 'string', required: false },
+                    },
+                    suspendedAt: {
+                        property: 'suspendedAt',
+                        schema: { type: 'string', required: false },
+                    },
+                    unsuspendedAt: {
+                        property: 'unsuspendedAt',
+                        schema: { type: 'string', required: false },
+                    },
                 },
             },
             presentationSent: {

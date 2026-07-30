@@ -22,46 +22,46 @@ infisical init
 #    → This creates .infisical.json (safe to commit)
 
 # 4. Optionally back up your current .env files
-pnpm env:backup
+bun run env:backup
 
 # 5. Pull all .env files
-pnpm env:pull
+bun run env:pull
 
 # 6. Optionally compare the new .env files against the backup
-pnpm env:compare-backup
+bun run env:compare-backup
 
 # 7. Optionally compare your local .env files against Infisical
-pnpm env:compare-infisical
+bun run env:compare-infisical
 ```
 
 ## Usage
 
 ```bash
 # Pull dev environment for all services (default)
-pnpm env:pull
+bun run env:pull
 
 # Pull a specific environment
-pnpm env:pull --env=staging
-pnpm env:pull --env=prod
+bun run env:pull --env=staging
+bun run env:pull --env=prod
 
 # Pull only one service
-pnpm env:pull --only=brain
-pnpm env:pull --only=app
+bun run env:pull --only=brain
+bun run env:pull --only=app
 
 # List available service targets
-pnpm env:pull --list
+bun run env:pull --list
 
 # Combine flags
-pnpm env:pull --env=staging --only=lca-api
+bun run env:pull --env=staging --only=lca-api
 
 # Backup the current .env files before regenerating them
-pnpm env:backup
+bun run env:backup
 
 # Compare the current .env files against their .env.backup copies
-pnpm env:compare-backup
+bun run env:compare-backup
 
 # Compare the current .env files against Infisical exports
-pnpm env:compare-infisical
+bun run env:compare-infisical
 ```
 
 ### Backup and Compare Workflow
@@ -71,10 +71,10 @@ environment files before pulling from Infisical again.
 
 ```bash
 # Copy each current .env to a matching .env.backup file
-pnpm env:backup
+bun run env:backup
 
 # Show which keys differ between .env and .env.backup
-pnpm env:compare-backup
+bun run env:compare-backup
 ```
 
 The compare-backup command reports keys that were added, removed, or changed
@@ -86,13 +86,13 @@ local `.env` file. It does not print full secret values.
 
 ## Service Targets
 
-| Key       | Service                | Infisical Path(s)                    | Local .env File                                           |
-| --------- | ---------------------- | ------------------------------------ | --------------------------------------------------------- |
-| `brain`   | Brain Service          | `/LearnCard/brain-service`           | `services/learn-card-network/brain-service/.env`          |
-| `cloud`   | LearnCloud Service     | `/LearnCard/cloud-service`           | `services/learn-card-network/learn-cloud-service/.env`    |
-| `app`     | LearnCard App          | `/learn-card-app`                    | `apps/learn-card-app/.env`                                |
-| `lca-api` | LCA API                | `/LearnCard/lca-api`                 | `services/learn-card-network/lca-api/.env`                |
-| `signing` | Simple Signing Service | `/LearnCard/simple-signing-service`  | `services/learn-card-network/simple-signing-service/.env` |
+| Key       | Service                | Infisical Path(s)                   | Dev file                                                  | Staging file                                                      |
+| --------- | ---------------------- | ----------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------- |
+| `brain`   | Brain Service          | `/LearnCard/brain-service`          | `services/learn-card-network/brain-service/.env`          | `services/learn-card-network/brain-service/.env.staging`          |
+| `cloud`   | LearnCloud Service     | `/LearnCard/cloud-service`          | `services/learn-card-network/learn-cloud-service/.env`    | `services/learn-card-network/learn-cloud-service/.env.staging`    |
+| `app`     | LearnCard App          | `/learn-card-app`                   | `apps/learn-card-app/.env`                                | `apps/learn-card-app/.env.staging`                                |
+| `lca-api` | LCA API                | `/LearnCard/lca-api`                | `services/learn-card-network/lca-api/.env`                | `services/learn-card-network/lca-api/.env.staging`                |
+| `signing` | Simple Signing Service | `/LearnCard/simple-signing-service` | `services/learn-card-network/simple-signing-service/.env` | `services/learn-card-network/simple-signing-service/.env.staging` |
 
 Each target pulls secrets from its specific Infisical folder path. To enable root-level (`/`) variable merging, add pipe-separated paths (e.g., `/|/LearnCard/brain-service`) to the INFISICAL_PATHS array in `scripts/pull-env.sh`.
 
@@ -101,7 +101,8 @@ Each target pulls secrets from its specific Infisical folder path. To enable roo
 1. The script (`scripts/pull-env.sh`) iterates over the service targets
 2. For each target, it calls `infisical export --path=<path> --env=<env>` for each Infisical folder
 3. Secrets from all paths are merged (later paths win on duplicate keys)
-4. The result is written to the local `.env` file with a header comment
+4. The result is written to the local `.env` file for `--env=dev` and to a
+   matching overlay file such as `.env.staging` for non-dev environments
 
 Generated `.env` files are gitignored and should **never** be committed.
 

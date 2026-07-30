@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { createHash } from 'crypto';
 import { GoogleGenAI } from '@google/genai';
 import cache from '@cache';
 
@@ -13,6 +14,12 @@ export type SkillEmbeddingTarget = {
     code?: string | null;
 };
 
+export type UpdateSkillEmbeddingFn = (
+    skillId: string,
+    embedding: number[],
+    frameworkId?: string
+) => Promise<boolean>;
+
 const googleApiKey = process.env.SKILL_EMBEDDING_GOOGLE_API_KEY;
 const googleModel = process.env.SKILL_EMBEDDING_GOOGLE_MODEL ?? 'gemini-embedding-001';
 const googleClient = googleApiKey ? new GoogleGenAI({ apiKey: googleApiKey }) : null;
@@ -23,11 +30,43 @@ const embeddingResponseValidator = z.object({
 
 const embeddingsResponseValidator = z.array(embeddingResponseValidator);
 
+const getEmbeddingCacheTtlSeconds = (): number => {
+    const raw = Number(process.env.SKILL_EMBEDDING_CACHE_TTL_SECONDS ?? 60 * 60 * 24);
+    return Math.min(Math.max(raw, 60), 60 * 60 * 24 * 7);
+};
+
+const getEmbeddingCacheKey = (text: string): string => {
+    const normalizedText = text.trim();
+    const digest = createHash('sha256').update(normalizedText).digest('hex');
+
+    return `skill-embedding:query:${googleModel}:${digest}`;
+};
+
+export const getCachedEmbeddingForText = async (text: string): Promise<number[] | null> => {
+    const normalizedText = text.trim();
+    if (!normalizedText) {
+        return null;
+    }
+
+    try {
+        const cachedEmbedding = await cache.get(getEmbeddingCacheKey(normalizedText));
+        if (!cachedEmbedding) {
+            return null;
+        }
+
+        const parsed = embeddingResponseValidator.parse(JSON.parse(cachedEmbedding));
+        return parsed.values;
+    } catch (error) {
+        console.warn('Failed to read cached skill embedding', error);
+        return null;
+    }
+};
+
 const getEmbeddingBatchSize = (): number => {
     const raw = Number(
         process.env.SKILL_EMBEDDING_BATCH_SIZE ??
-        process.env.SKILL_EMBEDDING_BACKFILL_BATCH_SIZE ??
-        25
+            process.env.SKILL_EMBEDDING_BACKFILL_BATCH_SIZE ??
+            25
     );
     return Math.min(Math.max(raw, 1), 100);
 };
@@ -58,21 +97,49 @@ export const buildSkillEmbeddingText = (skill: SkillEmbeddingTarget): string => 
 };
 
 export const generateEmbeddingForText = async (text: string): Promise<number[]> => {
-    const embeddings = await generateEmbeddingsForTexts([text]);
+    const normalizedText = text.trim();
+    if (!normalizedText) {
+        return [];
+    }
+
+    const cachedEmbedding = await getCachedEmbeddingForText(normalizedText);
+    if (cachedEmbedding) {
+        return cachedEmbedding;
+    }
+
+    const embeddings = await generateEmbeddingsForTexts([normalizedText]);
     const embedding = embeddings[0];
     if (!embedding) throw new Error('No embedding returned from Google API');
+
+    try {
+        const cacheKey = getEmbeddingCacheKey(normalizedText);
+        await cache.set(
+            cacheKey,
+            JSON.stringify({ values: embedding }),
+            getEmbeddingCacheTtlSeconds()
+        );
+    } catch (error) {
+        console.warn('Failed to cache skill embedding', error);
+    }
+
     return embedding;
 };
 
-export const upsertSkillEmbedding = async (skill: SkillEmbeddingTarget): Promise<void> => {
+export const upsertSkillEmbedding = async (
+    skill: SkillEmbeddingTarget,
+    updateSkillEmbeddingFn: UpdateSkillEmbeddingFn = updateSkillEmbedding
+): Promise<void> => {
     const text = buildSkillEmbeddingText(skill);
     if (!text) return;
 
     const embedding = await generateEmbeddingForText(text);
-    await updateSkillEmbedding(skill.id, embedding, skill.frameworkId);
+    await updateSkillEmbeddingFn(skill.id, embedding, skill.frameworkId);
 };
 
-export const upsertSkillEmbeddings = async (skills: SkillEmbeddingTarget[]): Promise<void> => {
+export const upsertSkillEmbeddings = async (
+    skills: SkillEmbeddingTarget[],
+    updateSkillEmbeddingFn: UpdateSkillEmbeddingFn = updateSkillEmbedding
+): Promise<void> => {
     const candidates = skills
         .map(skill => ({ skill, text: buildSkillEmbeddingText(skill) }))
         .filter(item => Boolean(item.text));
@@ -90,7 +157,7 @@ export const upsertSkillEmbeddings = async (skills: SkillEmbeddingTarget[]): Pro
             const embedding = embeddings[j];
             if (!item || !embedding) continue;
 
-            await updateSkillEmbedding(item.skill.id, embedding, item.skill.frameworkId);
+            await updateSkillEmbeddingFn(item.skill.id, embedding, item.skill.frameworkId);
         }
     }
 };

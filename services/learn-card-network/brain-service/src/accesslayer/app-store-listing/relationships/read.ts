@@ -154,7 +154,7 @@ export const getCredentialsSentByListingToProfile = async (
     Array<{
         credentialId: string;
         date: string;
-        status: 'pending' | 'claimed' | 'revoked';
+        status: 'pending' | 'claimed' | 'revoked' | 'suspended';
         boostName?: string;
         boostCategory?: string;
         activityId?: string;
@@ -168,7 +168,7 @@ export const getCredentialsSentByListingToProfile = async (
          OPTIONAL MATCH (c)-[received:CREDENTIAL_RECEIVED]->(recipient:Profile {profileId: $profileId})
          RETURN c.id AS credentialId, r.date AS date, 
                 b.name AS boostName, b.category AS boostCategory, r.activityId AS activityId,
-                received IS NOT NULL AS isReceived, received.status AS receivedStatus
+                r.status AS sentStatus, received IS NOT NULL AS isReceived, received.status AS receivedStatus
          ORDER BY r.date DESC
          LIMIT $limit`,
         {
@@ -189,12 +189,16 @@ export const getCredentialsSentByListingToProfile = async (
                 return null;
             }
 
-            // Determine status based on CREDENTIAL_RECEIVED relationship
             const isReceived = record.get('isReceived');
+            const sentStatus = record.get('sentStatus');
             const receivedStatus = record.get('receivedStatus');
-            let status: 'pending' | 'claimed' | 'revoked' = 'pending';
-            if (isReceived) {
-                status = receivedStatus === 'revoked' ? 'revoked' : 'claimed';
+            const rawStatus = sentStatus ?? receivedStatus;
+            let status: 'pending' | 'claimed' | 'revoked' | 'suspended' = 'pending';
+
+            if (rawStatus === 'revoked' || rawStatus === 'suspended') {
+                status = rawStatus;
+            } else if (isReceived) {
+                status = 'claimed';
             }
 
             return {

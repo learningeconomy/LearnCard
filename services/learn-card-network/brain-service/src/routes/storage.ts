@@ -8,6 +8,7 @@ import {
     JWEValidator,
     ConsentFlowContractValidator,
     ConsentFlowTermsValidator,
+    StoredCredentialEnvelopeValidator,
 } from '@learncard/types';
 
 import { getCredentialUri } from '@helpers/credential.helpers';
@@ -126,7 +127,10 @@ export const storageRouter = t.router({
         })
         .input(
             z.object({
-                item: UnsignedVCValidator.or(VCValidator).or(VPValidator).or(JWEValidator),
+                item: UnsignedVCValidator.or(VCValidator)
+                    .or(VPValidator)
+                    .or(JWEValidator)
+                    .or(StoredCredentialEnvelopeValidator),
                 type: z.enum(['credential', 'presentation']).optional(),
             })
         )
@@ -169,7 +173,13 @@ export const storageRouter = t.router({
         })
         .input(z.object({ uri: z.string(), challenge: z.string().optional() }))
         .output(
-            UnsignedVCValidator.or(VCValidator)
+            // StoredCredentialEnvelopeValidator FIRST because ConsentFlowContractValidator
+            // uses .prefault() on every field, so any object — including an envelope —
+            // would successfully parse as a contract with extras stripped. Envelope's
+            // `format` literal enum makes its parse strict, so non-envelopes fall through
+            // to the next validator correctly.
+            StoredCredentialEnvelopeValidator.or(UnsignedVCValidator)
+                .or(VCValidator)
                 .or(VPValidator)
                 .or(JWEValidator)
                 .or(ConsentFlowContractValidator)

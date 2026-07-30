@@ -1,3 +1,5 @@
+import { getLogger } from '../logging/logger';
+const log = getLogger('tenant-defaults');
 /**
  * Default TenantConfig for the LearnCard production deployment.
  *
@@ -32,6 +34,7 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         cloudService: 'https://cloud.learncard.com/trpc',
         lcaApi: 'https://api.learncard.app/trpc',
         xapi: undefined,
+        notificationsEndpoint: 'https://api.learncard.app/api/notifications/send',
         aiService: 'https://api.learncloud.ai',
         corsProxyApiKey: undefined,
     },
@@ -57,6 +60,13 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
             enableEmailBackupShare: true,
             requireEmailForPhoneUsers: false,
         },
+    },
+
+    storage: {
+        provider: 'filestack',
+        apiKey: 'A7RsW3VzfSNO2TCsFJ6Eiz',
+        cdnDomain: 'cdn.filestackcontent.com',
+        apiDomain: 'www.filestackapi.com',
     },
 
     branding: {
@@ -88,16 +98,15 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         themeSwitching: true,
         introSlides: true,
         launchPadQuickActions: true,
+        dashboardHome: false,
+        useSeededSkillFrameworks: false,
     },
 
     observability: {
-        sentryDsn: 'https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704',
+        sentryDsn:
+            'https://68210fb71359458b9746c55cf5f545b4@o246842.ingest.us.sentry.io/4505432118984704',
         sentryEnv: 'production',
-        sentryTraceDomains: [
-            'network.learncard.com',
-            'api.learncard.app',
-            'cloud.learncard.com',
-        ],
+        sentryTraceDomains: ['network.learncard.com', 'api.learncard.app', 'cloud.learncard.com'],
         launchDarklyClientId: '63dabf3982caed12cac3e55c',
         userflowToken: 'ct_qq6z63mixbhyzbzsgmivgrftda',
         googleMapsApiKey: undefined,
@@ -105,6 +114,11 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         analyticsProvider: 'noop',
         posthogKey: undefined,
         posthogHost: undefined,
+    },
+
+    registries: {
+        badgePackUrls: ['https://peerbadges.com/api/public/badges.json'],
+        badgePackAssets: [],
     },
 
     links: {
@@ -123,9 +137,30 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
             'learncard.app',
             'learncardapp.netlify.app',
             'learncardapp.netlify.com',
-            'lcw.app'
+            'lcw.app',
         ],
-        customSchemes: ['dccrequest', 'msprequest', 'asuprequest'],
+        // Two consumers — keep this list complete for BOTH:
+        //   (a) `prepare-native-config.ts` writes these to iOS Info.plist
+        //       CFBundleURLSchemes and Android intent-filter
+        //       `<data android:scheme=…>` so the OS routes deep links here.
+        //   (b) `resolveTenantParseConfig` passes these to `parseClaimInput`
+        //       for runtime dispatch.
+        // `openid-credential-offer` and `openid4vp` are short-circuited by
+        // the parser into dedicated `oid4vci` / `oid4vp` kinds; they only
+        // need to be listed here for (a). Removing them silently breaks
+        // OS-level deep linking on Android.
+        customSchemes: [
+            'dccrequest',
+            'msprequest',
+            'asuprequest',
+            'openid-credential-offer',
+            'openid4vp',
+        ],
+    },
+
+    i18n: {
+        defaultLanguage: 'en',
+        supportedLanguages: ['en'],
     },
 };
 
@@ -138,7 +173,7 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
 const _defaultsValidation = tenantConfigSchema.safeParse(DEFAULT_LEARNCARD_TENANT_CONFIG);
 
 if (!_defaultsValidation.success) {
-    console.error(
+    log.error(
         '[TenantConfig] DEFAULT_LEARNCARD_TENANT_CONFIG failed schema validation:',
         _defaultsValidation.error.issues
     );

@@ -9,7 +9,7 @@ services:
             - 3000
         ports:
             - '3000:3000'
-        command: ['sh', '-c', 'pnpm exec nx docker-start learn-card-app']
+        command: ['sh', '-c', 'bun run --cwd apps/learn-card-app docker-start:tenant']
         depends_on:
             - brain
             - cloud
@@ -28,40 +28,29 @@ services:
             CLOUD_URL: http://localhost:4100/trpc
             LEARN_CLOUD_XAPI_URL: http://localhost:4100/xapi
             API_URL: http://localhost:5100/trpc
+            TENANT: ${TENANT:-learncard}
+            STAGE: ${STAGE:-local}
+            LOCAL_AIP: ${LOCAL_AIP:-}
             SKIP_DIDKIT_NAPI: '1'
             # Enable polling for Vite file watching in Docker
             CHOKIDAR_USEPOLLING: 'true'
             CHOKIDAR_INTERVAL: '1000'
         volumes:
             - ./src:/app/apps/learn-card-app/src
-            - ./vite.config.ts:/app/apps/learn-card-app/vite.config.ts
+            - ./scripts:/app/apps/learn-card-app/scripts
+            - ./environments:/app/apps/learn-card-app/environments
+            - ./public:/app/apps/learn-card-app/public
+            - ./index.html:/app/apps/learn-card-app/index.html
+            - ./index.template.html:/app/apps/learn-card-app/index.template.html
+            - ./package.json:/app/apps/learn-card-app/package.json
+            - ./capacitor.config.ts:/app/apps/learn-card-app/capacitor.config.ts
+            - ./vite.config.mts:/app/apps/learn-card-app/vite.config.mts
+            - ./postcss.config.js:/app/apps/learn-card-app/postcss.config.js
+            - ./tailwind.config.js:/app/apps/learn-card-app/tailwind.config.js
+            - ./tsconfig.json:/app/apps/learn-card-app/tsconfig.json
             - ../../packages:/app/packages
-
-    watcher:
-        image: learncard-monorepo-local
-        container_name: 'lcn-watcher'
-        command:
-            [
-                'pnpm',
-                'exec',
-                'nx',
-                'watch',
-                '--all',
-                '--verbose',
-                '--',
-                'sh',
-                '/app/tools/scripts/nx-watch-build.sh',
-            ]
-        networks:
-            - learn-card
-        environment:
-            SKIP_DIDKIT_NAPI: '1'
-            # Enable polling for file watching in Docker
-            CHOKIDAR_USEPOLLING: 'true'
-            CHOKIDAR_INTERVAL: '1000'
-        volumes:
-            - ../../packages:/app/packages
-            - nx-cache:/app/node_modules/.cache
+            - ../../services/learn-card-network:/app/services/learn-card-network
+            - ../../tools:/app/tools
 
     delete-service:
         build: ../../services/playwright-delete-service
@@ -104,7 +93,6 @@ services:
             - 4000
         ports:
             - '4000:4000'
-        command: ['sh', '-c', 'cd services/learn-card-network/brain-service && pnpm dev']
         depends_on:
             neo4j:
                 condition: service_healthy
@@ -119,14 +107,17 @@ services:
         env_file:
             - path: ../../services/learn-card-network/brain-service/.env
               required: false
+        command: ['sh', '-c', 'cd services/learn-card-network/brain-service && bun run dev']
         volumes:
-            - ../../services/learn-card-network/brain-service/src:/app/services/learn-card-network/brain-service/src
-            - ../../services/learn-card-network/brain-service/nodemon.docker.json:/app/services/learn-card-network/brain-service/nodemon.docker.json
+            - ../../services/learn-card-network:/app/services/learn-card-network
             - ../../packages:/app/packages
         environment:
             IS_OFFLINE: true
             PORT: 4000
             SEED: a
+            # LC-1644: Enable backend PerfTracker JSON logs (gated on this env var)
+            # Zero-cost in hot paths when unset; toggle off by unsetting.
+            LC_PERF_LOG: '1'
             DOMAIN_NAME: 'localhost%3A4000'
             SKIP_DIDKIT_NAPI: '1'
             # Enable polling for file watching in Docker
@@ -158,7 +149,6 @@ services:
             - 4100
         ports:
             - '4100:4100'
-        command: ['sh', '-c', 'cd services/learn-card-network/learn-cloud-service && pnpm dev']
         depends_on:
             - mongodb
             - redis2
@@ -169,9 +159,9 @@ services:
         env_file:
             - path: ../../services/learn-card-network/learn-cloud-service/.env
               required: false
+        command: ['sh', '-c', 'cd services/learn-card-network/learn-cloud-service && bun run dev']
         volumes:
-            - ../../services/learn-card-network/learn-cloud-service/src:/app/services/learn-card-network/learn-cloud-service/src
-            - ../../services/learn-card-network/learn-cloud-service/nodemon.docker.json:/app/services/learn-card-network/learn-cloud-service/nodemon.docker.json
+            - ../../services/learn-card-network:/app/services/learn-card-network
             - ../../packages:/app/packages
         environment:
             IS_OFFLINE: true
@@ -202,7 +192,6 @@ services:
             - 5100
         ports:
             - '5100:5100'
-        command: ['sh', '-c', 'cd services/learn-card-network/lca-api && pnpm dev']
         depends_on:
             - mongodb
             - redis3
@@ -213,9 +202,9 @@ services:
         env_file:
             - path: ../../services/learn-card-network/lca-api/.env
               required: false
+        command: ['sh', '-c', 'cd services/learn-card-network/lca-api && bun run dev']
         volumes:
-            - ../../services/learn-card-network/lca-api/src:/app/services/learn-card-network/lca-api/src
-            - ../../services/learn-card-network/lca-api/nodemon.docker.json:/app/services/learn-card-network/lca-api/nodemon.docker.json
+            - ../../services/learn-card-network:/app/services/learn-card-network
             - ../../packages:/app/packages
         environment:
             IS_OFFLINE: true
@@ -373,6 +362,3 @@ services:
 networks:
     learn-card:
         driver: bridge
-
-volumes:
-    nx-cache:

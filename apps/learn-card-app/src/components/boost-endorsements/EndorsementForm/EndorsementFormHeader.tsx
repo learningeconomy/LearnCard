@@ -5,6 +5,8 @@ import { useGetVCInfo, CredentialCategoryEnum, UserProfilePicture } from 'learn-
 import { VC } from '@learncard/types';
 import { EndorsementFormModeEnum } from '../EndorsementForm/endorsement-state.helpers';
 import { EndorsmentThumbWithCircle } from 'learn-card-base/svgs/EndorsementThumb';
+import * as m from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
 
 export const EndorsementFormHeader: React.FC<{
     credential: VC;
@@ -21,30 +23,8 @@ export const EndorsementFormHeader: React.FC<{
     } = useGetVCInfo(credential);
     const { issuerName: endorserName } = useGetVCInfo(endorsementVC);
 
-    let title = 'Endorsement Request';
-    let text = isRequest ? (
-        <p className="text-sm text-grayscale-600 font-poppins text-left">
-            <span className="font-semibold">{issueeProfile?.displayName || issueeName}</span> has
-            requested an endorsement from you for{' '}
-            <span className="font-semibold">{credentialTitle}</span>
-        </p>
-    ) : (
-        <p className="text-sm text-grayscale-600 font-poppins text-left">
-            You’re endorsing{' '}
-            <span className="font-semibold">{issueeProfile?.displayName || issueeName}</span> for{' '}
-            <span className="font-semibold">{credentialTitle}</span>
-        </p>
-    );
-
-    if (mode === EndorsementFormModeEnum.review) {
-        title = 'Review Endorsement';
-        text = (
-            <p className="text-sm text-grayscale-600 font-poppins text-left">
-                <span className="font-semibold">{endorserName}</span> has written an endorsement for{' '}
-                <span className="font-semibold">{credentialTitle}</span>
-            </p>
-        );
-    }
+    const boldSpan = <span className="font-semibold" />;
+    const subjectName = issueeProfile?.displayName || issueeName;
 
     let headerImage = issueeProfile?.image ? (
         <UserProfilePicture
@@ -66,6 +46,38 @@ export const EndorsementFormHeader: React.FC<{
                 fill="#E2E3E9"
                 className="w-[60px] h-[60px] text-grayscale-900"
             />
+        );
+    }
+
+    let title = m['endorsement.form.header.requestTitle']();
+    let text = (
+        <p className="text-sm text-grayscale-600 font-poppins text-left">
+            {isRequest ? (
+                <TransP
+                    m={m['endorsement.form.header.requestText']}
+                    values={{ name: subjectName, title: credentialTitle }}
+                    components={[boldSpan, boldSpan]}
+                />
+            ) : (
+                <TransP
+                    m={m['endorsement.form.header.endorsingText']}
+                    values={{ name: subjectName, title: credentialTitle }}
+                    components={[boldSpan, boldSpan]}
+                />
+            )}
+        </p>
+    );
+
+    if (mode === EndorsementFormModeEnum.review) {
+        title = m['endorsement.form.header.reviewTitle']();
+        text = (
+            <p className="text-sm text-grayscale-600 font-poppins text-left">
+                <TransP
+                    m={m['endorsement.form.header.reviewText']}
+                    values={{ name: endorserName, title: credentialTitle }}
+                    components={[boldSpan, boldSpan]}
+                />
+            </p>
         );
     }
 

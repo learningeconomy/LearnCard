@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatLocaleDate } from '../../i18n/formatters';
 import { useModal, ModalTypes, useWallet } from 'learn-card-base';
 import { useQuery } from '@tanstack/react-query';
 import { IonSpinner } from '@ionic/react';
@@ -105,7 +106,7 @@ const SkillFrameworks: React.FC = () => {
                     <div className="flex flex-col text-grayscale-900">
                         {frameworks.map(framework => {
                             const createdDate = framework.createdAt
-                                ? new Date(framework.createdAt).toLocaleDateString('en-US', {
+                                ? formatLocaleDate(new Date(framework.createdAt), {
                                       year: 'numeric',
                                       month: 'long',
                                       day: 'numeric',

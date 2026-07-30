@@ -36,7 +36,12 @@ export type {
     SSSKeyDerivationStrategy,
 } from '@learncard/sss-key-manager';
 
-import type { AuthProvider, AuthUser, KeyDerivationStrategy, RecoveryMethodInfo } from '@learncard/types';
+import type {
+    AuthProvider,
+    AuthUser,
+    KeyDerivationStrategy,
+    RecoveryMethodInfo,
+} from '@learncard/types';
 
 /**
  * Why the coordinator entered `needs_recovery`.
@@ -55,9 +60,21 @@ export type UnifiedAuthState =
     | { status: 'checking_key_status' }
     | { status: 'needs_setup'; authUser: AuthUser }
     | { status: 'needs_migration'; authUser: AuthUser; migrationData?: Record<string, unknown> }
-    | { status: 'needs_recovery'; authUser: AuthUser; recoveryMethods: RecoveryMethodInfo[]; recoveryReason: RecoveryReason; maskedRecoveryEmail?: string | null }
+    | {
+          status: 'needs_recovery';
+          authUser: AuthUser;
+          recoveryMethods: RecoveryMethodInfo[];
+          recoveryReason: RecoveryReason;
+          maskedRecoveryEmail?: string | null;
+      }
     | { status: 'deriving_key' }
-    | { status: 'ready'; authUser?: AuthUser; did: string; privateKey: string; authSessionValid: boolean }
+    | {
+          status: 'ready';
+          authUser?: AuthUser;
+          did: string;
+          privateKey: string;
+          authSessionValid: boolean;
+      }
     | { status: 'error'; error: string; canRetry: boolean; previousState?: UnifiedAuthState };
 
 /**
@@ -108,4 +125,23 @@ export interface AuthCoordinatorConfig {
      * @default 0 (disabled)
      */
     legacyAccountThresholdMs?: number;
+
+    /**
+     * Hard timeout (ms) for the opportunistic auth-session probe on the
+     * private-key-first (resume) path. If the auth provider can't answer within
+     * this budget (e.g. airplane mode), the coordinator proceeds to `ready`
+     * using the cached key alone rather than hanging.
+     *
+     * @default 2500
+     */
+    authSessionTimeoutMs?: number;
+
+    /**
+     * Hard timeout (ms) for the server key-status fetch. On the resume path a
+     * timeout is non-fatal (proceed to `ready`); on the standard login path it
+     * surfaces as a retryable error rather than an indefinite hang.
+     *
+     * @default 4000
+     */
+    serverStatusTimeoutMs?: number;
 }

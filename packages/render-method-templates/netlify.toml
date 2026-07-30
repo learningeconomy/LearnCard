@@ -1,0 +1,2 @@
+[build]
+  publish = "packages/render-method-templates"

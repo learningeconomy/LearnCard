@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { m } from '../../../../paraglide/messages.js';
+
 import { IonInput } from '@ionic/react';
 import Search from 'learn-card-base/svgs/Search';
 
@@ -41,7 +43,7 @@ export const ExistingTopicSearch: React.FC<{
                     className={`bg-white text-grayscale-800 flex-1 w-full rounded-[16px] !px-4 ${
                         isDesktop ? '' : 'border-solid border-[1px] border-grayscale-200'
                     }`}
-                    placeholder="Browse..."
+                    placeholder={m['aiSession.browse']()}
                 />
                 <button
                     className={` p-2 rounded-[16px] flex items-center justify-center ml-2 min-h-[44px] min-w-[44px] ${

@@ -1,14 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('explore-pathways-modal');
 
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 
 import {
     conditionalPluralize,
+    WalletIcons,
     useGetBoostSkills,
     useGetSelfAssignedSkillsBoost,
     useManageSelfAssignedSkillsBoost,
-    useSemanticSearchSkills,
     useModal,
     useToast,
     ToastTypeEnum,
@@ -17,9 +19,7 @@ import {
 } from 'learn-card-base';
 
 import { Plus, X } from 'lucide-react';
-import PuzzlePiece from 'learn-card-base/svgs/PuzzlePiece';
-import { ExperiencesIconWithShape } from 'learn-card-base/svgs/wallet/ExperiencesIcon';
-import { AiPathwaysIconWithShape } from 'learn-card-base/svgs/wallet/AiPathwaysIcon';
+import PuzzlePiece from 'src/components/svgs/PuzzlePiece';
 import SlimCaretLeft from 'src/components/svgs/SlimCaretLeft';
 import SlimCaretRight from 'src/components/svgs/SlimCaretRight';
 import Pencil from 'src/components/svgs/Pencil';
@@ -34,14 +34,19 @@ import type { SelectedSkill } from '../skills/skillTypes';
 import SelfAssignSkillsModal from '../skills/SelfAssignSkillsModal';
 import EditGoalsModal from './EditGoalsModal';
 import { SkillFrameworkNode } from '../../components/boost/boost';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import GrowSkillsModal from './GrowSkillsModal';
 import { AiPathwaysWhatWouldYouLikeToDoCardOptions } from './ai-pathways-what-would-you-like-to-do/AiPathwaysWhatWouldYouLikeToDoCard.types';
 import PathwaySearchInput from './ai-pathways-what-would-you-like-to-do/PathwaySearchInput';
 import ExploreRoles from './ExploreRoles';
+import * as m from '../../paraglide/messages.js';
+import {
+    useGlobalSemanticSearchSkills,
+    useGlobalSkillFrameworks,
+} from '../../helpers/globalSkillFrameworks.helpers';
 
 type SemanticSkillRecord = {
     id: string;
+    frameworkId?: string;
     score?: number;
 };
 
@@ -56,10 +61,18 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
 }) => {
     const { newModal, closeModal } = useModal();
     const { presentToast } = useToast();
-    const flags = useFlags();
+    const globalSkillFrameworks = useGlobalSkillFrameworks();
+    const frameworkIds = useMemo(
+        () => globalSkillFrameworks.map(framework => framework.frameworkId),
+        [globalSkillFrameworks]
+    );
 
     const [search, setSearch] = useState(initialSearchQuery);
     const [selectedSkills, setSelectedSkills] = useState<SelectedSkill[]>([]);
+    const skillsSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pendingSkillsRef = useRef<SelectedSkill[] | null>(null);
+    const lastSavedSkillsRef = useRef<SelectedSkill[]>([]);
+    const skillsDirtyRef = useRef(false);
     const skillsSwiperRef = useRef<any>(null);
     const goalsSwiperRef = useRef<any>(null);
     const [skillsAtBeginning, setSkillsAtBeginning] = useState(true);
@@ -74,14 +87,17 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
         sasBoostData?.uri
     );
     const { mutateAsync: saveSkills, isPending: skillsSaving } = useManageSelfAssignedSkillsBoost();
+    const saveSkillsRef = useRef(saveSkills);
+    saveSkillsRef.current = saveSkills;
 
-    const frameworkId = flags?.selfAssignedSkillsFrameworkId;
     const searchQuery = search.trim();
     const hasSearchQuery = Boolean(searchQuery);
 
-    const { data: semanticSearchSkillsData } = useSemanticSearchSkills(searchQuery, frameworkId, {
-        limit: 25,
-    });
+    const { data: semanticSearchSkillsData } = useGlobalSemanticSearchSkills(
+        searchQuery,
+        frameworkIds,
+        { limit: 25 }
+    );
 
     const {
         data: goalsData,
@@ -102,68 +118,129 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
 
         const scoreBySkillId = new Map<string, number>(
             semanticSearchSkillsData?.records?.map((skill: SemanticSkillRecord) => [
-                skill.id,
+                `${skill.frameworkId ?? ''}::${skill.id}`,
                 skill.score ?? 0,
             ]) ?? []
         );
 
         return [...selectedSkills].sort(
             (left, right) =>
-                (scoreBySkillId.get(right.id) ?? 0) - (scoreBySkillId.get(left.id) ?? 0)
+                (scoreBySkillId.get(`${right.frameworkId}::${right.id}`) ?? 0) -
+                (scoreBySkillId.get(`${left.frameworkId}::${left.id}`) ?? 0)
         );
-    }, [hasSearchQuery, searchQuery, selectedSkills, semanticSearchSkillsData?.records]);
+    }, [hasSearchQuery, selectedSkills, semanticSearchSkillsData?.records]);
 
     useEffect(() => {
-        if (sasBoostSkills) {
-            setSelectedSkills(
-                sasBoostSkills.map((s: { id: string; proficiencyLevel: number }) => ({
+        // Skip syncing server state while a local edit is pending/saving, otherwise
+        // an in-flight refetch can clobber selections the user just made.
+        if (sasBoostSkills && !skillsDirtyRef.current) {
+            const nextSkills = sasBoostSkills.map(
+                (s: { id: string; frameworkId?: string; proficiencyLevel: number }) => ({
                     id: s.id,
+                    frameworkId: s.frameworkId ?? frameworkIds[0] ?? '',
                     proficiency: s.proficiencyLevel,
-                }))
+                })
             );
+            setSelectedSkills(nextSkills);
+            lastSavedSkillsRef.current = nextSkills;
         }
-    }, [sasBoostSkills]);
+    }, [frameworkIds, sasBoostSkills]);
 
-    const persistSkills = async (nextSkills: SelectedSkill[]) => {
-        const previousSkills = selectedSkills;
+    useEffect(
+        () => () => {
+            if (skillsSaveTimerRef.current) clearTimeout(skillsSaveTimerRef.current);
+
+            const pendingSkills = pendingSkillsRef.current;
+            if (!pendingSkills) return;
+
+            pendingSkillsRef.current = null;
+            void saveSkillsRef
+                .current({
+                    skills: pendingSkills.map(skill => ({
+                        frameworkId: skill.frameworkId,
+                        id: skill.id,
+                        proficiencyLevel: skill.proficiency,
+                    })),
+                })
+                .catch((error: any) => {
+                    log.error('Error flushing skills save:', error);
+                    // presentToast is a global store setter, safe to call after this
+                    // component has unmounted.
+                    presentToast(
+                        `Error saving skills!${error?.message ? ` ${error.message}` : ''}`,
+                        { type: ToastTypeEnum.Error }
+                    );
+                });
+        },
+        []
+    );
+
+    const persistSkills = (nextSkills: SelectedSkill[]) => {
         setSelectedSkills(nextSkills);
+        pendingSkillsRef.current = nextSkills;
+        skillsDirtyRef.current = true;
+        if (skillsSaveTimerRef.current) clearTimeout(skillsSaveTimerRef.current);
 
-        try {
-            await saveSkills({
-                skills: nextSkills.map(skill => ({
-                    frameworkId,
-                    id: skill.id,
-                    proficiencyLevel: skill.proficiency,
-                })),
-            });
-        } catch (error: any) {
-            console.error('Error creating or updating skills:', error);
-            setSelectedSkills(previousSkills);
-            presentToast(`Error saving skills!${error?.message ? ` ${error?.message}` : ''}`, {
-                type: ToastTypeEnum.Error,
-            });
-        }
+        skillsSaveTimerRef.current = setTimeout(async () => {
+            const skillsToSave = pendingSkillsRef.current;
+            pendingSkillsRef.current = null;
+            if (!skillsToSave) return;
+
+            try {
+                await saveSkillsRef.current({
+                    skills: skillsToSave.map(skill => ({
+                        frameworkId: skill.frameworkId,
+                        id: skill.id,
+                        proficiencyLevel: skill.proficiency,
+                    })),
+                });
+                lastSavedSkillsRef.current = skillsToSave;
+            } catch (error: any) {
+                log.error('Error creating or updating skills:', error);
+                setSelectedSkills(lastSavedSkillsRef.current);
+                presentToast(`Error saving skills!${error?.message ? ` ${error.message}` : ''}`, {
+                    type: ToastTypeEnum.Error,
+                });
+            } finally {
+                skillsSaveTimerRef.current = null;
+                // Only clear dirty if no newer edit was queued while this save was in flight.
+                if (pendingSkillsRef.current === null) {
+                    skillsDirtyRef.current = false;
+                }
+            }
+        }, 400);
     };
 
-    const handleAddSkill = async (skill: SkillFrameworkNode, proficiencyLevel: number) => {
+    const handleAddSkill = (skill: SkillFrameworkNode, proficiencyLevel: number) => {
         if (!skill.id) return;
+        const resolvedFrameworkId = skill.frameworkId ?? skill.targetFramework ?? frameworkIds[0];
+        if (!resolvedFrameworkId) return;
 
-        await persistSkills([
-            ...selectedSkills.filter(selected => selected.id !== skill.id),
-            { id: skill.id, proficiency: proficiencyLevel },
+        persistSkills([
+            ...selectedSkills.filter(
+                selected =>
+                    !(selected.id === skill.id && selected.frameworkId === resolvedFrameworkId)
+            ),
+            { id: skill.id, frameworkId: resolvedFrameworkId, proficiency: proficiencyLevel },
         ]);
     };
 
-    const handleEditSkill = async (skillId: string, proficiencyLevel: number) => {
-        await persistSkills(
+    const handleEditSkill = (frameworkId: string, skillId: string, proficiencyLevel: number) => {
+        persistSkills(
             selectedSkills.map(skill =>
-                skill.id === skillId ? { ...skill, proficiency: proficiencyLevel } : skill
+                skill.id === skillId && skill.frameworkId === frameworkId
+                    ? { ...skill, proficiency: proficiencyLevel }
+                    : skill
             )
         );
     };
 
-    const handleRemoveSkill = async (skillId: string) => {
-        await persistSkills(selectedSkills.filter(skill => skill.id !== skillId));
+    const handleRemoveSkill = (frameworkId: string, skillId: string) => {
+        persistSkills(
+            selectedSkills.filter(
+                skill => !(skill.id === skillId && skill.frameworkId === frameworkId)
+            )
+        );
     };
 
     const openSelfAssignSkillsModal = () => {
@@ -196,7 +273,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
         try {
             await saveGoals({ goals: nextGoals });
         } catch (error: any) {
-            console.error('Error creating or updating goals:', error);
+            log.error('Error creating or updating goals:', error);
             presentToast(`Error saving goals!${error?.message ? ` ${error?.message}` : ''}`, {
                 type: ToastTypeEnum.Error,
             });
@@ -237,7 +314,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
         <div className="h-full relative bg-grayscale-50 overflow-hidden text-grayscale-900 flex flex-col">
             <div className="px-[15px] py-[20px] bg-white safe-area-top-margin flex flex-col gap-[15px] z-20 relative shadow-bottom-1-5 rounded-b-[20px]">
                 <div className="flex items-center gap-[10px] text-grayscale-900">
-                    <AiPathwaysIconWithShape className="w-[50px] h-[50px]" />
+                    <WalletIcons.AiPathwaysIconWithShape className="w-[50px] h-[50px]" />
                     <h5 className="text-[21px] font-poppins font-[600] leading-[24px]">
                         Explore Pathways
                     </h5>
@@ -248,18 +325,12 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
 
                 <PathwaySearchInput
                     variant="simple"
-                    placeholder="Search by skill, goal, or job..."
+                    placeholder={m['aiPathways.searchSkillGoalJob']()}
                     value={search}
                     onValueChange={setSearch}
                     onSearchSubmit={setSearch}
                 />
             </div>
-
-            {/* {isUpdating && (
-                <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-30">
-                    <IonSpinner color="dark" name="crescent" />
-                </div>
-            )} */}
 
             <section className="flex-1 min-h-0 pt-[20px] px-[20px] pb-[222px] overflow-y-auto z-0 relative">
                 <div className="flex flex-col gap-[10px] border-b-[1px] border-grayscale-200 border-solid pb-[15px]">
@@ -348,18 +419,22 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
                                             >
                                                 {selectedSkillsBySemanticScore.map(skill => (
                                                     <SwiperSlide
-                                                        key={skill.id}
+                                                        key={`${skill.frameworkId}-${skill.id}`}
                                                         style={{ width: 'auto' }}
                                                     >
                                                         <SkillTag
                                                             skillId={skill.id}
-                                                            frameworkId={frameworkId}
+                                                            frameworkId={skill.frameworkId}
                                                             proficiencyLevel={skill.proficiency}
                                                             handleRemoveSkill={() =>
-                                                                handleRemoveSkill(skill.id)
+                                                                handleRemoveSkill(
+                                                                    skill.frameworkId,
+                                                                    skill.id
+                                                                )
                                                             }
                                                             handleEditSkill={proficiencyLevel =>
                                                                 handleEditSkill(
+                                                                    skill.frameworkId,
                                                                     skill.id,
                                                                     proficiencyLevel
                                                                 )
@@ -369,9 +444,21 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
                                                                 selectedSkillsBySemanticScore
                                                             }
                                                             handleAddRelatedSkill={handleAddSkill}
-                                                            handleEditRelatedSkill={handleEditSkill}
-                                                            handleRemoveRelatedSkill={
-                                                                handleRemoveSkill
+                                                            handleEditRelatedSkill={(
+                                                                relatedSkillId,
+                                                                proficiencyLevel
+                                                            ) =>
+                                                                handleEditSkill(
+                                                                    skill.frameworkId,
+                                                                    relatedSkillId,
+                                                                    proficiencyLevel
+                                                                )
+                                                            }
+                                                            handleRemoveRelatedSkill={relatedSkillId =>
+                                                                handleRemoveSkill(
+                                                                    skill.frameworkId,
+                                                                    relatedSkillId
+                                                                )
                                                             }
                                                         />
                                                     </SwiperSlide>
@@ -408,23 +495,42 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
                                         <div className="flex flex-col gap-[10px]">
                                             {selectedSkillsBySemanticScore.map(skill => (
                                                 <SkillTag
-                                                    key={skill.id}
+                                                    key={`${skill.frameworkId}-${skill.id}`}
                                                     skillId={skill.id}
-                                                    frameworkId={
-                                                        sasBoostSkills?.[0]?.frameworkId ?? ''
-                                                    }
+                                                    frameworkId={skill.frameworkId}
                                                     proficiencyLevel={skill.proficiency}
                                                     handleRemoveSkill={() =>
-                                                        handleRemoveSkill(skill.id)
+                                                        handleRemoveSkill(
+                                                            skill.frameworkId,
+                                                            skill.id
+                                                        )
                                                     }
                                                     handleEditSkill={proficiencyLevel =>
-                                                        handleEditSkill(skill.id, proficiencyLevel)
+                                                        handleEditSkill(
+                                                            skill.frameworkId,
+                                                            skill.id,
+                                                            proficiencyLevel
+                                                        )
                                                     }
                                                     disabled={skillsSaving}
                                                     selectedSkills={selectedSkillsBySemanticScore}
                                                     handleAddRelatedSkill={handleAddSkill}
-                                                    handleEditRelatedSkill={handleEditSkill}
-                                                    handleRemoveRelatedSkill={handleRemoveSkill}
+                                                    handleEditRelatedSkill={(
+                                                        relatedSkillId,
+                                                        proficiencyLevel
+                                                    ) =>
+                                                        handleEditSkill(
+                                                            skill.frameworkId,
+                                                            relatedSkillId,
+                                                            proficiencyLevel
+                                                        )
+                                                    }
+                                                    handleRemoveRelatedSkill={relatedSkillId =>
+                                                        handleRemoveSkill(
+                                                            skill.frameworkId,
+                                                            relatedSkillId
+                                                        )
+                                                    }
                                                 />
                                             ))}
                                         </div>
@@ -591,9 +697,7 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
 
                 <SkillSearchSelector
                     selectedSkills={selectedSkillsBySemanticScore}
-                    onSelectedSkillsChange={async (nextSkills: SelectedSkill[]) => {
-                        await persistSkills(nextSkills);
-                    }}
+                    onSelectedSkillsChange={persistSkills}
                     showSuggestSkill={true}
                     showSearchInput={false}
                     showSelectedSkills={false}
@@ -613,8 +717,8 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
                             onClick={openGrowSkillsModal}
                             className="w-full bg-violet-500 text-white font-bold flex items-center justify-center gap-[5px] py-[7px] px-[15px] rounded-[30px] shadow-bottom-3-4 font-poppins text-[17px] leading-[24px] tracking-[0.25px]"
                         >
-                            <PuzzlePiece className="w-[30px] h-[30px]" version="filled" />
-                            Grow Skills
+                            <PuzzlePiece className="w-[30px] h-[30px]" />
+                            {m['growSkills.title']()}
                         </button>
                     )}
 
@@ -632,8 +736,8 @@ const ExplorePathwaysModal: React.FC<ExplorePathwaysModalProps> = ({
                             }
                             className="w-full bg-cyan-501 text-white font-bold flex items-center justify-center gap-[5px] py-[7px] px-[15px] rounded-[30px] shadow-bottom-3-4 font-poppins text-[17px] leading-[24px] tracking-[0.25px]"
                         >
-                            <ExperiencesIconWithShape className="w-[30px] h-[30px]" />
-                            Explore Roles
+                            <WalletIcons.ExperiencesIconWithShape className="w-[30px] h-[30px]" />
+                            {m['aiPathways.exploreRoles']()}
                         </button>
                     )}
                 </div>

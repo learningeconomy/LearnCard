@@ -77,6 +77,8 @@ import {
 } from 'learn-card-base';
 import { useScoutPassStylesPackRegistry } from 'learn-card-base/hooks/useRegistry';
 import { VC } from '@learncard/types';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('update-boost-cms');
 
 type UpdateBoostCMSProps = {
     boostCategoryType?: BoostCategoryOptionsEnum;
@@ -176,7 +178,10 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
 
             // disable editing boost based on boost status
             // DRAFT and PROVISIONAL boosts are editable, LIVE boosts are not
-            if (boostWrapper?.status === LCNBoostStatusEnum.draft || boostWrapper?.status === LCNBoostStatusEnum.provisional) {
+            if (
+                boostWrapper?.status === LCNBoostStatusEnum.draft ||
+                boostWrapper?.status === LCNBoostStatusEnum.provisional
+            ) {
                 setIsEditDisabled(false);
             } else if (boostWrapper?.status === LCNBoostStatusEnum.live) {
                 setIsEditDisabled(true);
@@ -493,7 +498,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
             }
         } catch (e) {
             setIsSaveLoading(false);
-            console.log('error::savingBoost', e);
+            log.debug('error::savingBoost', e);
             presentToast('Unable to save boost', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -531,7 +536,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                 }
             } catch (e) {
                 setIsPublishLoading(false);
-                console.log('error::boosting::someone', e);
+                log.debug('error::boosting::someone', e);
                 presentToast('Error issuing boost', {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
@@ -558,7 +563,9 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                             );
 
                             // Auto-accept the credential on LCN so it's not stuck in "pending" state
-                            await wallet.invoke.acceptCredential(sentBoostUri, { skipNotification: true });
+                            await wallet.invoke.acceptCredential(sentBoostUri, {
+                                skipNotification: true,
+                            });
 
                             //in future allow user to set storage option, eg ceramic or LCN
                             // const uri = await wallet?.store['LearnCard Network'].uploadEncrypted(sentBoost);
@@ -613,7 +620,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
             }
         } catch (e) {
             setIsLoading(false);
-            console.log('error::boosting::someone', e);
+            log.debug('error::boosting::someone', e);
             presentToast('Error issuing boost', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
@@ -678,7 +685,7 @@ const UpdateBoostCMS: React.FC<UpdateBoostCMSProps> = ({
                 }
                 customFooterComponent={
                     <BoostPreviewFooter
-                        handleSaveAndQuit={(goBack) => handleSaveAndQuit(goBack, true)}
+                        handleSaveAndQuit={goBack => handleSaveAndQuit(goBack, true)}
                         isSaveLoading={isSaveLoading}
                         handleSubmit={() => handlePublishBoost(true)}
                         isLoading={isLoading}

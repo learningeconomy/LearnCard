@@ -1,6 +1,10 @@
 import React from 'react';
 
 import { BoostPreviewTabsEnum, boostPreviewTabs } from './boost-preview-tabs.helpers';
+import * as m from '../../paraglide/messages.js';
+
+const tabLabel = (tab: BoostPreviewTabsEnum): string =>
+    tab === BoostPreviewTabsEnum.Endorsements ? m['boost.endorsements']() : m['common.details']();
 
 export const BoostPreviewTabs: React.FC<{
     className?: string;
@@ -32,7 +36,7 @@ export const BoostPreviewTabs: React.FC<{
                     }`}
                 >
                     {tab.Icon && <tab.Icon />}
-                    {tab.label}
+                    {tabLabel(tab.value)}
                 </button>
             ))}
         </div>

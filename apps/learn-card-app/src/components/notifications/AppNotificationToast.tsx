@@ -78,18 +78,24 @@ const AppNotificationToast: React.FC<AppNotificationToastProps> = ({
 
     return (
         <div
-            className={`fixed top-0 left-0 right-0 z-[99999] flex justify-center pointer-events-none px-4 pt-3 transition-all duration-300 ease-out ${
+            className={`fixed top-0 left-0 right-0 z-[99999] flex justify-center pointer-events-none px-4 pt-3 transition-all duration-300 ease-out safe-area-top-margin ${
                 isLeaving ? 'opacity-0 -translate-y-2' : 'opacity-100 translate-y-0'
             }`}
-            style={{ animation: isLeaving ? undefined : 'slideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1)' }}
+            style={{
+                animation: isLeaving ? undefined : 'slideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+            }}
         >
             <div
                 onClick={handleTap}
-                className={`pointer-events-auto max-w-[420px] w-full rounded-2xl bg-gradient-to-r ${bgGradient} p-[1px] shadow-2xl ring-1 ${ringColor} ${isTappable ? 'cursor-pointer' : ''}`}
+                className={`pointer-events-auto max-w-[420px] w-full rounded-2xl bg-gradient-to-r ${bgGradient} p-[1px] shadow-2xl ring-1 ${ringColor} ${
+                    isTappable ? 'cursor-pointer' : ''
+                }`}
             >
                 <div className="flex items-start gap-3 rounded-2xl bg-white/95 backdrop-blur-xl px-4 py-3">
                     {/* App icon or bell */}
-                    <div className={`flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-gradient-to-br ${bgGradient} shadow-sm`}>
+                    <div
+                        className={`flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-gradient-to-br ${bgGradient} shadow-sm`}
+                    >
                         {notification.appIcon && !iconFailed ? (
                             <img
                                 src={notification.appIcon}

@@ -11,11 +11,7 @@ import { ServerClient } from 'postmark';
 import { renderEmail, resolveBranding } from '@learncard/email-templates';
 import type { TemplateId, TemplateDataMap } from '@learncard/email-templates';
 
-import {
-    DeliveryService,
-    Notification,
-    isTemplateNotification,
-} from '../delivery.service';
+import { DeliveryService, Notification, isTemplateNotification } from '../delivery.service';
 
 /**
  * Map env-driven Postmark template aliases to local template IDs.
@@ -41,13 +37,12 @@ const LOCAL_TEMPLATE_ALIASES: Record<string, TemplateId> = {
 };
 
 /** Whether the given alias is a sentinel we registered (vs. a real Postmark alias). */
-const isLocalSentinelAlias = (alias: string): boolean =>
-    LOCAL_TEMPLATE_ALIASES[alias] === alias;
+const isLocalSentinelAlias = (alias: string): boolean => LOCAL_TEMPLATE_ALIASES[alias] === alias;
 
 /** Infer the local template ID from the template alias and model shape. */
 function inferLocalTemplateId(
     alias: string,
-    model: Record<string, unknown>,
+    model: Record<string, unknown>
 ): TemplateId | undefined {
     // Check the static map first (populated at startup if needed)
     if (LOCAL_TEMPLATE_ALIASES[alias]) return LOCAL_TEMPLATE_ALIASES[alias];
@@ -82,7 +77,7 @@ export class PostmarkAdapter implements DeliveryService {
         if (isTemplateNotification(notification)) {
             const localId = inferLocalTemplateId(
                 notification.templateAlias,
-                notification.templateModel,
+                notification.templateModel
             );
 
             // Try local rendering for known templates
@@ -90,12 +85,14 @@ export class PostmarkAdapter implements DeliveryService {
                 try {
                     const branding = resolveBranding(notification.branding);
 
-                    const templateData = this.mapTemplateModel(
-                        localId,
-                        notification.templateModel,
-                    );
+                    const templateData = this.mapTemplateModel(localId, notification.templateModel);
 
-                    const { html, text, subject } = await renderEmail(localId, branding, templateData);
+                    const { html, text, subject } = await renderEmail(
+                        localId,
+                        branding,
+                        templateData,
+                        notification.locale
+                    );
 
                     await this.client.sendEmail({
                         From: from,
@@ -110,7 +107,7 @@ export class PostmarkAdapter implements DeliveryService {
                 } catch (renderError) {
                     console.error(
                         `[PostmarkAdapter] Local render failed for "${notification.templateAlias}":`,
-                        renderError,
+                        renderError
                     );
 
                     // If the alias is one of our sentinels (e.g. 'recovery-key'),
@@ -149,7 +146,7 @@ export class PostmarkAdapter implements DeliveryService {
      */
     private mapTemplateModel(
         templateId: TemplateId,
-        model: Record<string, unknown>,
+        model: Record<string, unknown>
     ): TemplateDataMap[TemplateId] {
         switch (templateId) {
             case 'login-verification-code':
@@ -162,7 +159,10 @@ export class PostmarkAdapter implements DeliveryService {
 
             case 'contact-method-verification':
                 return {
-                    verificationToken: (model.verificationToken as string) ?? (model.verificationCode as string) ?? '',
+                    verificationToken:
+                        (model.verificationToken as string) ??
+                        (model.verificationCode as string) ??
+                        '',
                     recipient: model.recipient as { name?: string } | undefined,
                 };
 

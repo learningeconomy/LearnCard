@@ -1,4 +1,6 @@
 import { useCallback, useMemo } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-guardian-gate');
 
 import {
     switchedProfileStore,
@@ -110,7 +112,7 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
                 const parentUser = currentUserStore.get.parentUser();
                 const parentPrivateKey = parentUser?.privateKey;
                 if (!parentPrivateKey) {
-                    console.error('Failed to get parent private key for guardian approval');
+                    log.error('Failed to get parent private key for guardian approval');
                     return;
                 }
 
@@ -139,7 +141,7 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
                     guardianApprovalStore.set.setApproval(parentDid, vp, expiresAt);
                 }
             } catch (error) {
-                console.error('Failed to create guardian approval VP:', error);
+                log.error('Failed to create guardian approval VP:', error);
             }
         }
     }, [parentDid, initWallet, verificationTTL]);
@@ -178,7 +180,7 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
 
             // Need guardian verification
             if (!parentDid) {
-                console.warn('useGuardianGate: No parent DID found for child profile');
+                log.warn('useGuardianGate: No parent DID found for child profile');
                 onCancel?.();
                 return;
             }

@@ -13,6 +13,9 @@ import { waitForSQLiteReady } from 'learn-card-base/SQL/sqliteReady';
 // - Web: delegates to AES-GCM + IndexedDB secure storage
 // - Native (Capacitor): stores/reads from encrypted SQLite `users.privateKey`
 
+import { getLogger } from '../logging/logger';
+const log = getLogger('platform-private-key-storage');
+
 export async function setPlatformPrivateKey(pk: string): Promise<void> {
     if (!pk) throw new Error('No private key provided');
 
@@ -24,7 +27,12 @@ export async function setPlatformPrivateKey(pk: string): Promise<void> {
         return;
     }
 
-    // Native: store in SQLite (encrypted DB). Prefer updating current user's row.
+    // Native: store in SQLite (encrypted DB). Wait for the SQLite plugin to be
+    // ready first — symmetric with getPlatformPrivateKey. Without this, a write
+    // during the login race hits the null-db fallback below and only lands in
+    // memory, so the key is lost on hard close (the offline-boot regression).
+    await waitForSQLiteReady();
+
     const db = sqliteStore.get.db();
 
     if (!db) {
@@ -33,30 +41,37 @@ export async function setPlatformPrivateKey(pk: string): Promise<void> {
         return;
     }
 
+    const user = currentUserStore.get.currentUser();
+    const uid = user?.uid || '';
+    const verifierId =
+        user && typeof (user as { verifierId?: string }).verifierId === 'string'
+            ? (user as { verifierId?: string }).verifierId || ''
+            : '';
+    const email = user?.email || '';
+
+    let where = '';
+    if (uid) where = `WHERE uid="${uid}"`;
+    else if (verifierId) where = `WHERE verifierId="${verifierId}"`;
+    else if (email) where = `WHERE email="${email}"`;
+
     try {
         await db.open();
 
-        const user = currentUserStore.get.currentUser();
-        let where = '';
-        if (user?.uid) where = `WHERE uid="${user.uid}"`;
-        else if (
-            user &&
-            'verifierId' in user &&
-            typeof (user as { verifierId?: string }).verifierId === 'string' &&
-            (user as { verifierId?: string }).verifierId
-        )
-            where = `WHERE verifierId="${(user as { verifierId?: string }).verifierId}"`;
-        else if (user?.email) where = `WHERE email="${user.email}"`;
+        await db.execute(`UPDATE users SET privateKey="${pk}" ${where}`);
 
-        if (where) {
-            await db.execute(`UPDATE users SET privateKey="${pk}" ${where}`);
-        } else {
-            // Fallback: update any existing row, else insert minimal row
-            const rows = await db.query('SELECT rowid as id FROM users');
-            if ((rows?.values ?? []).length > 0) {
-                await db.execute(`UPDATE users SET privateKey="${pk}"`);
-            } else {
-                await db.execute(`INSERT INTO users (
+        // A keyed UPDATE matches nothing when the row doesn't exist yet, and
+        // SQLite reports no error — verify the write actually landed, and insert
+        // a row keyed to this user if it didn't. Otherwise the key silently
+        // vanishes and offline boot can't reconstruct the wallet.
+        const check = await db.query(
+            where
+                ? `SELECT privateKey FROM users ${where} LIMIT 1`
+                : 'SELECT privateKey FROM users LIMIT 1'
+        );
+        const persisted = check?.values?.[0]?.privateKey;
+
+        if (persisted !== pk) {
+            await db.execute(`INSERT INTO users (
                     email,
                     name,
                     profileImage,
@@ -70,12 +85,11 @@ export async function setPlatformPrivateKey(pk: string): Promise<void> {
                     uid,
                     phoneNumber
                 ) VALUES (
-                    '', '', '', '', '', '', '', '', '${pk}', '', '', ''
+                    '${email}', '', '', '', '', '${verifierId}', '', '', '${pk}', '', '${uid}', ''
                 )`);
-            }
         }
     } catch (e) {
-        console.warn('setPlatformPrivateKey: sqlite error', e);
+        log.warn('setPlatformPrivateKey: sqlite error', e);
         // Also set in memory to avoid blocking login
         currentUserStore.set.currentUserPK(pk);
     } finally {
@@ -103,38 +117,47 @@ export async function getPlatformPrivateKey(): Promise<string | null> {
 
     if (!db) return null;
 
-    try {
-        await db.open();
+    const user = currentUserStore.get.currentUser();
+    let where = '';
+    if (user?.uid) where = `WHERE uid="${user.uid}"`;
+    else if (
+        user &&
+        'verifierId' in user &&
+        typeof (user as { verifierId?: string }).verifierId === 'string' &&
+        (user as { verifierId?: string }).verifierId
+    )
+        where = `WHERE verifierId="${(user as { verifierId?: string }).verifierId}"`;
+    else if (user?.email) where = `WHERE email="${user.email}"`;
 
-        const user = currentUserStore.get.currentUser();
-        let where = '';
-        if (user?.uid) where = `WHERE uid="${user.uid}"`;
-        else if (
-            user &&
-            'verifierId' in user &&
-            typeof (user as { verifierId?: string }).verifierId === 'string' &&
-            (user as { verifierId?: string }).verifierId
-        )
-            where = `WHERE verifierId="${(user as { verifierId?: string }).verifierId}"`;
-        else if (user?.email) where = `WHERE email="${user.email}"`;
+    // Prefer the current user's row, but always fall back to ANY row that
+    // actually holds a key — the current-user identifiers may not be rehydrated
+    // yet at cold start, and a plain `LIMIT 1` can hit a keyless row.
+    const keyedQuery = where ? `SELECT privateKey FROM users ${where} LIMIT 1` : null;
+    const anyKeyQuery = `SELECT privateKey FROM users WHERE privateKey IS NOT NULL AND privateKey != '' LIMIT 1`;
 
-        const query = where
-            ? `SELECT privateKey FROM users ${where} LIMIT 1`
-            : 'SELECT privateKey FROM users LIMIT 1';
-
-        const res = await db.query(query);
-        const pk = res?.values?.[0]?.privateKey ?? null;
-
-        if (typeof pk === 'string' && pk.length > 0) return pk;
-        return null;
-    } catch (e) {
-        console.warn('getPlatformPrivateKey: sqlite error', e);
-        return null;
-    } finally {
+    // The shared SQLite connection can transiently return empty right after a
+    // cold start (open/close races with concurrent reads). The key IS on disk,
+    // so retry a few times before giving up — otherwise pk-first boot falls
+    // through to a network login and strands the user on the offline gate.
+    for (let attempt = 0; attempt < 3; attempt++) {
         try {
-            if ((await db?.isDBOpen())?.result) await db?.close();
-        } catch {}
+            await db.open();
+
+            if (keyedQuery) {
+                const keyed = (await db.query(keyedQuery))?.values?.[0]?.privateKey ?? null;
+                if (typeof keyed === 'string' && keyed.length > 0) return keyed;
+            }
+
+            const any = (await db.query(anyKeyQuery))?.values?.[0]?.privateKey ?? null;
+            if (typeof any === 'string' && any.length > 0) return any;
+        } catch (e) {
+            log.warn(`getPlatformPrivateKey: sqlite error (attempt ${attempt + 1})`, e);
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 150));
     }
+
+    return null;
 }
 
 export async function clearPlatformPrivateKey(): Promise<void> {
@@ -175,7 +198,7 @@ export async function clearPlatformPrivateKey(): Promise<void> {
             : `UPDATE users SET privateKey=NULL`;
         await db.execute(sql);
     } catch (e) {
-        console.warn('clearPlatformPrivateKey: sqlite error (likely db already cleared)', e);
+        log.warn('clearPlatformPrivateKey: sqlite error (likely db already cleared)', e);
     } finally {
         try {
             if ((await db?.isDBOpen())?.result) await db?.close();

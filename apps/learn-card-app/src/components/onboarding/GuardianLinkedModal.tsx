@@ -1,4 +1,7 @@
 import React from 'react';
+import * as m from '../../paraglide/messages.js';
+import { getLocale } from '../../paraglide/runtime.js';
+import { TransP } from '../../i18n/TransP';
 
 type LinkedChild = {
     childProfileId: string;
@@ -13,15 +16,18 @@ type Props = {
 
 const GuardianLinkedModal: React.FC<Props> = ({ children, onDismiss }) => {
     const names = children.map(c => c.childDisplayName || c.childProfileId);
+    const listFormat = new Intl.ListFormat(getLocale(), { style: 'long', type: 'conjunction' });
 
     let nameText: string;
-    if (names.length === 1) {
-        nameText = names[0]!;
-    } else if (names.length === 2) {
-        nameText = `${names[0]} and ${names[1]}`;
+    if (names.length <= 2) {
+        nameText = listFormat.format(names);
     } else {
         const rest = names.length - 2;
-        nameText = `${names[0]}, ${names[1]}, and ${rest} other${rest > 1 ? 's' : ''}`;
+        const othersLabel =
+            rest === 1
+                ? m['onboarding.guardianLinked.otherOne']({ count: rest })
+                : m['onboarding.guardianLinked.otherOther']({ count: rest });
+        nameText = listFormat.format([names[0]!, names[1]!, othersLabel]);
     }
 
     return (
@@ -30,18 +36,20 @@ const GuardianLinkedModal: React.FC<Props> = ({ children, onDismiss }) => {
                 <span className="text-emerald-700 text-xl">✓</span>
             </div>
             <h2 className="text-[18px] font-[700] font-notoSans text-grayscale-900 mb-3">
-                You're all set up!
+                {m['onboarding.guardianLinked.heading']()}
             </h2>
             <p className="text-[14px] font-notoSans text-grayscale-600 mb-6">
-                You're now set up to manage credentials for{' '}
-                <span className="font-[600] text-grayscale-900">{nameText}</span>. Future
-                approvals will appear directly in the app.
+                <TransP
+                    m={m['onboarding.guardianLinked.description']}
+                    values={{ name: nameText }}
+                    components={[<span className="font-[600] text-grayscale-900" key="n" />]}
+                />
             </p>
             <button
                 onClick={onDismiss}
                 className="w-full rounded-full bg-emerald-700 text-white py-[12px] text-[15px] font-[600] font-notoSans"
             >
-                Got it
+                {m['onboarding.guardianLinked.gotIt']()}
             </button>
         </div>
     );

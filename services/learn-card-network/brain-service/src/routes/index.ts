@@ -52,6 +52,13 @@ export type Context = {
     domain: string;
     tenant: ResolvedTenant;
     _guardianApprovalToken?: string;
+    /**
+     * Caller IP, when the transport exposes one. Used to scope abuse limits on
+     * pre-auth routes, where there is no DID to key a limit on. Best-effort:
+     * absent for transports without a request context (e.g. direct in-process
+     * callers), so treat `undefined` as "unknown caller", not "trusted".
+     */
+    sourceIp?: string;
 };
 
 export type RequiredScope = { requiredScope?: string };
@@ -93,14 +100,24 @@ export const createContext = async (
 
     const domain = process.env.DOMAIN_NAME || _domain;
 
+    // API Gateway v2 puts the caller IP on requestContext.http.sourceIp. Other
+    // transports (Fastify/NodeHTTP/in-process) may not carry one at all.
+    const sourceIp =
+        'requestContext' in event
+            ? (event.requestContext as { http?: { sourceIp?: string } }).http?.sourceIp
+            : undefined;
+
     // Resolve tenant from request headers (X-Tenant-Id → Origin → env → default)
-    const rawHeaders = 'event' in options
-        ? (options.event.headers as Record<string, string | undefined>)
-        : 'get' in event.headers
+    const rawHeaders =
+        'event' in options
+            ? (options.event.headers as Record<string, string | undefined>)
+            : 'get' in event.headers
             ? Object.fromEntries(event.headers as Map<string, string>)
             : (event.headers as Record<string, string | string[] | undefined>);
 
-    const tenant = resolveTenantFromRequest(rawHeaders as Record<string, string | string[] | undefined>);
+    const tenant = resolveTenantFromRequest(
+        rawHeaders as Record<string, string | string[] | undefined>
+    );
 
     if (authHeader && authHeader.split(' ').length === 2) {
         const [scheme, jwt] = authHeader.split(' ');
@@ -125,6 +142,7 @@ export const createContext = async (
                         user: { did, isChallengeValid: false, scope: AUTH_GRANT_NO_ACCESS_SCOPE },
                         domain,
                         tenant,
+                        sourceIp,
                     };
 
                 let isChallengeValid = false;
@@ -142,6 +160,7 @@ export const createContext = async (
                             contactMethod,
                             domain,
                             tenant,
+                            sourceIp,
                         };
                     }
                     // If the user is using a real auth grant i.e. an API Token.
@@ -161,12 +180,18 @@ export const createContext = async (
 
                 Sentry.setUser({ id: did });
 
-                return { user: { did, isChallengeValid, scope }, domain, tenant, _guardianApprovalToken };
+                return {
+                    user: { did, isChallengeValid, scope },
+                    domain,
+                    tenant,
+                    _guardianApprovalToken,
+                    sourceIp,
+                };
             }
         }
     }
 
-    return { domain, tenant, _guardianApprovalToken };
+    return { domain, tenant, _guardianApprovalToken, sourceIp };
 };
 
 export const openRoute = t.procedure

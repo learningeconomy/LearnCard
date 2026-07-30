@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import * as m from '../../../paraglide/messages.js';
 import { QRCodeSVG } from 'qrcode.react';
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
@@ -40,12 +41,12 @@ const AddressBookQRCode: React.FC<{
             await Clipboard.write({
                 string: `${getAppBaseUrl()}/connect?did=${wallet?.id?.did()}`,
             });
-            presentToast('Contact link copied to clipboard', {
+            presentToast(m['contacts.linkCopied'](), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy Contact link to clipboard', {
+            presentToast(m['contacts.linkCopyFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -57,7 +58,7 @@ const AddressBookQRCode: React.FC<{
 
         if (Capacitor.isNativePlatform()) {
             await Share.share({
-                title: 'Add contact',
+                title: m['contacts.addContactDesc'](),
                 text: '',
                 url: `${getAppBaseUrl()}/connect?did=${wallet?.id?.did()}`,
                 dialogTitle: '',

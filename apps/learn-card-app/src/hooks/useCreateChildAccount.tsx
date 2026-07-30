@@ -12,6 +12,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { LCNProfile } from '@learncard/types';
 import { LearnCardRolesEnum } from '../components/onboarding/onboarding.helpers';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-create-child-account');
+
 export const useCreateChildAccount = () => {
     const DEFAULT_LEARNCARD_WALLPAPER = 'https://cdn.filestackcontent.com/ImEqbxSFRESCRdkhQKY8';
     const DEFAULT_LEARNCARD_ID_WALLPAPER = 'https://cdn.filestackcontent.com/9Bgaim1ShGYSFgUBB2hn';
@@ -90,7 +93,7 @@ export const useCreateChildAccount = () => {
 
                 return { success: true, childDid, childLc, managerLc };
             } catch (e) {
-                console.error('handleCreateChildAccount', e);
+                log.error('handleCreateChildAccount', e);
                 throw new Error('Failed to create child account');
             }
         },

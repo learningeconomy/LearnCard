@@ -12,6 +12,8 @@ import X from 'learn-card-base/svgs/X';
 import useTheme from '../../theme/hooks/useTheme';
 import { CredentialCategoryEnum } from 'learn-card-base';
 
+import * as m from '../../paraglide/messages.js';
+
 export enum CredentialListTabEnum {
     Earned = 'earned',
     Managed = 'managed',
@@ -99,7 +101,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                                     : inactiveLabelClassName
                             }`}
                         >
-                            Earned
+                            {m['boost.earnedTab']()}
                         </button>
                     )}
                     {showEarnedManaged && (
@@ -111,7 +113,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                                     : inactiveLabelClassName
                             }`}
                         >
-                            Managed
+                            {m['boost.managedTab']()}
                         </button>
                     )}
                 </div>
@@ -137,11 +139,11 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                                                 e.target.value
                                             )
                                         }
-                                        placeholder={`Browse ${
+                                        placeholder={
                                             activeTab === CredentialListTabEnum.Earned
-                                                ? 'earned'
-                                                : 'managed'
-                                        }...`}
+                                                ? m['boost.browseEarnedPlaceholder']()
+                                                : m['boost.browseManagedPlaceholder']()
+                                        }
                                         className={`rounded-[10px] pl-4 w-full h-[44px] pr-[34px] font-notoSans text-[14px] outline-none placeholder:text-grayscale-900 ${tabColor}`}
                                         autoFocus
                                     />

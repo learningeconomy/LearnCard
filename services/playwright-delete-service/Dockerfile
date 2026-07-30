@@ -1,15 +1,13 @@
-FROM node:22-alpine
+FROM oven/bun:1.3.14
 
 WORKDIR /app
 
 COPY package.json ./
 
-RUN npm i -g pnpm
-
-RUN pnpm i --no-frozen-lockfile
+RUN bun install
 
 COPY . .
 
 EXPOSE 3100
 
-CMD ["pnpm", "dev"]
+CMD ["bun", "run", "dev"]

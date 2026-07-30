@@ -44,7 +44,14 @@ server.addHook('onRequest', (request, _reply, done) => {
 server.register(fastifyCors, {
     origin: true,
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-Id', 'X-Guardian-Approval'],
+    allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-Tenant-Id',
+        'X-Guardian-Approval',
+        'baggage',
+        'sentry-trace',
+    ],
     credentials: true,
 });
 

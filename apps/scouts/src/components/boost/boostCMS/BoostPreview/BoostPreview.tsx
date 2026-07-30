@@ -1,7 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
-import { VCDisplayCard2 } from '@learncard/react';
+import CredentialIssuerPopover, {
+    useCredentialIssuerPopover,
+} from 'learn-card-base/components/CredentialBadge/CredentialIssuerPopover';
+import { getVCDisplayCardVariant, VCDisplayCard2 } from '@learncard/react';
 import { IonContent, IonFooter, IonPage, IonRow } from '@ionic/react';
 
 import { VC, VerificationItem } from '@learncard/types';
@@ -76,6 +79,8 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     handleShareBoost,
 }) => {
     const { initWallet } = useWallet();
+    const { credentialIssuerPopoverProps, openCredentialIssuerPopover } =
+        useCredentialIssuerPopover();
     const issuerDid =
         typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
     // Extract user ID from DID (e.g., "jpgclub" from "did:web:localhost%3A4000:users:jpgclub")
@@ -113,6 +118,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
         credential?.display?.displayType === 'id' ||
         categoryType === BoostCategoryOptionsEnum.membership ||
         categoryType === BoostCategoryOptionsEnum.id;
+    const shouldUseHostCardPadding = getVCDisplayCardVariant(credential, categoryType) !== 'ribbon';
     let _categoryType = categoryType;
 
     const bgImage = credential?.display?.backgroundImage;
@@ -146,11 +152,17 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                 className={`flex items-center justify-center ion-padding boost-cms-preview transition-colors [&::part(scroll)]:px-0 gradient-mask-b-90`}
             >
                 <IonRow
-                    className={`flex flex-col items-center justify-center px-1 overflow-x-auto pb-32  ${boostPreviewWrapperCustomClass} ${
-                        isCertificate ? 'pt-14 md:pt-20' : ''
-                    } ${isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''}`}
+                    className={`flex flex-col items-center justify-center overflow-x-auto pb-32 ${boostPreviewWrapperCustomClass} ${
+                        shouldUseHostCardPadding ? 'px-1' : ''
+                    } ${isCertificate ? 'pt-14 md:pt-20' : ''} ${
+                        isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''
+                    }`}
                 >
-                    <section className="px-6 w-full safe-area-top-margin">
+                    <section
+                        className={`w-full safe-area-top-margin ${
+                            shouldUseHostCardPadding ? 'px-6' : ''
+                        }`}
+                    >
                         <VCDisplayCard2
                             credential={credential}
                             issueeOverride={issueeOverride}
@@ -179,6 +191,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                             qrCodeOnClick={qrCodeOnClick}
                             hideQRCode={hideQRCode}
                             unknownVerifierTitle={unknownVerifierTitle}
+                            onVerifierClick={openCredentialIssuerPopover}
                         />
                     </section>
                 </IonRow>
@@ -197,6 +210,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                     />
                 </IonRow>
             </IonFooter>
+            <CredentialIssuerPopover {...credentialIssuerPopoverProps} />
         </IonPage>
     );
 };

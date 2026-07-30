@@ -1,12 +1,16 @@
+import * as m from '../../../../paraglide/messages.js';
+import { getLogger } from 'learn-card-base';
+import { TransP } from '../../../../i18n/TransP';
+const log = getLogger('integration-code-tab');
 /**
  * IntegrationCodeTab - Boost URI Reference + API Code Generator
- * 
+ *
  * Provides developers with:
  * - Copy-pastable boost URIs for all templates
  * - Export all URIs as a config file
  * - Interactive API code generator with template data inputs
  * - CSV template download
- * 
+ *
  * Mirrors functionality from DataMappingStep for dashboard use.
  */
 
@@ -39,7 +43,7 @@ import { useWallet } from 'learn-card-base';
 import type { CredentialTemplate } from '../types';
 import { useTemplateDetails } from '../hooks/useTemplateDetails';
 import { CodeOutputPanel } from '../../guides/shared/CodeOutputPanel';
-import { 
+import {
     extractDynamicVariables,
     extractVariablesByType,
     OBv3CredentialTemplate,
@@ -74,7 +78,10 @@ export const IntegrationCodeTab: React.FC<IntegrationCodeTabProps> = ({
     const { initWallet } = useWallet();
 
     // Load full template details on-demand (not loaded by dashboard for performance)
-    const { templates, isLoading: isLoadingTemplates } = useTemplateDetails(integration.id, basicTemplates);
+    const { templates, isLoading: isLoadingTemplates } = useTemplateDetails(
+        integration.id,
+        basicTemplates
+    );
 
     const [viewMode, setViewMode] = useState<'reference' | 'example'>('reference');
     const [copiedUri, setCopiedUri] = useState<string | null>(null);
@@ -107,11 +114,11 @@ export const IntegrationCodeTab: React.FC<IntegrationCodeTabProps> = ({
             setLoadingGrants(true);
             try {
                 const wallet = await initWallet();
-                const grants = await wallet.invoke.getAuthGrants() || [];
+                const grants = (await wallet.invoke.getAuthGrants()) || [];
                 const active = grants.filter((g: AuthGrant) => g.status === 'active');
                 setAuthGrants(active);
             } catch (err) {
-                console.error('Failed to fetch auth grants:', err);
+                log.error('Failed to fetch auth grants:', err);
             } finally {
                 setLoadingGrants(false);
             }
@@ -127,17 +134,20 @@ export const IntegrationCodeTab: React.FC<IntegrationCodeTabProps> = ({
             setSelectedGrantId(grantId);
             setShowTokenSelector(false);
         } catch (err) {
-            console.error('Failed to get token:', err);
+            log.error('Failed to get token:', err);
         }
     };
 
     const selectedGrant = authGrants.find(g => g.id === selectedGrantId);
-    const displayTokenName = selectedGrant?.name || (apiToken ? 'Token selected' : 'No token selected');
+    const displayTokenName =
+        selectedGrant?.name || (apiToken ? 'Token selected' : 'No token selected');
 
     // Compute issuable templates (exclude master templates, include their children flattened)
     // Get master templates for display
     const masterTemplates = useMemo(() => {
-        return (templates as ExtendedTemplate[]).filter(t => t.isMasterTemplate && t.childTemplates?.length);
+        return (templates as ExtendedTemplate[]).filter(
+            t => t.isMasterTemplate && t.childTemplates?.length
+        );
     }, [templates]);
 
     // Collect all child template IDs for filtering (computed before issuableTemplates)
@@ -179,7 +189,9 @@ export const IntegrationCodeTab: React.FC<IntegrationCodeTabProps> = ({
     // Get parent master template if selected is a child
     const selectedTemplateMaster = useMemo(() => {
         if (!selectedTemplate?.parentTemplateId) return null;
-        return (templates as ExtendedTemplate[]).find(t => t.id === selectedTemplate.parentTemplateId);
+        return (templates as ExtendedTemplate[]).find(
+            t => t.id === selectedTemplate.parentTemplateId
+        );
     }, [selectedTemplate, templates]);
 
     // Get dynamic variables for selected template
@@ -188,13 +200,19 @@ export const IntegrationCodeTab: React.FC<IntegrationCodeTabProps> = ({
 
         if (selectedTemplate.obv3Template) {
             try {
-                return extractDynamicVariables(selectedTemplate.obv3Template as OBv3CredentialTemplate);
+                return extractDynamicVariables(
+                    selectedTemplate.obv3Template as OBv3CredentialTemplate
+                );
             } catch (e) {
-                console.warn('Failed to extract OBv3 dynamic variables:', e);
+                log.warn('Failed to extract OBv3 dynamic variables:', e);
             }
         }
 
-        return selectedTemplate.fields?.map(f => f.variableName || fieldNameToVariable(f.name || f.label || f.key || '')).filter((v): v is string => Boolean(v)) || [];
+        return (
+            selectedTemplate.fields
+                ?.map(f => f.variableName || fieldNameToVariable(f.name || f.label || f.key || ''))
+                .filter((v): v is string => Boolean(v)) || []
+        );
     }, [selectedTemplate]);
 
     // Generate smart default value based on variable name
@@ -230,7 +248,10 @@ export const IntegrationCodeTab: React.FC<IntegrationCodeTabProps> = ({
             return 'Introduction to Web Development';
         }
 
-        if (lower.includes('name') && (lower.includes('student') || lower.includes('recipient') || lower.includes('learner'))) {
+        if (
+            lower.includes('name') &&
+            (lower.includes('student') || lower.includes('recipient') || lower.includes('learner'))
+        ) {
             return 'Jane Smith';
         }
 
@@ -243,7 +264,9 @@ export const IntegrationCodeTab: React.FC<IntegrationCodeTabProps> = ({
 
         if (lower.includes('instructor') || lower.includes('teacher')) return 'Dr. John Smith';
 
-        const readable = varName.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+        const readable = varName
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, (l: string) => l.toUpperCase());
         return `Example ${readable}`;
     };
 
@@ -271,17 +294,23 @@ export const IntegrationCodeTab: React.FC<IntegrationCodeTabProps> = ({
         await Clipboard.write({ string: uri });
         setCopiedUri(uri);
         setTimeout(() => setCopiedUri(null), 2000);
-        presentToast('Copied!', { hasDismissButton: true });
+        presentToast(m['developerPortal.dashboards.tabs.integrationCode.copied'](), {
+            hasDismissButton: true,
+        });
     };
 
     // Generate boost config for export
     const generateBoostConfig = useCallback(() => {
-        const config: Record<string, { uri: string; name: string; variables: string[]; systemVariables: string[] }> = {};
+        const config: Record<
+            string,
+            { uri: string; name: string; variables: string[]; systemVariables: string[] }
+        > = {};
 
-        const toKey = (name: string) => name
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '_')
-            .replace(/^_|_$/g, '');
+        const toKey = (name: string) =>
+            name
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '_')
+                .replace(/^_|_$/g, '');
 
         issuableTemplates.forEach(template => {
             if (template.boostUri) {
@@ -291,7 +320,9 @@ export const IntegrationCodeTab: React.FC<IntegrationCodeTabProps> = ({
 
                 if (template.obv3Template) {
                     try {
-                        const extracted = extractVariablesByType(template.obv3Template as OBv3CredentialTemplate);
+                        const extracted = extractVariablesByType(
+                            template.obv3Template as OBv3CredentialTemplate
+                        );
                         dynamicVars = extracted.dynamic;
                         systemVars = extracted.system;
                     } catch (e) {
@@ -299,8 +330,18 @@ export const IntegrationCodeTab: React.FC<IntegrationCodeTabProps> = ({
                     }
                 }
 
-                if (dynamicVars.length === 0 && systemVars.length === 0 && template.fields?.length) {
-                    dynamicVars = template.fields.map(f => f.variableName || fieldNameToVariable(f.name || f.label || f.key || '')).filter((v): v is string => Boolean(v));
+                if (
+                    dynamicVars.length === 0 &&
+                    systemVars.length === 0 &&
+                    template.fields?.length
+                ) {
+                    dynamicVars = template.fields
+                        .map(
+                            f =>
+                                f.variableName ||
+                                fieldNameToVariable(f.name || f.label || f.key || '')
+                        )
+                        .filter((v): v is string => Boolean(v));
                 }
 
                 config[key] = {
@@ -352,8 +393,8 @@ const INTEGRATION_ID = '${integrationId || 'YOUR_INTEGRATION_ID'}';
 //     templateData,
 // });
 //
-// console.log('Credential URI:', result.credentialUri);
-// console.log('Activity ID:', result.activityId);
+// log.info('Credential URI:', result.credentialUri);
+// log.info('Activity ID:', result.activityId);
 
 export default BOOST_TEMPLATES;
 export { INTEGRATION_ID };`;
@@ -400,11 +441,22 @@ export { INTEGRATION_ID };`;
             optionsParts.push(`        suppressDelivery: true,`);
         }
 
-        if (advancedOptions.issuerName || advancedOptions.issuerLogoUrl || advancedOptions.recipientName) {
+        if (
+            advancedOptions.issuerName ||
+            advancedOptions.issuerLogoUrl ||
+            advancedOptions.recipientName
+        ) {
             const brandingParts: string[] = [];
-            if (advancedOptions.issuerName) brandingParts.push(`            issuerName: '${advancedOptions.issuerName}',`);
-            if (advancedOptions.issuerLogoUrl) brandingParts.push(`            issuerLogoUrl: '${advancedOptions.issuerLogoUrl}',`);
-            if (advancedOptions.recipientName) brandingParts.push(`            recipientName: '${advancedOptions.recipientName}',`);
+            if (advancedOptions.issuerName)
+                brandingParts.push(`            issuerName: '${advancedOptions.issuerName}',`);
+            if (advancedOptions.issuerLogoUrl)
+                brandingParts.push(
+                    `            issuerLogoUrl: '${advancedOptions.issuerLogoUrl}',`
+                );
+            if (advancedOptions.recipientName)
+                brandingParts.push(
+                    `            recipientName: '${advancedOptions.recipientName}',`
+                );
 
             optionsParts.push(`        branding: {
 ${brandingParts.join('\n')}
@@ -442,9 +494,9 @@ ${templateDataCode}
     },${optionsCode}
 });
 
-console.log('Credential URI:', result.credentialUri);
-console.log('Boost URI:', result.uri);
-console.log('Activity ID:', result.activityId); // Use to track lifecycle
+log.info('Credential URI:', result.credentialUri);
+log.info('Boost URI:', result.uri);
+log.info('Activity ID:', result.activityId); // Use to track lifecycle
 
 // For email/phone recipients:
 // result.inbox?.issuanceId - tracking ID
@@ -476,11 +528,21 @@ console.log('Activity ID:', result.activityId); // Use to track lifecycle
             options.suppressDelivery = true;
         }
 
-        if (advancedOptions.issuerName || advancedOptions.issuerLogoUrl || advancedOptions.recipientName) {
+        if (
+            advancedOptions.issuerName ||
+            advancedOptions.issuerLogoUrl ||
+            advancedOptions.recipientName
+        ) {
             options.branding = {};
-            if (advancedOptions.issuerName) (options.branding as Record<string, string>).issuerName = advancedOptions.issuerName;
-            if (advancedOptions.issuerLogoUrl) (options.branding as Record<string, string>).issuerLogoUrl = advancedOptions.issuerLogoUrl;
-            if (advancedOptions.recipientName) (options.branding as Record<string, string>).recipientName = advancedOptions.recipientName;
+            if (advancedOptions.issuerName)
+                (options.branding as Record<string, string>).issuerName =
+                    advancedOptions.issuerName;
+            if (advancedOptions.issuerLogoUrl)
+                (options.branding as Record<string, string>).issuerLogoUrl =
+                    advancedOptions.issuerLogoUrl;
+            if (advancedOptions.recipientName)
+                (options.branding as Record<string, string>).recipientName =
+                    advancedOptions.recipientName;
         }
 
         // Build the full payload
@@ -498,7 +560,7 @@ console.log('Activity ID:', result.activityId); // Use to track lifecycle
 
         const payloadJson = JSON.stringify(payload, null, 2)
             .split('\n')
-            .map((line, i) => i === 0 ? line : '  ' + line)
+            .map((line, i) => (i === 0 ? line : '  ' + line))
             .join('\n');
 
         return `# Send credential via LearnCard Network API
@@ -525,7 +587,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
         await Clipboard.write({ string: code });
         setApiCopied(true);
         setTimeout(() => setApiCopied(false), 2000);
-        presentToast('Code copied!', { hasDismissButton: true });
+        presentToast(m['developerPortal.dashboards.tabs.integrationCode.codeCopied'](), {
+            hasDismissButton: true,
+        });
     };
 
     // Download CSV template for selected template
@@ -538,15 +602,22 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
         if (selectedTemplate.obv3Template) {
             try {
                 // Only include dynamic (user-provided) variables, not system variables
-                const { dynamic } = extractVariablesByType(selectedTemplate.obv3Template as OBv3CredentialTemplate);
-                variableHeaders = dynamic.map(v => v.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()));
+                const { dynamic } = extractVariablesByType(
+                    selectedTemplate.obv3Template as OBv3CredentialTemplate
+                );
+                variableHeaders = dynamic.map(v =>
+                    v.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
+                );
             } catch (e) {
-                console.warn('Failed to extract OBv3 dynamic variables for CSV:', e);
+                log.warn('Failed to extract OBv3 dynamic variables for CSV:', e);
             }
         }
 
         if (variableHeaders.length === 0) {
-            variableHeaders = selectedTemplate.fields?.map(f => f.name || f.label || f.key || '').filter(Boolean) as string[] || [];
+            variableHeaders =
+                (selectedTemplate.fields
+                    ?.map(f => f.name || f.label || f.key || '')
+                    .filter(Boolean) as string[]) || [];
         }
 
         // Recipient is always the first required column
@@ -562,11 +633,17 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
         a.click();
         URL.revokeObjectURL(url);
 
-        presentToast('CSV template downloaded!', { hasDismissButton: true });
+        presentToast(m['developerPortal.dashboards.tabs.integrationCode.csvDownloaded'](), {
+            hasDismissButton: true,
+        });
     };
 
-    const hasAdvancedOptions = advancedOptions.issuerName || advancedOptions.issuerLogoUrl || 
-        advancedOptions.recipientName || advancedOptions.webhookUrl || advancedOptions.suppressDelivery;
+    const hasAdvancedOptions =
+        advancedOptions.issuerName ||
+        advancedOptions.issuerLogoUrl ||
+        advancedOptions.recipientName ||
+        advancedOptions.webhookUrl ||
+        advancedOptions.suppressDelivery;
 
     const savedTemplateCount = issuableTemplates.filter(t => t.boostUri).length;
 
@@ -574,8 +651,12 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
         return (
             <div className="text-center py-12">
                 <FileStack className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p className="text-gray-500 font-medium">No templates yet</p>
-                <p className="text-sm text-gray-400 mt-1">Create templates first to get integration code</p>
+                <p className="text-gray-500 font-medium">
+                    {m['developerPortal.dashboards.tabs.integrationCode.noTemplatesTitle']()}
+                </p>
+                <p className="text-sm text-gray-400 mt-1">
+                    {m['developerPortal.dashboards.tabs.integrationCode.noTemplatesDesc']()}
+                </p>
             </div>
         );
     }
@@ -592,8 +673,12 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-lg font-semibold text-gray-800">Integration Code</h2>
-                <p className="text-sm text-gray-500">Copy boost URIs and generate integration code</p>
+                <h2 className="text-lg font-semibold text-gray-800">
+                    {m['developerPortal.dashboards.tabs.integrationCode.title']()}
+                </h2>
+                <p className="text-sm text-gray-500">
+                    {m['developerPortal.dashboards.tabs.integrationCode.description']()}
+                </p>
             </div>
 
             {/* View Mode Toggle */}
@@ -607,7 +692,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     }`}
                 >
                     <FileStack className="w-4 h-4" />
-                    Boost URIs Reference
+                    {m['developerPortal.dashboards.tabs.integrationCode.viewReference']()}
                 </button>
 
                 <button
@@ -619,7 +704,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     }`}
                 >
                     <Code className="w-4 h-4" />
-                    Code Example
+                    {m['developerPortal.dashboards.tabs.integrationCode.viewExample']()}
                 </button>
             </div>
 
@@ -629,9 +714,15 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     <div className="flex items-start gap-3 p-4 bg-violet-50 border border-violet-200 rounded-xl">
                         <Zap className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
                         <div className="text-sm text-violet-800">
-                            <p className="font-medium mb-1">Your Boost Template URIs</p>
+                            <p className="font-medium mb-1">
+                                {m[
+                                    'developerPortal.dashboards.tabs.integrationCode.referenceTitle'
+                                ]()}
+                            </p>
                             <p>
-                                Copy individual URIs or export all as a config file for your codebase.
+                                {m[
+                                    'developerPortal.dashboards.tabs.integrationCode.referenceDesc'
+                                ]()}
                             </p>
                         </div>
                     </div>
@@ -645,12 +736,16 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             {copiedConfig ? (
                                 <>
                                     <Check className="w-4 h-4" />
-                                    Copied Config!
+                                    {m[
+                                        'developerPortal.dashboards.tabs.integrationCode.copiedConfig'
+                                    ]()}
                                 </>
                             ) : (
                                 <>
                                     <Download className="w-4 h-4" />
-                                    Copy All as Config ({savedTemplateCount} templates)
+                                    {m[
+                                        'developerPortal.dashboards.tabs.integrationCode.copyAllConfig'
+                                    ]({ count: savedTemplateCount })}
                                 </>
                             )}
                         </button>
@@ -660,12 +755,18 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     <div className="space-y-3">
                         {/* Master Templates with Children */}
                         {masterTemplates.map(master => (
-                            <div key={master.id} className="border border-gray-200 rounded-xl overflow-hidden">
+                            <div
+                                key={master.id}
+                                className="border border-gray-200 rounded-xl overflow-hidden"
+                            >
                                 <div className="flex items-center gap-3 p-3 bg-gray-50 border-b border-gray-200">
                                     <FileStack className="w-4 h-4 text-violet-600" />
                                     <span className="font-medium text-gray-700">{master.name}</span>
                                     <span className="text-xs text-gray-500">
-                                        {master.childTemplates?.filter(c => c.boostUri).length} boosts
+                                        {master.childTemplates?.filter(c => c.boostUri).length}{' '}
+                                        {m[
+                                            'developerPortal.dashboards.tabs.integrationCode.boosts'
+                                        ]()}
                                     </span>
                                 </div>
 
@@ -674,19 +775,27 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                         <div key={child.id} className="p-3 hover:bg-gray-50">
                                             <div className="flex items-start justify-between gap-3">
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="font-medium text-gray-800 truncate">{child.name}</p>
+                                                    <p className="font-medium text-gray-800 truncate">
+                                                        {child.name}
+                                                    </p>
                                                     {child.boostUri ? (
                                                         <code className="text-xs text-gray-500 font-mono break-all">
                                                             {child.boostUri}
                                                         </code>
                                                     ) : (
-                                                        <span className="text-xs text-amber-600">Not saved yet</span>
+                                                        <span className="text-xs text-amber-600">
+                                                            {m[
+                                                                'developerPortal.dashboards.tabs.integrationCode.noBoostUri'
+                                                            ]()}
+                                                        </span>
                                                     )}
                                                 </div>
 
                                                 {child.boostUri && (
                                                     <button
-                                                        onClick={() => handleCopyUri(child.boostUri!)}
+                                                        onClick={() =>
+                                                            handleCopyUri(child.boostUri!)
+                                                        }
                                                         className="flex-shrink-0 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                                                     >
                                                         {copiedUri === child.boostUri ? (
@@ -704,45 +813,63 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         ))}
 
                         {/* Standalone Templates (not masters, not children) */}
-                        {issuableTemplates.filter(t => !childTemplateIds.has(t.id) && !t.isMasterTemplate).length > 0 && (
+                        {issuableTemplates.filter(
+                            t => !childTemplateIds.has(t.id) && !t.isMasterTemplate
+                        ).length > 0 && (
                             <div className="border border-gray-200 rounded-xl overflow-hidden">
                                 {masterTemplates.length > 0 && (
                                     <div className="flex items-center gap-3 p-3 bg-gray-50 border-b border-gray-200">
                                         <Award className="w-4 h-4 text-gray-500" />
-                                        <span className="font-medium text-gray-700">Other Templates</span>
+                                        <span className="font-medium text-gray-700">
+                                            {m[
+                                                'developerPortal.dashboards.tabs.integrationCode.otherTemplates'
+                                            ]()}
+                                        </span>
                                     </div>
                                 )}
 
                                 <div className="divide-y divide-gray-100">
-                                    {issuableTemplates.filter(t => !childTemplateIds.has(t.id) && !t.isMasterTemplate).map(template => (
-                                        <div key={template.id} className="p-3 hover:bg-gray-50">
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="font-medium text-gray-800 truncate">{template.name}</p>
-                                                    {template.boostUri ? (
-                                                        <code className="text-xs text-gray-500 font-mono break-all">
-                                                            {template.boostUri}
-                                                        </code>
-                                                    ) : (
-                                                        <span className="text-xs text-amber-600">Not saved yet</span>
+                                    {issuableTemplates
+                                        .filter(
+                                            t => !childTemplateIds.has(t.id) && !t.isMasterTemplate
+                                        )
+                                        .map(template => (
+                                            <div key={template.id} className="p-3 hover:bg-gray-50">
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-medium text-gray-800 truncate">
+                                                            {template.name}
+                                                        </p>
+                                                        {template.boostUri ? (
+                                                            <code className="text-xs text-gray-500 font-mono break-all">
+                                                                {template.boostUri}
+                                                            </code>
+                                                        ) : (
+                                                            <span className="text-xs text-amber-600">
+                                                                {m[
+                                                                    'developerPortal.dashboards.tabs.integrationCode.noBoostUri'
+                                                                ]()}
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    {template.boostUri && (
+                                                        <button
+                                                            onClick={() =>
+                                                                handleCopyUri(template.boostUri!)
+                                                            }
+                                                            className="flex-shrink-0 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                                        >
+                                                            {copiedUri === template.boostUri ? (
+                                                                <Check className="w-4 h-4 text-emerald-500" />
+                                                            ) : (
+                                                                <Copy className="w-4 h-4" />
+                                                            )}
+                                                        </button>
                                                     )}
                                                 </div>
-
-                                                {template.boostUri && (
-                                                    <button
-                                                        onClick={() => handleCopyUri(template.boostUri!)}
-                                                        className="flex-shrink-0 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                                    >
-                                                        {copiedUri === template.boostUri ? (
-                                                            <Check className="w-4 h-4 text-emerald-500" />
-                                                        ) : (
-                                                            <Copy className="w-4 h-4" />
-                                                        )}
-                                                    </button>
-                                                )}
                                             </div>
-                                        </div>
-                                    ))}
+                                        ))}
                                 </div>
                             </div>
                         )}
@@ -753,10 +880,26 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                             <Code className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                             <div className="text-sm">
-                                <p className="font-medium text-amber-800">Your API Key</p>
+                                <p className="font-medium text-amber-800">
+                                    {m[
+                                        'developerPortal.dashboards.tabs.integrationCode.apiKeyTitle'
+                                    ]()}
+                                </p>
                                 <p className="text-xs text-amber-700 mt-0.5">
-                                    Set <code className="bg-amber-100 px-1 rounded">LEARNCARD_API_KEY</code> in your environment to: 
-                                    <code className="bg-amber-100 px-1 rounded ml-1 font-mono">{integration.publishableKey.slice(0, 12)}...</code>
+                                    <TransP
+                                        m={
+                                            m[
+                                                'developerPortal.dashboards.tabs.integrationCode.apiKeyDesc'
+                                            ]
+                                        }
+                                        values={{
+                                            key: integration.publishableKey.slice(0, 12) + '...',
+                                        }}
+                                        components={[
+                                            <code className="bg-amber-100 px-1 rounded" />,
+                                            <code className="bg-amber-100 px-1 rounded ml-1 font-mono" />,
+                                        ]}
+                                    />
                                 </p>
                             </div>
                         </div>
@@ -770,9 +913,13 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     <div className="flex items-start gap-3 p-4 bg-violet-50 border border-violet-200 rounded-xl">
                         <Zap className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
                         <div className="text-sm text-violet-800">
-                            <p className="font-medium mb-1">Code Example Generator</p>
+                            <p className="font-medium mb-1">
+                                {m[
+                                    'developerPortal.dashboards.tabs.integrationCode.exampleTitle'
+                                ]()}
+                            </p>
                             <p>
-                                Select a template to generate example code. Use the Reference tab to get all URIs.
+                                {m['developerPortal.dashboards.tabs.integrationCode.exampleDesc']()}
                             </p>
                         </div>
                     </div>
@@ -780,18 +927,24 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     {/* Template Selector */}
                     <div className="space-y-3">
                         <label className="block text-sm font-medium text-gray-700">
-                            Select Template for Example
+                            {m['developerPortal.dashboards.tabs.integrationCode.selectTemplate']()}
                         </label>
 
                         {/* Master Templates with Children */}
                         {masterTemplates.map(master => (
-                            <div key={master.id} className="border-2 border-violet-200 rounded-xl overflow-hidden">
+                            <div
+                                key={master.id}
+                                className="border-2 border-violet-200 rounded-xl overflow-hidden"
+                            >
                                 <div className="flex items-center gap-3 p-3 bg-violet-50">
                                     <FileStack className="w-5 h-5 text-violet-600" />
                                     <div className="flex-1">
                                         <p className="font-medium text-violet-800">{master.name}</p>
                                         <p className="text-xs text-violet-600">
-                                            {master.childTemplates?.length} course boosts
+                                            {master.childTemplates?.length}{' '}
+                                            {m[
+                                                'developerPortal.dashboards.tabs.integrationCode.courseBoosts'
+                                            ]()}
                                         </p>
                                     </div>
                                 </div>
@@ -807,21 +960,31 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                     : 'bg-gray-50 border border-gray-200 hover:border-gray-300'
                                             }`}
                                         >
-                                            <Award className={`w-4 h-4 ${
-                                                selectedTemplateId === child.id ? 'text-cyan-600' : 'text-gray-400'
-                                            }`} />
+                                            <Award
+                                                className={`w-4 h-4 ${
+                                                    selectedTemplateId === child.id
+                                                        ? 'text-cyan-600'
+                                                        : 'text-gray-400'
+                                                }`}
+                                            />
 
                                             <div className="flex-1 text-left min-w-0">
-                                                <p className={`font-medium truncate ${
-                                                    selectedTemplateId === child.id ? 'text-cyan-800' : 'text-gray-700'
-                                                }`}>
+                                                <p
+                                                    className={`font-medium truncate ${
+                                                        selectedTemplateId === child.id
+                                                            ? 'text-cyan-800'
+                                                            : 'text-gray-700'
+                                                    }`}
+                                                >
                                                     {child.name}
                                                 </p>
                                             </div>
 
                                             {child.boostUri && (
                                                 <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs flex-shrink-0">
-                                                    Saved
+                                                    {m[
+                                                        'developerPortal.dashboards.tabs.integrationCode.saved'
+                                                    ]()}
                                                 </span>
                                             )}
 
@@ -835,44 +998,71 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         ))}
 
                         {/* Standalone Templates */}
-                        {issuableTemplates.filter(t => !childTemplateIds.has(t.id) && !t.isMasterTemplate).length > 0 && (
+                        {issuableTemplates.filter(
+                            t => !childTemplateIds.has(t.id) && !t.isMasterTemplate
+                        ).length > 0 && (
                             <div className="space-y-2">
                                 {masterTemplates.length > 0 && (
-                                    <p className="text-xs text-gray-500 font-medium pt-2">Other Templates</p>
+                                    <p className="text-xs text-gray-500 font-medium pt-2">
+                                        {m[
+                                            'developerPortal.dashboards.tabs.integrationCode.otherTemplates'
+                                        ]()}
+                                    </p>
                                 )}
 
-                                {issuableTemplates.filter(t => !childTemplateIds.has(t.id) && !t.isMasterTemplate).map(template => (
-                                    <button
-                                        key={template.id}
-                                        onClick={() => setSelectedTemplateId(template.id)}
-                                        className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
-                                            selectedTemplateId === template.id
-                                                ? 'border-cyan-500 bg-cyan-50'
-                                                : 'border-gray-200 bg-white hover:border-gray-300'
-                                        }`}
-                                    >
-                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                                            selectedTemplateId === template.id ? 'bg-cyan-500' : 'bg-gray-100'
-                                        }`}>
-                                            <Award className={`w-5 h-5 ${
-                                                selectedTemplateId === template.id ? 'text-white' : 'text-gray-500'
-                                            }`} />
-                                        </div>
+                                {issuableTemplates
+                                    .filter(t => !childTemplateIds.has(t.id) && !t.isMasterTemplate)
+                                    .map(template => (
+                                        <button
+                                            key={template.id}
+                                            onClick={() => setSelectedTemplateId(template.id)}
+                                            className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                                                selectedTemplateId === template.id
+                                                    ? 'border-cyan-500 bg-cyan-50'
+                                                    : 'border-gray-200 bg-white hover:border-gray-300'
+                                            }`}
+                                        >
+                                            <div
+                                                className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                                                    selectedTemplateId === template.id
+                                                        ? 'bg-cyan-500'
+                                                        : 'bg-gray-100'
+                                                }`}
+                                            >
+                                                <Award
+                                                    className={`w-5 h-5 ${
+                                                        selectedTemplateId === template.id
+                                                            ? 'text-white'
+                                                            : 'text-gray-500'
+                                                    }`}
+                                                />
+                                            </div>
 
-                                        <div className="flex-1 text-left">
-                                            <p className="font-medium text-gray-800">{template.name}</p>
-                                            <p className="text-xs text-gray-500">{template.description || 'No description'}</p>
-                                        </div>
+                                            <div className="flex-1 text-left">
+                                                <p className="font-medium text-gray-800">
+                                                    {template.name}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    {template.description ||
+                                                        m[
+                                                            'developerPortal.dashboards.tabs.integrationCode.noDescription'
+                                                        ]()}
+                                                </p>
+                                            </div>
 
-                                        {template.boostUri && (
-                                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs">Saved</span>
-                                        )}
+                                            {template.boostUri && (
+                                                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs">
+                                                    {m[
+                                                        'developerPortal.dashboards.tabs.integrationCode.saved'
+                                                    ]()}
+                                                </span>
+                                            )}
 
-                                        {selectedTemplateId === template.id && (
-                                            <CheckCircle2 className="w-5 h-5 text-cyan-600" />
-                                        )}
-                                    </button>
-                                ))}
+                                            {selectedTemplateId === template.id && (
+                                                <CheckCircle2 className="w-5 h-5 text-cyan-600" />
+                                            )}
+                                        </button>
+                                    ))}
                             </div>
                         )}
                     </div>
@@ -882,10 +1072,15 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         <div className="flex items-start gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
                             <Layers className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
                             <div className="text-sm text-emerald-800">
-                                <p className="font-medium">Course data is pre-filled</p>
+                                <p className="font-medium">
+                                    {m[
+                                        'developerPortal.dashboards.tabs.integrationCode.courseDataPrefilledTitle'
+                                    ]()}
+                                </p>
                                 <p className="text-xs text-emerald-700 mt-0.5">
-                                    This boost has course-specific data (name, credits, etc.) already baked in. 
-                                    You only need to provide issuance data like recipient name and date.
+                                    {m[
+                                        'developerPortal.dashboards.tabs.integrationCode.courseDataPrefilledDesc'
+                                    ]()}
                                 </p>
                             </div>
                         </div>
@@ -895,14 +1090,22 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     {templateVariables.length > 0 && (
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                                <label className="block text-sm font-medium text-gray-700">Template Data</label>
+                                <label className="block text-sm font-medium text-gray-700">
+                                    {m[
+                                        'developerPortal.dashboards.tabs.integrationCode.templateData'
+                                    ]()}
+                                </label>
                                 <span className="text-xs text-gray-500">
-                                    {templateVariables.length} field{templateVariables.length !== 1 ? 's' : ''}
+                                    {m[
+                                        'developerPortal.dashboards.tabs.integrationCode.fieldsCount'
+                                    ]({ count: templateVariables.length })}
                                 </span>
                             </div>
 
                             <p className="text-xs text-gray-500">
-                                Enter example values for your credential. These will appear in the generated code.
+                                {m[
+                                    'developerPortal.dashboards.tabs.integrationCode.templateDataDesc'
+                                ]()}
                             </p>
 
                             <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
@@ -915,16 +1118,20 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                         <div key={varName}>
                                             <label className="block text-xs font-medium text-gray-600 mb-1">
                                                 {displayName}
-                                                <code className="ml-2 text-gray-400 font-normal">{varName}</code>
+                                                <code className="ml-2 text-gray-400 font-normal">
+                                                    {varName}
+                                                </code>
                                             </label>
 
                                             <input
                                                 type="text"
                                                 value={apiTemplateData[varName] || ''}
-                                                onChange={(e) => setApiTemplateData(prev => ({
-                                                    ...prev,
-                                                    [varName]: e.target.value
-                                                }))}
+                                                onChange={e =>
+                                                    setApiTemplateData(prev => ({
+                                                        ...prev,
+                                                        [varName]: e.target.value,
+                                                    }))
+                                                }
                                                 placeholder={getSmartDefault(varName)}
                                                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                             />
@@ -938,19 +1145,21 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     {/* Recipient Input */}
                     <div className="space-y-2">
                         <label className="block text-sm font-medium text-gray-700">
-                            Recipient
+                            {m['developerPortal.dashboards.tabs.integrationCode.recipient']()}
                         </label>
 
                         <input
                             type="text"
                             value={apiRecipientEmail}
-                            onChange={(e) => setApiRecipientEmail(e.target.value)}
-                            placeholder="Profile ID or email address"
+                            onChange={e => setApiRecipientEmail(e.target.value)}
+                            placeholder={m[
+                                'developerPortal.dashboards.tabs.integrationCode.recipientPlaceholder'
+                            ]()}
                             className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
                         />
 
                         <p className="text-xs text-gray-500">
-                            Enter a LearnCard Profile ID or an email address
+                            {m['developerPortal.dashboards.tabs.integrationCode.recipientDesc']()}
                         </p>
                     </div>
 
@@ -963,15 +1172,25 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 </div>
 
                                 <div>
-                                    <p className="text-sm font-medium text-gray-700">API Token</p>
+                                    <p className="text-sm font-medium text-gray-700">
+                                        {m[
+                                            'developerPortal.dashboards.tabs.integrationCode.apiToken'
+                                        ]()}
+                                    </p>
                                     <p className="text-xs text-gray-500">
                                         {apiToken ? (
                                             <span className="text-emerald-600 flex items-center gap-1">
                                                 <CheckCircle2 className="w-3 h-3" />
-                                                {displayTokenName}
+                                                {m[
+                                                    'developerPortal.dashboards.tabs.integrationCode.tokenSelected'
+                                                ]()}
                                             </span>
                                         ) : (
-                                            <span className="text-amber-600">Select a token to fill the code below</span>
+                                            <span className="text-amber-600">
+                                                {m[
+                                                    'developerPortal.dashboards.tabs.integrationCode.noTokenSelected'
+                                                ]()}
+                                            </span>
                                         )}
                                     </p>
                                 </div>
@@ -981,8 +1200,16 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 onClick={() => setShowTokenSelector(!showTokenSelector)}
                                 className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1"
                             >
-                                {showTokenSelector ? 'Hide' : 'Select'}
-                                {showTokenSelector ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                {showTokenSelector
+                                    ? m[
+                                          'developerPortal.guides.issueCredentials.issueVerifyStep.hideButton'
+                                      ]()
+                                    : m['developerPortal.dashboards.tabs.integrationCode.select']()}
+                                {showTokenSelector ? (
+                                    <ChevronUp className="w-4 h-4" />
+                                ) : (
+                                    <ChevronDown className="w-4 h-4" />
+                                )}
                             </button>
                         </div>
 
@@ -991,15 +1218,26 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 {loadingGrants ? (
                                     <div className="flex items-center gap-2 text-sm text-gray-500">
                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                        Loading tokens...
+                                        {m[
+                                            'developerPortal.dashboards.tabs.integrationCode.loadingTokens'
+                                        ]()}
                                     </div>
                                 ) : authGrants.length === 0 ? (
                                     <p className="text-sm text-gray-500">
-                                        No API tokens found. Create one in the <span className="text-cyan-600 font-medium">API Tokens</span> tab.
+                                        <TransP
+                                            m={
+                                                m[
+                                                    'developerPortal.dashboards.tabs.integrationCode.noApiTokens'
+                                                ]
+                                            }
+                                            components={[
+                                                <span className="text-cyan-600 font-medium" />,
+                                            ]}
+                                        />
                                     </p>
                                 ) : (
                                     <div className="space-y-2">
-                                        {authGrants.map((grant) => (
+                                        {authGrants.map(grant => (
                                             <button
                                                 key={grant.id}
                                                 onClick={() => selectToken(grant.id)}
@@ -1010,9 +1248,17 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                 }`}
                                             >
                                                 <div className="text-left">
-                                                    <p className="text-sm font-medium text-gray-700">{grant.name}</p>
+                                                    <p className="text-sm font-medium text-gray-700">
+                                                        {grant.name}
+                                                    </p>
                                                     <p className="text-xs text-gray-500">
-                                                        Created {new Date(grant.createdAt).toLocaleDateString()}
+                                                        {m[
+                                                            'developerPortal.dashboards.tabs.integrationCode.createdLabel'
+                                                        ]({
+                                                            date: new Date(
+                                                                grant.createdAt
+                                                            ).toLocaleDateString(),
+                                                        })}
                                                     </p>
                                                 </div>
 
@@ -1034,7 +1280,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
                         >
                             <FileSpreadsheet className="w-4 h-4" />
-                            Download CSV Template for {selectedTemplate.name}
+                            {m['developerPortal.dashboards.tabs.integrationCode.downloadCsvFor']({
+                                name: selectedTemplate.name,
+                            })}
                         </button>
                     )}
 
@@ -1043,55 +1291,98 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         onClick={() => setShowAdvanced(!showAdvanced)}
                         className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
                     >
-                        {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                        {showAdvanced ? 'Hide' : 'Show'} Advanced Options
-                        {hasAdvancedOptions && <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded text-xs">Active</span>}
+                        {showAdvanced ? (
+                            <ChevronUp className="w-4 h-4" />
+                        ) : (
+                            <ChevronDown className="w-4 h-4" />
+                        )}
+                        {showAdvanced
+                            ? m['developerPortal.onboarding.dataMapping.hideAdvancedOptions']()
+                            : m['developerPortal.onboarding.dataMapping.showAdvancedOptions']()}
+                        {hasAdvancedOptions && (
+                            <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded text-xs">
+                                {m['developerPortal.shell.statusActive']()}
+                            </span>
+                        )}
                     </button>
 
                     {/* Advanced Options Panel */}
                     {showAdvanced && (
                         <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-4">
                             <p className="text-sm text-gray-600">
-                                Customize branding, webhooks, and delivery options.
+                                {m[
+                                    'developerPortal.dashboards.tabs.integrationCode.advancedOptionsDesc'
+                                ]()}
                             </p>
 
                             {/* Branding Section */}
                             <div className="space-y-3">
                                 <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                                     <Building2 className="w-4 h-4 text-indigo-500" />
-                                    Email Branding
+                                    {m[
+                                        'developerPortal.dashboards.tabs.integrationCode.emailBranding'
+                                    ]()}
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-600 mb-1">Issuer Name</label>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                                            {m['boost.cms.basicInfo.issuerNamePlaceholder']()}
+                                        </label>
                                         <input
                                             type="text"
                                             value={advancedOptions.issuerName}
-                                            onChange={(e) => setAdvancedOptions(prev => ({ ...prev, issuerName: e.target.value }))}
-                                            placeholder="Your Organization"
+                                            onChange={e =>
+                                                setAdvancedOptions(prev => ({
+                                                    ...prev,
+                                                    issuerName: e.target.value,
+                                                }))
+                                            }
+                                            placeholder={m[
+                                                'developerPortal.onboarding.branding.yourOrg'
+                                            ]()}
                                             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                         />
                                     </div>
 
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-600 mb-1">Logo URL</label>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                                            {m[
+                                                'developerPortal.dashboards.tabs.integrationCode.logoUrl'
+                                            ]()}
+                                        </label>
                                         <input
                                             type="url"
                                             value={advancedOptions.issuerLogoUrl}
-                                            onChange={(e) => setAdvancedOptions(prev => ({ ...prev, issuerLogoUrl: e.target.value }))}
+                                            onChange={e =>
+                                                setAdvancedOptions(prev => ({
+                                                    ...prev,
+                                                    issuerLogoUrl: e.target.value,
+                                                }))
+                                            }
                                             placeholder="https://example.com/logo.png"
                                             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                         />
                                     </div>
 
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-600 mb-1">Recipient Name</label>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                                            {m[
+                                                'developerPortal.credentialBuilder.recipient.recipientName'
+                                            ]()}
+                                        </label>
                                         <input
                                             type="text"
                                             value={advancedOptions.recipientName}
-                                            onChange={(e) => setAdvancedOptions(prev => ({ ...prev, recipientName: e.target.value }))}
-                                            placeholder="John Doe"
+                                            onChange={e =>
+                                                setAdvancedOptions(prev => ({
+                                                    ...prev,
+                                                    recipientName: e.target.value,
+                                                }))
+                                            }
+                                            placeholder={m[
+                                                'developerPortal.dashboards.tabs.integrationCode.johnDoe'
+                                            ]()}
                                             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                         />
                                     </div>
@@ -1102,20 +1393,33 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <div className="space-y-3 pt-3 border-t border-gray-200">
                                 <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                                     <Webhook className="w-4 h-4 text-emerald-500" />
-                                    Webhook Notification
+                                    {m[
+                                        'developerPortal.dashboards.tabs.integrationCode.webhookNotification'
+                                    ]()}
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">Webhook URL</label>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                                        {m[
+                                            'developerPortal.onboarding.dataMapping.webhookUrlTitle'
+                                        ]()}
+                                    </label>
                                     <input
                                         type="url"
                                         value={advancedOptions.webhookUrl}
-                                        onChange={(e) => setAdvancedOptions(prev => ({ ...prev, webhookUrl: e.target.value }))}
+                                        onChange={e =>
+                                            setAdvancedOptions(prev => ({
+                                                ...prev,
+                                                webhookUrl: e.target.value,
+                                            }))
+                                        }
                                         placeholder="https://your-server.com/webhook"
                                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                     />
                                     <p className="text-xs text-gray-500 mt-1">
-                                        Receive a POST request when the credential is claimed.
+                                        {m[
+                                            'developerPortal.dashboards.tabs.integrationCode.webhookDesc'
+                                        ]()}
                                     </p>
                                 </div>
                             </div>
@@ -1126,16 +1430,27 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     <input
                                         type="checkbox"
                                         checked={advancedOptions.suppressDelivery}
-                                        onChange={(e) => setAdvancedOptions(prev => ({ ...prev, suppressDelivery: e.target.checked }))}
+                                        onChange={e =>
+                                            setAdvancedOptions(prev => ({
+                                                ...prev,
+                                                suppressDelivery: e.target.checked,
+                                            }))
+                                        }
                                         className="w-4 h-4 rounded border-gray-300 text-cyan-500 focus:ring-cyan-500"
                                     />
                                     <div className="flex items-center gap-2">
                                         <BellOff className="w-4 h-4 text-amber-500" />
-                                        <span className="text-sm font-medium text-gray-700">Suppress Email Delivery</span>
+                                        <span className="text-sm font-medium text-gray-700">
+                                            {m[
+                                                'developerPortal.dashboards.tabs.integrationCode.suppressDelivery'
+                                            ]()}
+                                        </span>
                                     </div>
                                 </label>
                                 <p className="text-xs text-gray-500 ml-7">
-                                    Don't send an email — get the claim URL to use in your own system.
+                                    {m[
+                                        'developerPortal.onboarding.dataMapping.suppressDeliveryDesc'
+                                    ]()}
                                 </p>
                             </div>
                         </div>
@@ -1143,7 +1458,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                     {/* Code Output */}
                     <CodeOutputPanel
-                        title="Your Code"
+                        title={m[
+                            'developerPortal.guides.issueCredentials.issueVerifyStep.yourCode'
+                        ]()}
                         snippets={{
                             typescript: generateApiCodeSnippet(),
                             curl: generateCurlCodeSnippet(),

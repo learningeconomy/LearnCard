@@ -15,6 +15,8 @@ import {
     getSubjectImage,
     getAchievementTypeDisplayText,
     getImageUrlFromCredential,
+    getCredentialSubjectAchievement,
+    getUrlFromImage,
     getCredentialName,
     isClrCredential as checkIsClrCredential,
     getClrLinkedCredentialCounts,
@@ -22,7 +24,6 @@ import {
     getEndorsements,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { isAppDidWeb } from '@learncard/helpers';
-import { getEmojiFromDidString } from 'learn-card-base/helpers/walletHelpers';
 
 import useCurrentUser from './useGetCurrentUser';
 import useGetCurrentLCNUser from './useGetCurrentLCNUser';
@@ -38,6 +39,8 @@ import {
     ID_CARD_DISPLAY_TYPES,
 } from 'learn-card-base/helpers/credentials/ids';
 import { ellipsisMiddle } from 'learn-card-base/helpers/stringHelpers';
+import { getDefaultDisplayType } from 'learn-card-base/helpers/display.helpers';
+import { parseLcTags } from 'learn-card-base/helpers/displayTags.helpers';
 
 import { useWallet } from 'learn-card-base';
 
@@ -133,11 +136,7 @@ export const useGetVCInfo = (
                 customImageClass="w-full h-full object-cover"
                 customContainerClass="flex items-center justify-center h-full text-white font-medium text-lg"
             />
-        ) : (
-            <div className="flex items-center justify-center h-full w-full overflow-hidden bg-gray-50 text-emerald-700 font-semibold text-xl">
-                {getEmojiFromDidString(issuerDid!)}
-            </div>
-        );
+        ) : undefined;
     } else if (issuerProfileId) {
         // Issuer has LCN profile
         issuerName =
@@ -149,11 +148,7 @@ export const useGetVCInfo = (
                 customImageClass="w-full h-full object-cover"
                 customContainerClass="flex items-center justify-center h-full text-white font-medium text-lg"
             />
-        ) : (
-            <div className="flex items-center justify-center h-full w-full overflow-hidden bg-gray-50 text-emerald-700 font-semibold text-xl">
-                {getEmojiFromDidString(issuerDid!)}
-            </div>
-        );
+        ) : undefined;
     } else if (isCurrentUserIssuer) {
         // Issuer is current user
         issuerName = currentUser?.name;
@@ -167,11 +162,7 @@ export const useGetVCInfo = (
                 customImageClass="w-full h-full object-cover"
                 customContainerClass="flex items-center justify-center h-full text-white font-medium text-lg"
             />
-        ) : (
-            <div className="flex items-center justify-center h-full w-full overflow-hidden bg-gray-50 text-emerald-700 font-semibold text-xl">
-                {getEmojiFromDidString(issuerDid!)}
-            </div>
-        );
+        ) : undefined;
     }
 
     // ========================================================================
@@ -194,11 +185,7 @@ export const useGetVCInfo = (
                 customImageClass="w-full h-full object-cover"
                 customContainerClass="flex items-center justify-center h-full text-white font-medium text-4xl"
             />
-        ) : (
-            <div className="flex items-center justify-center h-full w-full overflow-hidden bg-gray-50 text-emerald-700 font-semibold text-xl">
-                {getEmojiFromDidString(issueeDid)}
-            </div>
-        );
+        ) : undefined;
     } else if (isCurrentUserSubject) {
         // Subject is current user
         issueeName = currentUser?.name || issueeDid;
@@ -236,11 +223,7 @@ export const useGetVCInfo = (
                 customImageClass="w-full h-full object-cover"
                 customContainerClass="flex items-center justify-center h-full text-white font-medium text-4xl"
             />
-        ) : (
-            <div className="flex items-center justify-center h-full w-full overflow-hidden bg-gray-50 text-emerald-700 font-semibold text-xl">
-                {getEmojiFromDidString(issueeDid || issueeName)}
-            </div>
-        );
+        ) : undefined;
     }
 
     // ========================================================================
@@ -407,18 +390,30 @@ export const useGetVCInfo = (
     // ========================================================================
     // DISPLAY METADATA
     // ========================================================================
-    const displayType = vc?.display?.displayType;
+    const lcTagHints = parseLcTags(getCredentialSubjectAchievement(vc)?.tag);
+
+    const displayType =
+        vc?.display?.displayType ??
+        getDefaultDisplayType(categoryType ?? '', achievementType, lcTagHints.displayType);
     const previewType = vc?.display?.previewType;
+
+    const subtype = lcTagHints.subtype;
 
     // ID card-specific display settings
     const idBackgroundImage = vc?.boostID?.backgroundImage;
     const idDimBackgroundImage = vc?.boostID?.dimBackgroundImage;
     const idFontColor = vc?.boostID?.fontColor;
     const idAccentColor = vc?.boostID?.accentColor;
+    const achievementImage = getUrlFromImage(getCredentialSubjectAchievement(vc)?.image);
+    const idDisplayBackgroundImage = idBackgroundImage ?? achievementImage;
+    const idDisplayDimBackgroundImage = Boolean(
+        idBackgroundImage ? idDimBackgroundImage : achievementImage
+    );
 
     // Generic display settings
-    const backgroundImage = vc?.display?.backgroundImage;
-    const backgroundColor = vc?.display?.backgroundColor;
+    const backgroundImage = vc?.display?.backgroundImage ?? lcTagHints.backgroundImage;
+    const backgroundColor = vc?.display?.backgroundColor ?? lcTagHints.backgroundColor;
+    const accentColor = vc?.display?.accentColor ?? lcTagHints.accentColor;
 
     // ========================================================================
     // CLR
@@ -481,7 +476,9 @@ export const useGetVCInfo = (
         results,
         creditsEarned,
         achievementType,
-        formattedAchievementType,
+        subtype,
+        accentColor,
+        formattedAchievementType: subtype || formattedAchievementType,
         badgeThumbnail,
         isClrCredential,
         linkedCredentialCount,
@@ -499,6 +496,8 @@ export const useGetVCInfo = (
         idDimBackgroundImage,
         idFontColor,
         idAccentColor,
+        idDisplayBackgroundImage,
+        idDisplayDimBackgroundImage,
         backgroundImage,
         backgroundColor,
 

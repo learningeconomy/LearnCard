@@ -5,6 +5,35 @@ import {
     VerifiablePresentationRequest,
     AppEvent,
 } from './useLearnCardPostMessage';
+import type { LearnerContextRequestOptions } from './learnerContextCache.helpers';
+
+type LearnerContextResponseData = {
+    prompt: string;
+    raw?: {
+        credentials: unknown[];
+        personalData?: Record<string, unknown>;
+    };
+    did: string;
+    displayName?: string;
+    metadata?: {
+        cacheStatus?:
+            | 'browser-hit'
+            | 'browser-miss'
+            | 'backend-hit'
+            | 'backend-miss'
+            | 'structured';
+        timings?: {
+            totalMs: number;
+            sdkRoundTripMs?: number;
+            appEventMs?: number;
+            credentialReadMs?: number;
+            promptizerMs?: number;
+            cacheLookupMs?: number;
+            prewarmAgeMs?: number;
+        };
+        backendMetadata?: Record<string, unknown>;
+    };
+};
 
 // Re-export types for convenience
 export type { ActionHandler, ActionHandlers };
@@ -94,9 +123,15 @@ export const createRequestConsentHandler = (dependencies: {
     ) => Promise<ConsentModalResult>;
     getContractUri?: () => string | undefined;
     getIntegrationContractUri?: () => Promise<string | undefined>;
+    prewarmLearnerContext?: (options: LearnerContextRequestOptions) => void | Promise<void>;
 }): ActionHandler<'REQUEST_CONSENT'> => {
     return async ({ payload }) => {
-        const { showConsentModal, getContractUri, getIntegrationContractUri } = dependencies;
+        const {
+            showConsentModal,
+            getContractUri,
+            getIntegrationContractUri,
+            prewarmLearnerContext,
+        } = dependencies;
 
         // Use payload contractUri first, then launch config, then guideState fallback
         const contractUri =
@@ -117,6 +152,22 @@ export const createRequestConsentHandler = (dependencies: {
             const result = await showConsentModal(contractUri, {
                 redirect: payload.redirect,
             });
+
+            if (result.granted) {
+                void prewarmLearnerContext?.({
+                    includeCredentials: true,
+                    includePersonalData: false,
+                    format: 'prompt',
+                    detailLevel: 'compact',
+                });
+
+                void prewarmLearnerContext?.({
+                    includeCredentials: true,
+                    includePersonalData: true,
+                    format: 'prompt',
+                    detailLevel: 'compact',
+                });
+            }
 
             return {
                 success: true,
@@ -474,17 +525,12 @@ export const createAppEventHandler = (dependencies: {
         }
 
         try {
-            const result = await sendAppEvent(listingId, payload);
+            const result = await sendAppEvent(listingId, payload.event);
             return { success: true, data: result };
         } catch (error) {
-            const normalizedError = normalizeAppEventError(error);
-
             return {
                 success: false,
-                error: {
-                    code: normalizedError.code,
-                    message: normalizedError.message,
-                },
+                error: normalizeAppEventError(error),
             };
         }
     };
@@ -495,33 +541,24 @@ export const createAppEventHandler = (dependencies: {
  * Partner requests comprehensive learner context for AI tutoring.
  */
 export const createRequestLearnerContextHandler = (dependencies: {
-    requestLearnerContext: (options: {
-        includeCredentials?: boolean;
-        includePersonalData?: boolean;
-        format?: string;
-        instructions?: string;
-        detailLevel?: string;
-    }) => Promise<{
-        prompt: string;
-        raw?: {
-            credentials: unknown[];
-            preferences?: Record<string, unknown>;
-            recentActivity?: unknown[];
-        };
-        did: string;
-        displayName?: string;
-    }>;
+    requestLearnerContext: (
+        options: LearnerContextRequestOptions
+    ) => Promise<LearnerContextResponseData>;
 }): ActionHandler<'REQUEST_LEARNER_CONTEXT'> => {
     return async ({ payload }) => {
         const { requestLearnerContext } = dependencies;
 
         try {
+            const format = payload.format === 'structured' ? 'structured' : 'prompt';
+            const detailLevel = payload.detailLevel === 'expanded' ? 'expanded' : 'compact';
+
             const context = await requestLearnerContext({
                 includeCredentials: payload.includeCredentials,
                 includePersonalData: payload.includePersonalData,
-                format: payload.format,
+                format,
                 instructions: payload.instructions,
-                detailLevel: payload.detailLevel,
+                detailLevel,
+                waitForSync: payload.waitForSync,
             });
 
             return { success: true, data: context };
@@ -538,6 +575,35 @@ export const createRequestLearnerContextHandler = (dependencies: {
     };
 };
 
+export const createGetSyncStatusHandler = (dependencies: {
+    getSyncStatus: () => Promise<{
+        status: 'ready' | 'syncing' | 'error';
+        progress: {
+            totalCredentials: number;
+            completedCredentials: number;
+            failedCredentials: number;
+            retryCount: number;
+        };
+        eta?: number;
+        lastError?: string;
+    }>;
+}): ActionHandler<'GET_SYNC_STATUS'> => {
+    return async () => {
+        try {
+            const status = await dependencies.getSyncStatus();
+            return { success: true, data: status };
+        } catch (error) {
+            return {
+                success: false,
+                error: {
+                    code: 'UNKNOWN_ERROR',
+                    message: error instanceof Error ? error.message : 'Failed to get sync status',
+                },
+            };
+        }
+    };
+};
+
 /**
  * Factory function to create all handlers with dependencies
  */
@@ -545,7 +611,7 @@ export function createActionHandlers(dependencies: {
     // Identity
     isUserAuthenticated: () => boolean;
     mintDelegatedToken: (challenge?: string) => Promise<string>;
-    getUserInfo: () => Promise<{ did: string; profile: any }>;
+    getUserInfo: () => Promise<{ did: string; profile: unknown }>;
     showLoginConsentModal: (origin: string, appName?: string) => Promise<boolean>;
 
     // Consent
@@ -556,15 +622,18 @@ export function createActionHandlers(dependencies: {
     getContractUri?: () => string | undefined;
     getIntegrationContractUri?: () => Promise<string | undefined>;
     getIntegrationForListing?: (listingId: string) => Promise<LCNIntegration | undefined>;
+    prewarmLearnerContext?: (options: LearnerContextRequestOptions) => void | Promise<void>;
 
     // Credentials
-    showCredentialAcceptanceModal: (credential: any) => Promise<string | boolean>;
-    saveCredential: (credential: any) => Promise<string | undefined>;
-    getCredentialById: (id: string) => Promise<any | null>;
-    showShareCredentialModal: (credential: any) => Promise<boolean>;
-    showVprModal: (verifiablePresentationRequest: VerifiablePresentationRequest) => Promise<any>;
-    signCredential: (credential: any) => Promise<any>;
-    signPresentation: (presentation: any) => Promise<any>;
+    showCredentialAcceptanceModal: (credential: unknown) => Promise<string | boolean>;
+    saveCredential: (credential: unknown) => Promise<string | undefined>;
+    getCredentialById: (id: string) => Promise<unknown | null>;
+    showShareCredentialModal: (credential: unknown) => Promise<boolean>;
+    showVprModal: (
+        verifiablePresentationRequest: VerifiablePresentationRequest
+    ) => Promise<unknown>;
+    signCredential: (credential: unknown) => Promise<unknown>;
+    signPresentation: (presentation: unknown) => Promise<unknown>;
 
     // Navigation
     navigate: (path: string, params?: Record<string, string>) => void;
@@ -578,20 +647,19 @@ export function createActionHandlers(dependencies: {
     getAppListingId?: () => string | undefined;
 
     // Learner context
-    requestLearnerContext?: (options: {
-        include?: string[];
-        format?: string;
-        instructions?: string;
-        detailLevel?: string;
-    }) => Promise<{
-        prompt: string;
-        raw?: {
-            credentials: unknown[];
-            preferences?: Record<string, unknown>;
-            recentActivity?: unknown[];
+    requestLearnerContext?: (
+        options: LearnerContextRequestOptions
+    ) => Promise<LearnerContextResponseData>;
+    getSyncStatus: () => Promise<{
+        status: 'ready' | 'syncing' | 'error';
+        progress: {
+            totalCredentials: number;
+            completedCredentials: number;
+            failedCredentials: number;
+            retryCount: number;
         };
-        did: string;
-        displayName?: string;
+        eta?: number;
+        lastError?: string;
     }>;
 }): ActionHandlers {
     const handlers: ActionHandlers = {
@@ -618,6 +686,10 @@ export function createActionHandlers(dependencies: {
             requestLearnerContext: dependencies.requestLearnerContext,
         });
     }
+
+    handlers.GET_SYNC_STATUS = createGetSyncStatusHandler({
+        getSyncStatus: dependencies.getSyncStatus,
+    });
 
     return handlers;
 }

@@ -3,25 +3,79 @@
  * Add new events here with their corresponding payload types.
  */
 
+// ── LC-1853 Profile-building analytics ──────────────────────────────────────
+
+/** How the user added an item to their profile. Used by `profile_item_added` only. */
+export enum ProfileBuildMethod {
+    Notification = 'notification',
+    ClaimLink = 'claim_link',
+    Dashboard = 'dashboard',
+    VcApiRequest = 'vc_api_request',
+    SelfIssue = 'self_issue',
+    ReceivedBoost = 'received_boost',
+    SelfArticulation = 'self_articulation',
+    SkillsProfileData = 'skills_profile_data',
+    ConsentFlow = 'consent_flow',
+    ResumeImport = 'resume_import',
+}
+
+/**
+ * Where a credential-claim flow was entered from. Used by the
+ * `credential_claim_*` lifecycle events; values align with
+ * `ProfileBuildMethod` where the two overlap.
+ */
+export type ClaimEntryPoint =
+    | 'claim_link'
+    | 'claim_modal'
+    | 'dashboard'
+    | 'vc_api_request'
+    | 'notification'
+    | 'consent_flow'
+    | string;
+
+/** Snapshot of the user's profile state at a point in time. */
+export interface ProfileSnapshot {
+    credentialCount: number;
+    hasSkillsProfile: boolean;
+    skillsCount: number;
+    daysSinceSignup: number;
+}
+
+// ── In-app micro-feedback (sentiment pilot) ─────────────────────────────────
+
+/** Where a micro-feedback prompt was rendered. */
+export type FeedbackSurface = 'issue_success' | 'claim_interaction' | 'claim_oidc';
+
+/** 3-point sentiment scale used by the SentimentStrip. */
+export type FeedbackSentiment = 'negative' | 'neutral' | 'positive';
+
 export const AnalyticsEvents = {
     // Boost/Credential Claims
     CLAIM_BOOST: 'claim_boost',
-    
+
+    // In-app micro-feedback (sentiment strips at value moments).
+    // `shown` vs `sentiment_given` gives per-surface response rate — the
+    // health metric that tells us when a prompt has become annoying.
+    FEEDBACK_PROMPT_SHOWN: 'feedback_prompt_shown',
+    FEEDBACK_SENTIMENT_GIVEN: 'feedback_sentiment_given',
+    FEEDBACK_FOLLOWUP_SUBMITTED: 'feedback_followup_submitted',
+    FEEDBACK_FOLLOWUP_DISMISSED: 'feedback_followup_dismissed',
+
     // Boost CMS
     BOOST_CMS_PUBLISH: 'boostCMS_publish',
     BOOST_CMS_ISSUE_TO: 'boostCMS_issue_to',
     BOOST_CMS_CONFIRMATION: 'boostCMS_confirmation',
     BOOST_CMS_DATA_ENTRY: 'boostCMS_data_entry',
-    
+
     // Sharing & Link Generation
     GENERATE_SHARE_LINK: 'generate_share_link',
     GENERATE_CLAIM_LINK: 'generate_claim_link',
-    
+
     // Boost Sending
     SELF_BOOST: 'self_boost',
     SEND_BOOST: 'send_boost',
     SEND_BOOST_WITH_ATTACHMENTS: 'send_boost_with_attachments',
-    
+
     // Navigation/Screens
     SCREEN_VIEW: 'screen_view',
 
@@ -38,11 +92,205 @@ export const AnalyticsEvents = {
     // Consent Flow
     CONSENT_FLOW_STARTED: 'consent_flow_started',
     CONSENT_FLOW_ACCEPTED: 'consent_flow_accepted',
+    CONSENT_FLOW_INSTALL_COMPLETED: 'consent_flow.installCompleted',
+    CONSENT_FLOW_SYNC_JOB: 'consent_flow.syncJob',
 
     // LaunchPad
     LAUNCHPAD_APP_CLICKED: 'launchpad_app_clicked',
     LAUNCHPAD_QUICKNAV_ACTION_CLICKED: 'launchpad_quicknav_action_clicked',
     LAUNCHPAD_APP_INSTALLED: 'launchpad_app_installed',
+
+    // Pathways (see docs § 13). Phase 0 stubs — callers land in later phases.
+    PATHWAYS_ONBOARD_STARTED: 'pathways.onboard.started',
+    PATHWAYS_ONBOARD_SUGGESTIONS_RENDERED: 'pathways.onboard.suggestionsRendered',
+    PATHWAYS_ONBOARD_SUGGESTION_ACCEPTED: 'pathways.onboard.suggestionAccepted',
+    PATHWAYS_TODAY_NEXT_ACTION_SHOWN: 'pathways.today.nextActionShown',
+    PATHWAYS_TODAY_NEXT_ACTION_DISMISSED: 'pathways.today.nextActionDismissed',
+    PATHWAYS_NODE_TERMINATION_COMPLETED: 'pathways.node.terminationCompleted',
+    PATHWAYS_PROPOSAL_CREATED: 'pathways.proposal.created',
+    PATHWAYS_PROPOSAL_ACCEPTED: 'pathways.proposal.accepted',
+    PATHWAYS_PROPOSAL_REJECTED: 'pathways.proposal.rejected',
+    PATHWAYS_PROPOSAL_EXPIRED: 'pathways.proposal.expired',
+    PATHWAYS_AGENT_BUDGET_EXCEEDED: 'pathways.agent.budgetExceeded',
+    PATHWAYS_LEARNER_COST_SNAPSHOT: 'pathways.learnerCost.snapshot',
+    PATHWAYS_ENDORSEMENT_REQUESTED: 'pathways.endorsement.requested',
+    PATHWAYS_ENDORSEMENT_RECEIVED: 'pathways.endorsement.received',
+    PATHWAYS_ENDORSEMENT_DECLINED: 'pathways.endorsement.declined',
+    PATHWAYS_OFFLINE_CONFLICT: 'pathways.offline.conflict',
+    PATHWAYS_PATHWAY_SWITCHED: 'pathways.pathway.switched',
+    PATHWAYS_PATHWAY_REMOVED: 'pathways.pathway.removed',
+    PATHWAYS_COMPOSITE_OPENED: 'pathways.composite.opened',
+    PATHWAYS_CTDL_IMPORTED: 'pathways.ctdl.imported',
+    PATHWAYS_CATALOG_BROWSED: 'pathways.catalog.browsed',
+    PATHWAYS_CATALOG_SEARCHED: 'pathways.catalog.searched',
+
+    // Pathways — ActionDescriptor dispatch (docs § 3.7).
+    // Fires when a learner activates a node's primary CTA. `kind`
+    // carries the resolved `ActionDescriptor.kind` (including `none`
+    // for local-only nodes that fall back to the NodeDetail overlay);
+    // `source` is `'explicit' | 'earn-url' | 'mcp-policy' | 'none'`
+    // so we can measure how often authored descriptors drive dispatch
+    // versus legacy-field fallbacks.
+    PATHWAYS_ACTION_DISPATCHED: 'pathways.action.dispatched',
+
+    // Pathways — OutcomeSignal lifecycle (docs § 3.8).
+    PATHWAYS_OUTCOME_AUTOBIND_PROPOSED: 'pathways.outcome.autobindProposed',
+    PATHWAYS_OUTCOME_BOUND: 'pathways.outcome.bound',
+    PATHWAYS_OUTCOME_BINDING_CLEARED: 'pathways.outcome.bindingCleared',
+
+    // OpenID4VC / OpenID4VP
+    /**
+     * Fired when a user explicitly taps "Tell LearnCard about this" on an
+     * OID4VC/VP exchange error screen. Distinct from a Sentry exception
+     * — this is product-prioritization signal (which formats / verifiers
+     * are users *trying* to use), not a crash report.
+     */
+    OPENID_EXCHANGE_ERROR_REPORTED: 'openid_exchange_error_reported',
+
+    /**
+     * One attempt of an OID4VC/VP exchange under the resilience
+     * orchestrator. Emits once per strategy attempt (success or
+     * failure). Joinable across attempts by `exchange_run_id`.
+     */
+    OPENID_RESILIENCE_ATTEMPT: 'openid_resilience_attempt',
+
+    /**
+     * Recovery decision the orchestrator made after a failed attempt.
+     * Joinable to the failed attempt by `exchange_run_id` +
+     * `attempt_number`.
+     */
+    OPENID_RESILIENCE_DECISION: 'openid_resilience_decision',
+
+    /**
+     * Final outcome of an exchange that went through the resilience
+     * orchestrator. Lets product see "% of exchanges that succeeded
+     * after fallback" and "% that surfaced error after exhaustion".
+     */
+    OPENID_RESILIENCE_OUTCOME: 'openid_resilience_outcome',
+
+    /**
+     * Fired when the resilience orchestrator gave up on an error
+     * whose classified `kind` suggested it might have been
+     * recoverable (wallet / request_invalid / unknown). Used to mine
+     * production for new signer-failure patterns: filter on
+     * `pattern_matched=false` in the dashboard to find shapes worth
+     * adding to STRUCTURED_SIGNER_FAILURES or SIGNER_FAILURE_PATTERNS.
+     * Payload omits raw message text (PII risk) — only a stable hash
+     * is included.
+     */
+    OPENID_RESILIENCE_UNRECOGNIZED_FAILURE: 'openid_resilience_unrecognized_failure',
+    /**
+     * Fired every time a claim-input string is routed (camera scan,
+     * paste field, image upload, clipboard auto-detect). Lets product
+     * answer "where do users actually claim from?" and "what fraction
+     * of pastes are unrecognized?".
+     */
+    CLAIM_INPUT_ROUTED: 'claim_input_routed',
+
+    // LC-1644 perf bench (admin-only)
+    BENCH_APPEVENT_RUN_TRIGGERED: 'bench_appevent_run_triggered',
+
+    // LC-1644 frontend perf telemetry — captures user-perceived sendCredential→claim flow.
+    // Joinable to backend `bench.appevent.iteration` via `run_id` when fired from the bench panel.
+    FRONTEND_SENDCREDENTIAL_ITERATION: 'frontend.sendcredential.iteration',
+
+    // LC-1862 Credential lifecycle management (revoke/suspend/unsuspend)
+    CREDENTIAL_REVOKED: 'credential_revoked',
+    CREDENTIAL_SUSPENDED: 'credential_suspended',
+    CREDENTIAL_UNSUSPENDED: 'credential_unsuspended',
+
+    // ── LC-1853 Profile-building analytics ──────────────────────────────────
+    ACCOUNT_CREATED: 'account_created',
+    PROFILE_ITEM_ADDED: 'profile_item_added',
+    ENGAGEMENT_SIGNAL: 'engagement_signal',
+    SKILL_PROFILE_STEP_STARTED: 'skill_profile_step_started',
+    SKILL_PROFILE_STEP_COMPLETED: 'skill_profile_step_completed',
+    SKILL_PROFILE_COMPLETED: 'skill_profile_completed',
+    SKILL_PROFILE_ABANDONED: 'skill_profile_abandoned',
+
+    // ── Lifecycle funnels (P0) ───────────────────────────────────────────────
+    // Start/terminal pairs share a `flow_id` (see `newFlowId()` in
+    // sharedContext.ts) so concurrent flows reconstruct reliably.
+    // `environment` / `app_version` / `tenant_id` / `platform` are
+    // auto-attached to every event — do NOT pass them per-call.
+
+    // Signup: `signup_started` fires when the AuthCoordinator reaches
+    // `needs_setup` (a provably new account), giving acquisition a real
+    // denominator — unlike ACCOUNT_CREATED, which is device-scoped.
+    SIGNUP_STARTED: 'signup_started',
+    SIGNUP_COMPLETED: 'signup_completed',
+    SIGNUP_FAILED: 'signup_failed',
+
+    ONBOARDING_STARTED: 'onboarding_started',
+    ONBOARDING_STEP_COMPLETED: 'onboarding_step_completed',
+    ONBOARDING_ABANDONED: 'onboarding_abandoned',
+
+    // Credential claim lifecycle: CLAIM_BOOST records success only.
+    // `presented` = the claim screen rendered (exposure); `started` =
+    // the user actively triggered the claim. Funnel denominators MUST
+    // use `started` — `presented` includes dwell/bounce traffic.
+    // Exactly one terminal event fires per started flow_id.
+    CREDENTIAL_CLAIM_PRESENTED: 'credential_claim_presented',
+    CREDENTIAL_CLAIM_STARTED: 'credential_claim_started',
+    CREDENTIAL_CLAIM_SUCCEEDED: 'credential_claim_succeeded',
+    CREDENTIAL_CLAIM_FAILED: 'credential_claim_failed',
+    CREDENTIAL_CLAIM_CANCELLED: 'credential_claim_cancelled',
+
+    // Issuance lifecycle for the Issue page (successor to the deprecated
+    // Boost CMS send flow). Legacy outcome events (SELF_BOOST, SEND_BOOST,
+    // GENERATE_CLAIM_LINK) still fire alongside these with
+    // `method: 'Issue Page'` so pre-existing dashboards keep a continuous
+    // series and CMS→IssuePage migration is visible via the method split.
+    CREDENTIAL_ISSUE_STARTED: 'credential_issue_started',
+    CREDENTIAL_ISSUE_SUCCEEDED: 'credential_issue_succeeded',
+    CREDENTIAL_ISSUE_FAILED: 'credential_issue_failed',
+
+    // OID4VC/VP exchange lifecycle. `exchange_id` equals the resilience
+    // orchestrator's `exchange_run_id` where one exists so these join
+    // against OPENID_RESILIENCE_* events. `offer_presented` = the offer
+    // screen rendered; `started` = the network exchange actually began.
+    OPENID_OFFER_PRESENTED: 'openid_offer_presented',
+    OPENID_EXCHANGE_STARTED: 'openid_exchange_started',
+    OPENID_EXCHANGE_SUCCEEDED: 'openid_exchange_succeeded',
+    OPENID_EXCHANGE_FAILED: 'openid_exchange_failed',
+    OPENID_EXCHANGE_CANCELLED: 'openid_exchange_cancelled',
+
+    // Post-claim value — activation/retention signals. CREDENTIAL_SHARED
+    // means the user completed a share action (clipboard copy, native
+    // share sheet, LinkedIn). Rendering a QR is only exposure — that is
+    // CREDENTIAL_QR_PRESENTED, since a scan can't be confirmed client-side.
+    CREDENTIAL_VIEWED: 'credential_viewed',
+    CREDENTIAL_SHARED: 'credential_shared',
+    CREDENTIAL_QR_PRESENTED: 'credential_qr_presented',
+    PRESENTATION_COMPLETED: 'presentation_completed',
+
+    // ── Feature outcomes (P1) ────────────────────────────────────────────────
+    LAUNCHPAD_APP_OPENED: 'launchpad_app_opened',
+    LAUNCHPAD_APP_ACTION_COMPLETED: 'launchpad_app_action_completed',
+    LAUNCHPAD_APP_UNINSTALLED: 'launchpad_app_uninstalled',
+
+    AI_MESSAGE_SENT: 'ai_message_sent',
+    AI_RESPONSE_COMPLETED: 'ai_response_completed',
+    AI_RESPONSE_FAILED: 'ai_response_failed',
+    AI_RECOMMENDATION_ACCEPTED: 'ai_recommendation_accepted',
+
+    PROFILE_ITEM_UPDATED: 'profile_item_updated',
+    PROFILE_ITEM_REMOVED: 'profile_item_removed',
+    PROFILE_SHARED: 'profile_shared',
+
+    // Dashboard "Get Started" checklist — the activation-loop UI.
+    // `item_clicked` is declared intent entering a funnel; `dismissed`
+    // is an explicit opt-out of activation guidance. Checklist
+    // completion needs no event (derivable from the funnel events).
+    DASHBOARD_GET_STARTED_INTERACTED: 'dashboard_get_started_interacted',
+
+    // ConsentFlow terminal states — distinguish deliberate exits and
+    // technical failures from silent abandonment.
+    CONSENT_FLOW_DECLINED: 'consent_flow_declined',
+    CONSENT_FLOW_CANCELLED: 'consent_flow_cancelled',
+    CONSENT_FLOW_FAILED: 'consent_flow_failed',
+    CONSENT_SYNC_COMPLETED: 'consent_sync_completed',
+    CONSENT_SYNC_FAILED: 'consent_sync_failed',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];
@@ -57,6 +305,37 @@ export interface AnalyticsEventPayloads {
         boostType?: string;
         achievementType?: string;
         method: 'VC-API Request' | 'Dashboard' | 'Claim Modal' | 'Notification' | string;
+        /** LC-1853: ms from when the claim flow started to when the boost was claimed. */
+        msSinceMethodStarted?: number;
+    };
+
+    [AnalyticsEvents.FEEDBACK_PROMPT_SHOWN]: {
+        surface: FeedbackSurface;
+    };
+
+    [AnalyticsEvents.FEEDBACK_SENTIMENT_GIVEN]: {
+        surface: FeedbackSurface;
+        sentiment: FeedbackSentiment;
+        /** ms from prompt render to tap. Rising latency = prompt fatigue signal. */
+        msSinceShown: number;
+    };
+
+    [AnalyticsEvents.FEEDBACK_FOLLOWUP_SUBMITTED]: {
+        surface: FeedbackSurface;
+        sentiment: FeedbackSentiment;
+        reasons: string[];
+        hasFreeText: boolean;
+        /**
+         * Optional free text. Only attached when the user's
+         * `bugReportsEnabled` preference allows it — treat as
+         * user-supplied PII downstream.
+         */
+        userNote?: string;
+    };
+
+    [AnalyticsEvents.FEEDBACK_FOLLOWUP_DISMISSED]: {
+        surface: FeedbackSurface;
+        sentiment: FeedbackSentiment;
     };
 
     [AnalyticsEvents.BOOST_CMS_PUBLISH]: {
@@ -103,12 +382,16 @@ export interface AnalyticsEventPayloads {
         category?: string;
         boostType?: string;
         method: 'Managed Boost' | string;
+        /** LC-1853: ms from when the self-boost flow started. */
+        msSinceMethodStarted?: number;
     };
 
     [AnalyticsEvents.SEND_BOOST]: {
         category?: string;
         boostType?: string;
         method: 'Managed Boost' | string;
+        /** LC-1853: ms from when the send-boost flow started. */
+        msSinceMethodStarted?: number;
     };
 
     [AnalyticsEvents.SEND_BOOST_WITH_ATTACHMENTS]: {
@@ -143,6 +426,8 @@ export interface AnalyticsEventPayloads {
     [AnalyticsEvents.ONBOARDING_COMPLETED]: {
         role?: string;
         country?: string;
+        /** LC-1853: ms from when the onboarding flow started. */
+        msSinceMethodStarted?: number;
     };
 
     [AnalyticsEvents.CONSENT_FLOW_STARTED]: {
@@ -152,6 +437,25 @@ export interface AnalyticsEventPayloads {
     [AnalyticsEvents.CONSENT_FLOW_ACCEPTED]: {
         contractName?: string;
         alreadyConsented: boolean;
+    };
+
+    [AnalyticsEvents.CONSENT_FLOW_INSTALL_COMPLETED]: {
+        contractUri: string;
+        ownerDid: string;
+        elapsedMs: number;
+        status: 'success' | 'error' | 'already_consented';
+    };
+
+    [AnalyticsEvents.CONSENT_FLOW_SYNC_JOB]: {
+        contractUri: string;
+        termsUri: string;
+        ownerDid: string;
+        phase: 'queued' | 'running' | 'done' | 'error';
+        elapsedMs?: number;
+        totalCredentials?: number;
+        completedCredentials?: number;
+        failedCredentials?: number;
+        retryCount?: number;
     };
 
     [AnalyticsEvents.LAUNCHPAD_APP_CLICKED]: {
@@ -170,6 +474,714 @@ export interface AnalyticsEventPayloads {
         appName: string;
         appId: string;
         category?: string;
+    };
+
+    // -- Pathways (docs § 13) ------------------------------------------------
+
+    [AnalyticsEvents.PATHWAYS_ONBOARD_STARTED]: {
+        hasWallet: boolean;
+        goalMode: 'free-text' | 'template' | 'skipped';
+    };
+
+    [AnalyticsEvents.PATHWAYS_ONBOARD_SUGGESTIONS_RENDERED]: {
+        latencyMs: number;
+        vectorOnly: boolean;
+        suggestionCount: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_ONBOARD_SUGGESTION_ACCEPTED]: {
+        suggestionId: string;
+        position: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_TODAY_NEXT_ACTION_SHOWN]: {
+        nodeId: string;
+        reasons: string[];
+        topScore: number;
+        runnerUpScores: number[];
+        /**
+         * Which selector produced this pick — `'route'` means the
+         * learner's committed `chosenRoute` drove the answer (turn-
+         * by-turn), `'ranking'` means the weighted scorer did. We
+         * break these out so we can measure how often learners are
+         * actually walking a route vs. bouncing through availability.
+         */
+        source?: 'route' | 'detour' | 'ranking';
+        /** 1-indexed position of the pick on the chosenRoute; only set when `source === 'route'`. */
+        routePosition?: number;
+        /** Total chosenRoute length; only set when `source === 'route'`. */
+        routeTotal?: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_TODAY_NEXT_ACTION_DISMISSED]: {
+        nodeId: string;
+        reasons: string[];
+    };
+
+    [AnalyticsEvents.PATHWAYS_NODE_TERMINATION_COMPLETED]: {
+        nodeId: string;
+        terminationKind: string;
+        evidenceCount: number;
+        offlineQueued: boolean;
+    };
+
+    [AnalyticsEvents.PATHWAYS_PROPOSAL_CREATED]: {
+        agent: string;
+        pathwayId: string | null;
+        tokensIn?: number;
+        tokensOut?: number;
+        latencyMs: number;
+        costCents: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_PROPOSAL_ACCEPTED]: {
+        proposalId: string;
+        agent: string;
+        ageMs: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_PROPOSAL_REJECTED]: {
+        proposalId: string;
+        agent: string;
+        ageMs: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_PROPOSAL_EXPIRED]: {
+        proposalId: string;
+        agent: string;
+    };
+
+    [AnalyticsEvents.PATHWAYS_AGENT_BUDGET_EXCEEDED]: {
+        agent: string;
+        tier: 'low' | 'medium' | 'high';
+        cappedAt:
+            | 'per-invocation'
+            | 'per-learner-daily'
+            | 'per-learner-monthly'
+            | 'per-tenant-monthly';
+    };
+
+    [AnalyticsEvents.PATHWAYS_LEARNER_COST_SNAPSHOT]: {
+        learnerDid: string;
+        monthToDateCents: number;
+        byCapability: Record<string, number>;
+    };
+
+    [AnalyticsEvents.PATHWAYS_ENDORSEMENT_REQUESTED]: {
+        nodeId: string;
+        endorserRelationship: 'mentor' | 'peer' | 'guardian' | 'institution';
+    };
+
+    [AnalyticsEvents.PATHWAYS_ENDORSEMENT_RECEIVED]: {
+        nodeId: string;
+        endorserTrustTier: string;
+        latencyMs: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_ENDORSEMENT_DECLINED]: {
+        nodeId: string;
+        reason?: string;
+    };
+
+    [AnalyticsEvents.PATHWAYS_OFFLINE_CONFLICT]: {
+        mutationType: string;
+        resolution: 'client-wins' | 'server-wins' | 'last-write-wins' | 'learner-prompt';
+    };
+
+    [AnalyticsEvents.PATHWAYS_PATHWAY_SWITCHED]: {
+        fromPathwayId: string | null;
+        toPathwayId: string;
+        subscribedCount: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_PATHWAY_REMOVED]: {
+        pathwayId: string;
+        remainingCount: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_COMPOSITE_OPENED]: {
+        parentPathwayId: string;
+        parentNodeId: string;
+        nestedPathwayId: string;
+        renderStyle: 'inline-expandable' | 'link-out';
+    };
+
+    [AnalyticsEvents.PATHWAYS_CTDL_IMPORTED]: {
+        ctid: string;
+        nodeCount: number;
+        warningCount: number;
+        hasDestination: boolean;
+        /**
+         * Where the import originated — the curated catalog card the
+         * learner clicked, a direct CTID / URL they pasted, or the
+         * cold-start `DiscoverStart` showcase picker on
+         * `/pathways/onboard`. Lets us measure whether the browse UX
+         * is actually getting used vs. power users bypassing it, and
+         * how often new learners pick a showcase to demo with versus
+         * describing their own goal.
+         */
+        importSource: 'catalog' | 'direct' | 'onboard';
+    };
+
+    [AnalyticsEvents.PATHWAYS_CATALOG_BROWSED]: {
+        /** Total entries visible at landing (after featured filter). */
+        entryCount: number;
+    };
+
+    [AnalyticsEvents.PATHWAYS_CATALOG_SEARCHED]: {
+        /** Length of the query string (not the string itself — no PII). */
+        queryLength: number;
+        /** Active tag-filter chips at search time. */
+        tagCount: number;
+        /** How many entries survived the filter + query. */
+        resultCount: number;
+    };
+
+    // -- Pathways — action dispatch (docs § 3.7) ----------------------------
+
+    [AnalyticsEvents.PATHWAYS_ACTION_DISPATCHED]: {
+        nodeId: string;
+        /** Resolved `ActionDescriptor.kind` at click time. */
+        kind: 'in-app-route' | 'app-listing' | 'ai-session' | 'external-url' | 'mcp-tool' | 'none';
+        /** How the resolver arrived at that kind. */
+        source: 'explicit' | 'earn-url' | 'mcp-policy' | 'none';
+        /**
+         * Coarse destination label — a URL, route path, listing id,
+         * or literal like `'in-app:node-detail'`. Never carries learner
+         * PII (query strings are safe because our in-app hrefs don't
+         * embed identifiers, but callers should avoid building hrefs
+         * that do).
+         */
+        destination: string;
+    };
+
+    // -- Pathways — outcome signal lifecycle (docs § 3.8) -------------------
+
+    [AnalyticsEvents.PATHWAYS_OUTCOME_AUTOBIND_PROPOSED]: {
+        pathwayId: string;
+        outcomeId: string;
+        signalKind: string;
+        issuerTrustTier: 'self' | 'peer' | 'trusted' | 'institution';
+        /** The VC's numeric value when the signal is `score-threshold`. */
+        observedValue?: number | string;
+        outOfWindow: boolean;
+    };
+
+    [AnalyticsEvents.PATHWAYS_OUTCOME_BOUND]: {
+        pathwayId: string;
+        outcomeId: string;
+        signalKind: string;
+        boundVia: 'auto' | 'manual';
+        outOfWindow: boolean;
+    };
+
+    [AnalyticsEvents.PATHWAYS_OUTCOME_BINDING_CLEARED]: {
+        pathwayId: string;
+        outcomeId: string;
+        /** Why we cleared — learner disputed, issuer revoked, etc. */
+        reason?: string;
+    };
+
+    [AnalyticsEvents.OPENID_EXCHANGE_ERROR_REPORTED]: {
+        /** Which OID4VC surface the error came from. */
+        surface: 'vci' | 'vp';
+        /**
+         * UX-meaningful classification from `FriendlyErrorInfo.kind`. Use
+         * this for top-level dashboards — "how many trust gaps this
+         * week?" "which formats are users hitting most?".
+         */
+        kind: 'format_gap' | 'trust_gap' | 'transport' | 'request_invalid' | 'wallet' | 'unknown';
+        /**
+         * Stable plugin-side error code when present (e.g.
+         * `unsupported_client_id_scheme`, `unknown_credential_format`).
+         * Useful for drilling down inside a `kind`.
+         */
+        code?: string;
+        /**
+         * `error.name` from the plugin (`VciError`, `RequestObjectError`,
+         * …). Lets us split aggregate counts by which plugin module
+         * surfaced the error.
+         */
+        errorName?: string;
+        /**
+         * Sanitized counterparty identifier — verifier `client_id` (host
+         * only) or issuer URL (host only). Never carries query strings,
+         * user secrets, or PII. `undefined` when we couldn't extract
+         * anything safe to log.
+         */
+        counterparty?: string;
+        /**
+         * Optional free-text the user typed into the report textarea.
+         * Treat as user-supplied PII downstream; do not enrich with
+         * automatic classification.
+         */
+        userNote?: string;
+        /** Wallet build version (from package.json). */
+        walletVersion?: string;
+    };
+
+    [AnalyticsEvents.OPENID_RESILIENCE_ATTEMPT]: {
+        surface: 'vci' | 'vp';
+        exchange_run_id: string;
+        attempt_number: number;
+        strategy_id: string;
+        strategy_axis: 'signer' | 'transport' | 'trust';
+        outcome: 'succeeded' | 'failed';
+        duration_ms: number;
+        error_kind?:
+            | 'format_gap'
+            | 'trust_gap'
+            | 'transport'
+            | 'request_invalid'
+            | 'wallet'
+            | 'unknown';
+        counterparty?: string;
+    };
+
+    [AnalyticsEvents.OPENID_RESILIENCE_DECISION]: {
+        surface: 'vci' | 'vp';
+        exchange_run_id: string;
+        attempt_number: number;
+        decision: 'retry_silent' | 'retry_with_prompt' | 'surface_error';
+        next_strategy_id?: string;
+        next_strategy_axis?: 'signer' | 'transport' | 'trust';
+        prompt_severity?: 'info' | 'warning';
+        backoff_ms?: number;
+    };
+
+    [AnalyticsEvents.OPENID_RESILIENCE_OUTCOME]: {
+        surface: 'vci' | 'vp';
+        exchange_run_id: string;
+        outcome:
+            | 'success_first_attempt'
+            | 'success_after_fallback'
+            | 'failure_user_cancelled'
+            | 'failure_exhausted';
+        total_attempts: number;
+        signers_tried: string[];
+        transport_retries: number;
+        trust_gaps_accepted: number;
+        final_error_kind?:
+            | 'format_gap'
+            | 'trust_gap'
+            | 'transport'
+            | 'request_invalid'
+            | 'wallet'
+            | 'unknown';
+        counterparty?: string;
+        total_duration_ms: number;
+    };
+
+    [AnalyticsEvents.OPENID_RESILIENCE_UNRECOGNIZED_FAILURE]: {
+        surface: 'vci' | 'vp';
+        exchange_run_id: string;
+        attempt_number: number;
+        error_kind: 'wallet' | 'request_invalid' | 'unknown';
+        error_name?: string;
+        error_code?: string;
+        http_status?: number;
+        message_hash: string;
+        pattern_matched: boolean;
+        signers_tried: string[];
+        counterparty?: string;
+    };
+
+    [AnalyticsEvents.CLAIM_INPUT_ROUTED]: {
+        source: 'camera' | 'paste' | 'image_upload' | 'clipboard_auto';
+        parsed_kind:
+            | 'oid4vci'
+            | 'oid4vp'
+            | 'vc-api-custom-scheme'
+            | 'lcw-https'
+            | 'boost-claim'
+            | 'connection-request'
+            | 'raw-vc-candidate'
+            | 'interaction-url'
+            | 'unrecognized';
+        outcome:
+            | 'routed'
+            | 'open_contact'
+            | 'open_claim_boost'
+            | 'open_claim_vc'
+            | 'open_website'
+            | 'unrecognized';
+        unrecognized_reason?:
+            | 'empty'
+            | 'malformed_url'
+            | 'unknown_scheme'
+            | 'invalid_vc'
+            | 'interaction_unavailable'
+            | 'unknown_format';
+        surface?:
+            | 'oid4vci'
+            | 'oid4vp'
+            | 'vc-api-custom-scheme'
+            | 'lcw-https'
+            | 'boost-claim'
+            | 'connection-request'
+            | 'raw-vc'
+            | 'interaction';
+    };
+
+    // ── LC-1853 Profile-building analytics ──────────────────────────────────
+
+    [AnalyticsEvents.ACCOUNT_CREATED]: {
+        method: 'new_signup' | 'returning_user';
+        signupSource?: string;
+    };
+
+    [AnalyticsEvents.PROFILE_ITEM_ADDED]: {
+        method: ProfileBuildMethod;
+        itemType: 'credential' | 'skill' | 'profile_data';
+        /** Always 1 per call. */
+        itemCount: number;
+        /** Pre-mutation count + 1 (arithmetic — do NOT re-read). */
+        totalItemsAfter: number;
+        msSinceAccountCreated: number;
+        msSinceSessionStart: number;
+    };
+
+    [AnalyticsEvents.ENGAGEMENT_SIGNAL]: {
+        signal: 'ai_chat' | 'ai_insights' | 'ai_pathway' | 'returning_session';
+        profileSnapshot: ProfileSnapshot;
+    };
+
+    [AnalyticsEvents.SKILL_PROFILE_STEP_STARTED]: { step: 1 | 2 | 3 | 4 | 5 };
+
+    [AnalyticsEvents.SKILL_PROFILE_STEP_COMPLETED]: {
+        step: 1 | 2 | 3 | 4 | 5;
+        stepDurationMs: number;
+        fieldsCompleted: string[];
+    };
+
+    [AnalyticsEvents.SKILL_PROFILE_COMPLETED]: { totalDurationMs: number };
+
+    [AnalyticsEvents.SKILL_PROFILE_ABANDONED]: { step: 1 | 2 | 3 | 4 | 5; stepDurationMs: number };
+
+    // LC-1862 Credential lifecycle management
+    [AnalyticsEvents.CREDENTIAL_REVOKED]: {
+        boostUri: string;
+        surface: 'managed-boosts' | 'issuer-dashboard';
+    };
+    [AnalyticsEvents.CREDENTIAL_SUSPENDED]: {
+        boostUri: string;
+        surface: 'managed-boosts' | 'issuer-dashboard';
+    };
+    [AnalyticsEvents.CREDENTIAL_UNSUSPENDED]: {
+        boostUri: string;
+        surface: 'managed-boosts' | 'issuer-dashboard';
+    };
+
+    // ── Lifecycle funnels (P0) ───────────────────────────────────────────────
+
+    [AnalyticsEvents.SIGNUP_STARTED]: {
+        flow_id: string;
+        /** Auth method that produced the new account (google/apple/passwordless/sms). */
+        method?: string;
+        entry_point?: string;
+    };
+
+    [AnalyticsEvents.SIGNUP_COMPLETED]: {
+        flow_id: string;
+        method?: string;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.SIGNUP_FAILED]: {
+        flow_id: string;
+        method?: string;
+        /** Which part of setup failed — key derivation, profile creation, etc. */
+        step_id?: string;
+        error_code?: string;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.ONBOARDING_STARTED]: {
+        flow_id: string;
+        entry_point?: string;
+    };
+
+    [AnalyticsEvents.ONBOARDING_STEP_COMPLETED]: {
+        flow_id: string;
+        step_id: string;
+        /** 1-indexed position in the flow. */
+        step_index: number;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.ONBOARDING_ABANDONED]: {
+        flow_id: string;
+        /** Step the user was on when they exited. */
+        step_id: string;
+        step_index: number;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_CLAIM_PRESENTED]: {
+        flow_id: string;
+        entry_point: ClaimEntryPoint;
+        credential_type?: string;
+        category?: string;
+        partner_id?: string;
+        credential_count?: number;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_CLAIM_STARTED]: {
+        flow_id: string;
+        entry_point: ClaimEntryPoint;
+        credential_type?: string;
+        category?: string;
+        /** Sanitized issuer identifier (profileId or URL host — never PII). */
+        partner_id?: string;
+        /** Batch size for multi-credential claims (default 1). */
+        credential_count?: number;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED]: {
+        flow_id: string;
+        entry_point: ClaimEntryPoint;
+        credential_type?: string;
+        category?: string;
+        partner_id?: string;
+        credential_count?: number;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_CLAIM_FAILED]: {
+        flow_id: string;
+        entry_point: ClaimEntryPoint;
+        credential_type?: string;
+        category?: string;
+        partner_id?: string;
+        credential_count?: number;
+        error_code?: string;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_CLAIM_CANCELLED]: {
+        flow_id: string;
+        entry_point: ClaimEntryPoint;
+        credential_type?: string;
+        category?: string;
+        partner_id?: string;
+        credential_count?: number;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_ISSUE_STARTED]: {
+        flow_id: string;
+        recipient_mode: 'self' | 'people' | 'link';
+        credential_type?: string;
+        category?: string;
+        recipient_count?: number;
+        has_skills?: boolean;
+        used_dynamic_variables?: boolean;
+        /** Surface that launched the issue flow (router state), e.g. 'dashboard'. */
+        entry_point?: string;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_ISSUE_SUCCEEDED]: {
+        flow_id: string;
+        recipient_mode: 'self' | 'people' | 'link';
+        credential_type?: string;
+        category?: string;
+        recipient_count?: number;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_ISSUE_FAILED]: {
+        flow_id: string;
+        recipient_mode: 'self' | 'people' | 'link';
+        /** Pre-flight validation rejections vs technical issuance failures. */
+        step_id: 'jsonld_validation' | 'issuance';
+        error_code?: string;
+        credential_type?: string;
+        category?: string;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.OPENID_OFFER_PRESENTED]: {
+        exchange_id: string;
+        surface: 'vci' | 'vp';
+        counterparty?: string;
+        entry_point?: string;
+    };
+
+    [AnalyticsEvents.OPENID_EXCHANGE_STARTED]: {
+        /** Equals the resilience orchestrator's `exchange_run_id` when present. */
+        exchange_id: string;
+        surface: 'vci' | 'vp';
+        counterparty?: string;
+        entry_point?: string;
+    };
+
+    [AnalyticsEvents.OPENID_EXCHANGE_SUCCEEDED]: {
+        exchange_id: string;
+        surface: 'vci' | 'vp';
+        counterparty?: string;
+        total_attempts?: number;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.OPENID_EXCHANGE_FAILED]: {
+        exchange_id: string;
+        surface: 'vci' | 'vp';
+        counterparty?: string;
+        error_code?: string;
+        error_kind?:
+            | 'format_gap'
+            | 'trust_gap'
+            | 'transport'
+            | 'request_invalid'
+            | 'wallet'
+            | 'unknown';
+        total_attempts?: number;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.OPENID_EXCHANGE_CANCELLED]: {
+        exchange_id: string;
+        surface: 'vci' | 'vp';
+        counterparty?: string;
+        total_attempts?: number;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_VIEWED]: {
+        credential_type?: string;
+        category?: string;
+        /** Where the detail view was opened from. */
+        surface: string;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_SHARED]: {
+        credential_type?: string;
+        category?: string;
+        /** Completed delivery action — never fired on UI open or link generation. */
+        method: 'clipboard_copy' | 'native_share' | 'linkedin' | string;
+        surface?: string;
+    };
+
+    [AnalyticsEvents.CREDENTIAL_QR_PRESENTED]: {
+        credential_type?: string;
+        category?: string;
+        surface?: string;
+    };
+
+    [AnalyticsEvents.PRESENTATION_COMPLETED]: {
+        exchange_id?: string;
+        surface: string;
+        /** Sanitized verifier identifier (host only — never PII). */
+        verifier?: string;
+        duration_ms?: number;
+    };
+
+    // ── Feature outcomes (P1) ────────────────────────────────────────────────
+
+    [AnalyticsEvents.LAUNCHPAD_APP_OPENED]: {
+        appName: string;
+        appId: string;
+        appType?: string;
+        entry_point?: string;
+    };
+
+    [AnalyticsEvents.LAUNCHPAD_APP_ACTION_COMPLETED]: {
+        appName?: string;
+        appId: string;
+        /** What the app accomplished — credential_issued, consent_granted, etc. */
+        action: string;
+        result: 'success' | 'failure';
+        error_code?: string;
+    };
+
+    [AnalyticsEvents.LAUNCHPAD_APP_UNINSTALLED]: {
+        appName: string;
+        appId: string;
+        result: 'success' | 'failure';
+        error_code?: string;
+    };
+
+    [AnalyticsEvents.AI_MESSAGE_SENT]: {
+        flow_id: string;
+        surface: string;
+        appType?: 'internal' | 'external';
+        /** 1-indexed position of the message within the session. */
+        message_index?: number;
+    };
+
+    [AnalyticsEvents.AI_RESPONSE_COMPLETED]: {
+        flow_id: string;
+        surface: string;
+        /** 1-indexed position of the message that produced this response. */
+        message_index?: number;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.AI_RESPONSE_FAILED]: {
+        flow_id: string;
+        surface: string;
+        /** 1-indexed position of the message that produced this response. */
+        message_index?: number;
+        error_code?: string;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.AI_RECOMMENDATION_ACCEPTED]: {
+        surface: string;
+        /** What kind of recommendation was accepted — skill, pathway, job, etc. */
+        recommendation_type: string;
+    };
+
+    [AnalyticsEvents.PROFILE_ITEM_UPDATED]: {
+        itemType: 'credential' | 'skill' | 'profile_data';
+        surface?: string;
+    };
+
+    [AnalyticsEvents.PROFILE_ITEM_REMOVED]: {
+        itemType: 'credential' | 'skill' | 'profile_data';
+        surface?: string;
+    };
+
+    [AnalyticsEvents.PROFILE_SHARED]: {
+        method: string;
+        surface?: string;
+    };
+
+    [AnalyticsEvents.DASHBOARD_GET_STARTED_INTERACTED]: {
+        action: 'item_clicked' | 'dismissed';
+        item_key?: string;
+        hero_action_id?: string;
+    };
+
+    [AnalyticsEvents.CONSENT_FLOW_DECLINED]: {
+        contractName?: string;
+        flow_id?: string;
+    };
+
+    [AnalyticsEvents.CONSENT_FLOW_CANCELLED]: {
+        contractName?: string;
+        flow_id?: string;
+        /** Step the user was on when they exited. */
+        step_id?: string;
+    };
+
+    [AnalyticsEvents.CONSENT_FLOW_FAILED]: {
+        contractName?: string;
+        flow_id?: string;
+        error_code?: string;
+    };
+
+    [AnalyticsEvents.CONSENT_SYNC_COMPLETED]: {
+        contractUri: string;
+        totalCredentials?: number;
+        duration_ms?: number;
+    };
+
+    [AnalyticsEvents.CONSENT_SYNC_FAILED]: {
+        contractUri: string;
+        failedCredentials?: number;
+        error_code?: string;
+        duration_ms?: number;
     };
 }
 

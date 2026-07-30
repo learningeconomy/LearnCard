@@ -11,8 +11,10 @@ import {
     LaunchPadAppListItem,
     boostCategoryMetadata,
     categoryMetadata,
+    contractCategoryNameToCategoryMetadata,
     getBaseUrl,
 } from 'learn-card-base';
+import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { walletPageData } from '../pages/wallet/constants';
 import { getAiAppBackgroundStylesForApp } from '../components/ai-passport-apps/aiPassport-apps.helpers';
 
@@ -38,17 +40,45 @@ export const CONTRACT_CATEGORIES: (CredentialCategoryEnum | string)[] = [
     CredentialCategoryEnum.accomplishment,
     CredentialCategoryEnum.accommodation,
     CredentialCategoryEnum.workHistory,
+    CredentialCategoryEnum.goals,
+    CredentialCategoryEnum.professionalTitle,
+    CredentialCategoryEnum.roleExperience,
+    CredentialCategoryEnum.workExperience,
+    CredentialCategoryEnum.payRate,
+    CredentialCategoryEnum.workLifeBalance,
+    CredentialCategoryEnum.jobStability,
+    CredentialCategoryEnum.selfAssignedSkills,
     CredentialCategoryEnum.id,
 
     ...AI_CONTRACT_CREDENTIAL_TYPE_OVERRIDES,
 ];
 
+export const VERIFIABLE_DATA_CONTRACT_CATEGORIES = [
+    CredentialCategoryEnum.goals,
+    CredentialCategoryEnum.professionalTitle,
+    CredentialCategoryEnum.roleExperience,
+    CredentialCategoryEnum.workExperience,
+    CredentialCategoryEnum.payRate,
+    CredentialCategoryEnum.workLifeBalance,
+    CredentialCategoryEnum.jobStability,
+    CredentialCategoryEnum.selfAssignedSkills,
+    CredentialCategoryEnum.verifiableData,
+];
+
+export const isVerifiableDataContractCategory = (category: string) =>
+    VERIFIABLE_DATA_CONTRACT_CATEGORIES.includes(category as CredentialCategoryEnum);
+
+export const isAiContractCategory = (category: string) =>
+    AI_CONTRACT_CATEGORIES.includes(category as CredentialCategoryEnum) ||
+    AI_CONTRACT_CREDENTIAL_TYPE_OVERRIDES.includes(category);
+
 export const contractAnonImageSrc = 'https://cdn.filestackcontent.com/52hRlXLIQVBi4fYpB1xw';
 
 export const getPersonalEntry = (key: string, user?: CurrentUser | null, anonymize = true) => {
     if (key.toLowerCase() === 'name') return anonymize ? 'Anonymous' : user?.name ?? '';
-    if (key.toLowerCase() === 'email')
+    if (key.toLowerCase() === 'email') {
         return anonymize ? 'anonymous@hidden.com' : user?.email ?? '';
+    }
     if (key.toLowerCase() === 'image') {
         return anonymize ? contractAnonImageSrc : user?.profileImage ?? '';
     }
@@ -159,8 +189,72 @@ export const getFullTermsForContract = (
     return terms;
 };
 
+type LearnCloudCredentialPage = {
+    records?: { uri?: string }[];
+    hasMore?: boolean;
+    cursor?: string;
+};
+
+const MAX_LEARN_CLOUD_PAGE_ITERATIONS = 1000;
+
+export const getAllCredentialUrisForCategory = async (
+    wallet: BespokeLearnCard,
+    category: string
+): Promise<string[]> => {
+    const getPage = wallet.index.LearnCloud.getPage;
+
+    if (!getPage) {
+        return (
+            (await wallet.index.LearnCloud.get({ category }))
+                ?.map((item: { uri?: string }) => item.uri)
+                .filter((uri): uri is string => Boolean(uri)) ?? []
+        );
+    }
+
+    const uris: string[] = [];
+    let cursor: string | undefined = undefined;
+    const seenCursors = new Set<string>();
+    let pageIterations = 0;
+
+    // Load sequentially to avoid giant batched `index.get` requests that can overwhelm tRPC.
+    while (pageIterations < MAX_LEARN_CLOUD_PAGE_ITERATIONS) {
+        const page: LearnCloudCredentialPage | undefined = await getPage(
+            { category },
+            { cursor, limit: 100 }
+        );
+
+        pageIterations += 1;
+
+        if (!page) {
+            break;
+        }
+
+        uris.push(
+            ...((page?.records ?? [])
+                .map((item: { uri?: string }) => item.uri)
+                .filter((uri): uri is string => Boolean(uri)) as string[])
+        );
+
+        if (!page?.hasMore || !page.cursor) {
+            break;
+        }
+
+        if (seenCursors.has(page.cursor) || page.cursor === cursor) {
+            break;
+        }
+
+        seenCursors.add(page.cursor);
+
+        cursor = page.cursor;
+    }
+
+    return uris;
+};
+
 export const getInfoFromContractKey = (key: string) => {
-    const options = boostCategoryMetadata[key as BoostCategoryOptionsEnum];
+    const metadata = contractCategoryNameToCategoryMetadata(key);
+    const options = metadata ?? boostCategoryMetadata[key as BoostCategoryOptionsEnum];
+    const isVerifiableDataCategory = isVerifiableDataContractCategory(key);
 
     // prefer the wallet title + icon
     const walletOptions = walletPageData.find(data => {
@@ -187,11 +281,13 @@ export const getInfoFromContractKey = (key: string) => {
     if (options) {
         return {
             IconComponent: options.IconComponent,
-            iconSrc: walletOptions?.iconSrc,
+            iconSrc: isVerifiableDataCategory ? options.CategoryImage : undefined,
             title: walletOptions?.title ?? options.title,
-            plural: `${key}s`,
-            iconClassName: 'text-white',
-            iconCircleClass: `bg-${options.color}`,
+            plural: options.plural ?? `${key}s`,
+            iconClassName: `text-white ${isVerifiableDataCategory ? '' : 'p-[3px]'}`,
+            iconCircleClass: isVerifiableDataCategory
+                ? 'bg-transparent'
+                : `bg-${options.color ?? 'cyan-700'}`,
         };
     } else {
         return {

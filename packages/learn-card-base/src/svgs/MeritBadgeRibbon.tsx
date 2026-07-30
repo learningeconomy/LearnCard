@@ -6,6 +6,14 @@ type MeritBadgeRibbonProps = {
 };
 
 const MeritBadgeRibbon: React.FC<MeritBadgeRibbonProps> = ({ className = '', image }) => {
+    const [errored, setErrored] = React.useState(false);
+
+    React.useEffect(() => {
+        setErrored(false);
+    }, [image]);
+
+    const showPlaceholder = !image || errored;
+
     return (
         <svg
             width="138"
@@ -37,15 +45,41 @@ const MeritBadgeRibbon: React.FC<MeritBadgeRibbonProps> = ({ className = '', ima
             <clipPath id="circleClip1">
                 <circle cx="69.0591" cy="55" r="48" />
             </clipPath>
-            <image
-                xlinkHref={image}
-                x="21.0591"
-                y="7"
-                width="96"
-                height="96"
-                clipPath="url(#circleClip1)"
-                preserveAspectRatio="xMidYMid slice"
-            />
+            {showPlaceholder ? (
+                <g
+                    clipPath="url(#circleClip1)"
+                    transform="translate(45 31) scale(2)"
+                    className="text-grayscale-400"
+                >
+                    <circle
+                        cx="12"
+                        cy="9"
+                        r="6"
+                        stroke="currentColor"
+                        strokeWidth="1.75"
+                        fill="none"
+                    />
+                    <path
+                        d="M8.5 14.5 7 22l5-3 5 3-1.5-7.5"
+                        stroke="currentColor"
+                        strokeWidth="1.75"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        fill="none"
+                    />
+                </g>
+            ) : (
+                <image
+                    xlinkHref={image}
+                    x="21.0591"
+                    y="7"
+                    width="96"
+                    height="96"
+                    clipPath="url(#circleClip1)"
+                    preserveAspectRatio="xMidYMid slice"
+                    onError={() => setErrored(true)}
+                />
+            )}
         </svg>
     );
 };

@@ -1,6 +1,7 @@
 import React from 'react';
 import useTheme from '../../../theme/hooks/useTheme';
 import { boostCategoryMetadata, BoostCategoryOptionsEnum } from 'learn-card-base';
+import { getBoostCategoryLabel } from '../../../helpers/boostCategoryLabel';
 
 export type BoostSelectCategoryMenuProps = {
     categories: BoostCategoryOptionsEnum[];
@@ -58,7 +59,9 @@ export const BoostSelectCategoryMenu: React.FC<BoostSelectCategoryMenuProps> = (
                         }`}
                     >
                         {icon}
-                        <p className="font-poppins text-grayscale-800 text-[18px]">{title}</p>
+                        <p className="font-poppins text-grayscale-800 text-[18px]">
+                            {getBoostCategoryLabel(boostCategory, title)}
+                        </p>
                     </button>
                 );
             })}

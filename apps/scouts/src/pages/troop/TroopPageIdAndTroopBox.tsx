@@ -42,10 +42,10 @@ const TroopPageIdAndTroopBox: React.FC<TroopPageIdAndTroopBoxProps> = ({
     const credentialStatus = useTroopIDStatus(credentialNoEdits, undefined, boostUri);
     const isRevokedOrPending = credentialStatus === 'revoked' || credentialStatus === 'pending';
 
-    const network = useGetTroopNetwork(credential);
+    const { network: networkData } = useGetTroopNetwork({ credential });
 
     const description = credential?.credentialSubject?.achievement?.description;
-    const networkName = network?.name;
+    const networkName = networkData?.name;
 
     const MAX_DESCRIPTION_LENGTH = 168; // 4 lines = 91 @'s = roughtly 168 regular characters
     const isLongDescription = description?.length > MAX_DESCRIPTION_LENGTH;

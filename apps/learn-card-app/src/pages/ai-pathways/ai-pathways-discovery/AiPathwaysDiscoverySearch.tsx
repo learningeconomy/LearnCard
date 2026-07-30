@@ -1,6 +1,8 @@
 import React from 'react';
 import { IonLabel, IonInput } from '@ionic/react';
 import useTheme from '../../../theme/hooks/useTheme';
+import * as m from '../../../paraglide/messages.js';
+import TransP from '../../../i18n/TransP';
 
 const AiPathwaysDiscoverySearch: React.FC<{
     keywordInput: string;
@@ -27,7 +29,7 @@ const AiPathwaysDiscoverySearch: React.FC<{
             <div className="w-full bg-white rounded-lg p-4 shadow-sm flex flex-col gap-4">
                 <div className="w-full gap-2 flex flex-col">
                     <IonLabel className="text-grayscale-600 font-poppins text-sm">
-                        Enter a career keyword
+                        {m['aiPathways.discovery.enterCareerKeyword']()}
                     </IonLabel>
                     <IonInput
                         value={keywordInput}
@@ -35,7 +37,7 @@ const AiPathwaysDiscoverySearch: React.FC<{
                         onKeyDown={(e: any) => e.key === 'Enter' && handleSearch()}
                         autocapitalize="on"
                         className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-sm`}
-                        placeholder="e.g. Software Engineer"
+                        placeholder={m['aiPathways.discovery.keywordPlaceholder']()}
                         type="text"
                     />
                 </div>
@@ -44,7 +46,7 @@ const AiPathwaysDiscoverySearch: React.FC<{
                         onClick={clearSearch}
                         className="p-[11px] bg-white rounded-full text-grayscale-900 border-grayscale-300 border-[1px] border-solid flex-1 font-poppins text-[17px]"
                     >
-                        Clear
+                        {m['common.clear']()}
                     </button>
 
                     <button
@@ -52,12 +54,16 @@ const AiPathwaysDiscoverySearch: React.FC<{
                         disabled={!keywordInput.trim()}
                         className={`p-[11px] bg-${primaryColor} rounded-full text-white flex-1 font-poppins text-[17px] font-semibold`}
                     >
-                        Search
+                        {m['common.search']()}
                     </button>
                 </div>
                 {searchKeyword && (
                     <div className="mt-2 text-sm text-grayscale-600">
-                        Searching for: <strong className="text-indigo-700">{searchKeyword}</strong>
+                        <TransP
+                            m={m['aiPathways.discovery.searchingFor']}
+                            values={{ keyword: searchKeyword }}
+                            components={[<strong className="text-indigo-700" />]}
+                        />
                     </div>
                 )}
             </div>

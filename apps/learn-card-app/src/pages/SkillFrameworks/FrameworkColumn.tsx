@@ -23,6 +23,7 @@ import EditAlignmentModal from './EditAlignmentModal';
 import SkillsFrameworkIcon from '../../components/svgs/SkillsFrameworkIcon';
 import FrameworkSkillsCount from './FrameworkSkillsCount';
 import FrameworkOptionsModal from './FrameworkOptionsModal';
+import * as m from '../../paraglide/messages.js';
 import FrameworkSearchResults from './FrameworkSearchResults';
 import { IonFooter, IonInput, IonSpinner } from '@ionic/react';
 
@@ -368,7 +369,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                             {isTopLevel ? frameworkInfo?.name : columnNode?.targetName}
                         </h5>
                         <span className="text-grayscale-800 font-poppins font-[700] text-[12px] flex items-center gap-[2px]">
-                            {isTopLevel && 'Framework • '}
+                            {isTopLevel && `${m['skills.framework.framework']()} • `}
                             <FrameworkSkillsCount
                                 frameworkId={frameworkInfo?.id}
                                 sourceURI={frameworkInfo?.sourceURI}
@@ -482,7 +483,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
                             <IonInput
                                 ref={inputRef}
                                 className="bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-poppins text-[14px] w-full"
-                                placeholder="Search framework..."
+                                placeholder={m['skills.framework.searchPlaceholder']()}
                                 value={search}
                                 onIonInput={e => setSearch(e.detail.value)}
                             />

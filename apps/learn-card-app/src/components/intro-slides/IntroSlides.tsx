@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { IonContent, IonPage, IonicSlides, IonSpinner } from '@ionic/react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Keyboard, Navigation, Pagination, Scrollbar, Swiper as SwiperInterface } from 'swiper';
+import type { Swiper as SwiperInterface } from 'swiper/types';
+import { Keyboard, Navigation, Pagination, Scrollbar } from 'swiper/modules';
 import { Capacitor } from '@capacitor/core';
 
 import { useTheme } from '../../theme/hooks/useTheme';

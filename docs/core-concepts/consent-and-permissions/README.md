@@ -16,19 +16,19 @@ User agency, data privacy, and clear authorization are fundamental to a trustwor
 
 You'll learn about the lifecycle of consent, how data sharing and usage terms are formally defined in Contracts, and how different Access Levels control interactions with profiles and data.
 
-***
+---
 
 ### 🧾 Consent & Selective Disclosure
 
 Learners and workers own their data. LearnCard supports:
 
-* **Granular consent**: Share only the parts of a record that are needed.
-* **ZKPs (Zero-Knowledge Proofs)**: Prove something without revealing everything.
-* **BBS+ Signatures**: Enable selective disclosure of credential fields.
+-   **Granular consent**: Share only the parts of a record that are needed.
+-   **ZKPs (Zero-Knowledge Proofs)**: Prove something without revealing everything.
+-   **BBS+ Signatures**: Enable selective disclosure of credential fields.
 
 This ensures privacy, security, and compliance with data protection best practices.
 
-***
+---
 
 ### 🔐 ConsentFlows
 
@@ -36,8 +36,10 @@ This ensures privacy, security, and compliance with data protection best practic
 
 Use ConsentFlow contracts to:
 
-* Request only specific fields from credentials
-* Enforce write permissions with fine-grained rules
-* Respect data ownership at every step
+-   Request only specific fields from credentials
+-   Enforce write permissions with fine-grained rules
+-   Respect data ownership at every step
 
 ConsentFlows power integrations like GameFlow and are especially useful in educational or family contexts.
+
+For the new My Skill Profile verifiable data support, see [Verifiable Data in ConsentFlow](verifiable-data-in-consentflow.md).

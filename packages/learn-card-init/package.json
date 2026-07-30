@@ -1,22 +1,33 @@
 {
     "name": "@learncard/init",
-    "version": "2.3.15",
-    "description": "",
+    "version": "2.4.9",
+    "description": "Primary initialization of LearnCard SDK",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/init.esm.js",
     "exports": {
         ".": {
+            "development": "./src/index.ts",
+            "import": {
+                "types": "./dist/index.d.ts",
+                "default": "./dist/init.esm.js"
+            },
+            "require": {
+                "types": "./dist/index.d.cts",
+                "default": "./dist/index.cjs"
+            }
+        },
+        "./dist/init.esm.js": {
             "types": "./dist/index.d.ts",
-            "import": "./dist/init.esm.js",
-            "require": "./dist/index.cjs"
+            "default": "./dist/init.esm.js"
         }
     },
     "files": [
-        "dist"
+        "dist",
+        "src"
     ],
     "scripts": {
-        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.build.json",
+        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.build.json && shx cp ./dist/index.d.ts ./dist/index.d.cts",
         "start": "aqu watch",
         "lint": "aqu lint",
         "lint:fix": "aqu lint --fix",
@@ -53,7 +64,6 @@
         "@learncard/crypto-plugin": "workspace:*",
         "@learncard/didkey-plugin": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
-        "@learncard/didkit-plugin-node": "workspace:*",
         "@learncard/did-web-plugin": "workspace:*",
         "@learncard/dynamic-loader-plugin": "workspace:*",
         "@learncard/encryption-plugin": "workspace:*",
@@ -63,11 +73,16 @@
         "@learncard/learn-card-plugin": "workspace:*",
         "@learncard/learn-cloud-plugin": "workspace:*",
         "@learncard/network-plugin": "workspace:^",
+        "@learncard/openid4vc-plugin": "workspace:*",
+        "@learncard/sd-jwt-vc-plugin": "workspace:*",
         "@learncard/types": "workspace:*",
         "@learncard/vc-api-plugin": "workspace:*",
         "@learncard/vc-plugin": "workspace:*",
         "@learncard/vc-templates-plugin": "workspace:*",
         "@learncard/vpqr-plugin": "workspace:*"
+    },
+    "optionalDependencies": {
+        "@learncard/didkit-plugin-node": "workspace:*"
     },
     "sideEffects": false
 }

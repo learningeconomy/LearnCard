@@ -11,22 +11,28 @@ description: Quick Start Guide
 Install using the package manager of your choice:
 
 {% tabs %}
-{% tab title="pnpm" %}
+{% tab title="Bun" %}
+
 ```bash
-pnpm i @learncard/init
+bun add @learncard/init
 ```
+
 {% endtab %}
 
 {% tab title="yarn" %}
+
 ```bash
 yarn add @learncard/init
 ```
+
 {% endtab %}
 
 {% tab title="npm" %}
+
 ```bash
 npm i @learncard/init
 ```
+
 {% endtab %}
 {% endtabs %}
 
@@ -39,14 +45,14 @@ import { initLearnCard } from '@learncard/init';
 
 // Generate a random key for wallet seed
 const seed = Array.from(crypto.getRandomValues(new Uint8Array(32)), dec =>
-  dec.toString(16).padStart(2, "0")
-).join("");
+    dec.toString(16).padStart(2, '0')
+).join('');
 
 /** Or, if in node environment:
     const seed = crypto.randomBytes(32).toString('hex');
 **/
 
-// Initialize a new LearnCard wallet with a unique string that is 64 characters or less 
+// Initialize a new LearnCard wallet with a unique string that is 64 characters or less
 const learnCard = await initLearnCard({ seed });
 
 // Returns an unsigned, achievement credential in the OBv3 spec.

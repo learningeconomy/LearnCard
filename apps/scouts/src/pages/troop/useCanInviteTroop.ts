@@ -15,7 +15,10 @@ interface UseTroopIdsParams {
 export const useCanInviteTroop = ({ credential, boostUri }: UseTroopIdsParams) => {
     const role = getScoutsRole(credential);
     const scoutNoun = getScoutsNounForRole(role);
-    const { scoutBoostUri, troopBoostUri, currentBoostUri } = useTroopIds({ boostUri, credential });
+    const { scoutBoostUri, troopBoostUri, currentBoostUri, scoutId, troopId } = useTroopIds({
+        boostUri,
+        credential,
+    });
 
     const { data: troopPermissionsData } = useGetBoostPermissions(troopBoostUri);
     const { data: scoutPermissionsData } = useGetBoostPermissions(scoutBoostUri);
@@ -39,5 +42,7 @@ export const useCanInviteTroop = ({ credential, boostUri }: UseTroopIdsParams) =
         boostPermissionsData,
         currentBoostUri,
         scoutNoun,
+        scoutId,
+        troopId,
     };
 };

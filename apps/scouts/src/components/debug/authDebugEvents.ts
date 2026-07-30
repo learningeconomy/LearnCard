@@ -1,6 +1,8 @@
+import { getLogger } from 'learn-card-base';
+const log = getLogger('auth-debug-events');
 /**
  * Auth/SSS Debug Event Logger
- * 
+ *
  * A simple event system for tracking auth and SSS-related events in dev mode.
  * Events are stored in memory and can be subscribed to by the debug widget.
  */
@@ -71,10 +73,7 @@ const isDebugEnabled = (): boolean => {
     if (typeof window === 'undefined') return false;
 
     try {
-        return (
-            import.meta.env.VITE_ENABLE_AUTH_DEBUG_WIDGET === 'true' ||
-            import.meta.env.DEV
-        );
+        return import.meta.env.VITE_ENABLE_AUTH_DEBUG_WIDGET === 'true' || import.meta.env.DEV;
     } catch {
         return false;
     }
@@ -108,7 +107,7 @@ export const emitAuthDebugEvent = (
         try {
             listener(event);
         } catch (e) {
-            console.error('[AuthDebug] Listener error:', e);
+            log.error('Listener error', e);
         }
     });
 };
@@ -155,7 +154,11 @@ export const clearAuthDebugEvents = (): void => {
 /**
  * Helper to emit success events
  */
-export const emitAuthSuccess = (type: AuthDebugEventType, message: string, data?: Record<string, unknown>): void => {
+export const emitAuthSuccess = (
+    type: AuthDebugEventType,
+    message: string,
+    data?: Record<string, unknown>
+): void => {
     emitAuthDebugEvent(type, message, { level: 'success', data });
 };
 
@@ -178,6 +181,10 @@ export const emitAuthError = (type: AuthDebugEventType, message: string, error?:
 /**
  * Helper to emit warning events
  */
-export const emitAuthWarning = (type: AuthDebugEventType, message: string, data?: Record<string, unknown>): void => {
+export const emitAuthWarning = (
+    type: AuthDebugEventType,
+    message: string,
+    data?: Record<string, unknown>
+): void => {
     emitAuthDebugEvent(type, message, { level: 'warning', data });
 };

@@ -10,6 +10,8 @@ import { useWallet } from 'learn-card-base';
 import LoggingOutModal from '../components/auth/LoggingOutModal';
 
 import { useAuthCoordinator } from '../providers/AuthCoordinatorProvider';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-logout');
 
 const useLogout = () => {
     const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
@@ -54,17 +56,21 @@ const useLogout = () => {
                     try {
                         await pushUtilities.revokePushToken(initWallet, deviceToken);
                     } catch (e) {
-                        console.error('Error revoking push token', e);
+                        log.error('Error revoking push token', e);
                     }
                 }
 
                 // Native Firebase sign-out for Capacitor social logins
                 // (web Firebase sign-out is handled by the coordinator via authProvider.signOut)
-                if (typeOfLogin && nativeSocialLogins.includes(typeOfLogin) && Capacitor.isNativePlatform()) {
+                if (
+                    typeOfLogin &&
+                    nativeSocialLogins.includes(typeOfLogin) &&
+                    Capacitor.isNativePlatform()
+                ) {
                     try {
                         await FirebaseAuthentication?.signOut?.();
                     } catch (e) {
-                        console.log('firebase::signout::error', e);
+                        log.debug('firebase::signout::error', e);
                     }
                 }
 
@@ -77,7 +83,7 @@ const useLogout = () => {
                 // land on a white screen. A full page reload reinitializes cleanly.
                 window.location.href = '/login';
             } catch (e) {
-                console.error('There was an issue logging out', e);
+                log.error('There was an issue logging out', e);
                 setIsLoggingOut(false);
                 closeModal();
                 presentToast('Oops, there was an issue logging out', {

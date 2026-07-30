@@ -29,7 +29,11 @@ import {
 // ─── Raw JSON shape (inferred from the Zod source of truth) ─────────────
 
 import type { ThemeJsonConfig } from '../validators/themeJson.validators';
-import { emitConfigDebugEvent, emitConfigWarning, emitConfigSuccess } from '../../components/debug/configDebugEvents';
+import {
+    emitConfigDebugEvent,
+    emitConfigWarning,
+    emitConfigSuccess,
+} from '../../components/debug/configDebugEvents';
 import {
     ALL_CATEGORIES,
     CATEGORY_KEY_TO_VALUE,
@@ -39,15 +43,15 @@ import {
 
 // ─── Glob imports (resolved at build time by Vite) ───────────────────────
 
-const themeJsonModules = import.meta.glob<ThemeJsonConfig>(
-    '../schemas/*/theme.json',
-    { eager: true, import: 'default' },
-);
+const themeJsonModules = import.meta.glob<ThemeJsonConfig>('../schemas/*/theme.json', {
+    eager: true,
+    import: 'default',
+});
 
-const themeAssetModules = import.meta.glob<string>(
-    '../schemas/*/assets/*',
-    { eager: true, import: 'default' },
-);
+const themeAssetModules = import.meta.glob<string>('../schemas/*/assets/*', {
+    eager: true,
+    import: 'default',
+});
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
 // Pure expansion utilities live in ./themeExpansion.ts for testability.
@@ -64,9 +68,17 @@ const resolveAsset = (themeId: string, relativePath: string): string => {
     const fallbackKey = `../schemas/colorful/assets/${fileName}`;
 
     if (!themeAssetModules[globKey] && themeAssetModules[fallbackKey]) {
-        emitConfigWarning('theme:asset_fallback', `Asset "${fileName}" missing from "${themeId}", using colorful fallback`, { themeId, fileName, globKey, fallbackKey });
+        emitConfigWarning(
+            'theme:asset_fallback',
+            `Asset "${fileName}" missing from "${themeId}", using colorful fallback`,
+            { themeId, fileName, globKey, fallbackKey }
+        );
     } else if (!themeAssetModules[globKey] && !themeAssetModules[fallbackKey]) {
-        emitConfigWarning('theme:asset_fallback', `Asset "${fileName}" not found in "${themeId}" or colorful fallback`, { themeId, fileName });
+        emitConfigWarning(
+            'theme:asset_fallback',
+            `Asset "${fileName}" not found in "${themeId}" or colorful fallback`,
+            { themeId, fileName }
+        );
     }
 
     return themeAssetModules[globKey] ?? themeAssetModules[fallbackKey] ?? relativePath;
@@ -100,10 +112,7 @@ const rawConfigs = getRawConfigs();
  * Recursively resolve a theme's `extends` chain, deep-merging parent → child.
  * Detects cycles.
  */
-const resolveExtends = (
-    id: string,
-    seen: Set<string> = new Set(),
-): ThemeJsonConfig => {
+const resolveExtends = (id: string, seen: Set<string> = new Set()): ThemeJsonConfig => {
     if (resolvedCache.has(id)) return resolvedCache.get(id)!;
 
     const config = rawConfigs.get(id);
@@ -125,7 +134,7 @@ const resolveExtends = (
 
         resolved = deepMerge(
             parent as unknown as Record<string, unknown>,
-            config as unknown as Record<string, unknown>,
+            config as unknown as Record<string, unknown>
         ) as unknown as ThemeJsonConfig;
 
         // Child's id and displayName always win
@@ -165,7 +174,7 @@ const CATEGORY_TO_PALETTE_KEY: Partial<Record<CredentialCategoryEnum, string>> =
  */
 const wrapIconWithPalette = (
     Component: React.ComponentType<Record<string, unknown>>,
-    palette: Partial<IconPalette>,
+    palette: Partial<IconPalette>
 ): React.ComponentType<Record<string, unknown>> => {
     const Wrapped: React.FC<Record<string, unknown>> = props =>
         React.createElement(Component, { ...props, palette });
@@ -202,8 +211,19 @@ const buildTheme = (config: ThemeJsonConfig): Theme => {
     const iconSetName = config.iconSet ?? 'colorful';
     const iconSet = resolveIconSet(iconSetName);
 
-    // Resolve view mode
-    const viewMode = config.defaults?.viewMode === 'grid' ? ViewMode.Grid : ViewMode.List;
+    // Resolve view modes (legacy `viewMode` seeds both when the newer fields are absent)
+    const legacyViewMode = config.defaults?.viewMode;
+
+    const passportViewMode =
+        (config.defaults?.passportViewMode ?? legacyViewMode) === 'grid'
+            ? ViewMode.Grid
+            : ViewMode.List;
+
+    const credentialViewMode =
+        (config.defaults?.credentialViewMode ?? (legacyViewMode === 'list' ? 'list' : 'card')) ===
+        'list'
+            ? 'list'
+            : 'card';
 
     // Resolve image assets
     const switcherIcon = resolveAsset(config.id, './assets/switcher-icon.png');
@@ -214,7 +234,9 @@ const buildTheme = (config: ThemeJsonConfig): Theme => {
     const styles = config.styles ?? {};
 
     // Build resolved icon palettes: start from compiled defaults, merge theme overrides
-    const resolvedIconPalettes: Record<string, Required<IconPalette>> = { ...WALLET_ICON_PALETTE_DEFAULTS };
+    const resolvedIconPalettes: Record<string, Required<IconPalette>> = {
+        ...WALLET_ICON_PALETTE_DEFAULTS,
+    };
 
     if (config.iconPalettes) {
         for (const [key, overrides] of Object.entries(config.iconPalettes)) {
@@ -247,21 +269,21 @@ const buildTheme = (config: ThemeJsonConfig): Theme => {
             if (catIcons.Icon) {
                 wrapped.Icon = wrapIconWithPalette(
                     catIcons.Icon as React.ComponentType<Record<string, unknown>>,
-                    palette,
+                    palette
                 ) as CategoryIcons['Icon'];
             }
 
             if (catIcons.IconWithShape) {
                 wrapped.IconWithShape = wrapIconWithPalette(
                     catIcons.IconWithShape as React.ComponentType<Record<string, unknown>>,
-                    palette,
+                    palette
                 ) as CategoryIcons['IconWithShape'];
             }
 
             if (catIcons.IconWithLightShape) {
                 wrapped.IconWithLightShape = wrapIconWithPalette(
                     catIcons.IconWithLightShape as React.ComponentType<Record<string, unknown>>,
-                    palette,
+                    palette
                 ) as CategoryIcons['IconWithLightShape'];
             }
 
@@ -278,7 +300,9 @@ const buildTheme = (config: ThemeJsonConfig): Theme => {
         iconPalettes: resolvedIconPalettes,
         styles,
         defaults: {
-            viewMode,
+            viewMode: passportViewMode,
+            passportViewMode,
+            credentialViewMode,
             switcherIcon,
             buildMyLCIcon,
             resumeBuilderIcon,
@@ -303,13 +327,25 @@ export const loadAllJsonThemes = (): Theme[] => {
 
             themes.push(buildTheme(resolved));
 
-            emitConfigSuccess('theme:loaded', `Theme "${id}" loaded${resolved.extends ? ` (extends ${resolved.extends})` : ''}`, { themeId: id, extends: resolved.extends, displayName: resolved.displayName });
+            emitConfigSuccess(
+                'theme:loaded',
+                `Theme "${id}" loaded${resolved.extends ? ` (extends ${resolved.extends})` : ''}`,
+                { themeId: id, extends: resolved.extends, displayName: resolved.displayName }
+            );
         } catch (err) {
-            emitConfigWarning('theme:loaded', `Failed to load theme "${id}": ${err instanceof Error ? err.message : String(err)}`, { themeId: id, error: err instanceof Error ? err.message : String(err) });
+            emitConfigWarning(
+                'theme:loaded',
+                `Failed to load theme "${id}": ${err instanceof Error ? err.message : String(err)}`,
+                { themeId: id, error: err instanceof Error ? err.message : String(err) }
+            );
         }
     }
 
-    emitConfigDebugEvent('theme:store_init', `${themes.length} theme(s) loaded: ${themes.map(t => t.id).join(', ')}`, { data: { count: themes.length, themeIds: themes.map(t => t.id) } });
+    emitConfigDebugEvent(
+        'theme:store_init',
+        `${themes.length} theme(s) loaded: ${themes.map(t => t.id).join(', ')}`,
+        { data: { count: themes.length, themeIds: themes.map(t => t.id) } }
+    );
 
     return themes;
 };

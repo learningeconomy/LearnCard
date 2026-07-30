@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { m } from '../../../paraglide/messages.js';
+
 import X from '../../svgs/X';
 import BurgerIcon from '../../svgs/Burger';
 import LearnCardTextLogo from '../../svgs/LearnCardTextLogo';
@@ -55,7 +57,11 @@ export const AiSessionsDesktopHeader: React.FC<{
                         </div>
                     </IonMenuToggle>
                     {textLogoDark ? (
-                        <img src={textLogoDark} alt="Logo" className="w-[85%] max-w-[150px] object-contain" />
+                        <img
+                            src={textLogoDark}
+                            alt="Logo"
+                            className="w-[85%] max-w-[150px] object-contain"
+                        />
                     ) : (
                         <LearnCardTextLogo className="text-grayscale-900 w-[85%] max-w-[150px]" />
                     )}
@@ -64,7 +70,7 @@ export const AiSessionsDesktopHeader: React.FC<{
 
                 <div className="w-full flex items-center justify-center gap-[6px]">
                     <h4 className={`font-semibold text-${primaryColor} text-sm mt-1`}>
-                        AI Sessions
+                        {m['ai.aiSessions']()}
                     </h4>
                     <span className="text-[15px] font-normal text-grayscale-400 leading-[100%] mt-1">
                         beta

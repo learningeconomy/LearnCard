@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { Redirect, Route, Switch, useLocation } from 'react-router-dom';
+import { Redirect, Route, Switch, matchPath, useLocation } from 'react-router-dom';
 import {
     DIDAuthModal,
     VCClaimModalController,
@@ -66,8 +66,24 @@ const SentryRoute = Sentry.withSentryRouting(Route);
 
 const history = createBrowserHistory();
 
-const PrivateRoute = ({ component: Component, ...rest }) => {
+type PrivateRouteProps = {
+    component: React.ComponentType<any>;
+    [key: string]: any;
+};
+
+const PrivateRoute = ({ component: Component, ...rest }: PrivateRouteProps) => {
     const isLoggedIn = useIsLoggedIn();
+    const location = useLocation();
+    const matchesCurrentLocation = !!matchPath(location.pathname, {
+        path: rest.path,
+        exact: rest.exact,
+        strict: rest.strict,
+        sensitive: rest.sensitive,
+    });
+
+    if (!matchesCurrentLocation) {
+        return null;
+    }
 
     return isLoggedIn ? (
         <SentryRoute {...rest} render={props => <Component {...props} {...rest} />} />
@@ -83,11 +99,16 @@ export const Routes: React.FC = () => {
     // The `backgroundLocation` state is the location that we were at when one of
     // it's what is displayed in the background when we open the modal route
     const background = location.state && location?.state?.background;
+    const isModalRoute =
+        location.pathname.startsWith('/claim-credential/') ||
+        location.pathname.startsWith('/did-auth/') ||
+        location.pathname.startsWith('/share-creds/');
+    const switchLocation = background && isModalRoute ? background : location;
 
     return (
         <ChunkBoundary>
             <Suspense fallback={<LoadingPageDumb />}>
-                <Switch location={background || location}>
+                <Switch location={switchLocation}>
                     <GenericErrorBoundary>
                         <SentryRoute exact path="/login" component={LoginPage} />
                         <SentryRoute exact path="/acctmgmt/__/auth/action" component={LoginPage} />

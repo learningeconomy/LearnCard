@@ -30,9 +30,14 @@ import ContractPermissionsAndDetailsText from './ContractPermissionsAndDetailsTe
 import AiInsightsInlineConsentFlowRequest from './AiInsights/AiInsightsInlineConsentFlowRequest';
 import AiPassportAppProfileContainer from '../../components/ai-passport-apps/AiPassportAppProfileContainer';
 
-import { getMinimumTermsForContract } from '../../helpers/contract.helpers';
+import {
+    getAllCredentialUrisForCategory,
+    getMinimumTermsForContract,
+} from '../../helpers/contract.helpers';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { ConsentFlowContractDetails, ConsentFlowTerms, LCNProfile } from '@learncard/types';
+import * as m from '../../paraglide/messages.js';
+import { useAnalytics, AnalyticsEvents } from '@analytics';
 
 type ConsentFlowConfirmationProps = {
     contractDetails: ConsentFlowContractDetails;
@@ -78,6 +83,7 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
     const { presentToast } = useToast();
     const confirm = useConfirmation();
     const brandingConfig = useBrandingConfig();
+    const { track } = useAnalytics();
 
     const currentUser = useCurrentUser();
     const isSwitchedProfile = switchedProfileStore.use.isSwitchedProfile();
@@ -129,16 +135,10 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
                     const wallet = await initWallet();
 
                     const updatedTerms = cloneDeep(terms);
-                    await Promise.all(
-                        categoriesWithLiveSync.map(async category => {
-                            const allCategoryCredUris = (
-                                await wallet.index.LearnCloud.get({ category })
-                            ).map(item => item.uri);
-
-                            updatedTerms.read.credentials.categories[category].shared =
-                                allCategoryCredUris;
-                        })
-                    );
+                    for (const category of categoriesWithLiveSync) {
+                        updatedTerms.read.credentials.categories[category].shared =
+                            await getAllCredentialUrisForCategory(wallet, category);
+                    }
 
                     const isUpdated = !isEqual(terms, updatedTerms);
 
@@ -167,6 +167,9 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
         const { deleteContractCredentials = false } = options ?? {};
 
         withdrawConsent(termsUri).then(async () => {
+            track(AnalyticsEvents.CONSENT_FLOW_DECLINED, {
+                contractName: contractDetails.name,
+            });
             if (deleteContractCredentials) {
                 try {
                     await Promise.all(
@@ -175,7 +178,6 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
                         })
                     );
 
-                    // clear creds from newCredsStore
                     const credentialUris = contractCredentials?.map(
                         contractCred => contractCred.uri
                     );
@@ -213,8 +215,8 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
                         </span>
                     </div>
                 ),
-                confirmText: 'Yes',
-                cancelText: 'No',
+                confirmText: m['contacts.confirm'](),
+                cancelText: m['common.cancel'](),
                 onConfirm: () => handleWithdrawConsent({ deleteContractCredentials: true }),
                 onCancel: () => handleWithdrawConsent({ deleteContractCredentials: false }),
             });
@@ -224,8 +226,8 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
     const handleDisconnect = async () => {
         await confirm({
             text: `Are you sure you want to disconnect from "${contractDetails.name}"?`,
-            confirmText: 'Yes',
-            cancelText: 'No',
+            confirmText: m['contacts.confirm'](),
+            cancelText: m['common.cancel'](),
             onConfirm: handleWithdrawConsentWithBoostCheck,
         });
     };
@@ -235,24 +237,26 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
     let showBackButton = false;
     let showFullBackButton = false;
     let showCloseButtonAlt = false;
-    let secondaryButtonText: string | undefined = isPostConsent ? 'Close' : 'Cancel';
+    let secondaryButtonText: string | undefined = isPostConsent
+        ? m['common.close']()
+        : m['common.cancel']();
 
     if (!isPostConsent) {
-        mainFooterButtonText = 'Accept';
+        mainFooterButtonText = m['common.accept']();
         mainFooterButtonAction = () => handleAccept(terms, shareDuration);
     } else if (
         isPostConsent &&
         contractDetails.needsGuardianConsent &&
         contractDetails.redirectUrl
     ) {
-        mainFooterButtonText = 'Launch Game';
+        mainFooterButtonText = m['consentFlow.launchGame']();
         mainFooterButtonAction = () => {
             window.location.href = contractDetails.redirectUrl as string;
         };
     }
 
     if (insightsProfile) {
-        mainFooterButtonText = 'Share Insights';
+        mainFooterButtonText = m['consentFlow.shareInsights']();
         mainFooterButtonAction = () => handleAccept(terms, shareDuration);
         showBackButton = true;
         showCloseButtonAlt = true && !showFullBackButton;
@@ -338,7 +342,7 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
                         className="flex gap-[5px] items-center w-full text-grayscale-900 font-notoSans text-[20px] py-[10px] border-t-[1px] border-solid border-grayscale-200"
                     >
                         <LockBroken />
-                        Privacy & Data
+                        {m['consentFlow.privacyAndData']()}
                         <SlimCaretRight className="h-[20px] w-[20px] ml-auto text-grayscale-500" />
                     </button>
 
@@ -350,7 +354,9 @@ const ConsentFlowConfirmation: React.FC<ConsentFlowConfirmationProps> = ({
                             disabled={isLoadingContractCreds || isWithdrawingConsent}
                         >
                             <BrokenLink version="2" className="h-[30px] w-[30px]" />
-                            {isWithdrawingConsent ? 'Disconnecting...' : 'Disconnect'}
+                            {isWithdrawingConsent
+                                ? m['consentFlow.disconnecting']()
+                                : m['consentFlow.disconnect']()}
                             <SlimCaretRight className="h-[20px] w-[20px] ml-auto text-grayscale-500" />
                         </button>
                     )}

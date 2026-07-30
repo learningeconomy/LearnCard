@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('child-invite-modal-simple');
 
 import AdminToolsFamilySelectorButton from '../../../../pages/adminToolsPage/AdminToolsAccountSwitcher/AdminToolsFamilySelectorButton';
 import LearnCardIconOutline from '../../../svgs/LearnCardIconOutline';
@@ -13,7 +15,7 @@ import X from '../../../svgs/X';
 import {
     ModalTypes,
     UploadRes,
-    useFilestack,
+    useImageUpload,
     useModal,
     UserProfilePicture,
     useGetCredentials,
@@ -28,6 +30,7 @@ import { LearnCardIDCMSTabsEnum } from '../../../learncardID-CMS/LearnCardIDCMST
 import { getLearnCardIDStyleDefaults } from '../../../learncardID-CMS/learncard-cms.helpers';
 
 import { useCreateChildAccount } from '../../../../hooks/useCreateChildAccount';
+import * as m from '../../../../paraglide/messages.js';
 
 type ChildInviteModalSimpleProps = {
     selectedFamily:
@@ -81,7 +84,7 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
         setUploadProgress(false);
     };
 
-    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useFilestack({
+    const { handleFileSelect: handleImageSelect, isLoading: imageUploadLoading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data) => onUpload(data),
         options: { onProgress: event => setUploadProgress(event.totalPercent) },
@@ -129,7 +132,7 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
-                console.error(e);
+                log.error(e);
             } finally {
                 setIsLoading(false);
             }
@@ -168,7 +171,7 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
                 <div className="flex flex-col items-center justify-center w-full max-w-[400px] shadow-sm rounded-[15px] bg-white px-4 pt-6 pb-10">
                     <div>
                         <p className="text-grayscale-900 font-poppins m-0 flex h-full w-full items-center justify-center text-center text-xl">
-                            Child Account
+                            {m['family.childInvite.title']()}
                         </p>
                     </div>
                     <div className="flex items-center justify-center my-4">
@@ -223,7 +226,7 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
                             className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] !px-4 !pb-2 !pr-8 font-normal font-poppins text-sm w-full troops-cms-placeholder ${
                                 errors?.name ? 'border-red-300 border-2' : ''
                             }`}
-                            label="Name"
+                            label={m['family.childInvite.nameLabel']()}
                             labelPlacement="stacked"
                             type="text"
                         />
@@ -257,7 +260,7 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
                             className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] !px-4 !pb-2 font-normal font-poppins text-sm w-full troops-cms-placeholder ${
                                 errors?.shortBio ? 'border-red-300 border-2' : ''
                             }`}
-                            label="Tagline"
+                            label={m['family.childInvite.taglineLabel']()}
                             labelPlacement="stacked"
                             type="text"
                         />
@@ -296,7 +299,7 @@ export const ChildInviteModalSimple: React.FC<ChildInviteModalSimpleProps> = ({
                     onClick={closeModal}
                     className="flex-1 rounded-full bg-white text-grayscale-800 py-2 shadow-sm"
                 >
-                    Close
+                    {m['common.close']()}
                 </button>
                 <button
                     onKeyDown={e => {

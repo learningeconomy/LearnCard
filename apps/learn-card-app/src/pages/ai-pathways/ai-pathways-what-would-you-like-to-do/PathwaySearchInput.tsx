@@ -1,18 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import { IonInput } from '@ionic/react';
 import { ArrowRight, X } from 'lucide-react';
-import {
-    CredentialCategoryEnum,
-    useSemanticSearchSkills,
-    useOccupationSuggestionsForKeyword,
-} from 'learn-card-base';
+import { CredentialCategoryEnum, useOccupationSuggestionsForKeyword } from 'learn-card-base';
 import useTheme from '../../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../../theme/icons/index';
 import type { OccupationDetailsResponse } from 'learn-card-base';
 
 import type { ApiSkillNode } from '../../../helpers/skillFramework.helpers';
+import {
+    useGlobalSemanticSearchSkills,
+    useGlobalSkillFrameworks,
+} from '../../../helpers/globalSkillFrameworks.helpers';
 
 type SemanticSkillRecord = ApiSkillNode & { score?: number };
 
@@ -36,8 +35,11 @@ const PathwaySearchInput: React.FC<PathwaySearchInputProps> = ({
     variant = 'action',
 }) => {
     const { getIconSet } = useTheme();
-    const flags = useFlags();
-    const frameworkId = flags?.selfAssignedSkillsFrameworkId as string;
+    const globalSkillFrameworks = useGlobalSkillFrameworks();
+    const frameworkIds = useMemo(
+        () => globalSkillFrameworks.map(framework => framework.frameworkId),
+        [globalSkillFrameworks]
+    );
 
     const [internalValue, setInternalValue] = useState<string>('');
     const [debouncedValue, setDebouncedValue] = useState<string>('');
@@ -73,7 +75,7 @@ const PathwaySearchInput: React.FC<PathwaySearchInputProps> = ({
     }, [value, didUserType, committedQuery]);
 
     const { data: occupationSuggestions } = useOccupationSuggestionsForKeyword(debouncedValue);
-    const { data: skillSearchData } = useSemanticSearchSkills(debouncedValue, frameworkId, {
+    const { data: skillSearchData } = useGlobalSemanticSearchSkills(debouncedValue, frameworkIds, {
         limit: 10,
     });
 

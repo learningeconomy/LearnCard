@@ -6,6 +6,8 @@ import { LinkedInIcon } from '../../svgs/LinkedInIcon';
 import { PersonalDetails, UserInfoEnum, getLinkedInHandle } from '../resume-builder.helpers';
 import { formatPhoneForDisplay } from './resume-preview.helpers';
 
+import * as m from '../../../paraglide/messages.js';
+
 export const ResumePreviewInfoChip: React.FC<{
     detailKey: keyof PersonalDetails;
     placeholder?: string;
@@ -17,7 +19,7 @@ export const ResumePreviewInfoChip: React.FC<{
         !onChange && detailKey === UserInfoEnum.Phone ? formatPhoneForDisplay(value) : value;
 
     return (
-        <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 text-grayscale-800 text-xs font-semibold px-3 py-1.5">
+        <div className="inline-flex w-full max-w-full items-center gap-2 overflow-hidden rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-grayscale-800 sm:w-auto">
             {detailKey === UserInfoEnum.LinkedIn && <LinkedInIcon className="w-4 h-4 shrink-0" />}
             {onChange ? (
                 <input
@@ -25,19 +27,23 @@ export const ResumePreviewInfoChip: React.FC<{
                     onChange={event => onChange(detailKey, event.target.value)}
                     placeholder={placeholder}
                     aria-label={placeholder || detailKey}
-                    className="truncate min-w-[120px] max-w-[260px] bg-transparent border-none outline-none placeholder:text-grayscale-500 text-xs font-semibold text-grayscale-800"
+                    className="min-w-0 w-full flex-1 truncate bg-transparent border-none outline-none placeholder:text-grayscale-500 text-xs font-semibold text-grayscale-800 sm:min-w-[120px] sm:max-w-[260px]"
                 />
             ) : detailKey === UserInfoEnum.LinkedIn ? (
-                <span className="truncate max-w-[260px]">/{getLinkedInHandle(value)}</span>
+                <span className="min-w-0 w-full flex-1 truncate sm:max-w-[260px]">
+                    /{getLinkedInHandle(value)}
+                </span>
             ) : (
-                <span className="truncate max-w-[260px]">{displayValue}</span>
+                <span className="min-w-0 w-full flex-1 truncate sm:max-w-[260px]">
+                    {displayValue}
+                </span>
             )}
             {onRemove && Boolean(value.trim()) && (
                 <button
                     data-pdf-hide
                     className="text-grayscale-500 hover:text-grayscale-800 leading-none"
                     onClick={() => onRemove(detailKey)}
-                    aria-label={`Remove ${detailKey}`}
+                    aria-label={m['passport.resumeBuilder.remove']()}
                 >
                     <X className="w-4 h-4 text-grayscale-800" />
                 </button>

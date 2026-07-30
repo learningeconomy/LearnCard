@@ -85,7 +85,7 @@ const HeaderBranding: React.FC<HeaderBrandingProps> = ({
                 <img
                     src={textLogoDarkUrl}
                     alt={headerText}
-                    className="max-w-[150px] max-h-[20px] object-contain"
+                    className="max-w-[170px] max-h-[24px] object-contain"
                 />
             ) : (
                 headerText

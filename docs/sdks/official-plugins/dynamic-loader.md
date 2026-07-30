@@ -19,7 +19,7 @@ If you're working in an environment where security is not as important, such as 
 ## Install
 
 ```bash
-pnpm i @learncard/dynamic-loader-plugin
+bun add @learncard/dynamic-loader-plugin
 ```
 
 ## Use Cases

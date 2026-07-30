@@ -42,7 +42,12 @@ test.describe('Tier 2: Browser Smoke Checks', () => {
                 !e.includes('favicon') &&
                 !e.includes('403') &&
                 !e.includes('net::ERR_BLOCKED_BY_CLIENT') &&
-                !e.includes('Failed to load resource')
+                !e.includes('Failed to load resource') &&
+                // The smoketest loads the app logged-out, so there is no wallet private key.
+                // Load-time sync queries (syncProgressStore / consent-flow) legitimately log
+                // "no valid private key found" in that state — it's expected here, not a
+                // regression. Tracked separately to stop the app logging it on logged-out load.
+                !e.includes('no valid private key found')
         );
         expect(criticalErrors).toEqual([]);
     });

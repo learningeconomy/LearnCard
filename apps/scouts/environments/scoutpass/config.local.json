@@ -1,0 +1,13 @@
+{
+    "_comment": "Local dev overrides for ScoutPass. Merged on top of config.json via deepMerge. These values match the local docker stack (compose-local.yaml).",
+    "apis": {
+        "brainService": "http://localhost:4000/trpc",
+        "brainServiceApi": "http://localhost:4000/api",
+        "cloudService": "http://localhost:4100/trpc",
+        "lcaApi": "http://localhost:5100/trpc",
+        "xapi": "http://localhost:4100/xapi"
+    },
+    "observability": {
+        "sentryEnv": "scouts-development"
+    }
+}

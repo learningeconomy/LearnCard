@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatLocaleDate } from '../../i18n/formatters';
 
 import { useHistory } from 'react-router-dom';
 import { Compass, Check, Hourglass, MessagesSquare, ChevronRight } from 'lucide-react';
@@ -55,18 +56,14 @@ const AiTopicCard: React.FC<AiTopicCardProps> = ({ record, isNew, index }) => {
         (unwrapped as { boostId?: string } | undefined)?.boostId ??
         (record.credential as { boostId?: string } | undefined)?.boostId;
 
-    const title =
-        topicInfo?.title ||
-        record.credential?.name ||
-        record.boostName ||
-        'AI Topic';
+    const title = topicInfo?.title || record.credential?.name || record.boostName || 'AI Topic';
 
     const subject = Array.isArray(record.credential?.credentialSubject)
         ? record.credential?.credentialSubject[0]
         : record.credential?.credentialSubject;
     const description = (subject as { description?: string } | undefined)?.description;
 
-    const formattedDate = record.dateEarned.toLocaleDateString('en-US', {
+    const formattedDate = formatLocaleDate(record.dateEarned, {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
@@ -91,7 +88,11 @@ const AiTopicCard: React.FC<AiTopicCardProps> = ({ record, isNew, index }) => {
                 transition-all duration-300 ease-out
                 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-1
                 disabled:opacity-70 disabled:cursor-default disabled:hover:shadow-sm disabled:hover:border-emerald-100/70
-                ${isAnimating ? 'animate-slide-in-right ring-2 ring-emerald-400 ring-opacity-50' : ''}
+                ${
+                    isAnimating
+                        ? 'animate-slide-in-right ring-2 ring-emerald-400 ring-opacity-50'
+                        : ''
+                }
             `}
             style={{
                 animationDelay: isNew ? '0ms' : `${index * 50}ms`,

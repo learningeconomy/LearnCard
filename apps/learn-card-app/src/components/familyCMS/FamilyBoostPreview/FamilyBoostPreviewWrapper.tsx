@@ -3,6 +3,7 @@ import { useHistory } from 'react-router-dom';
 
 import FamilyPreview from './FamilyBoostPreview';
 import BoostLoader from '../../boost/boostLoader/BoostLoader';
+import * as m from '../../../paraglide/messages.js';
 
 import { useGetCredentialWithEdits, useGetResolvedCredential, useModal } from 'learn-card-base';
 
@@ -23,7 +24,7 @@ export const FamilyBoostPreviewWrapper: React.FC<{ uri: string }> = ({ uri }) =>
     const { credentialWithEdits } = useGetCredentialWithEdits(cred);
     cred = credentialWithEdits ?? cred;
 
-    if (credentialLoading) return <BoostLoader darkBackground text={'Loading...'} />;
+    if (credentialLoading) return <BoostLoader darkBackground text={m['common.loading']()} />;
 
     return (
         <FamilyPreview

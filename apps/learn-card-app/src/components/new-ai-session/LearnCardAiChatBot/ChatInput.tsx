@@ -1,15 +1,26 @@
 import React, { useState } from 'react';
+
+import { m } from '../../../paraglide/messages.js';
+
 import { useHistory } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useStore } from '@nanostores/react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ProfilePicture, useGetCredentialList, useModal, useSyncConsentFlow } from 'learn-card-base';
+import {
+    ProfilePicture,
+    useGetCredentialList,
+    useModal,
+    useSyncConsentFlow,
+} from 'learn-card-base';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('chat-input');
 
 import { ArrowUp } from 'lucide-react';
 
 import {
     currentThreadId,
     threads,
+    hasThreadEnded,
     sendMessage,
     planReady,
     continuePlan,
@@ -22,7 +33,6 @@ import {
 } from 'learn-card-base/stores/nanoStores/chatStore';
 
 import type { LearningPathway } from 'learn-card-base/types/ai-chat';
-import { IonSpinner } from '@ionic/react';
 import CustomSpinner from '../../svgs/CustomSpinner';
 import AiSessionLoader from '../AiSessionLoader';
 import {
@@ -85,7 +95,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                 setPathways(pathwaysList);
                 setShowPathwaySelection(true);
             } catch (error) {
-                console.error('Error loading pathways:', error);
+                log.error('Error loading pathways:', error);
                 setPathways([]);
             } finally {
                 setLoadingPathways(false);
@@ -108,7 +118,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
 
     if (showContinue && mode === AiSessionMode.tutor) {
         return (
-            <div className="flex justify-center p-5">
+            <div className="flex flex-col items-center gap-2 p-5">
                 <button
                     onClick={continuePlan}
                     className={`bg-${primaryColor} text-xl text-white flex items-center justify-center font-semibold py-[12px] rounded-full w-full shadow-soft-bottom max-w-[375px] mr-2`}
@@ -119,9 +129,9 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
         );
     }
 
-    // Check if session has ended - either via atom or by checking for summary credentials
+    // Keep the reactive atom fast while honoring persisted lifecycle state for loaded threads.
     const thread = $threads.find(t => t.id === $currentThreadId);
-    const hasSessionEnded = $sessionEnded || (thread?.summaries && thread.summaries.length > 0);
+    const hasSessionEnded = $sessionEnded || hasThreadEnded(thread);
 
     if (hasSessionEnded) {
         return (
@@ -201,7 +211,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                                 <button
                                     onClick={() => setShowPathwaySelection(false)}
                                     className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
-                                    aria-label="Close"
+                                    aria-label={m['common.close']()}
                                 >
                                     ×
                                 </button>

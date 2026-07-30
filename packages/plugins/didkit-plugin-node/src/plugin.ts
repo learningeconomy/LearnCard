@@ -42,6 +42,43 @@ interface NativeAddon {
 
 let nativeAddon: NativeAddon | null = null;
 
+function isMusl(): boolean {
+    if (process.platform !== 'linux') return false;
+
+    if (!process.report || typeof process.report.getReport !== 'function') {
+        try {
+            const lddPath = require('child_process').execSync('which ldd').toString().trim();
+            return require('fs').readFileSync(lddPath, 'utf8').includes('musl');
+        } catch {
+            return true;
+        }
+    }
+
+    const report = process.report.getReport() as { header?: { glibcVersionRuntime?: string } };
+    const { glibcVersionRuntime } = report.header ?? {};
+    return !glibcVersionRuntime;
+}
+
+function getNativePackageName(): string | undefined {
+    const packagePrefix = '@learncard/didkit-plugin-node';
+
+    switch (process.platform) {
+        case 'darwin':
+            if (process.arch === 'x64') return `${packagePrefix}-darwin-x64`;
+            if (process.arch === 'arm64') return `${packagePrefix}-darwin-arm64`;
+            return undefined;
+
+        case 'linux':
+            if (isMusl()) return undefined;
+            if (process.arch === 'x64') return `${packagePrefix}-linux-x64-gnu`;
+            if (process.arch === 'arm64') return `${packagePrefix}-linux-arm64-gnu`;
+            return undefined;
+
+        default:
+            return undefined;
+    }
+}
+
 function loadNativeAddon(): NativeAddon {
     if (nativeAddon) return nativeAddon;
 
@@ -55,19 +92,24 @@ function loadNativeAddon(): NativeAddon {
         const packageJson = require.resolve('@learncard/didkit-plugin-node/package.json');
         const packageRoot = path.dirname(packageJson);
 
-        // Try to find the platform-specific .node file
+        // Local CI and service deploys place the compiled binding in this package root.
         const files = fs.readdirSync(packageRoot);
         const nodeFile = files.find((f: string) => f.startsWith('index.') && f.endsWith('.node'));
 
-        if (!nodeFile) {
+        if (nodeFile) {
+            nativeAddon = require(path.join(packageRoot, nodeFile)) as NativeAddon;
+            return nativeAddon;
+        }
+
+        const nativePackageName = getNativePackageName();
+
+        if (!nativePackageName) {
             throw new Error(
-                `No .node binary found in ${packageRoot}. Files: ${files.join(
-                    ', '
-                )}. Run 'pnpm build' to compile.`
+                `No prebuilt binary is available for ${process.platform}/${process.arch}.`
             );
         }
 
-        nativeAddon = require(path.join(packageRoot, nodeFile)) as NativeAddon;
+        nativeAddon = require(nativePackageName) as NativeAddon;
         return nativeAddon;
     } catch (error) {
         throw new Error(

@@ -11,6 +11,14 @@ import {
 import type { VC, LCNProfile } from '@learncard/types';
 import { useVerifySuccessTick } from '../stores/autoVerifyStore';
 import { captureException } from '@sentry/react';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    ProfileBuildMethod,
+    useProfileSnapshotCapture,
+    ACCOUNT_CREATED_AT_KEY,
+    SESSION_START_KEY,
+} from '@analytics';
 
 // Finalize cache settings
 const FINALIZE_CACHE_TTL_MS = 30 * 60_000; // 30 minutes
@@ -47,6 +55,9 @@ export const useFinalizeInboxCredentials = () => {
     const verifySuccessTick = useVerifySuccessTick();
 
     const inFlightRef = useRef(false);
+    const { track } = useAnalytics();
+    const { capture, snapshotRef } = useProfileSnapshotCapture();
+    const storedCountAtStartRef = useRef(0);
 
     useEffect(() => {
         if (!isLoggedIn) {
@@ -85,6 +96,10 @@ export const useFinalizeInboxCredentials = () => {
                 // mark syncing
                 walletStore.set.setIsSyncing(WalletSyncState.Syncing);
 
+                // LC-1853: freeze pre-mutation snapshot now that we know we have credentials to store.
+                capture();
+                storedCountAtStartRef.current = snapshotRef.current.credentialCount;
+
                 let storedCount = 0;
 
                 for (const vc of vcs) {
@@ -107,6 +122,23 @@ export const useFinalizeInboxCredentials = () => {
                         });
 
                         storedCount += 1;
+
+                        // LC-1853: fire profile_item_added for each auto-accepted credential
+                        try {
+                            const now = Date.now();
+                            const sessionStart = Number(localStorage.getItem(SESSION_START_KEY) ?? now);
+                            const accountCreatedAt = Number(localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now);
+                            track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                                method: ProfileBuildMethod.ReceivedBoost,
+                                itemType: 'credential',
+                                itemCount: 1,
+                                totalItemsAfter: storedCountAtStartRef.current + storedCount,
+                                msSinceAccountCreated: now - accountCreatedAt,
+                                msSinceSessionStart: now - sessionStart,
+                            });
+                        } catch (_) {
+                            // analytics must not break credential storage
+                        }
                     } catch (_) {
                         // continue storing other VCs
                     }

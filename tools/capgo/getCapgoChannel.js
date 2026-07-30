@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { readDefaultChannel } = require('./readDefaultChannel.cjs');
 
 // ---- CLI ARG PARSING ----
 const args = process.argv.slice(2);
@@ -27,26 +28,18 @@ if (!appConfigPaths[app]) {
 // ROOT OF REPO (the directory this script lives in is tools/capgo/)
 const repoRoot = path.resolve(__dirname, '../../');
 
-// Paths
 const configPath = path.join(repoRoot, appConfigPaths[app]);
 
-// ---- READ FILE ----
 if (!fs.existsSync(configPath)) {
     console.error(`❌ capacitor.config.ts not found at: ${configPath}`);
     process.exit(1);
 }
 
-const configContent = fs.readFileSync(configPath, 'utf8');
+const channel = readDefaultChannel(configPath);
 
-// ---- PARSE CHANNEL ----
-const match = configContent.match(/defaultChannel:\s*['"](.+?)['"]/);
-
-if (!match) {
-    console.error('❌ Could not find "defaultChannel" in capacitor.config.ts');
+if (!channel) {
+    console.error(`❌ Could not find "defaultChannel" in ${configPath}`);
     process.exit(1);
 }
 
-const channel = match[1];
-
-// ---- OUTPUT ----
 console.log(channel);

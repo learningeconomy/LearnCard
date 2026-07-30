@@ -1,8 +1,8 @@
 import React from 'react';
 import { IonCol, IonContent, IonRow, IonGrid, IonHeader, IonPage } from '@ionic/react';
+import * as m from '../../paraglide/messages.js';
 
-import Lottie from 'react-lottie-player';
-const HourGlass = '/lotties/hourglass.json';
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 
 const ClaimBoostLoading: React.FC = () => {
     return (
@@ -11,15 +11,10 @@ const ClaimBoostLoading: React.FC = () => {
                 <IonCol className="flex m-auto items-center flex-wrap w-full h-full">
                     <div className="flex flex-col w-full h-full items-center justify-center">
                         <h3 className="text-grayscale-900 text-xl font-poppins font-bold">
-                            Claiming...
+                            {m['claim.claiming']()}
                         </h3>
                         <div className="max-w-[150px]">
-                            <Lottie
-                                loop
-                                path={HourGlass}
-                                play
-                                style={{ width: '100%', height: '100%' }}
-                            />
+                            <LoadingSpinner />
                         </div>
                     </div>
                 </IonCol>

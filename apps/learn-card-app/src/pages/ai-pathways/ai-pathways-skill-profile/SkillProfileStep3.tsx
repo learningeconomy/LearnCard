@@ -1,5 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { TextInput, RadioGroup, useVerifiableData } from 'learn-card-base';
+import React, { useState, useEffect, useRef } from 'react';
+import { CredentialCategoryEnum, TextInput, RadioGroup, useVerifiableData } from 'learn-card-base';
+import { useTrackProfileDataAdded } from './useTrackProfileDataAdded';
+import { useSkillProfileStepFunnel } from './useSkillProfileStepFunnel';
+import * as m from '../../../paraglide/messages.js';
 
 export type SkillProfileSalaryData = {
     salary: string;
@@ -13,23 +16,33 @@ type SkillProfileStep3Props = {
     handleBack: () => void;
 };
 
-const SALARY_TYPE_OPTIONS = [
-    { value: 'per_year', label: 'Per Year' },
-    { value: 'per_hour', label: 'Per Hour' },
-];
-
 const sanitizeSalaryInput = (value: string | null | undefined): string =>
     (value ?? '').replace(/-/g, '');
 
 const SkillProfileStep3: React.FC<SkillProfileStep3Props> = ({ handleNext, handleBack }) => {
+    const { trackProfileDataAdded } = useTrackProfileDataAdded();
+    const { markStepCompleted } = useSkillProfileStepFunnel(3, () => {
+        const fields: string[] = [];
+        if (salary) fields.push('salary');
+        if (salaryType) fields.push('salaryType');
+        return fields;
+    });
     const [salary, setSalary] = useState('');
     const [salaryType, setSalaryType] = useState<string>('per_year');
+
+    // Resolved per render so the labels follow locale switches (a module-level
+    // const would freeze the load-time locale).
+    const SALARY_TYPE_OPTIONS = [
+        { value: 'per_year', label: m['skillProfile.step3.perYear']() },
+        { value: 'per_hour', label: m['skillProfile.step3.perHour']() },
+    ];
 
     const { data, isLoading, saveIfChanged, isSaving } = useVerifiableData<SkillProfileSalaryData>(
         SKILL_PROFILE_SALARY_KEY,
         {
             name: 'Salary Information',
             description: 'Current salary and compensation type',
+            category: CredentialCategoryEnum.payRate,
         }
     );
 
@@ -46,6 +59,8 @@ const SkillProfileStep3: React.FC<SkillProfileStep3Props> = ({ handleNext, handl
             salary,
             salaryType: salaryType as 'per_year' | 'per_hour',
         });
+        trackProfileDataAdded();
+        markStepCompleted();
         handleNext();
     };
 
@@ -53,22 +68,23 @@ const SkillProfileStep3: React.FC<SkillProfileStep3Props> = ({ handleNext, handl
         <div className="flex flex-col gap-[20px]">
             <div className="flex flex-col gap-[10px]">
                 <h3 className="text-[20px] font-bold text-grayscale-900 font-poppins leading-[24px] tracking-[0.24px]">
-                    How much money do you make?
+                    {m['skillProfile.step3.howMuchMoney']()}
                 </h3>
                 <p className="text-[16px] text-grayscale-700 font-poppins leading-[130%]">
-                    This helps us to show you where you stand compared to other people with the same
-                    role and experience.
+                    {m['skillProfile.step3.description']()}
                 </p>
             </div>
 
             <div className="flex flex-col gap-[10px]">
                 <span className="text-grayscale-900 font-poppins text-[14px] font-bold leading-[130%]">
-                    {salaryType === 'per_hour' ? 'Per Hour' : 'Annual Salary'}
+                    {salaryType === 'per_hour'
+                        ? m['skillProfile.step3.hourlyRate']()
+                        : m['skillProfile.step3.annualSalary']()}
                 </span>
                 <TextInput
                     value={salary}
                     onChange={value => setSalary(sanitizeSalaryInput(value))}
-                    placeholder="USD"
+                    placeholder={m['aiPathways.usd']()}
                     type="number"
                     startIcon={<span className="text-grayscale-600 text-[14px] pb-[1px]">$</span>}
                     inputClassName="!pl-[30px]"
@@ -89,14 +105,14 @@ const SkillProfileStep3: React.FC<SkillProfileStep3Props> = ({ handleNext, handl
                     onClick={handleBack}
                     disabled={isSaving}
                 >
-                    Back
+                    {m['common.back']()}
                 </button>
                 <button
                     className="bg-emerald-500 text-white rounded-full px-[15px] py-[7px] text-[17px] font-bold leading-[24px] tracking-[0.25px] flex-1 h-[44px] disabled:opacity-50"
                     onClick={handleSaveAndNext}
                     disabled={isSaving || isLoading}
                 >
-                    {isSaving ? 'Saving...' : 'Next'}
+                    {isSaving ? m['boost.saving']() : m['common.next']()}
                 </button>
             </div>
         </div>

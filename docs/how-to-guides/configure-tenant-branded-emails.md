@@ -14,21 +14,21 @@ This is the operator-facing guide. For the architecture and data flow, see [Tena
 
 Every outbound email carries your tenant's:
 
-- **Brand name** — subject lines, body copy, footer
-- **Logo** — header image
-- **Primary color** — CTA buttons, accents
-- **Support email** — footer contact link
-- **Website URL** — footer link
-- **App URL** — CTA target URL (e.g. the claim link)
-- **From domain** — `recovery@<your-domain>`, `notifications@<your-domain>`
-- **Copyright holder** — footer
+-   **Brand name** — subject lines, body copy, footer
+-   **Logo** — header image
+-   **Primary color** — CTA buttons, accents
+-   **Support email** — footer contact link
+-   **Website URL** — footer link
+-   **App URL** — CTA target URL (e.g. the claim link)
+-   **From domain** — `recovery@<your-domain>`, `notifications@<your-domain>`
+-   **Copyright holder** — footer
 
 Missing fields fall back to LearnCard defaults.
 
 ## Prerequisites
 
-- The tenant is already set up in `apps/learn-card-app/environments/<tenant>/` — see [the environments README](https://github.com/learningeconomy/LearnCard/blob/main/apps/learn-card-app/environments/README.md) for scaffolding a new tenant.
-- You have access to open a PR against the repo (backend branding currently lives in source).
+-   The tenant is already set up in `apps/learn-card-app/environments/<tenant>/` — see [the environments README](https://github.com/learningeconomy/LearnCard/blob/main/apps/learn-card-app/environments/README.md) for scaffolding a new tenant.
+-   You have access to open a PR against the repo (backend branding currently lives in source).
 
 ## Steps
 
@@ -37,7 +37,7 @@ Missing fields fall back to LearnCard defaults.
 Before wiring anything into the backend, render each template with your prospective branding to make sure logo, color, and copy look right in real email clients:
 
 ```bash
-pnpm --filter @learncard/email-templates dev
+bun --filter @learncard/email-templates run dev
 ```
 
 This starts the react-email dev server at [http://localhost:3333](http://localhost:3333). Browse every template, switch between HTML and plain-text views, and verify your `primaryColor` contrasts well against white backgrounds.
@@ -75,10 +75,10 @@ const TENANT_EMAIL_BRANDING: Record<string, Partial<TenantBranding>> = {
 
 Guidelines:
 
-- **`ORIGIN_MAP`** maps every hostname a browser might send as `Origin` / `Referer` to your canonical tenant ID. The resolver strips subdomains progressively, so registering `mytenant.app` will also match `foo.bar.mytenant.app`, but explicit entries are clearer.
-- **`TENANT_EMAIL_BRANDING`** is partial — omit any field to fall back to the LearnCard default.
-- **`logoUrl`** must be an absolute `https://` URL reachable from email clients. Relative paths do not work in email.
-- **`fromDomain`** must be a domain you've verified in Postmark, otherwise mail will be rejected.
+-   **`ORIGIN_MAP`** maps every hostname a browser might send as `Origin` / `Referer` to your canonical tenant ID. The resolver strips subdomains progressively, so registering `mytenant.app` will also match `foo.bar.mytenant.app`, but explicit entries are clearer.
+-   **`TENANT_EMAIL_BRANDING`** is partial — omit any field to fall back to the LearnCard default.
+-   **`logoUrl`** must be an absolute `https://` URL reachable from email clients. Relative paths do not work in email.
+-   **`fromDomain`** must be a domain you've verified in Postmark, otherwise mail will be rejected.
 
 Add test coverage to `packages/email-templates/src/__tests__/tenant-registry.test.ts` asserting that both the `X-Tenant-Id: mytenant` header and an `Origin: https://mytenant.app` header resolve to your branding.
 
@@ -133,18 +133,18 @@ This is used only when neither `X-Tenant-Id` nor `Origin` resolves. Requests tha
 
 ## Field reference
 
-| Field | Appears in | Example |
-|---|---|---|
-| `brandName` | Subject lines, body copy, footer copyright | `"MyTenant"` |
-| `logoUrl` | Header image in every email | `"https://mytenant.app/icon.png"` |
-| `logoAlt` | Alt text for the header image | `"MyTenant"` |
-| `primaryColor` | CTA button background, link accents | `"#1B5E20"` |
-| `primaryTextColor` | CTA button text color | `"#ffffff"` |
-| `supportEmail` | Footer "contact us" link | `"support@mytenant.app"` |
-| `websiteUrl` | Footer website link | `"https://www.mytenant.app"` |
-| `appUrl` | Base for CTA deep links | `"https://mytenant.app"` |
-| `fromDomain` | `recovery@<domain>`, `notifications@<domain>` sender | `"mytenant.app"` |
-| `copyrightHolder` | `© {year} {copyrightHolder}` in footer | `"MyTenant"` |
+| Field              | Appears in                                           | Example                           |
+| ------------------ | ---------------------------------------------------- | --------------------------------- |
+| `brandName`        | Subject lines, body copy, footer copyright           | `"MyTenant"`                      |
+| `logoUrl`          | Header image in every email                          | `"https://mytenant.app/icon.png"` |
+| `logoAlt`          | Alt text for the header image                        | `"MyTenant"`                      |
+| `primaryColor`     | CTA button background, link accents                  | `"#1B5E20"`                       |
+| `primaryTextColor` | CTA button text color                                | `"#ffffff"`                       |
+| `supportEmail`     | Footer "contact us" link                             | `"support@mytenant.app"`          |
+| `websiteUrl`       | Footer website link                                  | `"https://www.mytenant.app"`      |
+| `appUrl`           | Base for CTA deep links                              | `"https://mytenant.app"`          |
+| `fromDomain`       | `recovery@<domain>`, `notifications@<domain>` sender | `"mytenant.app"`                  |
+| `copyrightHolder`  | `© {year} {copyrightHolder}` in footer               | `"MyTenant"`                      |
 
 The full type lives in `@/packages/email-templates/src/branding.ts` as `TenantBranding`.
 
@@ -191,6 +191,6 @@ See the "Adding a New Template" section of the [`@learncard/email-templates` REA
 
 ## Related
 
-- [Tenant-Branded Emails (architecture)](../core-concepts/tenant-branded-emails.md)
-- [SSS Key Management Configuration](deploy-infrastructure/sss-key-management-config.md)
-- [`@learncard/email-templates` README](https://github.com/learningeconomy/LearnCard/blob/main/packages/email-templates/README.md)
+-   [Tenant-Branded Emails (architecture)](../core-concepts/tenant-branded-emails.md)
+-   [SSS Key Management Configuration](deploy-infrastructure/sss-key-management-config.md)
+-   [`@learncard/email-templates` README](https://github.com/learningeconomy/LearnCard/blob/main/packages/email-templates/README.md)

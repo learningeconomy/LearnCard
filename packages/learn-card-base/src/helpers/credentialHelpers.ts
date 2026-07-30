@@ -38,8 +38,18 @@ import { VERIFIER_STATES } from '@learncard/react';
 import { BoostCMSMediaAttachment, BoostEvidenceSpec } from 'learn-card-base/components/boost/boost';
 import { getVideoMetadata } from './video.helpers';
 import { getFileMetadata } from './attachment.helpers';
+import { getLogger } from '../logging/logger';
+import { parseLcTags } from './displayTags.helpers';
+const log = getLogger('credential-helpers');
 
-type CredentialType = 'MovieTicketCredential' | 'AlumniCredential' | 'PermanentResidentCard';
+type CredentialType =
+    | 'MovieTicketCredential'
+    | 'AlumniCredential'
+    | 'PermanentResidentCard'
+    // Vanilla VCDM examples types (see CREDENTIAL_TYPES.UNIVERSITY_DEGREE*).
+    // Kept here so they are valid keys in CATEGORY_MAP below.
+    | 'UniversityDegree'
+    | 'UniversityDegreeCredential';
 
 type KnownCredentialType = KnownAchievementType | CredentialType;
 
@@ -49,12 +59,67 @@ const CREDENTIAL_TYPES = {
     PERM_RESIDENT: 'PermanentResidentCard',
     CERTIFIED_BOOST: 'CertifiedBoostCredential',
     LEGACY_CRED: 'LegacyOpenBadgeCredential',
+    /**
+     * Type used by the W3C VCDM example schema (and the bundled
+     * walt.id sandbox). The formal example uses `UniversityDegreeCredential`
+     * but a number of issuers in the wild (including walt.id's defaults)
+     * mint the type as bare `UniversityDegree`. We accept both.
+     */
+    UNIVERSITY_DEGREE: 'UniversityDegreeCredential',
+    UNIVERSITY_DEGREE_SHORT: 'UniversityDegree',
 };
 
 const CREDENTIAL_CONTEXTS = {
     ALUMNI_OF: 'https://playground.chapi.io/examples/alumni/alumni-v1.json',
     PERM_RESIDENT: 'https://w3id.org/citizenship/v1',
     MOVIE_TICKET: 'https://playground.chapi.io/examples/movieTicket/ticket-v1.json',
+    /**
+     * Canonical W3C VCDM examples context. Anything issued in this
+     * shape (degree, alumniOf, etc. as plain credentialSubject fields)
+     * matches the structures defined in the spec's example library:
+     * https://www.w3.org/2018/credentials/examples/v1
+     */
+    W3C_VCDM_EXAMPLES_V1: 'https://www.w3.org/2018/credentials/examples/v1',
+};
+
+/**
+ * Humanize a Pascal/Camel-case credential type into a display title.
+ * `UniversityDegree` -> `University Degree`. Strips a trailing
+ * `Credential` / `Card` suffix so titles read naturally as nouns
+ * (`OpenBadgeCredential` -> `Open Badge`, not `Open Badge Credential`).
+ * Returns `undefined` for empty input so callers can fall through.
+ */
+export const humanizeCredentialType = (type: string | undefined): string | undefined => {
+    if (!type || typeof type !== 'string') return undefined;
+
+    const spaced = type
+        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+        .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
+        .trim();
+
+    if (!spaced) return undefined;
+
+    const stripped = spaced.replace(/\s+(Credential|Card)$/i, '').trim();
+    return stripped.length > 0 ? stripped : spaced;
+};
+
+/**
+ * Pick the most-specific entry from a VCDM `type` array. By spec the
+ * array is `['VerifiableCredential', ...subtypes]` so the last non-VC
+ * entry is the one we want for display. Returns `undefined` if the
+ * array is missing or only contains the base `VerifiableCredential` type.
+ */
+const getMostSpecificCredentialType = (
+    credentialTypes: string[] | undefined
+): string | undefined => {
+    if (!Array.isArray(credentialTypes)) return undefined;
+    for (let i = credentialTypes.length - 1; i >= 0; i--) {
+        const t = credentialTypes[i];
+        if (typeof t === 'string' && t.length > 0 && t !== 'VerifiableCredential') {
+            return t;
+        }
+    }
+    return undefined;
 };
 
 const otherCredentialTypes = [
@@ -77,12 +142,11 @@ export const CATEGORY_MAP: Record<
 > = {
     Achievement: 'Achievement',
     Award: 'Achievement',
-    Badge: 'Achievement',
+    Badge: 'Social Badge',
     CommunityService: 'Achievement',
     MovieTicketCredential: 'Achievement',
 
     // extending ( Achievement ) category
-    Degree: 'Achievement',
     Certificate: 'Achievement',
     'ext:CourseCompletion': 'Achievement',
     'ext:Attendance': 'Achievement',
@@ -98,7 +162,7 @@ export const CATEGORY_MAP: Record<
     'ext:Upskilling': 'Achievement',
 
     License: 'ID',
-    Membership: 'Membership',
+    Membership: 'ID',
     'Student Buckcard': 'ID',
     PermanentResidentCard: 'ID',
     AlumniCredential: 'ID',
@@ -147,6 +211,7 @@ export const CATEGORY_MAP: Record<
     'ext:Board': 'Work History',
 
     Assignment: 'Learning History',
+    Degree: 'Learning History',
     AssociateDegree: 'Learning History',
     BachelorDegree: 'Learning History',
     CertificateOfCompletion: 'Learning History',
@@ -185,6 +250,13 @@ export const CATEGORY_MAP: Record<
     QualityAssuranceCredential: 'Learning History',
     ResearchDoctorate: 'Learning History',
     SecondarySchoolDiploma: 'Learning History',
+
+    // Vanilla VCDM examples (walt.id sandbox, W3C VCDM examples context).
+    // A degree is first and foremost an academic record, so it lives in
+    // 'Studies' (Learning History) rather than the generic 'Achievement'
+    // bucket where one-off awards and badges reside.
+    UniversityDegree: 'Learning History',
+    UniversityDegreeCredential: 'Learning History',
 
     // extending ( Social Badge ) category
     'ext:Opportunist': 'Social Badge',
@@ -467,6 +539,11 @@ export const getDefaultCategoryForCredential = (
     options?: { skipValidation?: boolean }
 ): CredentialCategory => {
     const _credential = unwrapBoostCredential(credential);
+
+    // An explicit `lc:category` display-hint tag is a deliberate issuer choice and takes priority over all type inference below.
+    const lcCategory = parseLcTags(getCredentialSubjectAchievement(_credential)?.tag).category;
+    if (lcCategory) return lcCategory as CredentialCategory;
+
     // course meta VC is a metaversity specific case for now
     if (isCourseMetaVC(_credential)) return 'Learning History';
     if (isEntryVC(_credential) && _credential.id.split('|')[0] === 'course') return 'Hidden';
@@ -482,7 +559,7 @@ export const getDefaultCategoryForCredential = (
         if ('learningPathway' in _credential) return 'AI Pathway';
         if ('assessment' in _credential) return 'AI Assessment';
     } catch (error) {
-        console.log(error);
+        log.debug(error);
     }
 
     const _isClrCredential = isClrCredential(_credential);
@@ -503,16 +580,34 @@ export const getDefaultCategoryForCredential = (
         return 'Learning History';
     }
 
-    // Not OBv3 credential, default category to achievement
+    // Vanilla VCDM type-based routing.
+    // Before short-circuiting non-OBv3 credentials to 'Achievement', try
+    // to match any entry of the credential's `type[]` against CATEGORY_MAP.
+    // This lets well-known VCDM shapes (e.g. W3C examples `UniversityDegree`)
+    // land in the correct category rather than being lumped under
+    // 'Achievement' by default. Walks the array from most-specific to
+    // least-specific and skips the base `VerifiableCredential` entry.
+    const credentialTypes = _credential?.type;
+    if (Array.isArray(credentialTypes)) {
+        for (let i = credentialTypes.length - 1; i >= 0; i--) {
+            const t = credentialTypes[i];
+            if (typeof t !== 'string' || t === 'VerifiableCredential') continue;
+            const mapped = (CATEGORY_MAP as Record<string, CredentialCategory>)[t];
+            if (mapped) return mapped;
+        }
+    }
+
+    // Strict validation can fail for reasons unrelated to categorization — e.g. a
+    // reusable template whose numeric field holds a `{{mustache}}` placeholder, or
+    // an LER embedded credential without full @context. In those cases the
+    // achievementType is still the canonical category signal, so fall back to it
+    // rather than discarding it and defaulting everything to Achievement.
     if (!verificationResult.success) {
-        // For LER embedded credentials without full @context, extract achievementType as fallback
-        if (options?.skipValidation) {
-            const lerAchievementType = Array.isArray(_credential?.credentialSubject)
-                ? _credential.credentialSubject[0]?.achievement?.achievementType
-                : _credential?.credentialSubject?.achievement?.achievementType;
-            if (lerAchievementType && CATEGORY_MAP[lerAchievementType]) {
-                return CATEGORY_MAP[lerAchievementType];
-            }
+        const fallbackAchievementType = Array.isArray(_credential?.credentialSubject)
+            ? _credential.credentialSubject[0]?.achievement?.achievementType
+            : _credential?.credentialSubject?.achievement?.achievementType;
+        if (fallbackAchievementType && CATEGORY_MAP[fallbackAchievementType]) {
+            return CATEGORY_MAP[fallbackAchievementType];
         }
         return 'Achievement';
     }
@@ -701,13 +796,17 @@ export const getFallBackImage = (credCategory: string) => {
     if (credCategory === 'Work History')
         return 'https://cdn.filestackcontent.com/5r2T383T0mic3wrSbi3W';
     if (credCategory === 'Social Badge')
-        return 'https://cdn.filestackcontent.com/ynPzjedXTn2JBUNQHeEm';
+        return 'https://cdn.filestackcontent.com/DRPwxXjSWKl6TTkd2OCF';
     if (credCategory === 'Learning History')
         return 'https://cdn.filestackcontent.com/OSTqZlxSCe6B62jwPm7O';
     if (credCategory === 'Accomplishment')
         return 'https://cdn.filestackcontent.com/F9yva92WQ0CPisIeQRmr';
     if (credCategory === 'Accommodation')
         return 'https://cdn.filestackcontent.com/cHt9WgJQdCMWMnLFFQh1';
+    if (credCategory === 'Membership')
+        return 'https://cdn.filestackcontent.com/EwXi4MnoT6eDgM6cmJuH';
+    if (credCategory === 'Course') return 'https://cdn.filestackcontent.com/zBtHw5EqTJDb5r6Pw7cg';
+    if (credCategory === 'Job') return 'https://cdn.filestackcontent.com/2eR985mSrur9mK4V4mzQ';
     if (credCategory === 'Family') return 'https://cdn.filestackcontent.com/9HELycBJSKGEhQtiu9Is';
 };
 
@@ -758,14 +857,16 @@ export const getCredentialName = (credential: VC): string => {
     const credentialTypes = getCredentialType(credential);
     const name = getPotentialNameFieldsFromType(credentialTypes, credential);
     const credentialSubjectAchievementName = getCredentialSubject(credential)?.achievement?.name;
-    // console.log(
-    //     'GET CREDENTIAL NAME',
-    //     credential,
-    //     credentialTypes,
-    //     name,
-    //     credentialSubjectAchievementName
-    // );
-    return credential?.name || name || credentialSubjectAchievementName;
+
+    // Generic VCDM-shape fallback: humanize the most-specific entry of
+    // the `type` array so a credential without an explicit `name` or
+    // `achievement.name` still gets a sensible title rather than being
+    // rendered nameless. Critical for vanilla VCDM credentials issued
+    // via OID4VCI by issuers that don't ship a learncard-flavored
+    // achievement payload (e.g. the walt.id sandbox `UniversityDegree`).
+    const humanizedType = humanizeCredentialType(getMostSpecificCredentialType(credentialTypes));
+
+    return credential?.name || name || credentialSubjectAchievementName || humanizedType;
 };
 
 export const getCredentialType = (credential: VC) => {
@@ -786,6 +887,20 @@ export const getPotentialNameFieldsFromType = (credentialTypes: string[], creden
     }
     if (credentialTypes?.includes(CREDENTIAL_TYPES.LEGACY_CRED)) {
         name = credential?.legacyAssertion?.badge?.name || 'Open Badge';
+    }
+    // W3C VCDM examples shape: claims live under credentialSubject.degree
+    // (e.g. {type: 'BachelorDegree', name: 'Bachelor of Science and Arts'}).
+    // Prefer the explicit degree name; if absent, leave undefined so the
+    // generic type-name fallback in `getCredentialName` picks up
+    // `UniversityDegree` -> `University Degree`.
+    if (
+        credentialTypes?.includes(CREDENTIAL_TYPES.UNIVERSITY_DEGREE) ||
+        credentialTypes?.includes(CREDENTIAL_TYPES.UNIVERSITY_DEGREE_SHORT)
+    ) {
+        const degreeName = credentialSubject?.degree?.name;
+        if (typeof degreeName === 'string' && degreeName.length > 0) {
+            name = degreeName;
+        }
     }
     return name;
 };
@@ -866,6 +981,26 @@ export const getDetailsFromCredential = (credential: VC) => {
             `${credentialSubject?.alumniOf?.name}`
         );
         detailFieldsData = [description, issuanceDate, alumniOf, defaultIssuer];
+    }
+
+    // UNIVERSITY DEGREE (W3C VCDM examples)
+    // Surfaces the `degree.name` and a humanized `degree.type` so the
+    // details modal reads as `Degree | Bachelor of Science and Arts`,
+    // `Degree Type | Bachelor Degree` rather than falling back to the
+    // generic Description/Criteria triplet (which would all be empty for
+    // this shape).
+    const isUniversityDegreeShape =
+        credentialContexts?.includes(CREDENTIAL_CONTEXTS.W3C_VCDM_EXAMPLES_V1) &&
+        (_credentialTypes?.includes(CREDENTIAL_TYPES.UNIVERSITY_DEGREE) ||
+            _credentialTypes?.includes(CREDENTIAL_TYPES.UNIVERSITY_DEGREE_SHORT));
+    if (isUniversityDegreeShape) {
+        const degreeName = generateFieldDisplayObj('Degree', credentialSubject?.degree?.name);
+        const degreeType = generateFieldDisplayObj(
+            'Degree Type',
+            humanizeCredentialType(credentialSubject?.degree?.type)
+        );
+        const issuanceDate = generateFieldDisplayObj('Issue Date', credential?.issuanceDate);
+        detailFieldsData = [degreeName, degreeType, issuanceDate, defaultIssuer];
     }
 
     return detailFieldsData;
@@ -1086,8 +1221,13 @@ export const getAchievementTypeDisplayText = (
                 (options: { title: string; type: string }) => options?.type === achievementType
             )?.title ?? '';
 
-        if (!achievementType && fallbackText) {
-            displayText = fallbackText;
+        // 'Achievement' is the OBv3 base achievement type — it has no specific subtype and
+        //   maps to the meaningless label 'Generic'. Treat it like the no-type case: clear the
+        //   'Generic' lookup so we fall back to the credential title when a caller provides one
+        //   (e.g. the badge), otherwise to the boostType display text via the fail-safe below
+        //   (matching how unmatched/empty types already behave).
+        if (!achievementType || achievementType === 'Achievement') {
+            displayText = fallbackText || '';
         }
     }
 
@@ -1111,6 +1251,7 @@ export const getCategoryPrimaryColor = (category = CredentialCategoryEnum.achiev
         case CredentialCategoryEnum.socialBadge:
             return 'cyan';
         case CredentialCategoryEnum.skill:
+        case CredentialCategoryEnum.selfAssignedSkills:
             return 'indigo';
         case CredentialCategoryEnum.achievement:
             return 'spice';
@@ -1213,6 +1354,17 @@ export const isPdfAttachmentSource = (value?: string | null): boolean => {
     return PDF_DATA_URL_PATTERN.test(trimmedValue) || trimmedValue.startsWith(PDF_BASE64_PREFIX);
 };
 
+const EVIDENCE_ATTACHMENT_TYPES = ['photo', 'video', 'document', 'link', 'text'] as const;
+type EvidenceAttachmentType = (typeof EVIDENCE_ATTACHMENT_TYPES)[number];
+
+export const normalizeEvidenceGenreType = (
+    genre?: string | null
+): EvidenceAttachmentType | undefined => {
+    const normalized = genre?.toLowerCase();
+
+    return EVIDENCE_ATTACHMENT_TYPES.find(type => type === normalized);
+};
+
 export const getEvidenceAttachmentType = async (url: string) => {
     if (isPdfAttachmentSource(url)) {
         return 'document';
@@ -1244,9 +1396,15 @@ export const getEvidenceAttachments = async (evidence: BoostEvidenceSpec[]) => {
             let url;
             let type;
 
+            // Trust an explicit genre (e.g. Filestack URLs carry no file extension,
+            // so URL sniffing can't classify them). 'link' still goes through
+            // detection so e.g. YouTube URLs render as video.
+            const genreType = normalizeEvidenceGenreType(ev?.genre);
+            const trustedGenreType = genreType !== 'link' ? genreType : undefined;
+
             if (ev?.url) {
                 url = ev?.url;
-                type = await getEvidenceAttachmentType(ev?.url);
+                type = trustedGenreType ?? (await getEvidenceAttachmentType(ev?.url));
             } else if (isPdfAttachmentSource(ev?.id)) {
                 url = ev?.id;
                 type = 'document';
@@ -1255,7 +1413,7 @@ export const getEvidenceAttachments = async (evidence: BoostEvidenceSpec[]) => {
                 type = ev?.genre;
             } else {
                 url = ev?.id;
-                type = await getEvidenceAttachmentType(ev?.id);
+                type = trustedGenreType ?? (await getEvidenceAttachmentType(ev?.id));
             }
 
             return {
@@ -1290,17 +1448,50 @@ export const convertEvidenceToAttachments = (evidence: BoostEvidenceSpec[]): Boo
     });
 };
 
-// ! small helper to handle the transition from attachments to evidence
-// ! existing attachments will take higher precedence over evidence
+type RawArtifactAttachmentSource = {
+    data?: unknown;
+    fileName?: unknown;
+    fileSize?: unknown;
+    fileType?: unknown;
+};
+
+const convertRawArtifactToAttachment = (
+    rawArtifact: unknown
+): BoostCMSMediaAttachment | undefined => {
+    if (!rawArtifact || typeof rawArtifact !== 'object') return undefined;
+
+    const artifact = rawArtifact as RawArtifactAttachmentSource;
+    if (typeof artifact.data !== 'string' || artifact.data.length === 0) return undefined;
+
+    const fileName = typeof artifact.fileName === 'string' ? artifact.fileName : undefined;
+    const fileSize = typeof artifact.fileSize === 'string' ? artifact.fileSize : undefined;
+    const fileType = typeof artifact.fileType === 'string' ? artifact.fileType : undefined;
+    const normalizedFileType = fileType?.toUpperCase();
+    const type = ['PNG', 'JPG', 'JPEG', 'WEBP'].includes(normalizedFileType ?? '')
+        ? 'photo'
+        : 'document';
+
+    return {
+        title: fileName ?? null,
+        fileName,
+        fileSize,
+        fileType,
+        type,
+        url: artifact.data,
+    };
+};
+
+/**
+ * Returns published attachments first, then legacy evidence, and finally an embedded raw artifact.
+ */
 export const getExistingAttachmentsOrEvidence = (
     attachments: BoostCMSMediaAttachment[],
-    evidence: BoostEvidenceSpec[]
+    evidence: BoostEvidenceSpec[],
+    rawArtifact?: unknown
 ): BoostCMSMediaAttachment[] => {
-    const existingAttachments = attachments?.length > 0;
-    const existingEvidence = evidence?.length > 0;
+    if (attachments?.length > 0) return attachments;
+    if (evidence?.length > 0) return convertEvidenceToAttachments(evidence);
 
-    if (existingAttachments) return attachments;
-    if (!existingAttachments && existingEvidence) return convertEvidenceToAttachments(evidence);
-
-    return [];
+    const rawArtifactAttachment = convertRawArtifactToAttachment(rawArtifact);
+    return rawArtifactAttachment ? [rawArtifactAttachment] : [];
 };

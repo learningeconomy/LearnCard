@@ -2,6 +2,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useAutosave } from './useAutosave';
 
+vi.mock('learn-card-base', () => ({
+    getLogger: () =>
+        (
+            globalThis as typeof globalThis & { mockLearnCardBaseLogger: () => unknown }
+        ).mockLearnCardBaseLogger(),
+}));
+
 const STORAGE_KEY = 'test_autosave';
 const STORAGE_VERSION = 1;
 
@@ -36,9 +43,7 @@ describe('useAutosave', () => {
         const saved: TestState = { name: 'draft', value: 42 };
         localStorage.setItem(STORAGE_KEY, makeStoredEntry(saved));
 
-        const { result } = renderHook(() =>
-            useAutosave<TestState>({ storageKey: STORAGE_KEY })
-        );
+        const { result } = renderHook(() => useAutosave<TestState>({ storageKey: STORAGE_KEY }));
 
         expect(result.current.hasRecoveredState).toBe(true);
         expect(result.current.recoveredState).toEqual(saved);
@@ -58,9 +63,7 @@ describe('useAutosave', () => {
     });
 
     it('does not recover when localStorage is empty', () => {
-        const { result } = renderHook(() =>
-            useAutosave<TestState>({ storageKey: STORAGE_KEY })
-        );
+        const { result } = renderHook(() => useAutosave<TestState>({ storageKey: STORAGE_KEY }));
 
         expect(result.current.hasRecoveredState).toBe(false);
         expect(result.current.recoveredState).toBeNull();
@@ -70,9 +73,7 @@ describe('useAutosave', () => {
         const saved: TestState = { name: 'old', value: 0 };
         localStorage.setItem(STORAGE_KEY, makeStoredEntry(saved, { version: 999 }));
 
-        const { result } = renderHook(() =>
-            useAutosave<TestState>({ storageKey: STORAGE_KEY })
-        );
+        const { result } = renderHook(() => useAutosave<TestState>({ storageKey: STORAGE_KEY }));
 
         expect(result.current.hasRecoveredState).toBe(false);
         expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
@@ -86,9 +87,7 @@ describe('useAutosave', () => {
             makeStoredEntry(saved, { timestamp: twentyFiveHoursAgo })
         );
 
-        const { result } = renderHook(() =>
-            useAutosave<TestState>({ storageKey: STORAGE_KEY })
-        );
+        const { result } = renderHook(() => useAutosave<TestState>({ storageKey: STORAGE_KEY }));
 
         expect(result.current.hasRecoveredState).toBe(false);
         expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
@@ -97,10 +96,7 @@ describe('useAutosave', () => {
     it('respects custom maxAgeMs', () => {
         const saved: TestState = { name: 'recent', value: 1 };
         const twoMinutesAgo = Date.now() - 2 * 60 * 1000;
-        localStorage.setItem(
-            STORAGE_KEY,
-            makeStoredEntry(saved, { timestamp: twoMinutesAgo })
-        );
+        localStorage.setItem(STORAGE_KEY, makeStoredEntry(saved, { timestamp: twoMinutesAgo }));
 
         const { result } = renderHook(() =>
             useAutosave<TestState>({
@@ -192,9 +188,7 @@ describe('useAutosave', () => {
     });
 
     it('sets hasUnsavedChanges to true after saveToLocal', () => {
-        const { result } = renderHook(() =>
-            useAutosave<TestState>({ storageKey: STORAGE_KEY })
-        );
+        const { result } = renderHook(() => useAutosave<TestState>({ storageKey: STORAGE_KEY }));
 
         expect(result.current.hasUnsavedChanges).toBe(false);
 
@@ -270,9 +264,7 @@ describe('useAutosave', () => {
         const saved: TestState = { name: 'draft', value: 1 };
         localStorage.setItem(STORAGE_KEY, makeStoredEntry(saved));
 
-        const { result } = renderHook(() =>
-            useAutosave<TestState>({ storageKey: STORAGE_KEY })
-        );
+        const { result } = renderHook(() => useAutosave<TestState>({ storageKey: STORAGE_KEY }));
 
         expect(result.current.hasRecoveredState).toBe(true);
 
@@ -290,9 +282,7 @@ describe('useAutosave', () => {
         const saved: TestState = { name: 'draft', value: 1 };
         localStorage.setItem(STORAGE_KEY, makeStoredEntry(saved));
 
-        const { result } = renderHook(() =>
-            useAutosave<TestState>({ storageKey: STORAGE_KEY })
-        );
+        const { result } = renderHook(() => useAutosave<TestState>({ storageKey: STORAGE_KEY }));
 
         act(() => {
             result.current.clearRecoveredState(true);

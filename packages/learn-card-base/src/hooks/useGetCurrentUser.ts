@@ -8,6 +8,9 @@ import { Capacitor } from '@capacitor/core';
 import { waitForSQLiteReady } from 'learn-card-base/SQL/sqliteReady';
 export type { CurrentUser } from 'learn-card-base/stores/currentUserStore';
 
+import { getLogger } from '../logging/logger';
+const log = getLogger('use-get-current-user');
+
 export const useCurrentUser = () => {
     const { getCurrentUser } = useSQLiteStorage();
 
@@ -58,7 +61,7 @@ export const useCurrentUser = () => {
                     return;
                 }
 
-                console.warn('⚠️ NO PRIVATE KEY, Logging Out CurrentUser', currentUser);
+                log.warn('⚠️ NO PRIVATE KEY, Logging Out CurrentUser', currentUser);
                 currentUserStore.set.currentUser(null);
             })();
         }

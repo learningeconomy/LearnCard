@@ -5,7 +5,7 @@ import SlimCaretRight from '../../svgs/SlimCaretRight';
 import IDDisplayCard from 'learn-card-base/components/id/IDDisplayCard';
 import BoostPreview from '../../boost/boostCMS/BoostPreview/BoostPreview';
 import NonBoostPreview from '../../boost/boostCMS/BoostPreview/NonBoostPreview';
-import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
+import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import BoostLinkedCredentialsBox from '../../boost/boostLinkedCredentials/BoostLinkedCredentialsBox';
 
 import CredentialVerificationDisplay, {
@@ -143,7 +143,7 @@ export const EndorsementFormBoostPreviewCard: React.FC<{
                     {...mappedInputs}
                 />
             ) : (
-                <CredentialBadge
+                <CredentialBadgeNew
                     achievementType={achievementType}
                     boostType={categoryType}
                     badgeThumbnail={badgeThumbnail}
@@ -168,7 +168,7 @@ export const EndorsementFormBoostPreviewCard: React.FC<{
             issuerImageComponent: issuerProfileImageElement,
 
             customThumbComponent: (
-                <CredentialBadge
+                <CredentialBadgeNew
                     achievementType={achievementType}
                     fallbackCircleText={title}
                     boostType={categoryType}
@@ -219,7 +219,7 @@ export const EndorsementFormBoostPreviewCard: React.FC<{
             className={`w-full flex items-center gap-4 justify-start pt-2 pb-4 px-4 cursor-pointer bg-white rounded-[20px] mt-2 shadow-bottom-2-4 ${className}`}
         >
             <div className="flex items-center justify-start">
-                <CredentialBadge
+                <CredentialBadgeNew
                     achievementType={achievementType}
                     fallbackCircleText={title}
                     boostType={categoryType}

@@ -4,7 +4,7 @@ import {
     ModalTypes,
     useModal,
     useWallet,
-    useFilestack,
+    useImageUpload,
     conditionalPluralize,
     BoostUserTypeEnum,
     ShortBoostState,
@@ -29,6 +29,8 @@ import { IonFooter, IonInput, IonSpinner, IonTextarea } from '@ionic/react';
 import { SkillFramework } from '../../components/boost/boost';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('create-framework-modal');
 
 type CreateFrameworkModalProps = {
     isEdit?: boolean;
@@ -52,7 +54,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
         issueTo: [],
     });
 
-    const { handleFileSelect, isLoading: isUploadingImage } = useFilestack({
+    const { handleFileSelect, isLoading: isUploadingImage } = useImageUpload({
         onUpload: url => setImage(url),
         fileType: IMAGE_MIME_TYPES,
     });
@@ -76,7 +78,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
         }
     );
 
-    console.log('existingNetworks:', existingNetworks);
+    log.debug('existingNetworks:', existingNetworks);
 
     useEffect(() => {
         if (existingAdmins) {
@@ -141,7 +143,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
             }, 301);
         },
         onError: error => {
-            console.error('Failed to create framework:', error);
+            log.error('Failed to create framework:', error);
             alert('Failed to create framework. Please try again.');
         },
     });
@@ -282,7 +284,7 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
             // }, 301);
         },
         onError: error => {
-            console.error('Failed to update framework:', error);
+            log.error('Failed to update framework:', error);
             alert('Failed to update framework. Please try again.');
         },
     });

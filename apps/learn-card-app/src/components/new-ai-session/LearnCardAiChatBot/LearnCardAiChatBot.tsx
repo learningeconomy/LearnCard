@@ -2,6 +2,16 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useStore } from '@nanostores/react';
 import { useDeviceTypeByWidth, useKeyboardHeight, isPlatformIOS } from 'learn-card-base';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('learn-card-ai-chat-bot');
+
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    newFlowId,
+    createFlowLifecycle,
+    type FlowLifecycle,
+} from '@analytics';
 
 import ChatHeader from './ChatHeader';
 import ChatInput from './ChatInput';
@@ -18,6 +28,8 @@ import {
     startLearningPathway,
     currentThreadId,
     isLoading,
+    isTyping,
+    lastAiError,
     isEndingSession,
     showEndingSessionLoader,
     disconnectWebSocket,
@@ -43,6 +55,19 @@ type LearnCardAiChatBotProps = {
     initialMessages: ChatMessage[];
     initialTopic?: string | undefined;
     initialTopicUri?: string | undefined;
+    /**
+     * Optional AI Learning Pathway URI to seed the session with. When
+     * provided alongside `initialTopicUri`, the chatbot calls
+     * `startLearningPathway(topicUri, pathwayUri)` instead of the
+     * plain `startTopicWithUri(topicUri)`.
+     *
+     * Historically this was only read from `window.location.search`
+     * (the `?pathwayUri=` query param). Accepting it as a prop lets
+     * callers like the Pathways Map modal dispatcher seed pathway
+     * context without having to rewrite the browser URL — which
+     * matters when the chatbot mounts as a modal *over* the existing
+     * route (e.g. `/pathways/:id/node/:nodeId`).
+     */
     initialPathwayUri?: string | undefined;
     contractUri?: string | undefined;
     handleStartOver?: () => void;
@@ -84,6 +109,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     const loading = useStore(isLoading);
     const authState = useStore(auth);
     const streaming = useStore(streamingMessage);
+    const aiError = useStore(lastAiError);
 
     const chatContainerRef = useRef<HTMLDivElement>(null);
     const chatContentRef = useRef<HTMLDivElement>(null);
@@ -99,6 +125,19 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     const lastUserMessageRef = useRef<HTMLDivElement | null>(null);
     const prevUserCountRef = useRef(0);
 
+    const { track } = useAnalytics();
+    const aiFlowIdRef = useRef(newFlowId());
+    const aiMessageIndexRef = useRef(0);
+    const aiResponseQueueRef = useRef<Array<{ lifecycle: FlowLifecycle; messageIndex: number }>>(
+        []
+    );
+    const aiPrevUserCountRef = useRef(0);
+    const aiBaselineInitializedRef = useRef(false);
+    const aiPrevStreamingRef = useRef(false);
+    const aiMountedAtRef = useRef(Date.now());
+    const aiHandledErrorAtRef = useRef<number | null>(null);
+    const aiSuppressNextStreamCompletionRef = useRef(false);
+
     // Viewport height for min-height pin calculation
     const [viewportAllowance, setViewportAllowance] = useState(0);
 
@@ -106,6 +145,9 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
         const initialTopicUri = _initialTopicUri || urlParams.get('topicUri');
+        // Prop wins over URL. Pathways Map modal launches seed this
+        // via prop so we don't have to rewrite the browser URL while
+        // the user is sitting on `/pathways/:id/node/:nodeId`.
         const pathwayUri = _initialPathwayUri || urlParams.get('pathwayUri');
 
         // If there is already an active thread or messages, do not re-initialize
@@ -154,7 +196,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
         const handleVisibility = () => {
             const threadId = currentThreadId.get();
             const { did } = auth.get();
-            console.debug('visibility change', document.visibilityState, threadId, did);
+            log.debug('visibility change', document.visibilityState, threadId, did);
 
             if (threadId && did) {
                 if (document.visibilityState === 'hidden') {
@@ -171,7 +213,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                                 `${getBackendUrl()}/threads/visibility?did=${did}`,
                                 form
                             );
-                            console.debug('sent beacon after 5min hidden');
+                            log.debug('sent beacon after 5min hidden');
                             // After the timer fires, reset it to null so a new one can be created.
                             hiddenTimer = null;
                         }, 5 * 60 * 1000); // 5 minutes
@@ -188,7 +230,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                     form.append('threadId', threadId);
                     form.append('event', 'visible');
                     navigator.sendBeacon(`${getBackendUrl()}/threads/visibility?did=${did}`, form);
-                    console.debug('sent beacon visible');
+                    log.debug('sent beacon visible');
                 }
             }
         };
@@ -246,9 +288,93 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
         return -1;
     }, [messagesToShow]);
 
-    // Pin user message to top of viewport when a new user message is sent.
-    // The min-height style on the user bubble reserves viewport space so the
-    // assistant reply can grow beneath it without the view moving.
+    useEffect(() => {
+        const userCount = messagesToShow.filter(m => m.role === 'user').length;
+        if (!aiBaselineInitializedRef.current) {
+            // Wait until the message source has switched from the (possibly
+            // empty) initialMessages prop to the store — otherwise a resumed
+            // thread hydrating asynchronously baselines at 0 and its history
+            // gets counted as fresh sends.
+            if (showInitialMessages) return;
+            aiBaselineInitializedRef.current = true;
+            aiPrevUserCountRef.current = userCount;
+            return;
+        }
+        if (userCount > aiPrevUserCountRef.current) {
+            const delta = userCount - aiPrevUserCountRef.current;
+            aiPrevUserCountRef.current = userCount;
+            // A real send appends exactly one user message and synchronously
+            // sets isTyping (sendMessageWithQuestion). Thread hydration
+            // (loadThread) bulk-sets history with isTyping false — resync
+            // the baseline without emitting.
+            if (delta > 1 || !isTyping.get()) return;
+            aiMessageIndexRef.current += 1;
+            aiResponseQueueRef.current.push({
+                lifecycle: createFlowLifecycle(),
+                messageIndex: aiMessageIndexRef.current,
+            });
+            track(AnalyticsEvents.AI_MESSAGE_SENT, {
+                flow_id: aiFlowIdRef.current,
+                surface: 'ai_chat',
+                message_index: aiMessageIndexRef.current,
+            });
+        }
+    }, [messagesToShow, showInitialMessages, track]);
+
+    useEffect(() => {
+        const isNowStreaming = Boolean(streaming);
+        const hasCurrentError = Boolean(
+            aiError &&
+                aiError.at >= aiMountedAtRef.current &&
+                aiError.at !== aiHandledErrorAtRef.current
+        );
+        if (aiPrevStreamingRef.current && !isNowStreaming) {
+            if (aiSuppressNextStreamCompletionRef.current) {
+                aiSuppressNextStreamCompletionRef.current = false;
+            } else if (!hasCurrentError) {
+                const response = aiResponseQueueRef.current[0];
+                if (response?.lifecycle.terminate()) {
+                    track(AnalyticsEvents.AI_RESPONSE_COMPLETED, {
+                        flow_id: aiFlowIdRef.current,
+                        surface: 'ai_chat',
+                        message_index: response.messageIndex,
+                        duration_ms: response.lifecycle.durationMs(),
+                    });
+                    aiResponseQueueRef.current.shift();
+                }
+            }
+        }
+        aiPrevStreamingRef.current = isNowStreaming;
+    }, [aiError, streaming, track]);
+
+    useEffect(() => {
+        // Ignore errors that predate this mount (the atom persists across sessions).
+        if (
+            !aiError ||
+            aiError.at < aiMountedAtRef.current ||
+            aiError.at === aiHandledErrorAtRef.current
+        ) {
+            return;
+        }
+        const response = aiResponseQueueRef.current[0];
+        if (!response?.lifecycle.terminate()) {
+            aiHandledErrorAtRef.current = aiError.at;
+            return;
+        }
+        track(AnalyticsEvents.AI_RESPONSE_FAILED, {
+            flow_id: aiFlowIdRef.current,
+            surface: 'ai_chat',
+            message_index: response.messageIndex,
+            error_code: aiError.code,
+            duration_ms: response.lifecycle.durationMs(),
+        });
+        if (streaming) {
+            aiSuppressNextStreamCompletionRef.current = true;
+        }
+        aiResponseQueueRef.current.shift();
+        aiHandledErrorAtRef.current = aiError.at;
+    }, [aiError, streaming, track]);
+
     useEffect(() => {
         const userCount = messagesToShow.filter(m => m.role === 'user').length;
         if (userCount > prevUserCountRef.current) {
@@ -261,119 +387,123 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
 
     return (
         <AiFeatureGate>
-        <div
-            className="flex flex-col h-full min-h-0 w-full bg-white"
-            style={keyboardInset > 0 ? { paddingBottom: keyboardInset } : undefined}
-        >
-            {isEnding && showEndingLoader && (
-                <AiSessionLoader
-                    contractUri={contractUri}
-                    overrideText={sessionWrapUpText}
-                    // !force user to wait
-                    // showActionButton={true}
-                    // actionButtonText="Back to AI Sessions"
-                    // actionButtonHandler={() => {
-                    //     closeModal();
-                    //     if (isDesktop) {
-                    //         handleStartOver?.();
-                    //     }
-                    //     history.push('/ai/topics');
-                    // }}
-                    // containerClassName="flex-col"
-                    // showCloseButton={true}
-                    // closeButtonHandler={() => {
-                    //     showEndingSessionLoader.set(false);
-                    // }}
-                />
-            )}
+            <div
+                className="flex flex-col h-full min-h-0 w-full bg-white"
+                style={keyboardInset > 0 ? { paddingBottom: keyboardInset } : undefined}
+            >
+                {isEnding && showEndingLoader && (
+                    <AiSessionLoader
+                        contractUri={contractUri}
+                        overrideText={sessionWrapUpText}
+                        // !force user to wait
+                        // showActionButton={true}
+                        // actionButtonText="Back to AI Sessions"
+                        // actionButtonHandler={() => {
+                        //     closeModal();
+                        //     if (isDesktop) {
+                        //         handleStartOver?.();
+                        //     }
+                        //     history.push('/ai/topics');
+                        // }}
+                        // containerClassName="flex-col"
+                        // showCloseButton={true}
+                        // closeButtonHandler={() => {
+                        //     showEndingSessionLoader.set(false);
+                        // }}
+                    />
+                )}
 
-            {loading && mode === AiSessionMode.insights && (
-                <AiChatLoading contractUri={contractUri} />
-            )}
+                {loading && mode === AiSessionMode.insights && (
+                    <AiChatLoading contractUri={contractUri} />
+                )}
 
-            {(!loading || mode !== AiSessionMode.insights) && (
-                <>
-                    <ChatHeader mode={mode} aiApp={aiApp} initialTopic={initialTopic} />
-                    <div className="flex flex-col flex-1 min-h-0 min-w-0 w-full max-w-[829px] mx-auto sm:pb-[30px]">
-                    <div
-                        ref={chatContainerRef}
-                        className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col px-4 relative"
-                    >
-                        <div ref={chatContentRef} className="flex flex-col min-w-0">
-                            {mode !== AiSessionMode.insights && <AiSessionPlan />}
+                {(!loading || mode !== AiSessionMode.insights) && (
+                    <>
+                        <ChatHeader mode={mode} aiApp={aiApp} initialTopic={initialTopic} />
+                        <div className="flex flex-col flex-1 min-h-0 min-w-0 w-full max-w-[829px] mx-auto sm:pb-[30px]">
+                            <div
+                                ref={chatContainerRef}
+                                className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col px-4 relative"
+                            >
+                                <div ref={chatContentRef} className="flex flex-col min-w-0">
+                                    {mode !== AiSessionMode.insights && <AiSessionPlan />}
 
-                            {messagesToShow.map((msg, index) => {
-                                const isLastUser = index === lastUserIdx;
-                                const isTail = index === messagesToShow.length - 1;
-                                // Reserve viewport space on whatever is the last rendered block.
-                                // When streaming, that's the StreamingMessage below; otherwise
-                                // it's the tail message wrapper. Keeps the user bubble pinned
-                                // to the top without creating a gap before the assistant reply.
-                                const pinStyle =
-                                    isTail && !streaming && viewportAllowance > 0
-                                        ? {
-                                              minHeight: `${Math.max(
-                                                  0,
-                                                  viewportAllowance - 24
-                                              )}px`,
-                                          }
-                                        : undefined;
+                                    {messagesToShow.map((msg, index) => {
+                                        const isLastUser = index === lastUserIdx;
+                                        const isTail = index === messagesToShow.length - 1;
+                                        // Reserve viewport space on whatever is the last rendered block.
+                                        // When streaming, that's the StreamingMessage below; otherwise
+                                        // it's the tail message wrapper. Keeps the user bubble pinned
+                                        // to the top without creating a gap before the assistant reply.
+                                        const pinStyle =
+                                            isTail && !streaming && viewportAllowance > 0
+                                                ? {
+                                                      minHeight: `${Math.max(
+                                                          0,
+                                                          viewportAllowance - 24
+                                                      )}px`,
+                                                  }
+                                                : undefined;
 
-                                return (
-                                    <div
-                                        key={msg.id ?? index}
-                                        ref={isLastUser ? lastUserMessageRef : undefined}
-                                        className="w-full"
-                                        style={pinStyle}
-                                    >
-                                        <MessageWithQuestions message={msg} aiApp={aiApp} />
-                                    </div>
-                                );
-                            })}
+                                        return (
+                                            <div
+                                                key={msg.id ?? index}
+                                                ref={isLastUser ? lastUserMessageRef : undefined}
+                                                className="w-full"
+                                                style={pinStyle}
+                                            >
+                                                <MessageWithQuestions message={msg} aiApp={aiApp} />
+                                            </div>
+                                        );
+                                    })}
 
-                            {streaming && (
-                                <div
-                                    className="w-full"
-                                    style={
-                                        viewportAllowance > 0
-                                            ? {
-                                                  minHeight: `${Math.max(
-                                                      0,
-                                                      viewportAllowance - 24
-                                                  )}px`,
-                                              }
-                                            : undefined
-                                    }
-                                >
-                                    <StreamingMessage aiApp={aiApp} />
-                                </div>
-                            )}
-                        </div>
-
-                        {(!isAtBottom || streaming) && (
-                            <div className="sticky bottom-[20px] left-1/2 transform -translate-x-1/2 w-fit">
-                                <button
-                                    onClick={() => scrollToBottom('smooth')}
-                                    className="relative p-[11px] bg-white rounded-full border-solid border-[1px] border-grayscale-200 shadow-button-bottom text-grayscale-900"
-                                    aria-label={streaming ? 'AI is responding — scroll to bottom' : 'Scroll to bottom'}
-                                >
                                     {streaming && (
-                                        <span
-                                            className="pointer-events-none absolute inset-[-3px] rounded-full border-[2px] border-transparent border-t-emerald-700 animate-spin"
-                                            aria-hidden="true"
-                                        />
+                                        <div
+                                            className="w-full"
+                                            style={
+                                                viewportAllowance > 0
+                                                    ? {
+                                                          minHeight: `${Math.max(
+                                                              0,
+                                                              viewportAllowance - 24
+                                                          )}px`,
+                                                      }
+                                                    : undefined
+                                            }
+                                        >
+                                            <StreamingMessage aiApp={aiApp} />
+                                        </div>
                                     )}
-                                    <CaretDown version="2" />
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                                </div>
 
-                    <div className="sm:px-4">{!loading && <ChatInput />}</div>
-                    </div>
-                </>
-            )}
-        </div>
+                                {(!isAtBottom || streaming) && (
+                                    <div className="sticky bottom-[20px] left-1/2 transform -translate-x-1/2 w-fit">
+                                        <button
+                                            onClick={() => scrollToBottom('smooth')}
+                                            className="relative p-[11px] bg-white rounded-full border-solid border-[1px] border-grayscale-200 shadow-button-bottom text-grayscale-900"
+                                            aria-label={
+                                                streaming
+                                                    ? 'AI is responding — scroll to bottom'
+                                                    : 'Scroll to bottom'
+                                            }
+                                        >
+                                            {streaming && (
+                                                <span
+                                                    className="pointer-events-none absolute inset-[-3px] rounded-full border-[2px] border-transparent border-t-emerald-700 animate-spin"
+                                                    aria-hidden="true"
+                                                />
+                                            )}
+                                            <CaretDown version="2" />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="sm:px-4">{!loading && <ChatInput />}</div>
+                        </div>
+                    </>
+                )}
+            </div>
         </AiFeatureGate>
     );
 };

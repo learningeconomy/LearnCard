@@ -84,6 +84,10 @@ const {
     PortfolioTwoTonedIcon,
     AssistanceTwoTonedIcon,
     FamiliesTwoTonedIcon,
+    CompassTwoTonedIcon,
+    DashboardTwoTonedIcon,
+    DashboardColorfulIcon,
+    DashboardFormalIcon,
 } = ColorfulSideNavIcons;
 
 const {
@@ -260,9 +264,17 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
             [CredentialCategoryEnum.workHistory]: ExperiencesTwoTonedIcon,
             [CredentialCategoryEnum.family]: FamiliesTwoTonedIcon,
             [CredentialCategoryEnum.id]: IDsTwoTonedIcon,
+            // Pathways v2 ("Journeys"). Two-toned compass — keeps
+            // the wayfinding read while matching the rest of the
+            // side-menu's neutral icon family. The colourful
+            // `Compass` is still used as a hero mark on the onboard
+            // sub-header and AI session plan.
+            pathways: CompassTwoTonedIcon,
+            dashboard: DashboardColorfulIcon,
         },
 
         navbar: {
+            dashboard: DashboardColorfulIcon,
             wallet: NavBarPassportIcon,
             plus: ColorFulPlus,
             launchPad: NavBarLaunchPadIcon,
@@ -314,9 +326,16 @@ export const ICON_SETS: Record<string, ThemeIconTable> = {
             [CredentialCategoryEnum.workHistory]: ExperiencesFormalIcon,
             [CredentialCategoryEnum.family]: FamiliesFormalIcon,
             [CredentialCategoryEnum.id]: IDsFormalIcon,
+            // Pathways v2 ("Journeys") — same two-toned compass
+            // in the formal set. Design can supply a formal-style
+            // variant when the feature graduates out of flag-only
+            // rollout.
+            pathways: CompassTwoTonedIcon,
+            dashboard: DashboardFormalIcon,
         },
 
         navbar: {
+            dashboard: DashboardFormalIcon,
             wallet: NavBarPassportIconFormal,
             plus: FormalPlus,
             launchPad: NavBarLaunchPadIconFormal,
@@ -414,6 +433,7 @@ export const PARTIAL_ICON_SETS: Record<string, PartialIconSetDef> = {
             },
 
             navbar: {
+                dashboard: DashboardColorfulIcon,
                 wallet: VetpassPassportNavbar,
                 launchPad: VetpassAppsNavbar,
                 notification: VetpassAlertsNavbar,

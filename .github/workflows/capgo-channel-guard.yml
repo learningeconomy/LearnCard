@@ -28,14 +28,17 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout (full history)
-              uses: actions/checkout@v4
+              uses: actions/checkout@v7
               with:
                   fetch-depth: 0
+
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
 
             - name: Detect native compat changes
               id: detect
               run: |
-                  node tools/capgo/check-channel-bump.js \
+                  bun tools/capgo/check-channel-bump.js \
                       --base "${{ github.event.pull_request.base.sha }}" \
                       --head "${{ github.event.pull_request.head.sha }}" \
                       --out  "${{ github.workspace }}/capgo-guard.json" \
@@ -45,7 +48,7 @@ jobs:
                   cat "${{ github.workspace }}/capgo-guard.json"
                   echo '------------------------'
 
-                  GUARD_FAILED=$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1], "utf-8")).guardFailed)' "${{ github.workspace }}/capgo-guard.json")
+                  GUARD_FAILED=$(bun -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv.at(-1), "utf-8")).guardFailed)' "${{ github.workspace }}/capgo-guard.json")
                   echo "guard_failed=$GUARD_FAILED" >> "$GITHUB_OUTPUT"
 
             - name: Check for escape-hatch label or marker
@@ -113,13 +116,13 @@ jobs:
                       sections.push('Run the bumper from the repo root:');
                       sections.push('');
                       sections.push('```bash');
-                      sections.push('pnpm --filter learn-card-app lc bump-default-capgo-channel');
+                      sections.push('bun run --filter learn-card-app lc bump-default-capgo-channel');
                       sections.push('```');
                       sections.push('');
                       sections.push('Or pass an explicit channel:');
                       sections.push('');
                       sections.push('```bash');
-                      sections.push('pnpm --filter learn-card-app lc bump-default-capgo-channel 1.0.7');
+                      sections.push('bun run --filter learn-card-app lc bump-default-capgo-channel 1.0.7');
                       sections.push('```');
                       sections.push('');
                       sections.push('Then commit and push the updated `capacitor.config.ts`. The next push to this PR will re-run this check.');
@@ -196,5 +199,5 @@ jobs:
             - name: Fail the check if guard tripped
               if: steps.detect.outputs.guard_failed == 'true' && steps.escape.outputs.skip != 'true'
               run: |
-                  echo "::error::Capgo channel guard failed \u2014 bump defaultChannel via 'pnpm lc bump-default-capgo-channel' or use an exemption (see PR comment)."
+                  echo "::error::Capgo channel guard failed — bump defaultChannel via 'bun run --filter learn-card-app lc bump-default-capgo-channel' or use an exemption (see PR comment)."
                   exit 1

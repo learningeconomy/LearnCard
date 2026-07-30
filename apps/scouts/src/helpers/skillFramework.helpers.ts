@@ -66,6 +66,7 @@ export const convertApiSkillFrameworkToSkillFramework = (
     return {
         id: apiSkillFramework.framework.id,
         name: apiSkillFramework.framework.name,
+        image: apiSkillFramework.framework.image,
         description: apiSkillFramework.framework.description,
         skills: convertApiSkillNodesToSkillFrameworkNodes(apiSkillFramework.skills),
     };

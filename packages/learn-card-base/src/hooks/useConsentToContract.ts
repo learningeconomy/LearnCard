@@ -18,10 +18,17 @@ export const useConsentToContract = (
             terms: ConsentFlowTerms;
             expiresAt?: string;
             oneTime?: boolean;
+            skipSharedUriMaterialization?: boolean;
         }) => {
             const wallet = await initWallet();
 
-            const terms = await getTermsWithSharedUris(_terms);
+            const terms = _terms.skipSharedUriMaterialization
+                ? {
+                      terms: _terms.terms,
+                      expiresAt: _terms.expiresAt,
+                      oneTime: _terms.oneTime,
+                  }
+                : await getTermsWithSharedUris(_terms);
 
             return wallet.invoke.consentToContract(uri, terms, recipientToken);
         },

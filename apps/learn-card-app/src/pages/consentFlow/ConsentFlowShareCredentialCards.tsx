@@ -1,41 +1,171 @@
 import React from 'react';
 import { Updater } from 'use-immer';
 
-import GenericCardWrapper from 'learn-card-base/components/GenericCardWrapper/GenericCardWrapper';
 import { IonToggle } from '@ionic/react';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation } from 'swiper';
+
 import { ConsentFlowTerms, VC } from '@learncard/types';
-import { CredentialCategory } from 'learn-card-base';
+import { CredentialCategory, GenericCardWrapper, useVerifiableData } from 'learn-card-base';
 
 import { curriedStateSlice } from '@learncard/helpers';
+import * as m from '../../paraglide/messages.js';
 
-const vcDisplayWord: Record<CredentialCategory, string> = {
-    ID: 'ID',
-    Achievement: 'Achievement',
-    Skill: 'Skill',
-    Membership: 'Membership',
-    'Work History': 'Work History',
-    'Learning History': 'Learning History',
-    'Social Badge': 'Social Badge',
-    Hidden: '',
-};
+const getVcDisplayWord = (): Partial<
+    Record<CredentialCategory, { singular: string; plural: string }>
+> => ({
+    ID: { singular: 'ID', plural: 'IDs' },
+    Achievement: {
+        singular: m['consentFlow.credentialType.achievement'](),
+        plural: m['consentFlow.credentialType.achievementPlural'](),
+    },
+    Skill: {
+        singular: m['consentFlow.credentialType.skill'](),
+        plural: m['consentFlow.credentialType.skillPlural'](),
+    },
+    Membership: {
+        singular: m['consentFlow.credentialType.membership'](),
+        plural: m['consentFlow.credentialType.membershipPlural'](),
+    },
+    'Work History': {
+        singular: m['consentFlow.credentialType.workHistory'](),
+        plural: m['consentFlow.credentialType.workHistoryPlural'](),
+    },
+    'Learning History': {
+        singular: m['consentFlow.credentialType.learningHistory'](),
+        plural: m['consentFlow.credentialType.learningHistoryPlural'](),
+    },
+    'Social Badge': {
+        singular: m['consentFlow.credentialType.socialBadge'](),
+        plural: m['consentFlow.credentialType.socialBadgePlural'](),
+    },
+    Goals: {
+        singular: m['consentFlow.credentialType.goals'](),
+        plural: m['consentFlow.credentialType.goalsPlural'](),
+    },
+    'Professional Title': {
+        singular: m['consentFlow.credentialType.professionalTitle'](),
+        plural: m['consentFlow.credentialType.professionalTitlePlural'](),
+    },
+    'Role Experience': {
+        singular: m['consentFlow.credentialType.roleExperience'](),
+        plural: m['consentFlow.credentialType.roleExperiencePlural'](),
+    },
+    'Work Experience': {
+        singular: m['consentFlow.credentialType.workExperience'](),
+        plural: m['consentFlow.credentialType.workExperiencePlural'](),
+    },
+    'Pay Rate': {
+        singular: m['consentFlow.credentialType.payRate'](),
+        plural: m['consentFlow.credentialType.payRatePlural'](),
+    },
+    'Work Life Balance': {
+        singular: m['consentFlow.credentialType.workLifeBalance'](),
+        plural: m['consentFlow.credentialType.workLifeBalancePlural'](),
+    },
+    'Job Stability': {
+        singular: m['consentFlow.credentialType.jobStability'](),
+        plural: m['consentFlow.credentialType.jobStabilityPlural'](),
+    },
+    'Self-Assigned Skills': {
+        singular: m['consentFlow.credentialType.selfAssignedSkill'](),
+        plural: m['consentFlow.credentialType.selfAssignedSkillPlural'](),
+    },
+    VerifiableData: { singular: 'Verifiable Data', plural: 'Verifiable Data' },
+});
 
-const vcColor: Record<CredentialCategory, string> = {
+const vcColor: Partial<Record<CredentialCategory, string>> = {
     'Learning History': 'emerald-600',
     ID: 'yellow-400',
     Achievement: 'spice-600',
     Skill: 'indigo-400',
+    'Self-Assigned Skills': 'indigo-400',
     Membership: 'indigo-400',
     'Work History': 'rose-600',
     'Social Badge': 'cyan-300',
-    Hidden: '',
+    VerifiableData: 'grayscale-600',
+};
+
+type ResolvedCredential = {
+    uri: string;
+    vc: VC;
+};
+
+const formatVerifiableDataSummary = (data: unknown): string => {
+    if (data === undefined || data === null) {
+        return 'Saved data is unavailable right now.';
+    }
+
+    if (typeof data === 'string') {
+        return data;
+    }
+
+    if (typeof data === 'number' || typeof data === 'boolean') {
+        return String(data);
+    }
+
+    if (Array.isArray(data)) {
+        return `${data.length} item${data.length === 1 ? '' : 's'} saved`;
+    }
+
+    if (typeof data === 'object') {
+        const entries = Object.entries(data as Record<string, unknown>);
+
+        if (entries.length === 0) {
+            return 'Saved data is empty.';
+        }
+
+        return entries
+            .slice(0, 2)
+            .map(([key, value]) => `${key}: ${formatVerifiableDataSummary(value)}`)
+            .join(' · ');
+    }
+
+    return 'Saved data is available.';
+};
+
+const VerifiableDataCredentialCard: React.FC<{
+    credential: ResolvedCredential;
+    index: number;
+    onClick?: () => void;
+    initialCheckmarkState: boolean;
+}> = ({ credential, index, onClick, initialCheckmarkState }) => {
+    const credentialSubject = Array.isArray(credential.vc.credentialSubject)
+        ? credential.vc.credentialSubject[0]
+        : credential.vc.credentialSubject;
+
+    const dataKey = typeof credentialSubject?.dataKey === 'string' ? credentialSubject.dataKey : '';
+    const { data: savedData, isLoading } = useVerifiableData<unknown>(dataKey);
+
+    return (
+        <div key={credential.vc!.id ?? index} className="flex flex-col gap-[10px]">
+            <GenericCardWrapper
+                vc={credential.vc}
+                uri={credential.uri}
+                customHeaderClass="bg-grayscale-600"
+                showChecked
+                initialCheckmarkState={initialCheckmarkState}
+                onClick={onClick}
+            />
+
+            <div className="mx-[20px] rounded-[14px] border border-grayscale-200 bg-grayscale-10 px-[14px] py-[12px]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-grayscale-500">
+                    {isLoading ? 'Reading saved data' : 'Resolved from your account'}
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-grayscale-700">
+                    {dataKey
+                        ? isLoading
+                            ? m['common.loadingVerifiableData']()
+                            : formatVerifiableDataSummary(savedData)
+                        : 'This credential does not expose a data key.'}
+                </p>
+            </div>
+        </div>
+    );
 };
 
 type ConsentFlowShareCredentialCardsProps = {
     categories: ConsentFlowTerms['read']['credentials']['categories'];
     setCategories: Updater<ConsentFlowTerms['read']['credentials']['categories']>;
-    mappedCredentials: Record<CredentialCategory, { uri: string; vc: VC | undefined }[]>;
+    mappedCredentials: Partial<Record<CredentialCategory, { uri: string; vc: VC | undefined }[]>>;
     setShareAll: Updater<boolean | undefined>;
 };
 
@@ -48,8 +178,8 @@ const ConsentFlowShareCredentialCards: React.FC<ConsentFlowShareCredentialCardsP
     const updateSlice = curriedStateSlice(setCategories);
 
     const getTitle = (type: CredentialCategory, count: number) => {
-        return `${count} ${vcDisplayWord[type]}${count !== 1 && !['Learning History', 'Work History'].includes(type) ? 's' : ''
-            }`;
+        const displayWord = getVcDisplayWord()[type] ?? { singular: type, plural: type };
+        return `${count} ${count === 1 ? displayWord.singular : displayWord.plural}`;
     };
 
     return (
@@ -99,48 +229,57 @@ const ConsentFlowShareCredentialCards: React.FC<ConsentFlowShareCredentialCardsP
                                     />
                                 </span>
                             </div>
-                            <Swiper
-                                slidesPerView="auto"
-                                modules={[Navigation]}
-                                navigation
-                                spaceBetween={10}
-                                className="card-slider"
-                            >
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-[10px] px-[20px] pb-[20px]">
                                 {credentials.map((credential, index) => {
                                     const isSelected = category?.shared?.includes(credential.uri);
+                                    const handleCredentialClick = () => {
+                                        if (isSelected) {
+                                            updateCategory('shareAll', false);
+                                            setShareAll(false);
+                                        }
+
+                                        updateCategory(
+                                            'shared',
+                                            isSelected
+                                                ? category?.shared?.filter(
+                                                      uri => uri !== credential.uri
+                                                  )
+                                                : [...(category?.shared ?? []), credential.uri]
+                                        );
+                                    };
+
+                                    if (vcType === 'VerifiableData') {
+                                        if (!credential.vc) {
+                                            return <React.Fragment key={index}></React.Fragment>;
+                                        }
+
+                                        return (
+                                            <VerifiableDataCredentialCard
+                                                key={credential.vc!.id ?? index}
+                                                credential={credential as ResolvedCredential}
+                                                index={index}
+                                                onClick={handleCredentialClick}
+                                                initialCheckmarkState={Boolean(isSelected)}
+                                            />
+                                        );
+                                    }
 
                                     return (
-                                        <SwiperSlide key={credential.vc!.id ?? index}>
-                                            <GenericCardWrapper
-                                                vc={credential.vc!}
-                                                uri={credential.uri}
-                                                customHeaderClass={`bg-${vcColor[vcType as CredentialCategory]
-                                                    }`}
-                                                onClick={() => {
-                                                    if (isSelected) {
-                                                        updateCategory('shareAll', false);
-                                                        setShareAll(false);
-                                                    }
-
-                                                    updateCategory(
-                                                        'shared',
-                                                        isSelected
-                                                            ? category?.shared?.filter(
-                                                                uri => uri !== credential.uri
-                                                            )
-                                                            : [
-                                                                ...(category.shared ?? []),
-                                                                credential.uri,
-                                                            ]
-                                                    );
-                                                }}
-                                                initialCheckmarkState={isSelected}
-                                                showChecked
-                                            />
-                                        </SwiperSlide>
+                                        <GenericCardWrapper
+                                            key={credential.vc!.id ?? index}
+                                            vc={credential.vc!}
+                                            uri={credential.uri}
+                                            customHeaderClass={`bg-${
+                                                vcColor[vcType as CredentialCategory] ??
+                                                'grayscale-500'
+                                            }`}
+                                            onClick={handleCredentialClick}
+                                            initialCheckmarkState={isSelected}
+                                            showChecked
+                                        />
                                     );
                                 })}
-                            </Swiper>
+                            </div>
                         </section>
                     </React.Fragment>
                 );

@@ -13,10 +13,10 @@ These tests help verify that the package exports are correctly structured and im
     ```
 
 2.  **Build the `@learncard/init` package:**
-    Ensure all dependencies are installed (e.g., `pnpm install` in the monorepo root or package root) and then run the build command:
+    Ensure all dependencies are installed (e.g., `bun install` in the monorepo root or package root) and then run the build command:
 
     ```bash
-    pnpm build
+    bun run build
     ```
 
     This command should generate the `dist` folder in the `@learncard/init` package root, containing the CJS and ESM bundles.

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { 
-    FileSearch, 
-    Code, 
-    Shield, 
-    Rocket, 
-    ArrowRight, 
-    ArrowLeft, 
+import {
+    FileSearch,
+    Code,
+    Shield,
+    Rocket,
+    ArrowRight,
+    ArrowLeft,
     ExternalLink,
     CheckCircle2,
     AlertCircle,
@@ -14,16 +14,26 @@ import {
 import type { LCNIntegration } from '@learncard/types';
 import { getResolvedTenantConfig } from '../../../../config/bootstrapTenantConfig';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('verify-credentials-guide');
+
 import { useWallet } from 'learn-card-base';
 
+import * as m from '../../../../paraglide/messages.js';
 import { StepProgress, CodeOutputPanel, StatusIndicator } from '../shared';
 import { useGuideState } from '../shared/useGuideState';
 
-const STEPS = [
-    { id: 'understand', title: 'Understand VCs' },
-    { id: 'request', title: 'Request Credentials' },
-    { id: 'verify', title: 'Verify & Validate' },
-    { id: 'test', title: 'Test It' },
+const getSteps = () => [
+    {
+        id: 'understand',
+        title: m['developerPortal.guides.verifyCredentials.steps.understandVCs'](),
+    },
+    {
+        id: 'request',
+        title: m['developerPortal.guides.verifyCredentials.steps.requestCredentials'](),
+    },
+    { id: 'verify', title: m['developerPortal.guides.verifyCredentials.steps.verifyValidate']() },
+    { id: 'test', title: m['developerPortal.guides.verifyCredentials.steps.testIt']() },
 ];
 
 // Step 1: Understand
@@ -33,43 +43,88 @@ const UnderstandStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Understanding Verifiable Credentials</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.verifyCredentials.understandStep.title']()}
+                </h3>
 
                 <p className="text-gray-600">
-                    Verifiable Credentials (VCs) are digital documents that prove something about a person — 
-                    like a badge, certificate, or ID — that can be cryptographically verified.
+                    {m['developerPortal.guides.verifyCredentials.understandStep.description']()}
                 </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                    <h4 className="font-medium text-blue-800 mb-2">What you can verify</h4>
+                    <h4 className="font-medium text-blue-800 mb-2">
+                        {m[
+                            'developerPortal.guides.verifyCredentials.understandStep.whatYouCanVerify'
+                        ]()}
+                    </h4>
 
                     <ul className="text-sm text-blue-700 space-y-1">
-                        <li>• The credential hasn't been tampered with</li>
-                        <li>• It was issued by who it claims</li>
-                        <li>• It hasn't expired</li>
-                        <li>• It hasn't been revoked</li>
+                        <li>
+                            {m[
+                                'developerPortal.guides.verifyCredentials.understandStep.verifyBullet1'
+                            ]()}
+                        </li>
+                        <li>
+                            {m[
+                                'developerPortal.guides.verifyCredentials.understandStep.verifyBullet2'
+                            ]()}
+                        </li>
+                        <li>
+                            {m[
+                                'developerPortal.guides.verifyCredentials.understandStep.verifyBullet3'
+                            ]()}
+                        </li>
+                        <li>
+                            {m[
+                                'developerPortal.guides.verifyCredentials.understandStep.verifyBullet4'
+                            ]()}
+                        </li>
                     </ul>
                 </div>
 
                 <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-                    <h4 className="font-medium text-emerald-800 mb-2">Common use cases</h4>
+                    <h4 className="font-medium text-emerald-800 mb-2">
+                        {m[
+                            'developerPortal.guides.verifyCredentials.understandStep.commonUseCases'
+                        ]()}
+                    </h4>
 
                     <ul className="text-sm text-emerald-700 space-y-1">
-                        <li>• Verify course completions</li>
-                        <li>• Check professional certifications</li>
-                        <li>• Validate identity documents</li>
-                        <li>• Confirm memberships</li>
+                        <li>
+                            {m[
+                                'developerPortal.guides.verifyCredentials.understandStep.useCaseBullet1'
+                            ]()}
+                        </li>
+                        <li>
+                            {m[
+                                'developerPortal.guides.verifyCredentials.understandStep.useCaseBullet2'
+                            ]()}
+                        </li>
+                        <li>
+                            {m[
+                                'developerPortal.guides.verifyCredentials.understandStep.useCaseBullet3'
+                            ]()}
+                        </li>
+                        <li>
+                            {m[
+                                'developerPortal.guides.verifyCredentials.understandStep.useCaseBullet4'
+                            ]()}
+                        </li>
                     </ul>
                 </div>
             </div>
 
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                <h4 className="font-medium text-gray-800 mb-2">Example Credential Structure</h4>
+                <h4 className="font-medium text-gray-800 mb-2">
+                    {m[
+                        'developerPortal.guides.verifyCredentials.understandStep.exampleStructure'
+                    ]()}
+                </h4>
 
                 <pre className="text-xs text-gray-600 bg-white p-3 rounded-lg overflow-x-auto">
-{`{
+                    {`{
   "@context": ["https://www.w3.org/2018/credentials/v1"],
   "type": ["VerifiableCredential", "Achievement"],
   "issuer": "did:web:university.edu",
@@ -91,7 +146,7 @@ const UnderstandStep: React.FC<{
                 onClick={onComplete}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
             >
-                Continue
+                {m['common.continue']()}
                 <ArrowRight className="w-4 h-4" />
             </button>
         </div>
@@ -106,19 +161,27 @@ const RequestStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Requesting Credentials</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.verifyCredentials.requestStep.title']()}
+                </h3>
 
                 <p className="text-gray-600">
-                    You can request credentials from users in different ways depending on your integration type.
+                    {m['developerPortal.guides.verifyCredentials.requestStep.description']()}
                 </p>
             </div>
 
             <div className="space-y-4">
                 <div className="p-4 border border-gray-200 rounded-xl">
-                    <h4 className="font-medium text-gray-800 mb-2">Option 1: Embedded App (Partner Connect)</h4>
+                    <h4 className="font-medium text-gray-800 mb-2">
+                        {m[
+                            'developerPortal.guides.verifyCredentials.requestStep.option1Embedded'
+                        ]()}
+                    </h4>
 
                     <CodeOutputPanel
-                        title="Request via SDK"
+                        title={m[
+                            'developerPortal.guides.verifyCredentials.requestStep.requestViaSdk'
+                        ]()}
                         snippets={{
                             typescript: `// In your embedded app
 const result = await learnCard.askCredentialSearch({
@@ -131,21 +194,25 @@ const credentials = result.credentials;
 // Verify each credential
 for (const vc of credentials) {
     const verification = await verifyCredential(vc);
-    console.log('Valid:', verification.valid);
+    log.info('Valid:', verification.valid);
 }`,
                         }}
                     />
                 </div>
 
                 <div className="p-4 border border-gray-200 rounded-xl">
-                    <h4 className="font-medium text-gray-800 mb-2">Option 2: Direct Presentation</h4>
+                    <h4 className="font-medium text-gray-800 mb-2">
+                        {m['developerPortal.guides.verifyCredentials.requestStep.option2Direct']()}
+                    </h4>
 
                     <p className="text-sm text-gray-600 mb-3">
-                        Accept credentials posted directly to your API endpoint.
+                        {m['developerPortal.guides.verifyCredentials.requestStep.option2Desc']()}
                     </p>
 
                     <CodeOutputPanel
-                        title="API Endpoint"
+                        title={m[
+                            'developerPortal.guides.verifyCredentials.requestStep.apiEndpoint'
+                        ]()}
                         snippets={{
                             typescript: `// Express.js endpoint
 app.post('/api/verify-credential', async (req, res) => {
@@ -170,14 +237,14 @@ app.post('/api/verify-credential', async (req, res) => {
                     className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back
+                    {m['common.back']()}
                 </button>
 
                 <button
                     onClick={onComplete}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                 >
-                    Continue
+                    {m['common.continue']()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
@@ -212,11 +279,11 @@ const credential = { /* received from user */ };
 const result = await verifyCredential(credential);
 
 if (result.valid) {
-    console.log('Credential is valid!');
-    console.log('Issuer:', credential.issuer);
-    console.log('Subject:', credential.credentialSubject);
+    log.info('Credential is valid!');
+    log.info('Issuer:', credential.issuer);
+    log.info('Subject:', credential.credentialSubject);
 } else {
-    console.log('Verification failed:', result.errors);
+    log.info('Verification failed:', result.errors);
 }`;
 
     const checksExplanation = `// What gets checked:
@@ -234,15 +301,17 @@ if (result.valid) {
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Verifying Credentials</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.verifyCredentials.verifyStep.title']()}
+                </h3>
 
                 <p className="text-gray-600">
-                    Use the LearnCard SDK to cryptographically verify credentials. No API key required for verification.
+                    {m['developerPortal.guides.verifyCredentials.verifyStep.description']()}
                 </p>
             </div>
 
             <CodeOutputPanel
-                title="Verification Code"
+                title={m['developerPortal.guides.verifyCredentials.verifyStep.codePanelTitle']()}
                 snippets={{
                     typescript: verifyCode,
                     curl: `# Verify via API
@@ -259,7 +328,9 @@ curl -X POST ${getResolvedTenantConfig().apis.lcaApi.replace('/trpc', '')}/crede
             />
 
             <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                <h4 className="font-medium text-gray-800 mb-2">What Gets Checked</h4>
+                <h4 className="font-medium text-gray-800 mb-2">
+                    {m['developerPortal.guides.verifyCredentials.verifyStep.whatGetsChecked']()}
+                </h4>
 
                 <pre className="text-xs text-gray-600 bg-white p-3 rounded-lg overflow-x-auto">
                     {checksExplanation}
@@ -272,14 +343,14 @@ curl -X POST ${getResolvedTenantConfig().apis.lcaApi.replace('/trpc', '')}/crede
                     className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back
+                    {m['common.back']()}
                 </button>
 
                 <button
                     onClick={onComplete}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                 >
-                    Continue
+                    {m['common.continue']()}
                     <ArrowRight className="w-4 h-4" />
                 </button>
             </div>
@@ -321,12 +392,12 @@ const TestStep: React.FC<{
                 errors: verifyResult.errors,
             });
         } catch (err) {
-            console.error('Verification failed:', err);
+            log.error('Verification failed:', err);
             setResult({
                 valid: false,
                 checks: [],
                 warnings: [],
-                errors: ['Invalid JSON or credential format'],
+                errors: [m['developerPortal.guides.verifyCredentials.testStep.invalidJson']()],
             });
         } finally {
             setVerifying(false);
@@ -347,29 +418,35 @@ const TestStep: React.FC<{
     return (
         <div className="space-y-6">
             <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Test Verification</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.verifyCredentials.testStep.title']()}
+                </h3>
 
                 <p className="text-gray-600">
-                    Try verifying a credential right here. Paste a credential JSON below.
+                    {m['developerPortal.guides.verifyCredentials.testStep.description']()}
                 </p>
             </div>
 
             <div className="border border-gray-200 rounded-xl overflow-hidden">
                 <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-                    <span className="font-medium text-gray-800">Credential Input</span>
+                    <span className="font-medium text-gray-800">
+                        {m['developerPortal.guides.verifyCredentials.testStep.credentialInput']()}
+                    </span>
 
                     <button
                         onClick={() => setTestInput(sampleCredential)}
                         className="text-xs text-cyan-600 hover:text-cyan-700 font-medium"
                     >
-                        Use Sample
+                        {m['developerPortal.guides.verifyCredentials.testStep.useSample']()}
                     </button>
                 </div>
 
                 <textarea
                     value={testInput}
-                    onChange={(e) => setTestInput(e.target.value)}
-                    placeholder='{"@context": [...], "type": [...], ...}'
+                    onChange={e => setTestInput(e.target.value)}
+                    placeholder={m[
+                        'developerPortal.guides.verifyCredentials.testStep.credentialPlaceholder'
+                    ]()}
                     rows={8}
                     className="w-full p-4 bg-gray-900 text-gray-100 font-mono text-sm focus:outline-none resize-none"
                 />
@@ -383,12 +460,16 @@ const TestStep: React.FC<{
                         {verifying ? (
                             <>
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                Verifying...
+                                {m[
+                                    'developerPortal.guides.verifyCredentials.testStep.verifyingButton'
+                                ]()}
                             </>
                         ) : (
                             <>
                                 <Shield className="w-4 h-4" />
-                                Verify Credential
+                                {m[
+                                    'developerPortal.guides.verifyCredentials.testStep.verifyButton'
+                                ]()}
                             </>
                         )}
                     </button>
@@ -397,28 +478,49 @@ const TestStep: React.FC<{
 
             {/* Result */}
             {result && (
-                <div className={`p-4 rounded-xl border ${result.valid ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
+                <div
+                    className={`p-4 rounded-xl border ${
+                        result.valid
+                            ? 'bg-emerald-50 border-emerald-200'
+                            : 'bg-red-50 border-red-200'
+                    }`}
+                >
                     <div className="flex items-center gap-2 mb-3">
                         {result.valid ? (
                             <>
                                 <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                                <span className="font-medium text-emerald-800">Credential is valid!</span>
+                                <span className="font-medium text-emerald-800">
+                                    {m[
+                                        'developerPortal.guides.verifyCredentials.testStep.validResult'
+                                    ]()}
+                                </span>
                             </>
                         ) : (
                             <>
                                 <AlertCircle className="w-5 h-5 text-red-600" />
-                                <span className="font-medium text-red-800">Verification failed</span>
+                                <span className="font-medium text-red-800">
+                                    {m[
+                                        'developerPortal.guides.verifyCredentials.testStep.failedResult'
+                                    ]()}
+                                </span>
                             </>
                         )}
                     </div>
 
                     {result.checks.length > 0 && (
                         <div className="mb-2">
-                            <span className="text-xs font-medium text-gray-600">Checks passed:</span>
+                            <span className="text-xs font-medium text-gray-600">
+                                {m[
+                                    'developerPortal.guides.verifyCredentials.testStep.checksPassed'
+                                ]()}
+                            </span>
 
                             <div className="flex flex-wrap gap-1 mt-1">
                                 {result.checks.map((check, i) => (
-                                    <span key={i} className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">
+                                    <span
+                                        key={i}
+                                        className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full"
+                                    >
                                         {check}
                                     </span>
                                 ))}
@@ -428,7 +530,9 @@ const TestStep: React.FC<{
 
                     {result.errors.length > 0 && (
                         <div>
-                            <span className="text-xs font-medium text-red-600">Errors:</span>
+                            <span className="text-xs font-medium text-red-600">
+                                {m['developerPortal.guides.verifyCredentials.testStep.errors']()}
+                            </span>
 
                             <ul className="text-sm text-red-700 mt-1">
                                 {result.errors.map((err, i) => (
@@ -446,10 +550,12 @@ const TestStep: React.FC<{
                     <Rocket className="w-8 h-8 text-emerald-600" />
                 </div>
 
-                <h4 className="text-lg font-semibold text-gray-800 mb-2">Ready to verify!</h4>
+                <h4 className="text-lg font-semibold text-gray-800 mb-2">
+                    {m['developerPortal.guides.verifyCredentials.testStep.readyTitle']()}
+                </h4>
 
                 <p className="text-gray-600">
-                    You can now accept and verify credentials from users.
+                    {m['developerPortal.guides.verifyCredentials.testStep.readyDescription']()}
                 </p>
             </div>
 
@@ -459,7 +565,7 @@ const TestStep: React.FC<{
                     className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back
+                    {m['common.back']()}
                 </button>
 
                 <a
@@ -468,7 +574,7 @@ const TestStep: React.FC<{
                     rel="noopener noreferrer"
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                 >
-                    Full Documentation
+                    {m['developerPortal.guides.verifyCredentials.testStep.fullDocs']()}
                     <ExternalLink className="w-4 h-4" />
                 </a>
             </div>
@@ -481,7 +587,7 @@ const VerifyCredentialsGuide: React.FC<{
     selectedIntegration: LCNIntegration | null;
     setSelectedIntegration: (integration: LCNIntegration | null) => void;
 }> = ({ selectedIntegration }) => {
-    const guideState = useGuideState('verify-credentials', STEPS.length, selectedIntegration);
+    const guideState = useGuideState('verify-credentials', getSteps().length, selectedIntegration);
 
     const handleStepComplete = (stepId: string) => {
         guideState.markStepComplete(stepId);
@@ -522,8 +628,8 @@ const VerifyCredentialsGuide: React.FC<{
             <div className="mb-8">
                 <StepProgress
                     currentStep={guideState.currentStep}
-                    totalSteps={STEPS.length}
-                    steps={STEPS}
+                    totalSteps={getSteps().length}
+                    steps={getSteps()}
                     completedSteps={guideState.state.completedSteps}
                     onStepClick={guideState.goToStep}
                 />

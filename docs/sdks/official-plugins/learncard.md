@@ -5,5 +5,5 @@ The LearnCard plugin adds opinionated logic specific to LearnCard wallet softwar
 ### Installation
 
 ```bash
-pnpm i @learncard/learn-card-plugin
+bun add @learncard/learn-card-plugin
 ```

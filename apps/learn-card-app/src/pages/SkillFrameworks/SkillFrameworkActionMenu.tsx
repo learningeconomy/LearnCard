@@ -7,6 +7,8 @@ import TrashBin from 'learn-card-base/svgs/TrashBin';
 import EditFrameworkModal from './EditFrameworkModal';
 import ManageFrameworkNetworksModal from './ManageFrameworkNetworksModal';
 import ManageFrameworkAdminsModal from './ManageFrameworkAdminsModal';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('skill-framework-action-menu');
 
 type SkillFrameworkActionMenuProps = {
     frameworkId?: string;
@@ -28,7 +30,7 @@ const SkillFrameworkActionMenu: React.FC<SkillFrameworkActionMenuProps> = ({ fra
             closeModal();
         },
         onError: error => {
-            console.error('Failed to delete framework:', error);
+            log.error('Failed to delete framework:', error);
             alert('Failed to delete framework. Please try again.');
         },
     });

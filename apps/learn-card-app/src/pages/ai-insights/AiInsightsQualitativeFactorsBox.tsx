@@ -1,11 +1,16 @@
 import React, { useMemo } from 'react';
 
+import { m } from '../../paraglide/messages.js';
+import { TransP, type ParaglideMessage } from '../../i18n/TransP';
+
 import { type OccupationDetailsResponse, useVerifiableData } from 'learn-card-base';
 
 import AiPathwayCareerGauge from '../ai-pathways/ai-pathway-careers/AiPathwayCareerGauge';
 import {
-    SKILL_PROFILE_JOB_SATISFACTION_KEY,
-    type SkillProfileJobSatisfactionData,
+    SKILL_PROFILE_WORK_LIFE_BALANCE_KEY,
+    type SkillProfileWorkLifeBalanceData,
+    SKILL_PROFILE_JOB_STABILITY_KEY,
+    type SkillProfileJobStabilityData,
 } from '../ai-pathways/ai-pathways-skill-profile/SkillProfileStep4';
 
 type AiInsightsQualitativeFactorsBoxProps = {
@@ -15,10 +20,8 @@ type AiInsightsQualitativeFactorsBoxProps = {
 };
 
 type GaugeComparisonCopy = {
-    leadingText: string;
-    highlightText: string;
-    trailingText: string;
-    highlightClassName: string;
+    message: ParaglideMessage;
+    highlightClassName: 'text-grayscale-900' | 'text-red-700' | 'text-emerald-700';
 };
 
 const WORK_LIFE_BALANCE_SCORE_MAP: Record<string, number> = {
@@ -119,7 +122,7 @@ const getJobStabilityBenchmark = (occupation?: OccupationDetailsResponse): numbe
 };
 
 const getWorkLifeBalanceUserScore = (
-    value?: SkillProfileJobSatisfactionData['workLifeBalance']
+    value?: SkillProfileWorkLifeBalanceData['workLifeBalance']
 ): number | undefined => {
     if (!value) {
         return undefined;
@@ -129,7 +132,7 @@ const getWorkLifeBalanceUserScore = (
 };
 
 const getJobStabilityUserScore = (
-    value?: SkillProfileJobSatisfactionData['jobStability']
+    value?: SkillProfileJobStabilityData['jobStability']
 ): number | undefined => {
     if (!value) {
         return undefined;
@@ -144,9 +147,7 @@ const getWorkLifeBalanceCopy = (
 ): GaugeComparisonCopy => {
     if (userScore === undefined) {
         return {
-            leadingText: 'Your current work life balance is ',
-            highlightText: 'ready to compare',
-            trailingText: ' once you finish your profile.',
+            message: m['aiInsights.workLife.ready'],
             highlightClassName: 'text-grayscale-900',
         };
     }
@@ -155,44 +156,34 @@ const getWorkLifeBalanceCopy = (
 
     if (delta >= 33) {
         return {
-            leadingText: 'Your current work life balance ',
-            highlightText: 'is very low',
-            trailingText: ' compared to others.',
-            highlightClassName: 'text-rose-600',
+            message: m['aiInsights.workLife.veryLow'],
+            highlightClassName: 'text-red-700',
         };
     }
 
     if (delta >= 15) {
         return {
-            leadingText: 'Your current work life balance ',
-            highlightText: 'is low',
-            trailingText: ' compared to others.',
-            highlightClassName: 'text-rose-600',
+            message: m['aiInsights.workLife.low'],
+            highlightClassName: 'text-red-700',
         };
     }
 
     if (delta <= -33) {
         return {
-            leadingText: 'Your current work life balance ',
-            highlightText: 'is very strong',
-            trailingText: ' compared to others.',
-            highlightClassName: 'text-emerald-601',
+            message: m['aiInsights.workLife.veryStrong'],
+            highlightClassName: 'text-emerald-700',
         };
     }
 
     if (delta <= -15) {
         return {
-            leadingText: 'Your current work life balance ',
-            highlightText: 'is strong',
-            trailingText: ' compared to others.',
-            highlightClassName: 'text-emerald-601',
+            message: m['aiInsights.workLife.strong'],
+            highlightClassName: 'text-emerald-700',
         };
     }
 
     return {
-        leadingText: 'Your current work life balance is ',
-        highlightText: 'about in line with others',
-        trailingText: '.',
+        message: m['aiInsights.workLife.aboutInLine'],
         highlightClassName: 'text-grayscale-900',
     };
 };
@@ -203,9 +194,7 @@ const getJobStabilityCopy = (
 ): GaugeComparisonCopy => {
     if (userScore === undefined) {
         return {
-            leadingText: 'Others felt their jobs are ',
-            highlightText: 'ready to compare',
-            trailingText: ' once you finish your profile.',
+            message: m['aiInsights.jobStability.ready'],
             highlightClassName: 'text-grayscale-900',
         };
     }
@@ -214,44 +203,34 @@ const getJobStabilityCopy = (
 
     if (delta >= 33) {
         return {
-            leadingText: 'Your current job stability ',
-            highlightText: 'is very low',
-            trailingText: ' compared to others.',
-            highlightClassName: 'text-rose-600',
+            message: m['aiInsights.jobStability.veryLow'],
+            highlightClassName: 'text-red-700',
         };
     }
 
     if (delta >= 15) {
         return {
-            leadingText: 'Your current job stability ',
-            highlightText: 'is low',
-            trailingText: ' compared to others.',
-            highlightClassName: 'text-rose-600',
+            message: m['aiInsights.jobStability.low'],
+            highlightClassName: 'text-red-700',
         };
     }
 
     if (delta <= -33) {
         return {
-            leadingText: 'Your current job stability ',
-            highlightText: 'is very strong',
-            trailingText: ' compared to others.',
-            highlightClassName: 'text-emerald-601',
+            message: m['aiInsights.jobStability.veryStrong'],
+            highlightClassName: 'text-emerald-700',
         };
     }
 
     if (delta <= -15) {
         return {
-            leadingText: 'Your current job stability ',
-            highlightText: 'is strong',
-            trailingText: ' compared to others.',
-            highlightClassName: 'text-emerald-601',
+            message: m['aiInsights.jobStability.strong'],
+            highlightClassName: 'text-emerald-700',
         };
     }
 
     return {
-        leadingText: 'Your current job stability is ',
-        highlightText: 'about in line',
-        trailingText: ' with others.',
+        message: m['aiInsights.jobStability.aboutInLine'],
         highlightClassName: 'text-grayscale-900',
     };
 };
@@ -259,9 +238,10 @@ const getJobStabilityCopy = (
 const GaugeDescription: React.FC<{ copy: GaugeComparisonCopy }> = ({ copy }) => {
     return (
         <p className="text-sm font-poppins text-grayscale-600 text-center max-w-[250px] mx-auto">
-            {copy.leadingText}
-            <span className={`font-bold ${copy.highlightClassName}`}>{copy.highlightText}</span>
-            {copy.trailingText}
+            <TransP
+                m={copy.message}
+                components={[<span className={`font-bold ${copy.highlightClassName}`} />]}
+            />
         </p>
     );
 };
@@ -270,10 +250,15 @@ const AiInsightsQualitativeFactorsBox: React.FC<AiInsightsQualitativeFactorsBoxP
     occupation,
     isLoading = false,
 }) => {
-    const { data: jobSatisfactionData, isLoading: jobSatisfactionLoading } =
-        useVerifiableData<SkillProfileJobSatisfactionData>(SKILL_PROFILE_JOB_SATISFACTION_KEY, {
-            name: 'Job Satisfaction',
-            description: 'Work-life balance and job stability preferences',
+    const { data: workLifeBalanceData, isLoading: workLifeBalanceLoading } =
+        useVerifiableData<SkillProfileWorkLifeBalanceData>(SKILL_PROFILE_WORK_LIFE_BALANCE_KEY, {
+            name: 'Work Life Balance',
+            description: 'Your preferred work-life balance',
+        });
+    const { data: jobStabilityData, isLoading: jobStabilityLoading } =
+        useVerifiableData<SkillProfileJobStabilityData>(SKILL_PROFILE_JOB_STABILITY_KEY, {
+            name: 'Job Stability',
+            description: 'How stable you want your work to feel',
         });
 
     const workLifeBalanceBenchmarkScore = useMemo(
@@ -285,15 +270,15 @@ const AiInsightsQualitativeFactorsBox: React.FC<AiInsightsQualitativeFactorsBoxP
         [occupation]
     );
     const workLifeBalanceUserScore = useMemo(
-        () => getWorkLifeBalanceUserScore(jobSatisfactionData?.workLifeBalance),
-        [jobSatisfactionData?.workLifeBalance]
+        () => getWorkLifeBalanceUserScore(workLifeBalanceData?.workLifeBalance),
+        [workLifeBalanceData?.workLifeBalance]
     );
     const jobStabilityUserScore = useMemo(
-        () => getJobStabilityUserScore(jobSatisfactionData?.jobStability),
-        [jobSatisfactionData?.jobStability]
+        () => getJobStabilityUserScore(jobStabilityData?.jobStability),
+        [jobStabilityData?.jobStability]
     );
 
-    const isBusy = isLoading || jobSatisfactionLoading;
+    const isBusy = isLoading || workLifeBalanceLoading || jobStabilityLoading;
 
     const workLifeBalanceCopy = useMemo(() => {
         return getWorkLifeBalanceCopy(workLifeBalanceUserScore, workLifeBalanceBenchmarkScore);
@@ -305,16 +290,18 @@ const AiInsightsQualitativeFactorsBox: React.FC<AiInsightsQualitativeFactorsBoxP
     return (
         <div className="flex flex-col gap-5 w-full">
             <h2 className="text-[17px] font-bold text-grayscale-900 font-poppins text-left leading-[24px]">
-                Qualitative Factors
+                {m['aiInsights.qualitativeFactors']()}
             </h2>
 
             {isBusy ? (
-                <p className="text-sm text-grayscale-600">Finding qualitative data...</p>
+                <p className="text-sm text-grayscale-600">
+                    {m['aiInsights.findingQualitativeData']()}
+                </p>
             ) : occupation ? (
                 <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 sm:gap-6">
                     <div className="flex flex-col items-center gap-3">
                         <AiPathwayCareerGauge
-                            title="Work Life Balance"
+                            title={m['aiInsights.workLifeBalance']()}
                             score={workLifeBalanceBenchmarkScore}
                             userScore={workLifeBalanceUserScore}
                         />
@@ -323,7 +310,7 @@ const AiInsightsQualitativeFactorsBox: React.FC<AiInsightsQualitativeFactorsBoxP
 
                     <div className="flex flex-col items-center gap-3">
                         <AiPathwayCareerGauge
-                            title="Job Stability"
+                            title={m['aiInsights.jobStability']()}
                             score={jobStabilityBenchmarkScore}
                             userScore={jobStabilityUserScore}
                         />
@@ -332,12 +319,12 @@ const AiInsightsQualitativeFactorsBox: React.FC<AiInsightsQualitativeFactorsBoxP
                 </div>
             ) : (
                 <p className="text-sm text-grayscale-600 leading-relaxed">
-                    Add a professional title to see qualitative factors here.
+                    {m['aiInsights.addTitleForQualitativeFactors']()}
                 </p>
             )}
 
             <p className="text-xs text-grayscale-500 leading-relaxed text-left">
-                Based on your answers and occupation data.
+                {m['aiInsights.basedOnAnswersAndData']()}
             </p>
         </div>
     );

@@ -14,6 +14,8 @@ import {
 } from '../../../boost';
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 import { useModal, ModalTypes } from 'learn-card-base';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('boost-cms-skills-form');
 
 const BoostCMSPrimarySkillButton: React.FC<{
     skill: BoostCMSSkillsEnum | string;
@@ -232,7 +234,7 @@ export const BoostCMSSkillsForm: React.FC<{
     };
 
     const handleRemoveSubSkill = (skill: BoostCMSSkill | string, subskill: string) => {
-        console.log('clicking me here!!');
+        log.debug('clicking me here!!');
 
         setState(prevState => {
             return {

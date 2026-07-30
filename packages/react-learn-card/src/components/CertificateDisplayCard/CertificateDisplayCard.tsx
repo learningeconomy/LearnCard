@@ -11,6 +11,7 @@ import CertificateBackFace from './CertificateBackFace';
 import FatArrow from '../svgs/FatArrow';
 import ThreeDots from '../../assets/images/DotsThreeOutline.svg';
 import { KnownDIDRegistryType } from '../../types';
+import { VerifierState } from './VerifierStateBadgeAndText';
 
 type CertificateDisplayCardProps = {
     credential: VC | BoostAchievementCredential;
@@ -43,6 +44,10 @@ type CertificateDisplayCardProps = {
     unknownVerifierTitle?: string;
     hideAwardedTo?: boolean;
     hideFrontFaceDetails?: boolean;
+    onVerifierClick?: (
+        event: React.MouseEvent<HTMLButtonElement>,
+        verifierState: VerifierState
+    ) => void;
 };
 
 export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
@@ -76,6 +81,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     unknownVerifierTitle,
     hideAwardedTo,
     hideFrontFaceDetails,
+    onVerifierClick,
 }) => {
     const [_isFront, _setIsFront] = useState(isFrontOverride ?? true);
 
@@ -104,6 +110,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
                         unknownVerifierTitle={unknownVerifierTitle}
                         hideAwardedTo={hideAwardedTo}
                         hideFrontFaceDetails={hideFrontFaceDetails}
+                        onVerifierClick={onVerifierClick}
                     />
                 )}
 

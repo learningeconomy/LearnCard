@@ -1,5 +1,8 @@
 export type VideoPlatform = 'youtube' | 'vimeo' | 'drive' | 'loom' | 'unknown';
 
+import { getLogger } from '../logging/logger';
+const log = getLogger('video.helpers');
+
 export type VideoMetadata = {
     type: VideoPlatform;
     videoId: string | null;
@@ -121,7 +124,7 @@ export const getVideoMetadata = async (url: string): Promise<VideoMetadata> => {
                     };
                 } catch (e) {
                     // Fallback if oEmbed fails
-                    console.warn('Loom oEmbed fetch failed:', e);
+                    log.warn('Loom oEmbed fetch failed:', e);
                     return {
                         type: 'loom',
                         videoId: id,
@@ -135,7 +138,7 @@ export const getVideoMetadata = async (url: string): Promise<VideoMetadata> => {
         // Fallback
         return { type: 'unknown', videoId: null, embedUrl: null, thumbnailUrl: null };
     } catch (e) {
-        console.error('getVideoMetadata error:', e);
+        log.error('getVideoMetadata error:', e);
         return { type: 'unknown', videoId: null, embedUrl: null, thumbnailUrl: null };
     }
 };

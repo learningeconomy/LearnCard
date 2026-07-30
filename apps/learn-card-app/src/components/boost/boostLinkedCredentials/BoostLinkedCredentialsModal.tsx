@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 import { IonFooter, IonCol, IonGrid, IonRow, IonInput } from '@ionic/react';
-import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
+import CredentialBadgeNew from 'learn-card-base/components/CredentialBadge/CredentialBadgeNew';
 import BoostEarnedCard from '../boost-earned-card/BoostEarnedCard';
 import ListItemsIcon from 'learn-card-base/svgs/ListItemsIcon';
 import GridIcon from 'learn-card-base/svgs/GridIcon';
@@ -26,6 +26,8 @@ import { BoostCategoryOptionsEnum, boostCategoryMetadata } from 'learn-card-base
 import { VC, VerificationItem } from '@learncard/types';
 import keyboardStore from 'learn-card-base/stores/keyboardStore';
 import { Capacitor } from '@capacitor/core';
+import * as m from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
 
 export const BoostLinkedCredentialsModal: React.FC<{
     credential: VC;
@@ -149,7 +151,7 @@ export const BoostLinkedCredentialsModal: React.FC<{
         >
             <div className="w-full flex items-center justify-start ion-padding bg-white rounded-b-[30px] overflow-hidden shadow-md">
                 <div>
-                    <CredentialBadge
+                    <CredentialBadgeNew
                         achievementType={
                             credential?.credentialSubject?.achievement?.achievementType
                         }
@@ -223,8 +225,11 @@ export const BoostLinkedCredentialsModal: React.FC<{
                     <div className="w-full flex items-center justify-center z-10 mt-4">
                         <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t-[1px] border-solid border-grayscale-200 pt-2">
                             <p className="text-grayscale-800 text-base font-normal font-notoSans">
-                                No results found for{' '}
-                                <span className="text-black italic">{search}</span>
+                                <TransP
+                                    m={m['common.searchResults.noResultsFor']}
+                                    values={{ query: search }}
+                                    components={[<span className="text-black italic" />]}
+                                />
                             </p>
                         </div>
                     </div>

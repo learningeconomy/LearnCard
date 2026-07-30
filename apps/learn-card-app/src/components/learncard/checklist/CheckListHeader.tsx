@@ -1,5 +1,8 @@
 import React from 'react';
 
+import * as m from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
+
 import { useTheme } from '../../../theme/hooks/useTheme';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
@@ -16,9 +19,11 @@ export const ChecklistHeader: React.FC = () => {
                     <img src={buildMyLCIcon} className="text-white" alt="blocks" />
                 </div>
                 <h2 className="text-[22px] text-grayscale-800 font-notoSans text-center">
-                    Build My
-                    <br />
-                    <span className={`font-semibold text-${primaryColor}`}>{brandingConfig.name}</span>
+                    <TransP
+                        m={m['passport.buildMyLearnCard.titleMarkup']}
+                        values={{ brand: brandingConfig.name }}
+                        components={[<span className={`font-semibold text-${primaryColor}`} />]}
+                    />
                 </h2>
             </div>
         </div>

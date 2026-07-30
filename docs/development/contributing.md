@@ -8,26 +8,26 @@ To contribute to the LearnCard codebase, you'll need the following prerequisites
 
 ### Prerequisites <a href="#prerequisites" id="prerequisites"></a>
 
-* **Node.js**: Version 20.10.0 (as specified in `.nvmrc`)
-* **pnpm**: Version 9 (package manager)
-* **Git**: For version control
+-   **Node.js**: Version 20.10.0 (as specified in `.nvmrc`)
+-   **Bun**: Version 1.3.14 (package manager)
+-   **Git**: For version control
 
 ```mermaid
 flowchart TD
     subgraph "Development Prerequisites"
         node["Node.js v20.10.0"]
-        pnpm["pnpm v9"]
+        bun["Bun v1.3.14"]
         git["Git"]
     end
-    
+
     subgraph "Repository Setup"
         clone["Clone Repository"]
         install["Install Dependencies"]
         dev["Start Development Servers"]
     end
-    
+
     node --> clone
-    pnpm --> install
+    bun --> install
     git --> clone
     clone --> install
     install --> dev
@@ -76,25 +76,29 @@ flowchart TD
     ```bash
     git clone https://github.com/learningeconomy/LearnCard.gitcd LearnCard
     ```
+
 2.  **Set up Node.js version**:
 
     ```bash
     nvm use # Uses the version specified in .nvmrc
     ```
+
 3.  **Install dependencies**:
 
     ```bash
-    pnpm install
+    bun install
     ```
+
 4.  **Run tests for affected packages**:
 
     ```bash
-    pnpm exec nx affected --target=test --base=HEAD~1 --head=HEAD
+    bunx nx affected --target=test --base=HEAD~1 --head=HEAD
     ```
+
 5.  **Build packages**:
 
     ```bash
-    pnpm exec nx run-many --target=build --exclude docs
+    bunx nx run-many --target=build --exclude docs
     ```
 
 ## Continuous Integration and Deployment
@@ -132,7 +136,7 @@ flowchart LR
 All pull requests trigger a test workflow that runs tests for affected packages. The workflow:
 
 1. Checks out the repository
-2. Sets up Node.js and pnpm
+2. Sets up Node.js and Bun
 3. Installs dependencies
 4. Runs tests with retries in case of flaky tests
 5. Reports test results
@@ -148,8 +152,8 @@ When changes are merged to the main branch, the deploy workflow:
 
 The deployment targets two main services:
 
-* Brain Service: "LearnCloud Network API"
-* LearnCloud Service: "LearnCloud Storage API"
+-   Brain Service: "LearnCloud Network API"
+-   LearnCloud Service: "LearnCloud Storage API"
 
 ### Release Process <a href="#release-process" id="release-process"></a>
 
@@ -222,10 +226,10 @@ flowchart TD
 
 The services are configured using the Serverless Framework, which manages the AWS resources. Key features:
 
-* **Functions**: Multiple Lambda functions serve different endpoints
-* **VPC Configuration**: Services run in a private subnet with NAT gateway access
-* **ElastiCache**: Redis cache for improved performance
-* **Security Groups**: Control network access between components
+-   **Functions**: Multiple Lambda functions serve different endpoints
+-   **VPC Configuration**: Services run in a private subnet with NAT gateway access
+-   **ElastiCache**: Redis cache for improved performance
+-   **Security Groups**: Control network access between components
 
 ### Environment Variables <a href="#environment-variables" id="environment-variables"></a>
 
@@ -250,7 +254,7 @@ sequenceDiagram
     participant PR as "Changeset Release PR"
     participant GitHub as "GitHub Actions"
     participant DockerHub as "Docker Hub"
-    
+
     PR->>GitHub: Merge to main
     GitHub->>GitHub: Check if PR is changeset release
     GitHub->>GitHub: Extract package versions
@@ -270,8 +274,8 @@ The Docker release process:
 
 Available images:
 
-* `welibrary/lcn-brain-service`: LearnCloud Network API container
-* `welibrary/lcn-cloud-service`: LearnCloud Storage API container
+-   `welibrary/lcn-brain-service`: LearnCloud Network API container
+-   `welibrary/lcn-cloud-service`: LearnCloud Storage API container
 
 ### Maintenance <a href="#maintenance" id="maintenance"></a>
 

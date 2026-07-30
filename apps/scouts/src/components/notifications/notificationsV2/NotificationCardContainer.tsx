@@ -12,6 +12,8 @@ import NotificationBoostCard from './NotificationBoostCard';
 import ConnectionRequestCard from './ConnectionRequestCard';
 import { useQueryClient } from '@tanstack/react-query';
 import { useIonAlert } from '@ionic/react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('notification-card-container');
 
 type NotificationCardProps = {
     className?: string;
@@ -147,9 +149,9 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
                     return true;
                 },
                 async onError(err, variables, context) {
-                    console.log('///ON ERROR CONNECTION REQUEST', err);
+                    log.debug('///ON ERROR CONNECTION REQUEST', err);
                     if (err?.toString()?.includes('Profiles are already connected')) {
-                        console.log('//profiles already connected mutation firing');
+                        log.debug('//profiles already connected mutation firing');
                         await updateNotification({
                             notificationId: notification?._id,
                             payload: { actionStatus: 'COMPLETED', read: true },
@@ -217,7 +219,7 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
                             ],
                         });
 
-                        console.log('//profiles already connected mutation firing complete');
+                        log.debug('//profiles already connected mutation firing complete');
                         return true;
                     }
                     return false;

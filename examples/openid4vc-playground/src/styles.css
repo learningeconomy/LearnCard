@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* QR canvas the qrcode library renders into \u2014 Tailwind's reset
+   removes the default block display, which breaks the canvas
+   sizing path. Forcing it back keeps the QR visually contained. */
+canvas.qr {
+    display: block;
+}

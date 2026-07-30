@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 import { ModalTypes, useModal } from 'learn-card-base';
 import { VC } from '@learncard/types';
+import { m } from '../../../paraglide/messages.js';
 
 export const LeaveFamily: React.FC<{ credential: VC; boostUri?: string }> = ({
     credential,
@@ -25,10 +26,10 @@ export const LeaveFamily: React.FC<{ credential: VC; boostUri?: string }> = ({
             <>
                 <div className="w-full flex flex-col justify-center items-center bg-white rounded-[20px] p-8">
                     <h4 className="text-[22px] font-normal font-poppins mt-2 text-grayscale-900 text-center">
-                        Family Left Successfully
+                        {m['family.leave.successTitle']()}
                     </h4>
                     <p className="text-[17px] font-poppins text-grayscale-700 text-left mt-4">
-                        You have left {familyName}. You can now join or create another family.
+                        {m['family.leave.successBody']({ family: familyName ?? '' })}
                     </p>
                 </div>
 
@@ -38,7 +39,7 @@ export const LeaveFamily: React.FC<{ credential: VC; boostUri?: string }> = ({
                         type="button"
                         className="shrink-0 w-full py-2 h-full flex items-center font-medium justify-center text-xl bg-grayscale-900 rounded-[20px] shadow-bottom text-white"
                     >
-                        Got It
+                        {m['family.gotIt']()}
                     </button>
                 </div>
             </>,
@@ -53,10 +54,10 @@ export const LeaveFamily: React.FC<{ credential: VC; boostUri?: string }> = ({
         <>
             <div className="w-full flex flex-col justify-center items-center bg-white rounded-[20px] p-8">
                 <h4 className="text-[22px] font-normal font-poppins mt-2 text-grayscale-900 text-center">
-                    Leave Family?
+                    {m['family.leave.confirmTitle']()}
                 </h4>
                 <p className="text-[17px] font-poppins text-grayscale-700 text-left mt-4">
-                    Leaving this family will remove your access to its profiles and data.
+                    {m['family.leave.confirmBody']()}
                 </p>
             </div>
 
@@ -66,7 +67,7 @@ export const LeaveFamily: React.FC<{ credential: VC; boostUri?: string }> = ({
                     type="button"
                     className="shrink-0 w-full py-2 h-full flex items-center font-medium justify-center text-xl bg-red-600 rounded-[20px] shadow-bottom text-white"
                 >
-                    Leave
+                    {m['family.leave.action']()}
                 </button>
             </div>
         </>

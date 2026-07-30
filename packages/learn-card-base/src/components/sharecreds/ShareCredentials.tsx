@@ -12,6 +12,8 @@ import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
 import { IonContent, IonPage, IonToggle, IonSpinner, IonGrid, useIonAlert } from '@ionic/react';
 import 'swiper/css/navigation';
 import ShareCredentialCards from './ShareCredentialCards';
+import { getLogger } from '../../logging/logger';
+const log = getLogger('share-credentials');
 
 type ShareCredentialsProps = {
     onSubmit?: (payload: SelectedCredsStoreState) => void;
@@ -47,7 +49,7 @@ const ShareCredentials: React.FC<ShareCredentialsProps> = ({ onSubmit, name = 'b
             const selectedState = selectedCredsStore.get.state();
             onSubmit?.(selectedState);
         } catch (e) {
-            console.log('///handleSubmit create credential bundle Error', e);
+            log.debug('///handleSubmit create credential bundle Error', e);
             presentAlert({
                 header: 'Error',
                 subHeader: 'Create Boost Bundle error',
@@ -154,8 +156,9 @@ const ShareCredentials: React.FC<ShareCredentialsProps> = ({ onSubmit, name = 'b
                     <section className="fixed-bottom-container fixed w-full bottom-[0px] px-[20px] py-[10px] z-[3] h-fit bg-grayscale-50 flex flex items-start justify-center">
                         <button
                             onClick={handleIssueCredentials}
-                            className={`w-full bg-cyan-700 py-[15px] px-[2px] rounded-[40px] text-grayscale-50 text-[17px] font-bold max-w-[480px] ${totalSelectedCount === 0 ? 'bg-grayscale-500 opacity-70' : ''
-                                }`}
+                            className={`w-full bg-cyan-700 py-[15px] px-[2px] rounded-[40px] text-grayscale-50 text-[17px] font-bold max-w-[480px] ${
+                                totalSelectedCount === 0 ? 'bg-grayscale-500 opacity-70' : ''
+                            }`}
                             disabled={totalSelectedCount === 0}
                         >
                             {!isSharing && 'Share Boosts'}

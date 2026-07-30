@@ -1,0 +1,60 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+protected_branches="main production"
+timeout_seconds=10
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+    branch="${remote_ref#refs/heads/}"
+
+    blocked=0
+    for protected in $protected_branches; do
+        if [ "$branch" = "$protected" ]; then
+            blocked=1
+            break
+        fi
+    done
+
+    [ "$blocked" -eq 1 ] || continue
+
+    if [ "${LEARNCARD_ALLOW_PROTECTED_PUSH:-}" = "1" ]; then
+        echo "[pre-push] bypass enabled via LEARNCARD_ALLOW_PROTECTED_PUSH=1 ($branch)" >&2
+        continue
+    fi
+
+    if ! { exec 3<>/dev/tty; } 2>/dev/null; then
+        echo "[pre-push] blocked push to '$branch': no interactive terminal." >&2
+        echo "[pre-push] '$branch' deploys/releases from CI — open a PR instead." >&2
+        echo "[pre-push] break-glass: rerun with LEARNCARD_ALLOW_PROTECTED_PUSH=1" >&2
+        exit 1
+    fi
+    exec 3>&-
+
+    cat >/dev/tty <<MSG
+========================================================================
+ Protected push guard: learningeconomy/LearnCard -> $branch
+
+ Direct pushes to '$branch' are blocked. This branch is updated via PRs
+ and the deploy workflow. Pushing here directly can break deploys.
+
+ Type YES within ${timeout_seconds}s to override. Anything else cancels.
+========================================================================
+MSG
+    printf "Type YES to push to %s: " "$branch" >/dev/tty
+
+    reply=""
+    if ! read -r -t "$timeout_seconds" reply </dev/tty; then
+        echo "" >/dev/tty
+        echo "[pre-push] push cancelled: timed out." >&2
+        exit 1
+    fi
+
+    if [ "$reply" != "YES" ]; then
+        echo "[pre-push] push cancelled." >&2
+        exit 1
+    fi
+
+    echo "[pre-push] confirmed — proceeding with push to $branch." >/dev/tty
+done
+
+exit 0

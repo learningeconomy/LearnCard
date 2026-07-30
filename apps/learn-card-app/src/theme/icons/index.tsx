@@ -32,9 +32,18 @@ export type SideMenuIcons = {
     [CredentialCategoryEnum.resume]: React.FC<{ className?: string }>;
     [CredentialCategoryEnum.family]: React.FC<{ className?: string }>;
     [CredentialCategoryEnum.id]: React.FC<{ className?: string }>;
+    // Non-credential-category, feature-flagged routes. Keep in sync
+    // with the non-category members of `SideMenuLinksEnum` in
+    // `learn-card-base/components/sidemenu/sidemenuHelpers`.
+    pathways: React.FC<{ className?: string }>;
+    dashboard: React.FC<{ className?: string }>;
 };
 
 export type NavbarIcons = {
+    // The dashboard navbar icon currently reuses the side-menu Dashboard
+    // icons, which color via `currentColor` (no active-art `version` swap).
+    // Active state is conveyed by passing an active/inactive color class.
+    dashboard: React.FC<{ className?: string; shadeColor?: string }>;
     wallet: React.FC<{
         className?: string;
         version?: string;
@@ -64,4 +73,3 @@ export enum IconSetEnum {
     navbar = 'navbar',
     placeholders = 'placeholders',
 }
-

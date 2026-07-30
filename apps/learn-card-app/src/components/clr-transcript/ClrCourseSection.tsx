@@ -1,0 +1,38 @@
+import React from 'react';
+
+import ClrCourseTable from './ClrCourseTable';
+
+import type {
+    ClrTranscriptDisplayModel,
+    CourseDisplayModel,
+} from '../../helpers/clrRenderer.helpers';
+
+const ClrCourseSection: React.FC<{
+    model: ClrTranscriptDisplayModel;
+    onSelectCourse: (course: CourseDisplayModel) => void;
+    adminMode?: boolean;
+}> = ({ model, onSelectCourse, adminMode = false }) => {
+    return (
+        <div id="course-history" className="space-y-3 scroll-mt-6">
+            <div className="flex items-center justify-between px-1 border-b border-grayscale-100 pb-2 mb-4">
+                <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-widest">
+                    Course History
+                </p>
+                <p className="text-xs text-grayscale-500">
+                    {model.summary.courseCount} course{model.summary.courseCount !== 1 ? 's' : ''}
+                    {model.summary.totalCreditsAvailable !== undefined &&
+                        `, ${model.summary.totalCreditsAvailable} credits`}
+                </p>
+            </div>
+            <ClrCourseTable
+                courses={model.courses}
+                onSelectCourse={onSelectCourse}
+                adminMode={adminMode}
+                competencies={model.competencies}
+                associations={model.associations}
+            />
+        </div>
+    );
+};
+
+export default ClrCourseSection;

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { SafeArea } from 'capacitor-plugin-safe-area';
+import { getLogger } from '../logging/logger';
+const log = getLogger('use-safe-area');
 
 interface SafeAreaInsets {
     top: number;
@@ -28,7 +30,7 @@ export const useSafeArea = (): SafeAreaInsets => {
                 const { insets: _insets } = await SafeArea.getSafeAreaInsets();
                 setInsets(_insets);
             } catch (error) {
-                console.error('Failed to get safe area insets:', error);
+                log.error('Failed to get safe area insets:', error);
             }
         };
 

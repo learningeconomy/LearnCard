@@ -14,13 +14,15 @@
 
     &.grid {
         display: grid;
-        grid-template-columns: repeat(3, 1fr); // 3 columns for desktop
+        // Responsive: fills as many ~175px columns as fit (4 on wide desktop
+        // per Figma, dropping to 3 then 2 as the container narrows).
+        grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
         gap: 20px;
     }
 
     &.list {
-        display: flex;
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
         gap: 10px;
         padding: 0;
     }
@@ -28,6 +30,10 @@
     @media (max-width: 586px) {
         &.grid {
             grid-template-columns: repeat(2, 1fr); // 2 columns for mobile
+        }
+
+        &.list {
+            grid-template-columns: 1fr; // single column for mobile
         }
     }
 

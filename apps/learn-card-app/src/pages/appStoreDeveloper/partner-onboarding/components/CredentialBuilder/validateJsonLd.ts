@@ -5,19 +5,28 @@
  * and "boost expansion failed" errors before hitting the server.
  */
 
-import { bundledDocumentLoader } from './contexts';
+import { bundledDocumentLoader, createDocumentLoader } from './contexts';
 
 export interface JsonLdValidationResult {
     valid: boolean;
     errors: string[];
 }
 
+export interface ValidateCredentialOptions {
+    allowRemoteContexts?: boolean;
+}
+
 /**
  * Validate a credential JSON object by attempting JSON-LD expansion.
  * This catches the same errors that the server would return, but client-side.
+ *
+ * With `allowRemoteContexts`, non-standard `@context` URLs are fetched live
+ * rather than rejected, so any credential whose contexts genuinely resolve is
+ * accepted — matching what `issueCredential` can actually sign.
  */
 export const validateCredentialJsonLd = async (
-    credential: Record<string, unknown>
+    credential: Record<string, unknown>,
+    { allowRemoteContexts = false }: ValidateCredentialOptions = {}
 ): Promise<JsonLdValidationResult> => {
     try {
         const jsonld = (await import('@digitalcredentials/jsonld')).default;
@@ -32,9 +41,11 @@ export const validateCredentialJsonLd = async (
         // their original issuers — we only need to validate the CLR wrapper.
         const forExpansion = stripEmbeddedVCs(sanitized as Record<string, unknown>);
 
-        await jsonld.expand(forExpansion, {
-            documentLoader: bundledDocumentLoader,
-        });
+        const documentLoader = allowRemoteContexts
+            ? createDocumentLoader({ allowRemote: true })
+            : bundledDocumentLoader;
+
+        await jsonld.expand(forExpansion, { documentLoader });
 
         return { valid: true, errors: [] };
     } catch (e) {
@@ -107,13 +118,11 @@ function parseJsonLdError(message: string): string[] {
     const errors: string[] = [];
 
     // Pattern: "Invalid JSON-LD syntax; ... is not valid"
-    const invalidPropMatch = message.match(
-        /Invalid JSON-LD syntax;[^.]*?"([^"]+)"[^.]*?is not/i
-    );
+    const invalidPropMatch = message.match(/Invalid JSON-LD syntax;[^.]*?"([^"]+)"[^.]*?is not/i);
     if (invalidPropMatch) {
         errors.push(
             `Property "${invalidPropMatch[1]}" is not valid in this context. ` +
-            'Check that the property name matches the OBv3 specification.'
+                'Check that the property name matches the OBv3 specification.'
         );
     }
 
@@ -123,16 +132,19 @@ function parseJsonLdError(message: string): string[] {
         const term = termMatch ? termMatch[1] : 'unknown';
         errors.push(
             `Property "${term}" conflicts with a protected term in the JSON-LD context. ` +
-            'This property cannot be used on this type.'
+                'This property cannot be used on this type.'
         );
     }
 
     // Pattern: CLR-specific invalid properties
-    if (/ClrSubject|ClrCredential|association|Association/i.test(message) && /not valid|expansion failed/i.test(message)) {
+    if (
+        /ClrSubject|ClrCredential|association|Association/i.test(message) &&
+        /not valid|expansion failed/i.test(message)
+    ) {
         const clrPropMatch = message.match(/"([^"]+)"/);
         errors.push(
             `CLR 2.0 property "${clrPropMatch ? clrPropMatch[1] : 'unknown'}" is not valid. ` +
-            'Check that the property name matches the CLR 2.0 specification.'
+                'Check that the property name matches the CLR 2.0 specification.'
         );
     }
 
@@ -140,25 +152,28 @@ function parseJsonLdError(message: string): string[] {
     if (/@id.*invalid|invalid.*IRI|compaction.*IRI/i.test(message)) {
         errors.push(
             'A field that requires a URL contains an invalid value. ' +
-            'Ensure all URL fields start with https:// or urn:.'
+                'Ensure all URL fields start with https:// or urn:.'
         );
     }
 
-    // Pattern: loading remote context failed (shouldn't happen with bundled contexts)
-    if (/loading.*remote.*context|dereferencing|could not retrieve/i.test(message)) {
+    // Pattern: a context URL could not be resolved (bundled-only rejection,
+    // remote fetch failure, or timeout). Such a credential can't be issued.
+    if (
+        /unable to load JSON-LD context|timed out loading JSON-LD context|unknown JSON-LD context|loading.*remote.*context|dereferencing|could not retrieve/i.test(
+            message
+        )
+    ) {
         const urlMatch = message.match(/(https?:\/\/[^\s"]+)/);
         errors.push(
-            `Unknown JSON-LD context URL${urlMatch ? `: ${urlMatch[1]}` : ''}. ` +
-            'Only standard OBv3, CLR 2.0, and VC v2 contexts are supported.'
+            `A JSON-LD @context couldn’t be loaded${urlMatch ? `: ${urlMatch[1]}` : ''}. ` +
+                'Make sure every @context URL is reachable so the credential can be issued.'
         );
     }
 
     // Fallback: include the raw error
     if (errors.length === 0) {
         // Clean up the message for display
-        const cleaned = message
-            .replace(/^jsonld\./, '')
-            .replace(/Error:\s*/i, '');
+        const cleaned = message.replace(/^jsonld\./, '').replace(/Error:\s*/i, '');
         errors.push(`JSON-LD validation error: ${cleaned}`);
     }
 

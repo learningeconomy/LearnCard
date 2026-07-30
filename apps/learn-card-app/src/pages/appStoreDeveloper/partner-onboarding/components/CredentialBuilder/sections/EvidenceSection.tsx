@@ -5,6 +5,8 @@
 import React from 'react';
 import { FileCheck, Plus, X } from 'lucide-react';
 
+import * as m from '../../../../../../paraglide/messages.js';
+
 import {
     OBv3CredentialTemplate,
     EvidenceTemplate,
@@ -71,20 +73,21 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
 
     return (
         <CollapsibleSection
-            title="Evidence"
+            title={m['developerPortal.credentialBuilder.sectionTitles.evidence']()}
             icon={<FileCheck className="w-4 h-4 text-indigo-600" />}
             isExpanded={isExpanded}
             onToggle={onToggle}
             optional
             badge={
                 evidence.length > 0
-                    ? `${evidence.length} item${evidence.length > 1 ? 's' : ''}`
+                    ? `${evidence.length} ${m[
+                          'developerPortal.credentialBuilder.evidence.evidenceName'
+                      ]().toLowerCase()}${evidence.length > 1 ? 's' : ''}`
                     : undefined
             }
         >
             <p className="text-xs text-gray-500 mb-3">
-                Attach artifacts that support this credential — link to projects, portfolios,
-                assessments, or other work products.
+                {m['developerPortal.credentialBuilder.evidence.description']()}
             </p>
 
             <button
@@ -93,18 +96,22 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                 className="flex items-center gap-1 px-3 py-2 text-sm bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors mb-4"
             >
                 <Plus className="w-4 h-4" />
-                Add Evidence
+                {m['developerPortal.credentialBuilder.evidence.addEvidence']()}
             </button>
 
             {evidence.length === 0 ? (
-                <p className="text-xs text-gray-400 italic">No evidence items added</p>
+                <p className="text-xs text-gray-400 italic">
+                    {m['developerPortal.credentialBuilder.evidence.noEvidence']()}
+                </p>
             ) : (
                 <div className="space-y-4">
                     {evidence.map((item, index) => (
                         <div key={item.id} className="pl-3 border-l-2 border-indigo-200 space-y-3">
                             <div className="flex items-center justify-between">
                                 <span className="text-xs font-medium text-indigo-700">
-                                    Evidence {index + 1}
+                                    {m['developerPortal.credentialBuilder.evidence.evidenceNumber'](
+                                        { n: index + 1 }
+                                    )}
                                 </span>
 
                                 <button
@@ -117,20 +124,32 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                             </div>
 
                             <FieldEditor
-                                label="Evidence Name"
+                                label={m[
+                                    'developerPortal.credentialBuilder.evidence.evidenceName'
+                                ]()}
                                 field={item.name || staticField('')}
                                 onChange={f => updateEvidenceItem(index, 'name', f)}
-                                placeholder="e.g., Final Project Submission"
-                                helpText="A short title for this piece of evidence"
+                                placeholder={m[
+                                    'developerPortal.credentialBuilder.evidence.evidenceNamePlaceholder'
+                                ]()}
+                                helpText={m[
+                                    'developerPortal.credentialBuilder.evidence.evidenceNameHelp'
+                                ]()}
                                 showDynamicToggle={!disableDynamicFields}
                             />
 
                             <FieldEditor
-                                label="Evidence URL"
+                                label={m[
+                                    'developerPortal.credentialBuilder.evidence.evidenceUrl'
+                                ]()}
                                 field={item.evidenceUrl || staticField('')}
                                 onChange={f => updateEvidenceItem(index, 'evidenceUrl', f)}
-                                placeholder="https://portfolio.example.com/project"
-                                helpText="Link to the evidence artifact (webpage, file, portfolio)"
+                                placeholder={m[
+                                    'developerPortal.credentialBuilder.evidence.evidenceUrlPlaceholder'
+                                ]()}
+                                helpText={m[
+                                    'developerPortal.credentialBuilder.evidence.evidenceUrlHelp'
+                                ]()}
                                 type="url"
                                 showDynamicToggle={!disableDynamicFields}
                                 error={getFieldError(
@@ -140,50 +159,76 @@ export const EvidenceSection: React.FC<EvidenceSectionProps> = ({
                             />
 
                             <FieldEditor
-                                label="Narrative"
+                                label={m['developerPortal.credentialBuilder.evidence.narrative']()}
                                 field={item.narrative || staticField('')}
                                 onChange={f => updateEvidenceItem(index, 'narrative', f)}
-                                placeholder="Describe the process and achievement that led to this evidence..."
-                                helpText="A narrative describing the evidence and how it was produced (supports Markdown)"
+                                placeholder={m[
+                                    'developerPortal.credentialBuilder.evidence.narrativePlaceholder'
+                                ]()}
+                                helpText={m[
+                                    'developerPortal.credentialBuilder.evidence.narrativeHelp'
+                                ]()}
                                 type="textarea"
                                 showDynamicToggle={!disableDynamicFields}
                             />
 
                             <FieldEditor
-                                label="Description"
+                                label={m[
+                                    'developerPortal.credentialBuilder.evidence.description'
+                                ]()}
                                 field={item.description || staticField('')}
                                 onChange={f => updateEvidenceItem(index, 'description', f)}
-                                placeholder="e.g., A sentiment analysis model trained on movie reviews"
-                                helpText="A longer description of this evidence"
+                                placeholder={m[
+                                    'developerPortal.credentialBuilder.evidence.descriptionPlaceholder'
+                                ]()}
+                                helpText={m[
+                                    'developerPortal.credentialBuilder.evidence.descriptionHelp'
+                                ]()}
                                 showDynamicToggle={!disableDynamicFields}
                             />
 
                             <div className="grid grid-cols-2 gap-3 xs:flex xs:flex-col">
                                 <FieldEditor
-                                    label="Genre"
+                                    label={m['developerPortal.credentialBuilder.evidence.genre']()}
                                     field={item.genre || staticField('')}
                                     onChange={f => updateEvidenceItem(index, 'genre', f)}
-                                    placeholder="e.g., Portfolio, Film"
-                                    helpText="The format or medium of the evidence"
+                                    placeholder={m[
+                                        'developerPortal.credentialBuilder.evidence.genrePlaceholder'
+                                    ]()}
+                                    helpText={m[
+                                        'developerPortal.credentialBuilder.evidence.genreHelp'
+                                    ]()}
                                     showDynamicToggle={!disableDynamicFields}
                                 />
 
                                 <FieldEditor
-                                    label="Audience"
+                                    label={m[
+                                        'developerPortal.credentialBuilder.evidence.audience'
+                                    ]()}
                                     field={item.audience || staticField('')}
                                     onChange={f => updateEvidenceItem(index, 'audience', f)}
-                                    placeholder="e.g., Hiring Managers"
-                                    helpText="Who this evidence is intended for"
+                                    placeholder={m[
+                                        'developerPortal.credentialBuilder.evidence.audiencePlaceholder'
+                                    ]()}
+                                    helpText={m[
+                                        'developerPortal.credentialBuilder.evidence.audienceHelp'
+                                    ]()}
                                     showDynamicToggle={!disableDynamicFields}
                                 />
                             </div>
 
                             <FieldEditor
-                                label="Evidence Type"
+                                label={m[
+                                    'developerPortal.credentialBuilder.evidence.evidenceType'
+                                ]()}
                                 field={item.type || staticField('Evidence')}
                                 onChange={f => updateEvidenceItem(index, 'type', f)}
-                                placeholder="Evidence"
-                                helpText="OBv3 type identifier (usually 'Evidence')"
+                                placeholder={m[
+                                    'developerPortal.credentialBuilder.evidence.evidenceTypePlaceholder'
+                                ]()}
+                                helpText={m[
+                                    'developerPortal.credentialBuilder.evidence.evidenceTypeHelp'
+                                ]()}
                                 showDynamicToggle={!disableDynamicFields}
                             />
                         </div>

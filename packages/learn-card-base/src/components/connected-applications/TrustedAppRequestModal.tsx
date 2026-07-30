@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { TrustedAppRegistryEntry, useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import { IonHeader, IonRow, IonCol, IonGrid, IonPage, IonToolbar } from '@ionic/react';
+import { getLogger } from '../../logging/logger';
+const log = getLogger('trusted-app-request-modal');
 
 type TrustedAppRequestModalProps = {
     appInfo: TrustedAppRegistryEntry;
@@ -42,7 +44,7 @@ export const TrustedAppRequestModal: React.FC<TrustedAppRequestModalProps> = ({
                 }
             );
             // @ts-ignore
-            console.log('connectionReq::error', err?.message);
+            log.debug('connectionReq::error', err?.message);
             setLoading(false);
         }
     };

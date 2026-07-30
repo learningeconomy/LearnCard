@@ -1,6 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { RouteComponentProps } from 'react-router-dom';
 import { createPortal } from 'react-dom';
+import { getLogger } from 'learn-card-base';
+import * as m from '../../../../paraglide/messages.js';
+const log = getLogger('short-boost-user-options');
 
 import { useIonAlert } from '@ionic/react';
 import ShortBoostSomeoneScreen from './ShortBoostSomeoneScreen';
@@ -10,7 +13,14 @@ import AddUser from '../../../svgs/AddUser';
 
 import { BoostUserTypeEnum } from '../boostOptions';
 
-import { useAnalytics, AnalyticsEvents } from '@analytics';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    ProfileBuildMethod,
+    useProfileSnapshotCapture,
+    ACCOUNT_CREATED_AT_KEY,
+    SESSION_START_KEY,
+} from '@analytics';
 import useBoost from '../../../boost/hooks/useBoost';
 import {
     useModal,
@@ -68,6 +78,8 @@ const ShortBoostUserOptions: React.FC<{
     const sectionPortal = document.getElementById('section-cancel-portal');
 
     const { track } = useAnalytics();
+    const { capture, snapshotRef } = useProfileSnapshotCapture();
+    const flowStartedAt = useRef(Date.now());
 
     const firstPage =
         draftRecipients?.length && draftRecipients?.length > 0
@@ -101,6 +113,8 @@ const ShortBoostUserOptions: React.FC<{
         if (!profileId) return;
 
         setIssueLoading(true);
+        // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
+        capture();
 
         presentBoostIssueLoadingModal();
         await handleSubmitExistingBoostSelf(profileId, boostUri, boost?.status);
@@ -108,6 +122,19 @@ const ShortBoostUserOptions: React.FC<{
             category: boost?.category,
             boostType: boost?.type,
             method: 'Managed Boost',
+            msSinceMethodStarted: Date.now() - flowStartedAt.current,
+        });
+
+        const now = Date.now();
+        const sessionStart = Number(localStorage.getItem(SESSION_START_KEY) ?? now);
+        const accountCreatedAt = Number(localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now);
+        track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+            method: ProfileBuildMethod.SelfIssue,
+            itemType: 'credential',
+            itemCount: 1,
+            totalItemsAfter: snapshotRef.current.credentialCount + 1,
+            msSinceAccountCreated: now - accountCreatedAt,
+            msSinceSessionStart: now - sessionStart,
         });
         setIssueLoading(false);
         onSuccess?.();
@@ -127,6 +154,7 @@ const ShortBoostUserOptions: React.FC<{
             category: boost?.category,
             boostType: boost?.type,
             method: 'Managed Boost',
+            msSinceMethodStarted: Date.now() - flowStartedAt.current,
         });
 
         const attachmentsAnalytics = summarizeRecipientAttachments(state.issueTo);
@@ -177,7 +205,7 @@ const ShortBoostUserOptions: React.FC<{
         //             text: 'Cancel',
         //             role: 'cancel',
         //             handler: () => {
-        //                 console.log('Cancel clicked');
+        //                 log.info('Cancel clicked');
         //             },
         //         },
         //     ],
@@ -248,7 +276,7 @@ const ShortBoostUserOptions: React.FC<{
                 {showBoostContext && (
                     <div className="mb-3 pb-3 border-b border-grayscale-200">
                         <p className="text-xs font-medium text-grayscale-600 uppercase tracking-wide mb-1">
-                            Sending Boost
+                            {m['boost.shortBoost.sendingBoost']()}
                         </p>
                         <div className="flex items-center gap-2">
                             <p className="text-base font-semibold text-grayscale-900 truncate">
@@ -258,14 +286,17 @@ const ShortBoostUserOptions: React.FC<{
                     </div>
                 )}
                 <h1 className="font-poppins text-[22px] font-[600] leading-[130%] tracking-[-0.25px] py-[15px] flex items-center justify-center w-full h-full text-grayscale-900">
-                    Select Recipient
+                    {m['boost.shortBoost.selectRecipient']()}
                 </h1>
                 <button
                     onClick={selfBoostConfirmationAlert}
                     className="flex items-center gap-[10px] font-notoSans text-grayscale-800 text-[18px] py-[10px] w-full"
                 >
-                    <ProfilePicture customContainerClass="w-[35px] h-[35px]" />
-                    Myself
+                    <ProfilePicture
+                        customContainerClass="w-[35px] h-[35px] overflow-hidden rounded-full flex-shrink-0"
+                        customImageClass="w-full h-full object-cover"
+                    />
+                    {m['boost.shortBoost.myself']()}
                 </button>
                 <button
                     onClick={() => {
@@ -274,7 +305,7 @@ const ShortBoostUserOptions: React.FC<{
                     className="flex items-center gap-[10px] font-notoSans text-grayscale-800 text-[18px] py-[10px] w-full"
                 >
                     <AddUser className="w-[35px] h-[35px]" version="3" />
-                    Others
+                    {m['boost.shortBoost.others']()}
                 </button>
                 {sectionPortal &&
                     createPortal(
@@ -288,7 +319,7 @@ const ShortBoostUserOptions: React.FC<{
                                         color || 'grayscale-900'
                                     } disabled:bg-grayscale-400 rounded-full py-2 text-white font-poppins text-lg font-[600] w-full shadow-bottom-4-4`}
                                 >
-                                    Generate Link
+                                    {m['boost.shortBoost.generateLink']()}
                                 </button>
                             )}
                             {boost.status === 'DRAFT' && (
@@ -296,14 +327,14 @@ const ShortBoostUserOptions: React.FC<{
                                     onClick={handleEditOnClick}
                                     className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full h-full shadow-bottom mt-[10px]"
                                 >
-                                    Edit Draft
+                                    {m['boost.shortBoost.editDraft']()}
                                 </button>
                             )}
                             <button
                                 onClick={closeModal}
                                 className="bg-white text-grayscale-900 text-lg font-notoSans py-2 rounded-[20px] w-full h-full shadow-bottom mt-[10px]"
                             >
-                                Close
+                                {m['common.close']()}
                             </button>
                         </div>,
                         sectionPortal

@@ -9,11 +9,12 @@
         "xapi": "https://staging.network.learncard.com/xapi"
     },
     "features": {
-        "analytics": false
+        "analytics": false,
+        "useSeededSkillFrameworks": true
     },
     "observability": {
         "sentryEnv": "staging",
-        "launchDarklyClientId": "63dabf3082caed12cac3e55b",
+        "launchDarklyClientId": "6a07749c1380120a8213715a",
         "userflowToken": "ct_w53eaxhevvf2vejzrecekeq3nu"
     },
     "auth": {

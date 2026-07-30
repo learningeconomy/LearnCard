@@ -24,6 +24,7 @@ import {
     useSQLiteInitWeb,
     lazyWithRetry,
     Toast,
+    InAppMessageHost,
 } from 'learn-card-base';
 import { AuthCoordinatorProvider } from './providers/AuthCoordinatorProvider';
 import AuthKeyDebugWidget from './components/debug/AuthKeyDebugWidget';
@@ -31,6 +32,7 @@ import AppUrlListener from './components/app-url-listener/AppUrlListener';
 import PresentVcModalListener from './components/modalListener/ModalListener';
 import QRCodeScannerListener from './components/qrcode-scanner-listener/QRCodeScannerListener';
 import NetworkListener from './components/network-listener/NetworkListener';
+import UserProfileSetupListener from './components/user-profile/UserProfileSetupListener';
 import { QRCodeScannerStore } from 'learn-card-base';
 
 const CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 1 Week
@@ -118,7 +120,9 @@ const FullApp: React.FC = () => {
                                 <AppUrlListener />
                                 <PushNotificationListener />
                                 <PresentVcModalListener />
+                                <UserProfileSetupListener />
                                 <AppRouter />
+                                <InAppMessageHost />
                                 <QRCodeScannerListener />
                                 {showScannerOverlay && <QRCodeScannerOverlay />}
                                 <AuthKeyDebugWidget />

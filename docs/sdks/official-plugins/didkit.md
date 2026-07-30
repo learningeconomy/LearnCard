@@ -13,7 +13,7 @@ The folks over at [Spruce](https://www.spruceid.com/) have made a wonderful Rust
 ### Install
 
 ```bash
-pnpm i @learncard/didkit-plugin
+bun add @learncard/didkit-plugin
 ```
 
 ### What is DIDKit?

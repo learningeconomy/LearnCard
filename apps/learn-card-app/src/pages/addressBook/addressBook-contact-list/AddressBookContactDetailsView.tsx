@@ -22,6 +22,7 @@ import { useJoinLCNetworkModal } from '../../../components/network-prompts/hooks
 
 import useTheme from '../../../theme/hooks/useTheme';
 import useLCNGatedAction from 'apps/learn-card-app/src/components/network-prompts/hooks/useLCNGatedAction';
+import * as m from '../../../paraglide/messages.js';
 
 type AddressBookContactDetailsViewProps = {
     contact: LCNProfile | null;
@@ -100,11 +101,11 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
             header,
             buttons: [
                 {
-                    text: 'Confirm',
+                    text: m['contacts.confirm'](),
                     role: 'confirm',
                     handler: () => handler(new Event('custom'), contact?.profileId),
                 },
-                { text: 'Cancel', role: 'cancel', handler: () => dismissAlert() },
+                { text: m['common.cancel'](), role: 'cancel', handler: () => dismissAlert() },
             ],
         });
     };
@@ -118,7 +119,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                 hasDismissButton: true,
             });
         } catch (err) {
-            presentToast('Unable to copy DID to clipboard', {
+            presentToast(m['contacts.didCopyFailed'](), {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
@@ -144,12 +145,9 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                     onClick={e => {
                         e.stopPropagation();
                         closeModal();
-                        showConfirmationAlert(
-                            'Are you sure you want to send a connection request?',
-                            async () => {
-                                handleConnectionRequest?.(e, contact?.profileId);
-                            }
-                        );
+                        showConfirmationAlert(m['contacts.confirmSendRequest'](), async () => {
+                            handleConnectionRequest?.(e, contact?.profileId);
+                        });
                     }}
                 >
                     <p className="text-grayscale-900">Request Connection</p>
@@ -165,12 +163,9 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                     onClick={e => {
                         e.stopPropagation();
                         closeModal();
-                        showConfirmationAlert(
-                            'Are you sure you want to cancel your connection request?',
-                            async () => {
-                                handleCancelConnectionRequest?.(e, contact?.profileId);
-                            }
-                        );
+                        showConfirmationAlert(m['contacts.confirmCancelRequest'](), async () => {
+                            handleCancelConnectionRequest?.(e, contact?.profileId);
+                        });
                     }}
                 >
                     <p className="text-grayscale-900">Cancel Request</p>
@@ -186,12 +181,9 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                     className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-solid border-b-[2px] last:border-b-0"
                     onClick={e => {
                         e.stopPropagation();
-                        showConfirmationAlert(
-                            'Are you sure you want to accept the connection request?',
-                            async () => {
-                                handleAcceptConnectionRequest?.(e, contact?.profileId);
-                            }
-                        );
+                        showConfirmationAlert(m['contacts.confirmAcceptRequest'](), async () => {
+                            handleAcceptConnectionRequest?.(e, contact?.profileId);
+                        });
                     }}
                 >
                     <p className="text-grayscale-900">Accept Request</p>
@@ -258,7 +250,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                 e.stopPropagation();
                                 closeModal();
                                 showConfirmationAlert(
-                                    'Are you sure you want to remove this connection?',
+                                    m['contacts.confirmRemoveConnection'](),
                                     async () => {
                                         handleRemoveConnection(e, contact?.profileId);
                                     }
@@ -278,7 +270,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                 e.stopPropagation();
                                 closeModal();
                                 showConfirmationAlert(
-                                    'Are you sure you want to cancel your connection request?',
+                                    m['contacts.confirmCancelRequest'](),
                                     async () => {
                                         handleCancelConnectionRequest?.(e, contact?.profileId);
                                     }
@@ -297,12 +289,9 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                 closeModal();
                                 const { prompted } = await gate();
                                 if (prompted) return;
-                                showConfirmationAlert(
-                                    'Are you sure you want to block this user?',
-                                    async () => {
-                                        handleBlockUser(e, contact?.profileId);
-                                    }
-                                );
+                                showConfirmationAlert(m['contacts.confirmBlock'](), async () => {
+                                    handleBlockUser(e, contact?.profileId);
+                                });
                             }}
                         >
                             <p className="text-grayscale-900"> Block Contact</p>
@@ -315,12 +304,9 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                             onClick={e => {
                                 e.stopPropagation();
                                 closeModal();
-                                showConfirmationAlert(
-                                    'Are you sure you want to unblock this user?',
-                                    async () => {
-                                        handleUnblockUser(e, contact?.profileId);
-                                    }
-                                );
+                                showConfirmationAlert(m['contacts.confirmUnblock'](), async () => {
+                                    handleUnblockUser(e, contact?.profileId);
+                                });
                             }}
                         >
                             <p className="text-grayscale-900">Unblock Contact</p>
@@ -354,7 +340,7 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                                 e.stopPropagation();
                                 closeModal();
                                 showConfirmationAlert(
-                                    'Are you sure you want to accept the connection request?',
+                                    m['contacts.confirmAcceptRequest'](),
                                     async () => {
                                         handleAcceptConnectionRequest?.(e, contact?.profileId);
                                     }

@@ -23,6 +23,8 @@ import { useDeveloperPortalContext } from '../DeveloperPortalContext';
 import { useDeveloperPortal } from '../useDeveloperPortal';
 import { USE_CASES, UseCaseId } from './types';
 import { useBetaAccess } from '../components/BetaGate';
+import * as m from '../../../paraglide/messages.js';
+import { mDynamic } from '../../../i18n/mDynamic';
 import { openExternalLink } from 'src/helpers/externalLinkHelpers';
 
 const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
@@ -40,6 +42,9 @@ interface UseCaseCardProps {
     title: string;
     subtitle: string;
     description: string;
+    titleKey: string;
+    subtitleKey: string;
+    descriptionKey: string;
     icon: string;
     color: string;
     bgColor: string;
@@ -49,10 +54,13 @@ interface UseCaseCardProps {
     onClick: () => void;
 }
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('integration-hub');
+
 const UseCaseCard: React.FC<UseCaseCardProps> = ({
-    title,
-    subtitle,
-    description,
+    titleKey,
+    subtitleKey,
+    descriptionKey,
     icon,
     color,
     bgColor,
@@ -74,15 +82,15 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
                     </div>
 
                     <span className="px-2 py-1 bg-gray-200 text-gray-600 rounded-full text-xs font-medium">
-                        Coming Soon
+                        {m['developerPortal.guides.hub.comingSoon']()}
                     </span>
                 </div>
 
-                <h3 className="text-lg font-semibold text-gray-500 mb-1">{title}</h3>
+                <h3 className="text-lg font-semibold text-gray-500 mb-1">{mDynamic(titleKey)}</h3>
 
-                <p className="text-sm text-gray-400 mb-3">{subtitle}</p>
+                <p className="text-sm text-gray-400 mb-3">{mDynamic(subtitleKey)}</p>
 
-                <p className="text-sm text-gray-400 flex-1">{description}</p>
+                <p className="text-sm text-gray-400 flex-1">{mDynamic(descriptionKey)}</p>
             </div>
         );
     }
@@ -98,19 +106,19 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
 
                     <span className="px-2 py-1 bg-gray-200 text-gray-500 rounded-full text-xs font-medium flex items-center gap-1">
                         <Lock className="w-3 h-3" />
-                        Locked
+                        {m['developerPortal.guides.hub.locked']()}
                     </span>
                 </div>
 
-                <h3 className="text-lg font-semibold text-gray-500 mb-1">{title}</h3>
+                <h3 className="text-lg font-semibold text-gray-500 mb-1">{mDynamic(titleKey)}</h3>
 
-                <p className="text-sm text-gray-400 mb-3">{subtitle}</p>
+                <p className="text-sm text-gray-400 mb-3">{mDynamic(subtitleKey)}</p>
 
-                <p className="text-sm text-gray-400 flex-1">{description}</p>
+                <p className="text-sm text-gray-400 flex-1">{mDynamic(descriptionKey)}</p>
 
                 <div className="flex items-center gap-1.5 mt-4 text-gray-400 font-medium text-sm">
                     <Lock className="w-4 h-4" />
-                    <span>Request Access</span>
+                    <span>{m['developerPortal.guides.hub.requestAccess']()}</span>
                 </div>
             </div>
         );
@@ -132,19 +140,23 @@ const UseCaseCard: React.FC<UseCaseCardProps> = ({
 
                 {isActive && (
                     <span className="px-2 py-1 bg-cyan-100 text-cyan-700 rounded-full text-xs font-medium">
-                        In Progress
+                        {m['developerPortal.guides.hub.inProgress']()}
                     </span>
                 )}
             </div>
 
-            <h3 className="text-lg font-semibold text-gray-800 mb-1">{title}</h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-1">{mDynamic(titleKey)}</h3>
 
-            <p className="text-sm text-gray-500 mb-3">{subtitle}</p>
+            <p className="text-sm text-gray-500 mb-3">{mDynamic(subtitleKey)}</p>
 
-            <p className="text-sm text-gray-600 flex-1">{description}</p>
+            <p className="text-sm text-gray-600 flex-1">{mDynamic(descriptionKey)}</p>
 
             <div className="flex items-center gap-1.5 mt-4 text-cyan-600 font-medium text-sm group-hover:gap-2.5 transition-all">
-                <span>{isActive ? 'Continue' : 'Get Started'}</span>
+                <span>
+                    {isActive
+                        ? m['common.continue']()
+                        : m['developerPortal.guides.hub.getStarted']()}
+                </span>
                 <ArrowRight className="w-4 h-4" />
             </div>
         </button>
@@ -187,7 +199,7 @@ const IntegrationHub: React.FC = () => {
                 updates: { guideType: useCaseId },
             });
         } catch (error) {
-            console.error('Failed to save guide selection:', error);
+            log.error('Failed to save guide selection:', error);
         }
 
         // Navigate to guide
@@ -201,7 +213,7 @@ const IntegrationHub: React.FC = () => {
             await createIntegration(newProjectName.trim());
             setNewProjectName('');
         } catch (error) {
-            console.error('Failed to create project:', error);
+            log.error('Failed to create project:', error);
         }
     };
 
@@ -220,7 +232,10 @@ const IntegrationHub: React.FC = () => {
 
     return (
         <IonPage>
-            <AppStoreHeader title="Developer Portal" rightContent={integrationSelector} />
+            <AppStoreHeader
+                title={m['developerPortal.guides.page.title']()}
+                rightContent={integrationSelector}
+            />
 
             <IonContent className="ion-padding">
                 <div className="max-w-5xl mx-auto py-4">
@@ -233,17 +248,17 @@ const IntegrationHub: React.FC = () => {
                                 </div>
 
                                 <h2 className="text-2xl font-semibold text-gray-800 mb-2">
-                                    Create Your First Project
+                                    {m['developerPortal.guides.hub.createProject.title']()}
                                 </h2>
 
                                 <p className="text-gray-500">
-                                    Set up a project to start building your integration.
+                                    {m['developerPortal.guides.hub.createProject.description']()}
                                 </p>
                             </div>
 
                             <div className="max-w-md mx-auto">
                                 <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
-                                    Name your project
+                                    {m['developerPortal.guides.hub.createProject.nameLabel']()}
                                 </label>
 
                                 <div className="flex gap-2">
@@ -268,7 +283,7 @@ const IntegrationHub: React.FC = () => {
                                             <Loader2 className="w-5 h-5 animate-spin" />
                                         ) : (
                                             <>
-                                                Create
+                                                {m['common.create']()}
                                                 <ArrowRight className="w-4 h-4" />
                                             </>
                                         )}
@@ -285,16 +300,15 @@ const IntegrationHub: React.FC = () => {
                             <div className="text-center mb-10">
                                 <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-cyan-50 text-cyan-700 rounded-full text-sm font-medium mb-4">
                                     <Sparkles className="w-4 h-4" />
-                                    <span>Integration Guides</span>
+                                    <span>{m['developerPortal.guides.hub.badge']()}</span>
                                 </div>
 
                                 <h1 className="text-3xl font-bold text-gray-800 mb-3">
-                                    Build Your Integration
+                                    {m['developerPortal.guides.hub.heading']()}
                                 </h1>
 
                                 <p className="text-gray-500 max-w-lg mx-auto text-lg">
-                                    Select a project to get started, or browse the available guides
-                                    below.
+                                    {m['developerPortal.guides.hub.selectDescription']()}
                                 </p>
                             </div>
 
@@ -318,10 +332,10 @@ const IntegrationHub: React.FC = () => {
 
                                             <div>
                                                 <h3 className="font-medium text-gray-800">
-                                                    {useCase.title}
+                                                    {mDynamic(useCase.titleKey)}
                                                 </h3>
                                                 <p className="text-sm text-gray-500">
-                                                    {useCase.subtitle}
+                                                    {mDynamic(useCase.subtitleKey)}
                                                 </p>
                                             </div>
                                         </div>
@@ -336,12 +350,12 @@ const IntegrationHub: React.FC = () => {
                                     </div>
                                     <div className="flex-1">
                                         <h3 className="text-lg font-semibold text-gray-800 mb-1">
-                                            {integrations.length === 1
-                                                ? 'You have 1 project'
-                                                : `You have ${integrations.length} projects`}
+                                            {m['developerPortal.guides.hub.projectCount']({
+                                                count: integrations.length,
+                                            })}
                                         </h3>
                                         <p className="text-gray-600">
-                                            Choose a project to continue building.
+                                            {m['developerPortal.guides.hub.projectsChoose']()}
                                         </p>
                                     </div>
                                 </div>
@@ -365,8 +379,18 @@ const IntegrationHub: React.FC = () => {
                                                     integration.guideType in USE_CASES
                                                         ? USE_CASES[
                                                               integration.guideType as UseCaseId
-                                                          ]?.title
-                                                        : 'Not started'}
+                                                          ]?.titleKey
+                                                            ? m[
+                                                                  USE_CASES[
+                                                                      integration.guideType as UseCaseId
+                                                                  ]?.titleKey!
+                                                              ]()
+                                                            : USE_CASES[
+                                                                  integration.guideType as UseCaseId
+                                                              ]?.title
+                                                        : m[
+                                                              'developerPortal.guides.hub.notStarted'
+                                                          ]()}
                                                 </p>
                                             </div>
                                             <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-cyan-500 group-hover:translate-x-1 transition-all flex-shrink-0" />
@@ -384,16 +408,15 @@ const IntegrationHub: React.FC = () => {
                             <div className="text-center mb-10">
                                 <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-cyan-50 text-cyan-700 rounded-full text-sm font-medium mb-4">
                                     <Sparkles className="w-4 h-4" />
-                                    <span>Integration Guides</span>
+                                    <span>{m['developerPortal.guides.hub.badge']()}</span>
                                 </div>
 
                                 <h1 className="text-3xl font-bold text-gray-800 mb-3">
-                                    Build Your Integration
+                                    {m['developerPortal.guides.hub.heading']()}
                                 </h1>
 
                                 <p className="text-gray-500 max-w-lg mx-auto text-lg">
-                                    Choose what you want to build. We'll guide you through each step
-                                    with ready-to-use code and live setup tools.
+                                    {m['developerPortal.guides.hub.mainDescription']()}
                                 </p>
                             </div>
 
@@ -417,7 +440,7 @@ const IntegrationHub: React.FC = () => {
                         <div className="border-t border-gray-100 pt-10">
                             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                                 <BookOpen className="w-5 h-5 text-gray-400" />
-                                Additional Resources
+                                {m['developerPortal.guides.hub.resources.title']()}
                             </h2>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -430,8 +453,16 @@ const IntegrationHub: React.FC = () => {
                                     </div>
 
                                     <div className="flex-1 text-start">
-                                        <p className="font-medium text-gray-800">Documentation</p>
-                                        <p className="text-sm text-gray-500">Full API reference</p>
+                                        <p className="font-medium text-gray-800">
+                                            {m[
+                                                'developerPortal.guides.hub.resources.documentation.title'
+                                            ]()}
+                                        </p>
+                                        <p className="text-sm text-gray-500">
+                                            {m[
+                                                'developerPortal.guides.hub.resources.documentation.description'
+                                            ]()}
+                                        </p>
                                     </div>
 
                                     <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
@@ -456,8 +487,16 @@ const IntegrationHub: React.FC = () => {
                                     </div>
 
                                     <div className="flex-1 text-start">
-                                        <p className="font-medium text-gray-800">GitHub</p>
-                                        <p className="text-sm text-gray-500">Open source SDKs</p>
+                                        <p className="font-medium text-gray-800">
+                                            {m[
+                                                'developerPortal.guides.hub.resources.github.title'
+                                            ]()}
+                                        </p>
+                                        <p className="text-sm text-gray-500">
+                                            {m[
+                                                'developerPortal.guides.hub.resources.github.description'
+                                            ]()}
+                                        </p>
                                     </div>
 
                                     <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
@@ -472,8 +511,16 @@ const IntegrationHub: React.FC = () => {
                                     </div>
 
                                     <div className="flex-1">
-                                        <p className="font-medium text-gray-800">My Apps</p>
-                                        <p className="text-sm text-gray-500">Manage listings</p>
+                                        <p className="font-medium text-gray-800">
+                                            {m[
+                                                'developerPortal.guides.hub.resources.myApps.title'
+                                            ]()}
+                                        </p>
+                                        <p className="text-sm text-gray-500">
+                                            {m[
+                                                'developerPortal.guides.hub.resources.myApps.description'
+                                            ]()}
+                                        </p>
                                     </div>
 
                                     <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />

@@ -1,154 +1,259 @@
+---
+description: How LearnCard and LearnCloud fit together, and how they interoperate with the world.
+---
+
 # Ecosystem Architecture
 
-{% embed url="https://www.figma.com/board/eogBqV1c1tCzmNOA54B005/Ecosystem-Architecture?node-id=0-1&t=9wggrjsXToOT1GMK-1" %}
+**LearnCard** is the lifelong-learning passport — the wallet, app, CLI, and SDK a learner (or any app acting on their behalf) uses to **collect, understand, and navigate** their learning and employment record. **LearnCloud** is the open API platform behind it: a network for sending and receiving credentials, encrypted personal storage, and an AI layer that turns the passport into something useful.
 
-The LearnCard ecosystem is modular by design. Every component plays a distinct role, built on open standards and APIs to give developers the flexibility and clarity to build confidently.
+Together they make verifiable learning records portable across schools, states, employers, games, and AI — without locking anyone into a closed ecosystem.
 
-Use this guide to understand how each part connects—from low-level credential infrastructure to high-level personalized apps.
-
-
+This is the single page to understand the whole stack.
 
 ***
 
-## 🛠️ SDK & API Model
+## Three verbs
 
-Choose your stack:
+Three verbs the whole platform is organized around:
 
-* `@learncard/init` SDK for programmatic control
-* LearnCloud Network API for backend integrations
-* LearnCloud Storage API for encrypted storage
-* LearnCloud AI API for AI-enabled credential flows
-* LearnCard CLI for automation and scripting
+**Collect** — fill your passport from every source. School transcripts, course completions, badges, internships, work history, certifications — credentials aggregate longitudinally, across institutions, products, and life stages.
 
-LearnCard’s SDK is modular: bring only what you need, scale as you go.
+**Understand** — make sense of what's inside. Skills extracted from your record, gaps identified against your goals, AI tutoring grounded in your actual history. Insights you can act on.
 
-***
+**Navigate** — turn your record into opportunity. Pathways into education, jobs that fit your skills, scholarships and credentials that unlock them, AI agents that can advocate on your behalf with your consent.
 
-## 🟨 LearnCard (Wallet)
-
-The LearnCard wallet is the core tool for issuing, holding, sharing, and verifying credentials.
-
-#### Wallet SDK
-
-Use the SDK (via App or CLI) to:
-
-* **Issue** credentials like Boosts or standard W3C VCs
-* **Share** credentials with apps, orgs, or individuals
-* **Verify** incoming credentials
-* **Consent** to data access with ConsentFlows
-* **Store**, **Read**, **Delete**, and **Encrypt** credentials securely
-
-✅ Ideal for apps, bots, and backends needing verifiable credential logic.
+Every component below — LearnCard, LearnCloud, the standards core — exists to make these three verbs portable, open, and learner-controlled.
 
 ***
 
-## 🟨 LearnCloud (Platform)
+## At a glance
 
-LearnCloud extends LearnCard with cloud APIs for storage, sharing, and consent-based workflows.
+```mermaid
+%%{init: {"flowchart": {"defaultRenderer": "elk"}}}%%
+flowchart LR
+  classDef indigo stroke:#6366f1,stroke-width:2px,fill:transparent
+  classDef teal   stroke:#14b8a6,stroke-width:2px,fill:transparent
+  classDef violet stroke:#8b5cf6,stroke-width:2px,fill:transparent
+  classDef orange stroke:#f97316,stroke-width:2px,fill:transparent
 
+  Eco["Schools · States · Employers · EdTech · Games · AI Agents · Partner Apps"]:::orange
 
+  subgraph LC["LearnCard · clients & SDK"]
+    direction TB
+    APP["LearnCard App · CLI"]
+    SDK["Wallet SDK<br/><i>modular plugins · Rust ↔ WASM core</i>"]
+  end
+  class LC,APP,SDK teal
 
-### 🌐 LearnCloud Network API
+  subgraph CL["LearnCloud · open API platform"]
+    direction TB
+    NET["Network API<br/><i>send · share · verify · consent</i>"]
+    STR["Storage API<br/><i>store · read · delete · encrypt</i>"]
+    AI["AI API<br/><i>ingest · assess · analyze ·<br/>tutor · award · MCP</i>"]
+  end
+  class CL,NET,STR,AI indigo
 
-The **LearnCloud Network API** lets developers:
+  subgraph CORE["Standards-Based Core"]
+    direction TB
+    Std["W3C VCs · DIDs · OBv3 · CLR 2.0<br/>VC-API · OIDC4VC · CHAPI · Ed25519"]
+  end
+  class CORE,Std violet
 
-* Send and receive credentials, boosts, and presentations
-* Create and claim credentials through peer-to-peer or QR flows
-* Register and manage Signing Authorities
-* Trigger and validate ConsentFlows
-* Monitor health and fetch metadata (like DIDs or challenge keys)
+  Eco --> LC
+  LC <==>|"tRPC + REST · OpenAPI"| CL
+  LC -.- CORE
+  CL -.- CORE
+```
 
-It’s the backbone of interaction between LearnCard users and applications.
+**LearnCard** is everything users (or partners on their behalf) actually touch. Wallet operations — signing, verification, DID resolution, JSON-LD canonicalization — run in a Rust core compiled to native and WebAssembly, so the same SDK works identically on the web, iOS, Android, and Node.
 
-### ☁️ LearnCloud Storage API
+**LearnCloud** is three open APIs, each fully OpenAPI-documented and individually adoptable. They sit behind one network of verifiable, consented data.
 
-**LearnCloud** is LearnCard’s end-to-end encrypted storage system:
-
-* Store credentials and presentations securely
-* Sync across devices
-* Swap in your own storage backend if desired
-
-Data is encrypted client-side. LearnCard never sees private data unless explicitly shared through a consent contract.
-
-### 🧠 LearnCloud AI API
-
-Use to:
-
-* **Ingest** credentials
-* **Assess** skills and outcomes
-* **Analyze** for insights
-* **Award** credentials or Boosts via automated logic
-
-✅ Ideal for cloud-based systems and network-wide credential interaction.
-
-***
-
-## 🟦 Standards & Protocols
-
-LearnCard builds on trusted, open standards:
-
-* **W3C VC**, **W3C DID**, **W3C Linked Claims**
-* **OBv3**, **IEEE LER**, **CLR 2.0**, **LIF**
-* **xAPI**, **OIDC4VC**, **SCD**, **KYC**, **Open Awarding Service**
-
-✅ This ensures LearnCard plays nicely with existing platforms, wallets, and verifiers.
+The **standards core** is what makes both halves interoperable — with each other, with any conformant wallet, and with any conformant verifier in the world.
 
 ***
 
-## 🟧 Connected Tools
+## LearnCard · clients & SDK
 
-These protocols and interfaces extend the LearnCard platform:
+What a learner — or any app integrating on their behalf — actually touches.
 
-* **ConsentFlow**: Define how data can be accessed or written with user consent
-* **LTI**: Integrate into LMSs and EdTech platforms
-* **LearnCloud API**, **VC API**, **Trust Registry**: Shared infrastructure for credential validation and storage
+| Surface | Role |
+|---|---|
+| **LearnCard App** | Universal wallet — web, iOS, Android |
+| **LearnCard CLI** | Automation, scripting, server-side use |
+| **Wallet SDK** | `@learncard/init` for programmatic control, plugin-extensible |
 
-✅ These tools make LearnCard ecosystem-ready and plug-in compatible.
+The SDK is **modular**. Identity providers, signing methods, storage backends, exchange protocols, AI providers — every concern is a plugin you can swap. The same SDK works identically across the web, iOS, Android, and Node because the credential primitives (signing, verification, DID resolution, JSON-LD canonicalization) live in a Rust core compiled to native and WebAssembly.
 
-***
+This means apps don't have to choose between speed and portability — they get both, on every surface.
 
-## 🟪 Applications & Ecosystems
-
-LearnCard is used in:
-
-* **Apps**: Games, EdTech, LMS, AI, content tools
-* **Ecosystems**: Nations, states, school districts, employers, communities
-
-Each app or system connects via APIs, ConsentFlows, or wallet interactions.
+→ Deep dives: [Wallet SDK](../sdks/learncard-core/README.md) · [Plugin System](../core-concepts/architecture-and-principles/plugins.md) · [Control Planes](../core-concepts/architecture-and-principles/control-planes.md)
 
 ***
 
-## 🔁 The Layered Stack
+## LearnCloud · open API platform
 
-On the right side of the diagram, you'll see the **Skyway Stack**—our model for understanding how everything flows upward:
+Three open APIs. Each fully OpenAPI-documented. Each individually adoptable — use one, two, or all three.
 
-1. **Data Pipes**: Ingest and stream raw credential data
-2. **Portfolios**: Aggregate credentials per learner/worker
-3. **Consent**: Enable trusted sharing with granular control
-4. **Credentialing**: Issue and verify new claims
-5. **Analytics**: Gain insight from usage, learning, and pathways
-6. **Personalization**: Adapt experiences in real-time
-7. **Pathways**: Help users discover career and learning options
-8. **Applications**: Deliver features people see and touch
+### Network API
 
-✅ You don’t have to use every layer—build what you need, plug in where it makes sense.
+The credential exchange backbone. Send credentials to learners, run consent contracts, register Signing Authorities, manage trust between profiles, query the credential graph. Backed by a graph database; every interaction is recorded and revocable.
+
+`send · share · verify · consent · revoke`
+
+→ [LearnCloud Network API](../sdks/learncard-network/README.md) · [OpenAPI](https://network.learncard.com/docs)
+
+### Storage API
+
+End-to-end encrypted personal credential storage, with cross-device sync and pluggable storage backends. Credentials are encrypted client-side; the platform never sees private data unless explicitly shared via a consent contract.
+
+`store · read · delete · encrypt`
+
+→ [LearnCloud Storage API](../sdks/learncloud-storage-api/README.md)
+
+### AI API
+
+The passport is data. The AI API turns that data into something useful, on demand, across every product the learner uses.
+
+- **Ingest** — CLRs, transcripts, badges, and work history flow into a unified learner context — a single source of truth the AI grounds every interaction in.
+- **Assess** — Skill assessments calibrated against the learner's actual record, not generic rubrics.
+- **Analyze** — Insights, skill gaps, and goal mapping against frameworks like CTDL, O\*NET, and ESCO.
+- **Tutor** — AI tutors that know the learner — their goals, their history, their level — instead of starting from a blank prompt every session.
+- **Award** — Auto-issue credentials when assessment criteria are met, closing the loop from learning to recognition.
+- **MCP** — A Model Context Protocol server that exposes learner context to external AI agents with explicit, scoped consent.
+
+Because the learner context is a first-class API, **AI sessions are portable**: a tutoring relationship that begins in one product can continue in another, with the learner's history and consent intact.
+
+{% hint style="info" %}
+Every AI API call against learner data is gated by an explicit consent contract. The platform never operates on a learner's record without their (or their guardian's) approval.
+{% endhint %}
 
 ***
 
-## 🧠 Summary
+## How the stack stays interoperable
 
-If you’re:
+LearnCard and LearnCloud both build on a layered standards core. Each layer is independent — you can swap one without rewriting the others.
 
-* **Building an app** → Start with the [Wallet SDK](../sdks/learncard-core/)
-* **Working cloud-side** → Use ConsentFlows + the [Network](../sdks/learncard-network/) or [Storage](../sdks/learncloud-storage-api/) APIs
-* **Needing automation and personalization** → Tap into the AI API _(public API coming soon)_
+```mermaid
+%%{init: {"flowchart": {"defaultRenderer": "elk"}}}%%
+flowchart LR
+  L1["1 · Identity & Crypto<br/>did:key · did:web · plus any DID method via plugin<br/>Ed25519 · Secp256k1 — Rust ↔ WASM core"]:::indigo
+  L2["2 · Envelopes<br/>W3C Verifiable Credentials 2.0 (VC 1.1 also supported)<br/>Verifiable Presentations · JWT or LD-Proof"]:::teal
+  L3["3 · Schemas<br/>Open Badges 3.0 · CLR 2.0 · IEEE LER<br/>plus custom JSON-LD"]:::violet
+  L4["4 · Skills & Alignment<br/>CTDL (via ctid) · CASE · O*NET · ESCO<br/>OpenSALT skill frameworks"]:::orange
+  L5["5 · Exchange<br/>VC-API · OIDC4VC (OID4VP / OID4VCI)<br/>CHAPI · VPQR · claim links · inbox"]:::fuchsia
+  L6["6 · Trust & Consent<br/>Signing Authorities · ConsentFlow contracts<br/>Trust registries"]:::green
+
+  L1 --> L2 --> L3 --> L4 --> L5 --> L6
+
+  classDef indigo  stroke:#6366f1,stroke-width:2px,fill:transparent;
+  classDef teal    stroke:#14b8a6,stroke-width:2px,fill:transparent;
+  classDef violet  stroke:#8b5cf6,stroke-width:2px,fill:transparent;
+  classDef orange  stroke:#f97316,stroke-width:2px,fill:transparent;
+  classDef fuchsia stroke:#d946ef,stroke-width:2px,fill:transparent;
+  classDef green   stroke:#22c55e,stroke-width:2px,fill:transparent;
+```
+
+| Layer | Today | Status |
+|---|---|---|
+| Identity | did:key · did:web · plus any DID method via plugin | First-class |
+| Crypto | Ed25519, Secp256k1 — Rust ↔ WASM core | First-class |
+| Envelopes | W3C VC 2.0 (and VC 1.1) | First-class |
+| Schemas | OBv3, CLR 2.0, IEEE LER, custom JSON-LD | First-class |
+| Skills & alignment | CTDL via `ctid`; CASE / O\*NET / ESCO via Alignment URLs | First-class |
+| Exchange | VC-API, OIDC4VC, CHAPI, VPQR, claim links, inbox | Each has a plugin |
+| Trust | Signing Authorities, ConsentFlow contracts, Registries | First-class |
+
+### Partners interoperate via standards, not custom integration code
+
+The plugin and app-store layers are how the rest of the world plugs in *without* changes to the core:
+
+- **Plugin layer** — protocol-level integrations. Custom DID methods, custom signing, custom credential types, custom AI providers, custom storage backends. A partner like an **Open Awarding Service** can issue credentials into LearnCard by speaking VC-API. **LIF** can map data into the network through its own JSON-LD context. **SCD** consumers can render credentials from any provider that publishes the right metadata. **KYC** providers can attach identity proofs as endorsements without touching the credential subject. None of these require code in this repo.
+
+- **App store** — application-level integrations. Partner apps embed LearnCard (or are embedded by it) and exchange credentials through the **Partner Connect SDK** with origin-validated postMessage. The app store is the front door for the broader ecosystem of products learners actually use.
+
+This is the same model that makes any conformant wallet — DCC, MATTR, Procivis, Microsoft Entra Verified ID — readable by LearnCard verifiers and vice versa. Standards are the wire; plugins and the app store are the connectors.
+
+{% hint style="success" %}
+**Plug in via standards, not custom code.** A partner that publishes a conformant Verifiable Credential is already interoperable with LearnCard — no special integration required.
+{% endhint %}
+
+→ Deep dives: [Verifiable Credentials](../core-concepts/credentials-and-data/verifiable-credentials-vcs.md) · [DIDs](../core-concepts/identities-and-keys/decentralized-identifiers-dids.md) · [Skill Frameworks & OpenSALT](../sdks/learncard-network/skills-and-opensalt.md) · [Partner Connect SDK](../sdks/partner-connect.md) · [Interoperability](interoperability.md)
 
 ***
 
-### ✅ Next Steps
+## How a credential moves through the system
 
-Now that you understand the big ideas:
+Three actors, one shared protocol. (Plus a guardian, when the holder is a minor.)
 
-* 🔗 Jump into [Your First Integration](../quick-start/your-first-integration.md)
-* 🧪 Try a live flow using the [LearnCard CLI](../sdks/learncard-cli.md)
-* 📚 Browse the [API Reference](/broken/pages/2CFJ0iVopfhxEzxav7hh)
+```mermaid
+sequenceDiagram
+  autonumber
+  actor Issuer as Issuer<br/>school · state · partner
+  actor Holder as Holder<br/>learner · LearnCard
+  actor Guardian as Guardian<br/>if minor
+  actor Verifier as Verifier<br/>college · employer · AI agent
+
+  Note over Issuer: authenticates learner via<br/>their existing system<br/>(Clever · district SSO ·<br/>Google Workspace · Entra · etc.)
+  Issuer->>Holder: sign credential bound to learner DID<br/>(Boost / OBv3 / CLR 2.0)
+  opt Holder is a minor
+    Issuer->>Guardian: request approval
+    Guardian-->>Holder: approve
+  end
+  Holder->>Holder: store encrypted<br/>(Storage API)
+  Verifier->>Holder: request presentation<br/>(Partner Connect · OID4VP · CHAPI · MCP)
+  Holder->>Verifier: signed Verifiable Presentation<br/>(holder DID = proof of ownership)
+  Verifier->>Verifier: verify signatures · resolve DIDs ·<br/>check status & trust
+```
+
+In a typical K-12 or workforce flow:
+
+1. The **issuer** (school, state, employer, EdTech app) authenticates the learner with their existing identity system, then signs a credential bound to the learner's DID and sends it.
+2. The **holder** (the learner, or their guardian if a minor) receives it through a claim link, an inbox, or a direct send. The wallet stores it encrypted in LearnCloud Storage; the network records it as received.
+3. The **verifier** (college, employer, scholarship platform, AI agent) requests credentials via Partner Connect, VC-API, OID4VP, CHAPI, or MCP. The holder approves with selective disclosure, and the wallet returns a signed Verifiable Presentation.
+
+### Identity providers, holder binding, and guardianship
+
+Authentication shows up in two places, deliberately decoupled:
+
+**On the wallet side (the personal passport)** — LearnCard uses a *modular auth provider* model. Today: email/phone. Provider model supports any OIDC-compliant provider, Keycloak, Okta, custom. Every wallet has a learner DID; private-key custody uses Shamir Secret Sharing across device + server, with passkey, recovery phrase, and email backup options.
+
+**On the issuer side (schools, states, ecosystem actors)** — issuers use *whatever auth they already have*. LearnCard does not require — and never will require — schools or states to adopt a particular identity system. Whatever they use to authenticate the learner today, they can use to gate credential issuance tomorrow. The learner's DID is just the address the credential is sent to.
+
+**Holder binding** is cryptographic — to share a credential, the holder signs a Verifiable Presentation with the private key of the DID the credential is bound to. Possession of the key is proof of identity.
+
+**Guardian gating** is supported via approval tokens and a `guardianStatus` field on inbox credentials, used when the holder is a minor or when the issuer requires guardian co-signature before a credential can be claimed.
+
+→ Deep dives: [Auth Coordinator](../core-concepts/architecture-and-principles/auth-coordinator.md) · [Signing Authorities](../core-concepts/identities-and-keys/signing-authorities.md) · [Trust Registries](../core-concepts/identities-and-keys/trust-registries.md) · [Universal Inbox](../core-concepts/network-and-interactions/universal-inbox.md) · [Guardian-Gated Credentials](../how-to-guides/implement-flows/guardian-gated-credentials.md) · [ConsentFlow Overview](../core-concepts/consent-and-permissions/consentflow-overview.md)
+
+***
+
+## What you can build with it
+
+The components compose upward into real products:
+
+1. **Data Pipes** — ingest credential and learning data
+2. **Portfolios** — aggregate credentials per learner / worker
+3. **Consent** — share with granular control
+4. **Credentialing** — issue and verify new claims
+5. **Analytics** — insight from usage and pathways
+6. **Personalization** — adapt experiences in real time
+7. **Pathways** — discover careers and learning options
+8. **Applications** — features people see and touch
+
+You don't need every layer. Most teams start with one and grow into others.
+
+***
+
+## Next steps
+
+If you're...
+
+- **Building an app** → start with the [Wallet SDK](../sdks/learncard-core/README.md)
+- **Working cloud-side** → start with the [Network API](../sdks/learncard-network/README.md) or [Storage API](../sdks/learncloud-storage-api/README.md)
+- **Issuing credentials** → start with [Boost Credentials](../core-concepts/credentials-and-data/boost-credentials.md)
+- **Building consent flows** → start with [ConsentFlow Overview](../core-concepts/consent-and-permissions/consentflow-overview.md)
+- **Connecting an AI agent** → start with [Connect AI Agent](../how-to-guides/connect-systems/connect-ai-agent.md)
+- **Integrating into a school or state** → start with [Use Cases & Possibilities](use-cases-and-possibilities.md)
+
+Or jump straight into [Your First Integration](../quick-start/your-first-integration.md).

@@ -44,9 +44,12 @@ export const currentUserStore = createStore('currentUserStore')<{
         },
     }
 )
-    .extendSelectors((_state, get) => ({
-        currentUserIsLoggedIn: () => !!get.currentUser(),
-        parentUserProfileId: () => get.parentUserDid()?.split(':').at(-1),
+    .extendSelectors((state, _get) => ({
+        // Must read the tracked `state`, NOT `get.*()`. Reading via `get` makes
+        // react-tracked record zero deps, so `useIsLoggedIn()` won't re-render
+        // when `currentUser` is set after first mount (breaks native auth boot).
+        currentUserIsLoggedIn: () => !!state.currentUser,
+        parentUserProfileId: () => state.parentUserDid?.split(':').at(-1),
     }))
     .extendActions((set, get) => ({
         updateCurrentUserNameAndImage: (name: string, profileImage: string) => {

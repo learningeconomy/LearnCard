@@ -1,2 +1,8 @@
 node_modules
-build
+# Anchor with a leading slash so we only exclude the production output
+# directory at the app root (`apps/learn-card-app/build/`), not every
+# directory named `build` in the tree. The Pathways module has a
+# `src/pages/pathways/build/` subtree (Build mode) that Rollup needs;
+# without the anchor, the Docker image is assembled without it and
+# `PathwaysShell.tsx`'s dynamic import of `./build/BuildMode` fails.
+/build

@@ -1,5 +1,500 @@
 # Changelog
 
+## 1.98.0
+
+### Minor Changes
+
+-   [#1366](https://github.com/learningeconomy/LearnCard/pull/1366) [`660778e73161c9c185e1f6592a5ac90dd9309a0a`](https://github.com/learningeconomy/LearnCard/commit/660778e73161c9c185e1f6592a5ac90dd9309a0a) Thanks [@goblincore](https://github.com/goblincore)! - Revocation/suspension follow-ups (LC-1894, LC-1913)
+
+    -   Issuance now allocates a `suspension` bitstring status entry by default, so suspended credentials are externally verifiable (LC-1894).
+    -   `getActivityStats` returns `revoked`/`suspended` counts, surfaced in the issuer Issuances summary (LC-1894).
+    -   Credential-lifecycle mutations (revoke/suspend/unsuspend) now emit a holder notification, and the activity views migrated to react-query so they auto-refresh without manual callbacks (LC-1894 / LC-1913).
+    -   Holder wallet cards show a revoked/suspended treatment: a red/orange X seal badge (replacing the verified seal), a colored corner pill, and a desaturated card, driven by a lazy per-card status check; revoked/suspended credentials remain in the Earned tab (LC-1913).
+
+### Patch Changes
+
+-   [#1430](https://github.com/learningeconomy/LearnCard/pull/1430) [`dad696c557da114840d45c858166fac029185678`](https://github.com/learningeconomy/LearnCard/commit/dad696c557da114840d45c858166fac029185678) Thanks [@Custard7](https://github.com/Custard7)! - feat: Feedback Prompts
+
+-   [#1427](https://github.com/learningeconomy/LearnCard/pull/1427) [`68b1d0e2c2354b5736a035c50a92f1bfd670613e`](https://github.com/learningeconomy/LearnCard/commit/68b1d0e2c2354b5736a035c50a92f1bfd670613e) Thanks [@smurflo2](https://github.com/smurflo2)! - Redesign build my learncard into repeatable actions. Also attach certificate to generated portfolio item.
+
+-   [#1432](https://github.com/learningeconomy/LearnCard/pull/1432) [`0ec072538d67ebf48af55e427426717420de6e62`](https://github.com/learningeconomy/LearnCard/commit/0ec072538d67ebf48af55e427426717420de6e62) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: [LC-1970] - hide sidenav scroll bar
+
+-   [#1309](https://github.com/learningeconomy/LearnCard/pull/1309) [`f504c57823d2a978f9cec569a00c9478ea8b3158`](https://github.com/learningeconomy/LearnCard/commit/f504c57823d2a978f9cec569a00c9478ea8b3158) Thanks [@goblincore](https://github.com/goblincore)! - feat: [LC-1898] Paraglide i18n LCA implementation and translations
+
+-   [#1309](https://github.com/learningeconomy/LearnCard/pull/1309) [`f504c57823d2a978f9cec569a00c9478ea8b3158`](https://github.com/learningeconomy/LearnCard/commit/f504c57823d2a978f9cec569a00c9478ea8b3158) Thanks [@goblincore](https://github.com/goblincore)! - i18n [LC-1989]: complete es/fr/ar App Store + Developer Portal translations + i18n guards
+
+-   [#1400](https://github.com/learningeconomy/LearnCard/pull/1400) [`acf13250d6ffd39798b44f0c5b9331b3769ebd24`](https://github.com/learningeconomy/LearnCard/commit/acf13250d6ffd39798b44f0c5b9331b3769ebd24) Thanks [@Custard7](https://github.com/Custard7)! - feat: inAppMessage Nudge
+
+-   [#1309](https://github.com/learningeconomy/LearnCard/pull/1309) [`f504c57823d2a978f9cec569a00c9478ea8b3158`](https://github.com/learningeconomy/LearnCard/commit/f504c57823d2a978f9cec569a00c9478ea8b3158) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1900] Translate notifications (per-user locale + localized server-side copy)
+
+-   [#1312](https://github.com/learningeconomy/LearnCard/pull/1312) [`0f93889aeebd38203ec57c44ed888d25f8d75f4f`](https://github.com/learningeconomy/LearnCard/commit/0f93889aeebd38203ec57c44ed888d25f8d75f4f) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1902] Localize transactional emails + SMS (en/es/fr/ar)
+
+-   [#1436](https://github.com/learningeconomy/LearnCard/pull/1436) [`3fb7cc7a994e39985151ed9020922e8a59bee347`](https://github.com/learningeconomy/LearnCard/commit/3fb7cc7a994e39985151ed9020922e8a59bee347) Thanks [@smurflo2](https://github.com/smurflo2)! - Polish loading states across LearnCard and ScoutPass with credential skeletons and accessible spinners
+
+-   [#1433](https://github.com/learningeconomy/LearnCard/pull/1433) [`53444b2120d32eeafa2a006235d4a95d27940419`](https://github.com/learningeconomy/LearnCard/commit/53444b2120d32eeafa2a006235d4a95d27940419) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: Fix Native Build Out-of-Memory Failure
+
+-   Updated dependencies [[`660778e73161c9c185e1f6592a5ac90dd9309a0a`](https://github.com/learningeconomy/LearnCard/commit/660778e73161c9c185e1f6592a5ac90dd9309a0a), [`0f93889aeebd38203ec57c44ed888d25f8d75f4f`](https://github.com/learningeconomy/LearnCard/commit/0f93889aeebd38203ec57c44ed888d25f8d75f4f)]:
+    -   @learncard/react@2.11.0
+    -   @learncard/lca-api-plugin@1.2.22
+    -   @learncard/credential-library@1.0.14
+    -   @learncard/helpers@1.3.10
+    -   @learncard/ler-rs-plugin@0.1.19
+    -   @learncard/open-badge-v2-plugin@1.1.29
+    -   @learncard/render-method-plugin@4.0.0
+    -   @learncard/sss-key-manager@0.1.18
+
+## 1.97.5
+
+### Patch Changes
+
+-   [#1420](https://github.com/learningeconomy/LearnCard/pull/1420) [`f19ca34c0ad6425f669304981b720619abdf0559`](https://github.com/learningeconomy/LearnCard/commit/f19ca34c0ad6425f669304981b720619abdf0559) Thanks [@Custard7](https://github.com/Custard7)! - feat: Live Notifications
+
+-   [#1266](https://github.com/learningeconomy/LearnCard/pull/1266) [`cf779d0e7d3d02d2b2c2d993986e3e1878b9cbaf`](https://github.com/learningeconomy/LearnCard/commit/cf779d0e7d3d02d2b2c2d993986e3e1878b9cbaf) Thanks [@goblincore](https://github.com/goblincore)! - feat: [LC-1898] Paraglide i18n LCA implementation and translations
+
+-   [#1266](https://github.com/learningeconomy/LearnCard/pull/1266) [`cf779d0e7d3d02d2b2c2d993986e3e1878b9cbaf`](https://github.com/learningeconomy/LearnCard/commit/cf779d0e7d3d02d2b2c2d993986e3e1878b9cbaf) Thanks [@goblincore](https://github.com/goblincore)! - i18n [LC-1989]: complete es/fr/ar App Store + Developer Portal translations + i18n guards
+
+-   [#1315](https://github.com/learningeconomy/LearnCard/pull/1315) [`9b853ae7aace370a527ac11ba2ae46ae025f22dd`](https://github.com/learningeconomy/LearnCard/commit/9b853ae7aace370a527ac11ba2ae46ae025f22dd) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add tenant-configured image upload providers and replace Filestack-specific upload hook usage with `useImageUpload`.
+
+-   Updated dependencies [[`2e5f5dba1b8b95a0fbdc24cd431d8826dc180852`](https://github.com/learningeconomy/LearnCard/commit/2e5f5dba1b8b95a0fbdc24cd431d8826dc180852)]:
+    -   @learncard/react@2.10.8
+    -   @learncard/credential-library@1.0.13
+    -   @learncard/lca-api-plugin@1.2.21
+
+## 1.97.4
+
+### Patch Changes
+
+-   [#1407](https://github.com/learningeconomy/LearnCard/pull/1407) [`0f2e8faa0e70de1917cfc7d1ab12494cb048136a`](https://github.com/learningeconomy/LearnCard/commit/0f2e8faa0e70de1917cfc7d1ab12494cb048136a) Thanks [@Custard7](https://github.com/Custard7)! - Fix selector
+
+-   [#1394](https://github.com/learningeconomy/LearnCard/pull/1394) [`147d2a5fda49ba33f20077400ac3aae633bddb05`](https://github.com/learningeconomy/LearnCard/commit/147d2a5fda49ba33f20077400ac3aae633bddb05) Thanks [@goblincore](https://github.com/goblincore)! - perf: eliminate duplicate wallet construction during app boot. getBespokeLearnCard/getSigningLearnCard now cache in-flight promises so concurrent boot callers share one build; getWalletOrFallback checks secure storage before falling back to the dummy wallet; useGetProofOfLoginVp reuses the logged-in user's wallet instead of building a throwaway 'aaa'-seed wallet (the server route ignores the caller DID).
+
+-   [#1412](https://github.com/learningeconomy/LearnCard/pull/1412) [`7e101e35f8faf1c43f5c37120dda63393a4ffe1b`](https://github.com/learningeconomy/LearnCard/commit/7e101e35f8faf1c43f5c37120dda63393a4ffe1b) Thanks [@Custard7](https://github.com/Custard7)! - fix: Badge Summit Bugs
+
+-   [#1413](https://github.com/learningeconomy/LearnCard/pull/1413) [`24bd3cd36c5aa9a3a013288909d389e0aa43dd5d`](https://github.com/learningeconomy/LearnCard/commit/24bd3cd36c5aa9a3a013288909d389e0aa43dd5d) Thanks [@Custard7](https://github.com/Custard7)! - feat: Onboarding 2.0
+
+-   [#1410](https://github.com/learningeconomy/LearnCard/pull/1410) [`daf64d05972682d6bd87b4afc7005eb0f19b0361`](https://github.com/learningeconomy/LearnCard/commit/daf64d05972682d6bd87b4afc7005eb0f19b0361) Thanks [@Custard7](https://github.com/Custard7)! - fix: Query Param Merging
+
+-   [#1410](https://github.com/learningeconomy/LearnCard/pull/1410) [`daf64d05972682d6bd87b4afc7005eb0f19b0361`](https://github.com/learningeconomy/LearnCard/commit/daf64d05972682d6bd87b4afc7005eb0f19b0361) Thanks [@Custard7](https://github.com/Custard7)! - fix: Query Param Merging
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.2.20
+    -   @learncard/credential-library@1.0.13
+    -   @learncard/react@2.10.7
+
+## 1.97.3
+
+### Patch Changes
+
+-   [#1401](https://github.com/learningeconomy/LearnCard/pull/1401) [`86557d270445ebc7cdb192adf2256306e6ab84fe`](https://github.com/learningeconomy/LearnCard/commit/86557d270445ebc7cdb192adf2256306e6ab84fe) Thanks [@Custard7](https://github.com/Custard7)! - feat: Rich Tags
+
+-   [#1398](https://github.com/learningeconomy/LearnCard/pull/1398) [`b9ee9b1d331257b4bbd088e11d4fe0f55d98ae91`](https://github.com/learningeconomy/LearnCard/commit/b9ee9b1d331257b4bbd088e11d4fe0f55d98ae91) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: Always show edge cards on swiper carousel
+
+-   [#1404](https://github.com/learningeconomy/LearnCard/pull/1404) [`6417de04cfb15ab10eb85ba3a934b09ff7835c52`](https://github.com/learningeconomy/LearnCard/commit/6417de04cfb15ab10eb85ba3a934b09ff7835c52) Thanks [@smurflo2](https://github.com/smurflo2)! - Speed up Self Assigned Skills save
+
+-   [#1387](https://github.com/learningeconomy/LearnCard/pull/1387) [`8a14a233d2faee61151c552c3eeddc87cfbade2d`](https://github.com/learningeconomy/LearnCard/commit/8a14a233d2faee61151c552c3eeddc87cfbade2d) Thanks [@smurflo2](https://github.com/smurflo2)! - Fix pruning credentials from contracts + bug fest fixes
+
+-   [#1403](https://github.com/learningeconomy/LearnCard/pull/1403) [`948100f45b11a76c961eadf2eb3224646bd38d09`](https://github.com/learningeconomy/LearnCard/commit/948100f45b11a76c961eadf2eb3224646bd38d09) Thanks [@smurflo2](https://github.com/smurflo2)! - Fix new credential indicators
+
+-   [#1406](https://github.com/learningeconomy/LearnCard/pull/1406) [`98584bb0af8525961d2196d4d372772480b241c3`](https://github.com/learningeconomy/LearnCard/commit/98584bb0af8525961d2196d4d372772480b241c3) Thanks [@Custard7](https://github.com/Custard7)! - feat: Peer Badges
+
+## 1.97.2
+
+### Patch Changes
+
+-   [#1392](https://github.com/learningeconomy/LearnCard/pull/1392) [`a0279fba0a6a9d265cafef760b0a6b971b82a87b`](https://github.com/learningeconomy/LearnCard/commit/a0279fba0a6a9d265cafef760b0a6b971b82a87b) Thanks [@goblincore](https://github.com/goblincore)! - fix: native notifications route + side-menu logout redirect
+
+-   [#1397](https://github.com/learningeconomy/LearnCard/pull/1397) [`6d17eace1fc99377db54b4317dfd69bd40c8e021`](https://github.com/learningeconomy/LearnCard/commit/6d17eace1fc99377db54b4317dfd69bd40c8e021) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: Issue flow
+
+-   [#1389](https://github.com/learningeconomy/LearnCard/pull/1389) [`43be4f491751008d410c486742156256614205c5`](https://github.com/learningeconomy/LearnCard/commit/43be4f491751008d410c486742156256614205c5) Thanks [@Custard7](https://github.com/Custard7)! - feat: Desktop AI Pathways
+
+-   [#1391](https://github.com/learningeconomy/LearnCard/pull/1391) [`8272ac35f75364319d75c53887c7a9682b4eed8f`](https://github.com/learningeconomy/LearnCard/commit/8272ac35f75364319d75c53887c7a9682b4eed8f) Thanks [@goblincore](https://github.com/goblincore)! - fix: eliminate the loading-screen flash on hard refresh and cold login. The wallet now survives the auth coordinator re-initialization that follows Firebase session restore (instead of being torn down and rebuilt while flashing the loader over the rendered app), and the coordinator bridges the login provider swap with a transitional state so the login screen no longer flashes between loaders.
+
+-   [#1395](https://github.com/learningeconomy/LearnCard/pull/1395) [`1dfc4fa94555071ccb2ed02eaa24c560503934ec`](https://github.com/learningeconomy/LearnCard/commit/1dfc4fa94555071ccb2ed02eaa24c560503934ec) Thanks [@Custard7](https://github.com/Custard7)! - chore: Update Claim Page Styles
+
+-   [#1396](https://github.com/learningeconomy/LearnCard/pull/1396) [`4f9f29069f2abc179a50fb2cd052dc06751b0e15`](https://github.com/learningeconomy/LearnCard/commit/4f9f29069f2abc179a50fb2cd052dc06751b0e15) Thanks [@goblincore](https://github.com/goblincore)! - fix: refresh claim-credential view + land on credential's category page
+
+## 1.97.1
+
+### Patch Changes
+
+-   [#1381](https://github.com/learningeconomy/LearnCard/pull/1381) [`604142cb067da6485e713326adf7b3461fd8d630`](https://github.com/learningeconomy/LearnCard/commit/604142cb067da6485e713326adf7b3461fd8d630) Thanks [@Custard7](https://github.com/Custard7)! - fix: Bug Fest
+
+-   [#1378](https://github.com/learningeconomy/LearnCard/pull/1378) [`0b844db213cd29e430aee5842fd9c2e7e30748be`](https://github.com/learningeconomy/LearnCard/commit/0b844db213cd29e430aee5842fd9c2e7e30748be) Thanks [@goblincore](https://github.com/goblincore)! - fix: App page tile icons + More Apps launch behavior
+
+-   [#1382](https://github.com/learningeconomy/LearnCard/pull/1382) [`e75bd4fd4699b2ac33dca2bc0ea339d22335b732`](https://github.com/learningeconomy/LearnCard/commit/e75bd4fd4699b2ac33dca2bc0ea339d22335b732) Thanks [@goblincore](https://github.com/goblincore)! - test(learn-card-app): remove dead smoke specs, salvage useGuardianGate as a vitest test
+
+-   [#1384](https://github.com/learningeconomy/LearnCard/pull/1384) [`55787f9bdbdbfd2773aae56182bf71793b01f1a1`](https://github.com/learningeconomy/LearnCard/commit/55787f9bdbdbfd2773aae56182bf71793b01f1a1) Thanks [@Custard7](https://github.com/Custard7)! - fix: Bug Fest: Profile Settings
+
+-   [#1379](https://github.com/learningeconomy/LearnCard/pull/1379) [`e5e1ff6cbce4f264a8380bfe57d23d81761c4353`](https://github.com/learningeconomy/LearnCard/commit/e5e1ff6cbce4f264a8380bfe57d23d81761c4353) Thanks [@goblincore](https://github.com/goblincore)! - fix: route to dashboard instead of launchpad after login
+
+-   [#1373](https://github.com/learningeconomy/LearnCard/pull/1373) [`3aa32349990c964f2c809c35643a2593a24c194d`](https://github.com/learningeconomy/LearnCard/commit/3aa32349990c964f2c809c35643a2593a24c194d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow Demo School cleanup to remove credentials from legacy contract URIs after the active contract flag changes.
+
+-   [#1374](https://github.com/learningeconomy/LearnCard/pull/1374) [`61e0a198c1166ec468f812caac8d7a3ddbd42edd`](https://github.com/learningeconomy/LearnCard/commit/61e0a198c1166ec468f812caac8d7a3ddbd42edd) Thanks [@Custard7](https://github.com/Custard7)! - fix: Activity Feed
+
+-   [#1385](https://github.com/learningeconomy/LearnCard/pull/1385) [`f357a1adf27917978f432c348419fb1f8a9799c8`](https://github.com/learningeconomy/LearnCard/commit/f357a1adf27917978f432c348419fb1f8a9799c8) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: Bug Fest July UI Fixes & Polishes 🐞🎉
+
+-   [#1380](https://github.com/learningeconomy/LearnCard/pull/1380) [`b898c44f924b2560e29a17e64840a138407d545d`](https://github.com/learningeconomy/LearnCard/commit/b898c44f924b2560e29a17e64840a138407d545d) Thanks [@goblincore](https://github.com/goblincore)! - chore: open notifications in right-side modal
+
+## 1.97.0
+
+### Minor Changes
+
+-   [#1295](https://github.com/learningeconomy/LearnCard/pull/1295) [`c0b5edb671ba3704b44547f9d0ef99f6f0e090ba`](https://github.com/learningeconomy/LearnCard/commit/c0b5edb671ba3704b44547f9d0ef99f6f0e090ba) Thanks [@Custard7](https://github.com/Custard7)! - Add a streamlined "Create Credential" flow (simple send), gated behind the `enableSimpleSend` flag.
+
+    A new `/issue` page lets users issue a standards-pure OBv3 credential from one screen — from scratch, from an imported source (link, file, JSON, or Credential Engine ID), or by resending a credential they already manage — with a live card preview and self / specific-people / claim-link recipients.
+
+    Also includes shared credential-card fixes used across the wallet: achievement-type-aware subtitles and display types, corrected category mapping, redesigned "verified source" alignments, and image/placeholder fallbacks. `@learncard/types` gains an optional `created` field on the boost validator.
+
+### Patch Changes
+
+-   [#1329](https://github.com/learningeconomy/LearnCard/pull/1329) [`05acdcf9b7c3cb8e9f8af530a48a970fe7f8e571`](https://github.com/learningeconomy/LearnCard/commit/05acdcf9b7c3cb8e9f8af530a48a970fe7f8e571) Thanks [@goblincore](https://github.com/goblincore)! - feat: LC-1928 Rework of LCA Apps page redesign (initial implementation)
+
+-   [#1361](https://github.com/learningeconomy/LearnCard/pull/1361) [`3626bc083dac33a51ee5c4125b9b0d227bf0ae09`](https://github.com/learningeconomy/LearnCard/commit/3626bc083dac33a51ee5c4125b9b0d227bf0ae09) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Improve Resume Builder credential focus behavior and credential card editing layout.
+
+-   [#1364](https://github.com/learningeconomy/LearnCard/pull/1364) [`ced16e60cecba72335dd38725ea1dbe90beee221`](https://github.com/learningeconomy/LearnCard/commit/ced16e60cecba72335dd38725ea1dbe90beee221) Thanks [@goblincore](https://github.com/goblincore)! - test(e2e): fix app-store + wallet selectors for Nav/App/Passport redesign
+
+-   [#1363](https://github.com/learningeconomy/LearnCard/pull/1363) [`21f0076cf769b42881d64f4b04fe9c5767dae690`](https://github.com/learningeconomy/LearnCard/commit/21f0076cf769b42881d64f4b04fe9c5767dae690) Thanks [@Custard7](https://github.com/Custard7)! - feat: Data Center
+
+-   [#1356](https://github.com/learningeconomy/LearnCard/pull/1356) [`d9e9fbdadccdba92736189c9772afd8e7b929b1e`](https://github.com/learningeconomy/LearnCard/commit/d9e9fbdadccdba92736189c9772afd8e7b929b1e) Thanks [@Custard7](https://github.com/Custard7)! - Offline resiliency
+
+-   [#1329](https://github.com/learningeconomy/LearnCard/pull/1329) [`05acdcf9b7c3cb8e9f8af530a48a970fe7f8e571`](https://github.com/learningeconomy/LearnCard/commit/05acdcf9b7c3cb8e9f8af530a48a970fe7f8e571) Thanks [@goblincore](https://github.com/goblincore)! - feat: [LC-1919] Reorganize Passport Content (+ gated activity feed)
+
+-   [#1359](https://github.com/learningeconomy/LearnCard/pull/1359) [`ca6760392066c4ca5daf0061e740523a63b6cf52`](https://github.com/learningeconomy/LearnCard/commit/ca6760392066c4ca5daf0061e740523a63b6cf52) Thanks [@smurflo2](https://github.com/smurflo2)! - Support more reliable and stable ai insights generation. Include Skills, Goals, and Professional Title data
+
+-   [#1371](https://github.com/learningeconomy/LearnCard/pull/1371) [`120e1b20b169afbdd8478bbbf958f687035aaf35`](https://github.com/learningeconomy/LearnCard/commit/120e1b20b169afbdd8478bbbf958f687035aaf35) Thanks [@Custard7](https://github.com/Custard7)! - fix: Nav Wrap
+
+-   [#1360](https://github.com/learningeconomy/LearnCard/pull/1360) [`995b6328f5cb85888e9c247616c3ba8421a047b5`](https://github.com/learningeconomy/LearnCard/commit/995b6328f5cb85888e9c247616c3ba8421a047b5) Thanks [@goblincore](https://github.com/goblincore)! - feat: [LC-1905] Upload VC resiliency in Build My LearnCard — accept .txt files, resiliently extract JSON, and import a VerifiablePresentation wrapping one or more VCs (partial success supported).
+
+-   [#1362](https://github.com/learningeconomy/LearnCard/pull/1362) [`3db07a355d84e3b900cfe91932dd0eac36212bf1`](https://github.com/learningeconomy/LearnCard/commit/3db07a355d84e3b900cfe91932dd0eac36212bf1) Thanks [@goblincore](https://github.com/goblincore)! - fix(side-nav): remove dark right-edge line + stop width shrink on load
+
+-   [#1365](https://github.com/learningeconomy/LearnCard/pull/1365) [`1a9401eb0a51a15c413d99346bf4d04750afe7f0`](https://github.com/learningeconomy/LearnCard/commit/1a9401eb0a51a15c413d99346bf4d04750afe7f0) Thanks [@Custard7](https://github.com/Custard7)! - fix: Fix Verification Flow
+
+-   [#1355](https://github.com/learningeconomy/LearnCard/pull/1355) [`b1e554a65413116c36e6f2162410d7b7aefa1174`](https://github.com/learningeconomy/LearnCard/commit/b1e554a65413116c36e6f2162410d7b7aefa1174) Thanks [@Custard7](https://github.com/Custard7)! - fix: Tanstack Resolution
+
+-   [#1329](https://github.com/learningeconomy/LearnCard/pull/1329) [`05acdcf9b7c3cb8e9f8af530a48a970fe7f8e571`](https://github.com/learningeconomy/LearnCard/commit/05acdcf9b7c3cb8e9f8af530a48a970fe7f8e571) Thanks [@goblincore](https://github.com/goblincore)! - feat(nav): LC-1921 rework left navigation (dashboard-first IA)
+
+-   [#1370](https://github.com/learningeconomy/LearnCard/pull/1370) [`941d1084a88796f7e9256b551e8e548dc3d1bed6`](https://github.com/learningeconomy/LearnCard/commit/941d1084a88796f7e9256b551e8e548dc3d1bed6) Thanks [@Custard7](https://github.com/Custard7)! - fix: Add Journeys Back
+
+-   [#1372](https://github.com/learningeconomy/LearnCard/pull/1372) [`6f0fab0dfa3f68960a180540cacec5717c32cf57`](https://github.com/learningeconomy/LearnCard/commit/6f0fab0dfa3f68960a180540cacec5717c32cf57) Thanks [@goblincore](https://github.com/goblincore)! - fix: align Boosts→Badges terminology in wallet category (LCA)
+
+-   [#1358](https://github.com/learningeconomy/LearnCard/pull/1358) [`f76ff1a3d0439c71c1011bfc5b670002eb6fbea3`](https://github.com/learningeconomy/LearnCard/commit/f76ff1a3d0439c71c1011bfc5b670002eb6fbea3) Thanks [@Custard7](https://github.com/Custard7)! - feat: Quick Build Journeys
+
+-   Updated dependencies [[`c0b5edb671ba3704b44547f9d0ef99f6f0e090ba`](https://github.com/learningeconomy/LearnCard/commit/c0b5edb671ba3704b44547f9d0ef99f6f0e090ba)]:
+    -   @learncard/react@2.10.6
+    -   @learncard/credential-library@1.0.13
+    -   @learncard/helpers@1.3.9
+    -   @learncard/lca-api-plugin@1.2.19
+    -   @learncard/ler-rs-plugin@0.1.18
+    -   @learncard/open-badge-v2-plugin@1.1.28
+    -   @learncard/render-method-plugin@3.0.7
+    -   @learncard/sss-key-manager@0.1.17
+
+## 1.96.5
+
+### Patch Changes
+
+-   Updated dependencies [[`9b1f8352946f78f382f85d95c5e983d86449ea68`](https://github.com/learningeconomy/LearnCard/commit/9b1f8352946f78f382f85d95c5e983d86449ea68)]:
+    -   @learncard/helpers@1.3.8
+    -   @learncard/react@2.10.5
+    -   @learncard/sss-key-manager@0.1.16
+    -   @learncard/credential-library@1.0.12
+    -   @learncard/open-badge-v2-plugin@1.1.27
+    -   @learncard/lca-api-plugin@1.2.18
+    -   @learncard/ler-rs-plugin@0.1.17
+    -   @learncard/render-method-plugin@3.0.6
+
+## 1.96.4
+
+### Patch Changes
+
+-   [#1338](https://github.com/learningeconomy/LearnCard/pull/1338) [`8008ddf76f84338e8893a128789ee420765279ce`](https://github.com/learningeconomy/LearnCard/commit/8008ddf76f84338e8893a128789ee420765279ce) Thanks [@Custard7](https://github.com/Custard7)! - fix: Add safe-margin to Dashboard
+
+-   [#1300](https://github.com/learningeconomy/LearnCard/pull/1300) [`9e0f0db6c1ca818176d9153b45e96390dba5171d`](https://github.com/learningeconomy/LearnCard/commit/9e0f0db6c1ca818176d9153b45e96390dba5171d) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1871] - Move Consent Flow Sync Off Critical Path
+
+-   [#1336](https://github.com/learningeconomy/LearnCard/pull/1336) [`7dc73ba5068df0cfb1b0cc05eac36376ce5387dc`](https://github.com/learningeconomy/LearnCard/commit/7dc73ba5068df0cfb1b0cc05eac36376ce5387dc) Thanks [@Custard7](https://github.com/Custard7)! - fix: AI Passport Contract, Local Dev
+
+-   Updated dependencies [[`59d79e9c2aed145284d6cc3de4c53ef0d3415299`](https://github.com/learningeconomy/LearnCard/commit/59d79e9c2aed145284d6cc3de4c53ef0d3415299)]:
+    -   @learncard/credential-library@1.0.11
+    -   @learncard/embed-sdk@0.1.4
+    -   @learncard/helpers@1.3.7
+    -   @learncard/lca-api-plugin@1.2.17
+    -   @learncard/ler-rs-plugin@0.1.16
+    -   @learncard/open-badge-v2-plugin@1.1.26
+    -   @learncard/render-method-plugin@3.0.5
+    -   @learncard/react@2.10.4
+    -   @learncard/sss-key-manager@0.1.15
+
+## 1.96.3
+
+### Patch Changes
+
+-   [#1328](https://github.com/learningeconomy/LearnCard/pull/1328) [`922903508ffcd15f0644617a0ac9566c2735a68a`](https://github.com/learningeconomy/LearnCard/commit/922903508ffcd15f0644617a0ac9566c2735a68a) Thanks [@goblincore](https://github.com/goblincore)! - fix(boost): use new credential badge in LCA, hide meaningless "GENERIC" subtype label
+
+-   Updated dependencies [[`9853f6a89fa9103975ec855367e789746aee5387`](https://github.com/learningeconomy/LearnCard/commit/9853f6a89fa9103975ec855367e789746aee5387), [`6bebc466925987b23008b0de2229db554035a87e`](https://github.com/learningeconomy/LearnCard/commit/6bebc466925987b23008b0de2229db554035a87e)]:
+    -   @learncard/ler-rs-plugin@0.1.15
+    -   @learncard/credential-library@1.0.10
+    -   @learncard/helpers@1.3.6
+    -   @learncard/lca-api-plugin@1.2.16
+    -   @learncard/open-badge-v2-plugin@1.1.25
+    -   @learncard/render-method-plugin@3.0.4
+    -   @learncard/react@2.10.3
+    -   @learncard/sss-key-manager@0.1.14
+
+## 1.96.2
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/credential-library@1.0.9
+    -   @learncard/helpers@1.3.5
+    -   @learncard/lca-api-plugin@1.2.15
+    -   @learncard/ler-rs-plugin@0.1.14
+    -   @learncard/open-badge-v2-plugin@1.1.24
+    -   @learncard/render-method-plugin@3.0.3
+    -   @learncard/react@2.10.2
+    -   @learncard/sss-key-manager@0.1.13
+
+## 1.96.1
+
+### Patch Changes
+
+-   [#1304](https://github.com/learningeconomy/LearnCard/pull/1304) [`263efddbd32b67786224d6fb69d3b460bc2d68b2`](https://github.com/learningeconomy/LearnCard/commit/263efddbd32b67786224d6fb69d3b460bc2d68b2) Thanks [@goblincore](https://github.com/goblincore)! - feat(learn-card-app): App Store category loading skeletons (LC-1907)
+
+-   [#1296](https://github.com/learningeconomy/LearnCard/pull/1296) [`d75873c16f6bb287ef4d1c3e3fcc665a0e00ffd5`](https://github.com/learningeconomy/LearnCard/commit/d75873c16f6bb287ef4d1c3e3fcc665a0e00ffd5) Thanks [@smurflo2](https://github.com/smurflo2)! - Drive seeded skill frameworks via a `features.useSeededSkillFrameworks` tenant config flag instead of a hardcoded production brain-service host allowlist
+
+-   [#1293](https://github.com/learningeconomy/LearnCard/pull/1293) [`f77abec6b108d931e566c573f0694f2197e73eb9`](https://github.com/learningeconomy/LearnCard/commit/f77abec6b108d931e566c573f0694f2197e73eb9) Thanks [@smurflo2](https://github.com/smurflo2)! - Update ConsentFlow so it can read My Skill Profile data (Verifiable Data)
+
+-   [#1302](https://github.com/learningeconomy/LearnCard/pull/1302) [`ed44808fad96e9cba5c019fffa3780aba35f4095`](https://github.com/learningeconomy/LearnCard/commit/ed44808fad96e9cba5c019fffa3780aba35f4095) Thanks [@smurflo2](https://github.com/smurflo2)! - Privacy & Data onboarding step
+
+-   [#1305](https://github.com/learningeconomy/LearnCard/pull/1305) [`a8d215a8eccaf3781b02d1c1b5df67ef1c315340`](https://github.com/learningeconomy/LearnCard/commit/a8d215a8eccaf3781b02d1c1b5df67ef1c315340) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1895] - Issuer Detail Popover
+
+-   [#1294](https://github.com/learningeconomy/LearnCard/pull/1294) [`fffb7b42fa224e1a96fba7f03c5333f5ac0121ec`](https://github.com/learningeconomy/LearnCard/commit/fffb7b42fa224e1a96fba7f03c5333f5ac0121ec) Thanks [@Custard7](https://github.com/Custard7)! - Add Dashboard home screen (flagged)
+
+-   [#1307](https://github.com/learningeconomy/LearnCard/pull/1307) [`d28f87ebf8c2272b19ee83c5e1f8ba8aa3b329ae`](https://github.com/learningeconomy/LearnCard/commit/d28f87ebf8c2272b19ee83c5e1f8ba8aa3b329ae) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1896] - Add "Become a Verified Issuer" CTA
+
+-   [#1308](https://github.com/learningeconomy/LearnCard/pull/1308) [`e2463e9fd905d9ed3101f9141b854e27532f7ef9`](https://github.com/learningeconomy/LearnCard/commit/e2463e9fd905d9ed3101f9141b854e27532f7ef9) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1897] - Add vision OCR fallback for scanned PDFs and image uploads (Mimetypes support)
+
+-   [#1310](https://github.com/learningeconomy/LearnCard/pull/1310) [`d4d0a9e8a188a64c3d9e1ebbf63cbb698888813d`](https://github.com/learningeconomy/LearnCard/commit/d4d0a9e8a188a64c3d9e1ebbf63cbb698888813d) Thanks [@smurflo2](https://github.com/smurflo2)! - New LearnCard AI contract that includes goals, skills, professional title, and work experience. Also seperate network consent contract from LearnCard AI contract
+
+-   Updated dependencies [[`ff998efc079ad82dec633353927dfa0dd3f6054c`](https://github.com/learningeconomy/LearnCard/commit/ff998efc079ad82dec633353927dfa0dd3f6054c), [`f77abec6b108d931e566c573f0694f2197e73eb9`](https://github.com/learningeconomy/LearnCard/commit/f77abec6b108d931e566c573f0694f2197e73eb9), [`ed44808fad96e9cba5c019fffa3780aba35f4095`](https://github.com/learningeconomy/LearnCard/commit/ed44808fad96e9cba5c019fffa3780aba35f4095), [`a8d215a8eccaf3781b02d1c1b5df67ef1c315340`](https://github.com/learningeconomy/LearnCard/commit/a8d215a8eccaf3781b02d1c1b5df67ef1c315340)]:
+    -   @learncard/react@2.10.1
+    -   @learncard/credential-library@1.0.8
+    -   @learncard/lca-api-plugin@1.2.14
+
+## 1.96.0
+
+### Minor Changes
+
+-   [#1264](https://github.com/learningeconomy/LearnCard/pull/1264) [`fb74ceeea96438ddff92a78bbaf08806fa3147a4`](https://github.com/learningeconomy/LearnCard/commit/fb74ceeea96438ddff92a78bbaf08806fa3147a4) Thanks [@Custard7](https://github.com/Custard7)! - Add SdJwtVcClaimsBox widget to BoostDetailsSideBar/SideMenu. SD-JWT-VC credentials now display their disclosed claims as line items with a selective-disclosure note in the Details tab. The existing card display continues to render the credential's identity (title, issuer, expiration).
+
+### Patch Changes
+
+-   [#1276](https://github.com/learningeconomy/LearnCard/pull/1276) [`e4e315614f49ff96190c7ef60e9796a486d3e661`](https://github.com/learningeconomy/LearnCard/commit/e4e315614f49ff96190c7ef60e9796a486d3e661) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: LC-1868 - Updated CLR Redesign
+
+-   [#1286](https://github.com/learningeconomy/LearnCard/pull/1286) [`1bab6ba025c7f8f947c5c3de1ff8b63595c6919a`](https://github.com/learningeconomy/LearnCard/commit/1bab6ba025c7f8f947c5c3de1ff8b63595c6919a) Thanks [@smurflo2](https://github.com/smurflo2)! - fix double age gate
+
+-   [#1276](https://github.com/learningeconomy/LearnCard/pull/1276) [`e4e315614f49ff96190c7ef60e9796a486d3e661`](https://github.com/learningeconomy/LearnCard/commit/e4e315614f49ff96190c7ef60e9796a486d3e661) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1869] - Implement CLR badge card
+
+-   [#1290](https://github.com/learningeconomy/LearnCard/pull/1290) [`1889cff061330f0667fca9c161b56f673235475a`](https://github.com/learningeconomy/LearnCard/commit/1889cff061330f0667fca9c161b56f673235475a) Thanks [@smurflo2](https://github.com/smurflo2)! - Make staging use seeded frameworks
+
+-   [#1275](https://github.com/learningeconomy/LearnCard/pull/1275) [`e7ca2594a4d3912a1e7737b5819de0530be05570`](https://github.com/learningeconomy/LearnCard/commit/e7ca2594a4d3912a1e7737b5819de0530be05570) Thanks [@Custard7](https://github.com/Custard7)! - feat(capgo): staging channel deploys, /capgo-preview PR previews, channel switcher
+
+-   [#1283](https://github.com/learningeconomy/LearnCard/pull/1283) [`4bf986418f6477a7659faa348307ae7af199182a`](https://github.com/learningeconomy/LearnCard/commit/4bf986418f6477a7659faa348307ae7af199182a) Thanks [@smurflo2](https://github.com/smurflo2)! - Add commands for seeding skill-frameworks (locally + staging)
+
+-   [#1289](https://github.com/learningeconomy/LearnCard/pull/1289) [`77ddf3dda990b958e913a479f260bde0ea72447c`](https://github.com/learningeconomy/LearnCard/commit/77ddf3dda990b958e913a479f260bde0ea72447c) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: CLR preview native fixes
+
+-   [#1267](https://github.com/learningeconomy/LearnCard/pull/1267) [`8fdf6fa9ffdd13426ffea6762ee1a8f5f6196e0f`](https://github.com/learningeconomy/LearnCard/commit/8fdf6fa9ffdd13426ffea6762ee1a8f5f6196e0f) Thanks [@smurflo2](https://github.com/smurflo2)! - Check Age Gate first during sign up
+
+-   [#1264](https://github.com/learningeconomy/LearnCard/pull/1264) [`fb74ceeea96438ddff92a78bbaf08806fa3147a4`](https://github.com/learningeconomy/LearnCard/commit/fb74ceeea96438ddff92a78bbaf08806fa3147a4) Thanks [@Custard7](https://github.com/Custard7)! - Split OID4VCI auth-code flow into two retry-safe phases. New plugin methods `exchangeAuthCodeForToken` and `requestCredentialsFromAuthCodeToken` let the resilient wrapper exchange the OAuth code exactly once and reuse the resulting access_token across signer-axis retries. Fixes a bug where the orchestrator's did:web → did:key fallback would fail with `invalid_grant: Code inactive` when EUDI (and other RFC 6749-strict issuers) rejected the second exchange attempt. `completeCredentialOfferAuthCode` continues to work as a one-shot convenience method.
+
+    Pre-authorized-code issuance now exposes the same split via `exchangePreAuthCodeForToken` and `requestCredentialsFromPreAuthToken`, allowing resilient signer fallback to reuse a single-use pre-auth token exchange before storing credentials.
+
+-   [#1287](https://github.com/learningeconomy/LearnCard/pull/1287) [`51976f87f341a0c036fab1f550aeb3a31bc6cb70`](https://github.com/learningeconomy/LearnCard/commit/51976f87f341a0c036fab1f550aeb3a31bc6cb70) Thanks [@goblincore](https://github.com/goblincore)! - fix(ci): copy credential-library package in learn-card-app Dockerfile
+
+-   [#1271](https://github.com/learningeconomy/LearnCard/pull/1271) [`c749d55bec0fed881c3e488ffd90744e2eee021e`](https://github.com/learningeconomy/LearnCard/commit/c749d55bec0fed881c3e488ffd90744e2eee021e) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1862] FE: Revoke/suspend/unsuspend issued credentials followup part 1
+
+-   [#1264](https://github.com/learningeconomy/LearnCard/pull/1264) [`fb74ceeea96438ddff92a78bbaf08806fa3147a4`](https://github.com/learningeconomy/LearnCard/commit/fb74ceeea96438ddff92a78bbaf08806fa3147a4) Thanks [@Custard7](https://github.com/Custard7)! - Add prettifyVerificationItems helper to humanize raw SD-JWT-VC verification check codes (parse, disclosure_hash_integrity, issuer_resolved, issuer_signature, vct, expiration) and W3C VC check codes (proof, credentialStatus, credentialSchema) into user-friendly labels in the Credential Verifications display. Idempotent — already-prettified items pass through unchanged. Applied in useVerifyCredential and BoostPreview.useVerification.
+
+-   [#1291](https://github.com/learningeconomy/LearnCard/pull/1291) [`d291f603d38de4a20a606efb1d5ab5f153746f5c`](https://github.com/learningeconomy/LearnCard/commit/d291f603d38de4a20a606efb1d5ab5f153746f5c) Thanks [@smurflo2](https://github.com/smurflo2)! - Make staging use staging LD config
+
+-   [#1292](https://github.com/learningeconomy/LearnCard/pull/1292) [`c93e603d42c7aeb7e433bb4ba6a3374af18dde74`](https://github.com/learningeconomy/LearnCard/commit/c93e603d42c7aeb7e433bb4ba6a3374af18dde74) Thanks [@Custard7](https://github.com/Custard7)! - Hide unknown issuer
+
+-   [#1288](https://github.com/learningeconomy/LearnCard/pull/1288) [`0aa12efdde83ae3d82130aa05978364283c04a19`](https://github.com/learningeconomy/LearnCard/commit/0aa12efdde83ae3d82130aa05978364283c04a19) Thanks [@goblincore](https://github.com/goblincore)! - fix(e2e): import getLogger from logger module, not learn-card-base barrel
+
+-   Updated dependencies [[`e4e315614f49ff96190c7ef60e9796a486d3e661`](https://github.com/learningeconomy/LearnCard/commit/e4e315614f49ff96190c7ef60e9796a486d3e661), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`fd0cac0b78add9150cc5256a984188c32b6f4b2f`](https://github.com/learningeconomy/LearnCard/commit/fd0cac0b78add9150cc5256a984188c32b6f4b2f), [`fb74ceeea96438ddff92a78bbaf08806fa3147a4`](https://github.com/learningeconomy/LearnCard/commit/fb74ceeea96438ddff92a78bbaf08806fa3147a4), [`3a0b110bd9503969c1f33c47505a43d2d199d083`](https://github.com/learningeconomy/LearnCard/commit/3a0b110bd9503969c1f33c47505a43d2d199d083), [`c93e603d42c7aeb7e433bb4ba6a3374af18dde74`](https://github.com/learningeconomy/LearnCard/commit/c93e603d42c7aeb7e433bb4ba6a3374af18dde74), [`357ba3615d69cf28412ac779ddc4858139b46929`](https://github.com/learningeconomy/LearnCard/commit/357ba3615d69cf28412ac779ddc4858139b46929)]:
+    -   @learncard/react@2.10.0
+    -   @learncard/helpers@1.3.4
+    -   @learncard/render-method-plugin@3.0.2
+    -   @learncard/credential-library@1.0.8
+    -   @learncard/lca-api-plugin@1.2.13
+    -   @learncard/ler-rs-plugin@0.1.13
+    -   @learncard/open-badge-v2-plugin@1.1.23
+    -   @learncard/sss-key-manager@0.1.12
+
+## 1.95.16
+
+### Patch Changes
+
+-   [#1278](https://github.com/learningeconomy/LearnCard/pull/1278) [`b5fd74f72a5b08d271900fa45e856b7464c4a79f`](https://github.com/learningeconomy/LearnCard/commit/b5fd74f72a5b08d271900fa45e856b7464c4a79f) Thanks [@gerardopar](https://github.com/gerardopar)! - redeploy trigger
+
+-   [#1281](https://github.com/learningeconomy/LearnCard/pull/1281) [`ed1b8616cd70a571561592ae4cfb8df5dff23b1d`](https://github.com/learningeconomy/LearnCard/commit/ed1b8616cd70a571561592ae4cfb8df5dff23b1d) Thanks [@Custard7](https://github.com/Custard7)! - Fix playwright import
+
+-   Updated dependencies [[`1706490abb9a8c1b099882c84d144ccabf92ffe2`](https://github.com/learningeconomy/LearnCard/commit/1706490abb9a8c1b099882c84d144ccabf92ffe2)]:
+    -   @learncard/helpers@1.3.3
+    -   @learncard/lca-api-plugin@1.2.12
+    -   @learncard/ler-rs-plugin@0.1.12
+    -   @learncard/open-badge-v2-plugin@1.1.22
+    -   @learncard/react@2.9.29
+    -   @learncard/render-method-plugin@3.0.1
+    -   @learncard/sss-key-manager@0.1.11
+
+## 1.95.15
+
+### Patch Changes
+
+-   [#1268](https://github.com/learningeconomy/LearnCard/pull/1268) [`343ba0c683de7a10f23c40f9381515c56b00774d`](https://github.com/learningeconomy/LearnCard/commit/343ba0c683de7a10f23c40f9381515c56b00774d) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: LC-1887 - Migrate All Logs to Centralized Logger
+
+-   [#1268](https://github.com/learningeconomy/LearnCard/pull/1268) [`343ba0c683de7a10f23c40f9381515c56b00774d`](https://github.com/learningeconomy/LearnCard/commit/343ba0c683de7a10f23c40f9381515c56b00774d) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: LC-1887 - Migrate LCA + Scouts Logs -> getLogger()
+
+-   [#1257](https://github.com/learningeconomy/LearnCard/pull/1257) [`b0022c464e449800e133e1c3f825c6d5fb947c88`](https://github.com/learningeconomy/LearnCard/commit/b0022c464e449800e133e1c3f825c6d5fb947c88) Thanks [@Custard7](https://github.com/Custard7)! - feat: Add OpenID Deep Link Support to Native Apps
+
+-   Updated dependencies [[`7e90089f517908562becf72eb3831e9208232278`](https://github.com/learningeconomy/LearnCard/commit/7e90089f517908562becf72eb3831e9208232278)]:
+    -   @learncard/helpers@1.3.2
+    -   @learncard/render-method-plugin@3.0.0
+    -   @learncard/lca-api-plugin@1.2.11
+    -   @learncard/ler-rs-plugin@0.1.11
+    -   @learncard/open-badge-v2-plugin@1.1.21
+    -   @learncard/react@2.9.28
+    -   @learncard/sss-key-manager@0.1.10
+
+## 1.95.14
+
+### Patch Changes
+
+-   [#1261](https://github.com/learningeconomy/LearnCard/pull/1261) [`57d7724515a064256037827dffc3e79b72b9186f`](https://github.com/learningeconomy/LearnCard/commit/57d7724515a064256037827dffc3e79b72b9186f) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: LC-1844 - Central Logging System (LCA/ScoutPass)
+
+-   [#1260](https://github.com/learningeconomy/LearnCard/pull/1260) [`8014ca6408ac30f9c356f3978cbbf9c3174b8e1d`](https://github.com/learningeconomy/LearnCard/commit/8014ca6408ac30f9c356f3978cbbf9c3174b8e1d) Thanks [@smurflo2](https://github.com/smurflo2)! - Add support for multiple global skills frameworks (specifically Pathsmith for now)
+
+-   [#1263](https://github.com/learningeconomy/LearnCard/pull/1263) [`77dfa030ed2e4f994feb1bf1f1a5992705007af9`](https://github.com/learningeconomy/LearnCard/commit/77dfa030ed2e4f994feb1bf1f1a5992705007af9) Thanks [@goblincore](https://github.com/goblincore)! - test(e2e): scope launcher-modal Add to LearnCard click instead of .nth(1)
+
+-   [#1253](https://github.com/learningeconomy/LearnCard/pull/1253) [`a8c92c4af29fba3759f58bc6cc23bc8e9d5db9cd`](https://github.com/learningeconomy/LearnCard/commit/a8c92c4af29fba3759f58bc6cc23bc8e9d5db9cd) Thanks [@goblincore](https://github.com/goblincore)! - feat: [LC-1853] Profile-building analytics — PostHog event instrumentation
+
+    Adds profile-building analytics instrumentation to answer PM questions about time-to-build, method attribution, per-method duration, AI activation threshold, and Skills Profile funnel timing.
+
+    New events: `account_created`, `profile_item_added`, `engagement_signal`, `skill_profile_step_started`, `skill_profile_step_completed`, `skill_profile_completed`, `skill_profile_abandoned`.
+
+    New types: `ProfileBuildMethod` enum (10 values), `ProfileSnapshot` interface.
+
+    Retrofitted optional `msSinceMethodStarted` field on `CLAIM_BOOST`, `SELF_BOOST`, `SEND_BOOST`, `ONBOARDING_COMPLETED`.
+
+    All analytics code lives in `apps/learn-card-app/src/analytics/` — no shared-package changes.
+
+-   [#1243](https://github.com/learningeconomy/LearnCard/pull/1243) [`dd5872914236a7f0a089a76292c792bb949dd4ca`](https://github.com/learningeconomy/LearnCard/commit/dd5872914236a7f0a089a76292c792bb949dd4ca) Thanks [@goblincore](https://github.com/goblincore)! - chore: [LC-1843] Replace horizontal role scroller
+
+-   [#1262](https://github.com/learningeconomy/LearnCard/pull/1262) [`16406f4ce69f11b84b03bd43766db03d816e54a5`](https://github.com/learningeconomy/LearnCard/commit/16406f4ce69f11b84b03bd43766db03d816e54a5) Thanks [@goblincore](https://github.com/goblincore)! - fix: test(e2e): drill through LaunchPadActionModal in wallet-credentials
+
+-   [#1241](https://github.com/learningeconomy/LearnCard/pull/1241) [`5ffb1f605440c7b3dfb5259e27694936fb755eab`](https://github.com/learningeconomy/LearnCard/commit/5ffb1f605440c7b3dfb5259e27694936fb755eab) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1802] App Store tabs
+
+## 1.95.13
+
+### Patch Changes
+
+-   [#1240](https://github.com/learningeconomy/LearnCard/pull/1240) [`3a05603c72d76020b43ec6bbd5e31b2b31c0fd2b`](https://github.com/learningeconomy/LearnCard/commit/3a05603c72d76020b43ec6bbd5e31b2b31c0fd2b) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-1812][LC-1855] - Add Render Method Plugin + Render Method Toggle
+
+    Adds `@learncard/render-method-plugin` for attaching and reading W3C `renderMethod` entries on Verifiable Credentials. The plugin is registered as part of the default LearnCard wallet stack.
+
+    **Write side** (`wallet.invoke`): `attachRenderMethod`, `buildTemplateRenderMethod`.
+
+    **Read side** (`wallet.invoke` and direct imports):
+
+    -   String-based sugar (most common case): `findTemplateRenderMethod(vc, suite | suites[])`, `findTemplateRenderMethods(vc, suite | suites[])`.
+    -   Backward-compatible alias: `getSvgMustacheRenderMethod`.
+    -   Predicate-based escape hatch: `findRenderMethod`, `findRenderMethods`.
+    -   Raw access: `getRenderMethods` (unwraps `CertifiedBoostCredential`, normalizes object↔array).
+    -   Data shaping: `buildRenderData(vc, renderProperty?)` (Mustache context with `vc` / `credential` / `credentialSubjects` aliases, RFC 6901 overlay).
+    -   Exported type guards: `isTemplateRenderMethod`, `isSvgMustacheRenderMethod`.
+
+    The pure data-shaping helpers (Mustache context, JSON Pointer overlay, boost unwrapping) moved out of `apps/learn-card-app/src/helpers/renderMethod.helpers.ts` into the plugin; the app now only owns the SVG-specific render pipeline (Mustache hydration + DOMPurify sanitization + React display).
+
+    **`@learncard/types`**: `TemplateRenderMethodValidator` widened — `renderSuite` and `outputPreference.mediaType` are now `z.string()` (were `z.literal('svg-mustache')` and `z.literal('image/svg+xml')`). The literals couldn't express the W3C spec's openness to other suites/types and made the plugin's "future-extensible" read API contradictory. Backward-compatible: all existing literal values still validate.
+
+    Behavior:
+
+    -   `attachRenderMethod` is **opt-in**: calling it without a config returns the VC unchanged. Pass `{ templateId: DEFAULT_TEMPLATE_ID }` or a custom `{ templateId | templateValue }` to actually attach a render method. This avoids polluting every issued credential's `@context` with the render-method JSON-LD context URL.
+    -   `templateId` must be an `http://` or `https://` URL. Empty values, `javascript:`, `file:`, `data:` and other schemes are rejected at the plugin boundary.
+    -   `templateValue` is URL-encoded into a `data:image/svg+xml,` URI. Empty or whitespace-only values are rejected.
+    -   The `useRenderMethodEnabled` LaunchDarkly flag gates display only (the `RenderMethodDisplay` component, the `BoostDisplayStyleSelector`, the `getSvgMustacheRenderMethod` lookup). It does not gate the write path.
+
+    Known risk:
+
+    -   The JSON-LD context URL (`https://digitalbazaar.github.io/vc-render-method-context/contexts/v2rc2.jsonld`) is a community-group draft, not a finalized W3C TR. VCs issued with this context depend on the URL remaining stable. Follow-up work will bundle the context locally and migrate to the W3C TR URL when published.
+
+    Types:
+
+    -   `@learncard/types` adds `TemplateRenderMethod`, `RenderMethod`, and a top-level `renderMethod` field on `UnsignedVC`.
+    -   `learn-card-base` extends `BespokeLearnCard` to include `RenderMethodPlugin`, making `wallet.invoke.attachRenderMethod` and `wallet.invoke.buildTemplateRenderMethod` type-safe across the codebase.
+
+-   [#1201](https://github.com/learningeconomy/LearnCard/pull/1201) [`37439411ac68618fc27898ac4c0f48dbef4e424b`](https://github.com/learningeconomy/LearnCard/commit/37439411ac68618fc27898ac4c0f48dbef4e424b) Thanks [@Custard7](https://github.com/Custard7)! - [LC-1794]
+
+-   [#1249](https://github.com/learningeconomy/LearnCard/pull/1249) [`278cd687be6e9da19cdd4a61be6d4c023ab403e7`](https://github.com/learningeconomy/LearnCard/commit/278cd687be6e9da19cdd4a61be6d4c023ab403e7) Thanks [@goblincore](https://github.com/goblincore)! - fix(docker): copy render-method-plugin into learn-card-app image
+
+-   [#1221](https://github.com/learningeconomy/LearnCard/pull/1221) [`8746f659aa05c75e4e5a5a3273c2b5dd052d980c`](https://github.com/learningeconomy/LearnCard/commit/8746f659aa05c75e4e5a5a3273c2b5dd052d980c) Thanks [@Custard7](https://github.com/Custard7)! - fix: [LC-1841] Eliminate cold-start flash sequence
+
+-   [#1238](https://github.com/learningeconomy/LearnCard/pull/1238) [`180973146cacf9e69b312841ccbb40fa32423c30`](https://github.com/learningeconomy/LearnCard/commit/180973146cacf9e69b312841ccbb40fa32423c30) Thanks [@Custard7](https://github.com/Custard7)! - feat: Add fallback resiliency strategies to OIDC exchanges
+
+-   [#1238](https://github.com/learningeconomy/LearnCard/pull/1238) [`180973146cacf9e69b312841ccbb40fa32423c30`](https://github.com/learningeconomy/LearnCard/commit/180973146cacf9e69b312841ccbb40fa32423c30) Thanks [@Custard7](https://github.com/Custard7)! - feat: Add fallback resiliency strategies to OIDC exchanges
+
+-   [#1252](https://github.com/learningeconomy/LearnCard/pull/1252) [`53ed6f15c248c05c01f64e27b504563092d16989`](https://github.com/learningeconomy/LearnCard/commit/53ed6f15c248c05c01f64e27b504563092d16989) Thanks [@goblincore](https://github.com/goblincore)! - [Fix/e2e] Fix failing E2E credential tests
+
+-   [#1237](https://github.com/learningeconomy/LearnCard/pull/1237) [`3116d75cf8d2b0f4638f76365b9d8ca92c8b9b3a`](https://github.com/learningeconomy/LearnCard/commit/3116d75cf8d2b0f4638f76365b9d8ca92c8b9b3a) Thanks [@Custard7](https://github.com/Custard7)! - fix: CapGo Drift
+
+-   [#1239](https://github.com/learningeconomy/LearnCard/pull/1239) [`13fdb2f58b67c48ae30053095924eaf356ed6564`](https://github.com/learningeconomy/LearnCard/commit/13fdb2f58b67c48ae30053095924eaf356ed6564) Thanks [@Custard7](https://github.com/Custard7)! - Use a claim link
+
+-   Updated dependencies [[`3a05603c72d76020b43ec6bbd5e31b2b31c0fd2b`](https://github.com/learningeconomy/LearnCard/commit/3a05603c72d76020b43ec6bbd5e31b2b31c0fd2b), [`cf6c5db6aa03842674427441301cf4a8633bbe88`](https://github.com/learningeconomy/LearnCard/commit/cf6c5db6aa03842674427441301cf4a8633bbe88)]:
+    -   @learncard/render-method-plugin@2.0.0
+    -   @learncard/react@2.9.27
+    -   @learncard/helpers@1.3.1
+    -   @learncard/lca-api-plugin@1.2.10
+    -   @learncard/ler-rs-plugin@0.1.10
+    -   @learncard/open-badge-v2-plugin@1.1.20
+    -   @learncard/sss-key-manager@0.1.9
+
+## 1.95.12
+
+### Patch Changes
+
+-   [`212dbfc7d19888eb23b327472b6e93b15b396835`](https://github.com/learningeconomy/LearnCard/commit/212dbfc7d19888eb23b327472b6e93b15b396835) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix boost publish screen whitescreening
+
+-   [#1225](https://github.com/learningeconomy/LearnCard/pull/1225) [`773bbd425d2e87796d5d713450397723e3c21c71`](https://github.com/learningeconomy/LearnCard/commit/773bbd425d2e87796d5d713450397723e3c21c71) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1644] Optimize sendCredential performance: backend + frontend + telemetry
+
+-   [#1217](https://github.com/learningeconomy/LearnCard/pull/1217) [`5d402748c33bbe4f23aa38f45953d03274f38b65`](https://github.com/learningeconomy/LearnCard/commit/5d402748c33bbe4f23aa38f45953d03274f38b65) Thanks [@smurflo2](https://github.com/smurflo2)! - Automatically refresh AI Insights credential when adding or deleting credential
+
+-   Updated dependencies [[`b61cfb80e80f382b22d673e7e826fc60528161e7`](https://github.com/learningeconomy/LearnCard/commit/b61cfb80e80f382b22d673e7e826fc60528161e7)]:
+    -   @learncard/helpers@1.3.0
+    -   @learncard/lca-api-plugin@1.2.9
+    -   @learncard/react@2.9.26
+    -   @learncard/ler-rs-plugin@0.1.9
+    -   @learncard/open-badge-v2-plugin@1.1.19
+    -   @learncard/sss-key-manager@0.1.8
+
+## 1.95.11
+
+### Patch Changes
+
+-   [#1207](https://github.com/learningeconomy/LearnCard/pull/1207) [`3312e78f640f536660c91c643fc57cf02196b4dc`](https://github.com/learningeconomy/LearnCard/commit/3312e78f640f536660c91c643fc57cf02196b4dc) Thanks [@rhen92](https://github.com/rhen92)! - chore: [LC-1788] Bug fest
+
+-   [#1209](https://github.com/learningeconomy/LearnCard/pull/1209) [`bf68df3640b7d78c434b8466e5855ec384447eb0`](https://github.com/learningeconomy/LearnCard/commit/bf68df3640b7d78c434b8466e5855ec384447eb0) Thanks [@goblincore](https://github.com/goblincore)! - Build My LearnCard: upload-success toast is now persistent, includes the filename and target wallet categories, and appears immediately when parsing finishes (no more 5-6s lag). Also: empty-extraction uploads no longer say "Successfully Parsed" (LC-1792).
+
+-   [#1206](https://github.com/learningeconomy/LearnCard/pull/1206) [`c249dfb2390d3b14832790c3dec8ce84aef5de34`](https://github.com/learningeconomy/LearnCard/commit/c249dfb2390d3b14832790c3dec8ce84aef5de34) Thanks [@goblincore](https://github.com/goblincore)! - Build My LearnCard: artifacts now disappear instantly on delete; wallet remove and checklist refetch run in the background, with rollback on failure (LC-1793).
+
+-   [#1210](https://github.com/learningeconomy/LearnCard/pull/1210) [`f71f2fc5c89ce0fed8dc8e5558e4ed7a3ae22a55`](https://github.com/learningeconomy/LearnCard/commit/f71f2fc5c89ce0fed8dc8e5558e4ed7a3ae22a55) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: [LC-1813] - publishing resume fails with "Protected term redefinition"
+
+-   [#1215](https://github.com/learningeconomy/LearnCard/pull/1215) [`99b64725dfdc58d569832d6d2e6ef9f572073d35`](https://github.com/learningeconomy/LearnCard/commit/99b64725dfdc58d569832d6d2e6ef9f572073d35) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1788] Bug fest polishes
+
+-   Updated dependencies []:
+    -   @learncard/lca-api-plugin@1.2.8
+    -   @learncard/react@2.9.25
+
 ## 1.95.10
 
 ### Patch Changes

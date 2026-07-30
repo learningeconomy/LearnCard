@@ -1,0 +1,566 @@
+---
+/**
+ * /course — Northstar Cloud Essentials.
+ *
+ * A stripped-down course-player mock. Four chapter rows with
+ * checkboxes (clicked by the learner to simulate progress). When
+ * every chapter is checked off, an email-claim card activates;
+ * entering an email and clicking "Get your claim link" walks the
+ * learner through this flow:
+ *
+ *   1. The `issueCourseCompletionEmail` server action signs an
+ *      `AWSCloudEssentialsCompletion` VC with the Northstar issuer
+ *      seed.
+ *   2. That action hands the signed VC to the LearnCard Network's
+ *      Universal Inbox via `invoke.send({ recipient: email,
+ *      signedCredential, options: { suppressDelivery: true } })`.
+ *   3. The network returns a *claim URL* the learner can open to
+ *      drop the credential into their wallet.
+ *
+ * Once the learner claims via that URL, the pathway reactor's
+ * `credential-ingested` subscription fires (claim links are one of
+ * the recognized ingest sources) and the node-1 `credential-type`
+ * termination auto-completes the course step.
+ *
+ * ## Why email / claim-link and not Partner Connect `sendCredential`?
+ *
+ * The /course route is a *direct link*: learners reach it by the
+ * app listing's primary link, not via the embed iframe. That means
+ * the Partner Connect postMessage bridge isn't available (there's
+ * no host iframe to reply) — `sendCredential` would hang forever.
+ * Email / claim-link is the canonical pattern for direct-link
+ * issuers (see `docs/how-to-guides/send-credentials.md`).
+ *
+ * Practice and coaching flows *are* embed-only, so they continue
+ * to use `sendCredential` — see `practice.astro` + `coaching.astro`.
+ *
+ * Every chapter toggle is pure UX theatre — the server doesn't
+ * care whether the learner "actually" finished the chapters. In
+ * production a real course-player would gate issuance behind real
+ * progress, but we're not pretending to teach AWS here; we're
+ * demoing the matcher.
+ */
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const chapters = [
+    {
+        id: 'ec2',
+        title: 'Chapter 1 · Compute with EC2',
+        meta: '18 min · video + quick check',
+    },
+    {
+        id: 's3',
+        title: 'Chapter 2 · Object storage with S3',
+        meta: '14 min · video + quick check',
+    },
+    {
+        id: 'iam',
+        title: 'Chapter 3 · Identity & access with IAM',
+        meta: '22 min · video + quick check',
+    },
+    {
+        id: 'vpc',
+        title: 'Chapter 4 · Networking with VPC',
+        meta: '19 min · video + quick check',
+    },
+];
+---
+
+<BaseLayout title="Cloud Essentials" activeNav="course">
+    <div class="container container-narrow">
+        <p class="page-eyebrow">Northstar · Cloud Essentials</p>
+
+        <h1 class="page-title">AWS Cloud Essentials</h1>
+
+        <p class="page-lede">
+            Four chapters covering the compute, storage, identity, and networking
+            fundamentals of AWS. When you finish, Northstar issues a signed
+            completion credential to your wallet &mdash; no upload required.
+        </p>
+
+        <div
+            class="banner is-info"
+            id="status-banner"
+        >
+            <span class="banner-icon" aria-hidden="true">i</span>
+            <span id="status-text">
+                Check off the chapters as you go, then enter your email
+                and we’ll hand you a secure claim link for your completion
+                credential.
+            </span>
+        </div>
+
+        <section class="card u-stack">
+            {chapters.map(ch => (
+                <label class="card-row" data-chapter-id={ch.id}>
+                    <span class="checkbox" aria-hidden="true"></span>
+                    <span style="flex: 1;">
+                        <span class="card-row-title">{ch.title}</span>
+                        <span class="card-row-meta">{ch.meta}</span>
+                    </span>
+                </label>
+            ))}
+        </section>
+
+        <!--
+          Email-claim card. Disabled (visually + interactively) until
+          every chapter is checked off — keeps the flow linear so the
+          demo narrative reads cleanly. `is-callout` gives it the
+          emerald accent strip + subtle gradient fill so it reads as
+          a distinct next-step CTA, not just another list container.
+        -->
+        <section
+            class="card is-callout is-disabled u-stack"
+            id="claim-card"
+            style="margin-top: 28px;"
+            aria-disabled="true"
+        >
+            <header style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                <div>
+                    <p class="card-eyebrow">
+                        <svg
+                            aria-hidden="true"
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        Claim your credential
+                    </p>
+                    <h2 class="card-title" style="margin-bottom: 0;">
+                        Drop it in your wallet
+                    </h2>
+                </div>
+                <span
+                    class="progress-pill"
+                    id="progress-pill"
+                    aria-live="polite"
+                >
+                    <span id="progress-pill-text">0 / 4 chapters</span>
+                </span>
+            </header>
+
+            <p class="card-body" style="margin-top: 4px;">
+                Enter any email &mdash; we&rsquo;ll hand you a signed,
+                single-use claim link. Open it on the device where your
+                LearnCard wallet lives to pull the credential in.
+            </p>
+
+            <div class="field">
+                <label for="email-input" class="field-label">
+                    <svg
+                        aria-hidden="true"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <rect x="2" y="4" width="20" height="16" rx="3"></rect>
+                        <path d="m3 7 8.4 6a1 1 0 0 0 1.2 0L21 7"></path>
+                    </svg>
+                    Your email
+                </label>
+                <input
+                    type="email"
+                    id="email-input"
+                    class="input"
+                    placeholder="you@example.com"
+                    autocomplete="email"
+                    inputmode="email"
+                />
+                <p class="field-hint">
+                    Stays on your machine. We only use it to key the
+                    Universal Inbox issuance &mdash; no marketing, no
+                    tracking.
+                </p>
+            </div>
+
+            <button
+                class="btn btn-success btn-block"
+                id="claim-btn"
+                disabled
+            >
+                <span id="claim-label">Finish all chapters to continue</span>
+            </button>
+        </section>
+
+        <!--
+          Success card — claim-link variant. Hidden until the server
+          returns a claim URL (i.e. the email isn't associated with
+          an existing LearnCard account). We render the full URL (not
+          just a button) so the learner can copy it to another device
+          or share it with a teammate, which is one of the headline
+          benefits of the claim-link flow over a direct wallet drop.
+        -->
+        <section
+            class="card is-callout u-stack"
+            id="result-card"
+            style="margin-top: 28px; display: none;"
+        >
+            <div>
+                <p class="card-eyebrow">
+                    <svg
+                        aria-hidden="true"
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Ready to claim
+                </p>
+                <h2 class="card-title">Your credential is waiting</h2>
+                <p class="card-body">
+                    Open this link on the device where your LearnCard
+                    wallet lives. Once you accept it, the AWS Cloud
+                    Practitioner pathway auto-advances to the practice
+                    step.
+                </p>
+            </div>
+
+            <div class="url-block">
+                <svg
+                    class="url-block-icon"
+                    aria-hidden="true"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                >
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                </svg>
+                <span id="claim-url-text"></span>
+            </div>
+
+            <div
+                style="display: flex; gap: 8px; align-items: stretch;"
+            >
+                <a
+                    id="claim-link"
+                    class="btn btn-success"
+                    style="flex: 1; text-align: center;"
+                    href="#"
+                    target="_blank"
+                    rel="noopener"
+                >
+                    Open claim link &rarr;
+                </a>
+                <button
+                    id="copy-btn"
+                    class="btn btn-ghost"
+                    type="button"
+                >
+                    Copy
+                </button>
+            </div>
+        </section>
+
+        <!--
+          Success card — delivered-direct variant. Hidden until the
+          server auto-delivers the credential into an existing
+          LearnCard account (email matched a verified profile, no
+          claim URL needed). We don't render any copyable URL here
+          because there isn't one — the VC is already in the
+          learner's wallet.
+        -->
+        <section
+            class="card is-callout u-stack"
+            id="delivered-card"
+            style="margin-top: 28px; display: none;"
+        >
+            <div>
+                <p class="card-eyebrow">
+                    <svg
+                        aria-hidden="true"
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Sent to your LearnCard
+                </p>
+                <h2 class="card-title">
+                    Delivered straight to your wallet
+                </h2>
+                <p class="card-body">
+                    We recognized <strong id="delivered-email"></strong>
+                    &mdash; your AWS Cloud Essentials completion is
+                    already in your LearnCard. Open the app and head to
+                    your pathway to see the next step unlock.
+                </p>
+            </div>
+
+            <a
+                class="btn btn-success btn-block"
+                href="learncard://wallet"
+                target="_blank"
+                rel="noopener"
+            >
+                Open LearnCard &rarr;
+            </a>
+        </section>
+    </div>
+
+    <script>
+        import { actions } from 'astro:actions';
+
+        // Plain JS — Astro inline scripts get pre-scanned by esbuild
+        // in JS mode; TS-only syntax makes the scanner bail and the
+        // whole script fails to load (click handlers never bind).
+        //
+        // Unlike /practice and /coaching, this page does NOT
+        // instantiate `createPartnerConnect()` — /course is a direct
+        // link, not an embed, so there's no host iframe to postMessage
+        // with. All credential delivery happens via the Universal
+        // Inbox claim-link flow in the `issueCourseCompletionEmail`
+        // server action. See the file-level docstring.
+
+        // -- Chapter checkbox state ---------------------------------------
+
+        const rows = Array.from(document.querySelectorAll('.card-row'));
+        const claimCard = document.getElementById('claim-card');
+        const claimBtn = document.getElementById('claim-btn');
+        const claimLabel = document.getElementById('claim-label');
+        const emailInput = document.getElementById('email-input');
+        const statusBanner = document.getElementById('status-banner');
+        const statusText = document.getElementById('status-text');
+        const resultCard = document.getElementById('result-card');
+        const claimLink = document.getElementById('claim-link');
+        const claimUrlText = document.getElementById('claim-url-text');
+        const copyBtn = document.getElementById('copy-btn');
+        const progressPill = document.getElementById('progress-pill');
+        const progressPillText = document.getElementById('progress-pill-text');
+        const deliveredCard = document.getElementById('delivered-card');
+        const deliveredEmail = document.getElementById('delivered-email');
+
+        const completed = new Set();
+
+        // Claim button is a two-phase affordance: first it nudges
+        // "finish the chapters", then it nudges "enter a valid
+        // email", then it becomes the submit button. This helper
+        // keeps the label + disabled state in sync with the current
+        // gate, and also drives the chapter-progress pill in the
+        // card header so the learner sees the gate unlock visually.
+        const refreshClaimButton = () => {
+            if (!claimBtn || !claimLabel || !claimCard) return;
+
+            const done = completed.size;
+            const total = rows.length;
+            const allChaptersDone = done === total;
+
+            // Progress pill text + color swap (ink → emerald at 100%).
+            if (progressPillText) {
+                progressPillText.textContent = allChaptersDone
+                    ? `All ${total} chapters complete`
+                    : `${done} / ${total} chapters`;
+            }
+
+            if (progressPill) {
+                progressPill.classList.toggle(
+                    'is-complete',
+                    allChaptersDone,
+                );
+            }
+
+            // The `.is-disabled` modifier (in main.css) handles
+            // visual + pointer-events disabling. Keeping it as a
+            // class means the disabled state transitions alongside
+            // the other theme tokens and is easy to override in
+            // one place.
+            if (!allChaptersDone) {
+                claimCard.classList.add('is-disabled');
+                claimCard.setAttribute('aria-disabled', 'true');
+                claimBtn.disabled = true;
+                claimLabel.textContent = `Finish ${total - done} more chapter${
+                    total - done === 1 ? '' : 's'
+                } to continue`;
+                return;
+            }
+
+            claimCard.classList.remove('is-disabled');
+            claimCard.setAttribute('aria-disabled', 'false');
+
+            const email = (emailInput?.value ?? '').trim();
+            const hasEmail = email.length > 0 && email.includes('@');
+
+            claimBtn.disabled = !hasEmail;
+            claimLabel.textContent = hasEmail
+                ? 'Get your claim link'
+                : 'Enter your email to continue';
+        };
+
+        rows.forEach(row => {
+            const checkbox = row.querySelector('.checkbox');
+            const id = row.dataset.chapterId ?? '';
+
+            row.addEventListener('click', () => {
+                if (completed.has(id)) {
+                    completed.delete(id);
+                    checkbox?.classList.remove('is-checked');
+                } else {
+                    completed.add(id);
+                    checkbox?.classList.add('is-checked');
+                }
+                refreshClaimButton();
+            });
+        });
+
+        emailInput?.addEventListener('input', refreshClaimButton);
+
+        refreshClaimButton();
+
+        // -- Issuance flow ------------------------------------------------
+
+        const setStatus = (kind, html) => {
+            if (!statusBanner || !statusText) return;
+            statusBanner.classList.remove('is-info', 'is-success', 'is-error');
+            statusBanner.classList.add(`is-${kind}`);
+            statusText.innerHTML = html;
+        };
+
+        claimBtn?.addEventListener('click', async () => {
+            if (!claimBtn || !claimLabel || !emailInput) return;
+
+            const recipientEmail = emailInput.value.trim();
+
+            if (!recipientEmail || !recipientEmail.includes('@')) {
+                setStatus('error', 'Please enter a valid email address first.');
+                return;
+            }
+
+            claimBtn.disabled = true;
+            claimLabel.innerHTML =
+                '<span class="spinner" aria-hidden="true"></span> Generating your claim link&hellip;';
+
+            try {
+                const result = await actions.issueCourseCompletionEmail({
+                    recipientEmail,
+                });
+
+                // Astro actions wrap the response; real shape is
+                // result.data when the handler resolves, result.error
+                // when it throws an ActionError.
+                if (result.error || !result.data) {
+                    throw new Error(
+                        result.error?.message ??
+                            'Northstar could not issue your credential. Please try again.',
+                    );
+                }
+
+                // Hide whichever success card might have been shown
+                // previously so a retry doesn't stack both.
+                if (resultCard) resultCard.style.display = 'none';
+                if (deliveredCard) deliveredCard.style.display = 'none';
+
+                if (result.data.delivery === 'claim-link') {
+                    // Not-yet-a-LearnCard user path: surface the URL
+                    // to the learner. We set both the anchor href
+                    // AND a copyable code block so the link is usable
+                    // via click OR copy-paste — the latter matters
+                    // when the learner's LearnCard wallet is on a
+                    // different device than the browser they're
+                    // running this demo in.
+                    const { claimUrl } = result.data;
+
+                    if (claimLink) claimLink.setAttribute('href', claimUrl);
+                    if (claimUrlText) claimUrlText.textContent = claimUrl;
+                    if (resultCard) resultCard.style.display = '';
+
+                    setStatus(
+                        'success',
+                        '<strong>Claim link ready!</strong> Open it in LearnCard to add the credential to your wallet. Once you claim it, the AWS Cloud Practitioner pathway will auto-advance.',
+                    );
+
+                    resultCard?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    claimLabel.textContent = '\u2713 Claim link generated';
+                } else {
+                    // Existing-LearnCard-account path: the network
+                    // already delivered the VC directly, no claim
+                    // URL was returned. Show the delivered-card
+                    // instead, and acknowledge the recipient email
+                    // so the learner knows why we skipped the claim
+                    // step.
+                    if (deliveredEmail) {
+                        deliveredEmail.textContent = result.data.recipientEmail;
+                    }
+                    if (deliveredCard) deliveredCard.style.display = '';
+
+                    setStatus(
+                        'success',
+                        '<strong>Delivered!</strong> We recognized this email as a LearnCard account, so your AWS Cloud Essentials completion is already in your wallet. Head to your pathway to see the next step unlock.',
+                    );
+
+                    deliveredCard?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    claimLabel.textContent = '\u2713 Sent to your LearnCard';
+                }
+
+                // Keep the button disabled after success either way
+                // so the learner doesn't double-issue by accident.
+                // If they want to try a different email they can
+                // just refresh the page.
+            } catch (err) {
+                console.error('[course] claim-link generation failed:', err);
+                setStatus(
+                    'error',
+                    `Something went wrong: ${
+                        err instanceof Error ? err.message : 'unknown error'
+                    }. Please try again.`,
+                );
+                claimBtn.disabled = false;
+                claimLabel.textContent = 'Get your claim link';
+            }
+        });
+
+        // Copy-to-clipboard support on the success card. Uses the
+        // modern `navigator.clipboard` API; falls back to selecting
+        // the URL text if the API isn't available (e.g. insecure
+        // context) so the learner can still ctrl/cmd-C.
+        copyBtn?.addEventListener('click', async () => {
+            const url = claimLink?.getAttribute('href') ?? '';
+            if (!url || url === '#') return;
+
+            try {
+                await navigator.clipboard.writeText(url);
+                copyBtn.textContent = 'Copied!';
+                setTimeout(() => {
+                    copyBtn.textContent = 'Copy';
+                }, 2000);
+            } catch {
+                if (claimUrlText) {
+                    const range = document.createRange();
+                    range.selectNodeContents(claimUrlText);
+                    const sel = window.getSelection();
+                    sel?.removeAllRanges();
+                    sel?.addRange(range);
+                }
+            }
+        });
+    </script>
+</BaseLayout>

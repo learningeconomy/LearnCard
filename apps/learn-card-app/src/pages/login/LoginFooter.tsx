@@ -1,14 +1,12 @@
 import React from 'react';
+import * as m from '../../paraglide/messages.js';
+import { TransP } from '../../i18n/TransP';
 import { useHistory } from 'react-router-dom';
 
 import { IonCol } from '@ionic/react';
 import SeedPhraseModal from './SeedPhraseModal';
 
-import {
-    openToS,
-    openPP,
-    openLCwebsite,
-} from '../../helpers/externalLinkHelpers';
+import { openToS, openPP, openLCwebsite } from '../../helpers/externalLinkHelpers';
 import { useTenantLinks } from 'learn-card-base/config/TenantConfigProvider';
 import { Capacitor } from '@capacitor/core';
 import { ModalTypes, useModal } from 'learn-card-base';
@@ -35,7 +33,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
             <div className="w-full flex items-center justify-center flex-col max-w-[400px]">
                 <IonCol
                     size="12"
-                    className="w-full flex items-center justify-center p-0 mt-2 gap-[15px]"
+                    className="w-full flex flex-wrap items-center justify-center p-0 mt-2 gap-x-[15px] gap-y-[8px]"
                 >
                     <a
                         href={links.termsOfServiceUrl}
@@ -45,9 +43,9 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                                 openToS();
                             }
                         }}
-                        className="flex items-center justify-center text-white/80 font-bold text-xs hover:underline"
+                        className="flex items-center justify-center whitespace-nowrap text-white/80 font-bold text-xs hover:underline"
                     >
-                        Terms
+                        {m['login.footer.terms']()}
                     </a>
                     <a
                         href={links.privacyPolicyUrl}
@@ -57,9 +55,9 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                                 openPP();
                             }
                         }}
-                        className="flex items-center text-white/80 font-bold text-xs hover:underline"
+                        className="flex items-center whitespace-nowrap text-white/80 font-bold text-xs hover:underline"
                     >
-                        Privacy
+                        {m['login.footer.privacy']()}
                     </a>
                     <a
                         href={links.websiteUrl}
@@ -69,18 +67,18 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                                 openLCwebsite();
                             }
                         }}
-                        className="flex items-center text-white/80 font-bold text-xs hover:underline min-w-[69px]"
+                        className="flex items-center whitespace-nowrap text-white/80 font-bold text-xs hover:underline"
                     >
-                        Learn More
+                        {m['login.footer.learnMore']()}
                     </a>
                     <button
                         onClick={e => {
                             e.preventDefault();
                             history.push('/ai/pathways/discovery');
                         }}
-                        className="flex items-center text-white/80 font-bold text-xs hover:underline"
+                        className="flex items-center whitespace-nowrap text-white/80 font-bold text-xs hover:underline"
                     >
-                        Explore Pathways
+                        {m['login.footer.explorePathways']()}
                     </button>
                 </IonCol>
                 {!hideSelfCustodialLogin && (
@@ -89,21 +87,23 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                         className="w-full flex flex-col items-center justify-center text-center mt-[20px] space-y-[4px] "
                     >
                         <p className="text-white/80 font-medium text-base">
-                            Self-custodial login.
+                            {m['login.footer.selfCustodialLogin']()}
                         </p>
                         <p className="text-white/80 text-sm">
-                            Have your own{' '}
-                            <button
-                                onClick={e => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    openSeedPhraseModal();
-                                }}
-                                className="font-bold underline text-sm text-white/80"
-                            >
-                                seed phrase
-                            </button>
-                            ?
+                            <TransP
+                                m={m['login.footer.haveSeedPhrase']}
+                                components={[
+                                    <button
+                                        key="s"
+                                        onClick={e => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            openSeedPhraseModal();
+                                        }}
+                                        className="font-bold underline text-sm text-white/80"
+                                    />,
+                                ]}
+                            />
                         </p>
                     </IonCol>
                 )}

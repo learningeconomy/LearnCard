@@ -7,6 +7,7 @@ import FamilyCMSMemberTitlesOptionsList from './FamilyCMSMemberTitlesOptionsList
 import { FamilyCMSState, MemberTitleTypes } from '../../familyCMSState';
 import { FamilyTitleModesEnum, familyTitleOptions, TitleOption } from './familyTitles.helpers';
 import { ModalTypes, useModal } from 'learn-card-base';
+import { m } from '../../../../paraglide/messages.js';
 
 export type FamilyMemberTitles = {
     singular: string;
@@ -78,13 +79,13 @@ export const FamilyCMSMemberTitlesToggle: React.FC<{
         <section className="bg-white ion-padding rounded-[20px] shadow-soft-bottom mt-[20px]">
             <div className="w-full flex items-start justify-center flex-col mb-4">
                 <h2 className="font-poppins text-[22px] font-normal text-grayscale-800">
-                    Member Titles
+                    {m['family.titles.heading']()}
                 </h2>
             </div>
 
             <div className="w-full mb-2 mt-4">
                 <h3 className="text-grayscale-900 text-left w-full font-poppins text-[17px] mb-2">
-                    Admins
+                    {m['family.titlesToggle.admins']()}
                 </h3>
                 <button
                     onClick={() => presentGuardianTitlesModal()}
@@ -99,7 +100,7 @@ export const FamilyCMSMemberTitlesToggle: React.FC<{
 
             <div className="w-full mb-2 mt-4">
                 <h3 className="text-grayscale-900 text-left w-full font-poppins text-[17px] mb-2">
-                    Kids
+                    {m['family.titlesToggle.kids']()}
                 </h3>
                 <button
                     onClick={() => presentDependentTitlesModal()}

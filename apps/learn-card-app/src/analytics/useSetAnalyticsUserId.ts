@@ -1,4 +1,6 @@
 import { useEffect } from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-set-analytics-user-id');
 
 import { useWallet } from 'learn-card-base';
 import { useIsCurrentUserLCNUser, useCurrentUser } from 'learn-card-base';
@@ -22,7 +24,7 @@ export function useSetAnalyticsUserId(options: UseSetAnalyticsUserIdOptions = {}
     useEffect(() => {
         const setUserId = async () => {
             if (options.debug) {
-                console.debug('[Analytics] Setting userId', currentUser);
+                log.debug('[Analytics] Setting userId', currentUser);
             }
 
             try {
@@ -34,7 +36,7 @@ export function useSetAnalyticsUserId(options: UseSetAnalyticsUserIdOptions = {}
                     }
                 }
             } catch (error) {
-                console.error('[Analytics] Unable to set userId', error);
+                log.error('[Analytics] Unable to set userId', error);
             }
         };
 

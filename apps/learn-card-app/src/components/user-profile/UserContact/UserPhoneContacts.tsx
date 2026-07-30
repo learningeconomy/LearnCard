@@ -14,6 +14,7 @@ import {
 } from 'learn-card-base';
 
 import useTheme from '../../../theme/hooks/useTheme';
+import * as m from '../../../paraglide/messages.js';
 
 type ContactMethodType =
     | {
@@ -97,7 +98,7 @@ export const UserPhoneContacts: React.FC = () => {
         <div className="w-full bg-white items-center justify-center flex flex-col shadow-2xl py-6 px-4 mt-4 rounded-[15px]">
             <div className="w-full flex items-start justify-center flex-col gap-2">
                 <h4 className="text-grayscale-900 text-[22px] font-semibold font-notoSans text-left">
-                    Phone
+                    {m['profile.phone.header']()}
                 </h4>
 
                 <div className="w-full flex flex-1 items-center justify-between">
@@ -106,7 +107,7 @@ export const UserPhoneContacts: React.FC = () => {
                         className={`bg-grayscale-100 text-grayscale-800 rounded-[15px] ion-padding font-medium tracking-widest text-base`}
                         onIonInput={e => setPhone(e.detail.value)}
                         value={phone}
-                        placeholder="Phone"
+                        placeholder={m['profile.phone.placeholder']()}
                         type="tel"
                     />
                     <button
@@ -142,7 +143,7 @@ export const UserPhoneContacts: React.FC = () => {
                                 onClick={() => handleSetPrimaryContactMethod(phone.id)}
                                 className={`bg-${primaryColor} rounded-full px-4 py-2`}
                             >
-                                Set as Primary
+                                {m['profile.phone.setAsPrimary']()}
                             </button>
                             <button
                                 onClick={() => handleRemoveContactMethod(phone.id)}

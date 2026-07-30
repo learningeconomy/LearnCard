@@ -7,6 +7,9 @@ import {
     PaginatedConsentFlowDataForDid,
 } from '@learncard/types';
 
+import { getLogger } from '../logging/logger';
+const log = getLogger('use-contract');
+
 export const useContract = (uri: string | undefined, enabled = true) => {
     const isLoggedIn = useIsLoggedIn();
     const { initWallet } = useWallet();
@@ -85,7 +88,7 @@ export const useContractRequestStatusForProfile = (
                         contractUri
                     );
                 } catch (error) {
-                    console.error(error);
+                    log.error(error);
                     return null;
                 }
 

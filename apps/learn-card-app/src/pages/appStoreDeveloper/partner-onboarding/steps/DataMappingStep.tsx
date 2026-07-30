@@ -33,16 +33,30 @@ import {
     Users,
 } from 'lucide-react';
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('data-mapping-step');
+
+import * as m from '../../../../paraglide/messages.js';
+import { TransP } from '../../../../i18n/TransP';
+
 import { Clipboard } from '@capacitor/clipboard';
 
 import { useWallet } from 'learn-card-base';
 import { useToast, ToastTypeEnum } from 'learn-card-base/hooks/useToast';
 
-import { IntegrationMethod, CredentialTemplate, DataMappingConfig, FieldMapping, TemplateBoostMeta, PartnerProject, fieldNameToVariable } from '../types';
+import {
+    IntegrationMethod,
+    CredentialTemplate,
+    DataMappingConfig,
+    FieldMapping,
+    TemplateBoostMeta,
+    PartnerProject,
+    fieldNameToVariable,
+} from '../types';
 import { CodeBlock } from '../../components/CodeBlock';
 import { getResolvedTenantConfig } from '../../../../config/bootstrapTenantConfig';
 import { CodeOutputPanel } from '../../guides/shared/CodeOutputPanel';
-import { 
+import {
     extractDynamicVariables,
     extractVariablesByType,
     OBv3CredentialTemplate,
@@ -93,7 +107,13 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
     const initWalletRef = useRef(initWallet);
     initWalletRef.current = initWallet;
 
-    const [webhookUrl] = useState(dataMapping?.webhookUrl || `${getResolvedTenantConfig().apis.lcaApi.replace('/trpc', '')}/webhooks/${Date.now().toString(36)}`);
+    const [webhookUrl] = useState(
+        dataMapping?.webhookUrl ||
+            `${getResolvedTenantConfig().apis.lcaApi.replace(
+                '/trpc',
+                ''
+            )}/webhooks/${Date.now().toString(36)}`
+    );
     const [copiedUrl, setCopiedUrl] = useState(false);
     const [samplePayload, setSamplePayload] = useState<Record<string, unknown> | null>(
         dataMapping?.samplePayload || null
@@ -112,7 +132,9 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
     const csvInputRef = useRef<HTMLInputElement>(null);
 
     // Boost selector state for master templates (webhook/CSV)
-    const [boostSelectorField, setBoostSelectorField] = useState<string>(dataMapping?.boostSelectorField || '');
+    const [boostSelectorField, setBoostSelectorField] = useState<string>(
+        dataMapping?.boostSelectorField || ''
+    );
     const [boostSelectorMatchType, setBoostSelectorMatchType] = useState<'id' | 'name'>(
         dataMapping?.boostSelectorMatchType || 'id'
     );
@@ -200,7 +222,7 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         // For master templates with children, find shared dynamic variables across all children
         if (masterTemplates.length > 0) {
             const allChildVars: Set<string>[] = [];
-            
+
             for (const master of masterTemplates) {
                 for (const child of master.childTemplates || []) {
                     if (child.obv3Template) {
@@ -209,21 +231,23 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
                             const { dynamic } = extractVariablesByType(obv3);
                             allChildVars.push(new Set(dynamic));
                         } catch (e) {
-                            console.warn('Failed to extract child template variables:', e);
+                            log.warn('Failed to extract child template variables:', e);
                         }
                     }
                 }
             }
-            
+
             // Find intersection of all child template variables (shared across all)
             if (allChildVars.length > 0) {
-                const sharedVars = [...allChildVars[0]].filter(v => 
+                const sharedVars = [...allChildVars[0]].filter(v =>
                     allChildVars.every(varSet => varSet.has(v))
                 );
-                return sharedVars.map(v => v.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
+                return sharedVars.map(v =>
+                    v.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                );
             }
         }
-        
+
         // Fallback: use selected template
         const template = templates.find(t => t.id === selectedTemplate);
         if (!template) return [];
@@ -233,11 +257,13 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
             try {
                 const obv3 = template.obv3Template as OBv3CredentialTemplate;
                 const { dynamic } = extractVariablesByType(obv3);
-                
+
                 // Return variable names formatted nicely
-                return dynamic.map(v => v.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
+                return dynamic.map(v =>
+                    v.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                );
             } catch (e) {
-                console.warn('Failed to extract OBv3 dynamic variables:', e);
+                log.warn('Failed to extract OBv3 dynamic variables:', e);
             }
         }
 
@@ -251,7 +277,7 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         // For master templates with children, find shared dynamic variables across all children
         if (masterTemplates.length > 0) {
             const allChildVars: Set<string>[] = [];
-            
+
             for (const master of masterTemplates) {
                 for (const child of master.childTemplates || []) {
                     if (child.obv3Template) {
@@ -260,20 +286,20 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
                             const { dynamic } = extractVariablesByType(obv3);
                             allChildVars.push(new Set(dynamic));
                         } catch (e) {
-                            console.warn('Failed to extract child template variables:', e);
+                            log.warn('Failed to extract child template variables:', e);
                         }
                     }
                 }
             }
-            
+
             // Find intersection of all child template variables (shared across all)
             if (allChildVars.length > 0) {
-                return [...allChildVars[0]].filter(v => 
+                return [...allChildVars[0]].filter(v =>
                     allChildVars.every(varSet => varSet.has(v))
                 );
             }
         }
-        
+
         const template = templates.find(t => t.id === selectedTemplate);
         if (!template) return [];
 
@@ -284,7 +310,7 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
                 const { dynamic } = extractVariablesByType(obv3);
                 return dynamic;
             } catch (e) {
-                console.warn('Failed to extract OBv3 dynamic variables:', e);
+                log.warn('Failed to extract OBv3 dynamic variables:', e);
             }
         }
 
@@ -318,7 +344,7 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         Papa.parse(file, {
             header: true,
             preview: 5, // Only parse first 5 rows for preview
-            complete: (result) => {
+            complete: result => {
                 const headers = result.meta.fields || [];
                 const rows = result.data as Record<string, string>[];
 
@@ -328,9 +354,12 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
                 // Reset mappings when new file is uploaded
                 setMappings([]);
             },
-            error: (error) => {
-                console.error('CSV parse error:', error);
-                presentToast('Failed to parse CSV file', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            error: error => {
+                log.error('CSV parse error:', error);
+                presentToast('Failed to parse CSV file', {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
             },
         });
     };
@@ -342,14 +371,14 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         // Build headers starting with recipient
         const headers: string[] = ['Recipient (email/phone/profileId)'];
         const rows: string[][] = [];
-        
+
         // For master templates, add boost selector column and use shared variables
         if (masterTemplates.length > 0) {
             headers.push('Course ID'); // Boost selector column
-            
+
             // Add shared dynamic variables (already computed in targetFields)
             headers.push(...targetFields);
-            
+
             // Add example rows for each child template
             for (const master of masterTemplates) {
                 for (const child of master.childTemplates || []) {
@@ -368,21 +397,25 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
             // Single template mode - use that template's variables
             const template = templates.find(t => t.id === selectedTemplate);
             let dynamicVars: string[] = [];
-            
+
             if (template?.obv3Template) {
                 try {
                     const obv3 = template.obv3Template as OBv3CredentialTemplate;
                     const { dynamic } = extractVariablesByType(obv3);
                     dynamicVars = dynamic;
-                    headers.push(...dynamic.map(v => v.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())));
+                    headers.push(
+                        ...dynamic.map(v =>
+                            v.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                        )
+                    );
                 } catch (e) {
-                    console.warn('Failed to extract OBv3 dynamic variables for CSV:', e);
+                    log.warn('Failed to extract OBv3 dynamic variables for CSV:', e);
                 }
             } else if (template?.fields?.length) {
                 dynamicVars = template.fields.map(f => f.name);
                 headers.push(...dynamicVars);
             }
-            
+
             // Add one example row
             const row: string[] = ['example@email.com'];
             for (const field of dynamicVars) {
@@ -395,7 +428,7 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         const csvLines = [headers.join(',')];
         for (const row of rows) {
             // Escape values that contain commas
-            csvLines.push(row.map(v => v.includes(',') ? `"${v}"` : v).join(','));
+            csvLines.push(row.map(v => (v.includes(',') ? `"${v}"` : v)).join(','));
         }
         const csvContent = csvLines.join('\n');
 
@@ -403,10 +436,13 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        
-        const filename = masterTemplates.length > 0 
-            ? 'batch-issuance-template.csv'
-            : `${(templates.find(t => t.id === selectedTemplate)?.name || 'template').toLowerCase().replace(/\s+/g, '-')}-template.csv`;
+
+        const filename =
+            masterTemplates.length > 0
+                ? 'batch-issuance-template.csv'
+                : `${(templates.find(t => t.id === selectedTemplate)?.name || 'template')
+                      .toLowerCase()
+                      .replace(/\s+/g, '-')}-template.csv`;
         a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
@@ -461,7 +497,7 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
                     const obv3 = template.obv3Template as OBv3CredentialTemplate;
                     dynamicVars = extractDynamicVariables(obv3);
                 } catch (e) {
-                    console.warn('Failed to extract OBv3 dynamic variables:', e);
+                    log.warn('Failed to extract OBv3 dynamic variables:', e);
                 }
             }
 
@@ -471,20 +507,22 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
             if (dynamicVars.length > 0) {
                 // Create/update fields based on dynamic variables
                 updatedFields = dynamicVars.map(varName => {
-                    const displayName = varName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                    const existingField = template.fields?.find(f => 
-                        f.variableName === varName || fieldNameToVariable(f.name) === varName
+                    const displayName = varName
+                        .replace(/_/g, ' ')
+                        .replace(/\b\w/g, l => l.toUpperCase());
+                    const existingField = template.fields?.find(
+                        f => f.variableName === varName || fieldNameToVariable(f.name) === varName
                     );
-                    
+
                     // Find mapping by display name or variable name
-                    const mapping = mappings.find(m => 
-                        m.targetField === displayName || m.targetField === varName
+                    const mapping = mappings.find(
+                        m => m.targetField === displayName || m.targetField === varName
                     );
 
                     return {
                         id: existingField?.id || varName,
                         name: displayName,
-                        type: existingField?.type || 'text' as const,
+                        type: existingField?.type || ('text' as const),
                         required: existingField?.required || false,
                         variableName: varName,
                         sourceMapping: mapping?.sourceField || existingField?.sourceMapping,
@@ -492,13 +530,14 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
                 });
             } else {
                 // Legacy mode - update existing fields
-                updatedFields = template.fields?.map(field => {
-                    const mapping = mappings.find(m => m.targetField === field.name);
-                    return {
-                        ...field,
-                        sourceMapping: mapping?.sourceField || field.sourceMapping,
-                    };
-                }) || [];
+                updatedFields =
+                    template.fields?.map(field => {
+                        const mapping = mappings.find(m => m.targetField === field.name);
+                        return {
+                            ...field,
+                            sourceMapping: mapping?.sourceField || field.sourceMapping,
+                        };
+                    }) || [];
             }
 
             return {
@@ -510,33 +549,36 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
     };
 
     // Save templates with mappings back to boosts
-    const saveTemplatesToBoosts = useCallback(async (updatedTemplates: CredentialTemplate[]) => {
-        if (!integrationId) return;
+    const saveTemplatesToBoosts = useCallback(
+        async (updatedTemplates: CredentialTemplate[]) => {
+            if (!integrationId) return;
 
-        const wallet = await initWalletRef.current();
+            const wallet = await initWalletRef.current();
 
-        for (const template of updatedTemplates) {
-            if (!template.boostUri) continue;
+            for (const template of updatedTemplates) {
+                if (!template.boostUri) continue;
 
-            const boostMeta: TemplateBoostMeta = {
-                integrationId,
-                templateConfig: {
-                    fields: template.fields,
-                    achievementType: template.achievementType,
-                    version: TEMPLATE_META_VERSION,
-                },
-            };
+                const boostMeta: TemplateBoostMeta = {
+                    integrationId,
+                    templateConfig: {
+                        fields: template.fields,
+                        achievementType: template.achievementType,
+                        version: TEMPLATE_META_VERSION,
+                    },
+                };
 
-            try {
-                await wallet.invoke.updateBoost(template.boostUri, {
-                    meta: boostMeta,
-                } as Parameters<typeof wallet.invoke.updateBoost>[1]);
-            } catch (err) {
-                console.error('Failed to update boost with mappings:', err);
-                throw err;
+                try {
+                    await wallet.invoke.updateBoost(template.boostUri, {
+                        meta: boostMeta,
+                    } as Parameters<typeof wallet.invoke.updateBoost>[1]);
+                } catch (err) {
+                    log.error('Failed to update boost with mappings:', err);
+                    throw err;
+                }
             }
-        }
-    }, [integrationId]);
+        },
+        [integrationId]
+    );
 
     // Handle save and continue
     const handleSaveAndContinue = async () => {
@@ -548,33 +590,46 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
             // Save mappings to boosts
             await saveTemplatesToBoosts(updatedTemplates);
 
-            presentToast('Field mappings saved!', { type: ToastTypeEnum.Success, hasDismissButton: true });
+            presentToast('Field mappings saved!', {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
 
             onComplete(
-                { 
-                    webhookUrl, 
-                    samplePayload: samplePayload || undefined, 
+                {
+                    webhookUrl,
+                    samplePayload: samplePayload || undefined,
                     mappings,
                     boostSelectorField: masterTemplates.length > 0 ? boostSelectorField : undefined,
-                    boostSelectorMatchType: masterTemplates.length > 0 ? boostSelectorMatchType : undefined,
+                    boostSelectorMatchType:
+                        masterTemplates.length > 0 ? boostSelectorMatchType : undefined,
                     recipientField: integrationMethod === 'csv' ? recipientField : undefined,
                 },
                 updatedTemplates
             );
         } catch (err) {
-            console.error('Failed to save mappings:', err);
-            presentToast('Failed to save mappings', { type: ToastTypeEnum.Error, hasDismissButton: true });
+            log.error('Failed to save mappings:', err);
+            presentToast('Failed to save mappings', {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         } finally {
             setIsSaving(false);
         }
     };
 
-    const canProceed = integrationMethod === 'api' || 
-        (integrationMethod === 'csv' && csvHeaders.length > 0 && mappings.length > 0 && recipientField) ||
+    const canProceed =
+        integrationMethod === 'api' ||
+        (integrationMethod === 'csv' &&
+            csvHeaders.length > 0 &&
+            mappings.length > 0 &&
+            recipientField) ||
         (integrationMethod === 'webhook' && samplePayload && mappings.length > 0);
 
     // API Integration state - use issuable templates (excludes master templates)
-    const [apiSelectedTemplate, setApiSelectedTemplate] = useState<string>(issuableTemplates[0]?.id || '');
+    const [apiSelectedTemplate, setApiSelectedTemplate] = useState<string>(
+        issuableTemplates[0]?.id || ''
+    );
     const [apiRecipientEmail, setApiRecipientEmail] = useState('');
     const [apiTemplateData, setApiTemplateData] = useState<Record<string, string>>({});
     const [apiShowAdvanced, setApiShowAdvanced] = useState(false);
@@ -586,7 +641,10 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
         suppressDelivery: false,
     });
     const [apiIsPolling, setApiIsPolling] = useState(false);
-    const [apiPollResult, setApiPollResult] = useState<{ success: boolean; message: string } | null>(null);
+    const [apiPollResult, setApiPollResult] = useState<{
+        success: boolean;
+        message: string;
+    } | null>(null);
     const apiInitialTimestampRef = useRef<string | null>(null);
     const [apiCopied, setApiCopied] = useState(false);
     const [apiCopiedUri, setApiCopiedUri] = useState<string | null>(null);
@@ -606,7 +664,7 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
                 });
                 apiInitialTimestampRef.current = activities?.records?.[0]?.timestamp || null;
             } catch (err) {
-                console.error('Failed to capture initial timestamp:', err);
+                log.error('Failed to capture initial timestamp:', err);
             }
         };
 
@@ -615,12 +673,16 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
 
     // Generate a config object mapping template names/IDs to their boost URIs
     const generateBoostConfig = useCallback(() => {
-        const config: Record<string, { uri: string; name: string; variables: string[]; systemVariables: string[] }> = {};
+        const config: Record<
+            string,
+            { uri: string; name: string; variables: string[]; systemVariables: string[] }
+        > = {};
 
-        const toKey = (name: string) => name
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '_')
-            .replace(/^_|_$/g, '');
+        const toKey = (name: string) =>
+            name
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '_')
+                .replace(/^_|_$/g, '');
 
         issuableTemplates.forEach(template => {
             if (template.boostUri) {
@@ -630,7 +692,9 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
 
                 if (template.obv3Template) {
                     try {
-                        const extracted = extractVariablesByType(template.obv3Template as OBv3CredentialTemplate);
+                        const extracted = extractVariablesByType(
+                            template.obv3Template as OBv3CredentialTemplate
+                        );
                         dynamicVars = extracted.dynamic;
                         systemVars = extracted.system;
                     } catch (e) {
@@ -638,8 +702,14 @@ export const DataMappingStep: React.FC<DataMappingStepProps> = ({
                     }
                 }
 
-                if (dynamicVars.length === 0 && systemVars.length === 0 && template.fields?.length) {
-                    dynamicVars = template.fields.map(f => f.variableName || fieldNameToVariable(f.name));
+                if (
+                    dynamicVars.length === 0 &&
+                    systemVars.length === 0 &&
+                    template.fields?.length
+                ) {
+                    dynamicVars = template.fields.map(
+                        f => f.variableName || fieldNameToVariable(f.name)
+                    );
                 }
 
                 config[key] = {
@@ -696,8 +766,8 @@ const INTEGRATION_ID = '${integrationId || 'YOUR_INTEGRATION_ID'}';
 //     templateData,
 // });
 //
-// console.log('Credential URI:', result.credentialUri);
-// console.log('Activity ID:', result.activityId);
+// log.info('Credential URI:', result.credentialUri);
+// log.info('Activity ID:', result.activityId);
 
 export default BOOST_TEMPLATES;
 export { INTEGRATION_ID };`;
@@ -748,7 +818,10 @@ export { INTEGRATION_ID };`;
             return 'Introduction to Web Development';
         }
 
-        if (lower.includes('name') && (lower.includes('student') || lower.includes('recipient') || lower.includes('learner'))) {
+        if (
+            lower.includes('name') &&
+            (lower.includes('student') || lower.includes('recipient') || lower.includes('learner'))
+        ) {
             return 'Jane Smith';
         }
 
@@ -789,7 +862,7 @@ export { INTEGRATION_ID };`;
                 dynamicVars = extracted.dynamic;
                 systemVars = extracted.system;
             } catch (e) {
-                console.warn('Failed to extract OBv3 dynamic variables:', e);
+                log.warn('Failed to extract OBv3 dynamic variables:', e);
             }
         }
 
@@ -799,8 +872,8 @@ export { INTEGRATION_ID };`;
             dynamicVars = template.fields.map(f => f.variableName || fieldNameToVariable(f.name));
         }
 
-        return { 
-            apiTemplateVariables: dynamicVars, 
+        return {
+            apiTemplateVariables: dynamicVars,
             apiSystemVariables: systemVars,
         };
     }, [issuableTemplates, apiSelectedTemplate]);
@@ -819,8 +892,12 @@ export { INTEGRATION_ID };`;
         }
     }, [apiTemplateVariables]);
 
-    const apiHasAdvancedOptions = apiAdvancedOptions.issuerName || apiAdvancedOptions.issuerLogoUrl || 
-        apiAdvancedOptions.recipientName || apiAdvancedOptions.webhookUrl || apiAdvancedOptions.suppressDelivery;
+    const apiHasAdvancedOptions =
+        apiAdvancedOptions.issuerName ||
+        apiAdvancedOptions.issuerLogoUrl ||
+        apiAdvancedOptions.recipientName ||
+        apiAdvancedOptions.webhookUrl ||
+        apiAdvancedOptions.suppressDelivery;
 
     const selectedApiTemplate = issuableTemplates.find(t => t.id === apiSelectedTemplate);
 
@@ -831,7 +908,10 @@ export { INTEGRATION_ID };`;
     }, [selectedApiTemplate, templates]);
 
     // Generate templateData code from template - uses user-entered values from apiTemplateData
-    const generateTemplateDataCode = (template: CredentialTemplate | undefined, indent: string = '        ') => {
+    const generateTemplateDataCode = (
+        template: CredentialTemplate | undefined,
+        indent: string = '        '
+    ) => {
         if (!template) return '';
 
         // Use the apiTemplateVariables that we already computed
@@ -876,11 +956,22 @@ export { INTEGRATION_ID };`;
             optionsParts.push(`        suppressDelivery: true,`);
         }
 
-        if (apiAdvancedOptions.issuerName || apiAdvancedOptions.issuerLogoUrl || apiAdvancedOptions.recipientName) {
+        if (
+            apiAdvancedOptions.issuerName ||
+            apiAdvancedOptions.issuerLogoUrl ||
+            apiAdvancedOptions.recipientName
+        ) {
             const brandingParts: string[] = [];
-            if (apiAdvancedOptions.issuerName) brandingParts.push(`            issuerName: '${apiAdvancedOptions.issuerName}',`);
-            if (apiAdvancedOptions.issuerLogoUrl) brandingParts.push(`            issuerLogoUrl: '${apiAdvancedOptions.issuerLogoUrl}',`);
-            if (apiAdvancedOptions.recipientName) brandingParts.push(`            recipientName: '${apiAdvancedOptions.recipientName}',`);
+            if (apiAdvancedOptions.issuerName)
+                brandingParts.push(`            issuerName: '${apiAdvancedOptions.issuerName}',`);
+            if (apiAdvancedOptions.issuerLogoUrl)
+                brandingParts.push(
+                    `            issuerLogoUrl: '${apiAdvancedOptions.issuerLogoUrl}',`
+                );
+            if (apiAdvancedOptions.recipientName)
+                brandingParts.push(
+                    `            recipientName: '${apiAdvancedOptions.recipientName}',`
+                );
 
             optionsParts.push(`        branding: {
 ${brandingParts.join('\n')}
@@ -911,17 +1002,21 @@ const learnCard = await initLearnCard({
 // Recipient type is auto-detected: profile ID, DID, email, or phone
 const result = await learnCard.invoke.send({
     type: 'boost',
-    recipient: '${recipientExample}', // profile ID, DID, email, or phone${integrationId ? `
-    integrationId: '${integrationId}', // Track activity for this integration` : ''},
+    recipient: '${recipientExample}', // profile ID, DID, email, or phone${
+            integrationId
+                ? `
+    integrationId: '${integrationId}', // Track activity for this integration`
+                : ''
+        },
     templateUri: '${boostUri}',
     templateData: {
 ${templateDataCode}
     },${optionsCode}
 });
 
-console.log('Credential URI:', result.credentialUri);
-console.log('Boost URI:', result.uri);
-console.log('Activity ID:', result.activityId); // Use to track lifecycle
+log.info('Credential URI:', result.credentialUri);
+log.info('Boost URI:', result.uri);
+log.info('Activity ID:', result.activityId); // Use to track lifecycle
 
 // For email/phone recipients:
 // result.inbox?.issuanceId - tracking ID
@@ -953,11 +1048,21 @@ console.log('Activity ID:', result.activityId); // Use to track lifecycle
             options.suppressDelivery = true;
         }
 
-        if (apiAdvancedOptions.issuerName || apiAdvancedOptions.issuerLogoUrl || apiAdvancedOptions.recipientName) {
+        if (
+            apiAdvancedOptions.issuerName ||
+            apiAdvancedOptions.issuerLogoUrl ||
+            apiAdvancedOptions.recipientName
+        ) {
             options.branding = {};
-            if (apiAdvancedOptions.issuerName) (options.branding as Record<string, string>).issuerName = apiAdvancedOptions.issuerName;
-            if (apiAdvancedOptions.issuerLogoUrl) (options.branding as Record<string, string>).issuerLogoUrl = apiAdvancedOptions.issuerLogoUrl;
-            if (apiAdvancedOptions.recipientName) (options.branding as Record<string, string>).recipientName = apiAdvancedOptions.recipientName;
+            if (apiAdvancedOptions.issuerName)
+                (options.branding as Record<string, string>).issuerName =
+                    apiAdvancedOptions.issuerName;
+            if (apiAdvancedOptions.issuerLogoUrl)
+                (options.branding as Record<string, string>).issuerLogoUrl =
+                    apiAdvancedOptions.issuerLogoUrl;
+            if (apiAdvancedOptions.recipientName)
+                (options.branding as Record<string, string>).recipientName =
+                    apiAdvancedOptions.recipientName;
         }
 
         // Build the full payload
@@ -979,7 +1084,7 @@ console.log('Activity ID:', result.activityId); // Use to track lifecycle
 
         const payloadJson = JSON.stringify(payload, null, 2)
             .split('\n')
-            .map((line, i) => i === 0 ? line : '  ' + line)
+            .map((line, i) => (i === 0 ? line : '  ' + line))
             .join('\n');
 
         return `# Send credential via LearnCard Network API
@@ -1025,7 +1130,10 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
             const poll = async () => {
                 if (attempts >= maxAttempts) {
                     setApiIsPolling(false);
-                    setApiPollResult({ success: false, message: 'No new credentials detected. Make sure you ran your code.' });
+                    setApiPollResult({
+                        success: false,
+                        message: m['developerPortal.onboarding.dataMapping.credentialNotFound'](),
+                    });
                     return;
                 }
 
@@ -1049,15 +1157,18 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                     // Handle FAILED events
                     if (eventType === 'FAILED') {
-                        const errorMsg = (latestEvent?.metadata as Record<string, unknown>)?.error || 'Unknown error';
+                        const errorMsg =
+                            (latestEvent?.metadata as Record<string, unknown>)?.error ||
+                            'Unknown error';
                         setApiPollResult({
                             success: false,
                             message: `Credential send failed: ${errorMsg}`,
                         });
                     } else {
-                        const message = recipientType === 'profile'
-                            ? 'Credential sent successfully to profile!'
-                            : 'Credential sent successfully to email/phone recipient!';
+                        const message =
+                            recipientType === 'profile'
+                                ? 'Credential sent successfully to profile!'
+                                : 'Credential sent successfully to email/phone recipient!';
                         setApiPollResult({ success: true, message });
                     }
                     return;
@@ -1069,9 +1180,12 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
             // Start first poll immediately (activity may already exist)
             poll();
         } catch (err) {
-            console.error('Polling error:', err);
+            log.error('Polling error:', err);
             setApiIsPolling(false);
-            setApiPollResult({ success: false, message: 'Failed to check credentials. Please try again.' });
+            setApiPollResult({
+                success: false,
+                message: m['developerPortal.onboarding.dataMapping.failedCheck'](),
+            });
         }
     };
 
@@ -1090,7 +1204,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         }`}
                     >
                         <FileStack className="w-4 h-4" />
-                        Boost URIs Reference
+                        {m['developerPortal.onboarding.dataMapping.apiViewReference']()}
                     </button>
 
                     <button
@@ -1102,7 +1216,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         }`}
                     >
                         <Code className="w-4 h-4" />
-                        Code Example
+                        {m['developerPortal.onboarding.dataMapping.apiViewExample']()}
                     </button>
                 </div>
 
@@ -1112,9 +1226,11 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         <div className="flex items-start gap-3 p-4 bg-violet-50 border border-violet-200 rounded-xl">
                             <Zap className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
                             <div className="text-sm text-violet-800">
-                                <p className="font-medium mb-1">Your Boost Template URIs</p>
+                                <p className="font-medium mb-1">
+                                    {m['developerPortal.onboarding.dataMapping.apiBoostUrisInfo']()}
+                                </p>
                                 <p>
-                                    Copy individual URIs or export all as a config file for your codebase.
+                                    {m['developerPortal.onboarding.dataMapping.apiBoostUrisDesc']()}
                                 </p>
                             </div>
                         </div>
@@ -1127,12 +1243,14 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             {apiCopiedConfig ? (
                                 <>
                                     <Check className="w-4 h-4" />
-                                    Copied Config!
+                                    {m['developerPortal.onboarding.dataMapping.apiCopied']()}
                                 </>
                             ) : (
                                 <>
                                     <Download className="w-4 h-4" />
-                                    Copy All as Config ({issuableTemplates.filter(t => t.boostUri).length} templates)
+                                    {m['developerPortal.onboarding.dataMapping.apiCopyConfig']({
+                                        count: issuableTemplates.filter(t => t.boostUri).length,
+                                    })}
                                 </>
                             )}
                         </button>
@@ -1140,12 +1258,21 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         {/* All Templates List */}
                         <div className="space-y-3">
                             {masterTemplates.map(master => (
-                                <div key={master.id} className="border border-gray-200 rounded-xl overflow-hidden">
+                                <div
+                                    key={master.id}
+                                    className="border border-gray-200 rounded-xl overflow-hidden"
+                                >
                                     <div className="flex items-center gap-3 p-3 bg-gray-50 border-b border-gray-200">
                                         <FileStack className="w-4 h-4 text-violet-600" />
-                                        <span className="font-medium text-gray-700">{master.name}</span>
+                                        <span className="font-medium text-gray-700">
+                                            {master.name}
+                                        </span>
                                         <span className="text-xs text-gray-500">
-                                            {master.childTemplates?.filter(c => c.boostUri).length} boosts
+                                            {m['developerPortal.onboarding.dataMapping.apiBoosts']({
+                                                count:
+                                                    master.childTemplates?.filter(c => c.boostUri)
+                                                        .length || 0,
+                                            })}
                                         </span>
                                     </div>
 
@@ -1154,19 +1281,27 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                             <div key={child.id} className="p-3 hover:bg-gray-50">
                                                 <div className="flex items-start justify-between gap-3">
                                                     <div className="flex-1 min-w-0">
-                                                        <p className="font-medium text-gray-800 truncate">{child.name}</p>
+                                                        <p className="font-medium text-gray-800 truncate">
+                                                            {child.name}
+                                                        </p>
                                                         {child.boostUri ? (
                                                             <code className="text-xs text-gray-500 font-mono break-all">
                                                                 {child.boostUri}
                                                             </code>
                                                         ) : (
-                                                            <span className="text-xs text-amber-600">Not saved yet</span>
+                                                            <span className="text-xs text-amber-600">
+                                                                {m[
+                                                                    'developerPortal.onboarding.dataMapping.apiNotSaved'
+                                                                ]()}
+                                                            </span>
                                                         )}
                                                     </div>
 
                                                     {child.boostUri && (
                                                         <button
-                                                            onClick={() => handleCopyUri(child.boostUri!)}
+                                                            onClick={() =>
+                                                                handleCopyUri(child.boostUri!)
+                                                            }
                                                             className="flex-shrink-0 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                                                         >
                                                             {apiCopiedUri === child.boostUri ? (
@@ -1184,45 +1319,71 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             ))}
 
                             {/* Standalone Templates (not masters, not children) */}
-                            {issuableTemplates.filter(t => !childTemplateIds.has(t.id) && !t.isMasterTemplate).length > 0 && (
+                            {issuableTemplates.filter(
+                                t => !childTemplateIds.has(t.id) && !t.isMasterTemplate
+                            ).length > 0 && (
                                 <div className="border border-gray-200 rounded-xl overflow-hidden">
                                     {masterTemplates.length > 0 && (
                                         <div className="flex items-center gap-3 p-3 bg-gray-50 border-b border-gray-200">
                                             <Award className="w-4 h-4 text-gray-500" />
-                                            <span className="font-medium text-gray-700">Other Templates</span>
+                                            <span className="font-medium text-gray-700">
+                                                {m[
+                                                    'developerPortal.onboarding.dataMapping.otherTemplates'
+                                                ]()}
+                                            </span>
                                         </div>
                                     )}
 
                                     <div className="divide-y divide-gray-100">
-                                        {issuableTemplates.filter(t => !childTemplateIds.has(t.id) && !t.isMasterTemplate).map(template => (
-                                            <div key={template.id} className="p-3 hover:bg-gray-50">
-                                                <div className="flex items-start justify-between gap-3">
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="font-medium text-gray-800 truncate">{template.name}</p>
-                                                        {template.boostUri ? (
-                                                            <code className="text-xs text-gray-500 font-mono break-all">
-                                                                {template.boostUri}
-                                                            </code>
-                                                        ) : (
-                                                            <span className="text-xs text-amber-600">Not saved yet</span>
+                                        {issuableTemplates
+                                            .filter(
+                                                t =>
+                                                    !childTemplateIds.has(t.id) &&
+                                                    !t.isMasterTemplate
+                                            )
+                                            .map(template => (
+                                                <div
+                                                    key={template.id}
+                                                    className="p-3 hover:bg-gray-50"
+                                                >
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="font-medium text-gray-800 truncate">
+                                                                {template.name}
+                                                            </p>
+                                                            {template.boostUri ? (
+                                                                <code className="text-xs text-gray-500 font-mono break-all">
+                                                                    {template.boostUri}
+                                                                </code>
+                                                            ) : (
+                                                                <span className="text-xs text-amber-600">
+                                                                    {m[
+                                                                        'developerPortal.onboarding.dataMapping.apiNotSaved'
+                                                                    ]()}
+                                                                </span>
+                                                            )}
+                                                        </div>
+
+                                                        {template.boostUri && (
+                                                            <button
+                                                                onClick={() =>
+                                                                    handleCopyUri(
+                                                                        template.boostUri!
+                                                                    )
+                                                                }
+                                                                className="flex-shrink-0 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                                            >
+                                                                {apiCopiedUri ===
+                                                                template.boostUri ? (
+                                                                    <Check className="w-4 h-4 text-emerald-500" />
+                                                                ) : (
+                                                                    <Copy className="w-4 h-4" />
+                                                                )}
+                                                            </button>
                                                         )}
                                                     </div>
-
-                                                    {template.boostUri && (
-                                                        <button
-                                                            onClick={() => handleCopyUri(template.boostUri!)}
-                                                            className="flex-shrink-0 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                                        >
-                                                            {apiCopiedUri === template.boostUri ? (
-                                                                <Check className="w-4 h-4 text-emerald-500" />
-                                                            ) : (
-                                                                <Copy className="w-4 h-4" />
-                                                            )}
-                                                        </button>
-                                                    )}
                                                 </div>
-                                            </div>
-                                        ))}
+                                            ))}
                                     </div>
                                 </div>
                             )}
@@ -1233,10 +1394,24 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                                 <Code className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                                 <div className="text-sm">
-                                    <p className="font-medium text-amber-800">Your API Key</p>
+                                    <p className="font-medium text-amber-800">
+                                        {m['developerPortal.onboarding.dataMapping.yourApiKey']()}
+                                    </p>
                                     <p className="text-xs text-amber-700 mt-0.5">
-                                        Set <code className="bg-amber-100 px-1 rounded">LEARNCARD_API_KEY</code> in your environment to: 
-                                        <code className="bg-amber-100 px-1 rounded ml-1 font-mono">{project.apiKey.slice(0, 12)}...</code>
+                                        <TransP
+                                            m={
+                                                m[
+                                                    'developerPortal.onboarding.dataMapping.setApiKeyInEnv'
+                                                ]
+                                            }
+                                            values={{
+                                                apiKeyPreview: project.apiKey.slice(0, 12) + '...',
+                                            }}
+                                            components={[
+                                                <code className="bg-amber-100 px-1 rounded" />,
+                                                <code className="bg-amber-100 px-1 rounded ml-1 font-mono" />,
+                                            ]}
+                                        />
                                     </p>
                                 </div>
                             </div>
@@ -1250,9 +1425,15 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         <div className="flex items-start gap-3 p-4 bg-violet-50 border border-violet-200 rounded-xl">
                             <Zap className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
                             <div className="text-sm text-violet-800">
-                                <p className="font-medium mb-1">Code Example Generator</p>
+                                <p className="font-medium mb-1">
+                                    {m[
+                                        'developerPortal.onboarding.dataMapping.codeExampleGenerator'
+                                    ]()}
+                                </p>
                                 <p>
-                                    Select a template to generate example code. Use the Reference tab to get all URIs.
+                                    {m[
+                                        'developerPortal.onboarding.dataMapping.codeExampleGeneratorDesc'
+                                    ]()}
                                 </p>
                             </div>
                         </div>
@@ -1261,18 +1442,29 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         {issuableTemplates.length > 0 && (
                             <div className="space-y-3">
                                 <label className="block text-sm font-medium text-gray-700">
-                                    Select Template for Example
+                                    {m[
+                                        'developerPortal.onboarding.dataMapping.selectTemplateForExample'
+                                    ]()}
                                 </label>
 
                                 {/* Master Templates with Children */}
                                 {masterTemplates.map(master => (
-                                    <div key={master.id} className="border-2 border-violet-200 rounded-xl overflow-hidden">
+                                    <div
+                                        key={master.id}
+                                        className="border-2 border-violet-200 rounded-xl overflow-hidden"
+                                    >
                                         <div className="flex items-center gap-3 p-3 bg-violet-50">
                                             <FileStack className="w-5 h-5 text-violet-600" />
                                             <div className="flex-1">
-                                                <p className="font-medium text-violet-800">{master.name}</p>
+                                                <p className="font-medium text-violet-800">
+                                                    {master.name}
+                                                </p>
                                                 <p className="text-xs text-violet-600">
-                                                    {master.childTemplates?.length} course boosts
+                                                    {m[
+                                                        'developerPortal.onboarding.dataMapping.courseBoostsCount'
+                                                    ]({
+                                                        count: master.childTemplates?.length || 0,
+                                                    })}
                                                 </p>
                                             </div>
                                         </div>
@@ -1288,21 +1480,31 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                             : 'bg-gray-50 border border-gray-200 hover:border-gray-300'
                                                     }`}
                                                 >
-                                                    <Award className={`w-4 h-4 ${
-                                                        apiSelectedTemplate === child.id ? 'text-cyan-600' : 'text-gray-400'
-                                                    }`} />
+                                                    <Award
+                                                        className={`w-4 h-4 ${
+                                                            apiSelectedTemplate === child.id
+                                                                ? 'text-cyan-600'
+                                                                : 'text-gray-400'
+                                                        }`}
+                                                    />
 
                                                     <div className="flex-1 text-left min-w-0">
-                                                        <p className={`font-medium truncate ${
-                                                            apiSelectedTemplate === child.id ? 'text-cyan-800' : 'text-gray-700'
-                                                        }`}>
+                                                        <p
+                                                            className={`font-medium truncate ${
+                                                                apiSelectedTemplate === child.id
+                                                                    ? 'text-cyan-800'
+                                                                    : 'text-gray-700'
+                                                            }`}
+                                                        >
                                                             {child.name}
                                                         </p>
                                                     </div>
 
                                                     {child.boostUri && (
                                                         <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs flex-shrink-0">
-                                                            Saved
+                                                            {m[
+                                                                'developerPortal.onboarding.dataMapping.saved'
+                                                            ]()}
                                                         </span>
                                                     )}
 
@@ -1316,338 +1518,508 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 ))}
 
                                 {/* Standalone Templates (not part of a master) */}
-                        {issuableTemplates.filter(t => !childTemplateIds.has(t.id) && !t.isMasterTemplate).length > 0 && (
-                            <div className="space-y-2">
-                                {masterTemplates.length > 0 && (
-                                    <p className="text-xs text-gray-500 font-medium pt-2">Other Templates</p>
+                                {issuableTemplates.filter(
+                                    t => !childTemplateIds.has(t.id) && !t.isMasterTemplate
+                                ).length > 0 && (
+                                    <div className="space-y-2">
+                                        {masterTemplates.length > 0 && (
+                                            <p className="text-xs text-gray-500 font-medium pt-2">
+                                                {m[
+                                                    'developerPortal.onboarding.dataMapping.otherTemplates'
+                                                ]()}
+                                            </p>
+                                        )}
+
+                                        {issuableTemplates
+                                            .filter(
+                                                t =>
+                                                    !childTemplateIds.has(t.id) &&
+                                                    !t.isMasterTemplate
+                                            )
+                                            .map(template => (
+                                                <button
+                                                    key={template.id}
+                                                    onClick={() =>
+                                                        setApiSelectedTemplate(template.id)
+                                                    }
+                                                    className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                                                        apiSelectedTemplate === template.id
+                                                            ? 'border-cyan-500 bg-cyan-50'
+                                                            : 'border-gray-200 bg-white hover:border-gray-300'
+                                                    }`}
+                                                >
+                                                    <div
+                                                        className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                                                            apiSelectedTemplate === template.id
+                                                                ? 'bg-cyan-500'
+                                                                : 'bg-gray-100'
+                                                        }`}
+                                                    >
+                                                        <Award
+                                                            className={`w-5 h-5 ${
+                                                                apiSelectedTemplate === template.id
+                                                                    ? 'text-white'
+                                                                    : 'text-gray-500'
+                                                            }`}
+                                                        />
+                                                    </div>
+
+                                                    <div className="flex-1 text-left">
+                                                        <p className="font-medium text-gray-800">
+                                                            {template.name}
+                                                        </p>
+                                                        <p className="text-xs text-gray-500">
+                                                            {template.description ||
+                                                                m[
+                                                                    'developerPortal.onboarding.dataMapping.noDescription'
+                                                                ]()}
+                                                        </p>
+                                                    </div>
+
+                                                    {template.boostUri && (
+                                                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs">
+                                                            {m[
+                                                                'developerPortal.onboarding.dataMapping.saved'
+                                                            ]()}
+                                                        </span>
+                                                    )}
+
+                                                    {apiSelectedTemplate === template.id && (
+                                                        <CheckCircle2 className="w-5 h-5 text-cyan-600" />
+                                                    )}
+                                                </button>
+                                            ))}
+                                    </div>
                                 )}
-
-                                {issuableTemplates.filter(t => !childTemplateIds.has(t.id) && !t.isMasterTemplate).map(template => (
-                                    <button
-                                        key={template.id}
-                                        onClick={() => setApiSelectedTemplate(template.id)}
-                                        className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
-                                            apiSelectedTemplate === template.id
-                                                ? 'border-cyan-500 bg-cyan-50'
-                                                : 'border-gray-200 bg-white hover:border-gray-300'
-                                        }`}
-                                    >
-                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                                            apiSelectedTemplate === template.id ? 'bg-cyan-500' : 'bg-gray-100'
-                                        }`}>
-                                            <Award className={`w-5 h-5 ${
-                                                apiSelectedTemplate === template.id ? 'text-white' : 'text-gray-500'
-                                            }`} />
-                                        </div>
-
-                                        <div className="flex-1 text-left">
-                                            <p className="font-medium text-gray-800">{template.name}</p>
-                                            <p className="text-xs text-gray-500">{template.description || 'No description'}</p>
-                                        </div>
-
-                                        {template.boostUri && (
-                                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs">Saved</span>
-                                        )}
-
-                                        {apiSelectedTemplate === template.id && (
-                                            <CheckCircle2 className="w-5 h-5 text-cyan-600" />
-                                        )}
-                                    </button>
-                                ))}
                             </div>
                         )}
-                    </div>
-                )}
 
-                {/* Info about child boost - course data is baked in */}
-                {selectedApiTemplateMaster && (
-                    <div className="flex items-start gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
-                        <Layers className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-                        <div className="text-sm text-emerald-800">
-                            <p className="font-medium">Course data is pre-filled</p>
-                            <p className="text-xs text-emerald-700 mt-0.5">
-                                This boost has course-specific data (name, credits, etc.) already baked in. 
-                                You only need to provide issuance data like recipient name and date.
+                        {/* Info about child boost - course data is baked in */}
+                        {selectedApiTemplateMaster && (
+                            <div className="flex items-start gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                <Layers className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                                <div className="text-sm text-emerald-800">
+                                    <p className="font-medium">
+                                        {m[
+                                            'developerPortal.onboarding.dataMapping.courseDataPreFilled'
+                                        ]()}
+                                    </p>
+                                    <p className="text-xs text-emerald-700 mt-0.5">
+                                        {m[
+                                            'developerPortal.onboarding.dataMapping.courseDataPreFilledDesc'
+                                        ]()}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Template Data Inputs - User-provided variables */}
+                        {apiTemplateVariables.length > 0 && (
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        {m['developerPortal.onboarding.dataMapping.templateData']()}
+                                    </label>
+
+                                    <span className="text-xs text-gray-500">
+                                        {apiTemplateVariables.length === 1
+                                            ? m[
+                                                  'developerPortal.onboarding.dataMapping.fieldsToProvide'
+                                              ]({ count: 1 })
+                                            : m[
+                                                  'developerPortal.onboarding.dataMapping.fieldsToProvidePlural'
+                                              ]({ count: apiTemplateVariables.length })}
+                                    </span>
+                                </div>
+
+                                <p className="text-xs text-gray-500">
+                                    {m[
+                                        'developerPortal.onboarding.dataMapping.enterExampleValues'
+                                    ]()}
+                                </p>
+
+                                <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                                    {apiTemplateVariables.map(varName => {
+                                        // Format display name
+                                        const displayName = varName
+                                            .replace(/_/g, ' ')
+                                            .replace(/\b\w/g, l => l.toUpperCase());
+
+                                        return (
+                                            <div key={varName}>
+                                                <label className="block text-xs font-medium text-gray-600 mb-1">
+                                                    {displayName}
+                                                    <code className="ml-2 text-gray-400 font-normal">
+                                                        {varName}
+                                                    </code>
+                                                </label>
+
+                                                <input
+                                                    type="text"
+                                                    value={apiTemplateData[varName] || ''}
+                                                    onChange={e =>
+                                                        setApiTemplateData(prev => ({
+                                                            ...prev,
+                                                            [varName]: e.target.value,
+                                                        }))
+                                                    }
+                                                    placeholder={getSmartDefault(varName)}
+                                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                                />
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* System Variables - Auto-injected at issuance */}
+                        {apiSystemVariables.length > 0 && (
+                            <div className="flex items-start gap-3 p-3 bg-cyan-50 border border-cyan-200 rounded-xl">
+                                <Zap className="w-4 h-4 text-cyan-600 flex-shrink-0 mt-0.5" />
+                                <div className="text-sm">
+                                    <p className="font-medium text-cyan-800">
+                                        {m[
+                                            'developerPortal.onboarding.dataMapping.autoInjectedAtIssuance'
+                                        ]()}
+                                    </p>
+                                    <p className="text-xs text-cyan-700 mt-0.5">
+                                        {apiSystemVariables.map(v => `{{${v}}}`).join(', ')}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Recipient Input */}
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">
+                                {m['developerPortal.onboarding.dataMapping.recipient']()}
+                            </label>
+
+                            <input
+                                type="text"
+                                value={apiRecipientEmail}
+                                onChange={e => setApiRecipientEmail(e.target.value)}
+                                placeholder={m[
+                                    'developerPortal.onboarding.dataMapping.profileIdOrEmail'
+                                ]()}
+                                className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            />
+
+                            <p className="text-xs text-gray-500">
+                                {m[
+                                    'developerPortal.onboarding.dataMapping.enterProfileIdOrEmail'
+                                ]()}
                             </p>
                         </div>
-                    </div>
-                )}
 
-                {/* Template Data Inputs - User-provided variables */}
-                {apiTemplateVariables.length > 0 && (
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <label className="block text-sm font-medium text-gray-700">Template Data</label>
+                        {/* API Key Reference */}
+                        {project?.apiKey && (
+                            <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                                <Code className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                                <div className="text-sm">
+                                    <p className="font-medium text-amber-800">
+                                        {m['developerPortal.onboarding.dataMapping.yourApiKey']()}
+                                    </p>
+                                    <p className="text-xs text-amber-700 mt-0.5">
+                                        <TransP
+                                            m={
+                                                m[
+                                                    'developerPortal.onboarding.dataMapping.setApiKeyInEnv'
+                                                ]
+                                            }
+                                            values={{
+                                                apiKeyPreview: project.apiKey.slice(0, 12) + '...',
+                                            }}
+                                            components={[
+                                                <code className="bg-amber-100 px-1 rounded" />,
+                                                <code className="bg-amber-100 px-1 rounded ml-1 font-mono" />,
+                                            ]}
+                                        />
+                                    </p>
+                                </div>
+                            </div>
+                        )}
 
-                            <span className="text-xs text-gray-500">
-                                {apiTemplateVariables.length} field{apiTemplateVariables.length !== 1 ? 's' : ''} to provide
-                            </span>
-                        </div>
+                        {/* Advanced Options Toggle */}
+                        <button
+                            onClick={() => setApiShowAdvanced(!apiShowAdvanced)}
+                            className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                        >
+                            {apiShowAdvanced ? (
+                                <ChevronUp className="w-4 h-4" />
+                            ) : (
+                                <ChevronDown className="w-4 h-4" />
+                            )}
+                            {apiShowAdvanced
+                                ? m['developerPortal.onboarding.dataMapping.hideAdvancedOptions']()
+                                : m['developerPortal.onboarding.dataMapping.showAdvancedOptions']()}
+                            {apiHasAdvancedOptions && (
+                                <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded text-xs">
+                                    {m['developerPortal.onboarding.dataMapping.active']()}
+                                </span>
+                            )}
+                        </button>
 
-                        <p className="text-xs text-gray-500">
-                            Enter example values for your credential. These will appear in the generated code.
-                        </p>
+                        {/* Advanced Options Panel */}
+                        {apiShowAdvanced && (
+                            <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-4">
+                                <p className="text-sm text-gray-600">
+                                    {m[
+                                        'developerPortal.onboarding.dataMapping.customizeBrandingWebhooks'
+                                    ]()}
+                                </p>
 
-                        <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                            {apiTemplateVariables.map(varName => {
-                                // Format display name
-                                const displayName = varName
-                                    .replace(/_/g, ' ')
-                                    .replace(/\b\w/g, l => l.toUpperCase());
+                                {/* Branding Section */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                                        <Building2 className="w-4 h-4 text-indigo-500" />
+                                        {m[
+                                            'developerPortal.onboarding.dataMapping.emailBranding'
+                                        ]()}
+                                    </div>
 
-                                return (
-                                    <div key={varName}>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                                                {m[
+                                                    'developerPortal.onboarding.dataMapping.issuerName'
+                                                ]()}
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={apiAdvancedOptions.issuerName}
+                                                onChange={e =>
+                                                    setApiAdvancedOptions(prev => ({
+                                                        ...prev,
+                                                        issuerName: e.target.value,
+                                                    }))
+                                                }
+                                                placeholder={m[
+                                                    'developerPortal.onboarding.dataMapping.yourOrganization'
+                                                ]()}
+                                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                                                {m[
+                                                    'developerPortal.onboarding.dataMapping.logoUrl'
+                                                ]()}
+                                            </label>
+                                            <input
+                                                type="url"
+                                                value={apiAdvancedOptions.issuerLogoUrl}
+                                                onChange={e =>
+                                                    setApiAdvancedOptions(prev => ({
+                                                        ...prev,
+                                                        issuerLogoUrl: e.target.value,
+                                                    }))
+                                                }
+                                                placeholder="https://example.com/logo.png"
+                                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                                                {m[
+                                                    'developerPortal.onboarding.dataMapping.recipientName'
+                                                ]()}
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={apiAdvancedOptions.recipientName}
+                                                onChange={e =>
+                                                    setApiAdvancedOptions(prev => ({
+                                                        ...prev,
+                                                        recipientName: e.target.value,
+                                                    }))
+                                                }
+                                                placeholder={m[
+                                                    'developerPortal.onboarding.dataMapping.johnDoe'
+                                                ]()}
+                                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Webhook Section */}
+                                <div className="space-y-3 pt-3 border-t border-gray-200">
+                                    <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                                        <Webhook className="w-4 h-4 text-emerald-500" />
+                                        {m[
+                                            'developerPortal.onboarding.dataMapping.webhookNotification'
+                                        ]()}
+                                    </div>
+
+                                    <div>
                                         <label className="block text-xs font-medium text-gray-600 mb-1">
-                                            {displayName}
-                                            <code className="ml-2 text-gray-400 font-normal">{varName}</code>
+                                            {m[
+                                                'developerPortal.onboarding.dataMapping.webhookUrl'
+                                            ]()}
                                         </label>
-
                                         <input
-                                            type="text"
-                                            value={apiTemplateData[varName] || ''}
-                                            onChange={(e) => setApiTemplateData(prev => ({
-                                                ...prev,
-                                                [varName]: e.target.value
-                                            }))}
-                                            placeholder={getSmartDefault(varName)}
+                                            type="url"
+                                            value={apiAdvancedOptions.webhookUrl}
+                                            onChange={e =>
+                                                setApiAdvancedOptions(prev => ({
+                                                    ...prev,
+                                                    webhookUrl: e.target.value,
+                                                }))
+                                            }
+                                            placeholder="https://your-server.com/webhook"
                                             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                         />
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-
-                {/* System Variables - Auto-injected at issuance */}
-                {apiSystemVariables.length > 0 && (
-                    <div className="flex items-start gap-3 p-3 bg-cyan-50 border border-cyan-200 rounded-xl">
-                        <Zap className="w-4 h-4 text-cyan-600 flex-shrink-0 mt-0.5" />
-                        <div className="text-sm">
-                            <p className="font-medium text-cyan-800">Auto-injected at issuance</p>
-                            <p className="text-xs text-cyan-700 mt-0.5">
-                                {apiSystemVariables.map(v => `{{${v}}}`).join(', ')}
-                            </p>
-                        </div>
-                    </div>
-                )}
-
-                {/* Recipient Input */}
-                <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                        Recipient
-                    </label>
-
-                    <input
-                        type="text"
-                        value={apiRecipientEmail}
-                        onChange={(e) => setApiRecipientEmail(e.target.value)}
-                        placeholder="Profile ID or email address"
-                        className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    />
-
-                    <p className="text-xs text-gray-500">
-                        Enter a LearnCard Profile ID or an email address
-                    </p>
-                </div>
-
-                {/* API Key Reference */}
-                {project?.apiKey && (
-                    <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                        <Code className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                        <div className="text-sm">
-                            <p className="font-medium text-amber-800">Your API Key</p>
-                            <p className="text-xs text-amber-700 mt-0.5">
-                                Set <code className="bg-amber-100 px-1 rounded">LEARNCARD_API_KEY</code> in your environment to: 
-                                <code className="bg-amber-100 px-1 rounded ml-1 font-mono">{project.apiKey.slice(0, 12)}...</code>
-                            </p>
-                        </div>
-                    </div>
-                )}
-
-                {/* Advanced Options Toggle */}
-                <button
-                    onClick={() => setApiShowAdvanced(!apiShowAdvanced)}
-                    className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
-                >
-                    {apiShowAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    {apiShowAdvanced ? 'Hide' : 'Show'} Advanced Options
-                    {apiHasAdvancedOptions && <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded text-xs">Active</span>}
-                </button>
-
-                {/* Advanced Options Panel */}
-                {apiShowAdvanced && (
-                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-4">
-                        <p className="text-sm text-gray-600">
-                            Customize branding, webhooks, and delivery options.
-                        </p>
-
-                        {/* Branding Section */}
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                                <Building2 className="w-4 h-4 text-indigo-500" />
-                                Email Branding
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">Issuer Name</label>
-                                    <input
-                                        type="text"
-                                        value={apiAdvancedOptions.issuerName}
-                                        onChange={(e) => setApiAdvancedOptions(prev => ({ ...prev, issuerName: e.target.value }))}
-                                        placeholder="Your Organization"
-                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">Logo URL</label>
-                                    <input
-                                        type="url"
-                                        value={apiAdvancedOptions.issuerLogoUrl}
-                                        onChange={(e) => setApiAdvancedOptions(prev => ({ ...prev, issuerLogoUrl: e.target.value }))}
-                                        placeholder="https://example.com/logo.png"
-                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-600 mb-1">Recipient Name</label>
-                                    <input
-                                        type="text"
-                                        value={apiAdvancedOptions.recipientName}
-                                        onChange={(e) => setApiAdvancedOptions(prev => ({ ...prev, recipientName: e.target.value }))}
-                                        placeholder="John Doe"
-                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Webhook Section */}
-                        <div className="space-y-3 pt-3 border-t border-gray-200">
-                            <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                                <Webhook className="w-4 h-4 text-emerald-500" />
-                                Webhook Notification
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-medium text-gray-600 mb-1">Webhook URL</label>
-                                <input
-                                    type="url"
-                                    value={apiAdvancedOptions.webhookUrl}
-                                    onChange={(e) => setApiAdvancedOptions(prev => ({ ...prev, webhookUrl: e.target.value }))}
-                                    placeholder="https://your-server.com/webhook"
-                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">
-                                    Receive a POST request when the credential is claimed.
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Suppress Delivery */}
-                        <div className="space-y-3 pt-3 border-t border-gray-200">
-                            <label className="flex items-center gap-3 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={apiAdvancedOptions.suppressDelivery}
-                                    onChange={(e) => setApiAdvancedOptions(prev => ({ ...prev, suppressDelivery: e.target.checked }))}
-                                    className="w-4 h-4 rounded border-gray-300 text-cyan-500 focus:ring-cyan-500"
-                                />
-                                <div className="flex items-center gap-2">
-                                    <BellOff className="w-4 h-4 text-amber-500" />
-                                    <span className="text-sm font-medium text-gray-700">Suppress Email Delivery</span>
-                                </div>
-                            </label>
-                            <p className="text-xs text-gray-500 ml-7">
-                                Don't send an email — get the claim URL to use in your own system.
-                            </p>
-                        </div>
-                    </div>
-                )}
-
-                {/* Code Output */}
-                <CodeOutputPanel
-                    title="Your Code"
-                    snippets={{
-                        typescript: generateApiCodeSnippet(),
-                        curl: generateCurlCodeSnippet(),
-                    }}
-                />
-
-                {/* Verification Section */}
-                <div className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl">
-                    <div className="flex items-start gap-4">
-                        <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <Send className="w-5 h-5 text-indigo-600" />
-                        </div>
-
-                        <div className="flex-1">
-                            <h4 className="font-medium text-gray-800 mb-1">Verify Your Code Worked</h4>
-                            <p className="text-sm text-gray-600 mb-3">
-                                Run your code, then click below to verify the credential was sent successfully.
-                            </p>
-
-                            {!apiIsPolling && !apiPollResult?.success && (
-                                <button
-                                    onClick={handleApiStartPolling}
-                                    className="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600 transition-colors"
-                                >
-                                    <RefreshCw className="w-4 h-4" />
-                                    Check for Sent Credentials
-                                </button>
-                            )}
-
-                            {apiIsPolling && (
-                                <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-indigo-200">
-                                    <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-700">Waiting for new credentials...</p>
-                                        <p className="text-xs text-gray-500">Run your code now. We'll detect when it's sent.</p>
-                                    </div>
-                                    <button
-                                        onClick={() => setApiIsPolling(false)}
-                                        className="ml-auto px-3 py-1 text-sm text-gray-500 hover:text-gray-700"
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
-                            )}
-
-                            {apiPollResult && (
-                                <div className={`flex items-center gap-3 p-3 rounded-lg ${
-                                    apiPollResult.success 
-                                        ? 'bg-emerald-50 border border-emerald-200' 
-                                        : 'bg-amber-50 border border-amber-200'
-                                }`}>
-                                    {apiPollResult.success ? (
-                                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                                    ) : (
-                                        <Clock className="w-5 h-5 text-amber-600" />
-                                    )}
-
-                                    <div className="flex-1">
-                                        <p className={`text-sm font-medium ${apiPollResult.success ? 'text-emerald-800' : 'text-amber-800'}`}>
-                                            {apiPollResult.message}
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            {m[
+                                                'developerPortal.onboarding.dataMapping.receivePostRequest'
+                                            ]()}
                                         </p>
                                     </div>
+                                </div>
 
-                                    {!apiPollResult.success && (
+                                {/* Suppress Delivery */}
+                                <div className="space-y-3 pt-3 border-t border-gray-200">
+                                    <label className="flex items-center gap-3 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={apiAdvancedOptions.suppressDelivery}
+                                            onChange={e =>
+                                                setApiAdvancedOptions(prev => ({
+                                                    ...prev,
+                                                    suppressDelivery: e.target.checked,
+                                                }))
+                                            }
+                                            className="w-4 h-4 rounded border-gray-300 text-cyan-500 focus:ring-cyan-500"
+                                        />
+                                        <div className="flex items-center gap-2">
+                                            <BellOff className="w-4 h-4 text-amber-500" />
+                                            <span className="text-sm font-medium text-gray-700">
+                                                {m[
+                                                    'developerPortal.onboarding.dataMapping.suppressEmailDelivery'
+                                                ]()}
+                                            </span>
+                                        </div>
+                                    </label>
+                                    <p className="text-xs text-gray-500 ml-7">
+                                        {m[
+                                            'developerPortal.onboarding.dataMapping.suppressDeliveryDesc'
+                                        ]()}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Code Output */}
+                        <CodeOutputPanel
+                            title={m['developerPortal.onboarding.dataMapping.yourCode']()}
+                            snippets={{
+                                typescript: generateApiCodeSnippet(),
+                                curl: generateCurlCodeSnippet(),
+                            }}
+                        />
+
+                        {/* Verification Section */}
+                        <div className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl">
+                            <div className="flex items-start gap-4">
+                                <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <Send className="w-5 h-5 text-indigo-600" />
+                                </div>
+
+                                <div className="flex-1">
+                                    <h4 className="font-medium text-gray-800 mb-1">
+                                        {m[
+                                            'developerPortal.onboarding.dataMapping.verifyYourCodeWorked'
+                                        ]()}
+                                    </h4>
+                                    <p className="text-sm text-gray-600 mb-3">
+                                        {m[
+                                            'developerPortal.onboarding.dataMapping.verifyTestDesc'
+                                        ]()}
+                                    </p>
+
+                                    {!apiIsPolling && !apiPollResult?.success && (
                                         <button
                                             onClick={handleApiStartPolling}
-                                            className="px-3 py-1 text-sm bg-amber-100 text-amber-700 rounded hover:bg-amber-200"
+                                            className="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600 transition-colors"
                                         >
-                                            Try Again
+                                            <RefreshCw className="w-4 h-4" />
+                                            {m[
+                                                'developerPortal.onboarding.dataMapping.checkForSentCredentials'
+                                            ]()}
                                         </button>
                                     )}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
 
+                                    {apiIsPolling && (
+                                        <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-indigo-200">
+                                            <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
+                                            <div>
+                                                <p className="text-sm font-medium text-gray-700">
+                                                    {m[
+                                                        'developerPortal.onboarding.dataMapping.waitingForNewCredentials'
+                                                    ]()}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    {m[
+                                                        'developerPortal.onboarding.dataMapping.runCodeNowDetect'
+                                                    ]()}
+                                                </p>
+                                            </div>
+                                            <button
+                                                onClick={() => setApiIsPolling(false)}
+                                                className="ml-auto px-3 py-1 text-sm text-gray-500 hover:text-gray-700"
+                                            >
+                                                {m[
+                                                    'developerPortal.onboarding.dataMapping.cancel'
+                                                ]()}
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {apiPollResult && (
+                                        <div
+                                            className={`flex items-center gap-3 p-3 rounded-lg ${
+                                                apiPollResult.success
+                                                    ? 'bg-emerald-50 border border-emerald-200'
+                                                    : 'bg-amber-50 border border-amber-200'
+                                            }`}
+                                        >
+                                            {apiPollResult.success ? (
+                                                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                                            ) : (
+                                                <Clock className="w-5 h-5 text-amber-600" />
+                                            )}
+
+                                            <div className="flex-1">
+                                                <p
+                                                    className={`text-sm font-medium ${
+                                                        apiPollResult.success
+                                                            ? 'text-emerald-800'
+                                                            : 'text-amber-800'
+                                                    }`}
+                                                >
+                                                    {apiPollResult.message}
+                                                </p>
+                                            </div>
+
+                                            {!apiPollResult.success && (
+                                                <button
+                                                    onClick={handleApiStartPolling}
+                                                    className="px-3 py-1 text-sm bg-amber-100 text-amber-700 rounded hover:bg-amber-200"
+                                                >
+                                                    {m[
+                                                        'developerPortal.onboarding.dataMapping.tryAgain'
+                                                    ]()}
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     </>
                 )}
 
@@ -1658,14 +2030,16 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        Back
+                        {m['developerPortal.onboarding.dataMapping.back']()}
                     </button>
 
                     <button
-                        onClick={() => onComplete({ mappings: [], webhookUrl: undefined }, templates)}
+                        onClick={() =>
+                            onComplete({ mappings: [], webhookUrl: undefined }, templates)
+                        }
                         className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                     >
-                        Continue to Testing
+                        {m['developerPortal.onboarding.dataMapping.continueToTesting']()}
                         <ArrowRight className="w-4 h-4" />
                     </button>
                 </div>
@@ -1676,7 +2050,10 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
     if (integrationMethod === 'csv') {
         // Simplified CSV flow: just download template and continue
         // Column selection happens in CsvUploadTab when actually uploading
-        const totalChildTemplates = masterTemplates.reduce((sum, m) => sum + (m.childTemplates?.length || 0), 0);
+        const totalChildTemplates = masterTemplates.reduce(
+            (sum, m) => sum + (m.childTemplates?.length || 0),
+            0
+        );
         const hasMasterTemplates = masterTemplates.length > 0;
 
         return (
@@ -1686,11 +2063,10 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     <FileSpreadsheet className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
 
                     <div className="text-sm text-amber-800">
-                        <p className="font-medium mb-1">CSV Batch Upload</p>
-                        <p>
-                            Issue credentials in bulk by uploading a CSV spreadsheet. 
-                            Download the template below to get started with the correct format.
+                        <p className="font-medium mb-1">
+                            {m['developerPortal.onboarding.dataMapping.csvBatchUpload']()}
                         </p>
+                        <p>{m['developerPortal.onboarding.dataMapping.csvBatchUploadDesc']()}</p>
                     </div>
                 </div>
 
@@ -1702,27 +2078,36 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         </div>
 
                         <div>
-                            <h3 className="font-semibold text-gray-800">CSV Template</h3>
+                            <h3 className="font-semibold text-gray-800">
+                                {m['developerPortal.onboarding.dataMapping.csvTemplate']()}
+                            </h3>
                             <p className="text-sm text-gray-500">
-                                Download a pre-formatted template with the correct columns
+                                {m[
+                                    'developerPortal.onboarding.dataMapping.downloadPreFormattedTemplate'
+                                ]()}
                             </p>
                         </div>
                     </div>
 
                     {/* Template columns preview */}
                     <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
-                        <p className="text-xs font-medium text-gray-600">Template columns:</p>
+                        <p className="text-xs font-medium text-gray-600">
+                            {m['developerPortal.onboarding.dataMapping.templateColumns']()}
+                        </p>
                         <div className="flex flex-wrap gap-2">
                             <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
-                                Recipient *
+                                {m['developerPortal.onboarding.dataMapping.recipientColumn']()}
                             </span>
                             {hasMasterTemplates && (
                                 <span className="px-2 py-1 bg-violet-100 text-violet-700 rounded text-xs font-medium">
-                                    Course ID *
+                                    {m['developerPortal.onboarding.dataMapping.courseIdColumn']()}
                                 </span>
                             )}
                             {targetFields.map(v => (
-                                <span key={v} className="px-2 py-1 bg-cyan-100 text-cyan-700 rounded text-xs">
+                                <span
+                                    key={v}
+                                    className="px-2 py-1 bg-cyan-100 text-cyan-700 rounded text-xs"
+                                >
                                     {v}
                                 </span>
                             ))}
@@ -1730,18 +2115,19 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                         {hasMasterTemplates && (
                             <p className="text-xs text-gray-500">
-                                You have {totalChildTemplates} course templates. 
-                                The CSV can include rows for different courses.
+                                {m['developerPortal.onboarding.dataMapping.csvCourseCount']({
+                                    count: totalChildTemplates,
+                                })}
                             </p>
                         )}
                     </div>
 
-                    <button 
+                    <button
                         onClick={handleDownloadTemplate}
                         className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                     >
                         <Download className="w-4 h-4" />
-                        Download CSV Template
+                        {m['developerPortal.onboarding.dataMapping.csvDownloadTemplate']()}
                     </button>
                 </div>
 
@@ -1753,40 +2139,74 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         </div>
 
                         <div>
-                            <h3 className="font-semibold text-gray-800">How It Works</h3>
-                            <p className="text-sm text-gray-500">Simple 3-step process</p>
+                            <h3 className="font-semibold text-gray-800">
+                                {m['developerPortal.onboarding.dataMapping.howItWorks']()}
+                            </h3>
+                            <p className="text-sm text-gray-500">
+                                {m['developerPortal.onboarding.dataMapping.simple3StepProcess']()}
+                            </p>
                         </div>
                     </div>
 
                     <div className="grid gap-3">
                         <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                             <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                <span className="text-xs font-bold text-cyan-700">1</span>
+                                {/* eslint-disable-next-line i18next/no-literal-string */}
+                                <span
+                                    className="text-xs font-bold text-cyan-700"
+                                    aria-hidden="true"
+                                >
+                                    1
+                                </span>
                             </div>
                             <div>
-                                <p className="text-sm font-medium text-gray-800">Download Template</p>
-                                <p className="text-xs text-gray-500">Get the CSV with the correct column headers</p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                            <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                <span className="text-xs font-bold text-cyan-700">2</span>
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium text-gray-800">Fill In Your Data</p>
-                                <p className="text-xs text-gray-500">Add recipient info and credential data for each row</p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                            <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                <span className="text-xs font-bold text-cyan-700">3</span>
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium text-gray-800">Upload & Send</p>
+                                <p className="text-sm font-medium text-gray-800">
+                                    {m['developerPortal.onboarding.dataMapping.downloadTemplate']()}
+                                </p>
                                 <p className="text-xs text-gray-500">
-                                    Go to the CSV Upload tab in your dashboard to upload and process
+                                    {m[
+                                        'developerPortal.onboarding.dataMapping.getCsvWithHeaders'
+                                    ]()}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                            <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                {/* eslint-disable-next-line i18next/no-literal-string */}
+                                <span
+                                    className="text-xs font-bold text-cyan-700"
+                                    aria-hidden="true"
+                                >
+                                    2
+                                </span>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-800">
+                                    {m['developerPortal.onboarding.dataMapping.fillInYourData']()}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                    {m['developerPortal.onboarding.dataMapping.addRecipientInfo']()}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                            <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                {/* eslint-disable-next-line i18next/no-literal-string */}
+                                <span
+                                    className="text-xs font-bold text-cyan-700"
+                                    aria-hidden="true"
+                                >
+                                    3
+                                </span>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-800">
+                                    {m['developerPortal.onboarding.dataMapping.uploadAndSend']()}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                    {m['developerPortal.onboarding.dataMapping.goToCsvUploadTab']()}
                                 </p>
                             </div>
                         </div>
@@ -1800,14 +2220,14 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        Back
+                        {m['developerPortal.onboarding.dataMapping.back']()}
                     </button>
 
                     <button
                         onClick={() => onComplete({ mappings: [] }, templates)}
                         className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-cyan-500 text-white rounded-xl font-medium hover:bg-cyan-600 transition-colors"
                     >
-                        Continue to Testing
+                        {m['developerPortal.onboarding.dataMapping.continueToTesting']()}
                         <ArrowRight className="w-4 h-4" />
                     </button>
                 </div>
@@ -1826,8 +2246,12 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-gray-800">Your Webhook URL</h3>
-                        <p className="text-sm text-gray-500">Configure this in your LMS settings</p>
+                        <h3 className="font-semibold text-gray-800">
+                            {m['developerPortal.onboarding.dataMapping.yourWebhookUrl']()}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                            {m['developerPortal.onboarding.dataMapping.configureInLms']()}
+                        </p>
                     </div>
                 </div>
 
@@ -1840,7 +2264,11 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         onClick={handleCopyUrl}
                         className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                     >
-                        {copiedUrl ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                        {copiedUrl ? (
+                            <Check className="w-4 h-4 text-emerald-500" />
+                        ) : (
+                            <Copy className="w-4 h-4" />
+                        )}
                     </button>
                 </div>
             </div>
@@ -1853,8 +2281,12 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-gray-800">Capture Sample Event</h3>
-                        <p className="text-sm text-gray-500">Send a test event from your LMS or simulate one</p>
+                        <h3 className="font-semibold text-gray-800">
+                            {m['developerPortal.onboarding.dataMapping.captureSampleEvent']()}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                            {m['developerPortal.onboarding.dataMapping.sendTestEventOrSimulate']()}
+                        </p>
                     </div>
                 </div>
 
@@ -1863,12 +2295,18 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         {isWaiting ? (
                             <div className="space-y-3">
                                 <Loader2 className="w-8 h-8 text-cyan-500 animate-spin mx-auto" />
-                                <p className="text-sm text-gray-600">Waiting for webhook event...</p>
+                                <p className="text-sm text-gray-600">
+                                    {m[
+                                        'developerPortal.onboarding.dataMapping.waitingForWebhookEvent'
+                                    ]()}
+                                </p>
                             </div>
                         ) : (
                             <div className="space-y-3">
                                 <p className="text-sm text-gray-600">
-                                    Send a test "course completed" event from your LMS, or click below to simulate one.
+                                    {m[
+                                        'developerPortal.onboarding.dataMapping.simulateEventDesc'
+                                    ]()}
                                 </p>
 
                                 <button
@@ -1876,7 +2314,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-100 text-cyan-700 rounded-lg hover:bg-cyan-200 transition-colors"
                                 >
                                     <RefreshCw className="w-4 h-4" />
-                                    Simulate Test Event
+                                    {m[
+                                        'developerPortal.onboarding.dataMapping.simulateTestEvent'
+                                    ]()}
                                 </button>
                             </div>
                         )}
@@ -1885,7 +2325,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     <div className="space-y-3">
                         <div className="flex items-center gap-2 text-sm text-emerald-600">
                             <Check className="w-4 h-4" />
-                            Event captured successfully!
+                            {m[
+                                'developerPortal.onboarding.dataMapping.eventCapturedSuccessfully'
+                            ]()}
                         </div>
 
                         <div className="p-4 bg-gray-900 rounded-xl overflow-x-auto">
@@ -1906,10 +2348,18 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         </div>
 
                         <div>
-                            <h3 className="font-semibold text-gray-800">Course Boost Selection</h3>
+                            <h3 className="font-semibold text-gray-800">
+                                {m['developerPortal.onboarding.dataMapping.courseBoostSelection']()}
+                            </h3>
                             <p className="text-sm text-gray-500">
-                                You have {masterTemplates.reduce((sum, m) => sum + (m.childTemplates?.length || 0), 0)} course boosts. 
-                                Specify which field identifies the course.
+                                {m[
+                                    'developerPortal.onboarding.dataMapping.courseBoostSelectionDesc'
+                                ]({
+                                    count: masterTemplates.reduce(
+                                        (sum, m) => sum + (m.childTemplates?.length || 0),
+                                        0
+                                    ),
+                                })}
                             </p>
                         </div>
                     </div>
@@ -1917,24 +2367,32 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     <div className="p-4 bg-violet-50 border border-violet-200 rounded-xl space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-violet-800 mb-2">
-                                Which field identifies the course?
+                                {m[
+                                    'developerPortal.onboarding.dataMapping.whichFieldIdentifiesCourse'
+                                ]()}
                             </label>
 
                             <select
                                 value={boostSelectorField}
-                                onChange={(e) => setBoostSelectorField(e.target.value)}
+                                onChange={e => setBoostSelectorField(e.target.value)}
                                 className="w-full px-3 py-2 border border-violet-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-violet-500"
                             >
-                                <option value="">Select a field...</option>
+                                <option value="">
+                                    {m['developerPortal.onboarding.dataMapping.selectField']()}
+                                </option>
                                 {sourceFields.map(field => (
-                                    <option key={field} value={field}>{field}</option>
+                                    <option key={field} value={field}>
+                                        {field}
+                                    </option>
                                 ))}
                             </select>
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-violet-800 mb-2">
-                                How should we match courses?
+                                {m[
+                                    'developerPortal.onboarding.dataMapping.howShouldWeMatchCourses'
+                                ]()}
                             </label>
 
                             <div className="space-y-2">
@@ -1948,9 +2406,15 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                         className="mt-0.5"
                                     />
                                     <div>
-                                        <p className="font-medium text-gray-800">Match by Course ID</p>
+                                        <p className="font-medium text-gray-800">
+                                            {m[
+                                                'developerPortal.onboarding.dataMapping.matchByCourseId'
+                                            ]()}
+                                        </p>
                                         <p className="text-xs text-gray-500">
-                                            Store a unique ID in each boost and match exactly (recommended)
+                                            {m[
+                                                'developerPortal.onboarding.dataMapping.matchByIdDesc'
+                                            ]()}
                                         </p>
                                     </div>
                                 </label>
@@ -1965,9 +2429,15 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                         className="mt-0.5"
                                     />
                                     <div>
-                                        <p className="font-medium text-gray-800">Match by Course Name</p>
+                                        <p className="font-medium text-gray-800">
+                                            {m[
+                                                'developerPortal.onboarding.dataMapping.matchByCourseName'
+                                            ]()}
+                                        </p>
                                         <p className="text-xs text-gray-500">
-                                            Find boost where name contains the course title (fallback)
+                                            {m[
+                                                'developerPortal.onboarding.dataMapping.matchByNameDesc'
+                                            ]()}
                                         </p>
                                     </div>
                                 </label>
@@ -1978,8 +2448,27 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             <div className="flex items-start gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
                                 <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
                                 <p className="text-xs text-emerald-800">
-                                    Will use <code className="bg-emerald-100 px-1 rounded">{boostSelectorField}</code> to 
-                                    find the right course boost by {boostSelectorMatchType === 'id' ? 'exact ID match' : 'name matching'}.
+                                    <TransP
+                                        m={
+                                            m[
+                                                'developerPortal.onboarding.dataMapping.boostMatcherConfirmation'
+                                            ]
+                                        }
+                                        values={{
+                                            field: boostSelectorField,
+                                            matchType:
+                                                boostSelectorMatchType === 'id'
+                                                    ? m[
+                                                          'developerPortal.onboarding.dataMapping.exactIdMatch'
+                                                      ]()
+                                                    : m[
+                                                          'developerPortal.onboarding.dataMapping.nameMatching'
+                                                      ](),
+                                        }}
+                                        components={[
+                                            <code className="bg-emerald-100 px-1 rounded" />,
+                                        ]}
+                                    />
                                 </p>
                             </div>
                         )}
@@ -1996,11 +2485,15 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         </div>
 
                         <div>
-                            <h3 className="font-semibold text-gray-800">Map Issuance Fields</h3>
+                            <h3 className="font-semibold text-gray-800">
+                                {m['developerPortal.onboarding.dataMapping.mapIssuanceFields']()}
+                            </h3>
                             <p className="text-sm text-gray-500">
-                                {masterTemplates.length > 0 
-                                    ? 'Map recipient data to credential fields (course data is already baked in)'
-                                    : 'Connect your data to credential fields'}
+                                {masterTemplates.length > 0
+                                    ? m[
+                                          'developerPortal.onboarding.dataMapping.mapWithCourseData'
+                                      ]()
+                                    : m['developerPortal.onboarding.dataMapping.connectYourData']()}
                             </p>
                         </div>
                     </div>
@@ -2008,11 +2501,13 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     {issuableTemplates.length > 1 && !masterTemplates.length && (
                         <select
                             value={selectedTemplate}
-                            onChange={(e) => setSelectedTemplate(e.target.value)}
+                            onChange={e => setSelectedTemplate(e.target.value)}
                             className="w-full px-3 py-2 border border-gray-200 rounded-lg"
                         >
                             {issuableTemplates.map(t => (
-                                <option key={t.id} value={t.id}>{t.name}</option>
+                                <option key={t.id} value={t.id}>
+                                    {t.name}
+                                </option>
                             ))}
                         </select>
                     )}
@@ -2025,17 +2520,24 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     key={idx}
                                     className="flex items-center gap-2 p-3 bg-emerald-50 rounded-lg"
                                 >
-                                    <code className="text-sm text-gray-700">{mapping.sourceField}</code>
+                                    <code className="text-sm text-gray-700">
+                                        {mapping.sourceField}
+                                    </code>
 
                                     <ChevronRight className="w-4 h-4 text-gray-400" />
 
-                                    <code className="text-sm text-emerald-700 font-medium">{mapping.targetField}</code>
+                                    <code className="text-sm text-emerald-700 font-medium">
+                                        {mapping.targetField}
+                                    </code>
 
                                     <button
                                         onClick={() => handleRemoveMapping(idx)}
                                         className="ml-auto p-1 text-gray-400 hover:text-red-500 rounded"
+                                        aria-label={m[
+                                            'developerPortal.onboarding.dataMapping.removeMapping'
+                                        ]()}
                                     >
-                                        ×
+                                        <span aria-hidden="true">{'\u00D7'}</span>
                                     </button>
                                 </div>
                             ))}
@@ -2046,8 +2548,10 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                         <Link2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
                         <p className="text-xs text-blue-800">
-                            <strong>How to map:</strong> Click a source field on the left, then click a target field on the right to connect them. 
-                            You can select them in any order.
+                            <TransP
+                                m={m['developerPortal.onboarding.dataMapping.howToMapInstructions']}
+                                components={[<strong />]}
+                            />
                         </p>
                     </div>
 
@@ -2055,8 +2559,12 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-xs font-medium text-gray-600 mb-2">
-                                Source Fields (Your Data)
-                                {selectedSource && <span className="ml-2 text-cyan-600">→ Select target</span>}
+                                {m['developerPortal.onboarding.dataMapping.sourceFields']()}
+                                {selectedSource && (
+                                    <span className="ml-2 text-cyan-600">
+                                        {m['developerPortal.onboarding.dataMapping.selectTarget']()}
+                                    </span>
+                                )}
                             </label>
 
                             <div className="space-y-1 max-h-56 overflow-y-auto border border-gray-200 rounded-lg p-2">
@@ -2074,21 +2582,36 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                         : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
                                                 }`}
                                             >
-                                                <code className={isSelected ? 'text-white' : 'text-gray-700'}>{field}</code>
+                                                <code
+                                                    className={
+                                                        isSelected ? 'text-white' : 'text-gray-700'
+                                                    }
+                                                >
+                                                    {field}
+                                                </code>
                                             </button>
                                         );
                                     })}
 
-                                {sourceFields.filter(f => !mappings.some(m => m.sourceField === f)).length === 0 && (
-                                    <p className="text-xs text-gray-400 text-center py-2">All source fields mapped</p>
+                                {sourceFields.filter(f => !mappings.some(m => m.sourceField === f))
+                                    .length === 0 && (
+                                    <p className="text-xs text-gray-400 text-center py-2">
+                                        {m[
+                                            'developerPortal.onboarding.dataMapping.allSourceFieldsMapped'
+                                        ]()}
+                                    </p>
                                 )}
                             </div>
                         </div>
 
                         <div>
                             <label className="block text-xs font-medium text-gray-600 mb-2">
-                                Target Fields (Credential)
-                                {selectedTarget && <span className="ml-2 text-cyan-600">← Select source</span>}
+                                {m['developerPortal.onboarding.dataMapping.targetFields']()}
+                                {selectedTarget && (
+                                    <span className="ml-2 text-cyan-600">
+                                        {m['developerPortal.onboarding.dataMapping.selectSource']()}
+                                    </span>
+                                )}
                             </label>
 
                             <div className="space-y-1 max-h-56 overflow-y-auto border border-gray-200 rounded-lg p-2">
@@ -2106,13 +2629,26 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                         : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700'
                                                 }`}
                                             >
-                                                <code className={isSelected ? 'text-white' : 'text-emerald-700'}>{field}</code>
+                                                <code
+                                                    className={
+                                                        isSelected
+                                                            ? 'text-white'
+                                                            : 'text-emerald-700'
+                                                    }
+                                                >
+                                                    {field}
+                                                </code>
                                             </button>
                                         );
                                     })}
 
-                                {targetFields.filter(f => !mappings.some(m => m.targetField === f)).length === 0 && (
-                                    <p className="text-xs text-gray-400 text-center py-2">All target fields mapped</p>
+                                {targetFields.filter(f => !mappings.some(m => m.targetField === f))
+                                    .length === 0 && (
+                                    <p className="text-xs text-gray-400 text-center py-2">
+                                        {m[
+                                            'developerPortal.onboarding.dataMapping.allTargetFieldsMapped'
+                                        ]()}
+                                    </p>
                                 )}
                             </div>
                         </div>
@@ -2121,54 +2657,97 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     {/* Selection hint */}
                     {(selectedSource || selectedTarget) && (
                         <div className="flex items-center justify-center gap-2 p-2 bg-cyan-50 rounded-lg text-sm text-cyan-700">
-                            {selectedSource && <code className="bg-cyan-500 text-white px-2 py-0.5 rounded">{selectedSource}</code>}
-                            {selectedSource && selectedTarget && <ChevronRight className="w-4 h-4" />}
-                            {selectedTarget && <code className="bg-emerald-500 text-white px-2 py-0.5 rounded">{selectedTarget}</code>}
-                            {(selectedSource && !selectedTarget) && <span>Now select a target field →</span>}
-                            {(selectedTarget && !selectedSource) && <span>← Now select a source field</span>}
+                            {selectedSource && (
+                                <code className="bg-cyan-500 text-white px-2 py-0.5 rounded">
+                                    {selectedSource}
+                                </code>
+                            )}
+                            {selectedSource && selectedTarget && (
+                                <ChevronRight className="w-4 h-4" />
+                            )}
+                            {selectedTarget && (
+                                <code className="bg-emerald-500 text-white px-2 py-0.5 rounded">
+                                    {selectedTarget}
+                                </code>
+                            )}
+                            {selectedSource && !selectedTarget && (
+                                <span>
+                                    {m['developerPortal.onboarding.dataMapping.nowSelectTarget']()}
+                                </span>
+                            )}
+                            {selectedTarget && !selectedSource && (
+                                <span>
+                                    {m['developerPortal.onboarding.dataMapping.nowSelectSource']()}
+                                </span>
+                            )}
                         </div>
                     )}
 
                     {/* Unmapped warning */}
-                    {targetFields.filter(f => !mappings.some(m => m.targetField === f)).length > 0 && mappings.length > 0 && (
-                        <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                            <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                            <p className="text-xs text-amber-800">
-                                {targetFields.filter(f => !mappings.some(m => m.targetField === f)).length} credential field(s) still need to be mapped.
-                            </p>
-                        </div>
-                    )}
+                    {targetFields.filter(f => !mappings.some(m => m.targetField === f)).length >
+                        0 &&
+                        mappings.length > 0 && (
+                            <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                                <p className="text-xs text-amber-800">
+                                    {
+                                        targetFields.filter(
+                                            f => !mappings.some(m => m.targetField === f)
+                                        ).length
+                                    }{' '}
+                                    {m[
+                                        'developerPortal.onboarding.dataMapping.unmappedFieldsWarning'
+                                    ]({
+                                        count: targetFields.filter(
+                                            f => !mappings.some(m => m.targetField === f)
+                                        ).length,
+                                    })}
+                                </p>
+                            </div>
+                        )}
 
                     {/* Generated templateData Preview */}
                     {mappings.length > 0 && (
                         <div className="space-y-3 pt-4 border-t border-gray-100">
                             <div className="flex items-center gap-2">
                                 <Code className="w-4 h-4 text-violet-600" />
-                                <span className="text-sm font-medium text-gray-700">Generated templateData</span>
+                                <span className="text-sm font-medium text-gray-700">
+                                    {m[
+                                        'developerPortal.onboarding.dataMapping.generatedTemplateData'
+                                    ]()}
+                                </span>
                             </div>
 
                             <p className="text-xs text-gray-500">
-                                Based on your mappings, here's the <code className="bg-gray-100 px-1 rounded">templateData</code> object 
-                                you'll pass when sending credentials:
+                                <TransP
+                                    m={
+                                        m[
+                                            'developerPortal.onboarding.dataMapping.templateDataPreviewDesc'
+                                        ]
+                                    }
+                                    components={[<code className="bg-gray-100 px-1 rounded" />]}
+                                />
                             </p>
 
                             <div className="p-4 bg-gray-900 rounded-xl overflow-x-auto">
                                 <pre className="text-xs text-gray-300">
-{`// In your webhook handler
+                                    {`// In your webhook handler
 const templateData = {
 ${(() => {
     const currentTemplate = templates.find(t => t.id === selectedTemplate);
     if (!currentTemplate?.fields) return '    // No fields defined';
-    
-    return currentTemplate.fields.map(field => {
-        const varName = field.variableName || fieldNameToVariable(field.name);
-        const mapping = mappings.find(m => m.targetField === field.name);
-        
-        if (mapping) {
-            return `    ${varName}: payload.${mapping.sourceField},`;
-        }
-        return `    ${varName}: /* unmapped */,`;
-    }).join('\n');
+
+    return currentTemplate.fields
+        .map(field => {
+            const varName = field.variableName || fieldNameToVariable(field.name);
+            const mapping = mappings.find(m => m.targetField === field.name);
+
+            if (mapping) {
+                return `    ${varName}: payload.${mapping.sourceField},`;
+            }
+            return `    ${varName}: /* unmapped */,`;
+        })
+        .join('\n');
 })()}
 };
 
@@ -2193,7 +2772,7 @@ const result = await learnCard.invoke.send({
                     className="flex items-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back
+                    {m['developerPortal.onboarding.dataMapping.back']()}
                 </button>
 
                 <button
@@ -2204,12 +2783,12 @@ const result = await learnCard.invoke.send({
                     {isSaving ? (
                         <>
                             <Loader2 className="w-4 h-4 animate-spin" />
-                            Saving...
+                            {m['developerPortal.onboarding.branding.saving']()}
                         </>
                     ) : (
                         <>
                             <Save className="w-4 h-4" />
-                            Save & Continue
+                            {m['developerPortal.onboarding.dataMapping.saveAndContinue']()}
                             <ArrowRight className="w-4 h-4" />
                         </>
                     )}

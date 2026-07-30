@@ -28,6 +28,8 @@ import {
 
 import { UnsignedVP } from '@learncard/types';
 import { getSharedCredentialsQueryKey } from 'learn-card-base/react-query/queries/vcQueries';
+import { getLogger } from '../../logging/logger';
+const log = getLogger('share-credentials-with-app');
 
 const ShareCredentialsWithApp: React.FC = () => {
     const history = useHistory();
@@ -96,7 +98,7 @@ const ShareCredentialsWithApp: React.FC = () => {
                 history.push(`/view-shared-credentials/${encodeURI(profileId)}`);
             }
         } catch (e) {
-            console.log('///handleSubmit create credential bundle Error', e);
+            log.debug('///handleSubmit create credential bundle Error', e);
             presentAlert({
                 header: 'Error',
                 subHeader: 'Create Credential Bundle error',
@@ -211,8 +213,9 @@ const ShareCredentialsWithApp: React.FC = () => {
                     <section className="fixed-bottom-container fixed w-full bottom-[0px] px-[20px] py-[10px] z-[3] h-fit bg-grayscale-50 flex flex items-start justify-center">
                         <button
                             onClick={handleIssueCredentials}
-                            className={`w-full bg-cyan-700 py-[15px] px-[2px] rounded-[40px] text-grayscale-50 text-[17px] font-bold max-w-[480px] ${totalSelectedCount === 0 ? 'bg-grayscale-500 opacity-70' : ''
-                                }`}
+                            className={`w-full bg-cyan-700 py-[15px] px-[2px] rounded-[40px] text-grayscale-50 text-[17px] font-bold max-w-[480px] ${
+                                totalSelectedCount === 0 ? 'bg-grayscale-500 opacity-70' : ''
+                            }`}
                             disabled={totalSelectedCount === 0}
                         >
                             {!isSharing && 'Share Credentials'}

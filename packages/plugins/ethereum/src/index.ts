@@ -10,11 +10,15 @@ import {
     getTokenFromSymbolOrAddress,
     getChainIdFromProvider,
 } from './helpers';
+import ERC20ABI from './erc20.abi.json';
+import uniswapDefaultTokenList from '@uniswap/default-token-list/build/uniswap-default.tokenlist.json';
 import hardcodedTokens from './hardcodedTokens';
 
 export * from './types';
 
-const ERC20ABI = require('./erc20.abi.json');
+const defaultTokenList = (uniswapDefaultTokenList as { tokens: TokenList }).tokens.concat(
+    hardcodedTokens
+);
 
 /**
  * @group Plugins
@@ -50,12 +54,7 @@ export const getEthereumPlugin = (
     };
     let provider: ethers.providers.Provider;
 
-    const getDefaultTokenList = (): TokenList => {
-        return require('@uniswap/default-token-list/build/uniswap-default.tokenlist.json').tokens.concat(
-            hardcodedTokens
-        );
-    };
-    const defaultTokenList: TokenList = getDefaultTokenList();
+    const defaultTokenListForNetwork = defaultTokenList;
 
     const getTokenAddress = async (tokenSymbolOrAddress: string) => {
         if (!provider) provider = getProvider();
@@ -63,7 +62,7 @@ export const getEthereumPlugin = (
         return (
             await getTokenFromSymbolOrAddress(
                 tokenSymbolOrAddress,
-                defaultTokenList,
+                defaultTokenListForNetwork,
                 await getChainIdFromProvider(provider)
             )
         )?.address;

@@ -23,6 +23,9 @@ export const getCredentialFromVp = (vp: VP): VC => {
     return Array.isArray(vcField) ? vcField[0] : vcField;
 };
 
+import { getLogger } from 'learn-card-base';
+const log = getLogger('credential-exchange');
+
 const CredentialExchange: React.FC = () => {
     const { addVCtoWallet, initWallet, publishEncryptedContentToCeramic } = useWallet();
     const currentUser = useCurrentUser();
@@ -36,11 +39,11 @@ const CredentialExchange: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             if (!currentUser?.privateKey) {
-                console.warn('🤔 Current user still loading...');
+                log.warn('🤔 Current user still loading...');
                 return;
             }
 
-            console.log('Current user found ✅.');
+            log.info('Current user found ✅.');
 
             const wallet = await initWallet();
             setLcDid(wallet.id.did());
@@ -93,9 +96,13 @@ const CredentialExchange: React.FC = () => {
                                 : isVpResult.data.verifiableCredential
                         );
                     } else {
-                        setCredential(Array.isArray(presentation?.verifiablePresentation?.verifiableCredential)
-                            ? presentation?.verifiablePresentation?.verifiableCredential[0]
-                            : presentation?.verifiablePresentation?.verifiableCredential);
+                        setCredential(
+                            Array.isArray(
+                                presentation?.verifiablePresentation?.verifiableCredential
+                            )
+                                ? presentation?.verifiablePresentation?.verifiableCredential[0]
+                                : presentation?.verifiablePresentation?.verifiableCredential
+                        );
                     }
 
                     return;
@@ -153,7 +160,7 @@ const CredentialExchange: React.FC = () => {
             chapiStore.set.isChapiInteraction(null);
             redirectStore.set.authRedirect(null);
         } catch (e) {
-            console.error(e);
+            log.error(e);
         }
 
         event.respondWith(
@@ -170,7 +177,7 @@ const CredentialExchange: React.FC = () => {
             chapiStore.set.isChapiInteraction(null);
             redirectStore.set.authRedirect(null);
         } catch (e) {
-            console.error(e);
+            log.error(e);
         }
         event.respondWith(Promise.resolve(null));
     };

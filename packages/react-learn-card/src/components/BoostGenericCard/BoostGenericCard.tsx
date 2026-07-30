@@ -5,6 +5,9 @@ import { DisplayTypeEnum, getDisplayIcon } from '../../helpers/display.helpers';
 import AlignmentSkillsCount from './AlignmentSkillsCount';
 import ThreeDotVertical from '../svgs/ThreeDotVertical';
 import { CircleCheckButton } from '../CircleCheckButton';
+import BadgeThumbnailImg from '../BadgeThumbnailImg/BadgeThumbnailImg';
+import { getLifecycleTreatment } from '../../helpers/lifecycle.helpers';
+import { useT } from '../../i18n';
 
 export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     title,
@@ -32,7 +35,9 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     linkedCredentialsCount = 0,
     linkedCredentialsClassName = '',
     checkBtnClass = '',
+    lifecycleStatus = 'active',
 }) => {
+    const t = useT();
     const thumbClass = TYPE_TO_WALLET_DARK_COLOR[type]
         ? `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}`
         : 'bg-grayscale-50';
@@ -44,10 +49,31 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
 
     const DisplayIcon = getDisplayIcon(displayType as DisplayTypeEnum);
 
+    // Shared revoked/suspended treatment (see getLifecycleTreatment). Inline styles are
+    // used (not Tailwind classes) because the consumer app's Tailwind doesn't scan this
+    // package and it ships no utility CSS, so utility classes here have no backing rule.
+    const {
+        isInactive,
+        mediaStyle: inactiveMediaStyle,
+        textStyle: inactiveTextStyle,
+        pillBg,
+    } = getLifecycleTreatment(lifecycleStatus);
+    const pillLabel = t(`credential.lifecycle.${lifecycleStatus}`);
+    const pillLeft = showChecked ? 'left-[44px]' : 'left-[8px]';
+
     return (
         <div
             className={`flex bg-white flex-col shadow-bottom relative p-0 w-[160px] h-[285px] rounded-[20px] overflow-hidden ${className}`}
         >
+            {isInactive && (
+                <span
+                    className={`absolute top-[8px] ${pillLeft} z-20 rounded-full px-[9px] py-[3px] text-[10px] font-extrabold uppercase tracking-wide text-white`}
+                    style={{ backgroundColor: pillBg }}
+                >
+                    {pillLabel}
+                </span>
+            )}
+
             {optionsTriggerOnClick && (
                 <section
                     className="absolute cursor-pointer h-[30px] w-[30px] top-[5px] right-[5px] rounded-full bg-white/70 flex items-center justify-center z-20"
@@ -58,7 +84,10 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
             )}
 
             {bgImgSrc && (
-                <section className="absolute top-[-50px] left-0 rounded-b-full overflow-hidden z-0">
+                <section
+                    className="absolute top-[-50px] left-0 rounded-b-full overflow-hidden z-0"
+                    style={inactiveMediaStyle}
+                >
                     <img className="h-full w-full object-cover" src={bgImgSrc} />
                 </section>
             )}
@@ -68,23 +97,26 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                 className="z-10 flex flex-col flex-grow"
                 onClick={handleInnerClick}
             >
-                {/* Thumbnail */}
-                {customThumbComponent || (
-                    <section className={defaultThumbClass}>
-                        {thumbImgSrc?.trim() ? (
-                            <img
-                                className="w-full h-full rounded-full object-cover"
-                                src={thumbImgSrc}
-                                alt="Credential Achievement"
-                            />
-                        ) : (
-                            <img
-                                className="max-w-full p-0 object-cover rounded-full"
-                                src={imgSrc}
-                            />
-                        )}
-                    </section>
-                )}
+                {/* Thumbnail — filter on the wrapper so it desaturates a
+                    customThumbComponent too, not just the default thumb section. */}
+                <div style={inactiveMediaStyle}>
+                    {customThumbComponent || (
+                        <section className={defaultThumbClass}>
+                            {thumbImgSrc?.trim() ? (
+                                <BadgeThumbnailImg
+                                    className="w-full h-full rounded-full object-cover"
+                                    src={thumbImgSrc}
+                                    alt="Credential Achievement"
+                                />
+                            ) : (
+                                <img
+                                    className="max-w-full p-0 object-cover rounded-full"
+                                    src={imgSrc}
+                                />
+                            )}
+                        </section>
+                    )}
+                </div>
 
                 {/* Details Section: grows to fill available space */}
                 <section
@@ -106,6 +138,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                                         : 'text-[16px]'
                                 }
                             `}
+                                style={inactiveTextStyle}
                                 title={title}
                             >
                                 {title}
@@ -114,19 +147,27 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                             customTitle
                         )}
 
-                        {/* Issuer */}
-                        {customIssuerName || (
-                            <span className="text-[12px] text-grayscale-700 mt-1">
-                                by <span className="font-bold">{issuerName}</span>
+                        {/* Verifier & Issuer */}
+                        <div className="mt-1 w-full px-4 text-center">
+                            <span className="line-clamp-2 break-words text-[12px] leading-snug text-grayscale-700">
+                                {verifierBadge && (
+                                    <span className="mr-1 inline-block align-middle">
+                                        {verifierBadge}
+                                    </span>
+                                )}
+                                {customIssuerName || (
+                                    <span className="font-bold" style={inactiveTextStyle}>
+                                        {issuerName}
+                                    </span>
+                                )}
                             </span>
-                        )}
+                        </div>
 
-                        {/* Date & Verifier */}
+                        {/* Date */}
                         {customDateDisplay || (
-                            <div className="text-[11px] text-grayscale-700 mt-1 flex flex-col items-center">
-                                {verifierBadge}
-                                <span>{dateDisplay}</span>
-                            </div>
+                            <span className="text-[11px] text-grayscale-700 mt-1">
+                                {dateDisplay}
+                            </span>
                         )}
 
                         {/* Skills count if in modal */}

@@ -7,17 +7,23 @@ import { CredentialCategoryEnum } from 'learn-card-base';
  * Catches accidental `undefined` or `number` values that would only
  * surface as cryptic React render errors.
  */
-const componentLike = z.unknown().refine(
-    (v): v is React.FC | string =>
-        typeof v === 'function' || typeof v === 'string' || (typeof v === 'object' && v !== null),
-    { message: 'Expected a React component (function or object) or image URL (string)' },
-);
+const componentLike = z
+    .unknown()
+    .refine(
+        (v): v is React.FC | string =>
+            typeof v === 'function' ||
+            typeof v === 'string' ||
+            (typeof v === 'object' && v !== null),
+        { message: 'Expected a React component (function or object) or image URL (string)' }
+    );
 
 export const CategoryIconsSchema = z
     .object({
         Icon: componentLike.optional().describe('React component for base icon'),
         IconWithShape: componentLike.optional().describe('React component for shaped icon'),
-        IconWithLightShape: componentLike.optional().describe('React component for light shaped icon'),
+        IconWithLightShape: componentLike
+            .optional()
+            .describe('React component for light shaped icon'),
     })
     .describe('Credential Category Icons');
 export type CategoryIcons = z.infer<typeof CategoryIconsSchema>;
@@ -44,6 +50,17 @@ const sideMenuFixedKeys = [
     'wallet',
 ] as const;
 
+/**
+ * Extra side-menu icon keys that aren't backed by a
+ * `CredentialCategoryEnum` value. These correspond to feature-flagged
+ * routes (see the non-category members of `SideMenuLinksEnum` in
+ * `learn-card-base/components/sidemenu/sidemenuHelpers`). Keep in sync
+ * when a new non-category side-menu entry is added; otherwise theme
+ * validation fails and the registry ends up empty, which surfaces as
+ * `"No themes registered"` at app boot.
+ */
+const sideMenuExtraKeys = ['pathways', 'dashboard'] as const;
+
 export const SideMenuIconsSchema = z
     .object({
         launchPad: componentLike.describe('SideMenu LaunchPad Icon'),
@@ -56,9 +73,11 @@ export const SideMenuIconsSchema = z
     .catchall(componentLike)
     .superRefine((obj, ctx) => {
         const fixed = new Set(sideMenuFixedKeys as readonly string[]);
+        const extras = new Set(sideMenuExtraKeys as readonly string[]);
         const validCats = new Set(Object.values(CredentialCategoryEnum) as string[]);
         for (const key of Object.keys(obj)) {
             if (fixed.has(key)) continue;
+            if (extras.has(key)) continue;
             if (!validCats.has(key)) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
@@ -73,9 +92,14 @@ export type SideMenuIcons = z.infer<typeof SideMenuIconsSchema>;
 
 export const NavbarIconsSchema = z
     .object({
+        // Optional so Zod doesn't strip them during validateThemeData — every
+        // theme defines these, but they were absent from the schema, which
+        // silently dropped `icons.navbar.dashboard` at runtime (LC-1921).
+        dashboard: componentLike.optional().describe('Navbar Dashboard Icon'),
         wallet: componentLike.describe('Navbar Wallet Icon'),
         plus: componentLike.describe('Navbar Plus Icon'),
         launchPad: componentLike.describe('Navbar LaunchPad Icon'),
+        notification: componentLike.optional().describe('Navbar Notification Icon'),
     })
     .describe('Navbar Icons');
 export type NavbarIcons = z.infer<typeof NavbarIconsSchema>;

@@ -1,4 +1,6 @@
 import React from 'react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('chat-bot-app-list');
 
 import { useConsentFlowByUri } from 'apps/learn-card-app/src/pages/consentFlow/useConsentFlow';
 
@@ -13,8 +15,8 @@ import {
 
 import {
     AiPassportAppsEnum,
-    aiPassportApps,
     areAiPassportAppsAvailable,
+    getSelectableAiPassportApps,
 } from '../../../ai-passport-apps/aiPassport-apps.helpers';
 import { ChatBotQuestionsEnum } from '../newAiSessionChatbot.helpers';
 import { getMinimumTermsForContract } from 'apps/learn-card-app/src/helpers/contract.helpers';
@@ -42,8 +44,6 @@ export const ChatBotAppListItem: React.FC<{
 
     const isLearnCardAI = app.type === AiPassportAppsEnum.learncardapp;
 
-    if (!aiAppsAvailable) return null;
-
     // Always show LearnCard AI
     if (!hasConsented && !isLearnCardAI) return null;
 
@@ -61,18 +61,14 @@ export const ChatBotAppListItem: React.FC<{
                             oneTime: false,
                         });
                     } catch (error) {
-                        console.error('Failed to consent to LearnCard AI contract:', error);
+                        log.error('Failed to consent to LearnCard AI contract:', error);
 
-                        const message =
-                            error instanceof Error ? error.message : String(error);
+                        const message = error instanceof Error ? error.message : String(error);
 
-                        presentToast(
-                            `Failed to consent to LearnCard AI contract: ${message}`,
-                            {
-                                type: ToastTypeEnum.Error,
-                                hasDismissButton: true,
-                            }
-                        );
+                        presentToast(`Failed to consent to LearnCard AI contract: ${message}`, {
+                            type: ToastTypeEnum.Error,
+                            hasDismissButton: true,
+                        });
                     }
                 }
 
@@ -102,8 +98,7 @@ export const ChatBotAppList: React.FC<{
         currentIndex: number
     ) => void;
 }> = ({ handleChatBotAnswer }) => {
-    const aiAppsAvailable = areAiPassportAppsAvailable();
-    const apps = aiAppsAvailable ? aiPassportApps : [];
+    const apps = getSelectableAiPassportApps();
 
     return (
         <div className="w-full flex items-center justify-around bg-white py-[24px] px-[20px] gap-[20px] overflow-x-auto">

@@ -13,6 +13,7 @@ import { useGetCurrentLCNUser, useModal, ModalTypes, useGetContracts } from 'lea
 import { ConsentFlowContractDetails } from '@learncard/types';
 
 import { useTheme } from '../../../theme/hooks/useTheme';
+import * as m from '../../../paraglide/messages.js';
 
 export const AdminToolsConsentFlowOption: React.FC<{ option: AdminToolOption }> = ({ option }) => {
     const { newModal } = useModal({
@@ -62,7 +63,7 @@ export const AdminToolsConsentFlowOption: React.FC<{ option: AdminToolOption }> 
                 <section className="flex flex-col items-center justify-center bg-white max-w-[800px] w-full rounded-[20px] mt-4">
                     <div className="flex flex-col items-start justify-center w-full px-4 pt-4">
                         <h4 className="text-lg text-grayscale-900 font-notoSans text-left">
-                            Contracts
+                            {m['adminTools.consentFlow.contracts']()}
                         </h4>
                     </div>
                     {contracts?.length > 0 && (
@@ -81,7 +82,9 @@ export const AdminToolsConsentFlowOption: React.FC<{ option: AdminToolOption }> 
                     )}
                     {contracts?.length === 0 && (
                         <div className="flex items-center justify-center w-full pt-4 pb-6">
-                            <p className="text-grayscale-600">No existing contracts.</p>
+                            <p className="text-grayscale-600">
+                                {m['adminTools.consentFlow.noContracts']()}
+                            </p>
                         </div>
                     )}
                     {contractsLoading && <AdminToolsConsentFlowContractSkeletonLoader />}

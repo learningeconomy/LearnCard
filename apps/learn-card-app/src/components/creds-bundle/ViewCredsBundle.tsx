@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { IonContent, IonButton, IonPage, useIonAlert, IonHeader, IonToolbar } from '@ionic/react';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('view-creds-bundle');
 
 import { initLearnCard } from '@learncard/init';
 import { VC, VP } from '@learncard/types';
@@ -59,7 +61,7 @@ const ViewCredsBundle: React.FC = () => {
         try {
             const wallet = await initLearnCard({ seed: _seed });
             let bundleWalletIndex = await wallet.invoke.getIDXIndex();
-            console.log('wallet index', bundleWalletIndex);
+            log.info('wallet index', bundleWalletIndex);
             // There should never be more than one in job id in this case
             //const jobId = jobWalletIndex?.jobs?.[0]?.jobId;
 
@@ -72,7 +74,7 @@ const ViewCredsBundle: React.FC = () => {
 
             const vcFromCeramic = await wallet.invoke.readContentFromCeramic(uri.split(':')[2]);
 
-            console.log('//vcFromCeramic', vcFromCeramic);
+            log.info('//vcFromCeramic', vcFromCeramic);
 
             setVC(vcFromCeramic);
             if (vcFromCeramic?.verifiableCredential) {

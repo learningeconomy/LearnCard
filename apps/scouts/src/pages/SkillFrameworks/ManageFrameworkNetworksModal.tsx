@@ -1,11 +1,18 @@
 import React, { useState, useMemo } from 'react';
-import { useModal, useGetCurrentUserTroopIdsResolved, useGetMultipleBoosts, useWallet } from 'learn-card-base';
+import {
+    useModal,
+    useGetCurrentUserTroopIdsResolved,
+    useGetMultipleBoosts,
+    useWallet,
+} from 'learn-card-base';
 import { IonSpinner } from '@ionic/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { SkillFrameworkType } from '@learncard/types';
 import CaretDown from 'apps/scouts/src/components/svgs/CaretDown';
 import ScoutsTroopIcon from 'apps/scouts/src/assets/icons/ScoutsTroopIcon';
 import { insertParamsToFilestackUrl } from 'learn-card-base';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('manage-framework-networks-modal');
 
 type ManageFrameworkNetworksModalProps = {
     frameworkId: string;
@@ -61,7 +68,10 @@ const ManageFrameworkNetworksModal: React.FC<ManageFrameworkNetworksModalProps> 
     }, [troopIds?.globalAdmin, troopIds?.nationalAdmin]);
 
     // Extract just the URIs for the query hook
-    const boostUris = useMemo(() => networkBoostIds.map(({ boostId }) => boostId), [networkBoostIds]);
+    const boostUris = useMemo(
+        () => networkBoostIds.map(({ boostId }) => boostId),
+        [networkBoostIds]
+    );
 
     // Fetch all boosts in parallel using useQueries
     const boostQueries = useGetMultipleBoosts(boostUris);
@@ -108,7 +118,7 @@ const ManageFrameworkNetworksModal: React.FC<ManageFrameworkNetworksModalProps> 
             closeModal();
         },
         onError: error => {
-            console.error('Failed to update networks:', error);
+            log.error('Failed to update networks:', error);
             alert('Failed to update networks. Please try again.');
         },
     });
@@ -121,7 +131,8 @@ const ManageFrameworkNetworksModal: React.FC<ManageFrameworkNetworksModalProps> 
         updateNetworksMutation.mutate(selected);
     };
 
-    const isLoading = isLoadingCredentials || isLoadingFramework || boostQueries.some(q => q.isLoading);
+    const isLoading =
+        isLoadingCredentials || isLoadingFramework || boostQueries.some(q => q.isLoading);
 
     return (
         <section className="bg-grayscale-100 rounded-[20px] flex flex-col max-w-[600px]">

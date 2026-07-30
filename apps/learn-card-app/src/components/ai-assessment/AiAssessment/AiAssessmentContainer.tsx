@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('ai-assessment-container');
 
 import AiAssessmentFooter from './AiAssessmentFooter';
 import AiAssessmentHeader from './AiAssessmentHeader';
@@ -145,7 +147,7 @@ export const AiAssessmentContainer: React.FC<{
                 }
             );
         } catch (error) {
-            console.error('[Assessment] Finish failed:', error);
+            log.error('[Assessment] Finish failed:', error);
             aiLoadingStore.set.isFinishingAssessment(false);
         } finally {
             aiLoadingStore.set.isFinishingAssessment(false);
@@ -206,7 +208,7 @@ export const AiAssessmentContainer: React.FC<{
 
             setIsPreLoadingAssessment(false);
         } catch (error) {
-            console.error('Error preloading assessment:', error);
+            log.error('Error preloading assessment:', error);
             setIsPreLoadingAssessment(false);
             setAllPrefilled(false);
         }

@@ -66,6 +66,7 @@ import {
     syncCredentialsToContract,
     updateRequestedForStatusIfExists,
     updateTerms,
+    pruneDeletedUrisFromConsentTerms,
     upsertRequestedForRelationship,
     withdrawTerms,
 } from '@accesslayer/consentflowcontract/relationships/update';
@@ -99,6 +100,8 @@ import {
     removeAutoBoostsFromContractDb,
 } from '@accesslayer/consentflowcontract/relationships/manageAutoboosts';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { getNotificationMessage } from '@helpers/notificationMessages';
+import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import { ProfileType } from 'types/profile';
 
 export const contractsRouter = t.router({
@@ -1245,6 +1248,78 @@ export const contractsRouter = t.router({
             return true;
         }),
 
+    deleteCredentialFromAllContracts: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contract/consent/prune-deleted-uris',
+                tags: ['Contracts'],
+                summary: 'Delete credential references from all consent terms',
+                description:
+                    'Removes deleted credential URIs from any live consent terms that still reference them',
+            },
+            requiredScope: 'contracts:write',
+        })
+        .input(
+            z.object({
+                deletedUris: z.string().array().min(1),
+            })
+        )
+        .output(
+            z.object({
+                contractsUpdated: z.number(),
+                removedSharedUris: z.number(),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { deletedUris } = input;
+
+            const uniqueDeletedUris = [...new Set(deletedUris.filter(uri => Boolean(uri)))];
+            if (!uniqueDeletedUris.length) {
+                return { contractsUpdated: 0, removedSharedUris: 0 };
+            }
+
+            const pageSize = 100;
+            const allContracts: Awaited<ReturnType<typeof getConsentedContractsForProfile>> = [];
+            let contractsUpdated = 0;
+            let removedSharedUris = 0;
+            let cursor: string | undefined = undefined;
+
+            do {
+                const results = await getConsentedContractsForProfile(profile, {
+                    query: {},
+                    limit: pageSize + 1,
+                    cursor,
+                    domain: ctx.domain,
+                });
+
+                const contracts = results.slice(0, pageSize);
+                allContracts.push(...contracts);
+
+                cursor = results.length > pageSize ? contracts.at(-1)?.terms.updatedAt : undefined;
+            } while (cursor);
+
+            for (const contract of allContracts) {
+                if (contract.terms.status && contract.terms.status !== 'live') {
+                    continue;
+                }
+
+                const removed = await pruneDeletedUrisFromConsentTerms(
+                    contract.terms,
+                    uniqueDeletedUris
+                );
+
+                if (!removed) continue;
+
+                contractsUpdated += 1;
+                removedSharedUris += removed;
+            }
+
+            return { contractsUpdated, removedSharedUris };
+        }),
+
     withdrawConsent: profileRoute
         .meta({
             openapi: {
@@ -1789,10 +1864,11 @@ export const contractsRouter = t.router({
                 type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
                 from: profile,
                 to: targetProfile as ProfileType,
-                message: {
-                    title: 'AI Insights',
-                    body: `${profile?.displayName} has requested to view your insights.`,
-                },
+                message: getNotificationMessage(
+                    'consentFlowViewRequest',
+                    resolveRecipientLocale(targetProfile as ProfileType),
+                    { name: profile?.displayName }
+                ),
                 data: {
                     metadata: {
                         type: 'AI Insight',
@@ -1874,10 +1950,11 @@ export const contractsRouter = t.router({
                 type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
                 from: fromProfile,
                 to: targetProfile as ProfileType,
-                message: {
-                    title: 'AI Insights',
-                    body: `${fromProfile?.displayName} is inviting you to view their insights. Request access to continue.`,
-                },
+                message: getNotificationMessage(
+                    'consentFlowInvite',
+                    resolveRecipientLocale(targetProfile as ProfileType),
+                    { name: fromProfile?.displayName }
+                ),
                 data: {
                     metadata: {
                         type: 'AI Insight',
@@ -2357,10 +2434,11 @@ export const contractsRouter = t.router({
                 type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
                 from: profile,
                 to: parentProfile as ProfileType,
-                message: {
-                    title: 'AI Insights',
-                    body: `${profile?.displayName} would like to share their insights with ${targetProfile?.displayName}.`,
-                },
+                message: getNotificationMessage(
+                    'consentFlowShare',
+                    resolveRecipientLocale(parentProfile as ProfileType),
+                    { name: profile?.displayName, targetName: targetProfile?.displayName }
+                ),
                 data: {
                     metadata: {
                         type: 'AI Insight',

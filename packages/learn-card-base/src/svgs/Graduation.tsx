@@ -1,6 +1,41 @@
 import React from 'react';
 
-const Graduation: React.FC<{ className?: string }> = ({ className = '' }) => {
+const Graduation: React.FC<{ className?: string; type?: 'flat' | 'default' }> = ({
+    className = '',
+    type = 'flat',
+}) => {
+    if (type === 'flat') {
+        return (
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                className={className}
+            >
+                <path
+                    d="M18.3332 8.33268V13.3327V8.33268ZM1.6665 8.33268L9.99984 4.16602L18.3332 8.33268L9.99984 12.4993L1.6665 8.33268Z"
+                    fill="#52597A"
+                />
+                <path
+                    d="M18.3332 8.33268V13.3327M18.3332 8.33268L9.99984 4.16602L1.6665 8.33268L9.99984 12.4993L18.3332 8.33268Z"
+                    stroke="#52597A"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
+                <path
+                    d="M5 10V14.1667C7.5 16.6667 12.5 16.6667 15 14.1667V10"
+                    stroke="#52597A"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
+            </svg>
+        );
+    }
+
     return (
         <svg viewBox="0 0 31 31" fill="none" className={className} data-testid="learning-icon">
             <path

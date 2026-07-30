@@ -22,6 +22,8 @@ import {
     useTrainingProgramsByKeyword,
 } from 'learn-card-base/react-query/queries/careerOneStop';
 import { normalizeSchoolPrograms } from '../ai-pathway-courses/ai-pathway-courses.helpers';
+import * as m from '../../../paraglide/messages.js';
+import { TransP } from '../../../i18n/TransP';
 
 const AiPathwaysDiscovery: React.FC = () => {
     const { getThemedCategoryColors } = useTheme();
@@ -76,7 +78,11 @@ const AiPathwaysDiscovery: React.FC = () => {
                                         <div className="w-full bg-white items-center justify-center flex flex-col shadow-bottom-2-4 px-[15px] py-[18px] rounded-[15px]">
                                             <div className="w-full flex-col flex items-center justify-center gap-4">
                                                 <p className="text-center text-lg font-semibold text-gray-600">
-                                                    No results found for "{searchKeyword}"
+                                                    <TransP
+                                                        m={m['common.searchResults.noResultsFor']}
+                                                        values={{ query: searchKeyword }}
+                                                        components={[<span className="italic" />]}
+                                                    />
                                                 </p>
                                             </div>
                                         </div>

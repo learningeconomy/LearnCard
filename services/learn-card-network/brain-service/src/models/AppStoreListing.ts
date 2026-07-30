@@ -50,6 +50,10 @@ export type AppStoreListingRelationships = {
             metadata?: Record<string, unknown>;
             activityId?: string;
             integrationId?: string;
+            status?: 'revoked' | 'suspended';
+            revokedAt?: string;
+            suspendedAt?: string;
+            unsuspendedAt?: string;
         },
         {
             to: string;
@@ -57,6 +61,10 @@ export type AppStoreListingRelationships = {
             metadata?: Record<string, unknown>;
             activityId?: string;
             integrationId?: string;
+            status?: 'revoked' | 'suspended';
+            revokedAt?: string;
+            suspendedAt?: string;
+            unsuspendedAt?: string;
         }
     >;
     usesSigningAuthority: ModelRelatedNodesI<
@@ -168,6 +176,19 @@ export const AppStoreListing = ModelFactory<FlatAppStoreListingType, AppStoreLis
                 properties: {
                     to: { property: 'to', schema: { type: 'string', required: true } },
                     date: { property: 'date', schema: { type: 'string', required: true } },
+                    status: { property: 'status', schema: { type: 'string', required: false } },
+                    revokedAt: {
+                        property: 'revokedAt',
+                        schema: { type: 'string', required: false },
+                    },
+                    suspendedAt: {
+                        property: 'suspendedAt',
+                        schema: { type: 'string', required: false },
+                    },
+                    unsuspendedAt: {
+                        property: 'unsuspendedAt',
+                        schema: { type: 'string', required: false },
+                    },
                 },
             },
             usesSigningAuthority: {

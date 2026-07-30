@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
-import { useNetworkConsentMutation } from 'learn-card-base/react-query/mutations/networkConsent';
 import {
     ModalTypes,
     useModal,
@@ -15,13 +14,15 @@ import {
     useIsCurrentUserLCNUser,
     getNotificationsEndpoint,
     useBrandingConfig,
+    useNetworkConsentMutation,
 } from 'learn-card-base';
 
 import { IonInput } from '@ionic/react';
-import { ProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
+import { ProfilePicture } from 'learn-card-base';
 import RejectNetworkPrompt from './RejectNetworkPrompt';
 import PushNotificationsPrompt from '../push-notifications-prompt/PushNotificationsPrompt';
 import { openPP, openToS } from '../../helpers/externalLinkHelpers';
+import { m } from '../../paraglide/messages.js';
 
 import useTheme from '../../theme/hooks/useTheme';
 
@@ -36,6 +37,9 @@ const StateValidator = z.object({
             ` Alpha numeric characters(s) and dashes '-' only, no spaces allowed.`
         ),
 });
+
+import { getLogger } from 'learn-card-base';
+const log = getLogger('join-network-prompt');
 
 export const JoinNetworkPrompt: React.FC<{
     handleCloseModal: () => void;
@@ -103,10 +107,11 @@ export const JoinNetworkPrompt: React.FC<{
                 setLoading(true);
                 const wallet = await initWallet();
                 const didWeb = await wallet.invoke.createProfile({
-                    did: wallet.id.did(),
-                    profileId: profileId,
-                    displayName: currentUser?.name,
-                    image: currentUser?.profileImage,
+                    profileId: profileId ?? '',
+                    displayName: currentUser?.name ?? '',
+                    shortBio: '',
+                    bio: '',
+                    image: currentUser?.profileImage ?? '',
                     notificationsWebhook: getNotificationsEndpoint(),
                 });
 
@@ -118,7 +123,7 @@ export const JoinNetworkPrompt: React.FC<{
                             queryClient,
                         });
                     } catch (consentErr) {
-                        console.warn('Network consent error:', consentErr);
+                        log.warn('Network consent error:', consentErr);
                     }
 
                     await refetchIsCurrentUserLCNUser();
@@ -141,9 +146,9 @@ export const JoinNetworkPrompt: React.FC<{
                         }, 0);
                     }
                 }
-            } catch (err) {
-                console.log('createProfile::error', err);
-                setError(err?.message);
+            } catch (err: unknown) {
+                log.info('createProfile::error', err);
+                setError(err instanceof Error ? err.message : String(err));
                 setLoading(false);
             }
         }
@@ -241,7 +246,7 @@ export const JoinNetworkPrompt: React.FC<{
                             type="submit"
                             className="flex items-center justify-center text-white rounded-full px-[18px] py-[12px] bg-emerald-700 font-poppins text-xl w-full shadow-lg normal max-w-[320px]"
                         >
-                            {loading ? 'Loading...' : 'Continue'}
+                            {loading ? m['common.loading']() : m['common.continue']()}
                         </button>
                     )}
 
@@ -265,22 +270,24 @@ export const JoinNetworkPrompt: React.FC<{
             <div className="flex items-center justify-center mt-4 w-full">
                 <div className="flex flex-col items-center justify-center text-center">
                     <p className="text-center text-sm font-normal px-16 text-grayscale-600">
-                        You own your own data.
+                        {m['legal.dataOwnership']()}
                         <br />
                         All connections are encrypted.
                     </p>
-                    <button className={`text-${primaryColor} font-bold`}>Learn More</button>
+                    <button className={`text-${primaryColor} font-bold`}>
+                        {m['common.learnMore']()}
+                    </button>
                 </div>
             </div>
 
             <div className="flex items-center justify-center w-full">
                 <div className="flex items-center justify-center">
                     <button onClick={openPP} className={`text-${primaryColor} font-bold text-sm`}>
-                        Privacy Policy
+                        {m['legal.privacyPolicy']()}
                     </button>
                     <span className={`text-${primaryColor} font-bold text-sm`}>•</span>
                     <button onClick={openToS} className={`text-${primaryColor} font-bold text-sm`}>
-                        Terms of Service
+                        {m['legal.termsOfService']()}
                     </button>
                 </div>
             </div>

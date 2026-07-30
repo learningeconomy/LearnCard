@@ -14,11 +14,11 @@ import HeaderBranding from '../headerBranding/HeaderBranding';
 
 import Burger from '../svgs/Burger';
 import LeftArrow from 'learn-card-base/svgs/LeftArrow';
-import QRCodeScannerButton from '../qrcode-scanner-button/QRCodeScannerButton';
-import NotificationButton from 'learn-card-base/components/notification-button/NotificationButton';
+import ProfileAlertsIsland from './ProfileAlertsIsland';
 import MainSubHeader from '../main-subheader/MainSubHeader';
 
 import { SubheaderTypeEnum } from '../main-subheader/MainSubHeader.types';
+import { resolveShowBackButton } from './headerConfig';
 import {
     BrandingEnum,
     getHeaderBrandingColor,
@@ -56,7 +56,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
     style,
     children = null,
     subheaderType,
-    showBackButton = false,
+    showBackButton,
     branding = BrandingEnum.learncard,
     customHeaderClass,
     showSideMenuButton = false,
@@ -76,6 +76,10 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
     const isLoggedIn = useIsLoggedIn();
     const location = useLocation();
     const history = useHistory();
+
+    // Back button defaults ON for non-top-level routes (LC-1921); an explicit
+    // prop still wins. Keeps deep pages consistent without per-page wiring.
+    const resolvedShowBackButton = resolveShowBackButton(location.pathname, showBackButton);
 
     const isLoading = loadingStore.use.loading();
 
@@ -115,11 +119,24 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                     isLoading ? 'opacity-100' : 'opacity-0'
                 }`}
             />
-            <IonToolbar className="ion-no-border" color={statusBarColor}>
+            <IonToolbar
+                className="ion-no-border"
+                color={statusBarColor}
+                // A page can override the toolbar background via a `--background`
+                // in its `style` prop (e.g. 'transparent' so content shows through);
+                // otherwise the themed status-bar color is used.
+                style={
+                    style && '--background' in style
+                        ? ({
+                              '--background': (style as Record<string, string>)['--background'],
+                          } as React.CSSProperties)
+                        : undefined
+                }
+            >
                 <IonGrid className={`${customClassName} ${backgroundPrimaryColor}`} style={style}>
                     <IonRow>
                         <IonCol size="2" className="flex justify-start items-center">
-                            {showBackButton && (
+                            {resolvedShowBackButton && (
                                 <button
                                     aria-label="Go back"
                                     className="p-0 mr-[10px] main-header-back-button"
@@ -138,12 +155,16 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
                             {mainHeaderBranding}
                         </IonCol>
 
-                        <IonCol size="10" className="flex justify-end items-center">
+                        <IonCol size="10" className="flex justify-end items-center gap-2">
                             {isLoggedIn ? (
-                                <>
-                                    <NotificationButton colorOverride={notificationColorOverride} />
-                                    <QRCodeScannerButton branding={branding} />
-                                </>
+                                <ProfileAlertsIsland
+                                    branding={branding}
+                                    // Match the alerts icon to the header's icon color; an
+                                    // explicit override (e.g. WalletPage) still wins.
+                                    notificationColorOverride={
+                                        notificationColorOverride ?? headerColors
+                                    }
+                                />
                             ) : (
                                 <div className="w-full pt-[3px] pb-[3px]">&nbsp;</div>
                             )}

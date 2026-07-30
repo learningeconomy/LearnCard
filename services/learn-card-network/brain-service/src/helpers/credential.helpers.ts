@@ -15,6 +15,8 @@ import {
 import { getOwnerProfileForListing } from '@accesslayer/app-store-listing/relationships/read';
 import { constructUri, getDomainFromUri, getUriParts } from './uri.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
+import { getNotificationMessage } from './notificationMessages';
+import { resolveRecipientLocale } from './getRecipientLocale.helpers';
 import { logCredentialClaimed } from './activity.helpers';
 import { ProfileType } from 'types/profile';
 import { AppStoreListingType } from 'types/app-store-listing';
@@ -52,20 +54,17 @@ export const sendCredential = async (
 
     const isEndorsement = metadata?.type === 'endorsement';
 
-    const notificationTitle = isEndorsement ? 'New Endorsement Received' : 'Credential Received';
-
-    const notificationBody = isEndorsement
-        ? `${from.displayName} has endorsed your credential`
-        : `${from.displayName} has sent you a credential`;
+    const message = getNotificationMessage(
+        isEndorsement ? 'endorsementReceived' : 'credentialReceived',
+        resolveRecipientLocale(to),
+        { from: from.displayName }
+    );
 
     await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
         to,
         from,
-        message: {
-            title: notificationTitle,
-            body: notificationBody,
-        },
+        message,
         data: {
             vcUris: [uri],
             ...(metadata ? { metadata } : {}),
@@ -94,6 +93,20 @@ export const acceptCredential = async (
         throw new TRPCError({
             code: 'NOT_FOUND',
             message: 'Pending Credential not found',
+        });
+    }
+
+    if (pendingVc.relationship.status === 'revoked') {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential has been revoked',
+        });
+    }
+
+    if (pendingVc.relationship.status === 'suspended') {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential is suspended',
         });
     }
 
@@ -134,10 +147,13 @@ export const acceptCredential = async (
             type: LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
             to: sourceProfile,
             from: profile,
-            message: {
-                title: 'Boost Accepted',
-                body: `${profile.displayName} has accepted your boost!`,
-            },
+            message: getNotificationMessage(
+                'boostAccepted',
+                resolveRecipientLocale(sourceProfile),
+                {
+                    name: profile.displayName,
+                }
+            ),
             data: { vcUris: [uri], ...(options?.metadata ? { metadata: options.metadata } : {}) },
         });
     }

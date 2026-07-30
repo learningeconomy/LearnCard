@@ -15,8 +15,8 @@ npm install @learncard/init @learncard/claimable-boosts-plugin @learncard/simple
 # Using yarn
 yarn add @learncard/init @learncard/claimable-boosts-plugin @learncard/simple-signing-plugin
 
-# Using pnpm
-pnpm add @learncard/init @learncard/claimable-boosts-plugin @learncard/simple-signing-plugin
+# Using Bun
+bun add @learncard/init @learncard/claimable-boosts-plugin @learncard/simple-signing-plugin
 ```
 
 ### Quickstart
@@ -25,9 +25,9 @@ This example shows the minimum setup to generate your first claimable boost link
 
 #### Prerequisites:
 
-* Node.js (v14 or later) installed.
-* A secure seed phrase for initializing LearnCard. Never hardcode your seed in production code. Use environment variables or a secure secrets management system. For this example, we'll use an environment variable `SECURE_SEED`.
-* A unique ID for your issuer profile (e.g., `my-awesome-org-profile`).
+-   Node.js (v14 or later) installed.
+-   A secure seed phrase for initializing LearnCard. Never hardcode your seed in production code. Use environment variables or a secure secrets management system. For this example, we'll use an environment variable `SECURE_SEED`.
+-   A unique ID for your issuer profile (e.g., `my-awesome-org-profile`).
 
 #### Steps:
 
@@ -44,85 +44,81 @@ const profileId = 'my-awesome-org-profile'; // Choose a unique ID for your organ
 const profileName = 'My Awesome Org';
 
 if (!seed) {
-  console.error('Error: SECURE_SEED environment variable is not set.');
-  process.exit(1);
+    console.error('Error: SECURE_SEED environment variable is not set.');
+    process.exit(1);
 }
 
 async function quickstartBoost() {
-  try {
-    console.log('Initializing LearnCard...');
-    // 1. Initialize LearnCard with network and signing capabilities
-    const learnCard = await initLearnCard({
-      seed: seed,
-      network: true,
-      allowRemoteContexts: true
-    });
-
-    const signingLearnCard = await learnCard.addPlugin(
-      await getSimpleSigningPlugin(learnCard, 'https://api.learncard.app/trpc')
-    );
-
-    const claimableLearnCard = await signingLearnCard.addPlugin(
-      await getClaimableBoostsPlugin(signingLearnCard)
-    );
-    console.log('LearnCard initialized with plugins.');
-
-    // 2. Create an Issuer Profile (run once per profileId)
     try {
-      console.log(`Creating profile "${profileId}"...`);
-      await claimableLearnCard.invoke.createProfile({
-        profileId: profileId,
-        displayName: profileName,
-        description: 'Issuing awesome credentials.',
-      });
-      console.log(`Profile "${profileId}" created successfully.`);
+        console.log('Initializing LearnCard...');
+        // 1. Initialize LearnCard with network and signing capabilities
+        const learnCard = await initLearnCard({
+            seed: seed,
+            network: true,
+            allowRemoteContexts: true,
+        });
+
+        const signingLearnCard = await learnCard.addPlugin(
+            await getSimpleSigningPlugin(learnCard, 'https://api.learncard.app/trpc')
+        );
+
+        const claimableLearnCard = await signingLearnCard.addPlugin(
+            await getClaimableBoostsPlugin(signingLearnCard)
+        );
+        console.log('LearnCard initialized with plugins.');
+
+        // 2. Create an Issuer Profile (run once per profileId)
+        try {
+            console.log(`Creating profile "${profileId}"...`);
+            await claimableLearnCard.invoke.createProfile({
+                profileId: profileId,
+                displayName: profileName,
+                description: 'Issuing awesome credentials.',
+            });
+            console.log(`Profile "${profileId}" created successfully.`);
+        } catch (error) {
+            if (error.message?.includes('Profile ID already exists')) {
+                console.log(`Profile "${profileId}" already exists, continuing.`);
+            } else {
+                throw new Error(`Failed to create profile: ${error.message}`);
+            }
+        }
+
+        // 3. Create a Boost Template (the credential structure)
+        console.log('Creating boost template...');
+        const boostTemplate = claimableLearnCard.invoke.newCredential({
+            type: 'boost',
+            boostName: 'Quickstart Achievement',
+            boostImage: 'https://placehold.co/400x400?text=Quickstart', // Optional placeholder image
+            achievementType: 'Influencer',
+            achievementName: 'Quickstart Achievement',
+            achievementDescription: 'Completed the quickstart guide!',
+            achievementNarrative: 'User successfully ran the quickstart script.',
+            achievementImage: 'https://placehold.co/400x400?text=Quickstart', // Optional placeholder image
+        });
+        console.log('Boost template created.');
+
+        // 4. Create the Boost (register it on the network)
+        console.log('Creating boost on the network...');
+        const boostUri = await claimableLearnCard.invoke.createBoost(boostTemplate, {
+            // Metadata for the boost itself
+            name: boostTemplate.name,
+            description: boostTemplate.achievementDescription,
+            // profileId is automatically linked from the initialized LearnCard instance
+        });
+        console.log(`Boost created with URI: ${boostUri}`);
+
+        // 5. Generate a Claim Link
+        console.log('Generating claim link...');
+        const claimLink = await claimableLearnCard.invoke.generateBoostClaimLink(boostUri);
+        console.log('\n✅ Success! Your Claimable Boost link is ready:');
+        console.log(claimLink);
+
+        return claimLink;
     } catch (error) {
-      if (error.message?.includes('Profile ID already exists')) {
-         console.log(`Profile "${profileId}" already exists, continuing.`);
-      } else {
-        throw new Error(`Failed to create profile: ${error.message}`);
-      }
+        console.error('\n❌ Error during quickstart process:', error);
+        process.exit(1);
     }
-
-    // 3. Create a Boost Template (the credential structure)
-    console.log('Creating boost template...');
-    const boostTemplate = claimableLearnCard.invoke.newCredential({
-      type: 'boost', 
-      boostName: 'Quickstart Achievement',
-      boostImage: 'https://placehold.co/400x400?text=Quickstart', // Optional placeholder image
-      achievementType: 'Influencer',
-      achievementName:'Quickstart Achievement',
-      achievementDescription: 'Completed the quickstart guide!',
-      achievementNarrative: 'User successfully ran the quickstart script.',
-      achievementImage: 'https://placehold.co/400x400?text=Quickstart', // Optional placeholder image
-    });
-    console.log('Boost template created.');
-
-    // 4. Create the Boost (register it on the network)
-    console.log('Creating boost on the network...');
-    const boostUri = await claimableLearnCard.invoke.createBoost(
-      boostTemplate,
-      {
-        // Metadata for the boost itself
-        name: boostTemplate.name,
-        description: boostTemplate.achievementDescription,
-        // profileId is automatically linked from the initialized LearnCard instance
-      }
-    );
-    console.log(`Boost created with URI: ${boostUri}`);
-
-    // 5. Generate a Claim Link
-    console.log('Generating claim link...');
-    const claimLink = await claimableLearnCard.invoke.generateBoostClaimLink(boostUri);
-    console.log('\n✅ Success! Your Claimable Boost link is ready:');
-    console.log(claimLink);
-
-    return claimLink;
-
-  } catch (error) {
-    console.error('\n❌ Error during quickstart process:', error);
-    process.exit(1);
-  }
 }
 
 quickstartBoost();
@@ -143,8 +139,9 @@ quickstartBoost();
     ```bash
     node createBoost.js
     ```
-3. Output: The script will print the generated claim link to your console. Anyone with this link can claim the "Quickstart Achievement" boost.
-4. Next Steps: Explore the "Detailed Usage" section below for customizing claim links (e.g., setting expiry times, usage limits), generating QR codes, and understanding the process in more detail.
+
+3.  Output: The script will print the generated claim link to your console. Anyone with this link can claim the "Quickstart Achievement" boost.
+4.  Next Steps: Explore the "Detailed Usage" section below for customizing claim links (e.g., setting expiry times, usage limits), generating QR codes, and understanding the process in more detail.
 
 ### Detailed Usage
 
@@ -152,10 +149,10 @@ This section provides a comprehensive walkthrough of creating and managing Claim
 
 #### Prerequisites:
 
-* Node.js (v14 or later)
-* npm, yarn, or pnpm
-* A LearnCard Network account (implied by using the plugin with `network: true`)
-* A secure seed phrase for your issuer identity.
+-   Node.js (v14 or later)
+-   npm, yarn, or Bun
+-   A LearnCard Network account (implied by using the plugin with `network: true`)
+-   A secure seed phrase for your issuer identity.
 
 #### Setup Process
 
@@ -173,19 +170,19 @@ import { getSimpleSigningPlugin } from '@learncard/simple-signing-plugin';
 const seed = process.env.SECURE_SEED; // Load from secure source
 
 const learnCard = await initLearnCard({
-  seed: seed,
-  network: true,             // Enable network features
-  allowRemoteContexts: true  // Required for standard credential contexts
+    seed: seed,
+    network: true, // Enable network features
+    allowRemoteContexts: true, // Required for standard credential contexts
 });
 
 // Add signing capability
 const signingLearnCard = await learnCard.addPlugin(
-  await getSimpleSigningPlugin(learnCard, 'https://api.learncard.app/trpc') // Use the LearnCard API endpoint
+    await getSimpleSigningPlugin(learnCard, 'https://api.learncard.app/trpc') // Use the LearnCard API endpoint
 );
 
 // Add claimable boosts capability
 const claimableLearnCard = await signingLearnCard.addPlugin(
-  await getClaimableBoostsPlugin(signingLearnCard)
+    await getClaimableBoostsPlugin(signingLearnCard)
 );
 ```
 
@@ -195,19 +192,19 @@ const claimableLearnCard = await signingLearnCard.addPlugin(
 
 ```javascript
 try {
-  await claimableLearnCard.invoke.createProfile({
-    profileId: 'your-unique-profile-id',   // Choose a unique identifier
-    displayName: 'Your Organization Name',
-    description: 'Brief description of your organization',
-  });
-  console.log('Profile created successfully!');
+    await claimableLearnCard.invoke.createProfile({
+        profileId: 'your-unique-profile-id', // Choose a unique identifier
+        displayName: 'Your Organization Name',
+        description: 'Brief description of your organization',
+    });
+    console.log('Profile created successfully!');
 } catch (error) {
-   if (error.message?.includes('Profile ID already exists')) {
-       console.log('Profile already exists, proceeding.');
-   } else {
-       console.error('Error creating profile:', error);
-       throw error; // Re-throw if it's a different error
-   }
+    if (error.message?.includes('Profile ID already exists')) {
+        console.log('Profile already exists, proceeding.');
+    } else {
+        console.error('Error creating profile:', error);
+        throw error; // Re-throw if it's a different error
+    }
 }
 ```
 
@@ -217,14 +214,14 @@ try {
 
 ```javascript
 const boostTemplate = claimableLearnCard.invoke.newCredential({
-    type: 'boost', 
+    type: 'boost',
     boostName: 'Advanced Course Completion',
     boostImage: 'https://placehold.co/400x400?text=Course', // Optional placeholder image
     achievementType: 'Achievement',
     achievementName:'Advanced Course Completion',
     achievementDescription: 'Recognizes successful completion of the advanced curriculum.',
     achievementNarrative: 'Student must pass all modules with a score of 85% or higher.'
-    achievementImage: 'https://placehold.co/400x400?text=Course', // Optional placeholder image   
+    achievementImage: 'https://placehold.co/400x400?text=Course', // Optional placeholder image
 });
 ```
 
@@ -234,13 +231,13 @@ const boostTemplate = claimableLearnCard.invoke.newCredential({
 
 ```javascript
 const boostUri = await claimableLearnCard.invoke.createBoost(
-  boostTemplate.credentialSubject, // Pass the credentialSubject part of the template
-  {
-    // Metadata associated with the boost listing itself
-    name: boostTemplate.credentialSubject.name,
-    description: boostTemplate.credentialSubject.achievementDescription,
-    // profileId will be inferred from the initialized claimableLearnCard instance
-  }
+    boostTemplate.credentialSubject, // Pass the credentialSubject part of the template
+    {
+        // Metadata associated with the boost listing itself
+        name: boostTemplate.credentialSubject.name,
+        description: boostTemplate.credentialSubject.achievementDescription,
+        // profileId will be inferred from the initialized claimableLearnCard instance
+    }
 );
 
 console.log('Boost created and registered with URI:', boostUri);
@@ -260,13 +257,10 @@ console.log('Claim Link:', claimLink);
 You can customize the behavior of claim links by providing an options object:
 
 ```javascript
-const claimLinkWithOptions = await claimableLearnCard.invoke.generateBoostClaimLink(
-  boostUri,
-  {
-    ttlSeconds: 86400,  // Link expires after 24 hours (86400 seconds)
-    totalUses: 50,      // Link can only be successfully claimed 50 times
-  }
-);
+const claimLinkWithOptions = await claimableLearnCard.invoke.generateBoostClaimLink(boostUri, {
+    ttlSeconds: 86400, // Link expires after 24 hours (86400 seconds)
+    totalUses: 50, // Link can only be successfully claimed 50 times
+});
 
 console.log('Limited Use Claim Link:', claimLinkWithOptions);
 ```
@@ -280,9 +274,9 @@ console.log('Limited Use Claim Link:', claimLinkWithOptions);
 
 **Use Cases for Options:**
 
-* **Limited-time offers**: Set `ttlSeconds` for time-sensitive campaigns or events.
-* **Limited quantity**: Set `totalUses` for exclusive rewards or limited-enrollment programs.
-* **Unique links per user**: Set `totalUses: 1`. You would generate a unique link for each intended recipient.
+-   **Limited-time offers**: Set `ttlSeconds` for time-sensitive campaigns or events.
+-   **Limited quantity**: Set `totalUses` for exclusive rewards or limited-enrollment programs.
+-   **Unique links per user**: Set `totalUses: 1`. You would generate a unique link for each intended recipient.
 
 #### QR Code Generation
 
@@ -295,31 +289,31 @@ const qrCodeData = await claimableLearnCard.invoke.generateBoostClaimQR(boostUri
 
 // Option 2: Generate QR code data with options
 const qrCodeDataWithOptions = await claimableLearnCard.invoke.generateBoostClaimQR(
-  boostUri,
-  { ttlSeconds: 3600, totalUses: 1 } // QR represents a link valid for 1 hour, 1 use
+    boostUri,
+    { ttlSeconds: 3600, totalUses: 1 } // QR represents a link valid for 1 hour, 1 use
 );
 
 // Use a library like 'qrcode' (npm install qrcode) to generate the image/SVG:
 import QRCode from 'qrcode';
 
-QRCode.toFile('./claim-qr-code.png', qrCodeData, (err) => {
-  if (err) throw err;
-  console.log('QR code saved to claim-qr-code.png');
+QRCode.toFile('./claim-qr-code.png', qrCodeData, err => {
+    if (err) throw err;
+    console.log('QR code saved to claim-qr-code.png');
 });
 
 QRCode.toString(qrCodeDataWithOptions, { type: 'svg' }, (err, svgString) => {
-  if (err) throw err;
-  console.log('QR Code SVG:\n', svgString); // Output SVG string
+    if (err) throw err;
+    console.log('QR Code SVG:\n', svgString); // Output SVG string
 });
 ```
 
 ### Common Issues & Troubleshooting
 
-* **"Profile ID already exists"**: This error occurs during `createProfile` if the profileId is already registered on the network. You can either choose a different unique profileId or safely ignore this error if you intend to use the existing profile (as shown in the Quickstart and Setup examples). Ensure the learnCard instance you're using is the controller of the existing profile if you intend to manage it.
-* **"Invalid credential format"**: Double-check that your boostTemplate conforms to the expected structure. Refer to LearnCard documentation for specific schema requirements.
-* **"Network error" / "Failed to fetch"**: Verify your internet connection. Ensure the LearnCard API endpoint (https://api.learncard.app/trpc by default) is accessible. Check for any network proxies or firewalls that might be blocking the connection.
-* **"Authentication Error" / "Unauthorized"**: Ensure your seed is correct and corresponds to the DID that controls the profileId you are trying to manage (especially when creating boosts under an existing profile).
-* **Seed Security**: Remember to handle your seed phrase securely using environment variables or a dedicated secrets manager. Avoid hardcoding it directly in your source code.
+-   **"Profile ID already exists"**: This error occurs during `createProfile` if the profileId is already registered on the network. You can either choose a different unique profileId or safely ignore this error if you intend to use the existing profile (as shown in the Quickstart and Setup examples). Ensure the learnCard instance you're using is the controller of the existing profile if you intend to manage it.
+-   **"Invalid credential format"**: Double-check that your boostTemplate conforms to the expected structure. Refer to LearnCard documentation for specific schema requirements.
+-   **"Network error" / "Failed to fetch"**: Verify your internet connection. Ensure the LearnCard API endpoint (https://api.learncard.app/trpc by default) is accessible. Check for any network proxies or firewalls that might be blocking the connection.
+-   **"Authentication Error" / "Unauthorized"**: Ensure your seed is correct and corresponds to the DID that controls the profileId you are trying to manage (especially when creating boosts under an existing profile).
+-   **Seed Security**: Remember to handle your seed phrase securely using environment variables or a dedicated secrets manager. Avoid hardcoding it directly in your source code.
 
 ### Complete Example Script
 
@@ -379,14 +373,14 @@ async function createClaimableBadgeFull() {
     // 3. Create boost template
     console.log('Creating boost template...');
     const boostTemplate = claimableLearnCard.invoke.newCredential({
-        type: 'boost', 
+        type: 'boost',
         boostName: 'Full Example Certificate',
         boostImage: 'https://placehold.co/400x400?text=Full+Example', // Optional placeholder image
         achievementType: 'Achievement',
         achievementName:'Advanced Course Completion',
         achievementDescription: 'Awarded for running the complete example script.',
         achievementNarrative: 'Executed the full NodeJS script for claimable boosts.'
-        achievementImage: 'https://placehold.co/400x400?text=Full+Example', // Optional placeholder image   
+        achievementImage: 'https://placehold.co/400x400?text=Full+Example', // Optional placeholder image
     });
     console.log('Boost template created.');
 

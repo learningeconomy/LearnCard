@@ -1,14 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import queryString from 'query-string';
 
-import {
-    IonContent,
-    IonHeader,
-    IonPage,
-    IonSpinner,
-    IonToolbar,
-    useIonModal,
-} from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonSpinner, IonToolbar, useIonModal } from '@ionic/react';
 import { useLocation } from 'react-router-dom';
 import { VC, VerificationItem, VP } from '@learncard/types';
 
@@ -38,6 +31,7 @@ import {
     type LerVerificationResultLike,
 } from './shared-resume.helpers';
 import { resumeBuilderStore } from '../../stores/resumeBuilderStore';
+import * as m from '../../paraglide/messages.js';
 
 const getQueryParam = (value: string | string[] | null): string => {
     if (Array.isArray(value)) return value[0] ?? '';
@@ -81,7 +75,7 @@ const VerifySharedResume: React.FC = () => {
                 throw new Error('Resume preview is not ready yet.');
             }
             await resumePreviewRef.current.generatePDF();
-            presentToast('Resume downloaded successfully.', {
+            presentToast(m['toasts.resume.downloadSuccess'](), {
                 title: 'Downloaded',
                 type: ToastTypeEnum.Success,
             });

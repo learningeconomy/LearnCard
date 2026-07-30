@@ -12,10 +12,10 @@
 #      LearnCard project ID), OR pass --projectId=<id> to this script.
 #
 # Usage:
-#   pnpm env:pull                      # Pull dev env for all services
-#   pnpm env:pull -- --env=staging     # Pull staging env for all services
-#   pnpm env:pull -- --only=brain      # Pull dev env for brain-service only
-#   pnpm env:pull -- --list            # Show available service targets
+#   bun run env:pull                      # Pull dev env for all services
+#   bun run env:pull --env=staging        # Pull staging env overlays (*.env.staging)
+#   bun run env:pull -- --only=brain      # Pull dev env for brain-service only
+#   bun run env:pull -- --list            # Show available service targets
 #
 # Infisical folder structure (LearnCard project):
 #   /LearnCard/brain-service       → brain-service secrets
@@ -59,7 +59,8 @@ INFISICAL_PATHS=(
   "/LearnCard/simple-signing-service"         # signing
 )
 
-# Local .env file paths (relative to repo root)
+# Local .env file paths (relative to repo root). Staging/prod pulls write
+# overlay files next to these targets (for example, `.env.staging`).
 LOCAL_ENV_FILES=(
   "services/learn-card-network/brain-service/.env"          # brain
   "services/learn-card-network/learn-cloud-service/.env"    # cloud
@@ -136,11 +137,26 @@ echo ""
 # ---------------------------------------------------------------------------
 # Helper functions
 # ---------------------------------------------------------------------------
+output_env_file_for_slug() {
+  local env_file="$1"
+
+  if [[ "$ENV_SLUG" == "dev" ]]; then
+    printf '%s\n' "$env_file"
+  else
+    printf '%s.%s\n' "$env_file" "$ENV_SLUG"
+  fi
+}
+
 base_template_for_env_file() {
   local env_file="$1"
+  local output_file="$2"
   local example_env="${env_file}.example"
 
-  if [[ -f "$env_file" ]]; then
+  if [[ -f "$output_file" ]]; then
+    printf '%s\n' "$output_file"
+  elif [[ "$ENV_SLUG" != "dev" && -f "$example_env" ]]; then
+    printf '%s\n' "$example_env"
+  elif [[ "$ENV_SLUG" == "dev" && -f "$env_file" ]]; then
     printf '%s\n' "$env_file"
   elif [[ -f "$example_env" ]]; then
     printf '%s\n' "$example_env"
@@ -174,7 +190,8 @@ for i in "${!SERVICE_KEYS[@]}"; do
   label="${SERVICE_LABELS[$i]}"
   paths_str="${INFISICAL_PATHS[$i]}"
   env_file="${REPO_ROOT}/${LOCAL_ENV_FILES[$i]}"
-  base_template_file="$(base_template_for_env_file "$env_file")"
+  output_file="$(output_env_file_for_slug "$env_file")"
+  base_template_file="$(base_template_for_env_file "$env_file" "$output_file")"
 
   # Filter by --only if set
   if [[ -n "$ONLY" && "$key" != "$ONLY" ]]; then
@@ -204,9 +221,9 @@ for i in "${!SERVICE_KEYS[@]}"; do
 
   if [[ ${#export_json_files[@]} -gt 0 ]]; then
     # Ensure parent directory exists
-    mkdir -p "$(dirname "$env_file")"
+    mkdir -p "$(dirname "$output_file")"
 
-    python3 - "$base_template_file" "$env_file" "$ENV_SLUG" "${export_json_files[@]}" <<'PY'
+    python3 - "$base_template_file" "$output_file" "$ENV_SLUG" "${export_json_files[@]}" <<'PY'
 import json
 import re
 import sys
@@ -329,7 +346,7 @@ for key, value in merged.items():
 output_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
 PY
 
-    echo "    ✔ wrote ${LOCAL_ENV_FILES[$i]}"
+    echo "    ✔ wrote ${output_file#${REPO_ROOT}/}"
     pulled=$((pulled + 1))
   else
     echo "    ⚠  No secrets found — skipped" >&2

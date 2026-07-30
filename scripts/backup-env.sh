@@ -6,7 +6,7 @@
 # if an Infisical pull needs to be rolled back.
 #
 # Usage:
-#   pnpm env:backup
+#   bun run env:backup
 # ============================================================================
 
 set -euo pipefail

@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
 
+import { m } from '../../../../paraglide/messages.js';
+
 import ExistingAiTopicItem from './ExistingAiTopicItem';
 
 import { ChatBotQuestionsEnum } from '../newAiSessionChatbot.helpers';
@@ -74,7 +76,7 @@ export const ExistingAiTopics: React.FC<{
                             <div className="w-full flex items-center justify-center">
                                 <div className="w-full max-w-[550px] flex items-center justify-start px-2 pt-2">
                                     <p className="text-grayscale-800 text-base font-normal font-notoSans">
-                                        No results found for{' '}
+                                        {m['ai.noResultsFor']()}{' '}
                                         <span className="text-black italic">{search}</span>
                                     </p>
                                 </div>

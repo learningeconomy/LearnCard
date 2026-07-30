@@ -101,12 +101,6 @@ export const SkillsHubFilterSortingOptionsModal: React.FC<{
                                 ) : (
                                     <div className="w-[24px] h-[24px] shrink-0"> </div>
                                 )}
-                                {option.type === SkillsHubFilterOptionsEnum.legacy && (
-                                    <FrameworkImage
-                                        sizeClassName="w-[25px] h-[25px]"
-                                        iconSizeClassName="w-[16px] h-[16px]"
-                                    />
-                                )}
                                 {option.title}
                             </button>
                         );

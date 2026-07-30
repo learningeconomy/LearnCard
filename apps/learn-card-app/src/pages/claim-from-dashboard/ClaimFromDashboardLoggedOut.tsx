@@ -10,6 +10,7 @@ import { openPP, openToS } from '../../helpers/externalLinkHelpers';
 import { FromDashboardMetadata } from './ClaimFromDashboard';
 
 import useTheme from '../../theme/hooks/useTheme';
+import * as m from '../../paraglide/messages.js';
 
 export type ClaimFromDashboardLoggedOutProps = {
     metadata: FromDashboardMetadata | undefined;
@@ -31,8 +32,8 @@ const ClaimFromDashboardLoggedOut: React.FC<ClaimFromDashboardLoggedOutProps> = 
     };
 
     const claimText = metadata?.credentialName
-        ? `Login or signup to claim your ${metadata?.credentialName}.`
-        : `Login or signup to claim.`;
+        ? m['claim.received.subtitleNamed']({ name: metadata.credentialName })
+        : m['claim.received.subtitle']();
 
     return (
         <IonPage className="bg-emerald-700 p-[30px]">
@@ -41,7 +42,7 @@ const ClaimFromDashboardLoggedOut: React.FC<ClaimFromDashboardLoggedOutProps> = 
 
                 <div className="flex flex-col items-center font-poppins w-full text-center">
                     <h1 className="text-grayscale-900 text-[20px] font-[600] leading-[160%]">
-                        You've received a credential!
+                        {m['claim.received.title']()}
                     </h1>
                     <div className="text-grayscale-800 text-[17px]">{claimText}</div>
                 </div>
@@ -53,16 +54,16 @@ const ClaimFromDashboardLoggedOut: React.FC<ClaimFromDashboardLoggedOutProps> = 
                             onClick={redirectToLogin}
                             className="bg-emerald-700 text-grayscale-50 text-[18px] leading-[28px] tracking-[0.75px] font-poppins normal w-full py-[12px] rounded-[40px] shadow-bottom"
                         >
-                            Sign up for {brandingConfig?.name}
+                            {m['claim.received.signUp']({ brand: brandingConfig?.name ?? '' })}
                         </button>
                         <div className="text-grayscale-900 text-[14px]">
-                            Have an account?{' '}
+                            {m['claim.received.haveAccount']()}{' '}
                             <button
                                 type="button"
                                 onClick={redirectToLogin}
                                 className={`text-${primaryColor} font-[600]`}
                             >
-                                Login
+                                {m['common.login']()}
                             </button>
                         </div>
                     </div>
@@ -72,16 +73,14 @@ const ClaimFromDashboardLoggedOut: React.FC<ClaimFromDashboardLoggedOutProps> = 
                     <span className="text-grayscale-900 text-[14px] font-montserrat normal font-[700] tracking-[7px] uppercase">
                         {brandingConfig?.name}
                     </span>
-                    <span className="text-grayscale-700 text-[14px]">
-                        Universal Learning & Work Portfolio
-                    </span>
+                    <span className="text-grayscale-700 text-[14px]">{m['common.tagline']()}</span>
                     <IonRow className="flex items-center justify-center">
                         <IonCol className="flex items-center justify-center">
                             <button
                                 onClick={openPP}
                                 className={`text-${primaryColor} font-[600] text-[12px]`}
                             >
-                                Privacy Policy
+                                {m['legal.privacyPolicy']()}
                             </button>
                             <span className="text-grayscale-600 font-bold text-[12px]">
                                 &nbsp;•&nbsp;
@@ -90,7 +89,7 @@ const ClaimFromDashboardLoggedOut: React.FC<ClaimFromDashboardLoggedOutProps> = 
                                 onClick={openToS}
                                 className={`text-${primaryColor} font-[600] text-[12px]`}
                             >
-                                Terms of Service
+                                {m['legal.termsOfService']()}
                             </button>
                         </IonCol>
                     </IonRow>

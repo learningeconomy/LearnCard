@@ -4,6 +4,8 @@ import { useWallet } from 'learn-card-base';
 
 import useFirebaseAnalytics from './useFirebaseAnalytics';
 import { useIsCurrentUserLCNUser, useCurrentUser } from 'learn-card-base';
+import { getLogger } from 'learn-card-base';
+const log = getLogger('use-set-firebase-analytics-user-id');
 
 export type UseSetFirebaseAnalyticsUserIdOptions = { debug?: boolean };
 
@@ -16,7 +18,7 @@ export const useSetFirebaseAnalyticsUserId = (options: UseSetFirebaseAnalyticsUs
     const { setUserId } = useFirebaseAnalytics();
 
     const setFirebaseUserId = async () => {
-        if (options.debug) console.debug('firebase analytics userId 🔥', currentUser);
+        if (options.debug) log.debug('firebase analytics userId 🔥', currentUser);
 
         try {
             if (currentUser) {
@@ -24,7 +26,7 @@ export const useSetFirebaseAnalyticsUserId = (options: UseSetFirebaseAnalyticsUs
                 if (did) await setUserId(did);
             }
         } catch (error) {
-            console.error('Unable to set firebase analytics userId', error);
+            log.error('Unable to set firebase analytics userId', error);
         }
     };
 

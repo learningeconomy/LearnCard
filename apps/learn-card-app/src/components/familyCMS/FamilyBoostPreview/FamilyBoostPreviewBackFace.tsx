@@ -6,6 +6,7 @@ import InfoIcon from '../../svgs/InfoIcon';
 import Checkmark from '../../svgs/Checkmark';
 
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
+import { m } from '../../../paraglide/messages.js';
 
 export const FamilyBoostPreviewBackFace: React.FC<{
     credential: VC;
@@ -20,10 +21,10 @@ export const FamilyBoostPreviewBackFace: React.FC<{
             <section className="bg-white ion-padding rounded-[20px] shadow-soft-bottom mt-[20px]">
                 <div className="w-full flex flex-col items-start justify-start text-left">
                     <h3 className="text-[22px] font-normal text-grayscale-900 font-poppins">
-                        Details
+                        {m['family.preview.details']()}
                     </h3>
                     <p className="text-grayscale-600 font-semibold mt-1 text-sm font-poppins">
-                        Created on {issueDate}
+                        {m['family.preview.createdOn']({ date: issueDate })}
                     </p>
                 </div>
             </section>
@@ -54,7 +55,7 @@ export const FamilyBoostPreviewBackFace: React.FC<{
             <section className="bg-white ion-padding rounded-[20px] shadow-soft-bottom mt-[20px]">
                 <button className="w-full flex items-center justify-between mb-2">
                     <h3 className="text-[22px] font-normal text-grayscale-900 font-poppins">
-                        Credential Verifications
+                        {m['sdk.verification.title']()}
                     </h3>
 
                     <button type="button">
@@ -67,10 +68,13 @@ export const FamilyBoostPreviewBackFace: React.FC<{
                         <span className="bg-emerald-700 rounded-full">
                             <Checkmark className="text-white w-[20px] h-[20px]" />
                         </span>
-                        <p className="ml-2 text-sm font-bold font-poppins">Success</p>
+                        <p className="ml-2 text-sm font-bold font-poppins">
+                            {m['sdk.verification.status.success']()}
+                        </p>
                     </div>
                     <p className="text-grayscale-900 text-sm font-poppins">
-                        <strong>Proof: </strong>Valid
+                        <strong>{m['sdk.verification.check.proof']()}: </strong>
+                        {m['sdk.verification.message.valid']()}
                     </p>
                 </div>
 
@@ -79,10 +83,13 @@ export const FamilyBoostPreviewBackFace: React.FC<{
                         <span className="bg-emerald-700 rounded-full">
                             <Checkmark className="text-white w-[20px] h-[20px]" />
                         </span>
-                        <p className="ml-2 text-sm font-bold font-poppins">Success</p>
+                        <p className="ml-2 text-sm font-bold font-poppins">
+                            {m['sdk.verification.status.success']()}
+                        </p>
                     </div>
                     <p className="text-grayscale-900 text-sm font-poppins">
-                        <strong>Status: </strong>Active
+                        <strong>{m['sdk.verification.check.status']()}: </strong>
+                        {m['sdk.verification.message.active']()}
                     </p>
                 </div>
             </section>
