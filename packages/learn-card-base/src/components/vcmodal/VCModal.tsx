@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
+import { getVCDisplayCardVariant } from '@learncard/react';
 
 import {
     IonContent,
@@ -23,7 +24,10 @@ import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
 
 import redirectStore from 'learn-card-base/stores/redirectStore';
 import modalStateStore from 'learn-card-base/stores/modalStateStore';
-import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
+import {
+    getDefaultCategoryForCredential,
+    unwrapBoostCredential,
+} from 'learn-card-base/helpers/credentialHelpers';
 import { VC, CredentialRecord } from '@learncard/types';
 import { useAcceptCredentialMutation } from 'learn-card-base/react-query/mutations/mutations';
 
@@ -171,17 +175,21 @@ export const VCClaim: React.FC<{
     }
 
     const isCertificate = vc?.display?.displayType === 'certificate';
+    const shouldUseHostCardPadding =
+        !vc || getVCDisplayCardVariant(vc, getDefaultCategoryForCredential(vc)) !== 'ribbon';
 
     return (
         <IonPage>
             <IonContent
-                className="flex items-center justify-center ion-padding boost-cms-preview"
+                className={`flex items-center justify-center ion-padding boost-cms-preview ${
+                    shouldUseHostCardPadding ? '' : '[&::part(scroll)]:px-0'
+                }`}
                 fullscreen
             >
                 <IonRow
-                    className={`flex flex-col items-center justify-center px-6 ${
-                        isCertificate ? 'pt-14 md:pt-20' : ''
-                    }`}
+                    className={`flex flex-col items-center justify-center ${
+                        shouldUseHostCardPadding ? 'px-6' : ''
+                    } ${isCertificate ? 'pt-14 md:pt-20' : ''}`}
                 >
                     <div className="flex items-center justify-center w-full mb-2">
                         {!isCertificate && (
@@ -350,18 +358,24 @@ export const VCModal = ({
         onDismiss?.();
     };
 
-    const isCertificate = vc?.display?.displayType === 'certificate';
+    const isCertificate = credential?.display?.displayType === 'certificate';
+    const category =
+        cr?.category || (credential ? getDefaultCategoryForCredential(credential) : undefined);
+    const shouldUseHostCardPadding =
+        !credential || getVCDisplayCardVariant(credential, category) !== 'ribbon';
 
     return (
         <IonPage>
             <IonContent
-                className="flex items-center justify-center ion-padding boost-cms-preview"
+                className={`flex items-center justify-center ion-padding boost-cms-preview ${
+                    shouldUseHostCardPadding ? '' : '[&::part(scroll)]:px-0'
+                }`}
                 fullscreen
             >
                 <IonRow
-                    className={`flex flex-col items-center justify-center px-6 ${
-                        isCertificate ? 'pt-14 md:pt-20' : ''
-                    }`}
+                    className={`flex flex-col items-center justify-center ${
+                        shouldUseHostCardPadding ? 'px-6' : ''
+                    } ${isCertificate ? 'pt-14 md:pt-20' : ''}`}
                 >
                     {!isCertificate && (
                         <div className="flex items-center justify-center mb-2">

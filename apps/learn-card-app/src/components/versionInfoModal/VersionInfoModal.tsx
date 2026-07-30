@@ -125,7 +125,6 @@ const PLATFORM_LABELS: Record<Platform, string> = {
     web: 'Web',
 };
 
-const STAGING_CHANNEL = 'staging';
 const SEMVER_RE = /^\d+\.\d+\.\d+$/;
 const PR_RE = /^pr-(\d+)$/;
 const CHANNELS_CACHE_TTL_MS = 60_000;
@@ -206,7 +205,8 @@ const compareSemverDesc = (a: string, b: string): number => {
  * into the four UI buckets. The production stream is semver-named (e.g. `1.0.7`),
  * so the channel matching the build-time `__CAPGO_DEFAULT_CHANNEL__` define is the
  * "Latest" production row; any other semver channels are older production versions
- * (newest first). `staging` and `pr-<n>` channels get their own sections.
+ * (newest first). The staging stream shares the native compatibility prefix
+ * (`<productionChannel>-staging`), and `pr-<n>` channels get their own sections.
  */
 const groupChannels = (
     channels: { name: string }[],
@@ -216,6 +216,7 @@ const groupChannels = (
     const prPreviews: ChannelOption[] = [];
     let productionLatest: ChannelOption | undefined;
     let staging: ChannelOption | undefined;
+    const stagingChannel = productionChannel ? `${productionChannel}-staging` : undefined;
 
     const semverChannels = channels
         .map(c => c.name)
@@ -252,7 +253,7 @@ const groupChannels = (
     }
 
     for (const { name } of channels) {
-        if (name === STAGING_CHANNEL) {
+        if (name === stagingChannel) {
             staging = {
                 value: name,
                 label: 'Staging',

@@ -75,6 +75,7 @@ import { DEFAULT_REGISTRY } from './quickActions/registry';
 import { resolveSlots } from './quickActions/resolveSlots';
 import type { ActionHandlers, DashboardState, SlotIcons } from './quickActions/types';
 import { isHiddenActivity } from '../wallet/activity-feed/activityFeed.helpers';
+import { useGlobalSkillFrameworks } from '../../helpers/globalSkillFrameworks.helpers';
 
 import { AnalyticsEvents, useAnalytics } from '@analytics';
 
@@ -91,6 +92,11 @@ const DashboardPage: React.FC = () => {
     const sideMenuIcons = getIconSet(IconSetEnum.sideMenu);
     const sideMenuColors = getColorSet(ColorSetEnum.sideMenu);
     const primaryButtonClass = sideMenuColors?.primaryButtonColor;
+    const globalSkillFrameworks = useGlobalSkillFrameworks();
+    const globalSkillFrameworkIds = useMemo(
+        () => globalSkillFrameworks.map(framework => framework.frameworkId),
+        [globalSkillFrameworks]
+    );
     const pathwaysEnabled = usePathwaysEnabled();
     const {
         openClaimLink,
@@ -194,7 +200,7 @@ const DashboardPage: React.FC = () => {
     const dashboardTopSkills = useMemo(() => {
         if (!aiInsightsAllowed) return [];
 
-        const skillsMap = mapBoostsToSkills(skillsCredentials);
+        const skillsMap = mapBoostsToSkills(skillsCredentials, globalSkillFrameworkIds);
         const categorizedSkills = Object.entries(skillsMap) as [
             string,
             RawCategorizedEntry[] & { totalSkills: number; totalSubskills: number }
@@ -202,7 +208,7 @@ const DashboardPage: React.FC = () => {
         const aggregatedSkills = aggregateCategorizedEntries(categorizedSkills);
 
         return buildTopSkills(getTopSkills(aggregatedSkills, 15), 3);
-    }, [aiInsightsAllowed, skillsCredentials]);
+    }, [aiInsightsAllowed, globalSkillFrameworkIds, skillsCredentials]);
 
     // LC-1921: shared right-loading profile/settings modal, same entry point as
     // the side-menu Settings row and the header avatar.

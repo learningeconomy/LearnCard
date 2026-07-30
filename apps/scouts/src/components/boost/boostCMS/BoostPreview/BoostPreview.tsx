@@ -4,7 +4,7 @@ import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFoote
 import CredentialIssuerPopover, {
     useCredentialIssuerPopover,
 } from 'learn-card-base/components/CredentialBadge/CredentialIssuerPopover';
-import { VCDisplayCard2 } from '@learncard/react';
+import { getVCDisplayCardVariant, VCDisplayCard2 } from '@learncard/react';
 import { IonContent, IonFooter, IonPage, IonRow } from '@ionic/react';
 
 import { VC, VerificationItem } from '@learncard/types';
@@ -118,6 +118,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
         credential?.display?.displayType === 'id' ||
         categoryType === BoostCategoryOptionsEnum.membership ||
         categoryType === BoostCategoryOptionsEnum.id;
+    const shouldUseHostCardPadding = getVCDisplayCardVariant(credential, categoryType) !== 'ribbon';
     let _categoryType = categoryType;
 
     const bgImage = credential?.display?.backgroundImage;
@@ -151,11 +152,11 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                 className={`flex items-center justify-center ion-padding boost-cms-preview transition-colors [&::part(scroll)]:px-0 gradient-mask-b-90`}
             >
                 <IonRow
-                    className={`flex flex-col items-center justify-center px-1 overflow-x-auto pb-32  ${boostPreviewWrapperCustomClass} ${
-                        isCertificate ? 'pt-14 md:pt-20' : ''
-                    } ${isID ? '!px-0 mt-[20px]' : ''}`}
+                    className={`flex flex-col items-center justify-center overflow-x-auto pb-32 ${boostPreviewWrapperCustomClass} ${
+                        shouldUseHostCardPadding ? 'px-1' : ''
+                    } ${isCertificate ? 'pt-14 md:pt-20' : ''} ${isID ? '!px-0 mt-[20px]' : ''}`}
                 >
-                    <section className="px-6 w-full">
+                    <section className={`w-full ${shouldUseHostCardPadding ? 'px-6' : ''}`}>
                         <VCDisplayCard2
                             credential={credential}
                             issueeOverride={issueeOverride}
