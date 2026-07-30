@@ -17,7 +17,7 @@ import { chatBotStore } from '../../stores/chatBotStore';
 import { useModal, ModalTypes } from 'learn-card-base';
 
 export const AiSessionTopicsContainer: React.FC = () => {
-    const { newModal, closeAllModals } = useModal({
+    const { newModal } = useModal({
         desktop: ModalTypes.Right,
         mobile: ModalTypes.Right,
     });
@@ -31,8 +31,8 @@ export const AiSessionTopicsContainer: React.FC = () => {
     const startNewSession: boolean = _startNewSession === 'true';
     const shortCircuitStep: NewAiSessionStepEnum = _shortCircuitStep as NewAiSessionStepEnum;
 
-    const [isMobileModalOpen, setIsMobileModalOpen] = useState<boolean>(false);
-    const { isDesktop, isMobile } = useDeviceTypeByWidth();
+    const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+    const { isDesktop } = useDeviceTypeByWidth();
 
     const { data: topics, isLoading: topicsLoading } = useGetCredentialList('AI Topic');
     const existingTopics = topics?.pages?.[0]?.records || [];
@@ -47,6 +47,10 @@ export const AiSessionTopicsContainer: React.FC = () => {
     const handleStartOver = () => {
         chatBotStore.set.resetStore();
         setChatBotSelected(null);
+    };
+    const handleModalClose = () => {
+        setChatBotSelected(null);
+        setIsModalOpen(false);
     };
 
     const { openNewAiSessionModal } = useAiSession();
@@ -87,27 +91,26 @@ export const AiSessionTopicsContainer: React.FC = () => {
     );
 
     useEffect(() => {
-        if (isMobile && !isMobileModalOpen && chatBotSelected) {
-            newModal(
-                newAiSessionComponent,
-                {
-                    hideButton: true,
-                },
-                {
-                    mobile: ModalTypes.Right,
-                    desktop: ModalTypes.Right,
-                }
-            );
-            setIsMobileModalOpen(true);
+        if (!chatBotSelected) {
+            if (isModalOpen) setIsModalOpen(false);
             return;
         }
 
-        if (isMobileModalOpen && isDesktop && chatBotSelected) {
-            closeAllModals();
-            setIsMobileModalOpen(false);
-            return;
-        }
-    }, [isMobile, isMobileModalOpen, isDesktop, chatBotSelected]);
+        if (isModalOpen) return;
+
+        newModal(
+            newAiSessionComponent,
+            {
+                hideButton: true,
+                onClose: handleModalClose,
+            },
+            {
+                mobile: ModalTypes.Right,
+                desktop: ModalTypes.Right,
+            }
+        );
+        setIsModalOpen(true);
+    }, [isModalOpen, chatBotSelected, newModal]);
 
     return (
         <AiFeatureGate>
