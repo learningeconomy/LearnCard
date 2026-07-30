@@ -11,12 +11,15 @@ export interface FeedbackMomentProps {
 }
 
 /**
- * Single entry point for the feedback/advocacy ask on a success screen.
+ * The feedback/advocacy ask for success *screens*. Claim flows that only toast
+ * before navigating away still render `SentimentStrip` directly via
+ * `ClaimFeedbackToast`, since a delayed native prompt can't survive that
+ * unmount.
  *
- * The two asks are mutually exclusive by design: when a user has earned an
- * advocacy ask we never also show the sentiment strip, because on native the
- * advocacy ask is an OS dialog and stacking an inline question underneath it
- * is both noisy and reads as a pre-prompt.
+ * The two asks are mutually exclusive: when a user has earned an advocacy ask
+ * we never also show the sentiment strip, because on native the advocacy ask is
+ * an OS dialog and stacking an inline question underneath it is both noisy and
+ * reads as a pre-prompt.
  */
 export const FeedbackMoment: React.FC<FeedbackMomentProps> = ({ surface, className }) => {
     const { showGitHubCard, advocacyActive, handleGitHubClick, handleGitHubDismiss } =

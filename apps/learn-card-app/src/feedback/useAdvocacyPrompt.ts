@@ -38,9 +38,19 @@ export const useAdvocacyPrompt = (surface: FeedbackSurface) => {
     const [advocacyActive, setAdvocacyActive] = useState(false);
     const firedRef = useRef(false);
     const cardCommittedRef = useRef(false);
+    const timerRef = useRef<ReturnType<typeof setTimeout>>();
 
     const isNative = Capacitor.isNativePlatform();
-    const isLearnCardTenant = tenantConfig?.tenantId === 'learncard';
+    const isLearnCardTenant = tenantConfig.tenantId === 'learncard';
+
+    /**
+     * `track` changes identity when the analytics provider swaps from Noop to
+     * the real one, so it must not sit in the effect's dependency array: a
+     * re-run mid-delay would clear the pending timer, then bail on `firedRef`
+     * without re-arming it, losing the ask entirely.
+     */
+    const trackRef = useRef(track);
+    trackRef.current = track;
 
     /**
      * Spends the yearly advocacy budget for the card. Deliberately fires on
@@ -54,21 +64,22 @@ export const useAdvocacyPrompt = (surface: FeedbackSurface) => {
 
         cardCommittedRef.current = true;
         feedbackGovernorStore.set.recordAdvocacyRequested();
-        void track(AnalyticsEvents.GITHUB_STAR_CARD_SHOWN, { trigger: surface });
-    }, [surface, track]);
+        void trackRef.current(AnalyticsEvents.GITHUB_STAR_CARD_SHOWN, { trigger: surface });
+    }, [surface]);
 
     useEffect(() => {
         if (firedRef.current || !privacyEligible) return;
         if (resolveAdvocacyDecision() !== 'eligible') return;
 
         firedRef.current = true;
+        feedbackGovernorStore.set.consumeSessionPrompt();
 
         if (isNative) {
             const platform = Capacitor.getPlatform() as 'ios' | 'android';
 
             setAdvocacyActive(true);
 
-            const timer = setTimeout(() => {
+            timerRef.current = setTimeout(() => {
                 void (async () => {
                     try {
                         const { InAppReview } = await import('@capacitor-community/in-app-review');
@@ -77,29 +88,33 @@ export const useAdvocacyPrompt = (surface: FeedbackSurface) => {
 
                         feedbackGovernorStore.set.recordAdvocacyRequested();
 
-                        void track(AnalyticsEvents.STORE_REVIEW_REQUESTED, {
+                        void trackRef.current(AnalyticsEvents.STORE_REVIEW_REQUESTED, {
                             platform,
                             trigger: surface,
                             asksThisYear: readRequestLog(feedbackGovernorStore.get.review()).length,
                         });
                     } catch (e) {
+                        // No dialog appeared, so hand the screen back to the
+                        // sentiment strip instead of leaving the user with
+                        // neither ask.
                         log.debug('store review unavailable', e);
+                        setAdvocacyActive(false);
                     }
                 })();
             }, NATIVE_PROMPT_DELAY_MS);
 
-            return () => clearTimeout(timer);
+            return;
         }
 
-        if (!isLearnCardTenant) return undefined;
+        if (!isLearnCardTenant) return;
 
         setShowGitHubCard(true);
         setAdvocacyActive(true);
 
-        const commitTimer = setTimeout(commitCardAsk, CARD_COMMIT_DELAY_MS);
+        timerRef.current = setTimeout(commitCardAsk, CARD_COMMIT_DELAY_MS);
+    }, [privacyEligible, isNative, isLearnCardTenant, surface, commitCardAsk]);
 
-        return () => clearTimeout(commitTimer);
-    }, [privacyEligible, isNative, isLearnCardTenant, surface, track, commitCardAsk]);
+    useEffect(() => () => clearTimeout(timerRef.current), []);
 
     const handleGitHubClick = useCallback(() => {
         commitCardAsk();

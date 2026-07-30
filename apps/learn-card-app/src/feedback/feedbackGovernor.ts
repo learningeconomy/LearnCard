@@ -15,6 +15,7 @@ const ADVOCACY_COOLDOWN_MS = 90 * DAY_MS;
 const ADVOCACY_NEGATIVE_QUARANTINE_MS = 30 * DAY_MS;
 const ADVOCACY_SENTIMENT_SETTLE_MS = 7 * DAY_MS;
 const ADVOCACY_MIN_SESSIONS = 3;
+const SESSION_GAP_MS = 4 * 60 * 60 * 1000;
 /**
  * Deliberately 2, not Apple's hard cap of 3 per 365 days. The OS gives us
  * no signal about whether a prompt was actually displayed, so we cannot
@@ -66,6 +67,7 @@ export const feedbackGovernorStore = createStore('feedbackGovernor')<{
     promptLog: number[];
     sentiment: { lastPositiveAt?: number; lastNegativeAt?: number; positiveCount: number };
     sessionCount: number;
+    lastSessionAt: number;
     review: { lastRequestedAt?: number; requestLog: number[] };
 }>(
     {
@@ -73,6 +75,7 @@ export const feedbackGovernorStore = createStore('feedbackGovernor')<{
         promptLog: [],
         sentiment: { positiveCount: 0 },
         sessionCount: 0,
+        lastSessionAt: 0,
         review: { requestLog: [] },
     },
     { persist: { name: 'feedbackGovernor', enabled: true } }
@@ -110,10 +113,26 @@ export const feedbackGovernorStore = createStore('feedbackGovernor')<{
         });
     },
 
+    /**
+     * Counts a *visit*, not a JS runtime. The Capacitor webview survives
+     * backgrounding, so on native a daily user could otherwise sit at
+     * `sessionCount: 1` forever and never reach `ADVOCACY_MIN_SESSIONS`;
+     * on web every hard reload would inflate it. Gating on elapsed time
+     * since the last counted visit makes both platforms behave the same.
+     */
     recordSession: () => {
         set.state(state => {
+            const now = Date.now();
+
+            if (now - state.lastSessionAt < SESSION_GAP_MS) return;
+
+            state.lastSessionAt = now;
             state.sessionCount += 1;
         });
+    },
+
+    consumeSessionPrompt: () => {
+        sessionPromptCount += 1;
     },
 
     recordAdvocacyRequested: () => {
