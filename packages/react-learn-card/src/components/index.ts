@@ -31,6 +31,7 @@ export * from './QRCodeCard/index';
 export * from './RoundedPill/index';
 export * from './RoundedSquare/index';
 export * from './SchoolIdCard/index';
+export * from './SkillCompetencyCard/index';
 export * from './SkillTabCard/index';
 export * from './SkillVerticalCard/index';
 export * from './SkillsCard/index';
