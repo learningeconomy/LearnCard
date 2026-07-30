@@ -27,6 +27,7 @@ export const clrWestbridgeFull: CredentialFixture = {
             'https://www.w3.org/ns/credentials/v2',
             'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
             'https://purl.imsglobal.org/spec/clr/v2p0/context-2.0.1.json',
+            'https://www.w3.org/ns/credentials/examples/v2',
         ],
         id: 'urn:uuid:wb-clr-2025-jordan-reyes-001',
         type: ['VerifiableCredential', 'ClrCredential'],
