@@ -47,7 +47,7 @@ let sessionPromptCount = 0;
  * from an older build replaces the default object entirely and arrives
  * without `requestLog` — read it through here, never directly.
  */
-const readRequestLog = (review: { requestLog?: number[] }): number[] => {
+export const readRequestLog = (review: { requestLog?: number[] }): number[] => {
     const now = Date.now();
 
     return (review.requestLog ?? []).filter(t => now - t < YEAR_MS);

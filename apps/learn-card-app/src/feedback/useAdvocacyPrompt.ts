@@ -4,7 +4,7 @@ import { Capacitor } from '@capacitor/core';
 import { getLogger, useTenantConfig } from 'learn-card-base';
 
 import { useAnalytics, AnalyticsEvents, type FeedbackSurface } from '@analytics';
-import { feedbackGovernorStore, resolveAdvocacyDecision } from './feedbackGovernor';
+import { feedbackGovernorStore, readRequestLog, resolveAdvocacyDecision } from './feedbackGovernor';
 import { useFeedbackPrivacyEligibility } from './useFeedbackEligibility';
 
 const log = getLogger('advocacy-prompt');
@@ -13,6 +13,9 @@ export const LEARNCARD_GITHUB_URL = 'https://github.com/learningeconomy/LearnCar
 
 /** Lets the success animation land before the OS prompt covers it. */
 const NATIVE_PROMPT_DELAY_MS = 1800;
+
+/** How long the card must stay mounted before it counts as presented. */
+const CARD_COMMIT_DELAY_MS = 1000;
 
 /**
  * Advocacy ask for users who have earned it (see `resolveAdvocacyDecision`).
@@ -34,9 +37,25 @@ export const useAdvocacyPrompt = (surface: FeedbackSurface) => {
     const [showGitHubCard, setShowGitHubCard] = useState(false);
     const [advocacyActive, setAdvocacyActive] = useState(false);
     const firedRef = useRef(false);
+    const cardCommittedRef = useRef(false);
 
     const isNative = Capacitor.isNativePlatform();
     const isLearnCardTenant = tenantConfig?.tenantId === 'learncard';
+
+    /**
+     * Spends the yearly advocacy budget for the card. Deliberately fires on
+     * "presented or acted on" rather than only on click/dismiss: a card the
+     * user ignores must still consume the ask, otherwise they'd be shown it
+     * again every session. Navigating away before it renders long enough to
+     * be seen leaves the budget untouched.
+     */
+    const commitCardAsk = useCallback(() => {
+        if (cardCommittedRef.current) return;
+
+        cardCommittedRef.current = true;
+        feedbackGovernorStore.set.recordAdvocacyRequested();
+        void track(AnalyticsEvents.GITHUB_STAR_CARD_SHOWN, { trigger: surface });
+    }, [surface, track]);
 
     useEffect(() => {
         if (firedRef.current || !privacyEligible) return;
@@ -61,8 +80,7 @@ export const useAdvocacyPrompt = (surface: FeedbackSurface) => {
                         void track(AnalyticsEvents.STORE_REVIEW_REQUESTED, {
                             platform,
                             trigger: surface,
-                            asksThisYear:
-                                feedbackGovernorStore.get.review().requestLog?.length ?? 1,
+                            asksThisYear: readRequestLog(feedbackGovernorStore.get.review()).length,
                         });
                     } catch (e) {
                         log.debug('store review unavailable', e);
@@ -75,24 +93,26 @@ export const useAdvocacyPrompt = (surface: FeedbackSurface) => {
 
         if (!isLearnCardTenant) return undefined;
 
-        feedbackGovernorStore.set.recordAdvocacyRequested();
         setShowGitHubCard(true);
         setAdvocacyActive(true);
-        void track(AnalyticsEvents.GITHUB_STAR_CARD_SHOWN, { trigger: surface });
 
-        return undefined;
-    }, [privacyEligible, isNative, isLearnCardTenant, surface, track]);
+        const commitTimer = setTimeout(commitCardAsk, CARD_COMMIT_DELAY_MS);
+
+        return () => clearTimeout(commitTimer);
+    }, [privacyEligible, isNative, isLearnCardTenant, surface, track, commitCardAsk]);
 
     const handleGitHubClick = useCallback(() => {
+        commitCardAsk();
         void track(AnalyticsEvents.GITHUB_STAR_CARD_CLICKED, { trigger: surface });
         window.open(LEARNCARD_GITHUB_URL, '_blank', 'noopener,noreferrer');
         setShowGitHubCard(false);
-    }, [surface, track]);
+    }, [commitCardAsk, surface, track]);
 
     const handleGitHubDismiss = useCallback(() => {
+        commitCardAsk();
         void track(AnalyticsEvents.GITHUB_STAR_CARD_DISMISSED, { trigger: surface });
         setShowGitHubCard(false);
-    }, [surface, track]);
+    }, [commitCardAsk, surface, track]);
 
     return { showGitHubCard, advocacyActive, handleGitHubClick, handleGitHubDismiss };
 };
