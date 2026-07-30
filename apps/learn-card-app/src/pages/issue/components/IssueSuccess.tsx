@@ -271,7 +271,11 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                             {m['issueFlow.success.issueAnother']()}
                         </button>
 
-                        <FeedbackMoment surface="issue_success" className="mt-3" />
+                        <FeedbackMoment
+                            surface="issue_success"
+                            className="mt-3"
+                            allowAdvocacy={false}
+                        />
                     </div>
                 </div>
             ) : recipientMode === 'people' ? (

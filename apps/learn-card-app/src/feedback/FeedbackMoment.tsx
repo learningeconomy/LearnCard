@@ -8,6 +8,12 @@ import { useAdvocacyPrompt } from './useAdvocacyPrompt';
 export interface FeedbackMomentProps {
     surface: FeedbackSurface;
     className?: string;
+    /**
+     * Set false on success branches whose next step opens another surface (a
+     * native share sheet, say) or leaves the user mid-task. The sentiment strip
+     * still renders; only the interruptive advocacy ask is withheld.
+     */
+    allowAdvocacy?: boolean;
 }
 
 /**
@@ -21,9 +27,13 @@ export interface FeedbackMomentProps {
  * an OS dialog and stacking an inline question underneath it is both noisy and
  * reads as a pre-prompt.
  */
-export const FeedbackMoment: React.FC<FeedbackMomentProps> = ({ surface, className }) => {
+export const FeedbackMoment: React.FC<FeedbackMomentProps> = ({
+    surface,
+    className,
+    allowAdvocacy = true,
+}) => {
     const { showGitHubCard, advocacyActive, handleGitHubClick, handleGitHubDismiss } =
-        useAdvocacyPrompt(surface);
+        useAdvocacyPrompt(surface, allowAdvocacy);
 
     if (showGitHubCard) {
         return (
