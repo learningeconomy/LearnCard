@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 
-import { feedbackGovernorStore, resolveAdvocacyDecision } from './feedbackGovernor';
+import {
+    canPromptForFeedback,
+    feedbackGovernorStore,
+    resolveAdvocacyDecision,
+} from './feedbackGovernor';
 
 const DAY = 24 * 60 * 60 * 1000;
 const daysAgo = (n: number) => Date.now() - n * DAY;
@@ -150,6 +154,54 @@ describe('recordSession', () => {
         feedbackGovernorStore.set.recordSession();
 
         expect(feedbackGovernorStore.get.sessionCount()).toBe(2);
+    });
+});
+
+// Both regressions found in review lived in this interaction rather than in the
+// decision resolver: advocacy spends the session's single prompt when it arms,
+// so an ask that never gets presented has to hand it back or the sentiment strip
+// stays suppressed everywhere for the rest of the session.
+describe('session prompt budget', () => {
+    beforeEach(() => {
+        feedbackGovernorStore.set.resetForDebug();
+    });
+
+    it('allows a prompt before anything is consumed', () => {
+        expect(canPromptForFeedback('issue_success')).toBe(true);
+    });
+
+    it('blocks further prompts once the session budget is spent', () => {
+        feedbackGovernorStore.set.consumeSessionPrompt();
+
+        expect(canPromptForFeedback('issue_success')).toBe(false);
+    });
+
+    it('blocks every other surface too, not just the one that spent it', () => {
+        feedbackGovernorStore.set.consumeSessionPrompt();
+
+        expect(canPromptForFeedback('claim_oidc')).toBe(false);
+        expect(canPromptForFeedback('claim_interaction')).toBe(false);
+    });
+
+    it('restores the prompt when an armed ask is released unused', () => {
+        feedbackGovernorStore.set.consumeSessionPrompt();
+        feedbackGovernorStore.set.releaseSessionPrompt();
+
+        expect(canPromptForFeedback('issue_success')).toBe(true);
+    });
+
+    it('never drops below zero on an unmatched release', () => {
+        feedbackGovernorStore.set.releaseSessionPrompt();
+        feedbackGovernorStore.set.consumeSessionPrompt();
+
+        expect(canPromptForFeedback('issue_success')).toBe(false);
+    });
+
+    it('is cleared by the debug reset, which localStorage alone cannot do', () => {
+        feedbackGovernorStore.set.consumeSessionPrompt();
+        feedbackGovernorStore.set.resetForDebug();
+
+        expect(canPromptForFeedback('issue_success')).toBe(true);
     });
 });
 

@@ -136,6 +136,16 @@ export const feedbackGovernorStore = createStore('feedbackGovernor')<{
     },
 
     /**
+     * Hands the session's prompt budget back when an advocacy ask was armed but
+     * never presented. Without this the sentiment strip stays suppressed for the
+     * rest of the session, so a cancelled or failed ask would cost the user
+     * their feedback prompt as well.
+     */
+    releaseSessionPrompt: () => {
+        sessionPromptCount = Math.max(0, sessionPromptCount - 1);
+    },
+
+    /**
      * Debug-panel only. Resets the module-scope session counter alongside the
      * persisted state — clearing localStorage by hand leaves that counter set,
      * which is the usual reason a prompt stubbornly refuses to reappear.

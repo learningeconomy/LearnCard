@@ -10,6 +10,7 @@ import {
     canPromptForFeedback,
     type AdvocacyDecision,
 } from '../../feedback/feedbackGovernor';
+import { resetAdvocacyLatchForDebug } from '../../feedback/useAdvocacyPrompt';
 import type { FeedbackSurface } from '@analytics';
 
 import { KVRow, Section, useCopyToClipboard } from './debugComponents';
@@ -80,7 +81,12 @@ export const FeedbackDebugTab: React.FC = () => {
             ...sentiment,
             lastNegativeAt: sentiment.lastNegativeAt ? stale : undefined,
         });
-        feedbackGovernorStore.set.review({ lastRequestedAt: stale, requestLog: [stale] });
+        // Backdate the existing asks rather than replacing them: dropping the
+        // count from 2 to 1 would turn a yearly_cap decision back into eligible.
+        feedbackGovernorStore.set.review({
+            lastRequestedAt: stale,
+            requestLog: readRequestLog(review).map(() => stale),
+        });
         feedbackGovernorStore.set.surfaces({});
     };
 
@@ -217,7 +223,10 @@ export const FeedbackDebugTab: React.FC = () => {
                 <div className="space-y-1.5">
                     <button
                         type="button"
-                        onClick={() => feedbackGovernorStore.set.resetForDebug()}
+                        onClick={() => {
+                            feedbackGovernorStore.set.resetForDebug();
+                            resetAdvocacyLatchForDebug();
+                        }}
                         className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[10px] font-semibold bg-gray-800 text-gray-200 hover:bg-gray-700 transition-colors"
                     >
                         <RotateCcw className="w-3 h-3" />

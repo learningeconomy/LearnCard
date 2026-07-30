@@ -31,6 +31,11 @@ const CARD_COMMIT_DELAY_MS = 1000;
  */
 let advocacyArmed = false;
 
+/** Debug-panel only: clears the latch so a reset can re-arm without a reload. */
+export const resetAdvocacyLatchForDebug = () => {
+    advocacyArmed = false;
+};
+
 /**
  * Advocacy ask for users who have earned it (see `resolveAdvocacyDecision`).
  *
@@ -83,6 +88,7 @@ export const useAdvocacyPrompt = (surface: FeedbackSurface, allowAdvocacy = true
         clearTimeout(timerRef.current);
         timerRef.current = undefined;
         firedRef.current = false;
+        feedbackGovernorStore.set.releaseSessionPrompt();
 
         if (ownsLatchRef.current) {
             advocacyArmed = false;
@@ -105,11 +111,22 @@ export const useAdvocacyPrompt = (surface: FeedbackSurface, allowAdvocacy = true
 
         cardCommittedRef.current = true;
         feedbackGovernorStore.set.recordAdvocacyRequested();
+
+        if (ownsLatchRef.current) {
+            advocacyArmed = false;
+            ownsLatchRef.current = false;
+        }
+
         void trackRef.current(AnalyticsEvents.GITHUB_STAR_CARD_SHOWN, { trigger: surface });
     }, [surface]);
 
     useEffect(() => {
         if (!allowAdvocacy || firedRef.current || advocacyArmed || !privacyEligible) return;
+        // Bail before arming. Spending the session prompt or holding the latch
+        // for a surface that then renders nothing would suppress the sentiment
+        // strip for the rest of the session — on a non-LearnCard web tenant
+        // that meant permanently losing it, since nothing is ever recorded.
+        if (!isNative && !isLearnCardTenant) return;
         if (resolveAdvocacyDecision() !== 'eligible') return;
 
         firedRef.current = true;
@@ -142,6 +159,7 @@ export const useAdvocacyPrompt = (surface: FeedbackSurface, allowAdvocacy = true
                         // neither ask.
                         log.debug('store review unavailable', e);
                         setAdvocacyActive(false);
+                        feedbackGovernorStore.set.releaseSessionPrompt();
                     } finally {
                         advocacyArmed = false;
                         ownsLatchRef.current = false;
@@ -151,8 +169,6 @@ export const useAdvocacyPrompt = (surface: FeedbackSurface, allowAdvocacy = true
 
             return;
         }
-
-        if (!isLearnCardTenant) return;
 
         setShowGitHubCard(true);
         setAdvocacyActive(true);
