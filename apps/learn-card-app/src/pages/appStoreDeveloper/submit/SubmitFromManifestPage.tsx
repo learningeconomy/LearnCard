@@ -47,7 +47,16 @@ interface PreviewLaunchConfig {
     url: string;
     permissions: string[];
     contractUri?: string;
+    devPreviewKey?: string;
 }
+
+interface ProvisionedPreview {
+    integrationId: string;
+    listingId: string;
+}
+
+const getPreviewDraftKey = (manifest: CapturedAppManifest): string =>
+    `partner-preview:${manifest.appUrl}:${manifest.suggestedName ?? ''}`;
 
 // Default app icon used across the developer portal (see PartnerDashboard fallback)
 const DEFAULT_APP_ICON_URL = 'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb';
@@ -139,6 +148,7 @@ export const SubmitFromManifestPage: React.FC = () => {
     const [currentLaunchConfig, setCurrentLaunchConfig] = useState<PreviewLaunchConfig | null>(
         null
     );
+    const provisioningPromiseRef = useRef<Promise<ProvisionedPreview> | null>(null);
     const [designerConsentKey, setDesignerConsentKey] = useState<string | null>(null);
     const [designerConsentScopes, setDesignerConsentScopes] = useState<ConsentRequest | null>(null);
     const { initWallet } = useWallet();
@@ -284,24 +294,87 @@ export const SubmitFromManifestPage: React.FC = () => {
         }
     }, [manifest?.suggestedIconUrl]);
 
-    const ensureProvisioned = async () => {
-        if (!manifest) throw new Error('No manifest');
+    const ensureProvisioned = async (): Promise<ProvisionedPreview> => {
+        if (provisioningPromiseRef.current) return provisioningPromiseRef.current;
 
-        // Preview always provisions against the captured app URL (localhost is
-        // allowed for DRAFT listings). The production URL only applies at Continue.
-        const previewUrl = manifest.appUrl;
-        const host = new URL(previewUrl).host;
+        const provision = async (): Promise<ProvisionedPreview> => {
+            if (!manifest) throw new Error('No manifest');
 
-        let integrationId = previewIntegrationId || integrations?.find(i => i.name === host)?.id;
-        if (!integrationId) {
-            integrationId = await createIntegration.mutateAsync(host);
-            setPreviewIntegrationId(integrationId);
-        }
-
-        let listingId = previewListingId;
-        if (!listingId) {
+            // Preview always provisions against the captured app URL (localhost is
+            // allowed for DRAFT listings). The production URL only applies at Continue.
+            const previewUrl = manifest.appUrl;
+            const host = new URL(previewUrl).host;
+            const previewKey = getPreviewDraftKey(manifest);
             const displayName = appName || manifest.suggestedName || 'Preview App';
-            const listing = await createListing.mutateAsync({
+
+            let integrationId =
+                previewIntegrationId || integrations?.find(i => i.name === host)?.id;
+            if (!integrationId) {
+                integrationId = await createIntegration.mutateAsync(host);
+                setPreviewIntegrationId(integrationId);
+            }
+
+            if (previewListingId) return { integrationId, listingId: previewListingId };
+
+            const wallet = await initWallet();
+            const existingListings = await wallet.invoke.getListingsForIntegration(integrationId, {
+                limit: 100,
+            });
+            const existingDraft = existingListings.records.find(listing => {
+                if (listing.app_listing_status !== 'DRAFT') return false;
+
+                try {
+                    const config = JSON.parse(listing.launch_config_json) as {
+                        devPreviewKey?: unknown;
+                        url?: unknown;
+                        contractUri?: unknown;
+                    };
+
+                    if (config.devPreviewKey === previewKey) return true;
+
+                    // Legacy preview drafts predate devPreviewKey. Restrict the fallback
+                    // to this flow's generated name, URL, and tagline so unrelated drafts
+                    // on the same integration are never reused.
+                    return (
+                        config.devPreviewKey === undefined &&
+                        config.url === previewUrl &&
+                        listing.display_name === displayName &&
+                        listing.tagline === `${displayName} preview`
+                    );
+                } catch {
+                    return false;
+                }
+            });
+
+            if (existingDraft) {
+                const existingConfig = JSON.parse(
+                    existingDraft.launch_config_json
+                ) as PreviewLaunchConfig;
+                const restoredConfig: PreviewLaunchConfig = {
+                    url: previewUrl,
+                    permissions: manifest.permissions,
+                    devPreviewKey: previewKey,
+                    ...(typeof existingConfig.contractUri === 'string'
+                        ? { contractUri: existingConfig.contractUri }
+                        : {}),
+                };
+
+                setPreviewIntegrationId(integrationId);
+                setPreviewListingId(existingDraft.listing_id);
+                setCurrentLaunchConfig(restoredConfig);
+                if (restoredConfig.contractUri) setContractUri(restoredConfig.contractUri);
+
+                return { integrationId, listingId: existingDraft.listing_id };
+            }
+
+            const launchConfig: PreviewLaunchConfig = {
+                ...(currentLaunchConfig ?? {
+                    url: previewUrl,
+                    permissions: manifest.permissions,
+                }),
+                devPreviewKey: previewKey,
+            };
+            const listingId = await createListing.mutateAsync({
                 integrationId,
                 listing: {
                     display_name: displayName,
@@ -313,19 +386,23 @@ export const SubmitFromManifestPage: React.FC = () => {
                         ? uploadedIconUrl
                         : DEFAULT_APP_ICON_URL,
                     launch_type: 'EMBEDDED_IFRAME',
-                    launch_config_json: JSON.stringify(
-                        currentLaunchConfig || {
-                            url: previewUrl,
-                            permissions: manifest.permissions,
-                        }
-                    ),
+                    launch_config_json: JSON.stringify(launchConfig),
                 },
             });
-            listingId = listing;
-            setPreviewListingId(listingId);
-        }
 
-        return { integrationId, listingId };
+            setPreviewIntegrationId(integrationId);
+            setPreviewListingId(listingId);
+            setCurrentLaunchConfig(launchConfig);
+
+            return { integrationId, listingId };
+        };
+
+        const pendingProvision = provision().finally(() => {
+            provisioningPromiseRef.current = null;
+        });
+        provisioningPromiseRef.current = pendingProvision;
+
+        return pendingProvision;
     };
 
     const handlePreview = async () => {
