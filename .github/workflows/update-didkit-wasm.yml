@@ -6,12 +6,11 @@ on:
             - main
         paths:
             - '.github/workflows/update-didkit-wasm.yml'
+            - '.gitmodules'
             - '.github/actions/setup/**'
             - 'packages/plugins/didkit/**'
             - 'lib/didkit'
             - 'lib/ssi'
-    schedule:
-        - cron: '17 8 * * *'
     repository_dispatch:
         types:
             - didkit-main-updated
@@ -175,7 +174,7 @@ jobs:
               run: |
                   set -euo pipefail
 
-                  # These checked-in remotes currently point to TaylorBeeston's maintained forks.
+                  # These checked-in remotes point to the learningeconomy-maintained forks.
                   # Publishing still requires the protected environment and a reviewed update PR.
                   git -C lib/didkit fetch origin "${DIDKIT_REF}"
                   git -C lib/didkit checkout --detach FETCH_HEAD
@@ -416,7 +415,7 @@ jobs:
 
                       Trigger:
                       - Event: `${{ github.event_name }}`
-                      - Source repository: `${{ github.event.client_payload.source_repo || 'scheduled-or-manual' }}`
+                      - Source repository: `${{ github.event.client_payload.source_repo || 'manual' }}`
                       - Source SHA: `${{ github.event.client_payload.source_sha || 'n/a' }}`
                   labels: |
                       automated pr
