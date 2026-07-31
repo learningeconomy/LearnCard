@@ -1,6 +1,6 @@
 ---
-"@learncard/react": minor
+"learn-card-base": patch
 "learn-card-app": patch
 ---
 
-Add a canonical skill and competency card and use it across CLR, course alignment, and credential detail views.
+Add a shared skill and competency card for CLR, course alignment, and credential preview views.
