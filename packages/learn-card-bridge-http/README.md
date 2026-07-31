@@ -22,8 +22,9 @@ https://docs.learncard.com
 
 ## Local VC-API conformance testing
 
-The bridge uses the WASM shipped by the current `@learncard/didkit-plugin` dependency by
-default, matching the LearnCard CLI. Rebuild it first only when testing local Rust changes:
+The bridge uses a source-controlled DIDKit WASM copied from the current plugin build. Every
+build and start command verifies the canonical plugin artifact's SHA-256 before refreshing the
+bridge copy, so local, CLI, and serverless execution cannot silently use different binaries.
 
 ```bash
 cd lib/didkit/lib/web
@@ -33,6 +34,9 @@ bun --cwd ../../../../packages/plugins/didkit run build
 
 Stop and restart any running bridge after rebuilding; it loads the DIDKit WASM during
 initialization.
+When intentionally rebuilding DIDKit, review the new binary and update
+`EXPECTED_DIDKIT_SHA256` in `scripts/sync-didkit.ts`. To test an unreviewed local artifact
+without changing that pin, set `LOCAL_DIDKIT_PATH` as described below.
 
 Start the LearnCard HTTP bridge in the first terminal:
 
@@ -58,6 +62,21 @@ npx mocha tests/15-di-rdfc-verify.js --timeout 30000
 
 Set `LEARN_CARD_REPO` to the absolute path of this monorepo. Set `BASE_URL` when the
 bridge is not listening at `http://127.0.0.1:3100`.
+
+## URL issuer verification policy
+
+When a credential names an HTTPS issuer but its proof uses a DID verification method, a
+successful `proof` check establishes signature integrity only. DIDKit cannot establish that the
+named URL issuer authorized that DID key because there is no issuer DID document to supply the
+assertion-method relationship. The raw verification result therefore includes this
+security-relevant warning:
+
+```text
+Issuer authorization was not checked because the credential issuer is not a DID
+```
+
+Consumers must surface or enforce this warning according to their trust policy; they must not
+interpret `checks: ["proof"]` by itself as issuer authorization.
 
 ## Contributing
 

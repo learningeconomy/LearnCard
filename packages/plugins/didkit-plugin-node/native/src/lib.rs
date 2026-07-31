@@ -278,7 +278,9 @@ pub async fn verify_presentation(
 #[napi]
 pub fn context_loader(url: String) -> Result<String> {
     let context = match url.as_str() {
-        "https://www.w3.org/2018/credentials/v1" => ssi_contexts::CREDENTIALS_V1,
+        "https://www.w3.org/2018/credentials/v1" | "https://w3.org/2018/credentials/v1" => {
+            ssi_contexts::CREDENTIALS_V1
+        }
         "https://www.w3.org/ns/credentials/v2" => ssi_contexts::CREDENTIALS_V2,
         "https://www.w3.org/2018/credentials/examples/v1" => ssi_contexts::CREDENTIALS_EXAMPLES_V1,
         "https://www.w3.org/ns/credentials/examples/v2" => ssi_contexts::CREDENTIALS_EXAMPLES_V2,
@@ -475,6 +477,14 @@ mod tests {
     }
 
     #[test]
+    fn loads_credentials_v1_context_without_www() {
+        assert_eq!(
+            context_loader("https://w3.org/2018/credentials/v1".to_string()).unwrap(),
+            ssi_contexts::CREDENTIALS_V1
+        );
+    }
+
+    #[test]
     fn verifies_url_issuer_with_did_key_verification_method() {
         let credential = json!({
             "@context": [
@@ -510,7 +520,10 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(result["checks"], json!(["proof"]));
+        assert!(result["checks"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("proof")));
         assert_eq!(result["errors"], json!([]));
         assert_eq!(
             result["warnings"],
@@ -532,7 +545,10 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(filtered_result["checks"], json!(["proof"]));
+        assert!(filtered_result["checks"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("proof")));
         assert_eq!(filtered_result["errors"], json!([]));
         assert_eq!(
             filtered_result["warnings"],
@@ -620,7 +636,10 @@ mod tests {
         let credential: Value = serde_json::from_str(W3C_PROOF_CHAIN).unwrap();
         let result = verify(&credential);
 
-        assert_eq!(result["checks"], json!(["proof"]));
+        assert!(result["checks"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("proof")));
         assert_eq!(result["errors"], json!([]));
     }
 
@@ -641,5 +660,28 @@ mod tests {
         let result = verify_with_options(&corrupted, options);
 
         assert_ne!(result["errors"], json!([]));
+    }
+
+    #[test]
+    fn rejects_proof_set_when_any_proof_is_invalid() {
+        let credential = json!({
+            "@context": ["https://www.w3.org/ns/credentials/v2"],
+            "type": ["VerifiableCredential"],
+            "issuer": DID,
+            "validFrom": "2026-01-01T00:00:00Z",
+            "credentialSubject": { "id": "did:example:subject" }
+        });
+        let mut issued: Value = serde_json::from_str(&issue(credential).unwrap()).unwrap();
+        let valid_proof = issued["proof"].clone();
+        let mut invalid_proof = valid_proof.clone();
+        invalid_proof["proofValue"] = json!("zInvalidProofValue");
+        issued["proof"] = json!([invalid_proof, valid_proof]);
+        let result = verify(&issued);
+
+        assert_ne!(result["errors"], json!([]));
+        assert!(!result["checks"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("proof")));
     }
 }

@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { VP, VPValidator } from '@learncard/types';
+import { VCValidator, VPValidator, type UnsignedVC, type VP } from '@learncard/types';
 
 import { TypedRequest } from './types.helpers';
 import {
@@ -20,6 +20,7 @@ const router = express.Router();
 const app = express();
 
 const W3C_V1_CREDENTIALS_CONTEXT = 'https://www.w3.org/2018/credentials/v1';
+const W3C_ALT_V1_CREDENTIALS_CONTEXT = 'https://w3.org/2018/credentials/v1';
 
 app.use(cors());
 app.use(express.json());
@@ -64,14 +65,20 @@ app.post('/credentials/issue', async (req: TypedRequest<IssueEndpoint>, res) => 
         }
 
         const validatedBody = validationResult.data;
-        const credential = validatedBody.credential;
+        const credential = validatedBody.credential as UnsignedVC | undefined;
 
-        if (!credential) return res.status(400).json('Invalid input: credential is required');
+        if (!credential) {
+            return res.status(400).json('Invalid input: credential is required');
+        }
 
         const context = credential['@context'];
         const isV1Credential = Array.isArray(context)
-            ? context.some(contextEntry => contextEntry === W3C_V1_CREDENTIALS_CONTEXT)
-            : context === W3C_V1_CREDENTIALS_CONTEXT;
+            ? context.some(
+                  contextEntry =>
+                      contextEntry === W3C_V1_CREDENTIALS_CONTEXT ||
+                      contextEntry === W3C_ALT_V1_CREDENTIALS_CONTEXT
+              )
+            : context === W3C_V1_CREDENTIALS_CONTEXT || context === W3C_ALT_V1_CREDENTIALS_CONTEXT;
         const credentialToIssue =
             isV1Credential && !('issuanceDate' in credential)
                 ? { ...credential, issuanceDate: new Date().toISOString() }
@@ -266,7 +273,11 @@ app.post('/exchanges/:uri', async (req: TypedRequest<VP, { challenge?: string }>
 
         const subject = validatedBody.holder;
 
-        const credential = await learnCard.read.get(req.params.uri);
+        const credentialResult = VCValidator.safeParse(await learnCard.read.get(req.params.uri));
+
+        if (!credentialResult.success) return res.status(404).json('Credential not found');
+
+        const credential = credentialResult.data;
 
         credential.issuer = {
             ...(typeof credential.issuer === 'string' ? {} : credential.issuer),
@@ -278,9 +289,10 @@ app.post('/exchanges/:uri', async (req: TypedRequest<VP, { challenge?: string }>
             credential.credentialSubject.id = subject;
         }
 
-        delete credential.proof;
+        const { proof, ...unsignedCredential } = credential;
+        void proof;
 
-        const newVc = await learnCard.invoke.issueCredential(credential);
+        const newVc = await learnCard.invoke.issueCredential(unsignedCredential);
 
         return res.status(201).json(newVc);
     } catch (error) {

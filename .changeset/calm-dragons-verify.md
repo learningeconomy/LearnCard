@@ -3,6 +3,8 @@
 "@learncard/credential-library": patch
 "@learncard/didkit-plugin": patch
 "@learncard/didkit-plugin-node": patch
+"@learncard/learn-card-plugin": patch
+"@learncard/types": patch
 "@learncard/network-brain-service": patch
 ---
 

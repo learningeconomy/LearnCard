@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import {
     UnsignedVCValidator,
     UnsignedVPValidator,
@@ -15,7 +15,6 @@ const ProofOptionsValidator = z
         created: z.string().optional(),
         challenge: z.string().optional(),
         domain: z.string().optional(),
-        checks: z.enum(['proof', 'JWS', 'credentialStatus', 'credentialSchema']).array().optional(),
         cryptosuite: z
             .enum([
                 'eddsa-rdfc-2022',
@@ -26,7 +25,11 @@ const ProofOptionsValidator = z
             ])
             .optional(),
     })
-    .passthrough();
+    .strict();
+
+const VerificationProofOptionsValidator = ProofOptionsValidator.extend({
+    checks: z.enum(['proof', 'JWS', 'credentialStatus', 'credentialSchema']).array().optional(),
+});
 
 export const IssueEndpointValidator = z.object({
     credential: UnsignedVCValidator,
@@ -53,14 +56,14 @@ export type UpdateStatusEndpoint = z.infer<typeof UpdateStatusEndpointValidator>
 
 export const VerifyCredentialEndpointValidator = z.object({
     verifiableCredential: VCValidator,
-    options: ProofOptionsValidator.optional(),
+    options: VerificationProofOptionsValidator.optional(),
 });
 export type VerifyCredentialEndpoint = z.infer<typeof VerifyCredentialEndpointValidator>;
 
 export const VerifyPresentationEndpointValidator = z
     .object({
         verifiablePresentation: VPValidator,
-        options: ProofOptionsValidator.optional(),
+        options: VerificationProofOptionsValidator.optional(),
     })
     .or(z.object({ presentation: UnsignedVPValidator }));
 export type VerifyPresentationEndpoint = z.infer<typeof VerifyPresentationEndpointValidator>;
