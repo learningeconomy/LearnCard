@@ -41,6 +41,8 @@ permissions:
 
 env:
     CARGO_TERM_COLOR: always
+    BINARYEN_VERSION: '130'
+    BINARYEN_X86_64_LINUX_SHA256: 0a18362361ad05465118cd8eeb72edaeec89de6894bc283576ef4e07aa3babcc
 
 jobs:
     validate:
@@ -71,6 +73,12 @@ jobs:
                   restore-keys: |
                       ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-
 
+            - name: Cache Binaryen
+              uses: actions/cache@v6
+              with:
+                  path: ~/.cache/binaryen
+                  key: ${{ runner.os }}-${{ runner.arch }}-binaryen-${{ env.BINARYEN_VERSION }}-${{ env.BINARYEN_X86_64_LINUX_SHA256 }}
+
             - name: Install wasm-pack
               run: |
                   set -euo pipefail
@@ -78,6 +86,28 @@ jobs:
                   if [ "$(wasm-pack --version 2>/dev/null || true)" != "wasm-pack 0.15.0" ]; then
                       cargo install wasm-pack --version 0.15.0 --locked --force
                   fi
+
+            - name: Install Binaryen
+              run: |
+                  set -euo pipefail
+
+                  archive_name="binaryen-version_${BINARYEN_VERSION}-x86_64-linux.tar.gz"
+                  archive="${HOME}/.cache/binaryen/${archive_name}"
+                  install_dir="${RUNNER_TEMP}/binaryen"
+
+                  mkdir -p "$(dirname "${archive}")" "${install_dir}"
+
+                  if [ ! -f "${archive}" ]; then
+                      curl --fail --location --retry 3 --silent --show-error \
+                          --output "${archive}" \
+                          "https://github.com/WebAssembly/binaryen/releases/download/version_${BINARYEN_VERSION}/${archive_name}"
+                  fi
+
+                  printf '%s  %s\n' "${BINARYEN_X86_64_LINUX_SHA256}" "${archive}" | sha256sum --check
+                  tar -xzf "${archive}" --strip-components=1 -C "${install_dir}"
+
+                  "${install_dir}/bin/wasm-opt" --version
+                  echo "${install_dir}/bin" >> "${GITHUB_PATH}"
 
             - name: Build DIDKit WASM
               run: packages/plugins/didkit/scripts/build-wasm-from-submodules.sh
@@ -198,6 +228,13 @@ jobs:
                   restore-keys: |
                       ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-
 
+            - name: Cache Binaryen
+              if: steps.submodules.outputs.has_updates == 'true'
+              uses: actions/cache@v6
+              with:
+                  path: ~/.cache/binaryen
+                  key: ${{ runner.os }}-${{ runner.arch }}-binaryen-${{ env.BINARYEN_VERSION }}-${{ env.BINARYEN_X86_64_LINUX_SHA256 }}
+
             - name: Install wasm-pack
               if: steps.submodules.outputs.has_updates == 'true'
               run: |
@@ -206,6 +243,29 @@ jobs:
                   if [ "$(wasm-pack --version 2>/dev/null || true)" != "wasm-pack 0.15.0" ]; then
                       cargo install wasm-pack --version 0.15.0 --locked --force
                   fi
+
+            - name: Install Binaryen
+              if: steps.submodules.outputs.has_updates == 'true'
+              run: |
+                  set -euo pipefail
+
+                  archive_name="binaryen-version_${BINARYEN_VERSION}-x86_64-linux.tar.gz"
+                  archive="${HOME}/.cache/binaryen/${archive_name}"
+                  install_dir="${RUNNER_TEMP}/binaryen"
+
+                  mkdir -p "$(dirname "${archive}")" "${install_dir}"
+
+                  if [ ! -f "${archive}" ]; then
+                      curl --fail --location --retry 3 --silent --show-error \
+                          --output "${archive}" \
+                          "https://github.com/WebAssembly/binaryen/releases/download/version_${BINARYEN_VERSION}/${archive_name}"
+                  fi
+
+                  printf '%s  %s\n' "${BINARYEN_X86_64_LINUX_SHA256}" "${archive}" | sha256sum --check
+                  tar -xzf "${archive}" --strip-components=1 -C "${install_dir}"
+
+                  "${install_dir}/bin/wasm-opt" --version
+                  echo "${install_dir}/bin" >> "${GITHUB_PATH}"
 
             - name: Build DIDKit WASM
               if: steps.submodules.outputs.has_updates == 'true'
@@ -305,6 +365,36 @@ jobs:
                       --content-type application/wasm \
                       --cache-control public,max-age=31536000,immutable \
                       --metadata "sha256=${WASM_SHA256}"
+
+            - name: Verify CloudFront serves Brotli
+              if: steps.changes.outputs.has_changes == 'true'
+              env:
+                  WASM_URL: ${{ steps.wasm.outputs.url }}
+              run: |
+                  set -euo pipefail
+
+                  headers="$(mktemp)"
+                  body="$(mktemp)"
+                  trap 'rm -f "${headers}" "${body}"' EXIT
+
+                  downloaded_bytes="$(
+                      curl --fail --location --retry 10 --retry-all-errors --retry-delay 3 \
+                          --header 'Accept-Encoding: br' \
+                          --dump-header "${headers}" \
+                          --output "${body}" \
+                          --silent --show-error \
+                          --write-out '%{size_download}' \
+                          "${WASM_URL}"
+                  )"
+
+                  grep -Eiq '^content-type:[[:space:]]*application/wasm([[:space:]]*;|[[:space:]]*$)' "${headers}"
+                  grep -Eiq '^content-encoding:[[:space:]]*br[[:space:]]*$' "${headers}"
+
+                  {
+                      echo 'CloudFront served the generated WASM with Brotli compression.'
+                      echo
+                      echo "- Compressed transfer: ${downloaded_bytes} bytes"
+                  } >> "${GITHUB_STEP_SUMMARY}"
 
             - name: Create pull request
               if: steps.changes.outputs.has_changes == 'true'

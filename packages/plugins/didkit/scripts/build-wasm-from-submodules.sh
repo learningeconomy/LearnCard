@@ -14,6 +14,11 @@ if ! command -v wasm-pack >/dev/null 2>&1; then
     echo "wasm-pack is required to build DIDKit WASM" >&2
     exit 1
 fi
+if ! command -v wasm-opt >/dev/null 2>&1; then
+    echo "wasm-opt is required to optimize DIDKit WASM" >&2
+    exit 1
+fi
+
 
 if [ ! -d "${DIDKIT_WEB_DIR}" ]; then
     echo "Expected DIDKit web crate at ${DIDKIT_WEB_DIR}" >&2
@@ -44,6 +49,14 @@ cp "${DIDKIT_WASM_LOCKFILE}" "${DIDKIT_LOCKFILE}"
     else
         wasm-pack build --target=web --locked
     fi
+    optimized_wasm="$(mktemp "${SOURCE_PKG_DIR}/didkit_wasm_bg.wasm.XXXXXX")"
+    trap 'rm -f "${optimized_wasm}"' EXIT
+
+    wasm-opt -Oz -o "${optimized_wasm}" "${SOURCE_PKG_DIR}/didkit_wasm_bg.wasm"
+    mv "${optimized_wasm}" "${SOURCE_PKG_DIR}/didkit_wasm_bg.wasm"
+
+    trap - EXIT
+
 
 )
 
