@@ -19,6 +19,8 @@ const router = express.Router();
 
 const app = express();
 
+const W3C_V1_CREDENTIALS_CONTEXT = 'https://www.w3.org/2018/credentials/v1';
+
 app.use(cors());
 app.use(express.json());
 
@@ -66,10 +68,10 @@ app.post('/credentials/issue', async (req: TypedRequest<IssueEndpoint>, res) => 
 
         if (!credential) return res.status(400).json('Invalid input: credential is required');
 
-        const contexts = Array.isArray(credential['@context'])
-            ? credential['@context']
-            : [credential['@context']];
-        const isV1Credential = contexts.includes('https://www.w3.org/2018/credentials/v1');
+        const context = credential['@context'];
+        const isV1Credential = Array.isArray(context)
+            ? context.some(contextEntry => contextEntry === W3C_V1_CREDENTIALS_CONTEXT)
+            : context === W3C_V1_CREDENTIALS_CONTEXT;
         const credentialToIssue =
             isV1Credential && !('issuanceDate' in credential)
                 ? { ...credential, issuanceDate: new Date().toISOString() }
