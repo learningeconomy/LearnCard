@@ -14,7 +14,7 @@ import {
 
 import CredentialSyncConfirmation from './CredentialSyncConfirmation';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
-import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
+import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
 import BoostLoader from '../../components/boost/boostLoader/BoostLoader';
 import { IonSpinner } from '@ionic/react';
 
@@ -129,8 +129,20 @@ const ConsentFlowCredFrontDoor: React.FC<ConsentFlowCredFrontDoorProps> = ({
                 {!isLoading && (
                     <>
                         {resolvedBoost && (
-                            <>
-                                <section className="h-full w-full overflow-y-auto disable-scrollbars pt-[calc(30px+env(safe-area-inset-top))] pb-32 boost-preview-display">
+                            <BoostFooterLayout
+                                className="h-full"
+                                contentClassName="disable-scrollbars"
+                                footerClassName="z-9999"
+                                footerProps={{
+                                    handleClose: isPreview ? closeModal : () => history.push('/'),
+                                    handleDetails: isFront ? () => setIsFront(false) : undefined,
+                                    handleBack: isFront ? undefined : () => setIsFront(true),
+                                    handleClaim: handleAcceptClick,
+                                    disableClaimButton: isPreview || hasAlreadyConsented,
+                                    claimBtnText: hasAlreadyConsented ? 'Accepted' : undefined,
+                                }}
+                            >
+                                <section className="min-h-full w-full pt-[calc(30px+env(safe-area-inset-top))] boost-preview-display">
                                     <VCDisplayCardWrapper2
                                         credential={boost}
                                         checkProof={false}
@@ -139,22 +151,7 @@ const ConsentFlowCredFrontDoor: React.FC<ConsentFlowCredFrontDoorProps> = ({
                                         setIsFrontOverride={setIsFront}
                                     />
                                 </section>
-
-                                <footer className="absolute bottom-0 left-0 w-full z-9999">
-                                    <BoostFooter
-                                        handleClose={
-                                            isPreview ? closeModal : () => history.push('/')
-                                        }
-                                        handleDetails={
-                                            isFront ? () => setIsFront(false) : undefined
-                                        }
-                                        handleBack={isFront ? undefined : () => setIsFront(true)}
-                                        handleClaim={handleAcceptClick}
-                                        disableClaimButton={isPreview || hasAlreadyConsented}
-                                        claimBtnText={hasAlreadyConsented ? 'Accepted' : undefined}
-                                    />
-                                </footer>
-                            </>
+                            </BoostFooterLayout>
                         )}
 
                         {!resolvedBoost && (

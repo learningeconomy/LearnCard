@@ -496,9 +496,24 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             }
 
             await uninstallMutation.mutateAsync(listing.listing_id);
+            track(AnalyticsEvents.LAUNCHPAD_APP_UNINSTALLED, {
+                appName: listing.display_name,
+                appId: listing.listing_id,
+                result: 'success',
+            });
             closeModal();
         } catch (error) {
             log.error('Failed to uninstall app:', error);
+            track(AnalyticsEvents.LAUNCHPAD_APP_UNINSTALLED, {
+                appName: listing.display_name,
+                appId: listing.listing_id,
+                result: 'failure',
+                error_code:
+                    (error as { code?: string })?.code ??
+                    (error instanceof Error && (error as Error).name !== 'Error'
+                        ? (error as Error).name
+                        : 'unknown'),
+            });
         } finally {
             setIsProcessing(false);
         }
@@ -612,6 +627,13 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             showAgeBlockedModal();
             return;
         }
+
+        track(AnalyticsEvents.LAUNCHPAD_APP_OPENED, {
+            appName: listing.display_name,
+            appId: listing.listing_id,
+            appType: listing.launch_type,
+            entry_point: 'detail_modal',
+        });
 
         await proceedWithLaunch();
     };

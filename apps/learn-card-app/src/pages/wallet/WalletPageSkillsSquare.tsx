@@ -3,10 +3,9 @@ import numeral from 'numeral';
 
 import DotIcon from 'learn-card-base/svgs/DotIcon';
 import { useLoadingLine } from '../../stores/loadingStore';
-import { useGetCredentialsForSkills } from 'learn-card-base';
 
 import { WalletPageItem } from './constants';
-import { mapBoostsToSkills } from '../skills/skills.helpers';
+import useAlignments from '../../hooks/useAlignments';
 import { IonSkeletonText } from '@ionic/react';
 import { WalletCategoryTypes } from 'learn-card-base/components/IssueVC/types';
 
@@ -28,24 +27,11 @@ const WalletPageSkillsSquare: React.FC<{
 
     const { borderColor, backgroundColor } = notificationIndicator;
 
-    const { data: allResolvedCreds, isLoading: allResolvedBoostsLoading } =
-        useGetCredentialsForSkills();
+    const { alignments, isLoading: allResolvedBoostsLoading } = useAlignments();
 
     useLoadingLine(allResolvedBoostsLoading);
 
-    const skillsMap = mapBoostsToSkills(allResolvedCreds);
-
-    // Calculate total count of skills and subskills
-    const totalSkills = Object.values(skillsMap).reduce(
-        (total, category) => total + category.length,
-        0
-    );
-    const totalSubskills = Object.values(skillsMap).reduce(
-        (total, category) => total + (category?.totalSubskills || 0),
-        0
-    );
-
-    const total = totalSkills + totalSubskills;
+    const total = alignments.length;
 
     return (
         <div

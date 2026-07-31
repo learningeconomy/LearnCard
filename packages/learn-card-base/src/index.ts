@@ -31,6 +31,7 @@ export * from './components/boost/boostOptions/boostOptions';
 export * from './components/boost/boost';
 export * from './components/boost/BoostRecipients';
 export * from './components/boost/boostFooter/BoostFooter';
+export * from './components/boost/boostFooter/BoostFooterLayout';
 export * from './components/CredentialBadge/CredentialBadge';
 export * from './components/CredentialBadge/CredentialBadgeNew';
 export * from './components/CredentialBadge/CredentialCLRBadge';
@@ -191,6 +192,7 @@ export {
     suggestedTopics,
     topicCredentials,
     sessionEnded,
+    hasThreadEnded,
     planReady,
     planReadyThread,
     resetChatStores,
@@ -209,6 +211,7 @@ export {
 } from './stores/nanoStores/chatStore';
 
 export * from './helpers/credentialHelpers';
+export * from './helpers/credentialIngestion';
 export * from './helpers/credentials/queries';
 export * from './helpers/openid4vcErrors';
 export * from './helpers/faviconHelpers';
