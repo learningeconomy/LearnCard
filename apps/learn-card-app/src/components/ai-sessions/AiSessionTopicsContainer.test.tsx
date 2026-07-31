@@ -1,4 +1,4 @@
-import React, { type ReactNode } from 'react';
+import React, { type ReactElement, type ReactNode } from 'react';
 import { act, render, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -12,12 +12,16 @@ const mocks = vi.hoisted(() => ({
     clearNewCreds: vi.fn(),
     replace: vi.fn(),
     chatBotSelected: 'newTopic' as string | null,
+    topicsLoading: false,
+    existingTopics: [] as { uri: string }[],
 }));
 
 vi.mock('react-router-dom', () => ({
     useHistory: () => ({ replace: mocks.replace }),
     useLocation: () => ({ search: '' }),
 }));
+
+vi.mock('../../paraglide/messages.js', () => ({ m: {} }));
 
 vi.mock('../../hooks/useAiSession', () => ({
     default: () => ({ openNewAiSessionModal: vi.fn() }),
@@ -34,8 +38,8 @@ vi.mock('learn-card-base/hooks/useDeviceTypeByWidth', () => ({
 vi.mock('learn-card-base', () => ({
     ModalTypes: { Right: 'right' },
     useGetCredentialList: () => ({
-        data: { pages: [{ records: [] }] },
-        isLoading: false,
+        data: { pages: [{ records: mocks.existingTopics }] },
+        isLoading: mocks.topicsLoading,
     }),
     useModal: () => ({
         newModal: mocks.newModal,
@@ -72,12 +76,32 @@ describe('AiSessionTopicsContainer', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mocks.chatBotSelected = 'newTopic';
+        mocks.topicsLoading = false;
+        mocks.existingTopics = [];
     });
 
     it('opens a selected AI chat on desktop', async () => {
         render(<AiSessionTopicsContainer />);
 
         await waitFor(() => expect(mocks.newModal).toHaveBeenCalledTimes(1));
+    });
+
+    it('waits for existing topics before opening the modal', async () => {
+        mocks.topicsLoading = true;
+        const { rerender } = render(<AiSessionTopicsContainer />);
+
+        expect(mocks.newModal).not.toHaveBeenCalled();
+
+        mocks.existingTopics = [{ uri: 'urn:topic:existing' }];
+        mocks.topicsLoading = false;
+        rerender(<AiSessionTopicsContainer />);
+
+        await waitFor(() => expect(mocks.newModal).toHaveBeenCalledTimes(1));
+
+        const modal = mocks.newModal.mock.calls[0]?.[0] as ReactElement<{
+            existingTopics: { uri: string }[];
+        }>;
+        expect(modal.props.existingTopics).toEqual(mocks.existingTopics);
     });
 
     it('can reopen after the modal is dismissed', async () => {
