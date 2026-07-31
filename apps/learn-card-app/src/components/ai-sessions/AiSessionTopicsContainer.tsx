@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import queryString from 'query-string';
 import { useHistory, useLocation } from 'react-router-dom';
 
@@ -35,23 +35,23 @@ export const AiSessionTopicsContainer: React.FC = () => {
     const { isDesktop } = useDeviceTypeByWidth();
 
     const { data: topics, isLoading: topicsLoading } = useGetCredentialList('AI Topic');
-    const existingTopics = topics?.pages?.[0]?.records || [];
+    const existingTopics = useMemo(() => topics?.pages?.[0]?.records ?? [], [topics]);
 
     const chatBotSelected = chatBotStore.useTracked.chatBotSelected();
     const setChatBotSelected = chatBotStore.set.setChatBotSelected;
 
     // const [chatBotSelected, setChatBotSelected] = useState<NewAiSessionStepEnum | null>(null);
-    const handleSetChatBotSelected = (chatBotType: NewAiSessionStepEnum) => {
+    const handleSetChatBotSelected = useCallback((chatBotType: NewAiSessionStepEnum) => {
         setChatBotSelected(chatBotType);
-    };
-    const handleStartOver = () => {
+    }, []);
+    const handleStartOver = useCallback(() => {
         chatBotStore.set.resetStore();
         setChatBotSelected(null);
-    };
-    const handleModalClose = () => {
+    }, []);
+    const handleModalClose = useCallback(() => {
         setChatBotSelected(null);
         setIsModalOpen(false);
-    };
+    }, []);
 
     const { openNewAiSessionModal } = useAiSession();
 
@@ -81,25 +81,24 @@ export const AiSessionTopicsContainer: React.FC = () => {
         newCredsStore.set.clearNewCreds('AI Topic');
     }, []);
 
-    const newAiSessionComponent = (
-        <NewAiSessionContainer
-            existingTopics={existingTopics}
-            showAiAppSelector
-            shortCircuitStep={chatBotSelected}
-            handleStartOver={handleStartOver}
-        />
-    );
-
     useEffect(() => {
         if (!chatBotSelected) {
             if (isModalOpen) setIsModalOpen(false);
             return;
         }
 
-        if (isModalOpen) return;
+        // Ionic stores the React element passed to newModal rather than re-rendering
+        // it with this component. Wait for topics so the modal does not permanently
+        // capture the loading render's empty list.
+        if (topicsLoading || isModalOpen) return;
 
         newModal(
-            newAiSessionComponent,
+            <NewAiSessionContainer
+                existingTopics={existingTopics}
+                showAiAppSelector
+                shortCircuitStep={chatBotSelected}
+                handleStartOver={handleStartOver}
+            />,
             {
                 hideButton: true,
                 onClose: handleModalClose,
@@ -110,7 +109,15 @@ export const AiSessionTopicsContainer: React.FC = () => {
             }
         );
         setIsModalOpen(true);
-    }, [isModalOpen, chatBotSelected, newModal]);
+    }, [
+        chatBotSelected,
+        existingTopics,
+        handleModalClose,
+        handleStartOver,
+        isModalOpen,
+        newModal,
+        topicsLoading,
+    ]);
 
     return (
         <AiFeatureGate>
