@@ -104,6 +104,21 @@ describe('AiSessionTopicsContainer', () => {
         expect(modal.props.existingTopics).toEqual(mocks.existingTopics);
     });
 
+    it('closes the modal when starting over', async () => {
+        render(<AiSessionTopicsContainer />);
+
+        await waitFor(() => expect(mocks.newModal).toHaveBeenCalledTimes(1));
+
+        const modal = mocks.newModal.mock.calls[0]?.[0] as ReactElement<{
+            handleStartOver: () => void;
+        }>;
+        act(() => modal.props.handleStartOver());
+
+        expect(mocks.closeAllModals).toHaveBeenCalledTimes(1);
+        expect(mocks.resetStore).toHaveBeenCalledTimes(1);
+        expect(mocks.setChatBotSelected).toHaveBeenCalledWith(null);
+    });
+
     it('can reopen after the modal is dismissed', async () => {
         const { rerender } = render(<AiSessionTopicsContainer />);
 
