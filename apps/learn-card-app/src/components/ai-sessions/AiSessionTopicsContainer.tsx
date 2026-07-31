@@ -17,7 +17,7 @@ import { chatBotStore } from '../../stores/chatBotStore';
 import { useModal, ModalTypes } from 'learn-card-base';
 
 export const AiSessionTopicsContainer: React.FC = () => {
-    const { newModal } = useModal({
+    const { newModal, closeAllModals } = useModal({
         desktop: ModalTypes.Right,
         mobile: ModalTypes.Right,
     });
@@ -45,9 +45,10 @@ export const AiSessionTopicsContainer: React.FC = () => {
         setChatBotSelected(chatBotType);
     }, []);
     const handleStartOver = useCallback(() => {
+        closeAllModals();
         chatBotStore.set.resetStore();
         setChatBotSelected(null);
-    }, []);
+    }, [closeAllModals]);
     const handleModalClose = useCallback(() => {
         setChatBotSelected(null);
         setIsModalOpen(false);
