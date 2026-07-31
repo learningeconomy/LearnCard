@@ -2,7 +2,7 @@ import React from 'react';
 
 import { Target, ExternalLink } from 'lucide-react';
 
-import { SkillCompetencyCard, isSkillCompetencyAlignment } from '@learncard/react';
+import { SkillCompetencyCard, isSkillCompetencyAlignment } from 'learn-card-base';
 import type { AlignmentDisplayModel } from '../../helpers/clrRenderer.helpers';
 
 /**

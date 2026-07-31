@@ -3,8 +3,7 @@ import React from 'react';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 
-import { SkillCompetencyCard } from '@learncard/react';
-import { useGetSkillFrameworkById } from 'learn-card-base';
+import { SkillCompetencyCard, useGetSkillFrameworkById } from 'learn-card-base';
 
 type Alignment = {
     targetUrl: string;

@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { SkillCompetencyCard, type SkillCompetencyLevel } from '@learncard/react';
+import { SkillCompetencyCard, type SkillCompetencyLevel } from 'learn-card-base';
 import type { CompetencyDisplayModel, ResultDisplayModel } from '../../helpers/clrRenderer.helpers';
 
 const scaleItemsForResult = (result: ResultDisplayModel): string[] => {

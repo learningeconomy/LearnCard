@@ -4,7 +4,7 @@ import AlignmentRow from './AlignmentRow';
 import InfoIcon from 'learn-card-base/svgs/InfoIcon';
 import InfoBox from './InfoBox';
 import SkillCompetencyAlignmentCard from './SkillCompetencyAlignmentCard';
-import { isSkillCompetencyAlignment } from '@learncard/react';
+import { isSkillCompetencyAlignment } from 'learn-card-base';
 
 type Alignment = {
     targetUrl: string;
