@@ -71,16 +71,13 @@ jobs:
                   restore-keys: |
                       ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-
 
-            - name: Install WASM build tools
+            - name: Install wasm-pack
               run: |
                   set -euo pipefail
 
                   if [ "$(wasm-pack --version 2>/dev/null || true)" != "wasm-pack 0.15.0" ]; then
                       cargo install wasm-pack --version 0.15.0 --locked --force
                   fi
-
-                  sudo apt-get update
-                  sudo apt-get install -y binaryen
 
             - name: Build DIDKit WASM
               run: packages/plugins/didkit/scripts/build-wasm-from-submodules.sh
@@ -201,7 +198,7 @@ jobs:
                   restore-keys: |
                       ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-
 
-            - name: Install WASM build tools
+            - name: Install wasm-pack
               if: steps.submodules.outputs.has_updates == 'true'
               run: |
                   set -euo pipefail
@@ -209,9 +206,6 @@ jobs:
                   if [ "$(wasm-pack --version 2>/dev/null || true)" != "wasm-pack 0.15.0" ]; then
                       cargo install wasm-pack --version 0.15.0 --locked --force
                   fi
-
-                  sudo apt-get update
-                  sudo apt-get install -y binaryen
 
             - name: Build DIDKit WASM
               if: steps.submodules.outputs.has_updates == 'true'
