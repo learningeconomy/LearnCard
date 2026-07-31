@@ -6,7 +6,9 @@ let initialized = false;
 let generating = false; // Mutex flag to allow first init call to acquire a lock
 
 export const init = async (
-    arg: InitInput | Promise<InitInput> = 'https://cdn.filestackcontent.com/6v059q3KQlmXd6XoVPyC'
+    arg:
+        | InitInput
+        | Promise<InitInput> = 'https://assets.learncard.ai/didkit/sha256-dd685d6d0806b0fa882f18cec05587e470dcca94d96914662cddf775a362b40f/didkit_wasm_bg.wasm'
 ) => {
     // Do not return until we are done generating!
     while (generating) await new Promise(res => setTimeout(res, 250));
