@@ -162,11 +162,11 @@ jobs:
                       exit 1
                   fi
 
-            - name: Checkout LearnCard main
+            - name: Checkout LearnCard source
               uses: actions/checkout@v5
               with:
                   fetch-depth: 0
-                  ref: main
+                  ref: ${{ github.event_name == 'workflow_dispatch' && github.ref_name || 'main' }}
                   submodules: recursive
                   token: ${{ secrets.LEARNCARD_BOT_TOKEN || github.token }}
 
