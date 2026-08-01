@@ -485,6 +485,21 @@ mod tests {
     }
 
     #[test]
+    fn accepts_numeric_bitstring_status_list_index() {
+        let entry: ssi::vc::revocation::BitstringStatusListEntry = serde_json::from_value(json!({
+            "statusPurpose": "revocation",
+            "statusListIndex": 436,
+            "statusListCredential": "https://example.com/status/1"
+        }))
+        .unwrap();
+
+        assert_eq!(
+            serde_json::to_value(entry).unwrap()["statusListIndex"],
+            json!("436")
+        );
+    }
+
+    #[test]
     fn verifies_url_issuer_with_did_key_verification_method() {
         let credential = json!({
             "@context": [
