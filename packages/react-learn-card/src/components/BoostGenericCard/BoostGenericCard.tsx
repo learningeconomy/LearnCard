@@ -104,8 +104,9 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                     (UA align-items: flex-start per the HTML spec), so without it the
                     badge collapses to its 116px circle and the header artwork stops
                     running under the options button. iOS 26+/desktop engines compute
-                    align-items: normal and stretch, which masks the bug (LC-2066). */}
-                <div style={{ width: '100%', ...inactiveMediaStyle }}>
+                    align-items: normal and stretch, which masks the bug (LC-2066).
+                    width is spread last so nothing can ever override it. */}
+                <div style={{ ...inactiveMediaStyle, width: '100%' }}>
                     {customThumbComponent || (
                         <section className={defaultThumbClass}>
                             {thumbImgSrc?.trim() ? (
