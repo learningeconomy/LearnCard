@@ -13,16 +13,7 @@ const AdminToolsModalFooter: React.FC<{
     showSaveButton?: boolean;
     isLoading?: boolean;
     buttonTitle?: string;
-    includeSafeAreaInset?: boolean;
-}> = ({
-    isDisabled,
-    onSave,
-    className,
-    showSaveButton,
-    isLoading,
-    buttonTitle,
-    includeSafeAreaInset = false,
-}) => {
+}> = ({ isDisabled, onSave, className, showSaveButton, isLoading, buttonTitle }) => {
     const { closeModal } = useModal();
     const bottomPosition = Capacitor.isNativePlatform() ? 20 : 0;
 
@@ -31,9 +22,7 @@ const AdminToolsModalFooter: React.FC<{
             mode="ios"
             className={`w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 left-0 bg-white !max-h-[100px] ${className}`}
             style={{
-                bottom: includeSafeAreaInset
-                    ? `calc(${bottomPosition}px + var(--modal-safe-area-bottom, 0px))`
-                    : `${bottomPosition}px`,
+                bottom: `calc(${bottomPosition}px + var(--ion-safe-area-bottom, 0px))`,
             }}
         >
             <div className="w-full flex items-center justify-center">

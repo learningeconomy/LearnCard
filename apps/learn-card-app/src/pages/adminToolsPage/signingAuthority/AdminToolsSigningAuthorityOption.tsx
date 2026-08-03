@@ -119,7 +119,7 @@ const AdminToolsSigningAuthorityOption: React.FC<{
                     )}
                 </section>
 
-                {showFooter && <AdminToolsModalFooter includeSafeAreaInset />}
+                {showFooter && <AdminToolsModalFooter />}
             </section>
         </>
     );
