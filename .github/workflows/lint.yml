@@ -102,6 +102,20 @@ jobs:
               working-directory: apps/learn-card-app
               run: bun run i18n:check-memos
 
+    # Exercise behavior from the checked-in generated glue and binary directly. Native Rust
+    # tests do not prove that a source change was included in the committed WASM payload.
+    DidkitWasmPayload:
+        name: Check DIDKit WASM payload behavior
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v3
+              with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+
+            - name: Verify numeric Bitstring Status List compatibility
+              run: node packages/plugins/didkit/scripts/check-wasm-numeric-status.mjs
+
     # Pure-Node static scan (no install/build): the wasm-bindgen glue checked into
     # packages/plugins/didkit/src/didkit/pkg is version-locked to the binary beside it,
     # so the content-addressed URL that init() falls back to must name that same binary.
