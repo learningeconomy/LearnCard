@@ -125,6 +125,7 @@ const PathwayPickerModal: React.FC<PathwayPickerModalProps> = ({
         <PathwayPortal>
         <AnimatePresence>
             <motion.div
+                data-modal-root="centered"
                 key="backdrop"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}

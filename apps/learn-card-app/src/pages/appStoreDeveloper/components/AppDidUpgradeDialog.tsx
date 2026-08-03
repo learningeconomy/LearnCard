@@ -58,7 +58,7 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
     if (upgradeSuccess) {
         return (
             <div
-                data-modal-root
+                data-modal-root="centered"
                 className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm"
             >
                 <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 animate-fade-in">
@@ -82,7 +82,7 @@ export const AppDidUpgradeDialog: React.FC<AppDidUpgradeDialogProps> = ({
 
     return (
         <div
-            data-modal-root
+            data-modal-root="centered"
             className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm"
         >
             <div

@@ -951,7 +951,7 @@ const AppListingPage: React.FC = () => {
                 />
                 {showSignInModal && (
                     <div
-                        data-modal-root
+                        data-modal-root="centered"
                         className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in"
                     >
                         <div className="bg-white rounded-2xl shadow-2xl p-6 mx-4 max-w-sm w-full text-center">

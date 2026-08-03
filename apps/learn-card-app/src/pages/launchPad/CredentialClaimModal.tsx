@@ -251,7 +251,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
     if (claimed) {
         return (
             <div
-                data-modal-root
+                data-modal-root="centered"
                 className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
             >
                 <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
@@ -284,7 +284,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
     if (isLoading) {
         return (
             <div
-                data-modal-root
+                data-modal-root="centered"
                 className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
             >
                 <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8">
@@ -304,7 +304,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
     if (error || !credential) {
         return (
             <div
-                data-modal-root
+                data-modal-root="centered"
                 className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
             >
                 <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
@@ -351,7 +351,7 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
 
     return (
         <div
-            data-modal-root
+            data-modal-root="centered"
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
         >
             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden max-h-[90vh] flex flex-col relative">

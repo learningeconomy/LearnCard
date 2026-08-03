@@ -124,6 +124,7 @@ const SubPathwayCeremony: React.FC<SubPathwayCeremonyProps> = ({
     return (
         <PathwayPortal>
             <motion.div
+                data-modal-root="centered"
                 // Fixed overlay covering the shell. backdrop dims the
                 // page underneath; the card slides up from the bottom
                 // and self-centers on viewport so the touch target is

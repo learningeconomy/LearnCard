@@ -40,7 +40,7 @@ export const PreviewConfirmDialog: React.FC<PreviewConfirmDialogProps> = ({
 
     return (
         <div
-            data-modal-root
+            data-modal-root="centered"
             className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm"
         >
             {/* Backdrop */}

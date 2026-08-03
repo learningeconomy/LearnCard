@@ -82,7 +82,7 @@ const ChildEditModal = lazy(() => import('./ChildEditModal'));
 // Loading fallback for lazy-loaded modals
 const ModalLoadingFallback = () => (
     <div
-        data-modal-root
+        data-modal-root="centered"
         className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
     >
         <div className="bg-white rounded-2xl p-8">
@@ -1273,7 +1273,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             {/* Import from Catalog Modal */}
             {showImportModal && (
                 <div
-                    data-modal-root
+                    data-modal-root="centered"
                     className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
                 >
                     <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
@@ -1704,7 +1704,7 @@ export const TemplateBuilderStep: React.FC<TemplateBuilderStepProps> = ({
             {/* Edit Child Template Modal */}
             {editingChild && (
                 <div
-                    data-modal-root
+                    data-modal-root="centered"
                     className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
                 >
                     <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">

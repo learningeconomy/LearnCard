@@ -241,6 +241,7 @@ const OverlayFrame: React.FC<{
 }> = ({ children, onClose, hidden = false }) => (
     <PathwayPortal>
         <motion.div
+            data-modal-root="centered"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -248,7 +249,8 @@ const OverlayFrame: React.FC<{
             className={`${hidden ? 'invisible pointer-events-none' : ''}
                    fixed inset-0 z-40 bg-grayscale-900/50 backdrop-blur-md
                    flex items-start sm:items-center justify-center
-                   p-0 sm:p-6 overflow-y-auto font-poppins`}
+                   p-0 sm:p-6 [--modal-gutter:0px] sm:[--modal-gutter:1.5rem]
+                   overflow-y-auto font-poppins`}
             style={{ overscrollBehavior: 'contain' }}
             onClick={onClose}
         >

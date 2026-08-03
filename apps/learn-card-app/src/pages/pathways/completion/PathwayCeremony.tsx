@@ -122,6 +122,7 @@ const PathwayCeremony: React.FC<PathwayCeremonyProps> = ({ pathway, subPathways,
     return (
         <PathwayPortal>
             <motion.div
+                data-modal-root
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}

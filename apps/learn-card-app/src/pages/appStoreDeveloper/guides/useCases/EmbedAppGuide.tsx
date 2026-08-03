@@ -2445,7 +2445,7 @@ log.info('Available templates:', templates);`;
             {/* Creating overlay */}
             {isCreating && (
                 <div
-                    data-modal-root
+                    data-modal-root="centered"
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
                 >
                     <div className="bg-white rounded-xl p-6 flex items-center gap-3">
@@ -7015,7 +7015,7 @@ initializeApp();`);
             {/* Config Mismatch Modal */}
             {showConfigMismatchPrompt && configDifferences.length > 0 && (
                 <div
-                    data-modal-root
+                    data-modal-root="centered"
                     className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
                 >
                     <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">

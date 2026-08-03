@@ -1,33 +1,25 @@
 @import './fonts';
 
-// Safe areas belong to modal containers, never individual modal content.
-// Ionic adjusts its host variables for full-screen, inset, and sheet modals.
+// One modal layer owns device insets. Content inside that layer sees zeroed
+// Ionic safe-area variables, so it cannot accidentally apply the inset twice.
 //
-// `data-modal-root` marks the element that OWNS the device insets for a
-// standalone overlay. Which element that is depends on the overlay's shape:
-//   - Full-bleed overlay (the surface fills the viewport): mark the surface.
-//     Bare `data-modal-root` reserves the inset as a transparent border, so the
-//     surface's own background still paints through the band.
-//   - Centered card on a dimmer: mark the backdrop with
-//     `data-modal-root="centered"`. That pads rather than borders, and takes
-//     max(inset, gutter) so the inset does not stack onto the existing gutter.
-//   - Bottom sheet: `data-modal-root="bottom-sheet"` — bottom inset only.
-//   - `data-modal-insets="none"` — opt out entirely.
+// `data-modal-root` marks the element that owns insets for a standalone overlay:
+//   - Full-bleed surface: bare `data-modal-root`.
+//   - Centered card backdrop: `data-modal-root="centered"`; this takes the
+//     larger of the device inset and the existing modal gutter.
+//   - Bottom sheet: `data-modal-root="bottom-sheet"`; bottom inset only.
+//   - `data-modal-insets="none"` opts out entirely.
 ion-modal,
 #full-screen-modal,
 #right-modal,
 #center-modal,
 #cancel-modal,
 .freeform-modal,
-.pathway-modal-root,
 [data-modal-root] {
-    --modal-safe-area-top: var(--ion-safe-area-top, env(safe-area-inset-top, 0px));
-    --modal-safe-area-bottom: var(--ion-safe-area-bottom, env(safe-area-inset-bottom, 0px));
+    --modal-safe-area-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+    --modal-safe-area-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
 }
 
-// Opt-out escape hatch. This zeroes the *variable* rather than the border, so it
-// needs no specificity war with the `!important` border rules below: `var()` is
-// resolved against the element the border is painted on.
 [data-modal-root='bottom-sheet'] {
     --modal-safe-area-top: 0px;
 }
@@ -37,98 +29,76 @@ ion-modal,
     --modal-safe-area-bottom: 0px;
 }
 
-// Transparent borders reserve safe space without exposing backdrop bands:
-// the slotted modal root's own background paints through its border box.
-ion-modal > *,
-ion-modal > .ion-delegate-host > * {
+// Preserve each shared content root's existing layout padding while moving the
+// transparent inset border onto the element that paints the visible surface.
+// This prevents the white/blurred bands produced when the outer modal section
+// owned the border but an inner root owned the background.
+ion-modal
+    > :first-child:not(ion-header):not(ion-content):not(.ion-delegate-host):not([data-modal-root]),
+ion-modal
+    > .ion-delegate-host
+    > :first-child:not(ion-header):not(ion-content):not([data-modal-root]),
+#full-screen-modal > section > :first-child,
+#right-modal > section > :first-child,
+.freeform-modal > .freeform-section > :first-child {
     box-sizing: border-box;
+    border-top: var(--modal-safe-area-top) solid transparent !important;
     background-clip: border-box;
 }
 
-// `ion-content` is the exception to the border-box trick. It does not paint
-// `--background` on the host: it paints it on an internal absolutely-positioned
-// `#background-content`, which is laid out against the host's *padding* box and
-// therefore cannot reach into the reserved border. Mirror `--background` onto
-// the host so the reserved band paints in the content's own colour instead of
-// exposing the (transparent) `ion-modal::part(content)` and the dimmer behind
-// it. Uses the shorthand so gradient `--background` values work too.
-// A Tailwind `bg-*` class on the IonContent host still wins on specificity, and
-// contents that deliberately set `--background: transparent` stay transparent.
-ion-modal > ion-content,
-ion-modal > .ion-delegate-host > ion-content {
-    background: var(--background);
-}
-
-// `centered` roots are excluded here rather than overriding the border further
-// down, so the two mechanisms can never both apply to the same element
-// regardless of where it sits in the tree.
-ion-modal > :first-child:not(ion-header):not(.ion-delegate-host):not([data-modal-root='centered']),
-ion-modal > .ion-delegate-host > :first-child:not(ion-header):not([data-modal-root='centered']) {
-    border-top: var(--modal-safe-area-top) solid transparent !important;
-}
-
-ion-modal > :last-child:not(ion-footer):not(.ion-delegate-host):not([data-modal-root='centered']),
-ion-modal > .ion-delegate-host > :last-child:not(ion-footer):not([data-modal-root='centered']) {
+ion-modal
+    > :last-child:not(ion-footer):not(ion-content):not(.ion-delegate-host):not([data-modal-root]),
+ion-modal
+    > .ion-delegate-host
+    > :last-child:not(ion-footer):not(ion-content):not([data-modal-root]),
+#full-screen-modal > section > :last-child,
+#right-modal > section > :last-child,
+.freeform-modal > .freeform-section > :last-child {
+    box-sizing: border-box;
     border-bottom: var(--modal-safe-area-bottom) solid transparent !important;
+    background-clip: border-box;
 }
 
-.pathway-modal-root > *:not([data-modal-root='centered']),
+// IonContent paints and scrolls inside its shadow root. Its padding variables,
+// rather than a host border, keep the scrollable surface inside device insets.
+ion-modal > ion-content:first-child,
+ion-modal > .ion-delegate-host > ion-content:first-child {
+    --padding-top: var(--modal-safe-area-top);
+}
+
+ion-modal > ion-content:last-child,
+ion-modal > .ion-delegate-host > ion-content:last-child {
+    --padding-bottom: var(--modal-safe-area-bottom);
+}
+
+// Full-bleed custom roots own their background, so padding reserves the inset
+// without exposing the page behind the overlay.
 [data-modal-root]:not([data-modal-root='centered']) {
     box-sizing: border-box;
-    border-top: var(--modal-safe-area-top) solid transparent !important;
-    border-bottom: var(--modal-safe-area-bottom) solid transparent !important;
-    background-clip: border-box;
+    padding-top: var(--modal-safe-area-top) !important;
+    padding-bottom: var(--modal-safe-area-bottom) !important;
 }
 
-// `data-modal-root="centered"` — for a backdrop holding a vertically centered
-// card. Reserving the inset *in addition to* the backdrop's own gutter stacks
-// them, costing a tall card (inset + gutter) of usable height for no reason. The
-// gutter already clears the inset on most devices, so take the larger of the two.
-// Override the gutter with a Tailwind arbitrary property, e.g.
-// `sm:[--modal-gutter:1.5rem]`.
 [data-modal-root='centered'] {
     box-sizing: border-box;
     padding-top: max(var(--modal-safe-area-top), var(--modal-gutter, 1rem)) !important;
     padding-bottom: max(var(--modal-safe-area-bottom), var(--modal-gutter, 1rem)) !important;
 }
 
-// The positioned or bordered content root owns the insets and retains Ionic's
-// safe-area variables. Only its descendants are reset to prevent duplication.
-// Direct IonHeader/IonFooter siblings retain Ionic's built-in handling.
-ion-modal > :not(ion-header):not(ion-footer):not(.ion-delegate-host) > *,
-ion-modal > .ion-delegate-host > :not(ion-header):not(ion-footer) > *,
+// The content owner has already reserved the device inset. Zero Ionic's
+// inherited variables at that boundary so nested content cannot add it again.
+// A nested `data-modal-root` deliberately starts a new viewport overlay and
+// computes its own raw device insets above.
+ion-modal > :not(ion-header):not(ion-footer):not(.ion-delegate-host),
+ion-modal > .ion-delegate-host > :not(ion-header):not(ion-footer),
 #full-screen-modal > section > *,
 #right-modal > section > *,
 #center-modal > section > *,
 #cancel-modal > section > *,
 .freeform-modal > .freeform-section > *,
-.pathway-modal-root > * > *,
 [data-modal-root] > * {
     --ion-safe-area-top: 0px;
     --ion-safe-area-bottom: 0px;
-}
-
-ion-modal [data-modal-root],
-#full-screen-modal [data-modal-root],
-#right-modal [data-modal-root],
-#center-modal [data-modal-root],
-#cancel-modal [data-modal-root],
-.freeform-modal [data-modal-root],
-.pathway-modal-root [data-modal-root],
-[data-modal-root] [data-modal-root] {
-    border-top: 0 !important;
-    border-bottom: 0 !important;
-}
-
-ion-modal .safe-area-top-margin,
-#full-screen-modal .safe-area-top-margin,
-#right-modal .safe-area-top-margin,
-#center-modal .safe-area-top-margin,
-#cancel-modal .safe-area-top-margin,
-.freeform-modal .safe-area-top-margin,
-.pathway-modal-root .safe-area-top-margin,
-[data-modal-root] .safe-area-top-margin {
-    margin-top: 0;
 }
 
 #center-modal.new-post-overlay {
@@ -404,9 +374,6 @@ ion-modal .safe-area-top-margin,
         -ms-overflow-style: none;
         scrollbar-width: none;
         box-sizing: border-box;
-        border-top: var(--modal-safe-area-top) solid transparent !important;
-        border-bottom: var(--modal-safe-area-bottom) solid transparent !important;
-        background-clip: border-box;
 
         &::-webkit-scrollbar {
             display: none;
@@ -659,9 +626,6 @@ ion-modal .safe-area-top-margin,
         transition: transform 300ms cubic-bezier(0.64, 0.21, 0.01, 1.15);
         animation: right-modal-intro 300ms normal none ease;
         box-sizing: border-box;
-        border-top: var(--modal-safe-area-top) solid transparent !important;
-        border-bottom: var(--modal-safe-area-bottom) solid transparent !important;
-        background-clip: border-box;
 
         &.widen {
             max-width: 600px;
@@ -904,8 +868,8 @@ ion-modal .safe-area-top-margin,
     justify-content: flex-end;
     box-sizing: border-box;
     padding: 0.62rem;
-    padding-top: calc(0.62rem + var(--modal-safe-area-top)) !important;
-    padding-bottom: calc(0.62rem + var(--modal-safe-area-bottom)) !important;
+    padding-top: max(0.62rem, var(--modal-safe-area-top)) !important;
+    padding-bottom: max(0.62rem, var(--modal-safe-area-bottom)) !important;
     background-color: rgba(0, 0, 0, 0.1);
     backdrop-filter: blur(10px);
     position: fixed;
@@ -1083,7 +1047,7 @@ ion-modal .safe-area-top-margin,
         max-height: 100vh;
         overflow: hidden;
         box-sizing: border-box;
-        border-bottom: var(--modal-safe-area-bottom) solid transparent !important;
+        padding-bottom: var(--modal-safe-area-bottom) !important;
         padding-top: 8px;
         border-radius: 20px 20px 0 0;
         box-shadow: 0 0 2px 0 rgba(0, 0, 0, 0.5);
@@ -1210,9 +1174,6 @@ ion-modal .safe-area-top-margin,
         max-width: 600px;
         box-sizing: border-box;
         max-height: 100%;
-        border-top: var(--modal-safe-area-top) solid transparent !important;
-        border-bottom: var(--modal-safe-area-bottom) solid transparent !important;
-        background-clip: border-box;
         overflow-y: auto;
         -ms-overflow-style: none;
         scrollbar-width: none;

@@ -135,6 +135,7 @@ const OverlayFrame: React.FC<{
     // overflow scroll couldn't reach it. Classic Tailwind modal bug.
     <PathwayPortal>
         <motion.div
+            data-modal-root="centered"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

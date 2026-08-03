@@ -558,7 +558,7 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
 
     return (
         <div
-            data-modal-root
+            data-modal-root="centered"
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
         >
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">

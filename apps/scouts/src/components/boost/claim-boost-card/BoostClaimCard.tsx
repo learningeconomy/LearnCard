@@ -143,7 +143,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                         )}
                         {selectedImage && (
                             <div
-                                data-modal-root
+                                data-modal-root="centered"
                                 className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
                             >
                                 <div className="relative max-w-full max-h-[80vh]">

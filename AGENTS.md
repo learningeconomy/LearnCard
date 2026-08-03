@@ -110,6 +110,19 @@ Use the shared `Overlay` component from `packages/learn-card-base/src/auth-coord
 
 Overlay renders a fixed fullscreen backdrop with a white `rounded-[20px]` card, max-width 480px, with `font-poppins` and `animate-fade-in-up` entrance animation.
 
+#### Modal safe-area ownership
+
+The modal layer owns native top and bottom insets. Modal content must not add
+`safe-area-*` classes, `useSafeArea()` offsets, or
+`env(safe-area-inset-top|bottom)` spacing.
+
+-   Ionic and shared modal containers apply insets to the top-level content root. That root must own the visible surface background.
+-   Use `data-modal-root="centered"` on a standalone centered dialog's full-screen backdrop. Set `--modal-gutter` when its normal gutter is not `1rem`.
+-   Use bare `data-modal-root` only on a full-bleed surface with no independent vertical gutter.
+-   Use `data-modal-root="bottom-sheet"` when only the bottom inset applies.
+-   A nested viewport overlay needs its own marker; each marked root deliberately starts a new inset boundary.
+-   New centered Ionic modal classes must join the centered-modal selector group in both apps' `assets/sass/modals.scss` files so device insets are not added inside the floating card.
+
 ### Loading States
 
 Never leave the user without feedback. Every async action must show a loading state:
