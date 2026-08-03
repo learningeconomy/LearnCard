@@ -116,9 +116,11 @@ The modal layer owns native top and bottom insets. Modal content must not add
 `safe-area-*` classes, `useSafeArea()` offsets, or
 `env(safe-area-inset-top|bottom)` spacing.
 
--   Ionic and shared modal containers apply insets to the top-level content root. That root must own the visible surface background.
+-   Ionic and shared modal containers apply insets to the top-level content root. That root must own the visible surface background; shared roots also become the containing block for absolute footers.
+-   Direct modal `IonContent` roots preserve existing `ion-padding` and custom `--padding-*` values while adding the device inset.
 -   Use `data-modal-root="centered"` on a standalone centered dialog's full-screen backdrop. Set `--modal-gutter` when its normal gutter is not `1rem`.
--   Use bare `data-modal-root` only on a full-bleed surface with no independent vertical gutter.
+-   Use bare `data-modal-root` on the visible surface when it is full-bleed at any responsive breakpoint. If the root already has vertical padding, declare it through `--modal-root-padding-top` / `--modal-root-padding-bottom`; the shared rule adds the device inset to those values without altering visible borders.
+-   Absolute controls inside a bare modal root do not move with its padding; offset them with `--modal-safe-area-top` / `--modal-safe-area-bottom` or place them inside an inner positioned wrapper.
 -   Use `data-modal-root="bottom-sheet"` when only the bottom inset applies.
 -   A nested viewport overlay needs its own marker; each marked root deliberately starts a new inset boundary.
 -   New centered Ionic modal classes must join the centered-modal selector group in both apps' `assets/sass/modals.scss` files so device insets are not added inside the floating card.

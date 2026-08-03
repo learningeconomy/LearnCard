@@ -38,12 +38,12 @@ ion-modal
 ion-modal
     > .ion-delegate-host
     > :first-child:not(ion-header):not(ion-content):not([data-modal-root]),
-#full-screen-modal > section > :first-child,
-#right-modal > section > :first-child,
-.freeform-modal > .freeform-section > :first-child {
+#full-screen-modal > section > :first-child:not([data-modal-root]),
+#right-modal > section > :first-child:not([data-modal-root]),
+.freeform-modal > .freeform-section > :first-child:not([data-modal-root]) {
     box-sizing: border-box;
     border-top: var(--modal-safe-area-top) solid transparent !important;
-    background-clip: border-box;
+    background-origin: border-box !important;
 }
 
 ion-modal
@@ -51,32 +51,48 @@ ion-modal
 ion-modal
     > .ion-delegate-host
     > :last-child:not(ion-footer):not(ion-content):not([data-modal-root]),
-#full-screen-modal > section > :last-child,
-#right-modal > section > :last-child,
-.freeform-modal > .freeform-section > :last-child {
+#full-screen-modal > section > :last-child:not([data-modal-root]),
+#right-modal > section > :last-child:not([data-modal-root]),
+.freeform-modal > .freeform-section > :last-child:not([data-modal-root]) {
     box-sizing: border-box;
     border-bottom: var(--modal-safe-area-bottom) solid transparent !important;
-    background-clip: border-box;
+    background-origin: border-box !important;
 }
 
-// IonContent paints and scrolls inside its shadow root. Its padding variables,
-// rather than a host border, keep the scrollable surface inside device insets.
-ion-modal > ion-content:first-child,
-ion-modal > .ion-delegate-host > ion-content:first-child {
-    --padding-top: var(--modal-safe-area-top);
+// Shared content roots contain absolute footers. Zero selector specificity
+// lets explicit `absolute`, `fixed`, or inline positioning keep precedence.
+:where(
+        #full-screen-modal > section > :first-child:not(ion-footer):not([data-modal-root]),
+        #full-screen-modal > section > :last-child:not(ion-footer):not([data-modal-root]),
+        #right-modal > section > :first-child:not(ion-footer):not([data-modal-root]),
+        #right-modal > section > :last-child:not(ion-footer):not([data-modal-root]),
+        .freeform-modal > .freeform-section > :first-child:not(ion-footer):not([data-modal-root]),
+        .freeform-modal > .freeform-section > :last-child:not(ion-footer):not([data-modal-root])
+    ) {
+    position: relative;
 }
 
-ion-modal > ion-content:last-child,
-ion-modal > .ion-delegate-host > ion-content:last-child {
-    --padding-bottom: var(--modal-safe-area-bottom);
+// IonContent paints and scrolls inside its shadow root. Add the inset to the
+// scroll part's resolved padding so `ion-padding` and custom `--padding-*`
+// values are preserved instead of replaced.
+ion-modal > ion-content:first-child::part(scroll),
+ion-modal > .ion-delegate-host > ion-content:first-child::part(scroll) {
+    padding-top: calc(var(--padding-top, 0px) + var(--modal-safe-area-top));
 }
 
-// Full-bleed custom roots own their background, so padding reserves the inset
-// without exposing the page behind the overlay.
+ion-modal > ion-content:last-child::part(scroll),
+ion-modal > .ion-delegate-host > ion-content:last-child::part(scroll) {
+    padding-bottom: calc(var(--padding-bottom, 0px) + var(--modal-safe-area-bottom));
+}
+// Full-bleed custom roots own their background. Compose the device inset with
+// any declared root padding instead of replacing the root's visible border.
 [data-modal-root]:not([data-modal-root='centered']) {
     box-sizing: border-box;
-    padding-top: var(--modal-safe-area-top) !important;
-    padding-bottom: var(--modal-safe-area-bottom) !important;
+    padding-top: calc(var(--modal-root-padding-top, 0px) + var(--modal-safe-area-top)) !important;
+    padding-bottom: calc(
+        var(--modal-root-padding-bottom, 0px) + var(--modal-safe-area-bottom)
+    ) !important;
+    background-origin: border-box !important;
 }
 
 [data-modal-root='centered'] {
@@ -373,7 +389,6 @@ ion-modal > .ion-delegate-host > :not(ion-header):not(ion-footer),
         overflow-y: auto;
         -ms-overflow-style: none;
         scrollbar-width: none;
-        box-sizing: border-box;
 
         &::-webkit-scrollbar {
             display: none;
@@ -625,7 +640,6 @@ ion-modal > .ion-delegate-host > :not(ion-header):not(ion-footer),
         background-color: white;
         transition: transform 300ms cubic-bezier(0.64, 0.21, 0.01, 1.15);
         animation: right-modal-intro 300ms normal none ease;
-        box-sizing: border-box;
 
         &.widen {
             max-width: 600px;
