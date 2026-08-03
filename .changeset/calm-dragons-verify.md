@@ -5,6 +5,7 @@
 "@learncard/didkit-plugin-node": patch
 "@learncard/helpers": patch
 "@learncard/learn-card-plugin": patch
+"@learncard/ler-rs-plugin": patch
 "@learncard/types": patch
 "@learncard/network-brain-service": patch
 ---
