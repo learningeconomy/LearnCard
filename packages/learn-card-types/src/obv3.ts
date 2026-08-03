@@ -250,3 +250,37 @@ export const AchievementCredentialValidator = UnsignedAchievementCredentialValid
     proof: ProofValidator.or(ProofValidator.array()),
 });
 export type AchievementCredential = z.infer<typeof AchievementCredentialValidator>;
+
+/**
+ * Strict validator matching 1EdTech's published OBv3 JSON Schema `required` arrays.
+ *
+ * Deliberately separate from {@link AchievementCredentialValidator}, which stays permissive
+ * because it doubles as a runtime type-detection guard for already-stored credentials.
+ * Use this one for conformance gates and regression tests only.
+ *
+ * @see https://purl.imsglobal.org/spec/ob/v3p0/schema/json/ob_v3p0_achievementcredential_schema.json
+ */
+export const ConformantAchievementValidator = AchievementValidator.extend({
+    id: z.string().min(1),
+    criteria: CriteriaValidator,
+    description: z.string().min(1),
+    name: z.string().min(1),
+});
+
+export const ConformantAchievementSubjectValidator = AchievementSubjectValidator.extend({
+    achievement: ConformantAchievementValidator,
+}).refine(subject => Boolean(subject.id) || (subject.identifier?.length ?? 0) > 0, {
+    message: 'AchievementSubject requires either `id` or at least one `identifier`',
+});
+
+export const ConformantAchievementCredentialValidator = AchievementCredentialValidator.extend({
+    id: z.string().min(1),
+    validFrom: z.string().min(1),
+    credentialSubject: ConformantAchievementSubjectValidator.or(
+        ConformantAchievementSubjectValidator.array().nonempty()
+    ),
+    proof: ProofValidator.or(ProofValidator.array()),
+});
+export type ConformantAchievementCredential = z.infer<
+    typeof ConformantAchievementCredentialValidator
+>;

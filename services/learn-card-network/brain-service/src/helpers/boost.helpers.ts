@@ -687,6 +687,45 @@ export const isInboxRecipient = (recipient: string): ContactMethodQueryType | nu
 };
 
 /**
+ * Assigns the `id` properties 1EdTech's OBv3 JSON Schema requires but which a reusable
+ * boost template cannot carry itself:
+ *
+ *   AchievementCredential.required = ["@context","id","type","credentialSubject","issuer","validFrom"]
+ *   Achievement.required           = ["id","type","criteria","description","name"]
+ *
+ * The credential `id` must be unique per issuance, so it is minted here (this runs once
+ * per send). `achievement.id` identifies the achievement *definition*, so it is derived
+ * from the boost URI and stays stable across every recipient of the same boost.
+ *
+ * @see https://purl.imsglobal.org/spec/ob/v3p0/schema/json/ob_v3p0_achievementcredential_schema.json
+ */
+const assignObv3RequiredIds = (credential: UnsignedVC, boostUri: string): void => {
+    const credentialRecord = credential as unknown as Record<string, unknown>;
+
+    if (typeof credentialRecord.id !== 'string' || !credentialRecord.id) {
+        credentialRecord.id = `urn:uuid:${uuidv4()}`;
+    }
+
+    const subjects = Array.isArray(credential.credentialSubject)
+        ? credential.credentialSubject
+        : [credential.credentialSubject];
+
+    subjects.forEach(subject => {
+        if (!subject || typeof subject !== 'object') return;
+
+        const achievement = (subject as Record<string, unknown>).achievement as
+            | Record<string, unknown>
+            | undefined;
+
+        if (!achievement || typeof achievement !== 'object' || Array.isArray(achievement)) return;
+
+        if (typeof achievement.id !== 'string' || !achievement.id) {
+            achievement.id = boostUri;
+        }
+    });
+};
+
+/**
  * Prepares an unsigned credential from a boost template.
  * Handles templateData rendering, issuance date, boostId injection, and OBv3 alignments.
  */
@@ -755,6 +794,8 @@ export const prepareCredentialFromBoost = async (
 
     // Inject OBv3 alignments
     await injectObv3AlignmentsIntoCredentialForBoost(credential, boost, domain);
+
+    assignObv3RequiredIds(credential, boostUri);
 
     return credential;
 };

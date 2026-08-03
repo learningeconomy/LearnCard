@@ -11,6 +11,10 @@ export const getCredentialStatusArray = (credential: unknown): Record<string, un
         : [status as Record<string, unknown>];
 };
 
+const isBitstringStatusListIndex = (value: unknown): value is string | number =>
+    typeof value === 'string' ||
+    (typeof value === 'number' && Number.isInteger(value) && value >= 0);
+
 export const isBitstringStatusListEntry = (status: unknown): status is BitstringStatusListEntry => {
     if (!status || typeof status !== 'object') return false;
 
@@ -19,10 +23,19 @@ export const isBitstringStatusListEntry = (status: unknown): status is Bitstring
     return (
         record.type === 'BitstringStatusListEntry' &&
         (record.statusPurpose === 'revocation' || record.statusPurpose === 'suspension') &&
-        typeof record.statusListIndex === 'string' &&
+        isBitstringStatusListIndex(record.statusListIndex) &&
         typeof record.statusListCredential === 'string'
     );
 };
+
+/**
+ * `statusListIndex` is a string per the Bitstring Status List spec, but real-world
+ * issuers (including 1EdTech's conformance suite) emit it as a JSON number. Accept
+ * both on input and normalize to string so downstream consumers see one shape.
+ */
+const normalizeBitstringStatusListEntry = (
+    entry: BitstringStatusListEntry
+): BitstringStatusListEntry => ({ ...entry, statusListIndex: String(entry.statusListIndex) });
 
 export const getBitstringStatusListEntries = (credential: unknown): BitstringStatusListEntry[] => {
     if (!credential || typeof credential !== 'object' || Array.isArray(credential)) return [];
@@ -31,7 +44,7 @@ export const getBitstringStatusListEntries = (credential: unknown): BitstringSta
     const statuses = getCredentialStatusArray(record);
 
     return [
-        ...statuses.filter(isBitstringStatusListEntry),
+        ...statuses.filter(isBitstringStatusListEntry).map(normalizeBitstringStatusListEntry),
         ...getBitstringStatusListEntries(record.boostCredential),
     ];
 };

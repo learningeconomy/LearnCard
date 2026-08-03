@@ -1,5 +1,6 @@
 import base64url from 'base64url';
 import type { UnsignedVC, VC } from '@learncard/types';
+import { ensureObv3RequiredFields } from './obv3Conformance';
 import { getDidWeb } from '@learncard/helpers';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { getDefaultCategoryForCredential } from 'learn-card-base';
@@ -133,7 +134,8 @@ export const fillTemplateSystemVars = (
     if (!recipientDid && subject && typeof subject.id === 'string' && subject.id.includes('{{')) {
         delete subject.id;
     }
-    return filled as unknown as UnsignedVC;
+
+    return ensureObv3RequiredFields(filled) as unknown as UnsignedVC;
 };
 
 export interface IssueViaBoostOptions {

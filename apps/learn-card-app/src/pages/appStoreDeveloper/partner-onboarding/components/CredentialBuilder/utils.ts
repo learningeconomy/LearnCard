@@ -317,37 +317,26 @@ const serializeResults = (results: ResultTemplate[]): Record<string, unknown>[] 
 /**
  * Serialize issuer from template to JSON (shared between OBv3 and CLR)
  */
-const serializeIssuer = (issuer: IssuerTemplate): string | Record<string, unknown> => {
-    const issuerHasExtraFields =
-        issuer.name?.value ||
-        issuer.name?.isDynamic ||
-        issuer.url?.value ||
-        issuer.url?.isDynamic ||
-        issuer.image?.value ||
-        issuer.image?.isDynamic ||
-        issuer.email?.value ||
-        issuer.email?.isDynamic;
+const serializeIssuer = (issuer: IssuerTemplate): Record<string, unknown> => {
+    const issuerObj: Record<string, unknown> = {
+        id: fieldToJson(issuer.id) || '{{issuer_did}}',
+        type: ['Profile'],
+    };
 
-    if (issuerHasExtraFields) {
-        const issuerObj: Record<string, unknown> = {
-            id: fieldToJson(issuer.id) || '{{issuer_did}}',
-            type: ['Profile'],
-        };
-        if (issuer.name?.value || issuer.name?.isDynamic) {
-            issuerObj.name = fieldToJson(issuer.name);
-        }
-        if (issuer.url?.value || issuer.url?.isDynamic) {
-            issuerObj.url = fieldToJson(issuer.url);
-        }
-        if (issuer.image?.value || issuer.image?.isDynamic) {
-            issuerObj.image = fieldToJson(issuer.image);
-        }
-        if (issuer.email?.value || issuer.email?.isDynamic) {
-            issuerObj.email = fieldToJson(issuer.email);
-        }
-        return issuerObj;
+    if (issuer.name?.value || issuer.name?.isDynamic) {
+        issuerObj.name = fieldToJson(issuer.name);
     }
-    return fieldToJson(issuer.id) || '{{issuer_did}}';
+    if (issuer.url?.value || issuer.url?.isDynamic) {
+        issuerObj.url = fieldToJson(issuer.url);
+    }
+    if (issuer.image?.value || issuer.image?.isDynamic) {
+        issuerObj.image = fieldToJson(issuer.image);
+    }
+    if (issuer.email?.value || issuer.email?.isDynamic) {
+        issuerObj.email = fieldToJson(issuer.email);
+    }
+
+    return issuerObj;
 };
 
 /**
