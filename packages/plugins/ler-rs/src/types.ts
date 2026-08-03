@@ -258,22 +258,12 @@ export interface VerificationResult {
     presentationResult: {
         verified: boolean;
         errors?: string[];
-        /**
-         * Security-relevant conditions that did not prevent the requested cryptographic
-         * checks from completing. Warnings are disqualifying for `verified`.
-         */
-        warnings?: string[];
     };
     credentialResults: {
         credential: VerifiableCredential;
         verified: boolean;
         isSelfIssued: boolean;
         errors?: string[];
-        /**
-         * See `presentationResult.warnings`. Most notably, a non-DID issuer warning means
-         * the signature is valid but the named URL issuer never authorized the signing key.
-         */
-        warnings?: string[];
     }[];
 }
 

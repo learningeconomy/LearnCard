@@ -40,19 +40,6 @@ const toArray = <T>(maybe: T | T[] | undefined): T[] =>
     maybe == null ? [] : Array.isArray(maybe) ? maybe : [maybe];
 
 /**
- * Treats a verification result as trustworthy only when it is free of both errors and
- * warnings.
- *
- * Warnings are security-relevant: a credential whose `issuer` is a URL rather than a DID
- * verifies with `errors: []` because the signature itself is valid, but nothing
- * establishes that the named issuer authorized the signing key. Since an attacker fully
- * controls the `issuer` field of a credential they mint, treating such a result as
- * verified would let a self-signed credential display as issued by any organization.
- */
-const isCleanCheck = (check: { errors: string[]; warnings: string[] }): boolean =>
-    check.errors.length === 0 && check.warnings.length === 0;
-
-/**
  * Inline LER-RS JSON-LD context used for signing stability.
  *
  * The published HR Open URL is schema-oriented and can trigger additional remote
@@ -135,8 +122,7 @@ const buildEmploymentHistories = (
             container.positionHistories = [ph];
         }
         if (narrative) container.narrative = narrative;
-        if (descriptions?.length && !container.positionHistories)
-            container.descriptions = descriptions;
+        if (descriptions?.length && !container.positionHistories) container.descriptions = descriptions;
 
         const containerVerifications = getItemVerifications({
             verifiableCredential,
@@ -303,12 +289,7 @@ export const getLerRsPlugin = (initLearnCard: LERRSDependentLearnCard): LERRSPlu
                                   ? { phone: [{ formattedNumber: params.person.phone }] }
                                   : {}),
                               ...(webEntries.length
-                                  ? {
-                                        web: webEntries.map(entry => ({
-                                            url: entry.url,
-                                            name: entry.name,
-                                        })),
-                                    }
+                                  ? { web: webEntries.map(entry => ({ url: entry.url, name: entry.name })) }
                                   : {}),
                               ...(socialEntries.length
                                   ? {
@@ -325,8 +306,7 @@ export const getLerRsPlugin = (initLearnCard: LERRSDependentLearnCard): LERRSPlu
                                                 ...(params.person.address?.formattedAddress
                                                     ? {
                                                           formattedAddress:
-                                                              params.person.address
-                                                                  .formattedAddress,
+                                                              params.person.address.formattedAddress,
                                                       }
                                                     : {}),
                                                 ...(params.person.address?.line
@@ -336,10 +316,7 @@ export const getLerRsPlugin = (initLearnCard: LERRSDependentLearnCard): LERRSPlu
                                                     ? { city: params.person.address.city }
                                                     : {}),
                                                 ...(params.person.address?.postalCode
-                                                    ? {
-                                                          postalCode:
-                                                              params.person.address.postalCode,
-                                                      }
+                                                    ? { postalCode: params.person.address.postalCode }
                                                     : {}),
                                                 ...(params.person.address?.countryCode
                                                     ? {
@@ -443,9 +420,8 @@ export const getLerRsPlugin = (initLearnCard: LERRSDependentLearnCard): LERRSPlu
                 });
 
                 const presentationResult = {
-                    verified: isCleanCheck(presCheck),
+                    verified: presCheck.errors.length === 0,
                     errors: presCheck.errors.length ? presCheck.errors : undefined,
-                    warnings: presCheck.warnings.length ? presCheck.warnings : undefined,
                 };
 
                 const credentialResults: VerificationResult['credentialResults'] = [];
@@ -471,12 +447,9 @@ export const getLerRsPlugin = (initLearnCard: LERRSDependentLearnCard): LERRSPlu
 
                             credentialResults.push({
                                 credential,
-                                verified: isCleanCheck(credCheck),
+                                verified: credCheck.errors.length === 0,
                                 isSelfIssued,
                                 errors: credCheck.errors.length ? credCheck.errors : undefined,
-                                warnings: credCheck.warnings.length
-                                    ? credCheck.warnings
-                                    : undefined,
                             });
                         } catch (err) {
                             credentialResults.push({

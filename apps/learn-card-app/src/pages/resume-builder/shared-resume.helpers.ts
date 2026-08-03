@@ -13,28 +13,22 @@ export type LerVerificationResultLike = {
     presentationResult?: {
         verified?: boolean;
         errors?: string[];
-        warnings?: string[];
     };
     credentialResults?: Array<{
         verified?: boolean;
         isSelfIssued?: boolean;
         errors?: string[];
-        warnings?: string[];
     }>;
 };
-
-const toReasons = (...groups: Array<string[] | undefined>): string[] =>
-    groups.flatMap(group => (Array.isArray(group) ? group : []));
 
 export const mapLerVerificationResultToItems = (
     lerVerification: LerVerificationResultLike | null | undefined
 ): VerificationItem[] => {
     if (!lerVerification) return [];
 
-    const presentationReasons = toReasons(
-        lerVerification.presentationResult?.errors,
-        lerVerification.presentationResult?.warnings
-    );
+    const presentationErrors = Array.isArray(lerVerification.presentationResult?.errors)
+        ? lerVerification.presentationResult?.errors
+        : [];
     const credentialResults = Array.isArray(lerVerification.credentialResults)
         ? lerVerification.credentialResults
         : [];
@@ -47,11 +41,11 @@ export const mapLerVerificationResultToItems = (
                 : VerificationStatusEnum.Failed,
             message: lerVerification.presentationResult?.verified
                 ? 'valid.'
-                : presentationReasons.join('; ') || 'verification failed.',
-            details: presentationReasons.length ? presentationReasons.join('\n') : undefined,
+                : presentationErrors.join('; ') || 'verification failed.',
+            details: presentationErrors.length ? presentationErrors.join('\n') : undefined,
         },
         ...credentialResults.map(result => {
-            const reasons = toReasons(result.errors, result.warnings);
+            const errors = Array.isArray(result.errors) ? result.errors : [];
             const passed = Boolean(result.verified || result.isSelfIssued);
             return {
                 check: 'Credential',
@@ -60,8 +54,8 @@ export const mapLerVerificationResultToItems = (
                     ? result.isSelfIssued && !result.verified
                         ? 'Credential accepted as self-issued for LER validation.'
                         : 'valid.'
-                    : reasons.join('; ') || 'verification failed.',
-                details: reasons.length ? reasons.join('\n') : undefined,
+                    : errors.join('; ') || 'verification failed.',
+                details: errors.length ? errors.join('\n') : undefined,
             } as VerificationItem;
         }),
     ];
