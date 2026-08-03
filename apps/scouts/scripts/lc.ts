@@ -551,6 +551,11 @@ const printHelp = (): void => {
         )}`
     );
     log.info(
+        `  ${cyan('bun run lc stage-env [stage]')}            ${dim(
+            'Print env vars as KEY=VALUE for CI (errors on unknown stage)'
+        )}`
+    );
+    log.info(
         dim(
             `  Stages are discovered from environments/${PROJECT_ID} (config.<stage>.json + implicit 'production').`
         )
@@ -665,6 +670,27 @@ const handleShortcuts = async (): Promise<boolean> => {
         case 'resolve':
             printResolvedStage(asStage(args[1]) ?? args[1]);
             return true;
+
+        // Machine-readable KEY=VALUE output for CI ($GITHUB_OUTPUT). Unlike
+        // `resolve`, unknown stages are a hard error: silently falling back to
+        // the base config would point a staging build at production backends.
+        case 'stage-env': {
+            const requestedStage = args[1] ?? 'production';
+
+            if (!asStage(requestedStage)) {
+                console.error(
+                    `Unknown stage: ${requestedStage}. Available: ${discoverStages().join(', ')}`
+                );
+                process.exit(1);
+            }
+
+            for (const [key, value] of Object.entries(resolveStageEnv(requestedStage))) {
+                process.stdout.write(`${key}=${value}\n`);
+            }
+
+            rl.close();
+            return true;
+        }
 
         case 'build':
             runCommand('bun run build', 'Building Scouts web app', 'bun run lc build');
