@@ -66,8 +66,8 @@ export const InAppMessageModal: React.FC<InAppMessageModalProps> = ({ message, o
 
     return (
         <motion.div
-            data-modal-root
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-grayscale-900/40 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.2)_100%)] backdrop-blur-md"
+            data-modal-root="centered"
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 sm:[--modal-gutter:1.5rem] bg-grayscale-900/40 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.2)_100%)] backdrop-blur-md"
             variants={backdropVariants}
             initial="hidden"
             animate="visible"

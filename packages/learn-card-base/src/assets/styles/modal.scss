@@ -2,6 +2,17 @@
 
 // Safe areas belong to modal containers, never individual modal content.
 // Ionic adjusts its host variables for full-screen, inset, and sheet modals.
+//
+// `data-modal-root` marks the element that OWNS the device insets for a
+// standalone overlay. Which element that is depends on the overlay's shape:
+//   - Full-bleed overlay (the surface fills the viewport): mark the surface.
+//     Bare `data-modal-root` reserves the inset as a transparent border, so the
+//     surface's own background still paints through the band.
+//   - Centered card on a dimmer: mark the backdrop with
+//     `data-modal-root="centered"`. That pads rather than borders, and takes
+//     max(inset, gutter) so the inset does not stack onto the existing gutter.
+//   - Bottom sheet: `data-modal-root="bottom-sheet"` — bottom inset only.
+//   - `data-modal-insets="none"` — opt out entirely.
 ion-modal,
 #full-screen-modal,
 #right-modal,
@@ -14,6 +25,18 @@ ion-modal,
     --modal-safe-area-bottom: var(--ion-safe-area-bottom, env(safe-area-inset-bottom, 0px));
 }
 
+// Opt-out escape hatch. This zeroes the *variable* rather than the border, so it
+// needs no specificity war with the `!important` border rules below: `var()` is
+// resolved against the element the border is painted on.
+[data-modal-root='bottom-sheet'] {
+    --modal-safe-area-top: 0px;
+}
+
+[data-modal-insets='none'] {
+    --modal-safe-area-top: 0px;
+    --modal-safe-area-bottom: 0px;
+}
+
 // Transparent borders reserve safe space without exposing backdrop bands:
 // the slotted modal root's own background paints through its border box.
 ion-modal > *,
@@ -22,32 +45,51 @@ ion-modal > .ion-delegate-host > * {
     background-clip: border-box;
 }
 
-ion-modal > :first-child:not(ion-header):not(.ion-delegate-host),
-ion-modal > .ion-delegate-host > :first-child:not(ion-header) {
+// `ion-content` is the exception to the border-box trick. It does not paint
+// `--background` on the host: it paints it on an internal absolutely-positioned
+// `#background-content`, which is laid out against the host's *padding* box and
+// therefore cannot reach into the reserved border. Mirror `--background` onto
+// the host so the reserved band paints in the content's own colour instead of
+// exposing the (transparent) `ion-modal::part(content)` and the dimmer behind
+// it. Uses the shorthand so gradient `--background` values work too.
+// A Tailwind `bg-*` class on the IonContent host still wins on specificity, and
+// contents that deliberately set `--background: transparent` stay transparent.
+ion-modal > ion-content,
+ion-modal > .ion-delegate-host > ion-content {
+    background: var(--background);
+}
+
+// `centered` roots are excluded here rather than overriding the border further
+// down, so the two mechanisms can never both apply to the same element
+// regardless of where it sits in the tree.
+ion-modal > :first-child:not(ion-header):not(.ion-delegate-host):not([data-modal-root='centered']),
+ion-modal > .ion-delegate-host > :first-child:not(ion-header):not([data-modal-root='centered']) {
     border-top: var(--modal-safe-area-top) solid transparent !important;
 }
 
-ion-modal > :last-child:not(ion-footer):not(.ion-delegate-host),
-ion-modal > .ion-delegate-host > :last-child:not(ion-footer) {
+ion-modal > :last-child:not(ion-footer):not(.ion-delegate-host):not([data-modal-root='centered']),
+ion-modal > .ion-delegate-host > :last-child:not(ion-footer):not([data-modal-root='centered']) {
     border-bottom: var(--modal-safe-area-bottom) solid transparent !important;
 }
 
-.pathway-modal-root > * {
+.pathway-modal-root > *:not([data-modal-root='centered']),
+[data-modal-root]:not([data-modal-root='centered']) {
     box-sizing: border-box;
     border-top: var(--modal-safe-area-top) solid transparent !important;
     border-bottom: var(--modal-safe-area-bottom) solid transparent !important;
     background-clip: border-box;
 }
 
-[data-modal-root] {
+// `data-modal-root="centered"` — for a backdrop holding a vertically centered
+// card. Reserving the inset *in addition to* the backdrop's own gutter stacks
+// them, costing a tall card (inset + gutter) of usable height for no reason. The
+// gutter already clears the inset on most devices, so take the larger of the two.
+// Override the gutter with a Tailwind arbitrary property, e.g.
+// `sm:[--modal-gutter:1.5rem]`.
+[data-modal-root='centered'] {
     box-sizing: border-box;
-    border-top: var(--modal-safe-area-top) solid transparent !important;
-    border-bottom: var(--modal-safe-area-bottom) solid transparent !important;
-    background-clip: border-box;
-}
-
-[data-modal-root='bottom-sheet'] {
-    border-top: 0 !important;
+    padding-top: max(var(--modal-safe-area-top), var(--modal-gutter, 1rem)) !important;
+    padding-bottom: max(var(--modal-safe-area-bottom), var(--modal-gutter, 1rem)) !important;
 }
 
 // The positioned or bordered content root owns the insets and retains Ionic's

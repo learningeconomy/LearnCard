@@ -206,7 +206,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                 {showPathwaySelection &&
                     createPortal(
                         <div
-                            data-modal-root
+                            data-modal-root="centered"
                             className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[50000]"
                         >
                             <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-y-auto max-h-[80vh] relative">
