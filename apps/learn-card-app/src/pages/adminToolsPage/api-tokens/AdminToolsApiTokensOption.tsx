@@ -178,7 +178,7 @@ const AdminToolsApiTokensOption: React.FC<{ option: AdminToolOption; showFooter?
                 )}
             </section>
 
-            {showFooter && <AdminToolsModalFooter />}
+            {showFooter && <AdminToolsModalFooter includeSafeAreaInset />}
         </section>
     );
 };

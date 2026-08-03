@@ -207,7 +207,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
                     createPortal(
                         <div
                             data-modal-root="centered"
-                            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[50000]"
+                            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 [--modal-gutter:1rem] z-[50000]"
                         >
                             <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-y-auto max-h-[80vh] relative">
                                 {/* Close button */}

@@ -59,30 +59,22 @@ ion-modal
     background-origin: border-box !important;
 }
 
-// Shared content roots contain absolute footers. Zero selector specificity
-// lets explicit `absolute`, `fixed`, or inline positioning keep precedence.
-:where(
-        #full-screen-modal > section > :first-child:not(ion-footer):not([data-modal-root]),
-        #full-screen-modal > section > :last-child:not(ion-footer):not([data-modal-root]),
-        #right-modal > section > :first-child:not(ion-footer):not([data-modal-root]),
-        #right-modal > section > :last-child:not(ion-footer):not([data-modal-root]),
-        .freeform-modal > .freeform-section > :first-child:not(ion-footer):not([data-modal-root]),
-        .freeform-modal > .freeform-section > :last-child:not(ion-footer):not([data-modal-root])
-    ) {
-    position: relative;
-}
-
 // IonContent paints and scrolls inside its shadow root. Add the inset to the
 // scroll part's resolved padding so `ion-padding` and custom `--padding-*`
 // values are preserved instead of replaced.
 ion-modal > ion-content:first-child::part(scroll),
 ion-modal > .ion-delegate-host > ion-content:first-child::part(scroll) {
-    padding-top: calc(var(--padding-top, 0px) + var(--modal-safe-area-top));
+    padding-top: calc(
+        var(--padding-top, 0px) + var(--offset-top, 0px) + var(--modal-safe-area-top)
+    );
 }
 
 ion-modal > ion-content:last-child::part(scroll),
 ion-modal > .ion-delegate-host > ion-content:last-child::part(scroll) {
-    padding-bottom: calc(var(--padding-bottom, 0px) + var(--modal-safe-area-bottom));
+    padding-bottom: calc(
+        var(--padding-bottom, 0px) + var(--keyboard-offset, 0px) + var(--offset-bottom, 0px) +
+            var(--modal-safe-area-bottom)
+    );
 }
 // Full-bleed custom roots own their background. Compose the device inset with
 // any declared root padding instead of replacing the root's visible border.
@@ -97,8 +89,8 @@ ion-modal > .ion-delegate-host > ion-content:last-child::part(scroll) {
 
 [data-modal-root='centered'] {
     box-sizing: border-box;
-    padding-top: max(var(--modal-safe-area-top), var(--modal-gutter, 1rem)) !important;
-    padding-bottom: max(var(--modal-safe-area-bottom), var(--modal-gutter, 1rem)) !important;
+    padding-top: max(var(--modal-safe-area-top), var(--modal-gutter, 0px)) !important;
+    padding-bottom: max(var(--modal-safe-area-bottom), var(--modal-gutter, 0px)) !important;
 }
 
 // The content owner has already reserved the device inset. Zero Ionic's

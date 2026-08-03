@@ -27,7 +27,7 @@ const EndorsementFormFooter: React.FC<{
             mode="ios"
             className={`w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 left-0 bg-white !max-h-[100px] ${className}`}
             style={{
-                bottom: `${bottomPosition}px`,
+                bottom: `calc(${bottomPosition}px + var(--modal-safe-area-bottom, 0px))`,
             }}
         >
             <div className="w-full flex items-center justify-center">

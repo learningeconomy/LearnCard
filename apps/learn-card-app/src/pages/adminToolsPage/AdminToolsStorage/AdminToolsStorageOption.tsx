@@ -250,6 +250,7 @@ const AdminToolsStorageOption: React.FC<{ option: AdminToolOption; showFooter?: 
                     onSave={handleSave}
                     showSaveButton
                     className="z-50"
+                    includeSafeAreaInset
                 />
             )}
         </section>

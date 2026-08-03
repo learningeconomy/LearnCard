@@ -130,7 +130,7 @@ const PathwayPickerModal: React.FC<PathwayPickerModalProps> = ({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 bg-grayscale-900/40 backdrop-blur-sm flex items-center justify-center p-4 font-poppins"
+                className="fixed inset-0 z-50 bg-grayscale-900/40 backdrop-blur-sm flex items-center justify-center p-4 [--modal-gutter:1rem] font-poppins"
                 style={{ overscrollBehavior: 'contain' }}
                 onClick={onClose}
             >

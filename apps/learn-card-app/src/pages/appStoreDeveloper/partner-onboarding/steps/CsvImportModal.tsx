@@ -55,7 +55,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
     return (
         <div
             data-modal-root="centered"
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 [--modal-gutter:1rem]"
         >
             <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
                 {/* Modal Header */}

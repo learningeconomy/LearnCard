@@ -41,7 +41,7 @@ export const ChildEditModal: React.FC<ChildEditModalProps> = ({
     return (
         <div
             data-modal-root="centered"
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 [--modal-gutter:1rem]"
         >
             <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
                 {/* Modal Header */}

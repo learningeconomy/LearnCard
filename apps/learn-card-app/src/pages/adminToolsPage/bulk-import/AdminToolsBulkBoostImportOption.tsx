@@ -622,6 +622,7 @@ const AdminToolsBulkBoostImportOption: React.FC<{
                 showSaveButton
                 className="z-[100]"
                 isLoading={isLoading}
+                includeSafeAreaInset
             />
         </section>
     );

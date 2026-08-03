@@ -136,7 +136,7 @@ const SubPathwayCeremony: React.FC<SubPathwayCeremonyProps> = ({
                 className="fixed inset-0 z-50 font-poppins
                        bg-grayscale-900/40 backdrop-blur-sm
                        flex items-end sm:items-center justify-center
-                       p-3 sm:p-6"
+                       p-3 [--modal-gutter:0.75rem] sm:p-6 sm:[--modal-gutter:1.5rem]"
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="subpathway-ceremony-title"
