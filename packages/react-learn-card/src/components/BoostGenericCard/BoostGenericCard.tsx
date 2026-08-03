@@ -98,8 +98,15 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                 onClick={handleInnerClick}
             >
                 {/* Thumbnail — filter on the wrapper so it desaturates a
-                    customThumbComponent too, not just the default thumb section. */}
-                <div style={inactiveMediaStyle}>
+                    customThumbComponent too, not just the default thumb section.
+                    The explicit width is load-bearing on iOS 18 WebKit: a bare block
+                    child of a <button> flex container is laid out shrink-to-fit there
+                    (UA align-items: flex-start per the HTML spec), so without it the
+                    badge collapses to its 116px circle and the header artwork stops
+                    running under the options button. iOS 26+/desktop engines compute
+                    align-items: normal and stretch, which masks the bug (LC-2066).
+                    width is spread last so nothing can ever override it. */}
+                <div style={{ ...inactiveMediaStyle, width: '100%' }}>
                     {customThumbComponent || (
                         <section className={defaultThumbClass}>
                             {thumbImgSrc?.trim() ? (
