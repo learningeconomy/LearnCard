@@ -3302,6 +3302,7 @@
                 "approvedBy": "Approved by {{name}}",
                 "sendFailedTitle": "Endorsement Not Sent",
                 "sendFailedDescription": "Your endorsement is still saved. Try again.",
+                "missingRequestDescription": "Close this screen and reopen the endorsement link to try again.",
                 "tryAgain": "Try Again"
             },
             "footer": {

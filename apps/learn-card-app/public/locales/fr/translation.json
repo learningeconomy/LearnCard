@@ -3296,6 +3296,7 @@
                 "approvedBy": "Approuvé par {{name}}",
                 "sendFailedTitle": "Recommandation non envoyée",
                 "sendFailedDescription": "Votre recommandation est toujours enregistrée. Réessayez.",
+                "missingRequestDescription": "Fermez cet écran et rouvrez le lien de recommandation pour réessayer.",
                 "tryAgain": "Réessayer"
             },
             "footer": {

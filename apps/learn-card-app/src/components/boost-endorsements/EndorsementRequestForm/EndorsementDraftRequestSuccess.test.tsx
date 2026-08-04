@@ -16,6 +16,9 @@ const mocks = vi.hoisted(() => {
         sendCredential: vi.fn(),
         initWallet: vi.fn(),
         presentToast: vi.fn(),
+        closeModal: vi.fn(),
+        setEndorsementRequest: vi.fn(),
+        clearCredentialInfo: vi.fn(),
         getCredentialInfo: () => credentialInfo,
         setCredentialInfo: (
             value:
@@ -32,7 +35,13 @@ const mocks = vi.hoisted(() => {
 });
 
 vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
-vi.mock('./EndorsementRequestFormFooter', () => ({ default: () => null }));
+vi.mock('./EndorsementRequestFormFooter', () => ({
+    default: ({ handleCloseModal }: { handleCloseModal: () => void }) => (
+        <button type="button" onClick={handleCloseModal}>
+            Close
+        </button>
+    ),
+}));
 vi.mock('../EndorsementsList/EndorsementFullView', () => ({ default: () => null }));
 vi.mock('learn-card-base/svgs/EndorsementThumb', () => ({
     EndorsmentThumbWithCircle: () => null,
@@ -53,8 +62,8 @@ vi.mock('../../../stores/endorsementsRequestStore', () => ({
             credentialInfo: mocks.getCredentialInfo,
         },
         set: {
-            endorsementRequest: vi.fn(),
-            credentialInfo: vi.fn(),
+            endorsementRequest: mocks.setEndorsementRequest,
+            credentialInfo: mocks.clearCredentialInfo,
         },
     },
 }));
@@ -71,7 +80,7 @@ vi.mock('learn-card-base', () => ({
         issueeProfile: { profileId: 'recipient', displayName: 'Recipient' },
     }),
     useIsLoggedIn: () => true,
-    useModal: () => ({ newModal: vi.fn(), closeModal: vi.fn() }),
+    useModal: () => ({ newModal: vi.fn(), closeModal: mocks.closeModal }),
     useToast: () => ({ presentToast: mocks.presentToast }),
     useWallet: () => ({ initWallet: mocks.initWallet }),
 }));
@@ -88,6 +97,8 @@ vi.mock('../../../paraglide/messages.js', () => ({
     'endorsement.request.draft.sendFailedTitle': () => 'Endorsement Not Sent',
     'endorsement.request.draft.sendFailedDescription': () =>
         'Your endorsement is still saved. Try again.',
+    'endorsement.request.draft.missingRequestDescription': () =>
+        'Close this screen and reopen the endorsement link to try again.',
     'endorsement.request.draft.tryAgain': () => 'Try Again',
 }));
 
@@ -124,7 +135,10 @@ describe('EndorsementDraftRequestSuccess', () => {
         );
         expect(mocks.initWallet).not.toHaveBeenCalled();
         expect(await screen.findByText('Endorsement Not Sent')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Try Again' })).toBeEnabled();
+        expect(screen.queryByRole('button', { name: 'Try Again' })).not.toBeInTheDocument();
+        expect(
+            screen.getByText('Close this screen and reopen the endorsement link to try again.')
+        ).toBeInTheDocument();
         expect(screen.queryByText('Waiting for review')).not.toBeInTheDocument();
     });
 
@@ -146,6 +160,10 @@ describe('EndorsementDraftRequestSuccess', () => {
 
         await screen.findByText('Endorsement Not Sent');
         expect(mocks.sendCredential).toHaveBeenCalledOnce();
+        fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+        expect(mocks.closeModal).toHaveBeenCalledOnce();
+        expect(mocks.setEndorsementRequest).not.toHaveBeenCalled();
+        expect(mocks.clearCredentialInfo).not.toHaveBeenCalled();
 
         fireEvent.click(screen.getByRole('button', { name: 'Try Again' }));
 

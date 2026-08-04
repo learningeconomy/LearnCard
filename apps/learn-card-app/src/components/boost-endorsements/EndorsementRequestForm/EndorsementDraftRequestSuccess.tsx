@@ -58,6 +58,7 @@ export const EndorsementDraftRequestSuccess: React.FC<{
 
     const [endorsement, setEndorsement] = useState<BoostEndorsement | null>(null);
     const hasAutoSentRef = useRef(false);
+    const canRetry = Boolean(shareLinkInfo);
 
     const status = endorsement?.status || false;
     const endorsementStatus = status;
@@ -228,15 +229,19 @@ export const EndorsementDraftRequestSuccess: React.FC<{
                     {m['endorsement.request.draft.sendFailedTitle']()}
                 </h1>
                 <p className="text-center text-sm text-grayscale-600 leading-relaxed">
-                    {m['endorsement.request.draft.sendFailedDescription']()}
+                    {canRetry
+                        ? m['endorsement.request.draft.sendFailedDescription']()
+                        : m['endorsement.request.draft.missingRequestDescription']()}
                 </p>
-                <button
-                    type="button"
-                    onClick={() => void handleEndorsementSubmit()}
-                    className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
-                >
-                    {m['endorsement.request.draft.tryAgain']()}
-                </button>
+                {canRetry && (
+                    <button
+                        type="button"
+                        onClick={() => void handleEndorsementSubmit()}
+                        className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+                    >
+                        {m['endorsement.request.draft.tryAgain']()}
+                    </button>
+                )}
             </>
         );
     }
@@ -280,7 +285,8 @@ export const EndorsementDraftRequestSuccess: React.FC<{
                 showEndorsementPreview
                 handleCloseModal={() => {
                     close();
-                    clearDraftEndorsementRequest();
+
+                    if (!sendFailed) clearDraftEndorsementRequest();
                 }}
             />
         </div>

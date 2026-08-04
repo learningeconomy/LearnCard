@@ -3296,6 +3296,7 @@
                 "approvedBy": "Aprobado por {{name}}",
                 "sendFailedTitle": "Aval no enviado",
                 "sendFailedDescription": "Tu aval sigue guardado. Inténtalo de nuevo.",
+                "missingRequestDescription": "Cierra esta pantalla y vuelve a abrir el enlace de aval para intentarlo de nuevo.",
                 "tryAgain": "Intentar de nuevo"
             },
             "footer": {

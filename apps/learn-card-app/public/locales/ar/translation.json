@@ -3293,6 +3293,7 @@
                 "approvedBy": "تمت الموافقة بواسطة {{name}}",
                 "sendFailedTitle": "لم يتم إرسال التوصية",
                 "sendFailedDescription": "لا تزال توصيتك محفوظة. حاول مرة أخرى.",
+                "missingRequestDescription": "أغلق هذه الشاشة وأعد فتح رابط التوصية للمحاولة مرة أخرى.",
                 "tryAgain": "حاول مرة أخرى"
             },
             "footer": {
