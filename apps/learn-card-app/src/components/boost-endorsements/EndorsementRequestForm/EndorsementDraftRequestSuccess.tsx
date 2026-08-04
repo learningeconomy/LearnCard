@@ -19,6 +19,8 @@ import {
     useGetCurrentLCNUser,
     useIsLoggedIn,
     useWallet,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import {
     BoostEndorsement,
@@ -40,6 +42,7 @@ export const EndorsementDraftRequestSuccess: React.FC<{
     const { initWallet } = useWallet();
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
     const { currentLCNUser } = useGetCurrentLCNUser();
+    const { presentToast } = useToast();
 
     const { newModal, closeModal: close } = useModal({
         mobile: ModalTypes.Right,
@@ -146,6 +149,10 @@ export const EndorsementDraftRequestSuccess: React.FC<{
             }
         } catch (error) {
             log.error(error);
+            presentToast(m['toasts.boost.endorsementRequestFailed'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
             setIsLoading(false);
         }
     };
