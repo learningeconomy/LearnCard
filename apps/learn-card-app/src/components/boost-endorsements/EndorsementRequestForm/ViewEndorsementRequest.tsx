@@ -89,7 +89,7 @@ const ViewEndorsementRequest: React.FC<{
             presentAlert({
                 backdropDismiss: false,
                 cssClass: 'boost-confirmation-alert',
-                header: m['recovery.incorrectPassword'](),
+                header: m['endorsement.viewRequest.errorOpening'](),
                 buttons: [
                     {
                         text: m['endorsement.viewRequest.ok'](),

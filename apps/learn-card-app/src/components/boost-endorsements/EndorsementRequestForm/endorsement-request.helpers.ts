@@ -12,6 +12,18 @@ type SentEndorsement = {
     metadata?: Record<string, unknown>;
 };
 
+export type EndorsementRequestCredentialInfo = {
+    uri: string;
+    seed: string;
+    pin: string;
+};
+
+export const createEndorsementShareLinkInfo = ({
+    uri,
+    seed,
+    pin,
+}: EndorsementRequestCredentialInfo): string => new URLSearchParams({ uri, seed, pin }).toString();
+
 export const getEndorsementRequestId = (shareLinkInfo?: string): string | undefined => {
     if (!shareLinkInfo) return undefined;
 
@@ -29,14 +41,14 @@ export const getEndorsementRequestId = (shareLinkInfo?: string): string | undefi
 };
 
 export const findEndorsementForRequest = <T extends SentEndorsement>(
-    sentEndorsements: T[],
+    sentEndorsements: T[] | null | undefined,
     shareLinkInfo?: string
 ): T | undefined => {
     const requestId = getEndorsementRequestId(shareLinkInfo);
 
     if (!requestId) return undefined;
 
-    return sentEndorsements.find(endorsement => {
+    return (sentEndorsements ?? []).find(endorsement => {
         const metadata = endorsement.metadata;
         const sharedUri = metadata?.sharedUri;
 

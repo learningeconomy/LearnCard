@@ -3343,7 +3343,7 @@
         },
         "viewRequest": {
             "ok": "OK",
-            "errorFetching": "Error fetching credential: {{error}}"
+            "errorOpening": "We couldn't open this credential. Please try again."
         }
     },
     "verification": {

@@ -3334,7 +3334,7 @@
         },
         "viewRequest": {
             "ok": "حسنًا",
-            "errorFetching": "خطأ في جلب الاعتماد: {{error}}"
+            "errorOpening": "تعذّر فتح بيانات الاعتماد هذه. يُرجى المحاولة مرة أخرى."
         }
     },
     "verification": {

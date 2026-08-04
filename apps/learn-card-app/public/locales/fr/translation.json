@@ -3337,7 +3337,7 @@
         },
         "viewRequest": {
             "ok": "OK",
-            "errorFetching": "Erreur lors de la récupération de la credential : {{error}}"
+            "errorOpening": "Nous n’avons pas pu ouvrir cette attestation. Veuillez réessayer."
         }
     },
     "verification": {

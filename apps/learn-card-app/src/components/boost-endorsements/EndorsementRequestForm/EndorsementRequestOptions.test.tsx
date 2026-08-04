@@ -2,7 +2,10 @@ import React from 'react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mutateMock } = vi.hoisted(() => ({ mutateMock: vi.fn() }));
+const { mutateMock, presentToastMock } = vi.hoisted(() => ({
+    mutateMock: vi.fn(),
+    presentToastMock: vi.fn(),
+}));
 
 vi.mock('../../boost/boost-options-menu/ShareBoostLink', () => ({ default: () => null }));
 vi.mock('./EndorsementRequestSuccess', () => ({ default: () => null }));
@@ -25,7 +28,7 @@ vi.mock('learn-card-base', () => ({
         closeAllModals: vi.fn(),
     }),
     useShareBoostMutation: () => ({ mutate: mutateMock, isPending: false }),
-    useToast: () => ({ presentToast: vi.fn() }),
+    useToast: () => ({ presentToast: presentToastMock }),
     useWallet: () => ({ initWallet: vi.fn() }),
 }));
 vi.mock('@analytics', () => ({
@@ -86,5 +89,31 @@ describe('EndorsementRequestOptions', () => {
 
         expect(screen.getByRole('button', { name: /copy link/i })).toBeEnabled();
         expect(qrButton).toBeEnabled();
+    });
+
+    it('reports malformed generated links without enabling request actions', async () => {
+        render(
+            <EndorsementRequestOptions
+                credential={credential}
+                categoryType={'Achievement' as never}
+                endorsementRequest={{ email: '', text: '' }}
+                setEndorsementRequest={vi.fn()}
+            />
+        );
+
+        await waitFor(() => expect(mutateMock).toHaveBeenCalledOnce());
+
+        const callbacks = mutateMock.mock.calls[0][1];
+        act(() => {
+            callbacks.onSuccess({ link: 'not-a-url' });
+            callbacks.onSettled();
+        });
+
+        expect(presentToastMock).toHaveBeenCalledWith('Unable to generate request', {
+            type: 'error',
+            hasDismissButton: true,
+        });
+        expect(screen.getByRole('button', { name: /copy link/i })).toBeDisabled();
+        expect(screen.getByRole('button', { name: /get code/i })).toBeDisabled();
     });
 });

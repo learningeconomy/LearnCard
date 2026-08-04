@@ -3337,7 +3337,7 @@
         },
         "viewRequest": {
             "ok": "Aceptar",
-            "errorFetching": "Error al obtener la credencial: {{error}}"
+            "errorOpening": "No pudimos abrir esta credencial. Inténtalo de nuevo."
         }
     },
     "verification": {

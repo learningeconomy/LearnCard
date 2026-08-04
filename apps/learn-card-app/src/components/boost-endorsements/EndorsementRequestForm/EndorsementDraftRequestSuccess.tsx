@@ -27,6 +27,7 @@ import {
 } from '../boost-endorsement.helpers';
 import { convertAttachmentsToEvidence } from '../EndorsementForm/endorsement-state.helpers';
 import * as m from '../../../paraglide/messages.js';
+import { createEndorsementShareLinkInfo } from './endorsement-request.helpers';
 
 export const EndorsementDraftRequestSuccess: React.FC<{
     credential: VC;
@@ -112,6 +113,8 @@ export const EndorsementDraftRequestSuccess: React.FC<{
 
         try {
             if (isLoggedIn) {
+                if (!shareLinkInfo) throw new Error('Missing endorsement request identity');
+
                 setIsLoading(true);
                 const wallet = await initWallet();
 
@@ -131,7 +134,7 @@ export const EndorsementDraftRequestSuccess: React.FC<{
                     endorsementVC,
                     {
                         type: 'endorsement',
-                        sharedUri: `uri=${shareLinkInfo?.uri}&seed=${shareLinkInfo?.seed}&pin=${shareLinkInfo?.pin}`,
+                        sharedUri: createEndorsementShareLinkInfo(shareLinkInfo),
                         credentialId: credential.id,
                         relationship: draftEndorsementRequest.relationship,
                     }

@@ -46,6 +46,7 @@ import {
 import endorsementsRequestStore from '../../stores/endorsementsRequestStore';
 import EndorsementDraftRequestSuccess from '../boost-endorsements/EndorsementRequestForm/EndorsementDraftRequestSuccess';
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
+import { createEndorsementShareLinkInfo } from '../boost-endorsements/EndorsementRequestForm/endorsement-request.helpers';
 import * as m from '../../paraglide/messages.js';
 
 const websiteLink = `${getAppBaseUrl()}/login`;
@@ -165,7 +166,7 @@ const ViewSharedBoost: React.FC<{
             presentAlert({
                 backdropDismiss: false,
                 cssClass: 'boost-confirmation-alert',
-                header: m['recovery.incorrectPassword'](),
+                header: m['endorsement.viewRequest.errorOpening'](),
                 buttons: [
                     {
                         text: 'OK',
@@ -193,7 +194,13 @@ const ViewSharedBoost: React.FC<{
             setBoost(undefined);
             setVC(undefined);
             setExistingEndorsements(null);
-            setShareLinkInfo(`uri=${uri}&seed=${seed}&pin=${pin}`);
+            setShareLinkInfo(
+                createEndorsementShareLinkInfo({
+                    uri: String(uri),
+                    seed: String(seed),
+                    pin: String(pin),
+                })
+            );
             void fetchCredential((uri as string).replace('localhost:', 'localhost%3A'));
         }
     }, [pin, seed, uri, tryRefetch]);

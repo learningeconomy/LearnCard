@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { findEndorsementForRequest, getEndorsementRequestId } from './endorsement-request.helpers';
+import {
+    createEndorsementShareLinkInfo,
+    findEndorsementForRequest,
+    getEndorsementRequestId,
+} from './endorsement-request.helpers';
 
 describe('endorsement request identity', () => {
     const sentEndorsements = [
@@ -46,5 +50,27 @@ describe('endorsement request identity', () => {
 
     it('requires the complete request identity', () => {
         expect(getEndorsementRequestId('uri=credential%3Afirst&seed=first-seed')).toBeUndefined();
+    });
+
+    it('handles a missing sent-credential result', () => {
+        expect(
+            findEndorsementForRequest(undefined, 'uri=credential%3Afirst&seed=first-seed&pin=1111')
+        ).toBeUndefined();
+    });
+
+    it('encodes request identity values before storing them', () => {
+        const sharedUri = createEndorsementShareLinkInfo({
+            uri: 'credential:test?version=1&source=event',
+            seed: 'seed+with/slashes=',
+            pin: '12&34',
+        });
+
+        expect(getEndorsementRequestId(sharedUri)).toBe(
+            JSON.stringify([
+                'credential:test?version=1&source=event',
+                'seed+with/slashes=',
+                '12&34',
+            ])
+        );
     });
 });

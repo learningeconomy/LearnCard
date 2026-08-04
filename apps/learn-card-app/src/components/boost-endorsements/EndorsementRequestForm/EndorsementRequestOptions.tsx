@@ -53,6 +53,14 @@ export const EndorsementRequestOptions: React.FC<{
 
     const { mutate: shareEarnedBoost, isPending: isLinkLoading } = useShareBoostMutation();
 
+    const handleLinkGenerationError = () => {
+        setShareLink(undefined);
+        presentToast(m['toasts.boost.endorsementRequestFailed'](), {
+            type: ToastTypeEnum.Error,
+            hasDismissButton: true,
+        });
+    };
+
     const generateShareLink = () => {
         setShareLink(undefined);
         setIsGeneratingShareLink(true);
@@ -60,35 +68,35 @@ export const EndorsementRequestOptions: React.FC<{
             { credential, credentialUri: credential.id },
             {
                 onSuccess(data) {
-                    const url = new URL(data.link);
-                    const params = new URLSearchParams(url.search);
+                    try {
+                        const url = new URL(data.link);
+                        const uri = url.searchParams.get('uri');
+                        const seed = url.searchParams.get('seed');
+                        const pin = url.searchParams.get('pin');
 
-                    const host = url.host;
-                    const uri = params.get('uri');
-                    const seed = params.get('seed');
-                    const pin = params.get('pin');
+                        if (!uri || !seed || !pin) {
+                            handleLinkGenerationError();
+                            return;
+                        }
 
-                    if (!uri || !seed || !pin) {
-                        setShareLink(undefined);
-                        return;
+                        const endorsementUrl = new URL('/', url.origin);
+                        endorsementUrl.search = new URLSearchParams({
+                            uri,
+                            seed,
+                            pin,
+                            endorsementRequest: 'true',
+                        }).toString();
+                        setShareLink(endorsementUrl.toString());
+                        track(AnalyticsEvents.GENERATE_SHARE_LINK, {
+                            category: categoryType,
+                            boostType: achievementType,
+                            method: 'Share Boost',
+                        });
+                    } catch {
+                        handleLinkGenerationError();
                     }
-
-                    setShareLink(
-                        `https://${host}/?uri=${uri}&seed=${seed}&pin=${pin}&endorsementRequest=true`
-                    );
-                    track(AnalyticsEvents.GENERATE_SHARE_LINK, {
-                        category: categoryType,
-                        boostType: achievementType,
-                        method: 'Share Boost',
-                    });
                 },
-                onError() {
-                    setShareLink(undefined);
-                    presentToast(m['toasts.boost.endorsementRequestFailed'](), {
-                        type: ToastTypeEnum.Error,
-                        hasDismissButton: true,
-                    });
-                },
+                onError: handleLinkGenerationError,
                 onSettled() {
                     setIsGeneratingShareLink(false);
                 },
