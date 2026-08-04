@@ -24,7 +24,9 @@ vi.mock('swiper/modules', () => ({ Navigation: {} }));
 vi.mock('@ionic/react', () => ({
     IonContent: ({ children }: React.PropsWithChildren) => <main>{children}</main>,
     IonFooter: ({ children }: React.PropsWithChildren) => <footer>{children}</footer>,
-    IonPage: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
+    IonPage: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+        <div {...props}>{children}</div>
+    ),
 }));
 
 vi.mock('learn-card-base', () => ({
@@ -115,6 +117,21 @@ describe('BoostMediaPreview', () => {
             },
         });
     });
+    it('owns the modal surface while its footer owns the bottom safe area', () => {
+        const { container } = render(
+            <BoostMediaPreview
+                credential={{ attachments: [] } as unknown as VC}
+                openDetailsSideModal={vi.fn()}
+                handleShareBoost={vi.fn()}
+                onDotsClick={vi.fn()}
+                verifications={[]}
+            />
+        );
+
+        expect(container.firstElementChild).toHaveAttribute('data-modal-insets', 'content-bottom');
+        expect(container.firstElementChild).toHaveClass('bg-grayscale-800');
+    });
+
     it('previews an embedded PDF attachment without sending it to Filestack', async () => {
         // Resolver behavior is shared by attachment and raw-artifact sources.
 
