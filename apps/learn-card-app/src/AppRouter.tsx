@@ -55,6 +55,7 @@ import { SharedI18nProvider } from './i18n/SharedI18nProvider';
 import { LocaleProfileSync } from './i18n/useSyncLocaleToProfile';
 import { useSetAnalyticsUserId, useAnalytics, useScreenView } from '@analytics';
 import { useAccountCreatedAndReturningSession } from '@analytics';
+import { useRecordFeedbackSession } from './feedback/useRecordFeedbackSession';
 import { useDeviceTypeByWidth } from 'learn-card-base';
 import { AI_ROUTES } from './constants/aiRoutes';
 import { useAutoVerifyContactMethodWithProofOfLogin } from './hooks/useAutoVerifyContactMethodWithProofOfLogin';
@@ -379,6 +380,7 @@ const AppRouter: React.FC = () => {
 
     useSetAnalyticsUserId({ debug: false });
     useAccountCreatedAndReturningSession(currentUser);
+    useRecordFeedbackSession();
     useScreenView();
     useAutoVerifyContactMethodWithProofOfLogin();
     useFinalizeInboxCredentials();

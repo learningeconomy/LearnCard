@@ -2613,6 +2613,11 @@
             "placeholder": "Cuéntanos más (opcional)",
             "send": "Enviar comentarios",
             "skip": "Omitir"
+        },
+        "github": {
+            "body": "¿Te gusta LearnCard? Es de código abierto.",
+            "cta": "Danos una estrella en GitHub",
+            "dismiss": "Descartar"
         }
     },
     "toasts": {
