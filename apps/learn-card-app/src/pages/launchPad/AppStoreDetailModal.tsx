@@ -724,7 +724,7 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
         launchType === 'AI_TUTOR';
 
     return (
-        <IonPage data-modal-insets="none" className="h-full w-full">
+        <IonPage className="h-full w-full bg-white">
             {/* Header */}
             <IonHeader mode="ios" className="ion-no-border">
                 <div className="ion-padding shadow-header bg-white">

@@ -116,7 +116,7 @@ The modal layer owns native top and bottom insets. Modal content must not add
 `safe-area-*` classes, `useSafeArea()` offsets, or
 `env(safe-area-inset-top|bottom)` spacing.
 
--   Ionic and shared modal containers apply insets to the single top-level content root. That root must paint the visible surface background itself; a background or backdrop filter on an inner child stops before the root's transparent inset border. Do not return sibling roots from shared modal content: `:first-child` and `:last-child` would split inset ownership across them.
+-   Ionic and shared modal containers apply insets to the single top-level content root. That root must paint the visible surface background itself; a background or backdrop filter on an inner child stops before the root's transparent inset border. Do not return sibling roots from shared modal content: `:first-child` and `:last-child` would split inset ownership across them. If a component can return a substitute root early, every possible root needs the appropriate ownership marker.
 -   Direct modal `IonContent` roots preserve existing `ion-padding`, custom `--padding-*`, keyboard assistance, and Ionic header/footer offsets while adding the device inset.
 -   Use `data-modal-insets="content-bottom"` on an Ionic root whose footer already paints and reserves the bottom safe area. The shared layer continues to own the top inset while preserving `--ion-safe-area-bottom` for the footer.
 -   Use `data-modal-insets="none"` on a canonical Ionic page whose `IonHeader` and `IonFooter` own both safe areas; this prevents shared borders and preserves both Ionic safe-area variables.

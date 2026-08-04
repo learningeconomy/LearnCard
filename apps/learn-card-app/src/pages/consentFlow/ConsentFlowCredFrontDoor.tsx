@@ -105,6 +105,7 @@ const ConsentFlowCredFrontDoor: React.FC<ConsentFlowCredFrontDoorProps> = ({
 
     return (
         <div
+            data-modal-insets="content-bottom"
             className="h-full w-full bg-cover bg-grayscale-800"
             style={{
                 backgroundImage: showBgImage
