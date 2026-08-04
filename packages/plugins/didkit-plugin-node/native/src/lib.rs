@@ -25,7 +25,10 @@ use didkit::{
     get_verification_method, DIDWeb, JWTOrLDPOptions, LinkedDataProofOptions, ProofFormat,
     ResolutionResult, Source, VerifiableCredential, VerifiablePresentation, DID_METHODS, JWK,
 };
-use ssi::jsonld::ContextLoader;
+use ssi::{
+    did_resolve::{SeriesResolver, StaticDocumentResolver},
+    jsonld::ContextLoader,
+};
 
 mod dag;
 mod jwe;
@@ -146,19 +149,23 @@ pub async fn issue_credential(
     let context_map: HashMap<String, String> = serde_json::from_str(&context_map)
         .map_err(|e| Error::from_reason(format!("serde: {}", e)))?;
     let proof_format = options.proof_format.unwrap_or_default();
-    let resolver = DID_METHODS.to_resolver();
+    let static_resolver = StaticDocumentResolver::from_json_map(&context_map);
+    let did_resolver = DID_METHODS.to_resolver();
+    let resolver = SeriesResolver {
+        resolvers: vec![&static_resolver, did_resolver],
+    };
     let mut context_loader = ContextLoader::default()
         .with_context_map_from(context_map)
         .map_err(|e| Error::from_reason(format!("context: {}", e)))?;
 
     let vc_string = match proof_format {
         ProofFormat::JWT => credential
-            .generate_jwt(Some(&jwk), &options.ldp_options, resolver)
+            .generate_jwt(Some(&jwk), &options.ldp_options, &resolver)
             .await
             .map_err(|e| Error::from_reason(format!("jwt: {}", e)))?,
         _ => {
             let proof = credential
-                .generate_proof(&jwk, &options.ldp_options, resolver, &mut context_loader)
+                .generate_proof(&jwk, &options.ldp_options, &resolver, &mut context_loader)
                 .await
                 .map_err(|e| Error::from_reason(format!("ldp: {}", e)))?;
             credential.add_proof(proof);
@@ -182,13 +189,17 @@ pub async fn verify_credential(
         .map_err(|e| Error::from_reason(format!("serde: {}", e)))?;
     let context_map: HashMap<String, String> = serde_json::from_str(&context_map)
         .map_err(|e| Error::from_reason(format!("serde: {}", e)))?;
-    let resolver = DID_METHODS.to_resolver();
+    let static_resolver = StaticDocumentResolver::from_json_map(&context_map);
+    let did_resolver = DID_METHODS.to_resolver();
+    let resolver = SeriesResolver {
+        resolvers: vec![&static_resolver, did_resolver],
+    };
     let mut context_loader = ContextLoader::default()
         .with_context_map_from(context_map)
         .map_err(|e| Error::from_reason(format!("context: {}", e)))?;
 
     let result = vc
-        .verify(Some(options), resolver, &mut context_loader)
+        .verify(Some(options), &resolver, &mut context_loader)
         .await;
     serde_json::to_string(&result).map_err(|e| Error::from_reason(format!("serde: {}", e)))
 }
@@ -460,16 +471,24 @@ mod tests {
             "{}".to_string(),
         ))
     }
-    fn verify_with_options(credential: &Value, options: Value) -> Value {
+    fn verify_with_options_and_documents(
+        credential: &Value,
+        options: Value,
+        document_map: Value,
+    ) -> Value {
         serde_json::from_str(
             &block_on(verify_credential(
                 credential.to_string(),
                 options.to_string(),
-                "{}".to_string(),
+                document_map.to_string(),
             ))
             .unwrap(),
         )
         .unwrap()
+    }
+
+    fn verify_with_options(credential: &Value, options: Value) -> Value {
+        verify_with_options_and_documents(credential, options, json!({}))
     }
 
     fn verify(credential: &Value) -> Value {
@@ -571,6 +590,104 @@ mod tests {
                 "Issuer authorization was not checked because the credential issuer is not a DID"
             ])
         );
+
+        let issuer_document = json!({
+            "@context": "https://www.w3.org/ns/did/v1",
+            "id": credential["issuer"],
+            "assertionMethod": [credential["proof"]["verificationMethod"].clone()]
+        });
+        let authorized_result = verify_with_options_and_documents(
+            &credential,
+            json!({ "checks": ["proof", "issuerAuthorization"] }),
+            json!({ "https://vc.example/issuers/5678": issuer_document.to_string() }),
+        );
+
+        assert_eq!(authorized_result["errors"], json!([]));
+        assert_eq!(authorized_result["warnings"], json!([]));
+        assert!(authorized_result["checks"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("issuerAuthorization")));
+
+        let unauthorized_issuer_document = json!({
+            "@context": "https://www.w3.org/ns/did/v1",
+            "id": credential["issuer"],
+            "assertionMethod": []
+        });
+        let unauthorized_result = verify_with_options_and_documents(
+            &credential,
+            json!({ "checks": ["proof", "issuerAuthorization"] }),
+            json!({
+                "https://vc.example/issuers/5678": unauthorized_issuer_document.to_string()
+            }),
+        );
+
+        assert_ne!(unauthorized_result["errors"], json!([]));
+        assert!(!unauthorized_result["checks"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("issuerAuthorization")));
+    }
+
+    #[test]
+    fn verifies_https_issuer_verification_method_with_authorization() {
+        let issuer = "https://issuer.example/keys";
+        let verification_method = format!("{}#key-1", issuer);
+        let key: Value = serde_json::from_str(
+            &generate_ed25519_key_from_bytes(Buffer::from(vec![7; 32])).unwrap(),
+        )
+        .unwrap();
+        let mut public_key = key.clone();
+        public_key.as_object_mut().unwrap().remove("d");
+        let issuer_document = json!({
+            "@context": "https://www.w3.org/ns/did/v1",
+            "id": issuer,
+            "verificationMethod": [{
+                "id": verification_method,
+                "controller": issuer,
+                "type": "JsonWebKey2020",
+                "publicKeyJwk": public_key
+            }],
+            "assertionMethod": [verification_method]
+        });
+        let document_map = json!({ (issuer): issuer_document.to_string() });
+        let credential = json!({
+            "@context": [
+                "https://www.w3.org/ns/credentials/v2",
+                "https://w3id.org/security/suites/ed25519-2020/v1"
+            ],
+            "type": ["VerifiableCredential"],
+            "issuer": issuer,
+            "validFrom": "2026-01-01T00:00:00Z",
+            "credentialSubject": { "id": "did:example:subject" }
+        });
+        let issued: Value = serde_json::from_str(
+            &block_on(issue_credential(
+                credential.to_string(),
+                json!({
+                    "type": "Ed25519Signature2020",
+                    "proofPurpose": "assertionMethod",
+                    "verificationMethod": verification_method
+                })
+                .to_string(),
+                key.to_string(),
+                document_map.to_string(),
+            ))
+            .unwrap(),
+        )
+        .unwrap();
+        let result = verify_with_options_and_documents(
+            &issued,
+            json!({ "checks": ["proof", "issuerAuthorization"] }),
+            document_map,
+        );
+
+        assert_eq!(result["errors"], json!([]));
+        assert_eq!(result["warnings"], json!([]));
+        assert!(result["checks"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("issuerAuthorization")));
     }
 
     #[test]

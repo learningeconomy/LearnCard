@@ -48,7 +48,7 @@ export type ProofOptions = {
     created?: string;
     challenge?: string;
     domain?: string;
-    checks?: ('proof' | 'JWS' | 'credentialStatus' | 'credentialSchema')[];
+    checks?: ('proof' | 'JWS' | 'credentialStatus' | 'credentialSchema' | 'issuerAuthorization')[];
     cryptosuite?: DataIntegrityCryptosuite;
 };
 
