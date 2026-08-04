@@ -122,6 +122,62 @@ describe('QRCodeScannerListener', () => {
         expect(mocks.listenerRemovers[0]).not.toHaveBeenCalled();
     });
 
+    it('does not let a cancelled session stop a newer scan', async () => {
+        let resolveFirstStart: (() => void) | undefined;
+        mocks.startScan.mockImplementationOnce(
+            () =>
+                new Promise<void>(resolve => {
+                    resolveFirstStart = resolve;
+                })
+        );
+
+        const { rerender } = render(<QRCodeScannerListener />);
+
+        await waitFor(() => expect(mocks.callbacks).toHaveLength(1));
+
+        mocks.setShowScanner(false);
+        rerender(<QRCodeScannerListener />);
+        await waitFor(() => expect(mocks.stopScan).toHaveBeenCalledOnce());
+
+        mocks.setShowScanner(true);
+        rerender(<QRCodeScannerListener />);
+        await waitFor(() => expect(mocks.startScan).toHaveBeenCalledTimes(2));
+
+        await act(async () => resolveFirstStart?.());
+
+        expect(mocks.stopScan).toHaveBeenCalledOnce();
+        expect(mocks.listenerRemovers[0]).toHaveBeenCalledOnce();
+        expect(mocks.listenerRemovers[1]).not.toHaveBeenCalled();
+    });
+
+    it('waits for the previous cleanup before starting a new scan', async () => {
+        let resolveListenerRemoval: (() => void) | undefined;
+        const { rerender } = render(<QRCodeScannerListener />);
+
+        await waitFor(() => expect(mocks.startScan).toHaveBeenCalledOnce());
+        mocks.listenerRemovers[0].mockImplementationOnce(
+            () =>
+                new Promise<void>(resolve => {
+                    resolveListenerRemoval = resolve;
+                })
+        );
+
+        mocks.setShowScanner(false);
+        rerender(<QRCodeScannerListener />);
+        mocks.setShowScanner(true);
+        rerender(<QRCodeScannerListener />);
+
+        await act(async () => {});
+        expect(mocks.startScan).toHaveBeenCalledOnce();
+        expect(mocks.callbacks).toHaveLength(1);
+
+        await act(async () => resolveListenerRemoval?.());
+
+        await waitFor(() => expect(mocks.startScan).toHaveBeenCalledTimes(2));
+        expect(mocks.stopScan).toHaveBeenCalledOnce();
+        expect(mocks.callbacks).toHaveLength(2);
+    });
+
     it('stops a scan that starts after the session was cancelled', async () => {
         let resolveStart: (() => void) | undefined;
         mocks.startScan.mockImplementationOnce(

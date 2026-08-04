@@ -32,6 +32,8 @@ export const QRCodeScannerListener: React.FC = () => {
     const [vc, setVC] = useState<VC | null>(null);
 
     const [loading, setLoading] = useState<boolean>(false);
+    const latestSessionIdRef = useRef(0);
+    const cleanupPromiseRef = useRef<Promise<void>>(Promise.resolve());
 
     const handleScan = useCallback(
         async (qrCodeValue: string) => {
@@ -86,10 +88,12 @@ export const QRCodeScannerListener: React.FC = () => {
     useEffect(() => {
         handleScanRef.current = handleScan;
         presentToastRef.current = presentToast;
-    }, [handleScan, presentToast]);
+    });
 
     useEffect(() => {
         if (!Capacitor.isNativePlatform() || !showScanner) return;
+        const sessionId = ++latestSessionIdRef.current;
+        const previousCleanupPromise = cleanupPromiseRef.current;
 
         let disposed = false;
         let listener: PluginListenerHandle | null = null;
@@ -128,6 +132,9 @@ export const QRCodeScannerListener: React.FC = () => {
 
         const startScanning = async () => {
             try {
+                await previousCleanupPromise;
+                if (disposed) return;
+
                 const registeredListener = await BarcodeScanner.addListener(
                     'barcodeScanned',
                     result => {
@@ -146,7 +153,9 @@ export const QRCodeScannerListener: React.FC = () => {
                     lensFacing: LensFacing.Back,
                 });
 
-                if (disposed) await BarcodeScanner.stopScan();
+                if (disposed && latestSessionIdRef.current === sessionId) {
+                    await BarcodeScanner.stopScan();
+                }
             } catch (error) {
                 if (disposed) return;
 
@@ -171,7 +180,9 @@ export const QRCodeScannerListener: React.FC = () => {
 
         return () => {
             disposed = true;
-            void stopOwnedScan().catch(error => log.warn('scan::cleanup-error', error));
+            cleanupPromiseRef.current = previousCleanupPromise
+                .then(stopOwnedScan)
+                .catch(error => log.warn('scan::cleanup-error', error));
         };
     }, [showScanner]);
 
