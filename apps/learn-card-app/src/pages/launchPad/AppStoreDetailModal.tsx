@@ -977,7 +977,10 @@ const AppStoreDetailModal: React.FC<AppStoreDetailModalProps> = ({
             <IonFooter
                 mode="ios"
                 className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] pt-4 absolute bottom-0 bg-white"
-                style={{ paddingBottom: 'calc(1rem + var(--ion-safe-area-bottom, 0px))' }}
+                style={{
+                    paddingBottom: 'calc(1rem + var(--ion-safe-area-bottom, 0px))',
+                    maxHeight: 'calc(100px + var(--ion-safe-area-bottom, 0px))',
+                }}
             >
                 <div className="w-full flex items-center justify-center">
                     <div className="w-full flex items-center justify-between max-w-[600px] ion-padding gap-2">

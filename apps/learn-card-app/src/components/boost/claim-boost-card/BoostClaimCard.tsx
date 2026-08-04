@@ -500,7 +500,10 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     }
 
     return (
-        <IonPage data-modal-insets="content-bottom" className="flex items-center justify-center">
+        <IonPage
+            data-modal-insets="content-bottom"
+            className="flex items-center justify-center boost-cms-preview"
+        >
             <BoostFooterLayout
                 contentOwnsScroll
                 footerProps={{

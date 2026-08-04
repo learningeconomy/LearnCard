@@ -608,7 +608,7 @@ const ClaimBoost: React.FC<{
     };
 
     return (
-        <IonPage>
+        <IonPage data-modal-insets="content-bottom" className="bg-grayscale-100">
             {/* <MainHeader
                 showBackButton={false}
                 customClassName="bg-white"
@@ -638,7 +638,7 @@ const ClaimBoost: React.FC<{
                         className="flex flex-col items-center justify-center px-2 overflow-x-auto h-full pt-[30px]"
                     > */}
                         <section
-                            className={`w-full safe-area-top-margin overflow-y-auto max-h-full disable-scrollbars ${
+                            className={`w-full mt-[var(--ion-safe-area-top,0px)] overflow-y-auto max-h-full disable-scrollbars ${
                                 shouldUseHostCardPadding ? 'px-6' : ''
                             } ${Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'}`}
                         >
