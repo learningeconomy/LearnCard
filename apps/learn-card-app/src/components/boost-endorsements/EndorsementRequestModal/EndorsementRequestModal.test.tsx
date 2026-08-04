@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => {
@@ -77,18 +77,20 @@ const shareLinkInfo = 'uri=credential%3Atest&seed=request-seed&pin=1234';
 describe('EndorsementRequestModal', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.getSentCredentials.mockResolvedValue([
-            {
-                uri: 'endorsement:pending',
-                from: 'did:example:endorser',
-                sent: new Date(),
-                metadata: {
-                    type: 'endorsement',
-                    sharedUri: shareLinkInfo,
-                    relationship: { type: 'friend', label: 'Friend' },
+        mocks.getSentCredentials
+            .mockResolvedValueOnce([
+                {
+                    uri: 'endorsement:pending',
+                    from: 'did:example:endorser',
+                    sent: new Date(),
+                    metadata: {
+                        type: 'endorsement',
+                        sharedUri: shareLinkInfo,
+                        relationship: { type: 'friend', label: 'Friend' },
+                    },
                 },
-            },
-        ]);
+            ])
+            .mockResolvedValue([]);
         mocks.readCredential.mockResolvedValue({
             description: 'Please endorse this credential',
             credentialSubject: {},
@@ -103,8 +105,12 @@ describe('EndorsementRequestModal', () => {
         await screen.findByText('Existing endorsement');
         expect(mocks.getSentCredentials).toHaveBeenCalledOnce();
 
-        rerender(<EndorsementRequestModal credential={credential} shareLinkInfo={shareLinkInfo} />);
+        await act(async () => {
+            rerender(
+                <EndorsementRequestModal credential={credential} shareLinkInfo={shareLinkInfo} />
+            );
+        });
 
-        await waitFor(() => expect(mocks.getSentCredentials).toHaveBeenCalledOnce());
+        expect(mocks.getSentCredentials).toHaveBeenCalledOnce();
     });
 });
