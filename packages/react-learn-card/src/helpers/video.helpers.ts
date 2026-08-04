@@ -21,8 +21,14 @@ export type VideoMetadata = {
  * the web app. Rather than sniffing for Capacitor — which would drag a native
  * dependency into this package — we test the actual condition YouTube cares
  * about: is this document served over `http(s)`?
+ *
+ * Pass `platform` where it is known. Only YouTube rejects embeds this way —
+ * Vimeo, Google Drive and Loom serve their players regardless of referrer — so
+ * without the hint we stay conservative and treat any video as at risk.
  */
-export const canEmbedVideoIframe = (): boolean => {
+export const canEmbedVideoIframe = (platform?: VideoPlatform): boolean => {
+    if (platform && platform !== 'youtube') return true;
+
     if (typeof window === 'undefined') return true;
 
     const protocol = window.location?.protocol;

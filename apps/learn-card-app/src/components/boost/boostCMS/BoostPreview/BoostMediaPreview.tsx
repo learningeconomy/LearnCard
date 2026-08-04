@@ -175,7 +175,7 @@ export const BoostMediaPreview: React.FC<{
 
         if (isMediaLoading) {
             mediaContent = <MediaLoader text="Video" />;
-        } else if (iframeSrc && !canEmbedVideoIframe()) {
+        } else if (iframeSrc && !canEmbedVideoIframe(videoMetaData?.type)) {
             mediaContent = (
                 <div style={{ width: '100%', height: '100vh', backgroundColor: '#353E64' }}>
                     <ExternalVideoFallback

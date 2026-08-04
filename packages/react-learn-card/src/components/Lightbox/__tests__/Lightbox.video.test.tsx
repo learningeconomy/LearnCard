@@ -4,7 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { Lightbox } from '../Lightbox';
-import { setExternalUrlOpener } from '../../../helpers/externalUrl.helpers';
+import { openExternalUrl, setExternalUrlOpener } from '../../../helpers/externalUrl.helpers';
 import { canEmbedVideoIframe, getExternalVideoUrl } from '../../../helpers/video.helpers';
 
 const VIDEO_URL = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
@@ -42,6 +42,33 @@ describe('canEmbedVideoIframe', () => {
         // YouTube rejects the embed with "Error 153".
         setProtocol('capacitor:');
         expect(canEmbedVideoIframe()).toBe(false);
+        expect(canEmbedVideoIframe('youtube')).toBe(false);
+    });
+
+    it('leaves non-YouTube platforms embedded — only YouTube checks the referrer', () => {
+        setProtocol('capacitor:');
+        expect(canEmbedVideoIframe('vimeo')).toBe(true);
+        expect(canEmbedVideoIframe('drive')).toBe(true);
+        expect(canEmbedVideoIframe('loom')).toBe(true);
+    });
+});
+
+describe('openExternalUrl', () => {
+    afterEach(() => setExternalUrlOpener(undefined));
+
+    it('refuses non-web schemes from untrusted attachment data', async () => {
+        const opened: string[] = [];
+        setExternalUrlOpener(url => {
+            opened.push(url);
+        });
+
+        await openExternalUrl('javascript:alert(1)');
+        await openExternalUrl('data:text/html,<script>alert(1)</script>');
+        await openExternalUrl('');
+        expect(opened).toEqual([]);
+
+        await openExternalUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+        expect(opened).toEqual(['https://www.youtube.com/watch?v=dQw4w9WgXcQ']);
     });
 });
 

@@ -123,7 +123,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
 
             {currentItem.type === 'video' && videoMetadata?.embedUrl && (
                 <div className="relative w-[90vw] max-w-[800px] aspect-video">
-                    {canEmbedVideoIframe() ? (
+                    {canEmbedVideoIframe(videoMetadata.type) ? (
                         <iframe
                             src={videoMetadata.embedUrl}
                             className="absolute top-0 left-0 w-full h-full rounded-md"
