@@ -347,20 +347,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     }
 
     return (
-        <IonPage
-            data-modal-insets="content-bottom"
-            className={bgColor}
-            style={
-                bgColor
-                    ? undefined
-                    : {
-                          background: 'var(--modal-bg)',
-                          backgroundPosition: 'center',
-                          backgroundRepeat: 'no-repeat',
-                          backgroundSize: 'cover',
-                      }
-            }
-        >
+        <IonPage data-modal-insets="content-bottom" className={bgColor}>
             <BoostFooterLayout
                 contentOwnsScroll
                 footerProps={{
