@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 
 import ExistingAiSessionChatBotContainer from './NewAiSessionChatBot/ExistingAiSessionChatBotContainer';
 import NewAiAppSessionChatBotContainer from './NewAiSessionChatBot/NewAiAppSessionChatBotContainer';
 import NewAiSessionChatBotContainer from './NewAiSessionChatBot/NewAiSessionChatBotContainer';
 import AiSessionTypeSelector from './AiSessionTypeSelector/AiSessionTypeSelector';
+import AiInsightsErrorHandler from './AiInsightsErrorHandler';
 
 import { useDeviceTypeByWidth, LaunchPadAppListItem } from 'learn-card-base';
 
@@ -34,13 +35,9 @@ export const NewAiSessionContainer: React.FC<{
     const activeStep = chatBotStore.useTracked.activeStep();
     const setActiveStep = chatBotStore.set.setActiveStep;
 
-    // const [activeStep, setActiveStep] = useState<NewAiSessionStepEnum>(
-    //     NewAiSessionStepEnum.topicSelector
-    // );
-
     const startInternalAiChatBot = chatBotStore.useTracked.startInternalAiChatBot();
     const setStartInternalAiChatBot = chatBotStore.set.setStartInternalAiChatBot;
-    // const [startInternalAiChatBot, setStartInternalAiChatBot] = useState<boolean>(false);
+    const mode = chatBotStore.useTracked.mode();
 
     useEffect(() => {
         if (shortCircuitStep) {
@@ -112,6 +109,7 @@ export const NewAiSessionContainer: React.FC<{
         <div
             className={`h-full bg-transparent relative flex items-center flex-col justify-end ${containerStyles}`}
         >
+            <AiInsightsErrorHandler active={startInternalAiChatBot} mode={mode} />
             {step}
         </div>
     );
