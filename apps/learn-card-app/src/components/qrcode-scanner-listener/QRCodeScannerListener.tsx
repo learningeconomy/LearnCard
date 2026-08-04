@@ -83,8 +83,10 @@ export const QRCodeScannerListener: React.FC = () => {
     const handleScanRef = useRef(handleScan);
     const presentToastRef = useRef(presentToast);
 
-    handleScanRef.current = handleScan;
-    presentToastRef.current = presentToast;
+    useEffect(() => {
+        handleScanRef.current = handleScan;
+        presentToastRef.current = presentToast;
+    }, [handleScan, presentToast]);
 
     useEffect(() => {
         if (!Capacitor.isNativePlatform() || !showScanner) return;
