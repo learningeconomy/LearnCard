@@ -55,6 +55,31 @@ if (!w3cResult.warnings.some(warning => warning.includes('Issuer authorization')
     throw new Error(`Missing URL issuer warning: ${JSON.stringify(w3cResult)}`);
 }
 
+const w3cIssuerDocument = {
+    '@context': 'https://www.w3.org/ns/did/v1',
+    id: w3cCredential.issuer,
+    assertionMethod: [w3cCredential.proof.verificationMethod],
+};
+const w3cAuthorizedResult = JSON.parse(
+    await wasmModule.verifyCredential(
+        JSON.stringify(w3cCredential),
+        JSON.stringify({ checks: ['proof', 'issuerAuthorization'] }),
+        JSON.stringify({
+            [w3cCredential.issuer]: JSON.stringify(w3cIssuerDocument),
+        })
+    )
+);
+
+if (
+    w3cAuthorizedResult.errors.length !== 0 ||
+    !w3cAuthorizedResult.checks.includes('proof') ||
+    !w3cAuthorizedResult.checks.includes('issuerAuthorization')
+) {
+    throw new Error(
+        `URL issuer DID key authorization regression: ${JSON.stringify(w3cAuthorizedResult)}`
+    );
+}
+
 const issuer = 'https://issuer.example/keys';
 const verificationMethod = `${issuer}#key-1`;
 const key = JSON.parse(wasmModule.generateEd25519KeyFromBytes(new Uint8Array(32).fill(7)));
