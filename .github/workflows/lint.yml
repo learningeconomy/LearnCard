@@ -116,6 +116,9 @@ jobs:
             - name: Verify numeric Bitstring Status List compatibility
               run: node packages/plugins/didkit/scripts/check-wasm-numeric-status.mjs
 
+            - name: Verify URL issuer authorization behavior
+              run: node packages/plugins/didkit/scripts/check-wasm-issuer-authorization.mjs
+
     # Pure-Node static scan (no install/build): the wasm-bindgen glue checked into
     # packages/plugins/didkit/src/didkit/pkg is version-locked to the binary beside it,
     # so the content-addressed URL that init() falls back to must name that same binary.

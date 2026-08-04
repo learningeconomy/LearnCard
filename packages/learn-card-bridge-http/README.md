@@ -65,18 +65,21 @@ bridge is not listening at `http://127.0.0.1:3100`.
 
 ## URL issuer verification policy
 
-When a credential names an HTTPS issuer but its proof uses a DID verification method, a
-successful `proof` check establishes signature integrity only. DIDKit cannot establish that the
-named URL issuer authorized that DID key because there is no issuer DID document to supply the
-assertion-method relationship. The raw verification result therefore includes this
-security-relevant warning:
+When a credential names an HTTPS issuer, `checks: ["proof"]` establishes signature integrity but
+does not establish that the named issuer authorized the proof's key. The raw result therefore
+includes this security-relevant warning:
 
 ```text
 Issuer authorization was not checked because the credential issuer is not a DID
 ```
 
-Consumers must surface or enforce this warning according to their trust policy; they must not
-interpret `checks: ["proof"]` by itself as issuer authorization.
+Request `checks: ["proof", "issuerAuthorization"]` to require DIDKit to resolve the issuer's
+controlled identifier document and confirm that its `assertionMethod` authorizes the proof's
+verification method. The check fails closed if the document is unavailable or does not authorize
+the key. Remote issuer resolution requires a LearnCard initialized with `allowRemoteContexts:
+true`; otherwise only statically supplied documents can satisfy the check.
+
+Consumers must not interpret `checks: ["proof"]` by itself as issuer authorization.
 
 ## Contributing
 

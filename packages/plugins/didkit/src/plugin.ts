@@ -18,7 +18,12 @@ import init, {
     decryptDagJwe,
     clearCache,
 } from './didkit/index';
-import { getDocumentMap } from './helpers';
+import {
+    getCredentialIssuerDocumentURIs,
+    getDocumentMap,
+    getIssuerAuthorizationDocumentURIs,
+    getVerificationMethodDocumentURIs,
+} from './helpers';
 
 import { DIDKitPlugin, DidMethod } from './types';
 
@@ -73,7 +78,10 @@ export const getDidKitPlugin = async (
                         JSON.stringify(options),
                         JSON.stringify(keypair),
                         JSON.stringify(
-                            await getDocumentMap(_learnCard, credential, allowRemoteContexts)
+                            await getDocumentMap(_learnCard, credential, allowRemoteContexts, [
+                                ...getCredentialIssuerDocumentURIs(credential),
+                                ...getVerificationMethodDocumentURIs(credential),
+                            ])
                         )
                     )
                 );
@@ -85,7 +93,10 @@ export const getDidKitPlugin = async (
                         JSON.stringify(credential),
                         JSON.stringify(options),
                         JSON.stringify(
-                            await getDocumentMap(_learnCard, credential, allowRemoteContexts)
+                            await getDocumentMap(_learnCard, credential, allowRemoteContexts, [
+                                ...getVerificationMethodDocumentURIs(credential),
+                                ...getIssuerAuthorizationDocumentURIs(credential, options.checks),
+                            ])
                         )
                     )
                 );

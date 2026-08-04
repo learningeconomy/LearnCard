@@ -21,12 +21,59 @@ export const getContextURIs = (jsonld: Record<string, any>) => {
     return contexts;
 };
 
+export const getCredentialIssuerDocumentURIs = (credential: Record<string, any>): string[] => {
+    const issuer =
+        typeof credential.issuer === 'string' ? credential.issuer : credential.issuer?.id;
+
+    return typeof issuer === 'string' &&
+        (issuer.startsWith('https://') || issuer.startsWith('http://'))
+        ? [issuer]
+        : [];
+};
+
+export const getVerificationMethodDocumentURIs = (credential: Record<string, any>): string[] => {
+    const proofs = Array.isArray(credential.proof) ? credential.proof : [credential.proof];
+
+    return proofs.flatMap(proof => {
+        const verificationMethod =
+            typeof proof?.verificationMethod === 'string'
+                ? proof.verificationMethod
+                : proof?.verificationMethod?.id;
+
+        if (
+            typeof verificationMethod !== 'string' ||
+            (!verificationMethod.startsWith('https://') &&
+                !verificationMethod.startsWith('http://'))
+        ) {
+            return [];
+        }
+
+        try {
+            const documentUri = new URL(verificationMethod);
+            documentUri.hash = '';
+
+            return [documentUri.toString()];
+        } catch {
+            return [];
+        }
+    });
+};
+
+export const getIssuerAuthorizationDocumentURIs = (
+    credential: Record<string, any>,
+    checks: readonly string[] = []
+): string[] =>
+    checks.includes('issuerAuthorization') ? getCredentialIssuerDocumentURIs(credential) : [];
+
 export const getDocumentMap = async (
     learnCard: LearnCard<any, 'context'>,
     obj: Record<string, any>,
-    allowRemoteContexts = false
+    allowRemoteContexts = false,
+    additionalUris: string[] = []
 ) => {
-    const uris = getContextURIs(obj);
+    const uris = [...new Set([...getContextURIs(obj), ...additionalUris])].filter(
+        (uri): uri is string => typeof uri === 'string'
+    );
     const resolvedDocs = await Promise.all(
         uris.map(async uri => learnCard.context.resolveDocument(uri, allowRemoteContexts))
     );

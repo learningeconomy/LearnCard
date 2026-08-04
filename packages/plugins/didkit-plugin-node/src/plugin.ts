@@ -168,11 +168,20 @@ export const getDidKitPlugin = async (
             },
 
             issueCredential: async (_learnCard, credential, options, keypair) => {
-                const { getDocumentMap } = await import('@learncard/didkit-plugin');
+                // Keep the WASM-backed package lazy so loading the native plugin does not initialize WASM.
+                const {
+                    getCredentialIssuerDocumentURIs,
+                    getDocumentMap,
+                    getVerificationMethodDocumentURIs,
+                } = await import('@learncard/didkit-plugin');
                 const contextMap = await getDocumentMap(
                     _learnCard,
                     credential,
-                    _allowRemoteContexts
+                    _allowRemoteContexts,
+                    [
+                        ...getCredentialIssuerDocumentURIs(credential),
+                        ...getVerificationMethodDocumentURIs(credential),
+                    ]
                 );
                 const result = await native.issueCredential(
                     JSON.stringify(credential),
@@ -184,11 +193,20 @@ export const getDidKitPlugin = async (
             },
 
             verifyCredential: async (_learnCard, credential, options = {}) => {
-                const { getDocumentMap } = await import('@learncard/didkit-plugin');
+                // Keep the WASM-backed package lazy so loading the native plugin does not initialize WASM.
+                const {
+                    getDocumentMap,
+                    getIssuerAuthorizationDocumentURIs,
+                    getVerificationMethodDocumentURIs,
+                } = await import('@learncard/didkit-plugin');
                 const contextMap = await getDocumentMap(
                     _learnCard,
                     credential,
-                    _allowRemoteContexts
+                    _allowRemoteContexts,
+                    [
+                        ...getVerificationMethodDocumentURIs(credential),
+                        ...getIssuerAuthorizationDocumentURIs(credential, options.checks),
+                    ]
                 );
                 const result = await native.verifyCredential(
                     JSON.stringify(credential),
