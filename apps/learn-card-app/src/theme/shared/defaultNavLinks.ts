@@ -14,7 +14,10 @@ export const DEFAULT_SIDE_MENU_ROOT_LINKS: SideMenuLink[] = [
     // notifications live in the header island. The mobile-only filtering happens
     // in SideMenuRootLinks (LC-1921).
     { id: SideMenuLinksEnum.alerts, label: 'Alerts', path: '/notifications' },
+    { id: SideMenuLinksEnum.myAssistant, label: 'My Assistant', path: '/ai/assistant' },
     { id: SideMenuLinksEnum.contacts, label: 'Contacts', path: '/contacts' },
+    // Disable personalize as default side menu link for now
+    // { id: SideMenuLinksEnum.personalize, label: 'Personalize', path: '/personalize' },
     { id: SideMenuLinksEnum.adminTools, label: 'Admin Tools', path: '/admin-tools' },
 ];
 

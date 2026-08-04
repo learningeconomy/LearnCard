@@ -1,0 +1,54 @@
+{
+    "name": "@learncard/ai-agent-service",
+    "version": "0.0.1",
+    "private": true,
+    "description": "Prototype LearnCard AI agent service with a debug chat UI.",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "rm -rf dist && node esbuild.cjs && bun run tsc --p tsconfig.build.json",
+        "dev": "bun --conditions=development --watch src/index.ts",
+        "dev:prod": "NODE_ENV=production bun --conditions=development --watch src/index.ts",
+        "autonomy:once": "bun --conditions=development src/autonomy/once.ts",
+        "autonomy:dev": "bun --conditions=development src/autonomy/dev.ts",
+        "trigger:dev": "trigger dev",
+        "trigger:deploy": "trigger deploy",
+        "start": "bun --conditions=development src/index.ts",
+        "start:docker": "bun --conditions=development src/index.ts",
+        "test": "bunx vitest"
+    },
+    "keywords": [],
+    "author": "Learning Economy Foundation (www.learningeconomy.io)",
+    "license": "MIT",
+    "dependencies": {
+        "@learncard/didkit-plugin": "workspace:*",
+        "@learncard/didkit-plugin-node": "workspace:*",
+        "@learncard/init": "workspace:*",
+        "@trigger.dev/sdk": "4.5.4",
+        "cors": "^2.8.5",
+        "croner": "^10.0.1",
+        "dotenv": "^16.0.3",
+        "express": "^4.18.2",
+        "express-rate-limit": "^8.0.1",
+        "mongodb": "^6.2.0",
+        "openai": "^4.55.7",
+        "zod": "4.1.13"
+    },
+    "devDependencies": {
+        "@trigger.dev/build": "4.5.4",
+        "@types/cors": "^2.8.13",
+        "@types/express": "^4.17.15",
+        "@types/node": "^18.0.0",
+        "esbuild": "^0.27.1",
+        "trigger.dev": "4.5.4",
+        "vitest": "^1.4.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/learningeconomy/LearnCard"
+    },
+    "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/services/learn-card-network/ai-agent",
+    "bugs": {
+        "url": "https://github.com/learningeconomy/LearnCard/issues"
+    }
+}

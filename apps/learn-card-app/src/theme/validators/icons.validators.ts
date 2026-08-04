@@ -59,7 +59,7 @@ const sideMenuFixedKeys = [
  * validation fails and the registry ends up empty, which surfaces as
  * `"No themes registered"` at app boot.
  */
-const sideMenuExtraKeys = ['pathways', 'dashboard'] as const;
+const sideMenuExtraKeys = ['pathways', 'myAssistant', 'dashboard'] as const;
 
 export const SideMenuIconsSchema = z
     .object({
