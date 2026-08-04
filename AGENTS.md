@@ -116,8 +116,10 @@ The modal layer owns native top and bottom insets. Modal content must not add
 `safe-area-*` classes, `useSafeArea()` offsets, or
 `env(safe-area-inset-top|bottom)` spacing.
 
--   Ionic and shared modal containers apply insets to the single top-level content root that owns the visible surface background. Do not return sibling roots from shared modal content: `:first-child` and `:last-child` would split inset ownership across them.
+-   Ionic and shared modal containers apply insets to the single top-level content root. That root must paint the visible surface background itself; a background or backdrop filter on an inner child stops before the root's transparent inset border. Do not return sibling roots from shared modal content: `:first-child` and `:last-child` would split inset ownership across them.
 -   Direct modal `IonContent` roots preserve existing `ion-padding`, custom `--padding-*`, keyboard assistance, and Ionic header/footer offsets while adding the device inset.
+-   Use `data-modal-insets="content-bottom"` on an Ionic root whose footer already paints and reserves the bottom safe area. The shared layer continues to own the top inset while preserving `--ion-safe-area-bottom` for the footer.
+-   Use `data-modal-insets="none"` on a canonical Ionic page whose `IonHeader` and `IonFooter` own both safe areas; this prevents shared borders and preserves both Ionic safe-area variables.
 -   Use `data-modal-root="centered"` on a standalone centered dialog's full-screen backdrop. Set `--modal-gutter` to the backdrop's existing vertical gutter; it defaults to `0px`.
 -   Use bare `data-modal-root` on the visible surface when it is full-bleed at any responsive breakpoint. If the root already has vertical padding, declare it through `--modal-root-padding-top` / `--modal-root-padding-bottom`; the shared rule adds the device inset to those values without altering visible borders.
 -   Absolute controls inside a bare modal root do not move with its padding; offset them with `--modal-safe-area-top` / `--modal-safe-area-bottom` or place them inside an inner positioned wrapper.

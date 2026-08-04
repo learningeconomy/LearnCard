@@ -8,7 +8,8 @@
 //   - Centered card backdrop: `data-modal-root="centered"`; this takes the
 //     larger of the device inset and the existing modal gutter.
 //   - Bottom sheet: `data-modal-root="bottom-sheet"`; bottom inset only.
-//   - `data-modal-insets="none"` opts out entirely.
+//   - `data-modal-insets="content-bottom"` leaves the bottom inset to content.
+//   - `data-modal-insets="none"` leaves both insets to Ionic content.
 ion-modal,
 #full-screen-modal,
 #right-modal,
@@ -22,6 +23,10 @@ ion-modal,
 
 [data-modal-root='bottom-sheet'] {
     --modal-safe-area-top: 0px;
+}
+
+[data-modal-insets='content-bottom'] {
+    --modal-safe-area-bottom: 0px;
 }
 
 [data-modal-insets='none'] {
@@ -95,17 +100,45 @@ ion-modal > .ion-delegate-host > ion-content:last-child::part(scroll) {
 
 // The content owner has already reserved the device inset. Zero Ionic's
 // inherited variables at that boundary so nested content cannot add it again.
-// A nested `data-modal-root` deliberately starts a new viewport overlay and
-// computes its own raw device insets above.
-ion-modal > :not(ion-header):not(ion-footer):not(.ion-delegate-host),
-ion-modal > .ion-delegate-host > :not(ion-header):not(ion-footer),
-#full-screen-modal > section > *,
-#right-modal > section > *,
-#center-modal > section > *,
-#cancel-modal > section > *,
-.freeform-modal > .freeform-section > *,
-[data-modal-root] > * {
+// Opted-out roots retain the Ionic variables for their own layout; roots whose
+// footer owns the bottom inset still let the shared layer own the top.
+ion-modal
+    > :not(ion-header):not(ion-footer):not(.ion-delegate-host):not([data-modal-insets='none']),
+ion-modal > .ion-delegate-host > :not(ion-header):not(ion-footer):not([data-modal-insets='none']),
+#full-screen-modal > section > *:not([data-modal-insets='none']),
+#right-modal > section > *:not([data-modal-insets='none']),
+#center-modal > section > *:not([data-modal-insets='none']),
+#cancel-modal > section > *:not([data-modal-insets='none']),
+.freeform-modal > .freeform-section > *:not([data-modal-insets='none']),
+[data-modal-root]:not([data-modal-insets='none']) > * {
     --ion-safe-area-top: 0px;
+}
+
+ion-modal
+    > :not(ion-header):not(ion-footer):not(.ion-delegate-host):not([data-modal-insets='none']):not(
+        [data-modal-insets='content-bottom']
+    ),
+ion-modal
+    > .ion-delegate-host
+    > :not(ion-header):not(ion-footer):not([data-modal-insets='none']):not(
+        [data-modal-insets='content-bottom']
+    ),
+#full-screen-modal
+    > section
+    > *:not([data-modal-insets='none']):not([data-modal-insets='content-bottom']),
+#right-modal
+    > section
+    > *:not([data-modal-insets='none']):not([data-modal-insets='content-bottom']),
+#center-modal
+    > section
+    > *:not([data-modal-insets='none']):not([data-modal-insets='content-bottom']),
+#cancel-modal
+    > section
+    > *:not([data-modal-insets='none']):not([data-modal-insets='content-bottom']),
+.freeform-modal
+    > .freeform-section
+    > *:not([data-modal-insets='none']):not([data-modal-insets='content-bottom']),
+[data-modal-root]:not([data-modal-insets='none']):not([data-modal-insets='content-bottom']) > * {
     --ion-safe-area-bottom: 0px;
 }
 
