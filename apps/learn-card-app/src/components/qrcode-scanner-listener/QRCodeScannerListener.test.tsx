@@ -59,7 +59,7 @@ vi.mock('../../pages/addressBook/addContactView/AddContactView', () => ({
     default: () => null,
 }));
 vi.mock('../../hooks/useClaimInputRouter', () => ({
-    useClaimInputRouter: () => mocks.route,
+    useClaimInputRouter: () => (value: string) => mocks.route(value),
 }));
 vi.mock('../../paraglide/messages.js', () => ({
     'scanner.failed': () => 'Scan failed',
@@ -106,6 +106,20 @@ describe('QRCodeScannerListener', () => {
         expect(mocks.listenerRemovers[0]).toHaveBeenCalledOnce();
         expect(mocks.listenerRemovers[1]).toHaveBeenCalledOnce();
         expect(mocks.stopScan).toHaveBeenCalledTimes(2);
+    });
+
+    it('keeps the active scan when the router function changes identity', async () => {
+        const { rerender } = render(<QRCodeScannerListener />);
+
+        await waitFor(() => expect(mocks.startScan).toHaveBeenCalledOnce());
+
+        await act(async () => {
+            rerender(<QRCodeScannerListener />);
+        });
+
+        expect(mocks.startScan).toHaveBeenCalledOnce();
+        expect(mocks.stopScan).not.toHaveBeenCalled();
+        expect(mocks.listenerRemovers[0]).not.toHaveBeenCalled();
     });
 
     it('stops a scan that starts after the session was cancelled', async () => {

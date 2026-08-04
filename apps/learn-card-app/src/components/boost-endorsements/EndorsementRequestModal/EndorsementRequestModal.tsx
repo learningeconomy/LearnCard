@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import EndorsementForm from '../EndorsementForm/EndorsementForm';
 import EndorsementBadge from '../../../assets/images/endorsement-badge.png';
@@ -48,6 +48,11 @@ export const EndorsementRequestModal: React.FC<{
 
     const [showSuccess, setShowSuccess] = useState<boolean>(false);
     const [pendingEndorsement, setPendingEndorsement] = useState<BoostEndorsement | null>(null);
+    const initWalletRef = useRef(initWallet);
+    const currentLCNUserRef = useRef(currentLCNUser);
+
+    initWalletRef.current = initWallet;
+    currentLCNUserRef.current = currentLCNUser;
 
     let {
         issuerProfile,
@@ -73,7 +78,7 @@ export const EndorsementRequestModal: React.FC<{
 
         const getPendingEndorsement = async () => {
             try {
-                const wallet = await initWallet();
+                const wallet = await initWalletRef.current();
                 const sentCredentials = await wallet.invoke.getSentCredentials(profileId);
                 const matchingEndorsement = findEndorsementForRequest(
                     sentCredentials,
@@ -88,8 +93,8 @@ export const EndorsementRequestModal: React.FC<{
 
                 setPendingEndorsement({
                     user: {
-                        name: currentLCNUser?.displayName || matchingEndorsement.from,
-                        image: currentLCNUser?.image,
+                        name: currentLCNUserRef.current?.displayName || matchingEndorsement.from,
+                        image: currentLCNUserRef.current?.image,
                     },
                     description: pendingEndorsementRequest?.description,
                     qualification: pendingEndorsementRequest?.credentialSubject?.endorsementComment,
@@ -111,14 +116,7 @@ export const EndorsementRequestModal: React.FC<{
         return () => {
             cancelled = true;
         };
-    }, [
-        credential?.id,
-        currentLCNUser?.displayName,
-        currentLCNUser?.image,
-        initWallet,
-        issueeProfile?.profileId,
-        shareLinkInfo,
-    ]);
+    }, [credential?.id, issueeProfile?.profileId, shareLinkInfo]);
 
     const handleOnSuccess = (endorsementRequest: EndorsementState) => {
         endorsementRequestStore.set.setEndorsementRequest(endorsementRequest);

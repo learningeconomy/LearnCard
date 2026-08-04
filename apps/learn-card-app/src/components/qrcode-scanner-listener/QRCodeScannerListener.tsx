@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { BarcodeScanner, BarcodeFormat, LensFacing } from '@capacitor-mlkit/barcode-scanning';
 import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 
@@ -80,6 +80,11 @@ export const QRCodeScannerListener: React.FC = () => {
         },
         [presentToast, route]
     );
+    const handleScanRef = useRef(handleScan);
+    const presentToastRef = useRef(presentToast);
+
+    handleScanRef.current = handleScan;
+    presentToastRef.current = presentToast;
 
     useEffect(() => {
         if (!Capacitor.isNativePlatform() || !showScanner) return;
@@ -116,7 +121,7 @@ export const QRCodeScannerListener: React.FC = () => {
             }
 
             QRCodeScannerStore.set.showScanner(false);
-            await handleScan(rawValue);
+            await handleScanRef.current(rawValue);
         };
 
         const startScanning = async () => {
@@ -139,10 +144,7 @@ export const QRCodeScannerListener: React.FC = () => {
                     lensFacing: LensFacing.Back,
                 });
 
-                if (disposed) {
-                    await BarcodeScanner.stopScan();
-                    document.querySelector('#app-router')?.classList.remove('scanner-active');
-                }
+                if (disposed) await BarcodeScanner.stopScan();
             } catch (error) {
                 if (disposed) return;
 
@@ -156,7 +158,7 @@ export const QRCodeScannerListener: React.FC = () => {
                 }
 
                 QRCodeScannerStore.set.showScanner(false);
-                presentToast(m['scanner.failed'](), {
+                presentToastRef.current(m['scanner.failed'](), {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
@@ -169,7 +171,7 @@ export const QRCodeScannerListener: React.FC = () => {
             disposed = true;
             void stopOwnedScan().catch(error => log.warn('scan::cleanup-error', error));
         };
-    }, [handleScan, presentToast, showScanner]);
+    }, [showScanner]);
 
     return (
         <>
