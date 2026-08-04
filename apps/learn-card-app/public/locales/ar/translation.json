@@ -3290,7 +3290,10 @@
                 "approvedPre": "شكرًا!",
                 "approvedPost": "تمت الموافقة على التوصية!",
                 "waitingReview": "في انتظار المراجعة من {{name}}",
-                "approvedBy": "تمت الموافقة بواسطة {{name}}"
+                "approvedBy": "تمت الموافقة بواسطة {{name}}",
+                "sendFailedTitle": "لم يتم إرسال التوصية",
+                "sendFailedDescription": "لا تزال توصيتك محفوظة. حاول مرة أخرى.",
+                "tryAgain": "حاول مرة أخرى"
             },
             "footer": {
                 "viewEndorsement": "عرض التوصية"

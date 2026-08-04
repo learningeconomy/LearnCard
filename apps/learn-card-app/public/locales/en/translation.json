@@ -3299,7 +3299,10 @@
                 "approvedPre": "Thanks!",
                 "approvedPost": "Endorsement Approved!",
                 "waitingReview": "Waiting for review by {{name}}",
-                "approvedBy": "Approved by {{name}}"
+                "approvedBy": "Approved by {{name}}",
+                "sendFailedTitle": "Endorsement Not Sent",
+                "sendFailedDescription": "Your endorsement is still saved. Try again.",
+                "tryAgain": "Try Again"
             },
             "footer": {
                 "viewEndorsement": "View Endorsement"

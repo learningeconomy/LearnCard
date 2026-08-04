@@ -3293,7 +3293,10 @@
                 "approvedPre": "¡Gracias!",
                 "approvedPost": "¡Aval aprobado!",
                 "waitingReview": "Esperando revisión de {{name}}",
-                "approvedBy": "Aprobado por {{name}}"
+                "approvedBy": "Aprobado por {{name}}",
+                "sendFailedTitle": "Aval no enviado",
+                "sendFailedDescription": "Tu aval sigue guardado. Inténtalo de nuevo.",
+                "tryAgain": "Intentar de nuevo"
             },
             "footer": {
                 "viewEndorsement": "Ver aval"

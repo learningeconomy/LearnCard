@@ -3293,7 +3293,10 @@
                 "approvedPre": "Merci !",
                 "approvedPost": "Recommandation approuvée !",
                 "waitingReview": "En attente d'examen par {{name}}",
-                "approvedBy": "Approuvé par {{name}}"
+                "approvedBy": "Approuvé par {{name}}",
+                "sendFailedTitle": "Recommandation non envoyée",
+                "sendFailedDescription": "Votre recommandation est toujours enregistrée. Réessayez.",
+                "tryAgain": "Réessayer"
             },
             "footer": {
                 "viewEndorsement": "Voir la recommandation"
