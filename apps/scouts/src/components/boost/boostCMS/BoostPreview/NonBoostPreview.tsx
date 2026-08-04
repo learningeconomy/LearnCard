@@ -110,7 +110,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     const showBackground = bgImage && isCertificate;
 
     return (
-        <IonPage>
+        <IonPage data-modal-insets="content-bottom">
             <IonContent
                 fullscreen
                 className={`flex items-center justify-center ion-padding boost-cms-preview transition-colors [&::part(scroll)]:px-0 gradient-mask-b-90`}

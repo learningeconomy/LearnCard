@@ -358,15 +358,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     );
 
     return (
-        <IonPage
-            data-modal-insets="content-bottom"
-            style={{
-                background: 'var(--modal-bg)',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat',
-                backgroundSize: 'cover',
-            }}
-        >
+        <IonPage data-modal-insets="content-bottom">
             <BoostFooterLayout
                 contentOwnsScroll
                 footerProps={{

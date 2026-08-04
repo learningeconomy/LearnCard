@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, waitFor } from '@testing-library/react';
+import { fireEvent, render, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { VC } from '@learncard/types';
@@ -73,7 +73,11 @@ vi.mock('./helpers/MediaLoader', () => ({ default: () => <div>Loading document</
 vi.mock('../../../svgs/SlimCaretLeft', () => ({ default: () => null }));
 vi.mock('../../../svgs/SlimCaretRight', () => ({ default: () => null }));
 vi.mock('learn-card-base/components/boost/boostFooter/BoostFooter', () => ({
-    default: () => null,
+    default: ({ handleFullScreen }: { handleFullScreen?: () => void }) => (
+        <button type="button" onClick={handleFullScreen}>
+            View full screen
+        </button>
+    ),
 }));
 vi.mock('learn-card-base/svgs/SpilledCup', () => ({ default: () => null }));
 
@@ -117,8 +121,8 @@ describe('BoostMediaPreview', () => {
             },
         });
     });
-    it('owns the modal surface while its footer owns the bottom safe area', () => {
-        const { container } = render(
+    it('transfers bottom inset ownership when the footer is hidden', () => {
+        const { container, getByRole } = render(
             <BoostMediaPreview
                 credential={{ attachments: [] } as unknown as VC}
                 openDetailsSideModal={vi.fn()}
@@ -128,8 +132,14 @@ describe('BoostMediaPreview', () => {
             />
         );
 
-        expect(container.firstElementChild).toHaveAttribute('data-modal-insets', 'content-bottom');
-        expect(container.firstElementChild).toHaveClass('bg-grayscale-800');
+        const modalRoot = container.firstElementChild;
+
+        expect(modalRoot).toHaveAttribute('data-modal-insets', 'content-bottom');
+        expect(modalRoot).toHaveClass('bg-grayscale-800');
+
+        fireEvent.click(getByRole('button', { name: 'View full screen' }));
+
+        expect(modalRoot).not.toHaveAttribute('data-modal-insets');
     });
 
     it('previews an embedded PDF attachment without sending it to Filestack', async () => {

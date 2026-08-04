@@ -250,7 +250,7 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
 
     return (
         <IonPage
-            data-modal-insets="content-bottom"
+            data-modal-insets={isMobile ? 'content-bottom' : undefined}
             className="max-w-full !bg-white/80 !backdrop-blur-sm !overflow-y-auto"
         >
             <BoostFooterLayout

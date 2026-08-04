@@ -278,7 +278,10 @@ export const BoostMediaPreview: React.FC<{
         : undefined;
 
     return (
-        <IonPage data-modal-insets="content-bottom" className="h-full bg-grayscale-800">
+        <IonPage
+            data-modal-insets={isFullScreen ? undefined : 'content-bottom'}
+            className="h-full bg-grayscale-800"
+        >
             <BoostFooterLayout contentOwnsScroll footerClassName="z-50" footerProps={footerProps}>
                 {isMobile ? (
                     <IonContent fullscreen className="h-full">

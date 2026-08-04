@@ -106,7 +106,7 @@ const ConsentFlowCredFrontDoor: React.FC<ConsentFlowCredFrontDoorProps> = ({
     return (
         <div
             data-modal-insets="content-bottom"
-            className="h-full w-full bg-cover bg-grayscale-800"
+            className="relative h-full w-full bg-cover bg-grayscale-800"
             style={{
                 backgroundImage: showBgImage
                     ? `url(${boost?.display?.backgroundImage})`
@@ -114,7 +114,7 @@ const ConsentFlowCredFrontDoor: React.FC<ConsentFlowCredFrontDoorProps> = ({
                 backgroundColor: boost?.display?.backgroundColor,
             }}
         >
-            <div className="h-full w-full bg-black bg-opacity-20 backdrop-blur-[5px] flex items-center justify-center">
+            <div className="absolute inset-x-0 bottom-0 top-[calc(-1*var(--modal-safe-area-top,0px))] pt-[var(--modal-safe-area-top,0px)] bg-black bg-opacity-20 backdrop-blur-[5px] flex items-center justify-center">
                 {isLoading && (
                     <BoostLoader
                         darkBackground
