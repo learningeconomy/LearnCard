@@ -64,6 +64,7 @@ export * from './components/form-inputs';
 export * from './components/toast/Toast';
 export * from './components/loaders/LoadingSpinner';
 export * from './components/loaders/CredentialListSkeleton';
+export * from './components/SkillCompetencyCard';
 
 export * from './utils/regexes';
 export * from './utils/pushUtilities';
