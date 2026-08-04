@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+import { initLearnCard } from '@learncard/init';
+import { getLCAPlugin } from '@learncard/lca-api-plugin';
 
 import type { VC } from '@learncard/types';
 
@@ -30,7 +32,7 @@ export interface NetworkEnvConfig {
     label: string;
     network: string;
     cloud: string;
-    signingAuthority?: string;
+    lcaApi?: string;
 }
 
 export const NETWORK_PRESETS: Record<Exclude<NetworkEnvKey, 'custom'>, NetworkEnvConfig> = {
@@ -38,19 +40,19 @@ export const NETWORK_PRESETS: Record<Exclude<NetworkEnvKey, 'custom'>, NetworkEn
         label: 'Production',
         network: 'https://network.learncard.com/trpc',
         cloud: 'https://cloud.learncard.com/trpc',
-        signingAuthority: 'https://api.learncard.app/trpc',
+        lcaApi: 'https://api.learncard.app/trpc',
     },
     staging: {
         label: 'Staging',
         network: 'https://staging.network.learncard.com/trpc',
         cloud: 'https://staging.cloud.learncard.com/trpc',
-        signingAuthority: 'https://staging.api.learncard.app/trpc',
+        lcaApi: 'https://staging.api.learncard.app/trpc',
     },
     local: {
         label: 'Local',
         network: 'http://localhost:4000/trpc',
         cloud: 'http://localhost:4100/trpc',
-        signingAuthority: 'http://localhost:5100/trpc'
+        lcaApi: 'http://localhost:5100/trpc',
     },
 };
 
@@ -80,7 +82,10 @@ interface WalletContextValue {
     createProfile: (input: { displayName: string; profileId: string }) => Promise<void>;
     ensureSigningAuthority: () => Promise<void>;
 
-    issueAndStore: (unsigned: Record<string, unknown>, categoryOverride?: string) => Promise<{ uri: string; signed: VC }>;
+    issueAndStore: (
+        unsigned: Record<string, unknown>,
+        categoryOverride?: string
+    ) => Promise<{ uri: string; signed: VC }>;
 
     send: (input: {
         recipient: string;
@@ -118,7 +123,9 @@ const loadEnv = (): { key: NetworkEnvKey; config: NetworkEnvConfig } => {
             if (custom?.network && custom?.cloud) {
                 return { key: 'custom', config: custom as NetworkEnvConfig };
             }
-        } catch { /* fall through */ }
+        } catch {
+            /* fall through */
+        }
     }
 
     return { key: 'production', config: NETWORK_PRESETS.production };
@@ -133,9 +140,7 @@ const generateHexSeed = (): string => {
 export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [wallet, setWallet] = useState<WalletInstance | null>(null);
     const [did, setDid] = useState<string | null>(null);
-    const [seed, setSeed] = useState<string | null>(
-        () => localStorage.getItem(SEED_STORAGE_KEY)
-    );
+    const [seed, setSeed] = useState<string | null>(() => localStorage.getItem(SEED_STORAGE_KEY));
     const [envKey, setEnvKey] = useState<NetworkEnvKey>(() => loadEnv().key);
     const [envConfig, setEnvConfig] = useState<NetworkEnvConfig>(() => loadEnv().config);
     const [status, setStatus] = useState<ConnectionStatus>('disconnected');
@@ -203,7 +208,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
                 await lc.invoke.setPrimaryRegisteredSigningAuthority(
                     first.signingAuthority.endpoint,
-                    first.relationship.name,
+                    first.relationship.name
                 );
 
                 setSigningAuthority({
@@ -233,8 +238,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
                 throw new Error(
                     hasPlugin
-                        ? 'Signing authority was created but has no endpoint. Is the signing authority service running?'
-                        : 'No signing authority plugin available. Make sure the environment has a signingAuthority URL configured.'
+                        ? 'Signing authority was created but has no endpoint. Is the LCA API running?'
+                        : 'No LCA API plugin available. Make sure the environment has an lcaApi URL configured.'
                 );
             }
 
@@ -274,7 +279,10 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 setProfile({
                     did: 'did' in existing ? (existing.did as string) : '',
                     profileId: existing.profileId as string,
-                    displayName: ('displayName' in existing ? existing.displayName as string : undefined) ?? (existing.profileId as string),
+                    displayName:
+                        ('displayName' in existing
+                            ? (existing.displayName as string)
+                            : undefined) ?? (existing.profileId as string),
                     image: 'image' in existing ? (existing.image as string | undefined) : undefined,
                 });
             } else {
@@ -299,8 +307,6 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const cfg = envConfigRef.current;
 
         try {
-            const { initLearnCard } = await import('@learncard/init');
-
             let lc = await initLearnCard({
                 seed: inputSeed,
                 network: cfg.network,
@@ -308,17 +314,14 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 allowRemoteContexts: true,
             });
 
-            // Add Simple Signing plugin if a signing authority URL is configured
-            if (cfg.signingAuthority) {
+            if (cfg.lcaApi) {
                 try {
-                    const { getSimpleSigningPlugin } = await import('@learncard/simple-signing-plugin');
+                    const lcaApiLearnCard = await lc.addPlugin(await getLCAPlugin(lc, cfg.lcaApi));
 
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    lc = await (lc as any).addPlugin(
-                        await getSimpleSigningPlugin(lc as any, cfg.signingAuthority)
-                    );
+                    // The context intentionally erases the plugin tuple behind WalletInstance.
+                    lc = lcaApiLearnCard as unknown as typeof lc;
                 } catch (err) {
-                    console.warn('Could not load Simple Signing plugin:', err);
+                    console.warn('Could not load LCA API plugin:', err);
                 }
             }
 
@@ -342,8 +345,14 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                     setProfile({
                         did: 'did' in existing ? (existing.did as string) : walletDid,
                         profileId: existing.profileId as string,
-                        displayName: ('displayName' in existing ? existing.displayName as string : undefined) ?? (existing.profileId as string),
-                        image: 'image' in existing ? (existing.image as string | undefined) : undefined,
+                        displayName:
+                            ('displayName' in existing
+                                ? (existing.displayName as string)
+                                : undefined) ?? (existing.profileId as string),
+                        image:
+                            'image' in existing
+                                ? (existing.image as string | undefined)
+                                : undefined,
                     });
 
                     // Auto-check signing authority when profile exists
@@ -401,96 +410,110 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         return generateHexSeed();
     }, []);
 
-    const handleCreateProfile = useCallback(async (input: { displayName: string; profileId: string }) => {
-        const lc = walletRef.current;
+    const handleCreateProfile = useCallback(
+        async (input: { displayName: string; profileId: string }) => {
+            const lc = walletRef.current;
 
-        if (!lc?.invoke?.createProfile) {
-            throw new Error('Wallet not connected or missing network plugin');
-        }
+            if (!lc?.invoke?.createProfile) {
+                throw new Error('Wallet not connected or missing network plugin');
+            }
 
-        setProfileLoading(true);
-        setProfileError(null);
+            setProfileLoading(true);
+            setProfileError(null);
 
-        try {
-            await lc.invoke.createProfile({
-                displayName: input.displayName,
-                profileId: input.profileId,
+            try {
+                await lc.invoke.createProfile({
+                    displayName: input.displayName,
+                    profileId: input.profileId,
+                });
+
+                // Re-fetch the full profile after creation
+                const created = await lc.invoke.getProfile();
+
+                if (created && 'profileId' in created && created.profileId) {
+                    setProfile({
+                        did: 'did' in created ? (created.did as string) : '',
+                        profileId: created.profileId as string,
+                        displayName:
+                            ('displayName' in created
+                                ? (created.displayName as string)
+                                : undefined) ?? (created.profileId as string),
+                        image:
+                            'image' in created ? (created.image as string | undefined) : undefined,
+                    });
+                }
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+
+                setProfileError(msg);
+                throw err;
+            } finally {
+                setProfileLoading(false);
+            }
+        },
+        []
+    );
+
+    const issueAndStore = useCallback(
+        async (
+            unsigned: Record<string, unknown>,
+            categoryOverride?: string
+        ): Promise<{ uri: string; signed: VC }> => {
+            const lc = walletRef.current;
+
+            if (!lc) throw new Error('Wallet not connected');
+
+            const signed = await lc.invoke.issueCredential(unsigned);
+
+            const uri = (await lc.store.LearnCloud?.uploadEncrypted?.(signed)) ?? '';
+
+            if (!uri) throw new Error('Failed to upload to LearnCloud');
+
+            const id = ((signed as Record<string, unknown>).id as string | undefined) ?? uri;
+
+            const category =
+                categoryOverride || getCategoryForCredential(signed as Record<string, unknown>);
+
+            await lc.index.LearnCloud?.add?.({
+                id,
+                uri,
+                category,
             });
 
-            // Re-fetch the full profile after creation
-            const created = await lc.invoke.getProfile();
+            return { uri, signed: signed as VC };
+        },
+        []
+    );
 
-            if (created && 'profileId' in created && created.profileId) {
-                setProfile({
-                    did: 'did' in created ? (created.did as string) : '',
-                    profileId: created.profileId as string,
-                    displayName: ('displayName' in created ? created.displayName as string : undefined) ?? (created.profileId as string),
-                    image: 'image' in created ? (created.image as string | undefined) : undefined,
-                });
+    const send = useCallback(
+        async (input: {
+            recipient: string;
+            credential: Record<string, unknown>;
+            name?: string;
+            category?: string;
+        }): Promise<unknown> => {
+            const lc = walletRef.current;
+
+            if (!lc) throw new Error('Wallet not connected');
+
+            if (!lc.invoke.send) {
+                throw new Error('Wallet does not have send capability. Network mode required.');
             }
-        } catch (err) {
-            const msg = err instanceof Error ? err.message : String(err);
 
-            setProfileError(msg);
-            throw err;
-        } finally {
-            setProfileLoading(false);
-        }
-    }, []);
+            const result = await lc.invoke.send({
+                type: 'boost',
+                recipient: input.recipient,
+                template: {
+                    credential: input.credential,
+                    name: input.name ?? 'Credential from Viewer',
+                    category: input.category ?? getCategoryForCredential(input.credential),
+                },
+            });
 
-    const issueAndStore = useCallback(async (
-        unsigned: Record<string, unknown>,
-        categoryOverride?: string,
-    ): Promise<{ uri: string; signed: VC }> => {
-        const lc = walletRef.current;
-
-        if (!lc) throw new Error('Wallet not connected');
-
-        const signed = await lc.invoke.issueCredential(unsigned);
-
-        const uri = await lc.store.LearnCloud?.uploadEncrypted?.(signed) ?? '';
-
-        if (!uri) throw new Error('Failed to upload to LearnCloud');
-
-        const id = (signed as Record<string, unknown>).id as string | undefined ?? uri;
-
-        const category = categoryOverride || getCategoryForCredential(signed as Record<string, unknown>);
-
-        await lc.index.LearnCloud?.add?.({
-            id,
-            uri,
-            category,
-        });
-
-        return { uri, signed: signed as VC };
-    }, []);
-
-    const send = useCallback(async (input: {
-        recipient: string;
-        credential: Record<string, unknown>;
-        name?: string;
-        category?: string;
-    }): Promise<unknown> => {
-        const lc = walletRef.current;
-
-        if (!lc) throw new Error('Wallet not connected');
-
-        if (!lc.invoke.send) {
-            throw new Error('Wallet does not have send capability. Network mode required.');
-        }
-
-        const result = await lc.invoke.send({
-            type: 'boost',
-            recipient: input.recipient,
-            template: {
-                credential: input.credential,
-                name: input.name ?? 'Credential from Viewer',
-                category: input.category ?? getCategoryForCredential(input.credential),
-            },
-        });
-
-        return result;
-    }, []);
+            return result;
+        },
+        []
+    );
 
     const value: WalletContextValue = {
         wallet,
@@ -517,9 +540,5 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         send,
     };
 
-    return (
-        <WalletContext.Provider value={value}>
-            {children}
-        </WalletContext.Provider>
-    );
+    return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
 };

@@ -42,10 +42,9 @@ Each deployment environment provides secrets and variables for four service tier
 
 ## Other
 
-| Environment                                                                                                 | Purpose            |
-| ----------------------------------------------------------------------------------------------------------- | ------------------ |
-| [ci-tests](https://github.com/learningeconomy/LearnCard/settings/environments/7846436359/edit)              | CI test runner     |
-| [learn-card-discord-bot](https://github.com/learningeconomy/LearnCard/settings/environments/686767981/edit) | Discord bot deploy |
+| Environment                                                                                    | Purpose        |
+| ---------------------------------------------------------------------------------------------- | -------------- |
+| [ci-tests](https://github.com/learningeconomy/LearnCard/settings/environments/7846436359/edit) | CI test runner |
 
 ## Front-End (Netlify) Deploys
 

@@ -2,11 +2,15 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { SigningAuthorityAuthorizationValidator } from 'types/signing-authority';
 import { createSigningAuthorityForDID } from '@accesslayer/signing-authority/create';
-import { getSigningAuthorityById, getSigningAuthoritiesForDid, getSigningAuthorityForDid } from '@accesslayer/signing-authority/read';
+import {
+    getSigningAuthorityById,
+    getSigningAuthoritiesForDid,
+    getSigningAuthorityForDid,
+} from '@accesslayer/signing-authority/read';
 
 import { t, didAndChallengeRoute } from '@routes';
 
-import { MongoSigningAuthorityValidator } from '@models';
+import { SigningAuthorityResponseValidator } from '@models';
 import { getSigningAuthorityWithEndpoint } from '@helpers/signingAuthority.helpers';
 
 export const signingAuthorityRouter = t.router({
@@ -23,20 +27,19 @@ export const signingAuthorityRouter = t.router({
             },
         })
         .input(z.object({ name: z.string(), ownerDid: z.string().optional() }))
-        .output(MongoSigningAuthorityValidator.omit({ seed: true }))
+        .output(SigningAuthorityResponseValidator)
         .mutation(async ({ input, ctx }) => {
-            
             const { name, ownerDid } = input;
             const targetDid = ownerDid ?? ctx.user.did;
 
-            if(await getSigningAuthorityForDid(targetDid, name)) {
+            if (await getSigningAuthorityForDid(targetDid, name)) {
                 throw new TRPCError({
                     code: 'CONFLICT',
                     message: `Signing Authority with name, ${name}, already exists for user.`,
                 });
             }
             const createdId = await createSigningAuthorityForDID(targetDid, name);
-            if(!createdId) {
+            if (!createdId) {
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
                     message: `Signing Authority could not be created for user.`,
@@ -44,13 +47,13 @@ export const signingAuthorityRouter = t.router({
             }
 
             const signingAuthority = await getSigningAuthorityById(createdId);
-            if(!signingAuthority) {
+            if (!signingAuthority) {
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
                     message: `Signing Authority could not be created for user.`,
                 });
             }
-            
+
             return getSigningAuthorityWithEndpoint(signingAuthority, ctx.domain);
         }),
     signingAuthorities: didAndChallengeRoute
@@ -65,10 +68,10 @@ export const signingAuthorityRouter = t.router({
             },
         })
         .input(z.void())
-        .output(MongoSigningAuthorityValidator.omit({ seed: true }).array())
+        .output(SigningAuthorityResponseValidator.array())
         .query(async ({ ctx }) => {
             const signingAuthorities = await getSigningAuthoritiesForDid(ctx.user.did);
-            return signingAuthorities.map(sa => getSigningAuthorityWithEndpoint(sa, ctx.domain))
+            return signingAuthorities.map(sa => getSigningAuthorityWithEndpoint(sa, ctx.domain));
         }),
     authorizeSigningAuthority: didAndChallengeRoute
         .meta({
@@ -82,14 +85,15 @@ export const signingAuthorityRouter = t.router({
                     "This route is used to authorize a signing authority to sign specific credentials on the current user's behalf",
             },
         })
-        .input(z.object({ name: z.string(), authorization: SigningAuthorityAuthorizationValidator }))
+        .input(
+            z.object({ name: z.string(), authorization: SigningAuthorityAuthorizationValidator })
+        )
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
-            
             const { name } = input;
 
             const signingAuthority = await getSigningAuthorityForDid(ctx.user.did, name);
-            if(!signingAuthority) {
+            if (!signingAuthority) {
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
                     message: `Signing Authority with name, ${name}, does not exist for user.`,

@@ -1,10 +1,6 @@
 import React, { useState, useCallback } from 'react';
 
-import {
-    useWallet,
-    NETWORK_PRESETS,
-    type NetworkEnvKey,
-} from '../context/WalletContext';
+import { useWallet, NETWORK_PRESETS, type NetworkEnvKey } from '../context/WalletContext';
 
 const ENV_KEYS: NetworkEnvKey[] = ['production', 'staging', 'local', 'custom'];
 
@@ -17,8 +13,13 @@ const ENV_COLORS: Record<NetworkEnvKey, string> = {
 
 const EnvSelector: React.FC = () => {
     const { envKey, envConfig, setEnv, status } = useWallet();
-    const [customNetwork, setCustomNetwork] = useState(envKey === 'custom' ? envConfig.network : '');
+    const [customNetwork, setCustomNetwork] = useState(
+        envKey === 'custom' ? envConfig.network : ''
+    );
     const [customCloud, setCustomCloud] = useState(envKey === 'custom' ? envConfig.cloud : '');
+    const [customLcaApi, setCustomLcaApi] = useState(
+        envKey === 'custom' ? envConfig.lcaApi ?? '' : ''
+    );
 
     const isConnected = status === 'connected';
 
@@ -32,13 +33,19 @@ const EnvSelector: React.FC = () => {
                 label: 'Custom',
                 network: customNetwork || 'http://localhost:4000/trpc',
                 cloud: customCloud || 'http://localhost:4100/trpc',
+                lcaApi: customLcaApi || 'http://localhost:5100/trpc',
             });
         }
     };
 
     const handleCustomBlur = () => {
         if (envKey === 'custom' && customNetwork && customCloud) {
-            setEnv('custom', { label: 'Custom', network: customNetwork, cloud: customCloud });
+            setEnv('custom', {
+                label: 'Custom',
+                network: customNetwork,
+                cloud: customCloud,
+                ...(customLcaApi && { lcaApi: customLcaApi }),
+            });
         }
     };
 
@@ -83,11 +90,23 @@ const EnvSelector: React.FC = () => {
                         placeholder="Cloud URL"
                         className="w-44 px-2 py-1 bg-gray-800 border border-gray-700 rounded text-[11px] font-mono text-gray-300 placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-purple-500/50"
                     />
+
+                    <input
+                        type="text"
+                        value={customLcaApi}
+                        onChange={e => setCustomLcaApi(e.target.value)}
+                        onBlur={handleCustomBlur}
+                        placeholder="LCA API URL"
+                        className="w-44 px-2 py-1 bg-gray-800 border border-gray-700 rounded text-[11px] font-mono text-gray-300 placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-purple-500/50"
+                    />
                 </div>
             )}
 
             {envKey !== 'custom' && (
-                <span className="text-[10px] text-gray-600 font-mono ml-1" title={`${envConfig.network} | ${envConfig.cloud}`}>
+                <span
+                    className="text-[10px] text-gray-600 font-mono ml-1"
+                    title={`${envConfig.network} | ${envConfig.cloud}`}
+                >
                     {envConfig.network.replace(/\/trpc$/, '')}
                 </span>
             )}
@@ -132,8 +151,19 @@ const ProfileSection: React.FC = () => {
         return (
             <div className="flex items-center gap-2 px-2.5 py-1 bg-gray-800/50 rounded-lg">
                 <svg className="w-3 h-3 animate-spin text-gray-500" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                    />
+                    <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
                 </svg>
 
                 <span className="text-[11px] text-gray-500">Loading profile...</span>
@@ -145,11 +175,7 @@ const ProfileSection: React.FC = () => {
         return (
             <div className="flex items-center gap-2 px-2.5 py-1 bg-blue-900/20 border border-blue-800/40 rounded-lg">
                 {profile.image ? (
-                    <img
-                        src={profile.image}
-                        alt=""
-                        className="w-4 h-4 rounded-full object-cover"
-                    />
+                    <img src={profile.image} alt="" className="w-4 h-4 rounded-full object-cover" />
                 ) : (
                     <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
                         <span className="text-[8px] text-white font-bold">
@@ -158,13 +184,14 @@ const ProfileSection: React.FC = () => {
                     </div>
                 )}
 
-                <span className="text-[11px] text-blue-300 font-medium" title={`Profile: ${profile.profileId}`}>
+                <span
+                    className="text-[11px] text-blue-300 font-medium"
+                    title={`Profile: ${profile.profileId}`}
+                >
                     {profile.displayName}
                 </span>
 
-                <span className="text-[10px] text-gray-500 font-mono">
-                    @{profile.profileId}
-                </span>
+                <span className="text-[10px] text-gray-500 font-mono">@{profile.profileId}</span>
             </div>
         );
     }
@@ -176,8 +203,18 @@ const ProfileSection: React.FC = () => {
                 onClick={() => setShowCreateForm(true)}
                 className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] text-amber-400 bg-amber-900/20 border border-amber-800/40 rounded-lg hover:bg-amber-900/30 transition-colors cursor-pointer"
             >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
                 </svg>
                 No LCN Profile — Create One
             </button>
@@ -198,7 +235,9 @@ const ProfileSection: React.FC = () => {
             <input
                 type="text"
                 value={profileId}
-                onChange={e => setProfileId(e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ''))}
+                onChange={e =>
+                    setProfileId(e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ''))
+                }
                 placeholder="profile-id"
                 className="w-28 px-2 py-1 bg-gray-800 border border-gray-700 rounded text-[11px] font-mono text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500/50"
             />
@@ -211,23 +250,42 @@ const ProfileSection: React.FC = () => {
                 {creating ? (
                     <>
                         <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                            />
+                            <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                            />
                         </svg>
                         Creating...
                     </>
-                ) : 'Create'}
+                ) : (
+                    'Create'
+                )}
             </button>
 
             <button
-                onClick={() => { setShowCreateForm(false); setLocalError(null); }}
+                onClick={() => {
+                    setShowCreateForm(false);
+                    setLocalError(null);
+                }}
                 className="px-1.5 py-1 text-[11px] text-gray-500 hover:text-gray-300 cursor-pointer"
             >
                 Cancel
             </button>
 
             {(localError || profileError) && (
-                <span className="text-[10px] text-red-400 max-w-[180px] truncate" title={localError || profileError || ''}>
+                <span
+                    className="text-[10px] text-red-400 max-w-[180px] truncate"
+                    title={localError || profileError || ''}
+                >
                     {localError || profileError}
                 </span>
             )}
@@ -263,8 +321,19 @@ const SigningAuthoritySection: React.FC = () => {
         return (
             <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-800/50 rounded-lg">
                 <svg className="w-3 h-3 animate-spin text-gray-500" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                    />
+                    <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
                 </svg>
 
                 <span className="text-[10px] text-gray-500">
@@ -280,8 +349,18 @@ const SigningAuthoritySection: React.FC = () => {
                 className="flex items-center gap-1.5 px-2 py-1 bg-emerald-900/20 border border-emerald-800/40 rounded-lg"
                 title={`SA: ${signingAuthority.name}\nEndpoint: ${signingAuthority.endpoint}\nDID: ${signingAuthority.did}`}
             >
-                <svg className="w-3 h-3 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                <svg
+                    className="w-3 h-3 text-emerald-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                    />
                 </svg>
 
                 <span className="text-[10px] text-emerald-400 font-medium">
@@ -298,14 +377,27 @@ const SigningAuthoritySection: React.FC = () => {
                 onClick={handleSetup}
                 className="flex items-center gap-1 px-2 py-1 text-[10px] text-amber-400 bg-amber-900/20 border border-amber-800/40 rounded-lg hover:bg-amber-900/30 transition-colors cursor-pointer"
             >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                    />
                 </svg>
                 Set Up Signing Authority
             </button>
 
             {(localError || saError) && (
-                <span className="text-[10px] text-red-400 max-w-[160px] truncate" title={localError || saError || ''}>
+                <span
+                    className="text-[10px] text-red-400 max-w-[160px] truncate"
+                    title={localError || saError || ''}
+                >
                     {localError || saError}
                 </span>
             )}
@@ -349,7 +441,10 @@ export const ConnectBar: React.FC = () => {
 
                     <SigningAuthoritySection />
 
-                    <div className="text-xs text-gray-500 font-mono max-w-[200px] truncate" title={did}>
+                    <div
+                        className="text-xs text-gray-500 font-mono max-w-[200px] truncate"
+                        title={did}
+                    >
                         {did}
                     </div>
 
@@ -370,9 +465,24 @@ export const ConnectBar: React.FC = () => {
         return (
             <div className="flex flex-col items-end gap-1.5">
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-900/20 border border-blue-800/40 rounded-lg">
-                    <svg className="w-4 h-4 animate-spin text-blue-400" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    <svg
+                        className="w-4 h-4 animate-spin text-blue-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                    >
+                        <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                        />
+                        <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        />
                     </svg>
 
                     <span className="text-xs text-blue-400">Initializing wallet...</span>
@@ -395,8 +505,18 @@ export const ConnectBar: React.FC = () => {
                         onClick={handleGenerate}
                         className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
                     >
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        <svg
+                            className="w-3.5 h-3.5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M13 10V3L4 14h7v7l9-11h-7z"
+                            />
                         </svg>
                         Generate Wallet
                     </button>
@@ -413,8 +533,18 @@ export const ConnectBar: React.FC = () => {
                             onClick={() => connect(seed)}
                             className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-medium rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
                         >
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            <svg
+                                className="w-3.5 h-3.5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                />
                             </svg>
                             Reconnect
                         </button>
@@ -441,7 +571,10 @@ export const ConnectBar: React.FC = () => {
                     </button>
 
                     <button
-                        onClick={() => { setShowSeedInput(false); setInputSeed(''); }}
+                        onClick={() => {
+                            setShowSeedInput(false);
+                            setInputSeed('');
+                        }}
                         className="px-2 py-1.5 text-xs text-gray-500 hover:text-gray-300 cursor-pointer"
                     >
                         Cancel

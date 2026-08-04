@@ -152,22 +152,26 @@ After creating the boost, set up a ConsentFlow that requires guardian consent:
 To attach autoboosts to your ConsentFlow, you need to setup a "Signing Authority". You can do this once for your LearnCard service profile like so:<br>
 
 ```javascript
-// Make sure to bun add @learncard/simple-signing-plugin
-import { getSimpleSigningPlugin } from '@learncard/simple-signing-plugin';
+// Make sure to bun add @learncard/lca-api-plugin
+import { getLCAPlugin } from '@learncard/lca-api-plugin';
 
-// Add signing plugin to your learnCard
-const signingLearnCard = await learnCard.addPlugin(
-    await getSimpleSigningPlugin(learnCard, 'https://api.learncard.app/trpc')
+// Add the LCA API plugin to your LearnCard
+const lcaApiLearnCard = await learnCard.addPlugin(
+    await getLCAPlugin(learnCard, 'https://api.learncard.app/trpc')
 );
 
 // Create a Signing Authority (one-time). The name is an arbitrary identifier.
-const sa = await signingLearnCard.invoke.createSigningAuthority('autoboost');
+const sa = await lcaApiLearnCard.invoke.createSigningAuthority('autoboost');
+
+if (!sa) throw new Error('Could not create signing authority.');
 
 // Register a signing authority with LearnCard Network
-await signingLearnCard.invoke.registerSigningAuthority(sa.endpoint, sa.name, sa.did);
+await lcaApiLearnCard.invoke.registerSigningAuthority(sa.endpoint, sa.name, sa.did);
 
 // Get the signing authority
-const saResult = await signingLearnCard.invoke.getRegisteredSigningAuthority(sa.endpoint, sa.name);
+const saResult = await lcaApiLearnCard.invoke.getRegisteredSigningAuthority(sa.endpoint, sa.name);
+
+if (!saResult) throw new Error('Could not register signing authority.');
 
 // Save this — use when creating contracts with autoboosts
 const signingAuthority = {

@@ -28,14 +28,14 @@ export async function clearDatabases() {
 
         // Run all clear operations concurrently
         await Promise.all([
-            // Clear Redises 
+            // Clear Redises
             redis1.flushall(),
             redis2.flushall(),
 
             // Clear Didkit Cache in services
             fetch('http://localhost:4000/test/clear-cache'),
             fetch('http://localhost:4100/test/clear-cache'),
-            fetch('http://localhost:4200/test/clear-cache'),
+            fetch('http://localhost:5200/test/clear-cache'),
 
             // Clear Local Didkit Cache
             (async () => {
@@ -52,7 +52,7 @@ export async function clearDatabases() {
                 );
             })(),
             (async () => {
-                const db = mongoClient.db('simple-signing');
+                const db = mongoClient.db('lca-api-e2e');
                 const collections = await db.listCollections().toArray();
                 await Promise.all(
                     collections.map(collection => db.collection(collection.name).deleteMany({}))
@@ -86,9 +86,11 @@ export async function clearDatabases() {
                         .map(row => row.tablename)
                         .filter(
                             tablename =>
-                                !['lrs_credential', 'credential_to_scope', 'admin_account'].includes(
-                                    tablename
-                                )
+                                ![
+                                    'lrs_credential',
+                                    'credential_to_scope',
+                                    'admin_account',
+                                ].includes(tablename)
                         )
                         .map(tablename => `"${tablename}"`);
 
