@@ -54,7 +54,7 @@ export const EndorsementRequestModal: React.FC<{
     useEffect(() => {
         initWalletRef.current = initWallet;
         currentLCNUserRef.current = currentLCNUser;
-    }, [currentLCNUser, initWallet]);
+    });
 
     let {
         issuerProfile,

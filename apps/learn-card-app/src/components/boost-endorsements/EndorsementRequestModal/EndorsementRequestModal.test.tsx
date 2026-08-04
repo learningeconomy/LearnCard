@@ -112,5 +112,6 @@ describe('EndorsementRequestModal', () => {
         });
 
         expect(mocks.getSentCredentials).toHaveBeenCalledOnce();
+        expect(screen.getByText('Existing endorsement')).toBeInTheDocument();
     });
 });
