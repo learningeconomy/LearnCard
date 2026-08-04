@@ -161,6 +161,25 @@ jobs:
                       exit 1
                   fi
 
+                  # repository_dispatch bypasses branch protection, and these refs are checked out
+                  # and then compiled, so a Cargo build script runs whatever they point at. Keep
+                  # them to plain ref characters; reject option-like and traversal forms.
+                  for ref_name in DIDKIT_REF SSI_REF; do
+                      ref_value="${!ref_name}"
+
+                      if ! printf '%s' "${ref_value}" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9._/-]*$'; then
+                          echo "::error::${ref_name} is not a valid git ref: ${ref_value}"
+                          exit 1
+                      fi
+
+                      case "${ref_value}" in
+                          *..*)
+                              echo "::error::${ref_name} must not contain '..': ${ref_value}"
+                              exit 1
+                              ;;
+                      esac
+                  done
+
             - name: Checkout LearnCard source
               uses: actions/checkout@v5
               with:
@@ -293,7 +312,17 @@ jobs:
               if: steps.submodules.outputs.has_updates == 'true'
               env:
                   WASM_URL: ${{ steps.wasm.outputs.url }}
-              run: node packages/plugins/didkit/scripts/set-default-wasm-url.mjs "${WASM_URL}"
+              run: |
+                  set -euo pipefail
+
+                  node packages/plugins/didkit/scripts/set-default-wasm-url.mjs "${WASM_URL}"
+
+                  # Guards against the rewrite silently no-opping and shipping a binary that the
+                  # committed default URL does not point at.
+                  if ! grep -Fq "${WASM_URL}" packages/plugins/didkit/src/didkit/index.ts; then
+                      echo "::error::index.ts does not reference ${WASM_URL} after the rewrite."
+                      exit 1
+                  fi
 
             - name: Setup Bun and install dependencies
               if: steps.submodules.outputs.has_updates == 'true'
@@ -377,7 +406,8 @@ jobs:
                   trap 'rm -f "${headers}" "${body}"' EXIT
 
                   downloaded_bytes="$(
-                      curl --fail --location --retry 10 --retry-all-errors --retry-delay 3 \
+                      curl --fail --location --retry 20 --retry-all-errors --retry-delay 3 \
+                          --retry-max-time 300 \
                           --header 'Accept-Encoding: br' \
                           --dump-header "${headers}" \
                           --output "${body}" \
