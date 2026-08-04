@@ -7,6 +7,41 @@ export type VideoMetadata = {
     thumbnailUrl: string | null;
 };
 
+/**
+ * Whether a third-party video `<iframe>` embed can be expected to work in the
+ * current document.
+ *
+ * YouTube's embed endpoint validates the `Referer` header and returns an
+ * unplayable player ("Error 153: Video player configuration error") when it is
+ * missing or not `http(s)`. Capacitor's iOS WebView serves the app from
+ * `capacitor://localhost`, and WKWebView will not send a custom-scheme URL as a
+ * referrer, so every YouTube embed fails inside the native iOS app.
+ *
+ * Android is unaffected (Capacitor serves it from `https://localhost`), as is
+ * the web app. Rather than sniffing for Capacitor — which would drag a native
+ * dependency into this package — we test the actual condition YouTube cares
+ * about: is this document served over `http(s)`?
+ */
+export const canEmbedVideoIframe = (): boolean => {
+    if (typeof window === 'undefined') return true;
+
+    const protocol = window.location?.protocol;
+
+    return protocol === 'https:' || protocol === 'http:';
+};
+
+/** Public `watch` URL for a video, used when we have to hand playback off to an external browser. */
+export const getExternalVideoUrl = (
+    metadata: VideoMetadata | null | undefined,
+    fallbackUrl: string
+): string => {
+    if (metadata?.type === 'youtube' && metadata.videoId) {
+        return `https://www.youtube.com/watch?v=${metadata.videoId}`;
+    }
+
+    return fallbackUrl;
+};
+
 export const getVideoMetadata = async (url: string): Promise<VideoMetadata> => {
     try {
         const parsed = new URL(url);

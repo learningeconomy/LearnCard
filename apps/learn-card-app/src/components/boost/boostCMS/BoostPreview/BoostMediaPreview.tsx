@@ -22,6 +22,7 @@ import {
 } from 'learn-card-base';
 import { VC } from '@learncard/types';
 import { VideoMetadata } from 'learn-card-base';
+import { canEmbedVideoIframe, ExternalVideoFallback, getExternalVideoUrl } from '@learncard/react';
 import { getExistingAttachmentsOrEvidence } from 'learn-card-base/helpers/credentialHelpers';
 import { getAttachmentSource } from 'learn-card-base/helpers/attachment.helpers';
 import { getFilestackPreviewUrl } from 'learn-card-base/filestack/images/images.helpers';
@@ -174,6 +175,15 @@ export const BoostMediaPreview: React.FC<{
 
         if (isMediaLoading) {
             mediaContent = <MediaLoader text="Video" />;
+        } else if (iframeSrc && !canEmbedVideoIframe()) {
+            mediaContent = (
+                <div style={{ width: '100%', height: '100vh', backgroundColor: '#353E64' }}>
+                    <ExternalVideoFallback
+                        url={getExternalVideoUrl(videoMetaData, attachment?.url ?? '')}
+                        thumbnailUrl={videoMetaData?.thumbnailUrl}
+                    />
+                </div>
+            );
         } else if (iframeSrc) {
             mediaContent = (
                 <>
