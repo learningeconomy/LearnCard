@@ -140,6 +140,9 @@ export const BoostMediaPreview: React.FC<{
     }, [attachment?.fileName, attachment?.title, attachment?.type, attachment?.url]);
 
     let mediaContent = null;
+    // Video that has to open in an external browser — there is nothing inline to
+    // expand, so the full-screen control is suppressed for it below.
+    let playsExternally = false;
 
     if (attachment?.type === 'document') {
         if (isMediaLoading) {
@@ -176,6 +179,7 @@ export const BoostMediaPreview: React.FC<{
         if (isMediaLoading) {
             mediaContent = <MediaLoader text="Video" />;
         } else if (iframeSrc && !canEmbedVideoIframe(videoMetaData?.type)) {
+            playsExternally = true;
             mediaContent = (
                 <div style={{ width: '100%', height: '100vh', backgroundColor: '#353E64' }}>
                     <ExternalVideoFallback
@@ -273,7 +277,7 @@ export const BoostMediaPreview: React.FC<{
 
     const footerProps = !isFullScreen
         ? {
-              showFullScreen: true,
+              showFullScreen: !playsExternally,
               handleFullScreen: () => setIsFullScreen(true),
               showShareButton: false,
               handleClose: () => {
