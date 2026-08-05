@@ -1,8 +1,9 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { IonIcon } from '@ionic/react';
+import { alertCircleOutline } from 'ionicons/icons';
 import { useStore } from '@nanostores/react';
 
 import { lastAiError } from 'learn-card-base/stores/nanoStores/chatStore';
-import { showErrorModal } from 'learn-card-base/stores/nanoStores/ErrorModalStore';
 
 import { AiSessionMode } from './newAiSession.helpers';
 
@@ -12,7 +13,7 @@ export const AiInsightsErrorHandler: React.FC<{
 }> = ({ active, mode }) => {
     const aiError = useStore(lastAiError);
     const activeSinceRef = useRef<number | null>(null);
-    const handledErrorAtRef = useRef<number | null>(null);
+    const [visibleErrorAt, setVisibleErrorAt] = useState<number | null>(null);
 
     useEffect(() => {
         if (active && mode === AiSessionMode.insights) {
@@ -21,7 +22,7 @@ export const AiInsightsErrorHandler: React.FC<{
         }
 
         activeSinceRef.current = null;
-        handledErrorAtRef.current = null;
+        setVisibleErrorAt(null);
     }, [active, mode]);
 
     useEffect(() => {
@@ -33,16 +34,35 @@ export const AiInsightsErrorHandler: React.FC<{
             !aiError ||
             activeSince === null ||
             aiError.at < activeSince ||
-            aiError.at === handledErrorAtRef.current
+            aiError.at === visibleErrorAt
         ) {
             return;
         }
 
-        handledErrorAtRef.current = aiError.at;
-        showErrorModal('Something went wrong', 'Please try your request again.');
-    }, [active, aiError, mode]);
+        setVisibleErrorAt(aiError.at);
+    }, [active, aiError, mode, visibleErrorAt]);
 
-    return null;
+    if (visibleErrorAt === null) return null;
+
+    return (
+        <div className="absolute inset-x-4 top-[calc(80px+env(safe-area-inset-top))] z-[100]">
+            <div
+                role="alert"
+                className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5 shadow-soft-bottom"
+            >
+                <IonIcon
+                    icon={alertCircleOutline}
+                    className="text-red-400 text-lg mt-0.5 shrink-0"
+                />
+                <div>
+                    <p className="text-sm font-semibold text-red-700">Something went wrong</p>
+                    <p className="text-sm text-red-700 leading-relaxed">
+                        AI chat is temporarily unavailable. Please try again later.
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 export default AiInsightsErrorHandler;

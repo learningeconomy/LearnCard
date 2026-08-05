@@ -319,16 +319,20 @@ describe('chat session startup', () => {
         );
     });
 
-    it('ignores untagged startup frames after a request is accepted', async () => {
+    it('accepts an untagged startup error from the current socket', async () => {
         const start = startTopic('Algebra');
         const socket = await openLatestSocket();
         await start;
         socket.receive({ event: 'session_start_accepted', requestId: 'request-current' });
-        socket.receive({ error: 'stale provider failed' });
+        socket.receive({ error: 'provider failed' });
 
-        expect(isLoading.get()).toBe(true);
-        expect(isTyping.get()).toBe(true);
-        expect(mocks.showErrorModal).not.toHaveBeenCalled();
+        expect(isLoading.get()).toBe(false);
+        expect(isTyping.get()).toBe(false);
+        expect(lastAiError.get()).toMatchObject({ code: 'provider failed' });
+        expect(mocks.showErrorModal).toHaveBeenCalledWith(
+            'Something went wrong',
+            'Please try starting the session again.'
+        );
     });
 
     it('accepts an untagged Insights error after a correlated topic startup', async () => {
@@ -346,6 +350,10 @@ describe('chat session startup', () => {
         const insightsStart = startInsightsSession('Career options');
         const insightsSocket = await openLatestSocket();
         await insightsStart;
+        insightsSocket.receive({
+            event: 'session_start_accepted',
+            requestId: 'request-insights',
+        });
         insightsSocket.receive({ error: 'Insufficient credits' });
 
         expect(lastAiError.get()).toMatchObject({ code: 'Insufficient credits' });

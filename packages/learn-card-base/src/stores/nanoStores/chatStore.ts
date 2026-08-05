@@ -755,7 +755,11 @@ export function connectWebSocket() {
             }
 
             if (data.error) {
-                if (!isCurrentSessionStartFrame(data.requestId)) return;
+                if (
+                    typeof data.requestId === 'string' &&
+                    !isCurrentSessionStartFrame(data.requestId)
+                )
+                    return;
                 const isStartupPending = startupWatchdog !== undefined;
                 clearSessionStartWatchdog();
                 log.error('Error:', data.error);

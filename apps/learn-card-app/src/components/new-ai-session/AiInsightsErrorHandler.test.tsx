@@ -1,5 +1,5 @@
 import React from 'react';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import AiInsightsErrorHandler from './AiInsightsErrorHandler';
@@ -7,7 +7,6 @@ import { AiSessionMode } from './newAiSession.helpers';
 
 const mocks = vi.hoisted(() => ({
     aiError: null as { at: number; code?: string } | null,
-    showErrorModal: vi.fn(),
 }));
 
 vi.mock('@nanostores/react', () => ({
@@ -18,13 +17,8 @@ vi.mock('learn-card-base/stores/nanoStores/chatStore', () => ({
     lastAiError: {},
 }));
 
-vi.mock('learn-card-base/stores/nanoStores/ErrorModalStore', () => ({
-    showErrorModal: mocks.showErrorModal,
-}));
-
 describe('AiInsightsErrorHandler', () => {
     beforeEach(() => {
-        vi.clearAllMocks();
         mocks.aiError = null;
         vi.spyOn(Date, 'now').mockReturnValue(1_000);
     });
@@ -37,9 +31,9 @@ describe('AiInsightsErrorHandler', () => {
         mocks.aiError = { at: 1_001, code: 'insufficient_quota' };
         rerender(<AiInsightsErrorHandler active mode={AiSessionMode.insights} />);
 
-        expect(mocks.showErrorModal).toHaveBeenCalledWith(
-            'Something went wrong',
-            'Please try your request again.'
+        expect(screen.getByRole('alert')).toHaveTextContent('Something went wrong');
+        expect(screen.getByRole('alert')).toHaveTextContent(
+            'AI chat is temporarily unavailable. Please try again later.'
         );
     });
 
@@ -48,7 +42,7 @@ describe('AiInsightsErrorHandler', () => {
 
         render(<AiInsightsErrorHandler active mode={AiSessionMode.insights} />);
 
-        expect(mocks.showErrorModal).not.toHaveBeenCalled();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
 
     it('does not show the Insights error modal for tutor sessions', () => {
@@ -57,6 +51,6 @@ describe('AiInsightsErrorHandler', () => {
         mocks.aiError = { at: 1_001, code: 'server_error' };
         rerender(<AiInsightsErrorHandler active mode={AiSessionMode.tutor} />);
 
-        expect(mocks.showErrorModal).not.toHaveBeenCalled();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
 });
