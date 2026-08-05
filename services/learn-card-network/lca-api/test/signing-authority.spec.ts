@@ -84,6 +84,18 @@ describe('Signing Authority', () => {
         }
     });
 
+    it('should ignore legacy signing authorities without a DID', async () => {
+        await SigningAuthorities.insertOne({
+            ownerDid: userA.learnCard.id.did(),
+            name: 'legacy',
+            seed: 'legacy-seed',
+        });
+
+        await expect(
+            userA.clients.fullAuth.signingAuthority.signingAuthorities()
+        ).resolves.toEqual([]);
+    });
+
     it('should allow you to authorize your signing authority to issue a boost', async () => {
         await userA.clients.fullAuth.signingAuthority.createSigningAuthority({ name: 'mysa' });
         await expect(
