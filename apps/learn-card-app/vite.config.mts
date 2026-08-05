@@ -154,6 +154,7 @@ export default defineConfig(async ({ mode, command }) => {
             paraglideVitePlugin({
                 project: './project.inlang',
                 outdir: './src/paraglide',
+                outputStructure: 'locale-modules',
             }),
             ...(process.env.ANALYZE
                 ? [
