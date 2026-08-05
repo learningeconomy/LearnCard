@@ -979,7 +979,16 @@
         "sharedComputer": "Shared or public computer",
         "signInFromAnotherDevice": "Sign in from another device",
         "social": {
-            "or": "OR"
+            "or": "OR",
+            "inProgress": "A sign-in is already in progress. Finish it before trying again.",
+            "signingInWith": "Signing in with {{provider}}",
+            "googleStartFailed": "Google sign-in failed to start. If the issue persists, check your browser settings, clear the site data, refresh the page, and try again. You can also try a different browser or private browsing mode.",
+            "popupBlocked": "Popups are blocked in your browser. Enable popups and try again.",
+            "genericError": "Something went wrong. Please try again.",
+            "provider": {
+                "apple": "Apple",
+                "google": "Google"
+            }
         },
         "welcome": {
             "heading": "Welcome to {{brand}}",
