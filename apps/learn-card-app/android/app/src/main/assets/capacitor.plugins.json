@@ -1,9 +1,5 @@
 [
 	{
-		"pkg": "@capacitor-community/in-app-review",
-		"classpath": "com.getcapacitor.community.inappreview.InAppReviewPlugin"
-	},
-	{
 		"pkg": "@capacitor-community/media",
 		"classpath": "com.getcapacitor.community.media.MediaPlugin"
 	},
