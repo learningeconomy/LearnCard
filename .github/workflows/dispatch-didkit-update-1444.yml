@@ -85,7 +85,12 @@ jobs:
                       );
                       const tree = copyFiles.map(file => {
                           if (file.status === 'removed') {
-                              return { path: file.filename, sha: null };
+                              return {
+                                  path: file.filename,
+                                  mode: '100644',
+                                  type: 'blob',
+                                  sha: null,
+                              };
                           }
                           if (file.status === 'renamed') {
                               throw new Error(`Unexpected renamed generated file: ${file.filename}`);
@@ -109,7 +114,7 @@ jobs:
                           '.github/workflows/inspect-didkit-publisher-1444.yml',
                           '.github/workflows/cancel-duplicate-didkit-1444.yml',
                       ]) {
-                          tree.push({ path, sha: null });
+                          tree.push({ path, mode: '100644', type: 'blob', sha: null });
                       }
 
                       const { data: targetRef } = await github.rest.git.getRef({
