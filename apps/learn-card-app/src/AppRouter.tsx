@@ -298,12 +298,15 @@ const AppRouter: React.FC = () => {
                 pin: pin as string,
             });
             newModal(
-                <ViewSharedBoost showEndorsementRequest />,
+                <ViewSharedBoost
+                    key={`${String(boostUri)}:${String(seed)}:${String(pin)}`}
+                    showEndorsementRequest
+                />,
                 {},
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
         }
-    }, [boostUri, endorsementRequest]);
+    }, [boostUri, seed, pin, endorsementRequest, newModal]);
 
     useEffect(() => {
         // Skip entirely if this is a fresh endorsement link click - the first useEffect handles it
