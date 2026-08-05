@@ -16,7 +16,7 @@ jobs:
         if: github.event.pull_request.number == 1444
         runs-on: ubuntu-latest
         steps:
-            - name: Cancel duplicate orchestrator run
+            - name: Cancel queued duplicate publisher run
               uses: actions/github-script@v7
               with:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -24,5 +24,5 @@ jobs:
                       await github.rest.actions.cancelWorkflowRun({
                           owner: context.repo.owner,
                           repo: context.repo.repo,
-                          run_id: 30963543462,
+                          run_id: 30963550944,
                       });
