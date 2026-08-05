@@ -10,13 +10,9 @@ export const getEndpoint = (domainName: string) => {
 };
 
 export const getSigningAuthorityWithEndpoint = (
-    signingAuthority: MongoSigningAuthorityType,
+    signingAuthority: MongoSigningAuthorityType & { did: string },
     domainName: string
 ): SigningAuthorityResponseType => {
-    if (!signingAuthority.did) {
-        throw new Error(`Signing authority "${signingAuthority.name}" is missing its DID.`);
-    }
-
     return {
         ...signingAuthority,
         did: signingAuthority.did,
