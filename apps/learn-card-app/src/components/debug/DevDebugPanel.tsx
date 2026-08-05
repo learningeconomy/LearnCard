@@ -1,5 +1,15 @@
 import React, { useState } from 'react';
-import { Bug, X, Shield, Settings, Palette, GitBranch, WifiOff, MessageSquare } from 'lucide-react';
+import {
+    Bug,
+    X,
+    Shield,
+    Settings,
+    Palette,
+    GitBranch,
+    WifiOff,
+    MessageSquare,
+    Gauge,
+} from 'lucide-react';
 
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 
@@ -10,12 +20,13 @@ import { ThemeDebugTab } from './ThemeDebugTab';
 import { PathwaysDebugTab } from './PathwaysDebugTab';
 import { OfflineDebugTab } from './OfflineDebugTab';
 import { InAppMessagesDebugTab } from './InAppMessagesDebugTab';
+import { FeedbackDebugTab } from './FeedbackDebugTab';
 
 // ---------------------------------------------------------------------------
 // Tab definitions
 // ---------------------------------------------------------------------------
 
-type TabId = 'auth' | 'config' | 'theme' | 'pathways' | 'offline' | 'messages';
+type TabId = 'auth' | 'config' | 'theme' | 'pathways' | 'offline' | 'messages' | 'feedback';
 
 interface TabDef {
     id: TabId;
@@ -30,6 +41,7 @@ const TABS: TabDef[] = [
     { id: 'pathways', label: 'Pathways', icon: <GitBranch className="w-3 h-3" /> },
     { id: 'offline', label: 'Offline', icon: <WifiOff className="w-3 h-3" /> },
     { id: 'messages', label: 'Messages', icon: <MessageSquare className="w-3 h-3" /> },
+    { id: 'feedback', label: 'Feedback', icon: <Gauge className="w-3 h-3" /> },
 ];
 
 // ---------------------------------------------------------------------------
@@ -130,6 +142,7 @@ export const DevDebugPanel: React.FC = () => {
                         {activeTab === 'pathways' && <PathwaysDebugTab />}
                         {activeTab === 'offline' && <OfflineDebugTab />}
                         {activeTab === 'messages' && <InAppMessagesDebugTab />}
+                        {activeTab === 'feedback' && <FeedbackDebugTab />}
                     </div>
 
                     {/* ── Footer ── */}

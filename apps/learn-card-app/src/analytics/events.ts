@@ -61,6 +61,15 @@ export const AnalyticsEvents = {
     FEEDBACK_FOLLOWUP_SUBMITTED: 'feedback_followup_submitted',
     FEEDBACK_FOLLOWUP_DISMISSED: 'feedback_followup_dismissed',
 
+    // Advocacy asks earned by sustained positive sentiment.
+    // NOTE: `store_review_requested` records that we *asked* the OS to show
+    // the prompt. Neither StoreKit nor Play tells us whether a dialog was
+    // displayed or a review left, so this can never be read as a conversion.
+    STORE_REVIEW_REQUESTED: 'store_review_requested',
+    GITHUB_STAR_CARD_SHOWN: 'github_star_card_shown',
+    GITHUB_STAR_CARD_CLICKED: 'github_star_card_clicked',
+    GITHUB_STAR_CARD_DISMISSED: 'github_star_card_dismissed',
+
     // Boost CMS
     BOOST_CMS_PUBLISH: 'boostCMS_publish',
     BOOST_CMS_ISSUE_TO: 'boostCMS_issue_to',
@@ -341,6 +350,25 @@ export interface AnalyticsEventPayloads {
     [AnalyticsEvents.FEEDBACK_FOLLOWUP_DISMISSED]: {
         surface: FeedbackSurface;
         sentiment: FeedbackSentiment;
+    };
+
+    [AnalyticsEvents.STORE_REVIEW_REQUESTED]: {
+        platform: 'ios' | 'android';
+        trigger: FeedbackSurface;
+        /** How many times we've asked this user in the trailing 365 days, including this ask. */
+        asksThisYear: number;
+    };
+
+    [AnalyticsEvents.GITHUB_STAR_CARD_SHOWN]: {
+        trigger: FeedbackSurface;
+    };
+
+    [AnalyticsEvents.GITHUB_STAR_CARD_CLICKED]: {
+        trigger: FeedbackSurface;
+    };
+
+    [AnalyticsEvents.GITHUB_STAR_CARD_DISMISSED]: {
+        trigger: FeedbackSurface;
     };
 
     [AnalyticsEvents.BOOST_CMS_PUBLISH]: {

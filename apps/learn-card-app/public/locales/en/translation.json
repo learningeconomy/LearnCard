@@ -2622,6 +2622,11 @@
             "placeholder": "Tell us more (optional)",
             "send": "Send Feedback",
             "skip": "Skip"
+        },
+        "github": {
+            "body": "Enjoying LearnCard? It's open source.",
+            "cta": "Star us on GitHub",
+            "dismiss": "Dismiss"
         }
     },
     "toasts": {

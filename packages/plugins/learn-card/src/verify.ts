@@ -113,7 +113,12 @@ const transformErrorMessage = (
     return error;
 };
 
+const NON_DID_ISSUER_WARNING =
+    'Issuer authorization was not checked because the credential issuer is not a DID';
+
 const transformWarningCheck = (warning: string, _credential: VC): string => {
+    if (warning === NON_DID_ISSUER_WARNING) return 'Issuer Authorization';
+
     if (warning.includes('Boost Authenticity')) return 'Boost Authenticity';
 
     const prefix = warning.split(' warning')[0];
