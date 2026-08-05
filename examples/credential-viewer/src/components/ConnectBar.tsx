@@ -28,24 +28,31 @@ const EnvSelector: React.FC = () => {
 
         if (key !== 'custom') {
             setEnv(key);
-        } else {
-            setEnv('custom', {
-                label: 'Custom',
-                network: customNetwork || 'http://localhost:4000/trpc',
-                cloud: customCloud || 'http://localhost:4100/trpc',
-                lcaApi: customLcaApi || 'http://localhost:5100/trpc',
-            });
+            return;
         }
+
+        const network = customNetwork || 'http://localhost:4000/trpc';
+        const cloud = customCloud || 'http://localhost:4100/trpc';
+        const lcaApi = customLcaApi || 'http://localhost:5100/trpc';
+
+        setCustomNetwork(network);
+        setCustomCloud(cloud);
+        setCustomLcaApi(lcaApi);
+
+        setEnv('custom', { label: 'Custom', network, cloud, lcaApi });
     };
 
     const handleCustomBlur = () => {
         if (envKey !== 'custom') return;
 
+        // Guard: a cleared field must not overwrite the stored config with defaults.
+        if (!customNetwork || !customCloud) return;
+
         setEnv('custom', {
             label: 'Custom',
-            network: customNetwork || 'http://localhost:4000/trpc',
-            cloud: customCloud || 'http://localhost:4100/trpc',
-            lcaApi: customLcaApi || 'http://localhost:5100/trpc',
+            network: customNetwork,
+            cloud: customCloud,
+            lcaApi: customLcaApi || undefined,
         });
     };
 
