@@ -160,6 +160,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const walletRef = useRef<any>(null);
 
+    const lcaPluginErrorRef = useRef<string | null>(null);
+
     const setEnv = useCallback((key: NetworkEnvKey, custom?: NetworkEnvConfig) => {
         if (key === 'custom' && custom) {
             setEnvKey('custom');
@@ -236,10 +238,18 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             if (!sa || !sa.endpoint) {
                 const hasPlugin = !!lc.invoke.createSigningAuthority;
 
+                if (hasPlugin) {
+                    throw new Error(
+                        'Signing authority was created but has no endpoint. Is the LCA API running?'
+                    );
+                }
+
+                if (lcaPluginErrorRef.current) {
+                    throw new Error(`LCA API plugin failed to load: ${lcaPluginErrorRef.current}`);
+                }
+
                 throw new Error(
-                    hasPlugin
-                        ? 'Signing authority was created but has no endpoint. Is the LCA API running?'
-                        : 'No LCA API plugin available. Make sure the environment has an lcaApi URL configured.'
+                    'No LCA API plugin available. Make sure the environment has an lcaApi URL configured.'
                 );
             }
 
@@ -304,6 +314,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setSigningAuthority(null);
         setSaError(null);
 
+        lcaPluginErrorRef.current = null;
+
         const cfg = envConfigRef.current;
 
         try {
@@ -321,7 +333,12 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                     // The context intentionally erases the plugin tuple behind WalletInstance.
                     lc = lcaApiLearnCard as unknown as typeof lc;
                 } catch (err) {
+                    const msg = err instanceof Error ? err.message : String(err);
+
+                    lcaPluginErrorRef.current = msg;
+
                     console.warn('Could not load LCA API plugin:', err);
+                    setSaError(`Could not reach LCA API at ${cfg.lcaApi}: ${msg}`);
                 }
             }
 
