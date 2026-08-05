@@ -954,7 +954,16 @@
             }
         },
         "social": {
-            "or": "OU"
+            "or": "OU",
+            "inProgress": "Une connexion est déjà en cours. Terminez-la avant de réessayer.",
+            "signingInWith": "Connexion avec {{provider}}",
+            "googleStartFailed": "La connexion avec Google n’a pas pu démarrer. Si le problème persiste, vérifiez les paramètres du navigateur, effacez les données du site, actualisez la page et réessayez. Vous pouvez aussi essayer un autre navigateur ou le mode privé.",
+            "popupBlocked": "Les fenêtres contextuelles sont bloquées dans votre navigateur. Autorisez-les et réessayez.",
+            "genericError": "Une erreur est survenue. Veuillez réessayer.",
+            "provider": {
+                "apple": "Apple",
+                "google": "Google"
+            }
         },
         "seedPhrase": {
             "title": "Utiliser une phrase de récupération pour importer votre passeport",
@@ -2613,6 +2622,11 @@
             "placeholder": "Dites-nous en plus (facultatif)",
             "send": "Envoyer",
             "skip": "Passer"
+        },
+        "github": {
+            "body": "Vous aimez LearnCard ? C'est open source.",
+            "cta": "Mettez une étoile sur GitHub",
+            "dismiss": "Ignorer"
         }
     },
     "toasts": {
@@ -3303,7 +3317,11 @@
                 "approvedPre": "Merci !",
                 "approvedPost": "Recommandation approuvée !",
                 "waitingReview": "En attente d'examen par {{name}}",
-                "approvedBy": "Approuvé par {{name}}"
+                "approvedBy": "Approuvé par {{name}}",
+                "sendFailedTitle": "Recommandation non envoyée",
+                "sendFailedDescription": "Votre recommandation est toujours enregistrée. Réessayez.",
+                "missingRequestDescription": "Fermez cet écran et rouvrez le lien de recommandation pour réessayer.",
+                "tryAgain": "Réessayer"
             },
             "footer": {
                 "viewEndorsement": "Voir la recommandation"
@@ -3347,7 +3365,7 @@
         },
         "viewRequest": {
             "ok": "OK",
-            "errorFetching": "Erreur lors de la récupération de la credential : {{error}}"
+            "errorOpening": "Nous n’avons pas pu ouvrir cette attestation. Veuillez réessayer."
         }
     },
     "verification": {

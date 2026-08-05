@@ -61,6 +61,15 @@ export const AnalyticsEvents = {
     FEEDBACK_FOLLOWUP_SUBMITTED: 'feedback_followup_submitted',
     FEEDBACK_FOLLOWUP_DISMISSED: 'feedback_followup_dismissed',
 
+    // Advocacy asks earned by sustained positive sentiment.
+    // NOTE: `store_review_requested` records that we *asked* the OS to show
+    // the prompt. Neither StoreKit nor Play tells us whether a dialog was
+    // displayed or a review left, so this can never be read as a conversion.
+    STORE_REVIEW_REQUESTED: 'store_review_requested',
+    GITHUB_STAR_CARD_SHOWN: 'github_star_card_shown',
+    GITHUB_STAR_CARD_CLICKED: 'github_star_card_clicked',
+    GITHUB_STAR_CARD_DISMISSED: 'github_star_card_dismissed',
+
     // Boost CMS
     BOOST_CMS_PUBLISH: 'boostCMS_publish',
     BOOST_CMS_ISSUE_TO: 'boostCMS_issue_to',
@@ -81,6 +90,11 @@ export const AnalyticsEvents = {
 
     // Authentication
     LOGIN: 'login',
+    // `platform` is attached centrally by the analytics context.
+    SOCIAL_LOGIN_STARTED: 'social_login_started',
+    SOCIAL_LOGIN_SUCCEEDED: 'social_login_succeeded',
+    SOCIAL_LOGIN_CANCELLED: 'social_login_cancelled',
+    SOCIAL_LOGIN_FAILED: 'social_login_failed',
 
     // AI Features
     AI_CHAT_SESSION_STARTED: 'ai_chat_session_started',
@@ -338,6 +352,25 @@ export interface AnalyticsEventPayloads {
         sentiment: FeedbackSentiment;
     };
 
+    [AnalyticsEvents.STORE_REVIEW_REQUESTED]: {
+        platform: 'ios' | 'android';
+        trigger: FeedbackSurface;
+        /** How many times we've asked this user in the trailing 365 days, including this ask. */
+        asksThisYear: number;
+    };
+
+    [AnalyticsEvents.GITHUB_STAR_CARD_SHOWN]: {
+        trigger: FeedbackSurface;
+    };
+
+    [AnalyticsEvents.GITHUB_STAR_CARD_CLICKED]: {
+        trigger: FeedbackSurface;
+    };
+
+    [AnalyticsEvents.GITHUB_STAR_CARD_DISMISSED]: {
+        trigger: FeedbackSurface;
+    };
+
     [AnalyticsEvents.BOOST_CMS_PUBLISH]: {
         timestamp: number;
         action: 'publish' | 'publish_draft' | 'publish_live';
@@ -411,6 +444,45 @@ export interface AnalyticsEventPayloads {
 
     [AnalyticsEvents.LOGIN]: {
         method: string;
+    };
+
+    // Deliberately bounded: never add provider messages, callback URLs,
+    // credentials, authorization codes, state, or tokens to these payloads.
+    [AnalyticsEvents.SOCIAL_LOGIN_STARTED]: {
+        flow_id: string;
+        provider: 'apple' | 'google';
+        auth_surface: 'native_sdk' | 'web_popup';
+    };
+
+    [AnalyticsEvents.SOCIAL_LOGIN_SUCCEEDED]: {
+        flow_id: string;
+        provider: 'apple' | 'google';
+        auth_surface: 'native_sdk' | 'web_popup';
+        duration_ms: number;
+    };
+
+    [AnalyticsEvents.SOCIAL_LOGIN_CANCELLED]: {
+        flow_id: string;
+        provider: 'apple' | 'google';
+        auth_surface: 'native_sdk' | 'web_popup';
+        duration_ms: number;
+        reason: 'native_cancelled' | 'popup_closed' | 'request_superseded';
+    };
+
+    [AnalyticsEvents.SOCIAL_LOGIN_FAILED]: {
+        flow_id: string;
+        provider: 'apple' | 'google';
+        auth_surface: 'native_sdk' | 'web_popup';
+        duration_ms: number;
+        failure_reason:
+            | 'missing_initial_state'
+            | 'missing_popup_result'
+            | 'missing_credential'
+            | 'missing_user'
+            | 'network'
+            | 'popup_blocked'
+            | 'provider_internal'
+            | 'unknown';
     };
 
     [AnalyticsEvents.AI_CHAT_SESSION_STARTED]: {
