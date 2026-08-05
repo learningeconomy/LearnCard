@@ -1,7 +1,7 @@
 ---
 '@learncard/cli': patch
 '@learncard/lca-api-client': patch
-'@learncard/lca-api-plugin': patch
+'@learncard/lca-api-plugin': major
 '@learncard/lca-api-service': patch
 ---
 
