@@ -1,0 +1,121 @@
+name: Sync bridge DIDKit WASM for PR 1444
+
+on:
+    pull_request:
+        branches:
+            - main
+        paths:
+            - '.github/workflows/fix-bridge-wasm-1444.yml'
+
+permissions:
+    contents: write
+
+jobs:
+    sync:
+        if: github.event.pull_request.number == 1444
+        runs-on: ubuntu-latest
+        steps:
+            - name: Sync bridge binary and hash guard, then remove helper
+              uses: actions/github-script@v7
+              with:
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  script: |
+                      const owner = context.repo.owner;
+                      const repo = context.repo.repo;
+                      const branch = context.payload.pull_request.head.ref;
+                      const expectedSha256 = '60efb6027699fda135db0d817f7a541bbd660ae88bec9cbec9796feeb3740b96';
+                      const pluginPath = 'packages/plugins/didkit/src/didkit/pkg/didkit_wasm_bg.wasm';
+                      const bridgePath = 'packages/learn-card-bridge-http/src/didkit_wasm_bg.wasm';
+                      const syncPath = 'packages/learn-card-bridge-http/scripts/sync-didkit.ts';
+                      const helperPath = '.github/workflows/fix-bridge-wasm-1444.yml';
+
+                      const { data: targetRef } = await github.rest.git.getRef({
+                          owner,
+                          repo,
+                          ref: `heads/${branch}`,
+                      });
+                      const targetHead = targetRef.object.sha;
+                      const { data: targetCommit } = await github.rest.git.getCommit({
+                          owner,
+                          repo,
+                          commit_sha: targetHead,
+                      });
+                      const { data: targetTree } = await github.rest.git.getTree({
+                          owner,
+                          repo,
+                          tree_sha: targetCommit.tree.sha,
+                          recursive: 'true',
+                      });
+                      const entries = new Map(targetTree.tree.map(entry => [entry.path, entry]));
+                      const pluginWasm = entries.get(pluginPath);
+
+                      if (!pluginWasm?.sha || pluginWasm.type !== 'blob') {
+                          throw new Error(`Could not resolve ${pluginPath}`);
+                      }
+
+                      const { data: syncFile } = await github.rest.repos.getContent({
+                          owner,
+                          repo,
+                          path: syncPath,
+                          ref: branch,
+                      });
+                      if (Array.isArray(syncFile) || syncFile.type !== 'file' || !syncFile.content) {
+                          throw new Error(`Could not read ${syncPath}`);
+                      }
+
+                      const currentSync = Buffer.from(syncFile.content, 'base64').toString('utf8');
+                      const updatedSync = currentSync.replace(
+                          /const EXPECTED_DIDKIT_SHA256 = '[0-9a-f]{64}';/,
+                          `const EXPECTED_DIDKIT_SHA256 = '${expectedSha256}';`
+                      );
+                      if (updatedSync === currentSync || !updatedSync.includes(expectedSha256)) {
+                          throw new Error(`Could not update the expected DIDKit hash in ${syncPath}`);
+                      }
+
+                      const { data: syncBlob } = await github.rest.git.createBlob({
+                          owner,
+                          repo,
+                          content: updatedSync,
+                          encoding: 'utf-8',
+                      });
+                      const { data: newTree } = await github.rest.git.createTree({
+                          owner,
+                          repo,
+                          base_tree: targetCommit.tree.sha,
+                          tree: [
+                              {
+                                  path: syncPath,
+                                  mode: '100644',
+                                  type: 'blob',
+                                  sha: syncBlob.sha,
+                              },
+                              {
+                                  path: bridgePath,
+                                  mode: pluginWasm.mode,
+                                  type: pluginWasm.type,
+                                  sha: pluginWasm.sha,
+                              },
+                              {
+                                  path: helperPath,
+                                  mode: '100644',
+                                  type: 'blob',
+                                  sha: null,
+                              },
+                          ],
+                      });
+                      const { data: newCommit } = await github.rest.git.createCommit({
+                          owner,
+                          repo,
+                          message: 'fix: sync bridge wasm with published didkit',
+                          tree: newTree.sha,
+                          parents: [targetHead],
+                      });
+
+                      await github.rest.git.updateRef({
+                          owner,
+                          repo,
+                          ref: `heads/${branch}`,
+                          sha: newCommit.sha,
+                      });
+
+                      core.notice(`Synced bridge WASM and hash guard at ${newCommit.sha}.`);
