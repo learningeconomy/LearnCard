@@ -1,0 +1,1 @@
+Refresh PR checks after synchronizing the bridge DIDKit WASM.
