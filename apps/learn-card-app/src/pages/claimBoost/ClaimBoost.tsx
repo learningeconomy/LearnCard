@@ -608,7 +608,11 @@ const ClaimBoost: React.FC<{
     };
 
     return (
-        <IonPage data-modal-insets="content-bottom" className="bg-grayscale-100">
+        <IonPage
+            data-modal-insets="content-bottom"
+            className="bg-grayscale-100"
+            style={backgroundStyles}
+        >
             {/* <MainHeader
                 showBackButton={false}
                 customClassName="bg-white"
@@ -625,12 +629,7 @@ const ClaimBoost: React.FC<{
                 }}
             >
                 <div className="flex h-full bg-grayscale-100">
-                    <section
-                        style={{
-                            ...backgroundStyles,
-                        }}
-                        className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0"
-                    >
+                    <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0">
                         {/* <div
                         style={{
                             ...backgroundStyles,

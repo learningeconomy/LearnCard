@@ -76,21 +76,27 @@ vi.mock('./helpers/MediaCollapseButton', () => ({ default: () => null }));
 vi.mock('./helpers/MediaLoader', () => ({ default: () => <div>Loading document</div> }));
 vi.mock('../../../svgs/SlimCaretLeft', () => ({ default: () => null }));
 vi.mock('../../../svgs/SlimCaretRight', () => ({ default: () => null }));
-vi.mock('learn-card-base/components/boost/boostFooter/BoostFooter', () => ({
-    default: ({ handleFullScreen }: { handleFullScreen?: () => void }) => (
-        <button type="button" onClick={handleFullScreen}>
-            View full screen
-        </button>
-    ),
-}));
-// Surface footerProps so tests can assert on which footer controls are offered.
+// Surface the footer contract while preserving the full-screen interaction used by this suite.
 vi.mock('learn-card-base/components/boost/boostFooter/BoostFooterLayout', () => ({
-    default: ({ children, footerProps }: any) => (
+    default: ({
+        children,
+        footerProps,
+    }: React.PropsWithChildren<{
+        footerProps?: {
+            showFullScreen?: boolean;
+            handleFullScreen?: () => void;
+        };
+    }>) => (
         <div
             data-testid="footer-layout"
             data-show-full-screen={String(!!footerProps?.showFullScreen)}
         >
             {children}
+            {footerProps?.showFullScreen && (
+                <button type="button" onClick={footerProps.handleFullScreen}>
+                    View full screen
+                </button>
+            )}
         </div>
     ),
 }));
