@@ -74,6 +74,7 @@ const {
     currentThreadId,
     disconnectWebSocket,
     isLoading,
+    lastAiError,
     isTyping,
     messages,
     planReady,
@@ -83,6 +84,7 @@ const {
     resetChatStores,
     sendMessage,
     sessionEnded,
+    startInsightsSession,
     startTopic,
     threads,
 } = await import('./chatStore');
@@ -327,6 +329,28 @@ describe('chat session startup', () => {
         expect(isLoading.get()).toBe(true);
         expect(isTyping.get()).toBe(true);
         expect(mocks.showErrorModal).not.toHaveBeenCalled();
+    });
+
+    it('accepts an untagged Insights error after a correlated topic startup', async () => {
+        const topicStart = startTopic('Algebra');
+        const topicSocket = await openLatestSocket();
+        await topicStart;
+        topicSocket.receive({ event: 'session_start_accepted', requestId: 'request-topic' });
+        topicSocket.receive({
+            event: 'plan_ready',
+            requestId: 'request-topic',
+            threadId: 'thread-topic',
+            title: 'Algebra',
+        });
+
+        const insightsStart = startInsightsSession('Career options');
+        const insightsSocket = await openLatestSocket();
+        await insightsStart;
+        insightsSocket.receive({ error: 'Insufficient credits' });
+
+        expect(lastAiError.get()).toMatchObject({ code: 'Insufficient credits' });
+        expect(isLoading.get()).toBe(false);
+        expect(isTyping.get()).toBe(false);
     });
 
     it('ignores completion frames for another browser session', async () => {

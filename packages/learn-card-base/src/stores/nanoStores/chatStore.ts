@@ -146,6 +146,8 @@ export const hasThreadEnded = (thread: Thread | undefined): boolean =>
  * plan/messages/streaming state don't bleed into the new one.
  */
 export function resetChatSessionStores() {
+    clearSessionStartWatchdog();
+    currentSessionStartRequestId = null;
     messages.set([]);
     streamingMessage.set(null);
     if (streamRaf != null) {
