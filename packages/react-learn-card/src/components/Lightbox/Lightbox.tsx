@@ -3,7 +3,13 @@ import { createPortal } from 'react-dom';
 
 import X from '../svgs/X';
 
-import { getVideoMetadata, VideoMetadata } from '../../helpers/video.helpers';
+import {
+    canEmbedVideoIframe,
+    getExternalVideoUrl,
+    getVideoMetadata,
+    VideoMetadata,
+} from '../../helpers/video.helpers';
+import ExternalVideoFallback from './ExternalVideoFallback';
 
 export type LightboxItemType = 'photo' | 'video';
 
@@ -117,14 +123,22 @@ export const Lightbox: React.FC<LightboxProps> = ({
 
             {currentItem.type === 'video' && videoMetadata?.embedUrl && (
                 <div className="relative w-[90vw] max-w-[800px] aspect-video">
-                    <iframe
-                        src={videoMetadata.embedUrl}
-                        className="absolute top-0 left-0 w-full h-full rounded-md"
-                        title="Video player"
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                    />
+                    {canEmbedVideoIframe(videoMetadata.type) ? (
+                        <iframe
+                            src={videoMetadata.embedUrl}
+                            className="absolute top-0 left-0 w-full h-full rounded-md"
+                            title="Video player"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                        />
+                    ) : (
+                        <ExternalVideoFallback
+                            url={getExternalVideoUrl(videoMetadata, currentItem.url)}
+                            thumbnailUrl={videoMetadata.thumbnailUrl}
+                            className="absolute top-0 left-0"
+                        />
+                    )}
                 </div>
             )}
         </div>,
