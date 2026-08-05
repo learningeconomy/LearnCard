@@ -106,7 +106,12 @@ export const QRCodeScannerListener: React.FC = () => {
                 const activeListener = listener;
                 listener = null;
 
-                await activeListener?.remove();
+                try {
+                    await activeListener?.remove();
+                } catch (error) {
+                    log.warn('scan::listener-remove-error', error);
+                }
+
                 await BarcodeScanner.stopScan();
                 document.querySelector('#app-router')?.classList.remove('scanner-active');
             })();

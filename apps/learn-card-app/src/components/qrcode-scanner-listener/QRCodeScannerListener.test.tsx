@@ -201,4 +201,16 @@ describe('QRCodeScannerListener', () => {
         await waitFor(() => expect(mocks.stopScan).toHaveBeenCalledTimes(2));
         expect(mocks.listenerRemovers[0]).toHaveBeenCalledOnce();
     });
+    it('stops the scan when listener removal fails', async () => {
+        const { rerender } = render(<QRCodeScannerListener />);
+
+        await waitFor(() => expect(mocks.startScan).toHaveBeenCalledOnce());
+        mocks.listenerRemovers[0].mockRejectedValueOnce(new Error('Listener removal failed'));
+
+        mocks.setShowScanner(false);
+        rerender(<QRCodeScannerListener />);
+
+        await waitFor(() => expect(mocks.stopScan).toHaveBeenCalledOnce());
+        expect(mocks.listenerRemovers[0]).toHaveBeenCalledOnce();
+    });
 });
