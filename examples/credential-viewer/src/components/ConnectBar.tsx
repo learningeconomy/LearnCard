@@ -39,14 +39,14 @@ const EnvSelector: React.FC = () => {
     };
 
     const handleCustomBlur = () => {
-        if (envKey === 'custom' && customNetwork && customCloud) {
-            setEnv('custom', {
-                label: 'Custom',
-                network: customNetwork,
-                cloud: customCloud,
-                ...(customLcaApi && { lcaApi: customLcaApi }),
-            });
-        }
+        if (envKey !== 'custom') return;
+
+        setEnv('custom', {
+            label: 'Custom',
+            network: customNetwork || 'http://localhost:4000/trpc',
+            cloud: customCloud || 'http://localhost:4100/trpc',
+            lcaApi: customLcaApi || 'http://localhost:5100/trpc',
+        });
     };
 
     return (
