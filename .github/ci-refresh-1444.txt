@@ -1,0 +1,1 @@
+Refresh PR checks after applying generated DIDKit WASM.
