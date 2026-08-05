@@ -597,7 +597,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                         }.`,
                         {
                             title: `${typeLabel} ${fileList} saved`,
-                            ...SUCCESS_TOAST_OPTIONS,
+                            ...FILE_UPLOAD_ERROR_TOAST_OPTIONS,
                         }
                     );
                 } else {
@@ -688,7 +688,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                 if (totalCredentials === 0) {
                     presentToast(`No credentials could be extracted from this file.`, {
                         title: `${typeLabel} ${fileList} saved`,
-                        ...SUCCESS_TOAST_OPTIONS,
+                        ...FILE_UPLOAD_ERROR_TOAST_OPTIONS,
                     });
                 } else {
                     presentToast(`Successfully added to ${categoryList}.`, {
@@ -834,7 +834,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                         }.`,
                         {
                             title: `${typeLabel} ${fileList} saved`,
-                            ...SUCCESS_TOAST_OPTIONS,
+                            ...FILE_UPLOAD_ERROR_TOAST_OPTIONS,
                         }
                     );
                 } else {

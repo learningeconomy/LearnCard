@@ -28,6 +28,8 @@ export const Toast = () => {
 
     const isError = options.type === ToastTypeEnum.Error;
     const toastTextColor = isError ? 'text-white' : 'text-grayscale-900';
+    const showX = Boolean(options.hasX && (!options.hasCheckmark || isError));
+    const showCheckmark = Boolean(options.hasCheckmark && !showX);
 
     const zIndex = options.zIndex ?? 999999;
 
@@ -80,28 +82,36 @@ export const Toast = () => {
                                 >
                                     <X className="text-grayscale-900 h-[15px] w-[15px] min-w-[15px] min-h-[15px]" />
                                 </button>
-                                <div className="flex items-center justify-between min-h-[40px]">
-                                    <div className="flex items-center justify-start">
-                                        {options.hasCheckmark && (
-                                            <div className="flex items-center justify-center rounded-full bg-emerald-700 p-1 mr-4">
+                                <div className="flex min-w-0 items-center justify-between gap-3 min-h-[40px]">
+                                    <div className="flex min-w-0 flex-1 items-center justify-start">
+                                        {showCheckmark && (
+                                            <div
+                                                data-testid="toast-success-icon"
+                                                className="flex shrink-0 items-center justify-center rounded-full bg-emerald-700 p-1 mr-4"
+                                            >
                                                 <Checkmark className="text-white h-[25px] w-[25px]" />
                                             </div>
                                         )}
-                                        {options.hasX && (
-                                            <div className="flex items-center justify-center rounded-full bg-red-700 p-1 mr-4">
+                                        {showX && (
+                                            <div
+                                                data-testid="toast-error-icon"
+                                                className="flex shrink-0 items-center justify-center rounded-full bg-red-700 p-1 mr-4"
+                                            >
                                                 <X className="text-white h-[25px] w-[25px]" />
                                             </div>
                                         )}
-                                        <div className="flex flex-col">
+                                        <div className="flex min-w-0 flex-1 flex-col">
                                             {options.title && (
                                                 <h4
-                                                    className={`text-sm font-semibold text-left ${toastTextColor}`}
+                                                    className={`text-sm font-semibold text-left whitespace-normal break-words [overflow-wrap:anywhere] ${toastTextColor}`}
                                                 >
                                                     {options.title}
                                                 </h4>
                                             )}
 
-                                            <p className={`text-sm text-left ${toastTextColor}`}>
+                                            <p
+                                                className={`text-sm text-left whitespace-normal break-words [overflow-wrap:anywhere] ${toastTextColor}`}
+                                            >
                                                 {message}
                                             </p>
                                         </div>
@@ -111,7 +121,7 @@ export const Toast = () => {
                                         <button
                                             type="button"
                                             onClick={dismissToast}
-                                            className="border border-grayscale-200 border-solid p-3 rounded-full h-[45px] w-[45px] hidden items-center justify-center bg-white phone:flex"
+                                            className="shrink-0 border border-grayscale-200 border-solid p-3 rounded-full h-[45px] w-[45px] hidden items-center justify-center bg-white phone:flex"
                                         >
                                             <X className="text-grayscale-900 h-[20px] w-[20px]" />
                                         </button>
