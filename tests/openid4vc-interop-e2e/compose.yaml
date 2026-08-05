@@ -63,11 +63,11 @@ services:
             - oid4vc-interop
 
     waltid-issuer:
-        # Pinned: the 2026-08-05 `latest` push (feat-portal2-dcapi branch
-        # build) broke Ed25519 did:jwk issuer-key resolution in the
-        # verifier's JwtSignaturePolicy, failing the interop suite on
-        # every PR. 0.23.0 is the last known-good release tag.
-        image: waltid/issuer-api:0.23.0
+        # WALTID_IMAGE_TAG defaults to a known-good pin so PR runs only
+        # fail on regressions we introduce; the scheduled canary workflow
+        # overrides it with `latest` to catch upstream drift (see
+        # .github/workflows/openid4vc-interop.yml).
+        image: waltid/issuer-api:${WALTID_IMAGE_TAG:-0.23.0}
         container_name: oid4vc-interop-issuer
         # Share the host-bridge's netns so `localhost:4000` from inside
         # walt.id reaches brain-service on the host. See the comment
@@ -103,8 +103,7 @@ services:
             - oid4vc-interop
 
     waltid-verifier:
-        # Pinned alongside issuer-api — see comment above.
-        image: waltid/verifier-api:0.23.0
+        image: waltid/verifier-api:${WALTID_IMAGE_TAG:-0.23.0}
         container_name: oid4vc-interop-verifier
         # Shares the verifier-side bridge's netns so VPs signed by a
         # `did:web:localhost:4000:...` holder can be verified.
