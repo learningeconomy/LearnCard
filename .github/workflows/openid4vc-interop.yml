@@ -68,6 +68,17 @@ jobs:
                   # Surface real-vendor failures rather than silently skipping.
                   CI: 'true'
 
+            - name: Record vendor image digests
+              if: always()
+              working-directory: tests/openid4vc-interop-e2e
+              # Ties a red canary run to the exact upstream build it
+              # tested — `latest` is mutable, digests are not.
+              run: |
+                  docker compose config --images | sort -u | while read -r img; do
+                      digest=$(docker image inspect --format '{{index .RepoDigests 0}}' "$img" 2>/dev/null || echo 'not pulled')
+                      echo "$img -> $digest"
+                  done
+
             - name: Dump docker compose logs on failure
               if: failure()
               working-directory: tests/openid4vc-interop-e2e

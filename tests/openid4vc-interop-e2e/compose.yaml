@@ -46,7 +46,7 @@
 
 services:
     host-bridge-issuer:
-        image: alpine/socat
+        image: alpine/socat:1.8.1.3
         container_name: oid4vc-interop-host-bridge-issuer
         # Forward in-namespace localhost:4000 -> host's port 4000
         # (brain-service). socat's `fork` keeps each TCP connection in a
@@ -92,7 +92,7 @@ services:
             - ./config/issuer:/waltid-issuer-api/config:ro
 
     host-bridge-verifier:
-        image: alpine/socat
+        image: alpine/socat:1.8.1.3
         container_name: oid4vc-interop-host-bridge-verifier
         command: TCP-LISTEN:4000,fork,reuseaddr TCP:host.docker.internal:4000
         extra_hosts:
@@ -149,7 +149,7 @@ services:
     #     baseline; `direct_post.jwt` (encrypted JWE response) is
     #     out of scope for this slice.
     host-bridge-eudi:
-        image: alpine/socat
+        image: alpine/socat:1.8.1.3
         container_name: oid4vc-interop-host-bridge-eudi
         command: TCP-LISTEN:4000,fork,reuseaddr TCP:host.docker.internal:4000
         extra_hosts:

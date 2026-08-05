@@ -401,9 +401,11 @@ concerns that a single `latest` pin used to conflate:
     schedule trigger) runs with `WALTID_IMAGE_TAG=latest` — failures
     mean upstream drift, without blocking PRs.
 
-To reproduce a canary failure locally:
+To reproduce a canary failure locally (the `pull` matters — without
+it you'll test whatever `latest` you cached weeks ago):
 
 ```bash
+WALTID_IMAGE_TAG=latest docker compose pull waltid-issuer waltid-verifier
 WALTID_IMAGE_TAG=latest bun run test:interop:e2e
 ```
 
@@ -416,7 +418,7 @@ issuer-key resolution strictly `kid`-aware. `createIssuerKey()`
 previously handed walt.id a random `kid`; the new resolver couldn't
 match it against the `did:jwk` document's sole `#0` verification
 method and rejected every VC with `Could not resolve issuer key`.
-Fixed by setting `kid` to `<did>#0` (see quirk 8 below).
+Fixed by setting `kid` to `<did>#0` (see quirk 8 above).
 
 ## Troubleshooting
 
