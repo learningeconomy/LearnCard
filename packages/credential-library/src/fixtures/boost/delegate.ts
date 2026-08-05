@@ -17,6 +17,7 @@ export const boostDelegate: CredentialFixture = {
         '@context': [
             'https://www.w3.org/ns/credentials/v2',
             'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+            'https://ctx.learncard.com/boosts/1.0.3.json',
         ],
         id: 'urn:uuid:e7b3d1f4-9a26-4c58-b0d3-8f1e2c7a9b56',
         type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential'],

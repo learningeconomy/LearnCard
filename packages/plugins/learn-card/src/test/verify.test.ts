@@ -115,4 +115,25 @@ describe('verifyCredential prettify', () => {
             },
         ]);
     });
+
+    it('formats unchecked URL issuer authorization with a concise error label', async () => {
+        const warning =
+            'Issuer authorization was not checked because the credential issuer is not a DID';
+
+        await expect(
+            prettify({
+                checks: ['proof'],
+                warnings: [warning],
+                errors: [],
+            })
+        ).resolves.toEqual(
+            expect.arrayContaining([
+                {
+                    status: VerificationStatusEnum.Error,
+                    check: 'Issuer Authorization',
+                    message: warning,
+                },
+            ])
+        );
+    });
 });
