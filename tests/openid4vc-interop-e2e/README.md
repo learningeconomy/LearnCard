@@ -332,6 +332,20 @@ for this reason; the deterministic version lives in
 on every inner JWT-VC against its `did:jwk` issuer key — 100%
 repeatable rejection on a single bit-flip.
 
+### 8. Strict kid-based issuer-key resolution (verifier, post-Crypto2)
+
+Since PR #1954 ("Crypto2", merged 2026-08-05), walt.id's verifier
+resolves the inner-VC issuer key strictly by the JWT header's `kid`:
+it must match a verification method in the issuer's DID document.
+Earlier builds (≤0.23.0) fell back to the first key in the document
+regardless of `kid`. A `did:jwk` document has exactly one
+verification method, `<did>#0`, so `createIssuerKey()` sets its
+`kid` to that value — walt.id embeds the supplied `kid` in every VC
+it signs, and any other value now fails verification with
+`Could not resolve issuer key`. The plugin's own signers were
+always compliant (`didToVerificationMethod`); only the harness's
+issuer key needed fixing.
+
 ## Architecture notes
 
 ### By-value URL rewriting
@@ -377,14 +391,34 @@ Ed25519 keypair per spec run so:
 
 ### Rotating the walt.id image
 
-The compose file pins `waltid/issuer-api:0.23.0` +
-`waltid/verifier-api:0.23.0`. The suite originally tracked `latest`
-to catch drift early, but the 2026-08-05 `latest` push (a
-`feat-portal2-dcapi` branch build) broke Ed25519 `did:jwk`
-issuer-key resolution in the verifier's `JwtSignaturePolicy`,
-failing `roundtrip.spec.ts` and `multi-credential.spec.ts` on every
-PR. When rotating to a newer tag, run the full suite locally first
+The walt.id image tag is parameterized via `WALTID_IMAGE_TAG`
+(compose default: a known-good pinned release). This splits the two
+concerns that a single `latest` pin used to conflate:
+
+-   **PR runs** use the pin — failures mean a regression on our
+    side, never upstream drift.
+-   **Weekly canary** (`.github/workflows/openid4vc-interop.yml`
+    schedule trigger) runs with `WALTID_IMAGE_TAG=latest` — failures
+    mean upstream drift, without blocking PRs.
+
+To reproduce a canary failure locally (the `pull` matters — without
+it you'll test whatever `latest` you cached weeks ago):
+
+```bash
+WALTID_IMAGE_TAG=latest docker compose pull waltid-issuer waltid-verifier
+WALTID_IMAGE_TAG=latest bun run test:interop:e2e
+```
+
+When bumping the pin, run the suite against the candidate tag first
 and prefer immutable release tags over `latest` / `stable`.
+
+Drift caught so far: the 2026-08-05 `latest` push (built from
+walt-id/waltid-identity PR #1954, "Crypto2") made the verifier's
+issuer-key resolution strictly `kid`-aware. `createIssuerKey()`
+previously handed walt.id a random `kid`; the new resolver couldn't
+match it against the `did:jwk` document's sole `#0` verification
+method and rejected every VC with `Could not resolve issuer key`.
+Fixed by setting `kid` to `<did>#0` (see quirk 8 above).
 
 ## Troubleshooting
 
