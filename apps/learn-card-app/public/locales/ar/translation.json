@@ -3314,7 +3314,11 @@
                 "approvedPre": "شكرًا!",
                 "approvedPost": "تمت الموافقة على التوصية!",
                 "waitingReview": "في انتظار المراجعة من {{name}}",
-                "approvedBy": "تمت الموافقة بواسطة {{name}}"
+                "approvedBy": "تمت الموافقة بواسطة {{name}}",
+                "sendFailedTitle": "لم يتم إرسال التوصية",
+                "sendFailedDescription": "لا تزال توصيتك محفوظة. حاول مرة أخرى.",
+                "missingRequestDescription": "أغلق هذه الشاشة وأعد فتح رابط التوصية للمحاولة مرة أخرى.",
+                "tryAgain": "حاول مرة أخرى"
             },
             "footer": {
                 "viewEndorsement": "عرض التوصية"
@@ -3358,7 +3362,7 @@
         },
         "viewRequest": {
             "ok": "حسنًا",
-            "errorFetching": "خطأ في جلب الاعتماد: {{error}}"
+            "errorOpening": "تعذّر فتح بيانات الاعتماد هذه. يُرجى المحاولة مرة أخرى."
         }
     },
     "verification": {

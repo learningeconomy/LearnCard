@@ -3317,7 +3317,11 @@
                 "approvedPre": "¡Gracias!",
                 "approvedPost": "¡Aval aprobado!",
                 "waitingReview": "Esperando revisión de {{name}}",
-                "approvedBy": "Aprobado por {{name}}"
+                "approvedBy": "Aprobado por {{name}}",
+                "sendFailedTitle": "Aval no enviado",
+                "sendFailedDescription": "Tu aval sigue guardado. Inténtalo de nuevo.",
+                "missingRequestDescription": "Cierra esta pantalla y vuelve a abrir el enlace de aval para intentarlo de nuevo.",
+                "tryAgain": "Intentar de nuevo"
             },
             "footer": {
                 "viewEndorsement": "Ver aval"
@@ -3361,7 +3365,7 @@
         },
         "viewRequest": {
             "ok": "Aceptar",
-            "errorFetching": "Error al obtener la credencial: {{error}}"
+            "errorOpening": "No pudimos abrir esta credencial. Inténtalo de nuevo."
         }
     },
     "verification": {

@@ -3317,7 +3317,11 @@
                 "approvedPre": "Merci !",
                 "approvedPost": "Recommandation approuvée !",
                 "waitingReview": "En attente d'examen par {{name}}",
-                "approvedBy": "Approuvé par {{name}}"
+                "approvedBy": "Approuvé par {{name}}",
+                "sendFailedTitle": "Recommandation non envoyée",
+                "sendFailedDescription": "Votre recommandation est toujours enregistrée. Réessayez.",
+                "missingRequestDescription": "Fermez cet écran et rouvrez le lien de recommandation pour réessayer.",
+                "tryAgain": "Réessayer"
             },
             "footer": {
                 "viewEndorsement": "Voir la recommandation"
@@ -3361,7 +3365,7 @@
         },
         "viewRequest": {
             "ok": "OK",
-            "errorFetching": "Erreur lors de la récupération de la credential : {{error}}"
+            "errorOpening": "Nous n’avons pas pu ouvrir cette attestation. Veuillez réessayer."
         }
     },
     "verification": {
