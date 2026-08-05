@@ -1,0 +1,28 @@
+name: Cancel duplicate DIDKit publisher for PR 1444
+
+on:
+    pull_request:
+        branches:
+            - main
+        paths:
+            - '.github/workflows/cancel-duplicate-didkit-1444.yml'
+
+permissions:
+    actions: write
+    contents: read
+
+jobs:
+    cancel:
+        if: github.event.pull_request.number == 1444
+        runs-on: ubuntu-latest
+        steps:
+            - name: Cancel duplicate orchestrator run
+              uses: actions/github-script@v7
+              with:
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  script: |
+                      await github.rest.actions.cancelWorkflowRun({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          run_id: 30963543462,
+                      });
