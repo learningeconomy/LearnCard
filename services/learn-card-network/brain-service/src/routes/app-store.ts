@@ -1377,6 +1377,7 @@ const handleSendAiSessionCredentialEvent = async (
                     type: '@type',
                     xsd: 'https://www.w3.org/2001/XMLSchema#',
                     lcn: 'https://docs.learncard.com/definitions#',
+                    BoostCredential: 'lcn:boostCredential',
                     TopicCredential: {
                         '@id': 'lcn:topicCredential',
                         '@context': {
@@ -1456,6 +1457,7 @@ const handleSendAiSessionCredentialEvent = async (
                 type: '@type',
                 xsd: 'https://www.w3.org/2001/XMLSchema#',
                 lcn: 'https://docs.learncard.com/definitions#',
+                BoostCredential: 'lcn:boostCredential',
                 SummaryCredential: {
                     '@id': 'lcn:summaryCredential',
                     '@context': {

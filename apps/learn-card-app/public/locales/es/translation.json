@@ -954,7 +954,16 @@
             }
         },
         "social": {
-            "or": "O"
+            "or": "O",
+            "inProgress": "Ya hay un inicio de sesión en curso. Termínalo antes de volver a intentarlo.",
+            "signingInWith": "Iniciando sesión con {{provider}}",
+            "googleStartFailed": "No se pudo iniciar sesión con Google. Si el problema continúa, revisa la configuración del navegador, borra los datos del sitio, actualiza la página e inténtalo de nuevo. También puedes probar otro navegador o el modo privado.",
+            "popupBlocked": "Las ventanas emergentes están bloqueadas en tu navegador. Habilítalas e inténtalo de nuevo.",
+            "genericError": "Algo salió mal. Inténtalo de nuevo.",
+            "provider": {
+                "apple": "Apple",
+                "google": "Google"
+            }
         },
         "seedPhrase": {
             "title": "Usa una frase semilla para importar tu pasaporte",
@@ -3308,7 +3317,11 @@
                 "approvedPre": "¡Gracias!",
                 "approvedPost": "¡Aval aprobado!",
                 "waitingReview": "Esperando revisión de {{name}}",
-                "approvedBy": "Aprobado por {{name}}"
+                "approvedBy": "Aprobado por {{name}}",
+                "sendFailedTitle": "Aval no enviado",
+                "sendFailedDescription": "Tu aval sigue guardado. Inténtalo de nuevo.",
+                "missingRequestDescription": "Cierra esta pantalla y vuelve a abrir el enlace de aval para intentarlo de nuevo.",
+                "tryAgain": "Intentar de nuevo"
             },
             "footer": {
                 "viewEndorsement": "Ver aval"
@@ -3352,7 +3365,7 @@
         },
         "viewRequest": {
             "ok": "Aceptar",
-            "errorFetching": "Error al obtener la credencial: {{error}}"
+            "errorOpening": "No pudimos abrir esta credencial. Inténtalo de nuevo."
         }
     },
     "verification": {
