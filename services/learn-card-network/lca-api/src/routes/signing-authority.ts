@@ -62,7 +62,10 @@ export const signingAuthorityRouter = t.router({
                 });
             }
 
-            return getSigningAuthorityWithEndpoint(signingAuthority, ctx.domain);
+            return getSigningAuthorityWithEndpoint(
+                { ...signingAuthority, did: signingAuthority.did },
+                ctx.domain
+            );
         }),
     signingAuthorities: didAndChallengeRoute
         .meta({
