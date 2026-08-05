@@ -377,12 +377,14 @@ Ed25519 keypair per spec run so:
 
 ### Rotating the walt.id image
 
-The compose file pins `waltid/issuer-api:latest` +
-`waltid/verifier-api:latest`. For reproducible interop testing you
-should pin to a specific version tag (e.g. `waltid/issuer-api:1.2.3`)
-once you've settled on a known-good release. The default here favors
-"catch drift early" over "never flake", which is right for an
-interop harness but wrong for release blockers.
+The compose file pins `waltid/issuer-api:0.23.0` +
+`waltid/verifier-api:0.23.0`. The suite originally tracked `latest`
+to catch drift early, but the 2026-08-05 `latest` push (a
+`feat-portal2-dcapi` branch build) broke Ed25519 `did:jwk`
+issuer-key resolution in the verifier's `JwtSignaturePolicy`,
+failing `roundtrip.spec.ts` and `multi-credential.spec.ts` on every
+PR. When rotating to a newer tag, run the full suite locally first
+and prefer immutable release tags over `latest` / `stable`.
 
 ## Troubleshooting
 
