@@ -681,6 +681,7 @@
         "serverless-plugin-warmup": "^8.1.0",
         "simple-git": "^3.36.0",
         "use-immer": "^0.7.0",
+        "zod": "4.1.13",
       },
       "devDependencies": {
         "@types/aws-lambda": "^8.10.106",
@@ -693,7 +694,6 @@
         "@types/react": "^17.0.2",
         "nodemon": "^2.0.16",
         "serverless-plugin-typescript": "^2.1.0",
-        "shx": "^0.3.4",
         "ts-node": "^10.8.1",
       },
     },

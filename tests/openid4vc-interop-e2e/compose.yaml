@@ -78,7 +78,7 @@ services:
             test:
                 [
                     'CMD-SHELL',
-                    "wget -qO- http://localhost:3000/.well-known/openid-credential-issuer >/dev/null || exit 1",
+                    'wget -qO- http://localhost:3000/.well-known/openid-credential-issuer >/dev/null || exit 1',
                 ]
             interval: 5s
             timeout: 5s
@@ -156,7 +156,10 @@ services:
             - oid4vc-interop
 
     eudi-verifier:
-        image: ghcr.io/eu-digital-identity-wallet/eudi-srv-verifier-endpoint:latest
+        # v0.10 requires a Wallet Relying Party Registration Certificate
+        # when creating presentations. Keep this parsing-focused harness on
+        # the last compatible release until it provisions that certificate.
+        image: ghcr.io/eu-digital-identity-wallet/eudi-srv-verifier-endpoint:v0.9.2
         container_name: oid4vc-interop-eudi-verifier
         # Shares the eudi-side bridge's netns so a `did:web:localhost`
         # holder can present DCQL VPs through this verifier.
