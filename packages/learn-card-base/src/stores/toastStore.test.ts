@@ -7,6 +7,10 @@ describe('toastStore', () => {
         toastStore.set.dismissToast();
     });
 
+    it('keeps the fully specified defaults immutable', () => {
+        expect(Object.isFrozen(DEFAULT_TOAST_OPTIONS)).toBe(true);
+    });
+
     it('does not carry options from one toast into the next', () => {
         toastStore.set.presentToast('Saved', {
             type: ToastTypeEnum.Success,
@@ -43,6 +47,20 @@ describe('toastStore', () => {
             hasCheckmark: true,
             hasX: true,
         });
+
+        expect(toastStore.get.options()).toMatchObject({
+            hasCheckmark: true,
+            hasX: false,
+        });
+    });
+
+    it('lets a partial icon update replace the current status icon', () => {
+        toastStore.set.presentToast('Failed', {
+            type: ToastTypeEnum.Error,
+            hasX: true,
+        });
+
+        toastStore.set.setOptions({ hasCheckmark: true });
 
         expect(toastStore.get.options()).toMatchObject({
             hasCheckmark: true,

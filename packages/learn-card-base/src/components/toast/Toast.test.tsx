@@ -20,12 +20,17 @@ describe('Toast', () => {
         const longMessage =
             'No credentials could be extracted from this file because its contents were not recognized.';
 
-        toastStore.set.presentToast(longMessage, {
-            title: longTitle,
-            type: ToastTypeEnum.Error,
-            hasCheckmark: true,
-            hasX: true,
-            autoDismiss: false,
+        // Bypass the public actions to verify the render-level guard against malformed shared state.
+        toastStore.set.state(state => {
+            state.message = longMessage;
+            state.options = {
+                ...state.options,
+                title: longTitle,
+                type: ToastTypeEnum.Error,
+                hasCheckmark: true,
+                hasX: true,
+                autoDismiss: false,
+            };
         });
 
         render(<Toast />);
@@ -35,6 +40,8 @@ describe('Toast', () => {
 
         expect(screen.getByTestId('toast-error-icon')).toBeTruthy();
         expect(screen.queryByTestId('toast-success-icon')).toBeNull();
+
+        // jsdom cannot measure overflow; these classes are proxies for the required layout behavior.
         expect(title.className).toContain('[overflow-wrap:anywhere]');
         expect(message.className).toContain('[overflow-wrap:anywhere]');
         expect(message.parentElement?.className).toContain('min-w-0');

@@ -19,7 +19,7 @@ export const Toast = () => {
 
         const timer = setTimeout(() => {
             dismissToast();
-        }, options.duration ?? 3000);
+        }, options.duration);
 
         return () => clearTimeout(timer);
     }, [message, options.duration, options.autoDismiss]);
@@ -28,10 +28,10 @@ export const Toast = () => {
 
     const isError = options.type === ToastTypeEnum.Error;
     const toastTextColor = isError ? 'text-white' : 'text-grayscale-900';
-    const showX = Boolean(options.hasX && (!options.hasCheckmark || isError));
+    const showX = Boolean(options.hasX);
     const showCheckmark = Boolean(options.hasCheckmark && !showX);
 
-    const zIndex = options.zIndex ?? 999999;
+    const zIndex = options.zIndex;
 
     return (
         <AnimatePresence>
