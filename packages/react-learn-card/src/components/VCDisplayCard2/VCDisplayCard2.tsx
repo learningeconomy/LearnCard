@@ -43,6 +43,32 @@ export type CredentialIconType = {
     color?: string;
 };
 
+export type VCDisplayCardVariant = 'ribbon' | 'award' | 'certificate' | 'id';
+
+/**
+ * Returns the visual branch VCDisplayCard2 will render. Preview hosts use this
+ * to preserve their specialized-card spacing while the ribbon card owns its
+ * wider horizontal safe area.
+ */
+export const getVCDisplayCardVariant = (
+    credential?: VC | BoostAchievementCredential,
+    categoryType?: LCCategoryEnum | string,
+    formattedDisplayType?: string
+): VCDisplayCardVariant => {
+    const resolvedDisplayType = (
+        credential?.display?.displayType ?? formattedDisplayType
+    )?.toLocaleLowerCase();
+
+    if (categoryType === LCCategoryEnum.meritBadge || resolvedDisplayType === 'award') {
+        return 'award';
+    }
+
+    if (resolvedDisplayType === 'certificate') return 'certificate';
+    if (resolvedDisplayType === 'id' || categoryType === LCCategoryEnum.id) return 'id';
+
+    return 'ribbon';
+};
+
 export type VCDisplayCard2Props = {
     categoryType?: LCCategoryEnum;
     credential: VC | BoostAchievementCredential;
@@ -157,19 +183,30 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     const isFront = isFrontOverride ?? _isFront;
     const setIsFront = setIsFrontOverride ?? _setIsFront;
 
-    const [headerHeight, setHeaderHeight] = useState(100); // 79 is the height if the header is one line
-    const [headerWidth, setHeaderWidth] = useState(0);
+    const [headerHeight, setHeaderHeight] = useState(79);
 
     const headerRef = useRef<HTMLHeadingElement>(null);
 
     useLayoutEffect(() => {
-        // Needs a small setTimeout otherwise it'll be wrong sometimes with multiline header.
-        //   Probably because of the interaction with FitText
-        setTimeout(() => {
-            setHeaderHeight(headerRef.current?.clientHeight || 100);
-            setHeaderWidth(headerRef.current?.clientWidth ?? 0);
-        }, 10);
-    });
+        const header = headerRef.current;
+        if (!header) return;
+
+        // Keep the ribbon tails aligned when a long title makes the center
+        // section taller than its normal single-line height.
+        const updateHeaderHeight = () => setHeaderHeight(header.clientHeight || 79);
+
+        updateHeaderHeight();
+        if (typeof ResizeObserver === 'undefined') return;
+
+        const resizeObserver = new ResizeObserver(updateHeaderHeight);
+        resizeObserver.observe(header);
+
+        return () => resizeObserver.disconnect();
+    }, []);
+
+    // The tails start 10px below the center ribbon and visually overlap its
+    // lower border, so they are slightly shorter than the measured header.
+    const ribbonEndHeight = Math.max(headerHeight - 4, 75).toString();
 
     let worstVerificationStatus = verificationItems.reduce(
         (
@@ -204,10 +241,13 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
     const _title = titleOverride || title;
 
-    const resolvedDisplayType =
-        credential?.display?.displayType ?? formattedDisplayType?.toLocaleLowerCase();
+    const displayCardVariant = getVCDisplayCardVariant(
+        credential,
+        categoryType,
+        formattedDisplayType
+    );
 
-    if (categoryType === LCCategoryEnum.meritBadge || resolvedDisplayType === 'award') {
+    if (displayCardVariant === 'award') {
         return (
             <MeritBadgeDisplayCard
                 credential={credential}
@@ -241,7 +281,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
         );
     }
 
-    if (resolvedDisplayType === 'certificate') {
+    if (displayCardVariant === 'certificate') {
         return (
             <CertificateDisplayCard
                 credential={credential}
@@ -273,7 +313,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 onVerifierClick={onVerifierClick}
             />
         );
-    } else if (resolvedDisplayType === 'id' || categoryType === 'ID') {
+    } else if (displayCardVariant === 'id') {
         return (
             <div>
                 <VCIDDisplayCard
@@ -314,7 +354,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
         'vc-card-header-main-title text-[#18224E] pt-[3px] leading-[80%] text-[32px]';
 
     return (
-        <Flipper className="w-full" flipKey={isFront}>
+        <Flipper className="vc-display-card-ribbon-safe-area w-full" flipKey={isFront}>
             <Flipped flipId="card">
                 <section
                     className="vc-display-card font-poppins flex flex-col items-center border-solid border-[5px] border-white rounded-[30px] z-10 min-h-[800px] max-w-[400px] relative bg-white shadow-3xl"
@@ -325,14 +365,14 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                         <RibbonEnd
                             side="left"
                             className="absolute left-[-30px] top-[50px] z-0"
-                            height={'75'}
+                            height={ribbonEndHeight}
                         />
                     </Flipped>
                     <Flipped inverseFlipId="card">
                         <RibbonEnd
                             side="right"
                             className="absolute right-[-30px] top-[50px] z-0"
-                            height={'75'}
+                            height={ribbonEndHeight}
                         />
                     </Flipped>
 
@@ -351,7 +391,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                 text={_title ?? ''}
                                 maxFontSize={32}
                                 minFontSize={20}
-                                width={((headerWidth ?? 290) - 40).toString()}
+                                width="100%"
                                 className={headerFitTextClassName}
                             />
                         </h1>
@@ -390,7 +430,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                     text={_title ?? ''}
                                     maxFontSize={32}
                                     minFontSize={20}
-                                    width={((headerWidth ?? 290) - 40).toString()}
+                                    width="100%"
                                     className={headerFitTextClassName}
                                 />
                             </h1>

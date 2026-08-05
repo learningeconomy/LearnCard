@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 import {
     UnsignedVCValidator,
     UnsignedVPValidator,
@@ -6,28 +6,42 @@ import {
     VPValidator,
 } from '@learncard/types';
 
+const ProofOptionsValidator = z
+    .object({
+        type: z.string().optional(),
+        verificationMethod: z.string().optional(),
+        proofPurpose: z.string().optional(),
+        proofFormat: z.string().optional(),
+        created: z.string().optional(),
+        challenge: z.string().optional(),
+        domain: z.string().optional(),
+        cryptosuite: z
+            .enum([
+                'eddsa-rdfc-2022',
+                'eddsa-2022',
+                'json-eddsa-2022',
+                'ecdsa-2019',
+                'jcs-ecdsa-2019',
+            ])
+            .optional(),
+    })
+    .strict();
+
+const VerificationProofOptionsValidator = ProofOptionsValidator.extend({
+    checks: z.enum(['proof', 'JWS', 'credentialStatus', 'credentialSchema']).array().optional(),
+});
+
 export const IssueEndpointValidator = z.object({
     credential: UnsignedVCValidator,
-    options: z
-        .object({
-            created: z.string().optional(),
-            challenge: z.string().optional(),
-            domain: z.string().optional(),
-            credentialStatus: z.object({ type: z.string() }).optional(),
-        })
-        .optional(),
+    options: ProofOptionsValidator.extend({
+        credentialStatus: z.object({ type: z.string() }).optional(),
+    }).optional(),
 });
 export type IssueEndpoint = z.infer<typeof IssueEndpointValidator>;
 
 export const IssuePresentationEndpointValidator = z.object({
     presentation: UnsignedVPValidator,
-    options: z
-        .object({
-            created: z.string().optional(),
-            challenge: z.string().optional(),
-            domain: z.string().optional(),
-        })
-        .optional(),
+    options: ProofOptionsValidator.optional(),
 });
 export type IssuePresentationEndpoint = z.infer<typeof IssuePresentationEndpointValidator>;
 
@@ -42,18 +56,14 @@ export type UpdateStatusEndpoint = z.infer<typeof UpdateStatusEndpointValidator>
 
 export const VerifyCredentialEndpointValidator = z.object({
     verifiableCredential: VCValidator,
-    options: z
-        .object({ challenge: z.string().optional(), domain: z.string().optional() })
-        .optional(),
+    options: VerificationProofOptionsValidator.optional(),
 });
 export type VerifyCredentialEndpoint = z.infer<typeof VerifyCredentialEndpointValidator>;
 
 export const VerifyPresentationEndpointValidator = z
     .object({
         verifiablePresentation: VPValidator,
-        options: z
-            .object({ challenge: z.string().optional(), domain: z.string().optional() })
-            .optional(),
+        options: VerificationProofOptionsValidator.optional(),
     })
     .or(z.object({ presentation: UnsignedVPValidator }));
 export type VerifyPresentationEndpoint = z.infer<typeof VerifyPresentationEndpointValidator>;

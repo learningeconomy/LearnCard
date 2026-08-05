@@ -46,11 +46,6 @@ const CredentialBadgeNew = lazyWithRetry(
     () => import('learn-card-base/components/CredentialBadge/CredentialBadgeNew')
 );
 
-// Legacy skill selector (hardcoded skills)
-// oxlint-disable-next-line no-unused-vars
-const BoostCMSSkillsAttachmentForm = lazyWithRetry(
-    () => import('./boostCMSForms/boostCMSSkills/BoostSkillAttachmentsForm')
-);
 // New framework-based skill selector (Neo4j backend)
 const BoostFrameworkSkillSelector = lazyWithRetry(
     () => import('./boostCMSForms/boostCMSSkills/BoostFrameworkSkillSelector')
@@ -504,7 +499,6 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                         ...prevState.appearance,
                         badgeThumbnail: aiBoost?.imageUrl || prevState.appearance.badgeThumbnail,
                     },
-                    skills: aiBoost?.skills || prevState.skills,
                 };
             });
         }
@@ -1071,7 +1065,6 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
                     setCustomTypes={setCustomTypes}
                     handleCategoryAndTypeChange={handleCategoryAndTypeChange}
                 />
-                {/* <BoostCMSSkillsAttachmentForm state={state} setState={setState} /> */}
                 {/* Framework-based skill selector (new) */}
                 <BoostFrameworkSkillSelector state={state} setState={setState} />
                 <BoostCMSMediaForm state={state} setState={setState} />

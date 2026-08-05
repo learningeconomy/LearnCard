@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
 import { useHistory } from 'react-router-dom';
@@ -61,12 +61,19 @@ import endorsementRequestStore from '../../stores/endorsementsRequestStore';
 import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBrandingHelpers';
 import { useTheme } from '../../theme/hooks/useTheme';
 import { useAppAuth } from '../../providers/AuthCoordinatorProvider';
+import {
+    useAnalytics,
+    AnalyticsEvents,
+    LAST_LOGIN_METHOD_KEY,
+    getOrCreateSignupFlow,
+} from '@analytics';
 
 export const LoginContent: React.FC = () => {
     const { textLogo, brandMarkLight, fullLogoDark, desktopLoginBg } = useTenantBrandingAssets();
     const { theme } = useTheme();
     const { newModal, closeModal } = useModal();
     const { state: coordinatorState } = useAppAuth();
+    const { track } = useAnalytics();
     const isLoggedIn = useIsLoggedIn();
     const currentUser = useCurrentUser();
     const { appleLogin, googleLogin } = useFirebase();
@@ -159,10 +166,31 @@ export const LoginContent: React.FC = () => {
 
     const didRedirectRef = useRef(false);
     const didOpenOnboardingRef = useRef(false);
+    const didTrackSignupStartedRef = useRef(false);
+
+    const trackSignupStarted = useCallback(() => {
+        if (didTrackSignupStartedRef.current) {
+            return;
+        }
+
+        const { flowId, isNew } = getOrCreateSignupFlow();
+        const method = localStorage.getItem(LAST_LOGIN_METHOD_KEY) ?? undefined;
+
+        if (isNew) {
+            track(AnalyticsEvents.SIGNUP_STARTED, {
+                flow_id: flowId,
+                method,
+                entry_point: 'login_page',
+            });
+        }
+
+        didTrackSignupStartedRef.current = true;
+    }, [track]);
 
     useEffect(() => {
         if (coordinatorState.status !== 'needs_setup') {
             didOpenOnboardingRef.current = false;
+            didTrackSignupStartedRef.current = false;
         }
     }, [coordinatorState.status]);
 
@@ -173,6 +201,7 @@ export const LoginContent: React.FC = () => {
         if (coordinatorState.status === 'needs_setup') {
             if (didOpenOnboardingRef.current) return;
 
+            trackSignupStarted();
             didOpenOnboardingRef.current = true;
             didRedirectRef.current = false;
             void handlePromptOnboarding();
@@ -229,6 +258,7 @@ export const LoginContent: React.FC = () => {
         handleGeneratePinUpdateToken,
         handlePromptOnboarding,
         handleLogout,
+        trackSignupStarted,
     ]);
 
     useEffect(() => {
@@ -245,25 +275,22 @@ export const LoginContent: React.FC = () => {
         coordinatorState.status === 'ready' || coordinatorState.status === 'needs_recovery';
 
     // custom logins associated with the app
-    const extraSocialLogins = useMemo(
-        () => [
-            {
-                id: 1,
-                src: AppleIcon,
-                alt: 'apple',
-                onClick: appleLogin,
-                type: SocialLoginTypes.apple,
-            },
-            {
-                id: 2,
-                src: GoogleIcon,
-                alt: 'google',
-                onClick: googleLogin,
-                type: SocialLoginTypes.google,
-            },
-        ],
-        [appleLogin, googleLogin]
-    );
+    const extraSocialLogins = [
+        {
+            id: 1,
+            src: AppleIcon,
+            alt: 'apple',
+            onClick: appleLogin,
+            type: SocialLoginTypes.apple,
+        },
+        {
+            id: 2,
+            src: GoogleIcon,
+            alt: 'google',
+            onClick: googleLogin,
+            type: SocialLoginTypes.google,
+        },
+    ];
 
     // Redirect-pending gate: once the wallet is built and the user counts as
     // logged in, the effect above will history.push away from /login — but
