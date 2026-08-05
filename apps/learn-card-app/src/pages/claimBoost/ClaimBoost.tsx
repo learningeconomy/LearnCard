@@ -628,7 +628,7 @@ const ClaimBoost: React.FC<{
                     useFullCloseButton: !isMobile,
                 }}
             >
-                <div className="flex h-full bg-grayscale-100">
+                <div className="flex h-full">
                     <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0">
                         {/* <div
                         style={{
