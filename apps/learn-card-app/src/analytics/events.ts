@@ -448,6 +448,8 @@ export interface AnalyticsEventPayloads {
         duration_ms: number;
         failure_reason:
             | 'missing_initial_state'
+            | 'missing_popup_result'
+            | 'missing_credential'
             | 'missing_user'
             | 'network'
             | 'popup_blocked'
