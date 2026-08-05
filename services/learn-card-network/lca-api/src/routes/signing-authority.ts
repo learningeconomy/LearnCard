@@ -10,7 +10,8 @@ import {
 
 import { t, didAndChallengeRoute } from '@routes';
 
-import { MongoSigningAuthorityType, SigningAuthorityResponseValidator } from '@models';
+import { SigningAuthorityResponseValidator } from '@models';
+import type { MongoSigningAuthorityType } from '@models';
 import { getSigningAuthorityWithEndpoint } from '@helpers/signingAuthority.helpers';
 
 export const signingAuthorityRouter = t.router({
