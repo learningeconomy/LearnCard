@@ -114,3 +114,33 @@ export const revokeBinding = async (
 
     return updated;
 };
+
+export const activateBinding = async (
+    bindingId: string,
+    expectedRevision: number
+): Promise<BindingRecordType> => {
+    const existing = await requireBindingRecord(bindingId);
+    assertExpectedRevision(existing, expectedRevision);
+
+    if (existing.status !== 'APPROVED') {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Only APPROVED bindings can be activated.',
+        });
+    }
+
+    const updated: BindingRecordType = {
+        ...existing,
+        status: 'ACTIVE',
+        revisions: {
+            ...existing.revisions,
+            bindingRevision: existing.revisions.bindingRevision + 1,
+        },
+        revision: existing.revision + 1,
+        updatedAt: new Date().toISOString(),
+    };
+
+    await writeBindingRecord(updated);
+
+    return updated;
+};

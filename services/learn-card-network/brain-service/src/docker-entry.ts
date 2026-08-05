@@ -12,6 +12,7 @@ import {
 } from '@aws-sdk/client-sqs';
 
 import { neogma } from '@instance';
+import { startInstallIntentReconciler } from './reconciler';
 import { appRouter, type AppRouter, createContext } from './app';
 import { openApiDocument } from './openapi';
 import { didFastifyPlugin } from './dids';
@@ -189,4 +190,14 @@ if (pollUrl) {
 
         setInterval(receiveMessage, 10_000);
     })();
+}
+
+// Without this the reconciler only ever runs when an operator hits apply/revoke, so
+// bounded retries never fire unattended and drift is never observed.
+if (process.env.INSTALL_INTENT_RECONCILER_SCHEDULER_DISABLED !== 'true') {
+    const stopInstallIntentReconciler = startInstallIntentReconciler();
+
+    for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+        process.once(signal, () => stopInstallIntentReconciler());
+    }
 }

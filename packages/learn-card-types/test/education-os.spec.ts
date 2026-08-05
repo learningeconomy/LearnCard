@@ -182,10 +182,10 @@ describe('@learncard/types EducationOS validators', () => {
             ],
             defaultBindings: [
                 {
-                    capability: 'wallet-claim',
-                    providerDeclarationId: 'wallet',
+                    capability: 'credential-issuer',
+                    providerDeclarationId: '$ecosystem',
                     consumerDeclarationId: 'issuer',
-                    reason: 'Route claims to default wallet',
+                    reason: 'Route ecosystem issuance to bundle consumer',
                 },
             ],
             preflight: [{ entitlementKey: 'issuance', isolationTier: 'DEDICATED_STACK' }],
@@ -199,9 +199,17 @@ describe('@learncard/types EducationOS validators', () => {
             apiVersion: 'lc.wallet/v1',
             id: 'wallet.learncard',
             version: '1.0.0',
+            listingKind: 'WALLET',
             walletName: 'LearnCard',
-            claimEndpoint: 'https://wallet.example/claim',
-            supportedProtocols: ['chapi', 'oid4vci'],
+            claimProtocols: ['chapi', 'oid4vci'],
+            platforms: ['ios', 'android', 'web'],
+            endpoints: {
+                claimUrl: 'https://wallet.example/claim',
+                inviteUrl: 'https://wallet.example/invite',
+                healthUrl: 'https://wallet.example/health',
+            },
+            provides: ['wallet-claim'],
+            supportsApps: true,
         });
 
         expect(parsed.apiVersion).toBe('lc.wallet/v1');

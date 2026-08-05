@@ -27,6 +27,7 @@ import {
     getInstallIntentAuditEvents,
 } from '@accesslayer/install-intent/audit';
 import {
+    activateBinding as activateBindingRecord,
     approveBinding as approveBindingRecord,
     createBinding,
     revokeBinding as revokeBindingRecord,
@@ -289,11 +290,18 @@ const buildSpecForIntent = async (input: {
 
         const materialized = materializeBundlePlan({
             intentId: input.intentId,
+            ecosystemId: input.ecosystemId,
             expandedBundle: expanded,
             listingById,
             listingVersionsById,
             requestedConfig: input.requestedConfig,
         });
+        const scopes = Array.from(
+            new Set(materialized.targets.flatMap(target => target.scopes))
+        ).sort();
+        const consentTiers = Array.from(
+            new Set(materialized.targets.flatMap(target => target.consentTiers))
+        ).sort();
 
         return {
             listingKind: listing.kind,
@@ -305,8 +313,8 @@ const buildSpecForIntent = async (input: {
                     ...input.proposedBindings,
                 ]),
                 pinnedVersionIds: materialized.pinnedVersionIds,
-                scopes: [],
-                consentTiers: [],
+                scopes,
+                consentTiers,
                 config: input.requestedConfig,
                 entitlementRequirements: materialized.entitlementRequirements,
             },
@@ -876,6 +884,7 @@ export const installIntentsRouter = t.router({
                 input.expectedRevision,
                 ctx.user.profile.profileId
             );
+            const activated = await activateBindingRecord(approved.bindingId, approved.revision);
 
             await createInstallIntentAuditEvent({
                 action: 'BINDING_APPROVED',
@@ -887,7 +896,17 @@ export const installIntentsRouter = t.router({
                 afterSummary: { status: approved.status, revision: approved.revision },
             });
 
-            return approved;
+            await createInstallIntentAuditEvent({
+                action: 'BINDING_ACTIVATED',
+                actorProfileId: ctx.user.profile.profileId,
+                actorDid: ctx.user.did,
+                ecosystemId: activated.ecosystemId,
+                bindingId: activated.bindingId,
+                beforeSummary: { status: approved.status, revision: approved.revision },
+                afterSummary: { status: activated.status, revision: activated.revision },
+            });
+
+            return activated;
         }),
 
     revokeBinding: profileRoute

@@ -123,6 +123,8 @@ export type PlanBundleMaterialization = {
     infrastructureEffects: string[];
 };
 
+const BUNDLE_ECOSYSTEM_PROVIDER_SENTINEL = '$ecosystem';
+
 export type EvaluateConsentPreflightInput = {
     ecosystemId: string;
     bindingId?: string;
@@ -248,7 +250,10 @@ export const expandBundle = (manifest: BundleManifest): BundleExpansion => {
         });
 
     for (const binding of proposedBindings) {
-        if (!seenDeclarationIds.has(binding.providerDeclarationId)) {
+        if (
+            binding.providerDeclarationId !== BUNDLE_ECOSYSTEM_PROVIDER_SENTINEL &&
+            !seenDeclarationIds.has(binding.providerDeclarationId)
+        ) {
             throw new TRPCError({
                 code: 'BAD_REQUEST',
                 message: `Bundle binding provider ${binding.providerDeclarationId} is unknown.`,
@@ -296,6 +301,72 @@ export const expandBundle = (manifest: BundleManifest): BundleExpansion => {
 
 const uniqueSortedStrings = (values: string[]): string[] => Array.from(new Set(values)).sort();
 
+const safeParseJsonRecord = (value?: string): Record<string, unknown> | undefined => {
+    if (!value) return undefined;
+
+    try {
+        const parsed = JSON.parse(value);
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+            ? (parsed as Record<string, unknown>)
+            : undefined;
+    } catch {
+        return undefined;
+    }
+};
+
+const collectStringArrayValues = (
+    value: unknown,
+    keys: Set<string>,
+    path: string[] = []
+): string[] => {
+    if (Array.isArray(value)) {
+        if (path.length > 0 && keys.has(path[path.length - 1]!)) {
+            return value.filter((entry): entry is string => typeof entry === 'string');
+        }
+
+        return value.flatMap(entry => collectStringArrayValues(entry, keys, path));
+    }
+
+    if (!value || typeof value !== 'object') {
+        return [];
+    }
+
+    return Object.entries(value).flatMap(([key, nested]) =>
+        collectStringArrayValues(nested, keys, [...path, key])
+    );
+};
+
+const getListingVersionAuthoritySummary = (version: ListingVersionType) => {
+    const sources = [
+        safeParseJsonRecord(version.manifest_json),
+        safeParseJsonRecord(version.review_snapshot_json),
+    ].filter((source): source is Record<string, unknown> => Boolean(source));
+    const scopes = uniqueSortedStrings(
+        sources.flatMap(source =>
+            collectStringArrayValues(
+                source,
+                new Set([
+                    'scopes',
+                    'scopesRequested',
+                    'requestedScopes',
+                    'requiredScopes',
+                    'addedScopes',
+                ])
+            )
+        )
+    );
+    const consentTierCandidates = uniqueSortedStrings(
+        sources.flatMap(source =>
+            collectStringArrayValues(source, new Set(['consentTiers', 'requiredConsentTiers']))
+        )
+    );
+
+    return {
+        scopes,
+        consentTiers: assertSupportedConsentTiers(consentTierCandidates),
+    };
+};
+
 export const buildPlanFromMaterialization = (input: {
     scopeSummary: string;
     planRevision: number;
@@ -341,6 +412,7 @@ export const buildPlanFromMaterialization = (input: {
 
 export const materializeBundlePlan = (input: {
     intentId: string;
+    ecosystemId: string;
     expandedBundle: BundleExpansion;
     listingVersionsById: Record<string, ListingVersionType>;
     listingById: Record<string, AppStoreListingType>;
@@ -357,12 +429,14 @@ export const materializeBundlePlan = (input: {
             });
         }
 
+        const authoritySummary = getListingVersionAuthoritySummary(version);
+
         return {
             targetType: member.targetType,
             listingId: member.listingId,
             versionId: member.versionId,
-            scopes: [],
-            consentTiers: [],
+            scopes: authoritySummary.scopes,
+            consentTiers: authoritySummary.consentTiers,
             config: {
                 declarationId: member.declarationId,
                 optional: member.optional,
@@ -381,25 +455,47 @@ export const materializeBundlePlan = (input: {
             getIntentTargetId(input.intentId, member.declarationId),
         ])
     ) as Record<string, string>;
+    const resolveBindingEndpoint = (
+        declarationId: string,
+        endpoint: 'provider' | 'consumer'
+    ): BindingEndpoint => {
+        if (declarationId === BUNDLE_ECOSYSTEM_PROVIDER_SENTINEL) {
+            if (endpoint !== 'provider') {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Only bundle binding providers may reference $ecosystem.',
+                });
+            }
+
+            return {
+                resourceType: 'ECOSYSTEM',
+                resourceId: input.ecosystemId,
+                ecosystemId: '',
+            };
+        }
+
+        const member = input.expandedBundle.members.find(
+            member => member.declarationId === declarationId
+        );
+        const resourceId = targetIdByDeclarationId[declarationId];
+        if (!member || !resourceId) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: `Bundle binding ${endpoint} ${declarationId} is unknown.`,
+            });
+        }
+
+        return {
+            resourceType: member.targetType,
+            resourceId,
+            ecosystemId: '',
+        };
+    };
     const bindings = input.expandedBundle.proposedBindings.map(binding =>
         BindingProposalValidator.parse({
             capability: binding.capability,
-            provider: {
-                resourceType:
-                    input.expandedBundle.members.find(
-                        member => member.declarationId === binding.providerDeclarationId
-                    )?.targetType ?? 'APP_AVAILABILITY',
-                resourceId: targetIdByDeclarationId[binding.providerDeclarationId],
-                ecosystemId: '',
-            },
-            consumer: {
-                resourceType:
-                    input.expandedBundle.members.find(
-                        member => member.declarationId === binding.consumerDeclarationId
-                    )?.targetType ?? 'APP_AVAILABILITY',
-                resourceId: targetIdByDeclarationId[binding.consumerDeclarationId],
-                ecosystemId: '',
-            },
+            provider: resolveBindingEndpoint(binding.providerDeclarationId, 'provider'),
+            consumer: resolveBindingEndpoint(binding.consumerDeclarationId, 'consumer'),
             reason: binding.reason,
         })
     );

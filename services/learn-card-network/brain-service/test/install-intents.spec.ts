@@ -488,7 +488,7 @@ describe('Install intents', () => {
             expectedRevision: approved.revision,
         });
 
-        expect(approved.status).toBe('APPROVED');
+        expect(approved.status).toBe('ACTIVE');
         expect(revoked.status).toBe('REVOKED');
 
         await expect(
@@ -499,9 +499,46 @@ describe('Install intents', () => {
         ).rejects.toThrow(/stale/i);
     });
 
-    it('expands bundles deterministically and rejects unreviewed members', async () => {
+    it('expands bundles deterministically, aggregates authority from members, resolves $ecosystem bindings, and rejects unreviewed members', async () => {
         const memberA = await createListingWithVersion({ kind: 'INTEGRATION' });
         const memberB = await createListingWithVersion({ kind: 'WALLET' });
+        await neogma.queryRunner.run(
+            `MATCH (version:ListingVersion { version_id: $versionId })
+             SET version.manifest_json = $manifest`,
+            {
+                versionId: memberA.versionId,
+                manifest: JSON.stringify({
+                    apiVersion: 'lc.integration/v1',
+                    id: memberA.listingId,
+                    version: '1.0.0',
+                    requestedScopes: ['issuer:write', 'issuer:read'],
+                    consentTiers: ['credential-body'],
+                }),
+            }
+        );
+        await neogma.queryRunner.run(
+            `MATCH (version:ListingVersion { version_id: $versionId })
+             SET version.manifest_json = $manifest`,
+            {
+                versionId: memberB.versionId,
+                manifest: JSON.stringify({
+                    apiVersion: 'lc.wallet/v1',
+                    id: memberB.listingId,
+                    version: '1.0.0',
+                    listingKind: 'WALLET',
+                    walletName: 'LearnCard',
+                    claimProtocols: ['oid4vci'],
+                    platforms: ['ios', 'web'],
+                    endpoints: {
+                        claimUrl: 'https://wallet.example/claim',
+                        healthUrl: 'https://wallet.example/health',
+                    },
+                    provides: ['wallet-claim'],
+                    supportsApps: true,
+                    scopes: ['wallet:claim'],
+                }),
+            }
+        );
         const manifest = {
             apiVersion: 'lc.bundle/v1' as const,
             id: `bundle_${randomUUID()}`,
@@ -522,10 +559,10 @@ describe('Install intents', () => {
             ],
             defaultBindings: [
                 {
-                    capability: 'wallet-claim' as const,
-                    providerDeclarationId: 'wallet',
-                    consumerDeclarationId: 'integration',
-                    reason: 'Default wallet routing',
+                    capability: 'credential-issuer' as const,
+                    providerDeclarationId: '$ecosystem',
+                    consumerDeclarationId: 'wallet',
+                    reason: 'Default ecosystem issuance routing',
                 },
             ],
             preflight: [],
@@ -549,6 +586,20 @@ describe('Install intents', () => {
         });
 
         expect(firstPlan.plan.planHash).toBe(secondPlan.plan.planHash);
+        expect(firstPlan.plan.scopesRequested).toEqual([
+            'issuer:read',
+            'issuer:write',
+            'wallet:claim',
+        ]);
+        expect(firstPlan.plan.consentTiers).toEqual(['credential-body']);
+        expect(firstPlan.proposal.proposedBindings[0]?.provider).toEqual({
+            resourceType: 'ECOSYSTEM',
+            resourceId: ecosystem.id,
+            ecosystemId: ecosystem.id,
+        });
+        expect(firstPlan.proposal.proposedBindings[0]?.consumer.resourceType).toBe(
+            'WALLET_ENABLEMENT'
+        );
 
         const unreviewed = await createListingWithVersion({
             kind: 'INTEGRATION',

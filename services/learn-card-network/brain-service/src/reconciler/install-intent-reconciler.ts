@@ -1,10 +1,12 @@
 import cache from '@cache';
 import { TRPCError } from '@trpc/server';
 import { traceInternal } from '@tracing';
+import { WalletManifestValidator } from '@learncard/types';
 
 import { createInstallIntentAuditEvent } from '@accesslayer/install-intent/audit';
 import { readInstallIntentById } from '@accesslayer/install-intent/intent-read';
 import { writeInstallIntentStatus } from '@accesslayer/install-intent/intent-status';
+import { readListingVersionById } from '@accesslayer/listing-version/read';
 import {
     deleteInstallTargetInternal,
     ensureInstallTargetInternal,
@@ -98,6 +100,44 @@ const DEFAULT_STUCK_THRESHOLD_MS = 5 * 60 * 1000;
 const intentQueues = new Map<string, Promise<InstallIntentRecordType>>();
 
 const getRedisClient = () => cache.redis ?? cache.node;
+
+let warnedAboutLocalCoordination = false;
+
+const allowLocalCoordination = (): boolean => {
+    const flag = process.env.INSTALL_INTENT_RECONCILER_ALLOW_LOCAL_COORDINATION;
+
+    if (flag === 'true') return true;
+    if (flag === 'false') return false;
+
+    return process.env.NODE_ENV !== 'production';
+};
+
+/**
+ * Intent locks, tenant concurrency counters and the kill switch all live in the
+ * shared cache. Without a real Redis they silently fall back to an in-process
+ * `ioredis-mock`, which means locks stop excluding other instances and — worse — an
+ * engaged kill switch never reaches them. Refuse rather than reconcile with an
+ * emergency stop that cannot be trusted.
+ */
+export const assertInstallIntentCoordinationAvailable = (): void => {
+    if (cache.redis) return;
+
+    if (!allowLocalCoordination()) {
+        throw new Error(
+            'InstallIntent reconciliation requires a shared Redis (REDIS_HOST/REDIS_PORT). ' +
+                'Without it, intent locks, tenant concurrency limits and the kill switch are ' +
+                'process-local, so an engaged kill switch would not halt other instances. ' +
+                'Set INSTALL_INTENT_RECONCILER_ALLOW_LOCAL_COORDINATION=true only for a single-process dev/test run.'
+        );
+    }
+
+    if (!warnedAboutLocalCoordination) {
+        warnedAboutLocalCoordination = true;
+        console.warn(
+            '[install-intent-reconciler] no shared Redis: locks, tenant concurrency limits and the kill switch are process-local. Safe only for a single process.'
+        );
+    }
+};
 
 const getIntentLockKey = (intentId: string): string => `install-intent-reconciler:lock:${intentId}`;
 const getTenantCounterKey = (ecosystemId: string): string =>
@@ -438,6 +478,53 @@ const observeDrift = async (
                 now
             );
         }
+
+        if (expectedTarget.targetType === 'WALLET_ENABLEMENT') {
+            const version = await readListingVersionById(expectedTarget.versionId);
+            if (!version?.manifest_json) {
+                return markDrift(
+                    intent,
+                    `Drift detected: wallet target ${expectedTarget.id} is missing a manifest.`,
+                    actor,
+                    now
+                );
+            }
+
+            let manifest: ReturnType<typeof WalletManifestValidator.parse>;
+            try {
+                manifest = WalletManifestValidator.parse(JSON.parse(version.manifest_json));
+            } catch {
+                return markDrift(
+                    intent,
+                    `Drift detected: wallet target ${expectedTarget.id} has an invalid manifest.`,
+                    actor,
+                    now
+                );
+            }
+
+            const healthUrl = manifest.endpoints.healthUrl;
+            if (healthUrl) {
+                try {
+                    const response = await fetch(healthUrl);
+                    if (!response.ok) {
+                        return markDrift(
+                            intent,
+                            `Drift detected: wallet target ${expectedTarget.id} health check returned ${response.status}.`,
+                            actor,
+                            now
+                        );
+                    }
+                } catch (error) {
+                    const message = error instanceof Error ? error.message : 'unknown error';
+                    return markDrift(
+                        intent,
+                        `Drift detected: wallet target ${expectedTarget.id} health check failed: ${message}.`,
+                        actor,
+                        now
+                    );
+                }
+            }
+        }
     }
 
     if (intent.status?.phase === 'DEGRADED') {
@@ -623,6 +710,8 @@ export const reconcileInstallIntent = async (
     intentId: string,
     options: ReconcileOptions = {}
 ): Promise<InstallIntentRecordType> => {
+    assertInstallIntentCoordinationAvailable();
+
     const previous =
         intentQueues.get(intentId) ?? Promise.resolve<InstallIntentRecordType | null>(null);
     const queued = previous

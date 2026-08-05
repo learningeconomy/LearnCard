@@ -75,6 +75,9 @@ export type EducationOsBindingStatus = z.infer<typeof EducationOsBindingStatusEn
 export const WalletProtocolEnum = z.enum(['chapi', 'oid4vci', 'vc-api', 'deep-link']);
 export type WalletProtocol = z.infer<typeof WalletProtocolEnum>;
 
+export const WalletPlatformEnum = z.enum(['ios', 'android', 'web']);
+export type WalletPlatform = z.infer<typeof WalletPlatformEnum>;
+
 export const IsolationTierEnum = z.enum(['SHARED_LOGICAL', 'DEDICATED_DB', 'DEDICATED_STACK']);
 export type IsolationTier = z.infer<typeof IsolationTierEnum>;
 
@@ -295,9 +298,19 @@ export const WalletManifestValidator = z.object({
     apiVersion: z.literal('lc.wallet/v1'),
     id: z.string(),
     version: z.string(),
+    listingKind: z.literal('WALLET'),
     walletName: z.string(),
-    claimEndpoint: z.string().url().optional(),
-    supportedProtocols: z.array(WalletProtocolEnum).default([]),
+    claimProtocols: z.array(WalletProtocolEnum).default([]),
+    platforms: z.array(WalletPlatformEnum).default([]),
+    endpoints: z
+        .object({
+            claimUrl: z.string().url().optional(),
+            inviteUrl: z.string().url().optional(),
+            healthUrl: z.string().url().optional(),
+        })
+        .default({}),
+    provides: z.array(z.literal('wallet-claim')).default([]),
+    supportsApps: z.boolean().default(false),
 });
 export type WalletManifest = z.infer<typeof WalletManifestValidator>;
 

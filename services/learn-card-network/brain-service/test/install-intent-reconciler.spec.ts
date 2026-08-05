@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import cache from '@cache';
 import { neogma } from '@instance';
@@ -152,6 +152,7 @@ describe('Install intent reconciler', () => {
         delete process.env.INSTALL_INTENT_RECONCILER_ALERT_MAX_STUCK_INTENTS;
         delete process.env.INSTALL_INTENT_RECONCILER_ALERT_MAX_DEGRADED_INTENTS;
         delete process.env.INSTALL_INTENT_RECONCILER_ALERT_MAX_FAILED_INTENTS;
+        vi.restoreAllMocks();
         await resetInstallIntentReconcilerTestState();
     });
 
@@ -308,6 +309,62 @@ describe('Install intent reconciler', () => {
         expect(degraded.status?.phase).toBe('DEGRADED');
         expect(degraded.status?.message).toMatch(/drift detected/i);
         expect(stillMissing).toHaveLength(0);
+    });
+
+    it('uses wallet manifest healthUrl observation to degrade unhealthy wallet targets', async () => {
+        const ecosystem = await createOperatorEcosystem();
+        const { listingId, versionId } = await createListingWithVersion('WALLET');
+        await neogma.queryRunner.run(
+            `MATCH (version:ListingVersion { version_id: $versionId })
+             SET version.manifest_json = $manifest`,
+            {
+                versionId,
+                manifest: JSON.stringify({
+                    apiVersion: 'lc.wallet/v1',
+                    id: listingId,
+                    version: '1.0.0',
+                    listingKind: 'WALLET',
+                    walletName: 'LearnCard',
+                    claimProtocols: ['oid4vci'],
+                    platforms: ['ios', 'web'],
+                    endpoints: {
+                        claimUrl: 'https://wallet.example/claim',
+                        healthUrl: 'https://wallet.example/health',
+                    },
+                    provides: ['wallet-claim'],
+                    supportsApps: true,
+                }),
+            }
+        );
+
+        const fetchSpy = vi.spyOn(globalThis, 'fetch');
+        fetchSpy
+            .mockResolvedValueOnce({ ok: true, status: 200 } as Response)
+            .mockResolvedValueOnce({ ok: false, status: 503 } as Response);
+
+        const planned = await ownerClient.installIntent.planInstallIntent({
+            ecosystemId: ecosystem.id,
+            listingId,
+            versionId,
+            requestedConfig: {},
+            proposedBindings: [],
+        });
+        const approved = await ownerClient.installIntent.approveInstallIntent({
+            intentId: planned.intentId,
+            planHash: planned.plan.planHash,
+            planRevision: planned.plan.planRevision,
+            consentTiers: [],
+        });
+
+        await ownerClient.installIntent.applyInstallIntent({
+            intentId: approved.intentId,
+            expectedStatusRevision: approved.statusRevision,
+        });
+
+        const degraded = await reconcileInstallIntent(approved.intentId, { operation: 'health' });
+
+        expect(degraded.status?.phase).toBe('DEGRADED');
+        expect(degraded.status?.message).toMatch(/wallet target .* health check returned 503/i);
     });
 
     it('recovers from DEGRADED back to READY once drift is resolved', async () => {
