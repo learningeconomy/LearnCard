@@ -10,7 +10,8 @@ export * from './pkg/didkit_wasm';
  * Kept as a standalone constant so `scripts/set-default-wasm-url.mjs` can rewrite it regardless of
  * how Prettier wraps the `init` signature. Do not inline it back into the parameter list.
  */
-export const DEFAULT_DIDKIT_WASM_URL = 'https://cdn.filestackcontent.com/6v059q3KQlmXd6XoVPyC';
+export const DEFAULT_DIDKIT_WASM_URL =
+    'https://assets.learncard.ai/didkit/sha256-60efb6027699fda135db0d817f7a541bbd660ae88bec9cbec9796feeb3740b96/didkit_wasm_bg.wasm';
 
 let initialized = false;
 let generating = false; // Mutex flag to allow first init call to acquire a lock
