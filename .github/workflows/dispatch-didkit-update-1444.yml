@@ -1,9 +1,9 @@
 name: Dispatch DIDKit update to PR 1444
 
 on:
-    push:
+    pull_request:
         branches:
-            - lc-1958-eddsa-data-integrity-interop
+            - main
         paths:
             - '.github/workflows/dispatch-didkit-update-1444.yml'
 
@@ -13,6 +13,7 @@ permissions:
 
 jobs:
     dispatch:
+        if: github.event.pull_request.number == 1444
         runs-on: ubuntu-latest
         steps:
             - name: Dispatch existing DIDKit publisher on the PR branch
@@ -24,7 +25,7 @@ jobs:
                           owner: context.repo.owner,
                           repo: context.repo.repo,
                           workflow_id: 'update-didkit-wasm.yml',
-                          ref: 'lc-1958-eddsa-data-integrity-interop',
+                          ref: context.payload.pull_request.head.ref,
                           inputs: {
                               didkit_ref: 'main',
                               ssi_ref: 'main',
