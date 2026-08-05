@@ -59,7 +59,7 @@ class FakeWebSocket {
         this.sent.push(payload);
     }
 
-    receive(payload: Record<string, unknown>) {
+    receive(payload: unknown) {
         this.onmessage?.({ data: JSON.stringify(payload) } as MessageEvent<string>);
     }
 }
@@ -553,5 +553,57 @@ describe('chat session startup', () => {
             'Something went wrong',
             'Please try starting the session again.'
         );
+    });
+
+    it('ends a silent Insights response with friendly feedback after 32 seconds', async () => {
+        const start = startInsightsSession('Career fit');
+        const socket = await openLatestSocket();
+        await start;
+        socket.receive({ event: 'insights_ready', threadId: 'thread-insights' });
+        socket.receive({ event: 'assistant_typing', threadId: 'thread-insights' });
+
+        await vi.advanceTimersByTimeAsync(31_999);
+        expect(isTyping.get()).toBe(true);
+        expect(lastAiError.get()).toBeNull();
+
+        await vi.advanceTimersByTimeAsync(1);
+        expect(isLoading.get()).toBe(false);
+        expect(isTyping.get()).toBe(false);
+        expect(lastAiError.get()).toMatchObject({ code: 'startup_timeout' });
+    });
+
+    it('keeps Insights typing feedback visible across an automatic reconnect', async () => {
+        const start = startInsightsSession('Career fit');
+        const socket = await openLatestSocket();
+        await start;
+        socket.receive({ event: 'insights_ready', threadId: 'thread-insights' });
+        socket.receive({ event: 'assistant_typing', threadId: 'thread-insights' });
+
+        socket.close();
+        await Promise.resolve();
+
+        expect(isTyping.get()).toBe(true);
+
+        await vi.advanceTimersByTimeAsync(1_000);
+        const reconnectedSocket = FakeWebSocket.instances.at(-1);
+
+        expect(reconnectedSocket).not.toBe(socket);
+        reconnectedSocket?.open();
+        expect(isTyping.get()).toBe(true);
+
+        reconnectedSocket?.receive({ done: true, threadId: 'thread-insights' });
+        expect(isTyping.get()).toBe(false);
+    });
+
+    it('does not time out an Insights response after its first content frame', async () => {
+        const start = startInsightsSession('Career fit');
+        const socket = await openLatestSocket();
+        await start;
+        socket.receive({ event: 'insights_ready', threadId: 'thread-insights' });
+        socket.receive('Here is what I found.');
+
+        await vi.advanceTimersByTimeAsync(32_000);
+
+        expect(lastAiError.get()).toBeNull();
     });
 });
