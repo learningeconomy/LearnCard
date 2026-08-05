@@ -10,7 +10,7 @@ import {
 
 import { t, didAndChallengeRoute } from '@routes';
 
-import { SigningAuthorityResponseValidator } from '@models';
+import { MongoSigningAuthorityType, SigningAuthorityResponseValidator } from '@models';
 import { getSigningAuthorityWithEndpoint } from '@helpers/signingAuthority.helpers';
 
 export const signingAuthorityRouter = t.router({
@@ -54,6 +54,13 @@ export const signingAuthorityRouter = t.router({
                 });
             }
 
+            if (!signingAuthority.did) {
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Signing Authority was created without a DID.',
+                });
+            }
+
             return getSigningAuthorityWithEndpoint(signingAuthority, ctx.domain);
         }),
     signingAuthorities: didAndChallengeRoute
@@ -71,7 +78,16 @@ export const signingAuthorityRouter = t.router({
         .output(SigningAuthorityResponseValidator.array())
         .query(async ({ ctx }) => {
             const signingAuthorities = await getSigningAuthoritiesForDid(ctx.user.did);
-            return signingAuthorities.map(sa => getSigningAuthorityWithEndpoint(sa, ctx.domain));
+            return signingAuthorities
+                .filter(
+                    (
+                        signingAuthority
+                    ): signingAuthority is MongoSigningAuthorityType & { did: string } =>
+                        Boolean(signingAuthority.did)
+                )
+                .map(signingAuthority =>
+                    getSigningAuthorityWithEndpoint(signingAuthority, ctx.domain)
+                );
         }),
     authorizeSigningAuthority: didAndChallengeRoute
         .meta({
