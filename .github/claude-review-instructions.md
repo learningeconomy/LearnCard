@@ -91,7 +91,6 @@ This is a Bun + Nx monorepo. Key areas:
 -   `Dockerfile*`, `serverless*.yml`, `compose*.yaml`, `lambda.ts` changes
 -   `.github/workflows/` changes
 -   Root monorepo config changes: `nx.json`, `bun.lock`, root `package.json`
--   `heroku.yml`, `Procfile` changes
 -   Removal or weakening of existing tests (deleting assertions, `.skip`, commenting out tests)
 
 **Always-blocked paths (never auto-approve if touched):**
