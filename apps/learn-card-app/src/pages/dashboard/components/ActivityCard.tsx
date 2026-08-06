@@ -343,7 +343,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                               return (
                                   <div
                                       key={record.id ?? record.uri}
-                                      className="animate-fade-in-up"
+                                      className="animate-fade-in-up cursor-pointer"
                                       style={{
                                           animationDelay: `${
                                               (visibleActionable.length + i) * 60
