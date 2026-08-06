@@ -6,6 +6,7 @@ import { getLearnCard } from '../tests/helpers/learncard.helpers';
 
 const redis1 = new Redis();
 const redis2 = new Redis({ port: 6380 });
+const redis3 = new Redis({ port: 6381 });
 const mongoClient = new MongoClient('mongodb://localhost:27017');
 const neo4jDriver = neo4j.driver('bolt://localhost:7687');
 const createPgClient = () =>
@@ -17,7 +18,7 @@ const createPgClient = () =>
         database: 'lrsql_db',
     });
 
-export async function clearDatabases() {
+export async function clearDatabases(clearLcaApi = true) {
     const pgClient = createPgClient();
 
     try {
@@ -31,6 +32,7 @@ export async function clearDatabases() {
             // Clear Redises
             redis1.flushall(),
             redis2.flushall(),
+            ...(clearLcaApi ? [redis3.flushall()] : []),
 
             // Clear Didkit Cache in services
             fetch('http://localhost:4000/test/clear-cache'),
@@ -53,7 +55,9 @@ export async function clearDatabases() {
             })(),
             (async () => {
                 const db = mongoClient.db('lca-api-e2e');
-                const collections = await db.listCollections().toArray();
+                const collections = clearLcaApi
+                    ? await db.listCollections().toArray()
+                    : [{ name: 'signingauthorities' }];
                 await Promise.all(
                     collections.map(collection => db.collection(collection.name).deleteMany({}))
                 );

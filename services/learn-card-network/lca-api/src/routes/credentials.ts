@@ -60,6 +60,9 @@ export const credentialsRouter = t.router({
                 const saDid = learnCard.id.did();
                 console.log('[LCA /credentials/issue] SA LearnCard resolved, DID:', saDid);
 
+                // The DID document changes when a signing authority is registered.
+                await learnCard.invoke.clearDidWebCache();
+
                 // Preserve issuer.name/image if the credential has an object-form issuer
                 if (typeof credential.issuer === 'object' && credential.issuer !== null) {
                     credential.issuer.id = saDid;
