@@ -377,7 +377,7 @@ const pickStage = async (
     return allStages[idx] ?? defaultStage;
 };
 
-type DevMode = 'full' | 'app' | 'services';
+type DevMode = 'full' | 'app' | 'services' | 'console' | 'console-services';
 
 const asDevMode = (s?: string): DevMode | undefined => {
     if (!s) return undefined;
@@ -386,6 +386,10 @@ const asDevMode = (s?: string): DevMode | undefined => {
         full: 'full',
         app: 'app',
         services: 'services',
+        console: 'console',
+        educationos: 'console',
+        'console-services': 'console-services',
+        'console:services': 'console-services',
     };
 
     return map[s.toLowerCase()];
@@ -481,16 +485,35 @@ const startDev = async (
                 '(bun run dev:services)'
             )}`
         );
+        log.info(
+            `  ${cyan('4')}  ${bold(
+                'EducationOS console'
+            )} — Full stack + console-bff + console-web ${dim('(bun run dev-console)')}`
+        );
+        log.info(
+            `  ${cyan('5')}  ${bold('Console services')} — Console stack, no learner app ${dim(
+                '(--profile console, app=0)'
+            )}`
+        );
         log.info('');
 
-        const modeChoice = await ask(`Pick a mode [1-3] ${dim('(default: 1)')}: `);
+        const modeChoice = await ask(`Pick a mode [1-5] ${dim('(default: 1)')}: `);
 
-        devMode = modeChoice === '2' ? 'app' : modeChoice === '3' ? 'services' : 'full';
+        devMode =
+            modeChoice === '2'
+                ? 'app'
+                : modeChoice === '3'
+                ? 'services'
+                : modeChoice === '4'
+                ? 'console'
+                : modeChoice === '5'
+                ? 'console-services'
+                : 'full';
     }
 
     // Only Docker-backed modes care about --build; ask once if the caller
     // didn't already decide via the CLI shortcut.
-    const usesDocker = devMode === 'full' || devMode === 'services';
+    const usesDocker = devMode !== 'app';
 
     if (usesDocker && noBuild === undefined) {
         log.info('');
@@ -548,6 +571,28 @@ const startDev = async (
                 `${dockerUidEnv} docker compose -f compose-local.yaml up${buildFlag} --scale app=0`,
                 `Starting Docker services (no app)${noBuild ? ' — skipping rebuild' : ''}`,
                 `bun run lc dev ${tenantId}${stageArg} services${fastArg}`
+            );
+            break;
+
+        case 'console':
+            log.info(dim('  console-bff: http://localhost:3200 · console-web: see compose logs'));
+            runCommand(
+                `${dockerUidEnv}${localAiEnv} TENANT=${tenantId} STAGE=${stageId} docker compose -f compose-local.yaml --profile console up${buildFlag}`,
+                `Starting ${displayName}${stageLabel} — full stack + EducationOS console${
+                    noBuild ? ' (skipping rebuild)' : ''
+                }`,
+                `bun run lc dev ${tenantId}${stageArg} console${fastArg}`
+            );
+            break;
+
+        case 'console-services':
+            log.info(dim('  console-bff: http://localhost:3200 · console-web: see compose logs'));
+            runCommand(
+                `${dockerUidEnv} docker compose -f compose-local.yaml --profile console up${buildFlag} --scale app=0`,
+                `Starting EducationOS console stack (no learner app)${
+                    noBuild ? ' — skipping rebuild' : ''
+                }`,
+                `bun run lc dev ${tenantId}${stageArg} console-services${fastArg}`
             );
             break;
 
@@ -2021,7 +2066,7 @@ const handleShortcuts = async (): Promise<boolean> => {
         }
 
         case 'dev': {
-            // bun run lc dev [tenant] [stage] [full|app|services] [fast|no-build] [local-aip]
+            // bun run lc dev [tenant] [stage] [full|app|services|console|console-services] [fast|no-build] [local-aip]
             const devAllArgs = args.slice(1);
 
             const devModeArg = devAllArgs.reduce<DevMode | undefined>(
@@ -2269,7 +2314,7 @@ const printHelp = () => {
     log.info('');
     log.info(
         `  ${cyan('bun run lc dev <tenant> [stage] [mode] [fast] [local-aip]')}  ${dim(
-            'Web dev server (mode: full|app|services)'
+            'Web dev server (mode: full|app|services|console|console-services)'
         )}`
     );
     log.info(
@@ -2289,6 +2334,9 @@ const printHelp = () => {
     );
     log.info(dim('    bun run lc dev vetpass alpha app            # app only, no prompt'));
     log.info(dim('    bun run lc dev vetpass alpha full           # full stack, no prompt'));
+    log.info(
+        dim('    bun run lc dev learncard console            # full stack + EducationOS console')
+    );
     log.info(dim('    bun run lc dev learncard production app local-aip # app + local AI backend'));
     log.info(
         dim('    bun run lc dev vetpass alpha full fast      # full stack, skip docker --build')
