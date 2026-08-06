@@ -4,17 +4,6 @@ export type CategoryIcons = {
     Icon?: React.FC<{ className?: string }>;
     IconWithShape?: React.FC<{ version?: string; className?: string }>;
     IconWithLightShape?: React.FC<{ className?: string }>;
-    /**
-     * Flat, single-colour glyph with no background shape (LC-1969).
-     *
-     * Used by surfaces that render the category at small sizes against a
-     * plain background — currently the passport activity feed — where the
-     * illustrated `Icon`/`IconWithShape` art is too busy to read.
-     *
-     * Optional: a set only needs to declare this when its `Icon` is *not*
-     * already the solid glyph. `ActivityCredentialIcon` falls back to `Icon`.
-     */
-    IconSolid?: React.FC<{ className?: string }>;
 };
 
 export type LaunchPadIcons = {

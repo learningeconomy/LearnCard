@@ -115,7 +115,7 @@ export const SentimentStrip: React.FC<SentimentStripProps> = ({
 
             answeredRef.current = true;
             setAnswered(sentiment);
-            feedbackGovernorStore.set.recordAnswered(surface, sentiment);
+            feedbackGovernorStore.set.recordAnswered(surface);
 
             void track(AnalyticsEvents.FEEDBACK_SENTIMENT_GIVEN, {
                 surface,

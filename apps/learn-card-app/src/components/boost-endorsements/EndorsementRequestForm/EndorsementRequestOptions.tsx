@@ -53,55 +53,33 @@ export const EndorsementRequestOptions: React.FC<{
 
     const { mutate: shareEarnedBoost, isPending: isLinkLoading } = useShareBoostMutation();
 
-    const handleLinkGenerationError = () => {
-        setShareLink(undefined);
-        presentToast(m['toasts.boost.endorsementRequestFailed'](), {
-            type: ToastTypeEnum.Error,
-            hasDismissButton: true,
-        });
-    };
-
-    const generateShareLink = () => {
-        setShareLink(undefined);
+    const generateShareLink = async () => {
         setIsGeneratingShareLink(true);
         shareEarnedBoost(
-            { credential, credentialUri: credential.id },
+            { credential: credential, credentialUri: credential.id },
             {
-                onSuccess(data) {
-                    try {
-                        const url = new URL(data.link);
-                        const uri = url.searchParams.get('uri');
-                        const seed = url.searchParams.get('seed');
-                        const pin = url.searchParams.get('pin');
+                async onSuccess(data) {
+                    const url = new URL(data?.link);
+                    const params = new URLSearchParams(url.search);
 
-                        if (!uri || !seed || !pin) {
-                            handleLinkGenerationError();
-                            return;
-                        }
+                    const host = url.host;
+                    const uri = params.get('uri');
+                    const seed = params.get('seed');
+                    const pin = params.get('pin');
 
-                        const endorsementUrl = new URL('/', url.origin);
-                        endorsementUrl.search = new URLSearchParams({
-                            uri,
-                            seed,
-                            pin,
-                            endorsementRequest: 'true',
-                        }).toString();
-                        setShareLink(endorsementUrl.toString());
-                        track(AnalyticsEvents.GENERATE_SHARE_LINK, {
-                            category: categoryType,
-                            boostType: achievementType,
-                            method: 'Share Boost',
-                        });
-                    } catch {
-                        handleLinkGenerationError();
-                    }
-                },
-                onError: handleLinkGenerationError,
-                onSettled() {
-                    setIsGeneratingShareLink(false);
+                    // generate endorsement request share link
+                    setShareLink(
+                        `https://${host}/?uri=${uri}&seed=${seed}&pin=${pin}&endorsementRequest=true`
+                    );
+                    track(AnalyticsEvents.GENERATE_SHARE_LINK, {
+                        category: categoryType,
+                        boostType: achievementType,
+                        method: 'Share Boost',
+                    });
                 },
             }
         );
+        setIsGeneratingShareLink(false);
     };
 
     const copyItem = async () => {
@@ -114,7 +92,7 @@ export const EndorsementRequestOptions: React.FC<{
 
     useEffect(() => {
         generateShareLink();
-    }, [credential.id]);
+    }, []);
 
     const presentShareBoostLink = () => {
         const shareBoostLinkModalProps = {
@@ -190,7 +168,7 @@ export const EndorsementRequestOptions: React.FC<{
                 </p>
 
                 <button
-                    disabled={isGeneratingShareLink || isLinkLoading || !shareLink}
+                    disabled={isGeneratingShareLink}
                     onClick={copyItem}
                     className="text-[17px] text-center flex items-center justify-center rounded-full px-[16px] py-[12px] bg-grayscale-900 text-white w-full cursor-pointer"
                 >
@@ -200,7 +178,7 @@ export const EndorsementRequestOptions: React.FC<{
                     <CopyStack className="ml-2 h-[24px] w-[24px]" />
                 </button>
                 <button
-                    disabled={isGeneratingShareLink || isLinkLoading || !shareLink}
+                    disabled={isGeneratingShareLink}
                     onClick={presentShareBoostLink}
                     className="text-[17px] text-center flex items-center justify-center rounded-full px-[16px] py-[12px] bg-grayscale-900 text-white w-full cursor-pointer"
                 >

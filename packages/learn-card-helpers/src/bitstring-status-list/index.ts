@@ -15,15 +15,11 @@ export const isBitstringStatusListEntry = (status: unknown): status is Bitstring
     if (!status || typeof status !== 'object') return false;
 
     const record = status as Record<string, unknown>;
-    const statusListIndex = record.statusListIndex;
 
     return (
         record.type === 'BitstringStatusListEntry' &&
         (record.statusPurpose === 'revocation' || record.statusPurpose === 'suspension') &&
-        (typeof statusListIndex === 'string' ||
-            (typeof statusListIndex === 'number' &&
-                Number.isInteger(statusListIndex) &&
-                statusListIndex >= 0)) &&
+        typeof record.statusListIndex === 'string' &&
         typeof record.statusListCredential === 'string'
     );
 };

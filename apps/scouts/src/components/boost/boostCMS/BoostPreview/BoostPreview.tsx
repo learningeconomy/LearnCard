@@ -155,11 +155,11 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                     className={`flex flex-col items-center justify-center overflow-x-auto pb-32 ${boostPreviewWrapperCustomClass} ${
                         shouldUseHostCardPadding ? 'px-1' : ''
                     } ${isCertificate ? 'pt-14 md:pt-20' : ''} ${
-                        isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''
+                        isID ? '!px-0 mt-[calc(20px+var(--ion-safe-area-top,0px))]' : ''
                     }`}
                 >
                     <section
-                        className={`w-full safe-area-top-margin ${
+                        className={`w-full mt-[calc(20px+var(--ion-safe-area-top,0px))] ${
                             shouldUseHostCardPadding ? 'px-6' : ''
                         }`}
                     >

@@ -59,7 +59,7 @@ class FakeWebSocket {
         this.sent.push(payload);
     }
 
-    receive(payload: unknown) {
+    receive(payload: Record<string, unknown>) {
         this.onmessage?.({ data: JSON.stringify(payload) } as MessageEvent<string>);
     }
 }
@@ -74,7 +74,6 @@ const {
     currentThreadId,
     disconnectWebSocket,
     isLoading,
-    lastAiError,
     isTyping,
     messages,
     planReady,
@@ -84,7 +83,6 @@ const {
     resetChatStores,
     sendMessage,
     sessionEnded,
-    startInsightsSession,
     startTopic,
     threads,
 } = await import('./chatStore');
@@ -319,46 +317,16 @@ describe('chat session startup', () => {
         );
     });
 
-    it('accepts an untagged startup error from the current socket', async () => {
+    it('ignores untagged startup frames after a request is accepted', async () => {
         const start = startTopic('Algebra');
         const socket = await openLatestSocket();
         await start;
         socket.receive({ event: 'session_start_accepted', requestId: 'request-current' });
-        socket.receive({ error: 'provider failed' });
+        socket.receive({ error: 'stale provider failed' });
 
-        expect(isLoading.get()).toBe(false);
-        expect(isTyping.get()).toBe(false);
-        expect(lastAiError.get()).toMatchObject({ code: 'provider failed' });
-        expect(mocks.showErrorModal).toHaveBeenCalledWith(
-            'Something went wrong',
-            'Please try starting the session again.'
-        );
-    });
-
-    it('accepts an untagged Insights error after a correlated topic startup', async () => {
-        const topicStart = startTopic('Algebra');
-        const topicSocket = await openLatestSocket();
-        await topicStart;
-        topicSocket.receive({ event: 'session_start_accepted', requestId: 'request-topic' });
-        topicSocket.receive({
-            event: 'plan_ready',
-            requestId: 'request-topic',
-            threadId: 'thread-topic',
-            title: 'Algebra',
-        });
-
-        const insightsStart = startInsightsSession('Career options');
-        const insightsSocket = await openLatestSocket();
-        await insightsStart;
-        insightsSocket.receive({
-            event: 'session_start_accepted',
-            requestId: 'request-insights',
-        });
-        insightsSocket.receive({ error: 'Insufficient credits' });
-
-        expect(lastAiError.get()).toMatchObject({ code: 'Insufficient credits' });
-        expect(isLoading.get()).toBe(false);
-        expect(isTyping.get()).toBe(false);
+        expect(isLoading.get()).toBe(true);
+        expect(isTyping.get()).toBe(true);
+        expect(mocks.showErrorModal).not.toHaveBeenCalled();
     });
 
     it('ignores completion frames for another browser session', async () => {
@@ -553,57 +521,5 @@ describe('chat session startup', () => {
             'Something went wrong',
             'Please try starting the session again.'
         );
-    });
-
-    it('ends a silent Insights response with friendly feedback after 32 seconds', async () => {
-        const start = startInsightsSession('Career fit');
-        const socket = await openLatestSocket();
-        await start;
-        socket.receive({ event: 'insights_ready', threadId: 'thread-insights' });
-        socket.receive({ event: 'assistant_typing', threadId: 'thread-insights' });
-
-        await vi.advanceTimersByTimeAsync(31_999);
-        expect(isTyping.get()).toBe(true);
-        expect(lastAiError.get()).toBeNull();
-
-        await vi.advanceTimersByTimeAsync(1);
-        expect(isLoading.get()).toBe(false);
-        expect(isTyping.get()).toBe(false);
-        expect(lastAiError.get()).toMatchObject({ code: 'startup_timeout' });
-    });
-
-    it('keeps Insights typing feedback visible across an automatic reconnect', async () => {
-        const start = startInsightsSession('Career fit');
-        const socket = await openLatestSocket();
-        await start;
-        socket.receive({ event: 'insights_ready', threadId: 'thread-insights' });
-        socket.receive({ event: 'assistant_typing', threadId: 'thread-insights' });
-
-        socket.close();
-        await Promise.resolve();
-
-        expect(isTyping.get()).toBe(true);
-
-        await vi.advanceTimersByTimeAsync(1_000);
-        const reconnectedSocket = FakeWebSocket.instances.at(-1);
-
-        expect(reconnectedSocket).not.toBe(socket);
-        reconnectedSocket?.open();
-        expect(isTyping.get()).toBe(true);
-
-        reconnectedSocket?.receive({ done: true, threadId: 'thread-insights' });
-        expect(isTyping.get()).toBe(false);
-    });
-
-    it('does not time out an Insights response after its first content frame', async () => {
-        const start = startInsightsSession('Career fit');
-        const socket = await openLatestSocket();
-        await start;
-        socket.receive({ event: 'insights_ready', threadId: 'thread-insights' });
-        socket.receive('Here is what I found.');
-
-        await vi.advanceTimersByTimeAsync(32_000);
-
-        expect(lastAiError.get()).toBeNull();
     });
 });

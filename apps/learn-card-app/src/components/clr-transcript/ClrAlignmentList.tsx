@@ -2,7 +2,6 @@ import React from 'react';
 
 import { Target, ExternalLink } from 'lucide-react';
 
-import { SkillCompetencyCard, isSkillCompetencyAlignment } from 'learn-card-base';
 import type { AlignmentDisplayModel } from '../../helpers/clrRenderer.helpers';
 
 /**
@@ -30,23 +29,6 @@ const ClrAlignmentList: React.FC<{
                         alignment.targetCode?.value ??
                         'Framework alignment';
                     const url = alignment.targetUrl?.value;
-                    const isSkillOrCompetency = isSkillCompetencyAlignment({
-                        targetType: alignment.targetType?.value,
-                        targetUrl: url,
-                    });
-
-                    if (isSkillOrCompetency) {
-                        return (
-                            <SkillCompetencyCard
-                                key={`${name}-${index}`}
-                                name={name}
-                                frameworkName={alignment.targetFramework?.value}
-                                code={alignment.targetCode?.value}
-                                description={alignment.targetDescription?.value}
-                                sourceUrl={url}
-                            />
-                        );
-                    }
 
                     return (
                         <div

@@ -8,7 +8,7 @@ export const openApiDocument = generateOpenApiDocument(appRouter, {
     title: 'LearnCloud Storage API',
     description: 'API for interacting with LearnCloud Storage',
     version: '1.0.0',
-    baseUrl: '/api',
+    baseUrl: '../api',
     docsUrl: 'https://docs.learncard.com',
     tags: ['Storage', 'Index', 'User', 'Custom Storage', 'Utilities'],
 });

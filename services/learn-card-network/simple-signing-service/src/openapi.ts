@@ -8,7 +8,7 @@ export const openApiDocument = generateOpenApiDocument(appRouter, {
     title: 'LearnCard App API',
     description: 'This is the API for interacting with a LearnCard App API',
     version: '1.0.0',
-    baseUrl: '/api',
+    baseUrl: '../api',
     docsUrl: 'https://docs.learncard.com',
     tags: ['Notifications', 'AI', 'Utilities', 'Signing Authority', 'Credentials'],
 });

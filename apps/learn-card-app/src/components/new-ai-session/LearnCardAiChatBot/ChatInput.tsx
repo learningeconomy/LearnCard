@@ -290,7 +290,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ placeholder, showUserAvatar = tru
 
     return (
         <>
-            <div className="flex items-end gap-[10px] p-[15px] sm:p-0 pb-[calc(15px+env(safe-area-inset-bottom))] sm:pb-[env(safe-area-inset-bottom)] bg-grayscale-50">
+            <div className="flex items-end gap-[10px] p-[15px] sm:p-0 pb-[15px] sm:pb-0 bg-grayscale-50">
                 {showUserAvatar && (
                     <div className="flex-shrink-0 pb-[6px]">
                         <ProfilePicture

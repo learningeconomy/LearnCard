@@ -21,6 +21,8 @@ import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinne
 
 import { AddressSpec, formatLocationObject } from './location.helpers';
 
+const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+
 const LocationSearch: React.FC<{
     showCloseButton?: boolean;
     handleLocationStateChange: (locaton: AddressSpec) => void;

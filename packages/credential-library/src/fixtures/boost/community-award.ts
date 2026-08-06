@@ -17,7 +17,6 @@ export const boostCommunityAward: CredentialFixture = {
         '@context': [
             'https://www.w3.org/ns/credentials/v2',
             'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
-            'https://ctx.learncard.com/boosts/1.0.3.json',
         ],
         id: 'urn:uuid:d8c4f2a1-3b67-4e89-a1d0-5f9e7c2b8a43',
         type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential'],
@@ -54,8 +53,7 @@ export const boostCommunityAward: CredentialFixture = {
                     type: ['Profile'],
                     name: 'LearnCard Community Hub',
                     url: 'https://network.learncard.com/organizations/community-hub',
-                    description:
-                        'The LearnCard Community Hub connects learners, educators, and community leaders.',
+                    description: 'The LearnCard Community Hub connects learners, educators, and community leaders.',
                 },
                 tag: [
                     'leadership',

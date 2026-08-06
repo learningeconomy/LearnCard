@@ -26,9 +26,7 @@ export const clrWestbridgeFull: CredentialFixture = {
         '@context': [
             'https://www.w3.org/ns/credentials/v2',
             'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
-            'https://purl.imsglobal.org/spec/clr/v2p0/context.json',
-            'https://purl.imsglobal.org/spec/ob/v3p0/extensions.json',
-            { IssuerPolicy: 'https://westbridge.edu/credentials#IssuerPolicy' },
+            'https://purl.imsglobal.org/spec/clr/v2p0/context-2.0.1.json',
         ],
         id: 'urn:uuid:wb-clr-2025-jordan-reyes-001',
         type: ['VerifiableCredential', 'ClrCredential'],
@@ -102,13 +100,6 @@ export const clrWestbridgeFull: CredentialFixture = {
             },
         ],
         credentialSubject: {
-            // CLR v2's ClrSubject scoped context omits the Open Badges identifier term.
-            '@context': {
-                identifier: {
-                    '@id': 'https://purl.imsglobal.org/spec/vc/ob/vocab.html#identifier',
-                    '@container': '@set',
-                },
-            },
             id: 'did:example:wb-student-2025-001',
             type: ['ClrSubject'],
             identifier: [
