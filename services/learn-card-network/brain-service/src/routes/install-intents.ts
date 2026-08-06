@@ -50,6 +50,7 @@ type BindingProposal = z.infer<typeof BindingProposalValidator>;
 type InstallIntentSpec = z.infer<typeof InstallIntentSpecValidator>;
 import {
     assertBindingRefsExist,
+    assertBindingCapabilityVersionsCompatible,
     assertBindingRefsInIntentSpec,
     assertEntitlementsSatisfied,
     assertSupportedConsentTiers,
@@ -65,6 +66,10 @@ import {
     assertListingAllowedByCatalogPolicy,
     filterListingsByCatalogPolicy,
 } from '@helpers/catalog-policy.helpers';
+import {
+    assertSignedListingVersionOrThrow,
+    listingKindRequiresSignedManifest,
+} from '@helpers/manifest-signature.helpers';
 
 const PlanInstallIntentInputValidator = z.object({
     intentId: z.string().optional(),
@@ -253,6 +258,14 @@ const buildSpecForIntent = async (input: {
         });
     }
 
+    if (listingKindRequiresSignedManifest(listing.kind)) {
+        await assertSignedListingVersionOrThrow(
+            listing.kind,
+            version,
+            `Listing ${listing.listing_id} version ${version.version_id} has an invalid signature`
+        );
+    }
+
     if (listing.kind === 'BUNDLE') {
         const manifestResult = BundleManifestValidator.safeParse(
             version.manifest_json ? JSON.parse(version.manifest_json) : {}
@@ -282,6 +295,14 @@ const buildSpecForIntent = async (input: {
                     code: 'BAD_REQUEST',
                     message: `Bundle member ${member.declarationId} must resolve to a LISTED version.`,
                 });
+            }
+
+            if (listingKindRequiresSignedManifest(memberListing.kind)) {
+                await assertSignedListingVersionOrThrow(
+                    memberListing.kind,
+                    memberVersion,
+                    `Bundle member ${member.declarationId} has an invalid signature`
+                );
             }
 
             listingById[member.listingId] = memberListing;
@@ -821,6 +842,7 @@ export const installIntentsRouter = t.router({
 
             const proposal = BindingProposalValidator.parse(input);
             await assertBindingRefsExist([proposal]);
+            await assertBindingCapabilityVersionsCompatible(proposal);
 
             const created = await createBinding({
                 apiVersion: 'lc.binding/v1',
@@ -878,6 +900,8 @@ export const installIntentsRouter = t.router({
                     });
                 }
             }
+
+            await assertBindingCapabilityVersionsCompatible(binding);
 
             const approved = await approveBindingRecord(
                 binding.bindingId,

@@ -6,6 +6,8 @@ import {
     CapabilityEnum,
     ConsentDecisionActorValidator,
     ConsentTierEnum,
+    getCapabilitySetVersionForManifestApiVersion,
+    isCapabilitySupportedByManifestApiVersion,
 } from '@learncard/types';
 import type { AppStoreListingType } from 'types/app-store-listing';
 import type { ListingVersionType } from 'types/listing-version';
@@ -13,6 +15,9 @@ import { neogma } from '@instance';
 import { getEcosystemById } from '@accesslayer/ecosystem/read';
 import { getEcosystemMembershipRole } from '@accesslayer/ecosystem/membership';
 import { appendConsentDecisionRecord } from '@accesslayer/consent-decision-record/store';
+import { readInstallTargetInternal } from '@accesslayer/install-target/internal';
+import { readInstallIntentById } from '@accesslayer/install-intent/intent-read';
+import { readListingVersionById } from '@accesslayer/listing-version/read';
 
 type ConsentDecisionRecord = Awaited<ReturnType<typeof appendConsentDecisionRecord>>;
 
@@ -37,6 +42,7 @@ type BindingProposal = {
 };
 
 type BundleManifest = {
+    apiVersion?: string;
     contains: Array<{
         declarationId: string;
         targetType: InstallTargetType;
@@ -161,6 +167,7 @@ const SUBJECT_DATA_CAPABILITIES = new Set<string>([
     'credential-issuer',
     'wallet-claim',
     'insight-source',
+    'record-provisioning',
 ]);
 
 const stableSortObject = (value: unknown): unknown => {
@@ -301,6 +308,17 @@ export const expandBundle = (manifest: BundleManifest): BundleExpansion => {
 
 const uniqueSortedStrings = (values: string[]): string[] => Array.from(new Set(values)).sort();
 
+const formatManifestScope = (scope: Record<string, unknown>): string | undefined => {
+    const resource = typeof scope.resource === 'string' ? scope.resource : undefined;
+    const action = typeof scope.action === 'string' ? scope.action : undefined;
+    const selectorKind = typeof scope.selectorKind === 'string' ? scope.selectorKind : undefined;
+    const selectorValue = typeof scope.selectorValue === 'string' ? scope.selectorValue : undefined;
+
+    if (!resource || !action || !selectorKind || !selectorValue) return undefined;
+
+    return `${resource}:${action}:${selectorKind}:${selectorValue}`;
+};
+
 const safeParseJsonRecord = (value?: string): Record<string, unknown> | undefined => {
     if (!value) return undefined;
 
@@ -341,23 +359,32 @@ const getListingVersionAuthoritySummary = (version: ListingVersionType) => {
         safeParseJsonRecord(version.manifest_json),
         safeParseJsonRecord(version.review_snapshot_json),
     ].filter((source): source is Record<string, unknown> => Boolean(source));
-    const scopes = uniqueSortedStrings(
+    const manifestScopes = sources.flatMap(source => {
+        const scopes = Array.isArray(source.scopes) ? source.scopes : [];
+
+        return scopes
+            .map(scope =>
+                scope && typeof scope === 'object'
+                    ? formatManifestScope(scope as Record<string, unknown>)
+                    : undefined
+            )
+            .filter((scope): scope is string => Boolean(scope));
+    });
+    const scopes = uniqueSortedStrings([
+        ...manifestScopes,
+        ...sources.flatMap(source =>
+            collectStringArrayValues(
+                source,
+                new Set(['scopesRequested', 'requestedScopes', 'requiredScopes', 'addedScopes'])
+            )
+        ),
+    ]);
+    const consentTierCandidates = uniqueSortedStrings(
         sources.flatMap(source =>
             collectStringArrayValues(
                 source,
-                new Set([
-                    'scopes',
-                    'scopesRequested',
-                    'requestedScopes',
-                    'requiredScopes',
-                    'addedScopes',
-                ])
+                new Set(['consentTiers', 'requiredConsentTiers', 'consentRequirements'])
             )
-        )
-    );
-    const consentTierCandidates = uniqueSortedStrings(
-        sources.flatMap(source =>
-            collectStringArrayValues(source, new Set(['consentTiers', 'requiredConsentTiers']))
         )
     );
 
@@ -365,6 +392,35 @@ const getListingVersionAuthoritySummary = (version: ListingVersionType) => {
         scopes,
         consentTiers: assertSupportedConsentTiers(consentTierCandidates),
     };
+};
+
+const getListingVersionManifestApiVersion = (version: ListingVersionType): string => {
+    const manifest = safeParseJsonRecord(version.manifest_json);
+
+    if (typeof manifest?.apiVersion !== 'string') {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `ListingVersion ${version.version_id} is missing a valid manifest apiVersion.`,
+        });
+    }
+
+    return manifest.apiVersion;
+};
+
+const assertListingVersionSupportsCapability = (
+    version: ListingVersionType,
+    capability: (typeof CapabilityEnum)['options'][number],
+    endpointLabel: string
+): void => {
+    const apiVersion = getListingVersionManifestApiVersion(version);
+    const pinnedSetVersion = getCapabilitySetVersionForManifestApiVersion(apiVersion);
+
+    if (!isCapabilitySupportedByManifestApiVersion(apiVersion, capability)) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `${endpointLabel} pins capability set ${pinnedSetVersion}, which does not include ${capability}.`,
+        });
+    }
 };
 
 export const buildPlanFromMaterialization = (input: {
@@ -455,6 +511,9 @@ export const materializeBundlePlan = (input: {
             getIntentTargetId(input.intentId, member.declarationId),
         ])
     ) as Record<string, string>;
+    const memberByDeclarationId = Object.fromEntries(
+        input.expandedBundle.members.map(member => [member.declarationId, member])
+    ) as Record<string, BundleExpansionMember>;
     const resolveBindingEndpoint = (
         declarationId: string,
         endpoint: 'provider' | 'consumer'
@@ -491,14 +550,41 @@ export const materializeBundlePlan = (input: {
             ecosystemId: '',
         };
     };
-    const bindings = input.expandedBundle.proposedBindings.map(binding =>
-        BindingProposalValidator.parse({
+    const bindings = input.expandedBundle.proposedBindings.map(binding => {
+        const providerMember =
+            binding.providerDeclarationId === BUNDLE_ECOSYSTEM_PROVIDER_SENTINEL
+                ? undefined
+                : memberByDeclarationId[binding.providerDeclarationId];
+        const consumerMember = memberByDeclarationId[binding.consumerDeclarationId];
+
+        if (!consumerMember) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: `Bundle binding consumer ${binding.consumerDeclarationId} is unknown.`,
+            });
+        }
+
+        if (providerMember) {
+            assertListingVersionSupportsCapability(
+                input.listingVersionsById[providerMember.versionId]!,
+                binding.capability,
+                `Bundle binding provider ${binding.providerDeclarationId}`
+            );
+        }
+
+        assertListingVersionSupportsCapability(
+            input.listingVersionsById[consumerMember.versionId]!,
+            binding.capability,
+            `Bundle binding consumer ${binding.consumerDeclarationId}`
+        );
+
+        return BindingProposalValidator.parse({
             capability: binding.capability,
             provider: resolveBindingEndpoint(binding.providerDeclarationId, 'provider'),
             consumer: resolveBindingEndpoint(binding.consumerDeclarationId, 'consumer'),
             reason: binding.reason,
-        })
-    );
+        });
+    });
 
     return {
         targets,
@@ -638,6 +724,64 @@ export const assertBindingRefsInIntentSpec = async (
                 message: 'Binding consumer does not reference a materialized intent target.',
             });
         }
+    }
+};
+
+const resolveInstallTargetSpecForBindingEndpoint = async (
+    endpoint: BindingEndpoint
+): Promise<InstallTargetSpec | null> => {
+    if (endpoint.resourceType === 'ECOSYSTEM') return null;
+
+    const target = await readInstallTargetInternal({
+        id: endpoint.resourceId,
+        targetType: endpoint.resourceType,
+    });
+    if (!target) return null;
+
+    const intent = await readInstallIntentById(target.intentId);
+    if (!intent?.spec) return null;
+
+    return (
+        intent.spec.targets.find(candidate => {
+            const declarationId =
+                typeof candidate.config.declarationId === 'string'
+                    ? candidate.config.declarationId
+                    : `${candidate.targetType}_${candidate.listingId}`;
+
+            return getIntentTargetId(intent.intentId, declarationId) === endpoint.resourceId;
+        }) ?? null
+    );
+};
+
+export const assertBindingCapabilityVersionsCompatible = async (
+    binding: BindingProposal
+): Promise<void> => {
+    const [providerTarget, consumerTarget] = await Promise.all([
+        resolveInstallTargetSpecForBindingEndpoint(binding.provider),
+        resolveInstallTargetSpecForBindingEndpoint(binding.consumer),
+    ]);
+
+    const providerVersion = providerTarget
+        ? await readListingVersionById(providerTarget.versionId)
+        : null;
+    const consumerVersion = consumerTarget
+        ? await readListingVersionById(consumerTarget.versionId)
+        : null;
+
+    if (providerVersion) {
+        assertListingVersionSupportsCapability(
+            providerVersion,
+            binding.capability,
+            `Binding provider ${binding.provider.resourceId}`
+        );
+    }
+
+    if (consumerVersion) {
+        assertListingVersionSupportsCapability(
+            consumerVersion,
+            binding.capability,
+            `Binding consumer ${binding.consumer.resourceId}`
+        );
     }
 };
 

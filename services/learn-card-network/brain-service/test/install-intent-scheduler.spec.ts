@@ -38,6 +38,7 @@ import { AUTH_GRANT_FULL_ACCESS_SCOPE } from 'src/constants/auth-grant';
 
 import { getClient } from './helpers/getClient';
 import { makeListingInput } from './helpers/app-store.helpers';
+import { createSignedListingVersionForKind } from './helpers/manifest.helpers';
 
 const OWNER_DID = 'did:key:z6MkSchedulerOwner';
 const CASE_TIMEOUT_MS = 30_000;
@@ -85,13 +86,13 @@ const createApprovedIntent = async (ecosystemId: string) => {
             app_listing_status: 'LISTED',
         })
     );
-    await ListingVersion.createOne({
-        version_id: versionId,
+    await createSignedListingVersionForKind({
+        listingId,
+        kind: 'INTEGRATION',
+        versionId,
         version: '1.0.0',
         status: 'LISTED',
-        manifest_json: JSON.stringify({ ok: true }),
-        created_at: new Date().toISOString(),
-    } as Parameters<typeof ListingVersion.createOne>[0]);
+    });
 
     const planned = await ownerClient.installIntent.planInstallIntent({
         ecosystemId,

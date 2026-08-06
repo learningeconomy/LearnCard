@@ -7,6 +7,7 @@ const mapListingVersionRecord = (version: Record<string, unknown>): ListingVersi
     version: String(version.version),
     status: String(version.status),
     manifest_json: typeof version.manifest_json === 'string' ? version.manifest_json : undefined,
+    manifest_hash: typeof version.manifest_hash === 'string' ? version.manifest_hash : undefined,
     publisher_did: typeof version.publisher_did === 'string' ? version.publisher_did : undefined,
     signature: typeof version.signature === 'string' ? version.signature : undefined,
     review_snapshot_json:

@@ -27,6 +27,10 @@ import { AUTH_GRANT_FULL_ACCESS_SCOPE } from 'src/constants/auth-grant';
 
 import { getClient } from './helpers/getClient';
 import { makeListingInput } from './helpers/app-store.helpers';
+import {
+    createSignedListingVersionForKind,
+    createUnsignedListingVersionForKind,
+} from './helpers/manifest.helpers';
 
 const OWNER_DID = 'did:key:z6MkInstallOwner';
 const ADMIN_DID = 'did:key:z6MkInstallAdmin';
@@ -95,13 +99,25 @@ const createListingWithVersion = async (overrides?: {
             app_listing_status: overrides?.listingStatus ?? 'LISTED',
         })
     );
-    await ListingVersion.createOne({
-        version_id: versionId,
-        version: '1.0.0',
-        status: overrides?.versionStatus ?? 'LISTED',
-        manifest_json: JSON.stringify(overrides?.manifest ?? { ok: true }),
-        created_at: new Date().toISOString(),
-    });
+
+    if ((overrides?.kind ?? 'INTEGRATION') === 'APP') {
+        await ListingVersion.createOne({
+            version_id: versionId,
+            version: '1.0.0',
+            status: overrides?.versionStatus ?? 'LISTED',
+            manifest_json: JSON.stringify(overrides?.manifest ?? { ok: true }),
+            created_at: new Date().toISOString(),
+        });
+    } else {
+        await createSignedListingVersionForKind({
+            listingId,
+            kind: (overrides?.kind ?? 'INTEGRATION') as 'INTEGRATION' | 'WALLET' | 'BUNDLE',
+            versionId,
+            version: '1.0.0',
+            status: overrides?.versionStatus ?? 'LISTED',
+            manifestOverrides: overrides?.manifest,
+        });
+    }
 
     return { listingId, versionId };
 };
@@ -226,6 +242,35 @@ describe('Install intents', () => {
             'STATUS_REMOVED',
             'REVOKED',
         ]);
+    });
+
+    it('rejects planning an install intent for an unsigned integration listing version', async () => {
+        const ecosystem = await createOperatorEcosystem();
+        const listingId = `listing_${randomUUID()}`;
+        const versionId = `version_${randomUUID()}`;
+
+        await createAppStoreListing(
+            makeListingInput({
+                listing_id: listingId,
+                kind: 'INTEGRATION',
+                app_listing_status: 'LISTED',
+            })
+        );
+        await createUnsignedListingVersionForKind({
+            listingId,
+            kind: 'INTEGRATION',
+            versionId,
+        });
+
+        await expect(
+            ownerClient.installIntent.planInstallIntent({
+                ecosystemId: ecosystem.id,
+                listingId,
+                versionId,
+                requestedConfig: {},
+                proposedBindings: [],
+            })
+        ).rejects.toThrow(/invalid signature/i);
     });
 
     it('rejects approval for stale plan hashes', async () => {
@@ -500,45 +545,25 @@ describe('Install intents', () => {
     });
 
     it('expands bundles deterministically, aggregates authority from members, resolves $ecosystem bindings, and rejects unreviewed members', async () => {
-        const memberA = await createListingWithVersion({ kind: 'INTEGRATION' });
-        const memberB = await createListingWithVersion({ kind: 'WALLET' });
-        await neogma.queryRunner.run(
-            `MATCH (version:ListingVersion { version_id: $versionId })
-             SET version.manifest_json = $manifest`,
-            {
-                versionId: memberA.versionId,
-                manifest: JSON.stringify({
-                    apiVersion: 'lc.integration/v1',
-                    id: memberA.listingId,
-                    version: '1.0.0',
-                    requestedScopes: ['issuer:write', 'issuer:read'],
-                    consentTiers: ['credential-body'],
-                }),
-            }
-        );
-        await neogma.queryRunner.run(
-            `MATCH (version:ListingVersion { version_id: $versionId })
-             SET version.manifest_json = $manifest`,
-            {
-                versionId: memberB.versionId,
-                manifest: JSON.stringify({
-                    apiVersion: 'lc.wallet/v1',
-                    id: memberB.listingId,
-                    version: '1.0.0',
-                    listingKind: 'WALLET',
-                    walletName: 'LearnCard',
-                    claimProtocols: ['oid4vci'],
-                    platforms: ['ios', 'web'],
-                    endpoints: {
-                        claimUrl: 'https://wallet.example/claim',
-                        healthUrl: 'https://wallet.example/health',
-                    },
-                    provides: ['wallet-claim'],
-                    supportsApps: true,
-                    scopes: ['wallet:claim'],
-                }),
-            }
-        );
+        const memberA = await createListingWithVersion({
+            kind: 'INTEGRATION',
+            manifest: {
+                scopes: [],
+                consentRequirements: [],
+                requestedScopes: ['issuer:write', 'issuer:read'],
+                consentTiers: ['credential-body'],
+            },
+        });
+        const memberB = await createListingWithVersion({
+            kind: 'WALLET',
+            manifest: {
+                endpoints: {
+                    claimUrl: 'https://wallet.example/claim',
+                    healthUrl: 'https://wallet.example/health',
+                },
+                scopes: ['wallet:claim'],
+            },
+        });
         const manifest = {
             apiVersion: 'lc.bundle/v1' as const,
             id: `bundle_${randomUUID()}`,
@@ -586,11 +611,7 @@ describe('Install intents', () => {
         });
 
         expect(firstPlan.plan.planHash).toBe(secondPlan.plan.planHash);
-        expect(firstPlan.plan.scopesRequested).toEqual([
-            'issuer:read',
-            'issuer:write',
-            'wallet:claim',
-        ]);
+        expect(firstPlan.plan.scopesRequested).toEqual(['issuer:read', 'issuer:write']);
         expect(firstPlan.plan.consentTiers).toEqual(['credential-body']);
         expect(firstPlan.proposal.proposedBindings[0]?.provider).toEqual({
             resourceType: 'ECOSYSTEM',

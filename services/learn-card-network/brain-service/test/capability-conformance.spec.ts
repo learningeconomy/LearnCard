@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { neogma } from '@instance';
+import { createAppStoreListing } from '@accesslayer/app-store-listing/create';
 import { createProfile } from '@accesslayer/profile/create';
 import { createEcosystem } from '@accesslayer/ecosystem/create';
 import { grantEcosystemMembership } from '@accesslayer/ecosystem/membership';
@@ -30,10 +31,12 @@ import {
 import {
     requiresConsentPreflight,
     assertSupportedConsentTiers,
+    getIntentTargetId,
 } from '../src/helpers/install-intent.helpers';
 import { AUTH_GRANT_FULL_ACCESS_SCOPE } from 'src/constants/auth-grant';
 
 import { getClient } from './helpers/getClient';
+import { createSignedListingVersionForKind } from './helpers/manifest.helpers';
 
 const OWNER_DID = 'did:key:z6MkCapabilityOwner';
 const ADMIN_DID = 'did:key:z6MkCapabilityAdmin';
@@ -112,6 +115,7 @@ const EXPECTED_CAPABILITIES = [
     'wallet-claim',
     'registry-adapter',
     'insight-source',
+    'record-provisioning',
 ] as const;
 
 const EXPECTED_SUBJECT_DATA_CAPABILITIES = [
@@ -119,6 +123,7 @@ const EXPECTED_SUBJECT_DATA_CAPABILITIES = [
     'credential-issuer',
     'wallet-claim',
     'insight-source',
+    'record-provisioning',
 ] as const;
 
 const EXPECTED_NON_SUBJECT_DATA_CAPABILITIES = ['registry-adapter'] as const;
@@ -177,6 +182,70 @@ const buildConsentPreflight = () => ({
     policyRevision: `policy_${randomUUID()}`,
 });
 
+const createAppliedIntegrationTarget = async (input: {
+    ecosystemId: string;
+    listingId: string;
+    apiVersion: 'lc.integration/v1' | 'lc.integration/v1.1' | 'lc.integration/v1.2';
+    providedCapabilities: Array<(typeof CapabilityEnum.options)[number]>;
+}): Promise<{
+    targetId: string;
+    targetType: 'INTEGRATION_INSTALL';
+}> => {
+    const versionId = `version_${randomUUID()}`;
+
+    await createAppStoreListing({
+        listing_id: input.listingId,
+        slug: input.listingId,
+        kind: 'INTEGRATION',
+        display_name: input.listingId,
+        tagline: 'tagline',
+        full_description: 'description',
+        icon_url: 'https://example.com/icon.png',
+        app_listing_status: 'LISTED',
+        launch_type: 'SERVER_HEADLESS',
+        launch_config_json: JSON.stringify({ url: 'https://example.com' }),
+    });
+
+    await createSignedListingVersionForKind({
+        listingId: input.listingId,
+        kind: 'INTEGRATION',
+        versionId,
+        version: '1.0.0',
+        status: 'LISTED',
+        manifestOverrides: {
+            apiVersion: input.apiVersion,
+            capabilities: {
+                provided: input.providedCapabilities,
+                consumed: [],
+            },
+            supportedRecordClasses: input.apiVersion === 'lc.integration/v1.2' ? ['academic'] : [],
+        },
+    });
+
+    const planned = await ownerClient.installIntent.planInstallIntent({
+        ecosystemId: input.ecosystemId,
+        listingId: input.listingId,
+        versionId,
+        requestedConfig: {},
+        proposedBindings: [],
+    });
+    const approved = await ownerClient.installIntent.approveInstallIntent({
+        intentId: planned.intentId,
+        planHash: planned.plan.planHash,
+        planRevision: planned.plan.planRevision,
+        consentTiers: [],
+    });
+    await ownerClient.installIntent.applyInstallIntent({
+        intentId: planned.intentId,
+        expectedStatusRevision: approved.statusRevision,
+    });
+
+    return {
+        targetId: getIntentTargetId(planned.intentId, 'root'),
+        targetType: 'INTEGRATION_INSTALL',
+    };
+};
+
 describe('Capability conformance harness', () => {
     beforeEach(async () => {
         await neogma.queryRunner.run(
@@ -202,7 +271,7 @@ describe('Capability conformance harness', () => {
     });
 
     it('locks the closed v1 capability table to the expected capability set', () => {
-        expect(CAPABILITY_TABLE_VERSION).toBe('v1');
+        expect(CAPABILITY_TABLE_VERSION).toBe('v1.2');
         expect(new Set(capabilities)).toEqual(new Set(EXPECTED_CAPABILITIES));
         expect(new Set(EXPECTED_CAPABILITIES)).toEqual(new Set(capabilities));
     });
@@ -268,10 +337,10 @@ describe('Capability conformance harness', () => {
 
             expect(BindingValidator.parse(approved)).toMatchObject({
                 capability,
-                status: 'APPROVED',
+                status: 'ACTIVE',
                 approvedBy: 'owner',
             });
-            expect(approved.revision).toBe(proposed.revision + 1);
+            expect(approved.revision).toBe(proposed.revision + 2);
         },
         CAPABILITY_CASE_TIMEOUT_MS
     );
@@ -292,7 +361,7 @@ describe('Capability conformance harness', () => {
 
             expect(BindingValidator.parse(approved)).toMatchObject({
                 capability,
-                status: 'APPROVED',
+                status: 'ACTIVE',
                 approvedBy: 'owner',
             });
             expect(decisionRecords).toHaveLength(1);
@@ -331,6 +400,43 @@ describe('Capability conformance harness', () => {
                     ),
                 ])
             ).rejects.toThrow(/Invalid enum value|Invalid input|capability/i);
+        },
+        CAPABILITY_CASE_TIMEOUT_MS
+    );
+
+    it(
+        'rejects bindings when one endpoint manifest pins a capability set that excludes the capability',
+        async () => {
+            const ecosystem = await createOperatorEcosystem();
+            const provider = await createAppliedIntegrationTarget({
+                ecosystemId: ecosystem.id,
+                listingId: `provider_${randomUUID()}`,
+                apiVersion: 'lc.integration/v1.2',
+                providedCapabilities: ['record-provisioning'],
+            });
+            const consumer = await createAppliedIntegrationTarget({
+                ecosystemId: ecosystem.id,
+                listingId: `consumer_${randomUUID()}`,
+                apiVersion: 'lc.integration/v1',
+                providedCapabilities: ['roster-source'],
+            });
+
+            await expect(
+                ownerClient.installIntent.proposeBinding({
+                    ecosystemId: ecosystem.id,
+                    capability: 'record-provisioning',
+                    provider: {
+                        resourceType: provider.targetType,
+                        resourceId: provider.targetId,
+                        ecosystemId: ecosystem.id,
+                    },
+                    consumer: {
+                        resourceType: consumer.targetType,
+                        resourceId: consumer.targetId,
+                        ecosystemId: ecosystem.id,
+                    },
+                })
+            ).rejects.toThrow(/does not include record-provisioning/i);
         },
         CAPABILITY_CASE_TIMEOUT_MS
     );

@@ -3,7 +3,95 @@ import { z } from 'zod/v4';
 
 import { AppStoreListingKindEnum } from './lcn';
 
-export const CAPABILITY_TABLE_VERSION = 'v1' as const;
+export const CAPABILITY_TABLE_VERSION = 'v1.2' as const;
+
+export const CapabilitySetVersionEnum = z.enum(['v1', 'v1.1', 'v1.2']);
+export type CapabilitySetVersion = z.infer<typeof CapabilitySetVersionEnum>;
+
+const CAPABILITY_SET_BY_VERSION = {
+    v1: [
+        'roster-source',
+        'credential-issuer',
+        'wallet-claim',
+        'registry-adapter',
+        'insight-source',
+    ],
+    'v1.1': [
+        'roster-source',
+        'credential-issuer',
+        'wallet-claim',
+        'registry-adapter',
+        'insight-source',
+        'record-provisioning',
+    ],
+    'v1.2': [
+        'roster-source',
+        'credential-issuer',
+        'wallet-claim',
+        'registry-adapter',
+        'insight-source',
+        'record-provisioning',
+    ],
+} as const;
+
+export const getCapabilitiesForCapabilitySetVersion = (
+    version: CapabilitySetVersion
+): readonly string[] => CAPABILITY_SET_BY_VERSION[version];
+
+export const getCapabilitySetVersionForManifestApiVersion = (
+    apiVersion: string
+): CapabilitySetVersion => {
+    switch (apiVersion) {
+        case 'lc.integration/v1':
+        case 'lc.wallet/v1':
+        case 'lc.bundle/v1':
+            return 'v1';
+        case 'lc.integration/v1.1':
+            return 'v1.1';
+        case 'lc.integration/v1.2':
+            return 'v1.2';
+        default:
+            throw new Error(`Unsupported manifest apiVersion: ${apiVersion}`);
+    }
+};
+
+export const isCapabilitySupportedByManifestApiVersion = (
+    apiVersion: string,
+    capability: string
+): boolean =>
+    getCapabilitiesForCapabilitySetVersion(
+        getCapabilitySetVersionForManifestApiVersion(apiVersion)
+    ).includes(capability);
+
+const assertCapabilitiesWithinPinnedSet = (
+    apiVersion: string,
+    capabilities: string[],
+    ctx: z.core.$RefinementCtx,
+    path: Array<string | number>
+): void => {
+    const pinnedSetVersion = getCapabilitySetVersionForManifestApiVersion(apiVersion);
+    const supported = new Set(getCapabilitiesForCapabilitySetVersion(pinnedSetVersion));
+
+    for (const capability of capabilities) {
+        if (!supported.has(capability)) {
+            ctx.addIssue({
+                code: 'custom',
+                message: `Capability ${capability} is not available in pinned capability set ${pinnedSetVersion}.`,
+                path: [...path, capability],
+                input: capability,
+            });
+        }
+    }
+};
+
+const SEMVER_PATTERN = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
+
+export const ManifestSignatureValidator = z.object({
+    alg: z.string().min(1),
+    sig: z.string().min(1),
+    verificationMethod: z.string().min(1),
+});
+export type ManifestSignature = z.infer<typeof ManifestSignatureValidator>;
 
 export const CapabilityEnum = z.enum([
     'roster-source',
@@ -11,8 +99,12 @@ export const CapabilityEnum = z.enum([
     'wallet-claim',
     'registry-adapter',
     'insight-source',
+    'record-provisioning',
 ]);
 export type Capability = z.infer<typeof CapabilityEnum>;
+
+export const RecordClassEnum = z.enum(['academic', 'employment']);
+export type RecordClass = z.infer<typeof RecordClassEnum>;
 
 export const InstallTargetTypeEnum = z.enum([
     'INTEGRATION_INSTALL',
@@ -80,6 +172,107 @@ export type WalletPlatform = z.infer<typeof WalletPlatformEnum>;
 
 export const IsolationTierEnum = z.enum(['SHARED_LOGICAL', 'DEDICATED_DB', 'DEDICATED_STACK']);
 export type IsolationTier = z.infer<typeof IsolationTierEnum>;
+
+export const IntegrationScopeRequestValidator = z.object({
+    resource: z
+        .string()
+        .min(1)
+        .refine(resource => !resource.includes('*'), {
+            message: 'Integration scopes may not use wildcard resources.',
+        }),
+    action: z
+        .string()
+        .min(1)
+        .refine(action => !action.includes('*'), {
+            message: 'Integration scopes may not use wildcard actions.',
+        }),
+    selectorKind: z.enum(['tree', 'id']),
+    selectorValue: z.string().min(1),
+    reason: z.string().max(280),
+});
+export type IntegrationScopeRequest = z.infer<typeof IntegrationScopeRequestValidator>;
+
+export const IntegrationExtensionPointEnum = z.enum([
+    'roster.import',
+    'profile.sync',
+    'group.sync',
+    'completion.ingest',
+    'issuance.request',
+    'consent.observe',
+    'registry.query',
+    'dashboard.link',
+]);
+export type IntegrationExtensionPoint = z.infer<typeof IntegrationExtensionPointEnum>;
+
+export const IntegrationExtensionPointDeclarationValidator = z.object({
+    point: IntegrationExtensionPointEnum,
+    annotations: z
+        .object({
+            readOnly: z.boolean().default(false),
+            destructive: z.boolean().default(false),
+            idempotent: z.boolean().default(true),
+        })
+        .default({ readOnly: false, destructive: false, idempotent: true }),
+});
+export type IntegrationExtensionPointDeclaration = z.infer<
+    typeof IntegrationExtensionPointDeclarationValidator
+>;
+
+export const IntegrationManifestValidator = z
+    .object({
+        apiVersion: z.enum(['lc.integration/v1', 'lc.integration/v1.1', 'lc.integration/v1.2']),
+        id: z.string().min(1),
+        version: z.string().regex(SEMVER_PATTERN, { message: 'Must be valid semver.' }),
+        listingKind: z.literal('INTEGRATION'),
+        publisherDid: z.string().startsWith('did:'),
+        category: z.enum([
+            'sis',
+            'lms',
+            'hris',
+            'credential-source',
+            'registry-adapter',
+            'automation',
+        ]),
+        scopes: z.array(IntegrationScopeRequestValidator).default([]),
+        consentRequirements: z.array(ConsentTierEnum).default([]),
+        capabilities: z.object({
+            provided: z.array(CapabilityEnum).default([]),
+            consumed: z.array(CapabilityEnum).default([]),
+        }),
+        supportedRecordClasses: z.array(RecordClassEnum).default([]),
+        extensionPoints: z.array(IntegrationExtensionPointDeclarationValidator).default([]),
+        endpoints: z
+            .object({
+                connectUrl: z.string().url().optional(),
+                webhookUrl: z.string().url().optional(),
+                healthUrl: z.string().url().optional(),
+                syncUrl: z.string().url().optional(),
+                dashboardUrl: z.string().url().optional(),
+            })
+            .default({}),
+        signature: ManifestSignatureValidator,
+    })
+    .superRefine((manifest, ctx) => {
+        assertCapabilitiesWithinPinnedSet(
+            manifest.apiVersion,
+            [...manifest.capabilities.provided, ...manifest.capabilities.consumed],
+            ctx,
+            ['capabilities']
+        );
+
+        if (
+            manifest.apiVersion !== 'lc.integration/v1.2' &&
+            manifest.supportedRecordClasses.length > 0
+        ) {
+            ctx.addIssue({
+                code: 'custom',
+                message: 'supportedRecordClasses is only available in lc.integration/v1.2.',
+                path: ['supportedRecordClasses'],
+                input: manifest.supportedRecordClasses,
+            });
+        }
+    });
+export type IntegrationManifest = z.infer<typeof IntegrationManifestValidator>;
 
 export const InstallIntentSourceValidator = z.discriminatedUnion('type', [
     z.object({
@@ -284,34 +477,53 @@ export type BundleManifestPreflightRequirement = z.infer<
     typeof BundleManifestPreflightRequirementValidator
 >;
 
-export const BundleManifestValidator = z.object({
-    apiVersion: z.literal('lc.bundle/v1'),
-    id: z.string(),
-    version: z.string(),
-    contains: z.array(BundleManifestMemberValidator),
-    defaultBindings: z.array(BundleManifestDefaultBindingValidator).default([]),
-    preflight: z.array(BundleManifestPreflightRequirementValidator).default([]),
-});
+export const BundleManifestValidator = z
+    .object({
+        apiVersion: z.literal('lc.bundle/v1'),
+        id: z.string(),
+        version: z.string(),
+        contains: z.array(BundleManifestMemberValidator),
+        defaultBindings: z.array(BundleManifestDefaultBindingValidator).default([]),
+        preflight: z.array(BundleManifestPreflightRequirementValidator).default([]),
+        publisherDid: z.string().startsWith('did:'),
+        signature: ManifestSignatureValidator,
+    })
+    .superRefine((manifest, ctx) => {
+        assertCapabilitiesWithinPinnedSet(
+            manifest.apiVersion,
+            manifest.defaultBindings.map(binding => binding.capability),
+            ctx,
+            ['defaultBindings']
+        );
+    });
 export type BundleManifest = z.infer<typeof BundleManifestValidator>;
 
-export const WalletManifestValidator = z.object({
-    apiVersion: z.literal('lc.wallet/v1'),
-    id: z.string(),
-    version: z.string(),
-    listingKind: z.literal('WALLET'),
-    walletName: z.string(),
-    claimProtocols: z.array(WalletProtocolEnum).default([]),
-    platforms: z.array(WalletPlatformEnum).default([]),
-    endpoints: z
-        .object({
-            claimUrl: z.string().url().optional(),
-            inviteUrl: z.string().url().optional(),
-            healthUrl: z.string().url().optional(),
-        })
-        .default({}),
-    provides: z.array(z.literal('wallet-claim')).default([]),
-    supportsApps: z.boolean().default(false),
-});
+export const WalletManifestValidator = z
+    .object({
+        apiVersion: z.literal('lc.wallet/v1'),
+        id: z.string(),
+        version: z.string().regex(SEMVER_PATTERN, { message: 'Must be valid semver.' }),
+        listingKind: z.literal('WALLET'),
+        walletName: z.string(),
+        publisherDid: z.string().startsWith('did:'),
+        claimProtocols: z.array(WalletProtocolEnum).default([]),
+        platforms: z.array(WalletPlatformEnum).default([]),
+        endpoints: z
+            .object({
+                claimUrl: z.string().url().optional(),
+                inviteUrl: z.string().url().optional(),
+                healthUrl: z.string().url().optional(),
+            })
+            .default({}),
+        provides: z.array(CapabilityEnum).default([]),
+        supportsApps: z.boolean().default(false),
+        signature: ManifestSignatureValidator,
+    })
+    .superRefine((manifest, ctx) => {
+        assertCapabilitiesWithinPinnedSet(manifest.apiVersion, manifest.provides, ctx, [
+            'provides',
+        ]);
+    });
 export type WalletManifest = z.infer<typeof WalletManifestValidator>;
 
 export const ConsentDecisionActorValidator = z.discriminatedUnion('type', [

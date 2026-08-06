@@ -22,7 +22,7 @@ type InstallTargetRecord =
     | WorkloadDeploymentType
     | RegistrySubscriptionType;
 
-const readInstallTargetInternal = async (
+export const readInstallTargetInternal = async (
     input: Pick<InstallTargetRecord, 'id' | 'targetType'>
 ): Promise<InstallTargetRecord | null> => {
     switch (input.targetType) {

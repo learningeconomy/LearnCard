@@ -18,6 +18,7 @@ import { AppStoreListingCreateValidator } from 'types/app-store-listing';
 
 import { getUser } from './helpers/getClient';
 import { makeListingInput } from './helpers/app-store.helpers';
+import { buildSignedManifestForKind } from './helpers/manifest.helpers';
 import {
     backfillListingKind,
     getListingKindBackfillVerification,
@@ -184,8 +185,7 @@ describe('AppStoreListing kind migration', () => {
         const version = await createListingVersion(listing.listing_id, {
             version: '1.0.0',
             status: 'DRAFT',
-            manifest_json: JSON.stringify({ manifest: 'stub' }),
-            publisher_did: 'did:web:example.com:publisher',
+            manifest_json: JSON.stringify(await buildSignedManifestForKind('INTEGRATION')),
         });
 
         const byId = await readListingVersionById(version.version_id);
@@ -196,8 +196,17 @@ describe('AppStoreListing kind migration', () => {
         expect(byId?.version_id).toBe(version.version_id);
         expect(byListing).toHaveLength(1);
         expect(byListing[0]?.version).toBe('1.0.0');
+        expect(byListing[0]?.manifest_hash).toBeTruthy();
         expect('updateListingVersion' in createModule).toBe(false);
         expect('deleteListingVersion' in readModule).toBe(false);
+
+        await expect(
+            createListingVersion(listing.listing_id, {
+                version: '1.0.0',
+                status: 'DRAFT',
+                manifest_json: byId?.manifest_json,
+            })
+        ).rejects.toThrow(/immutable ListingVersion/i);
     });
 
     it('preserves kind on ordinary access-layer metadata updates', async () => {

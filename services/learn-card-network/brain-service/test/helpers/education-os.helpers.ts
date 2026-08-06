@@ -19,6 +19,7 @@ import { readAppStoreListingById } from '@accesslayer/app-store-listing/read';
 import { readListingVersionById } from '@accesslayer/listing-version/read';
 import { ListingVersion } from '@models';
 import { neogma } from '@instance';
+import { createSignedListingVersionForKind } from './manifest.helpers';
 import type { EcosystemRole } from '@learncard/types';
 
 import { makeListingInput } from './app-store.helpers';
@@ -138,18 +139,30 @@ export const ensureListedVersion = async (input: {
     listingId: string;
     versionId: string;
     versionNumber: string;
-    manifest: Record<string, unknown>;
+    manifest?: Record<string, unknown>;
+    listingKind?: 'APP' | 'INTEGRATION' | 'WALLET' | 'BUNDLE';
 }): Promise<string> => {
     const existing = await readListingVersionById(input.versionId);
 
     if (!existing) {
-        await ListingVersion.createOne({
-            version_id: input.versionId,
-            version: input.versionNumber,
-            status: 'LISTED',
-            manifest_json: JSON.stringify(input.manifest),
-            created_at: new Date().toISOString(),
-        } as Parameters<typeof ListingVersion.createOne>[0]);
+        if (input.listingKind && input.listingKind !== 'APP') {
+            await createSignedListingVersionForKind({
+                listingId: input.listingId,
+                kind: input.listingKind,
+                versionId: input.versionId,
+                version: input.versionNumber,
+                status: 'LISTED',
+                manifestOverrides: input.manifest,
+            });
+        } else {
+            await ListingVersion.createOne({
+                version_id: input.versionId,
+                version: input.versionNumber,
+                status: 'LISTED',
+                manifest_json: JSON.stringify(input.manifest ?? { ok: true }),
+                created_at: new Date().toISOString(),
+            } as Parameters<typeof ListingVersion.createOne>[0]);
+        }
     } else {
         await neogma.queryRunner.run(
             `MATCH (v:ListingVersion { version_id: $versionId }) SET v.status = 'LISTED'`,
@@ -201,11 +214,8 @@ export const seedPlannableApp = async (
         listingId,
         versionId: input.versionId,
         versionNumber: input.versionNumber ?? '1.0.0',
-        manifest: input.manifest ?? {
-            apiVersion: 'lc.integration/v1',
-            id: input.listingId,
-            version: input.versionNumber ?? '1.0.0',
-        },
+        listingKind,
+        manifest: input.manifest,
     });
 
     return {

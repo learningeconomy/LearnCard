@@ -42,6 +42,7 @@ import { AUTH_GRANT_FULL_ACCESS_SCOPE } from 'src/constants/auth-grant';
 
 import { getClient } from './helpers/getClient';
 import { makeListingInput } from './helpers/app-store.helpers';
+import { createSignedListingVersionForKind } from './helpers/manifest.helpers';
 
 const OWNER_DID = 'did:key:z6MkInstallReconcilerOwner';
 const ADMIN_DID = 'did:key:z6MkInstallReconcilerAdmin';
@@ -88,13 +89,24 @@ const createListingWithVersion = async (kind: 'APP' | 'INTEGRATION' | 'WALLET' =
     await createAppStoreListing(
         makeListingInput({ listing_id: listingId, kind, app_listing_status: 'LISTED' })
     );
-    await ListingVersion.createOne({
-        version_id: versionId,
-        version: '1.0.0',
-        status: 'LISTED',
-        manifest_json: JSON.stringify({ ok: true }),
-        created_at: new Date().toISOString(),
-    });
+
+    if (kind === 'APP') {
+        await ListingVersion.createOne({
+            version_id: versionId,
+            version: '1.0.0',
+            status: 'LISTED',
+            manifest_json: JSON.stringify({ ok: true }),
+            created_at: new Date().toISOString(),
+        });
+    } else {
+        await createSignedListingVersionForKind({
+            listingId,
+            kind,
+            versionId,
+            version: '1.0.0',
+            status: 'LISTED',
+        });
+    }
 
     return { listingId, versionId };
 };
@@ -314,28 +326,6 @@ describe('Install intent reconciler', () => {
     it('uses wallet manifest healthUrl observation to degrade unhealthy wallet targets', async () => {
         const ecosystem = await createOperatorEcosystem();
         const { listingId, versionId } = await createListingWithVersion('WALLET');
-        await neogma.queryRunner.run(
-            `MATCH (version:ListingVersion { version_id: $versionId })
-             SET version.manifest_json = $manifest`,
-            {
-                versionId,
-                manifest: JSON.stringify({
-                    apiVersion: 'lc.wallet/v1',
-                    id: listingId,
-                    version: '1.0.0',
-                    listingKind: 'WALLET',
-                    walletName: 'LearnCard',
-                    claimProtocols: ['oid4vci'],
-                    platforms: ['ios', 'web'],
-                    endpoints: {
-                        claimUrl: 'https://wallet.example/claim',
-                        healthUrl: 'https://wallet.example/health',
-                    },
-                    provides: ['wallet-claim'],
-                    supportsApps: true,
-                }),
-            }
-        );
 
         const fetchSpy = vi.spyOn(globalThis, 'fetch');
         fetchSpy

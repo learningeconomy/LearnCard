@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { describe, it, beforeAll, beforeEach, afterAll, expect } from 'vitest';
 
 import { getClient, getUser } from './helpers/getClient';
@@ -34,6 +35,10 @@ import {
 } from '@accesslayer/app-store-listing/relationships/read';
 import { createIntegration } from '@accesslayer/integration/create';
 import { associateIntegrationWithProfile } from '@accesslayer/integration/relationships/create';
+import {
+    createSignedListingVersionForKind,
+    createUnsignedListingVersionForKind,
+} from './helpers/manifest.helpers';
 
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
@@ -1275,6 +1280,50 @@ describe('AppStoreListing', () => {
 
                 const archived = await readAppStoreListingById(listingId);
                 expect(archived?.app_listing_status).toBe('ARCHIVED');
+            });
+
+            it('adminUpdateListingStatus rejects unsigned publish attempts for signed-manifest listing kinds', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId, {
+                    kind: 'WALLET',
+                });
+
+                await createUnsignedListingVersionForKind({
+                    listingId,
+                    kind: 'WALLET',
+                    versionId: `wallet-version-${randomUUID()}`,
+                });
+                await userA.clients.fullAuth.appStore.submitForReview({ listingId });
+
+                await expect(
+                    adminUser.clients.fullAuth.appStore.adminUpdateListingStatus({
+                        listingId,
+                        status: 'LISTED',
+                    })
+                ).rejects.toThrow(
+                    /cannot be published without a LISTED signed manifest version|not publishable/i
+                );
+            });
+
+            it('adminUpdateListingStatus allows signed publish attempts for signed-manifest listing kinds', async () => {
+                const integrationId = await seedIntegrationViaRouter(userA);
+                const listingId = await seedListingViaRouter(userA, integrationId, {
+                    kind: 'WALLET',
+                });
+
+                await createSignedListingVersionForKind({
+                    listingId,
+                    kind: 'WALLET',
+                    versionId: `wallet-version-${randomUUID()}`,
+                });
+                await userA.clients.fullAuth.appStore.submitForReview({ listingId });
+
+                await expect(
+                    adminUser.clients.fullAuth.appStore.adminUpdateListingStatus({
+                        listingId,
+                        status: 'LISTED',
+                    })
+                ).resolves.toBe(true);
             });
 
             it('adminUpdatePromotionLevel - admin can update promotion level', async () => {

@@ -19,6 +19,7 @@ export const ListingVersion = ModelFactory<ListingVersionType, ListingVersionRel
             version: { type: 'string', required: true },
             status: { type: 'string', required: true },
             manifest_json: { type: 'string', required: false },
+            manifest_hash: { type: 'string', required: false },
             publisher_did: { type: 'string', required: false },
             signature: { type: 'string', required: false },
             review_snapshot_json: { type: 'string', required: false },

@@ -5,6 +5,7 @@ export const ListingVersionValidator = z.object({
     version: z.string(),
     status: z.string(),
     manifest_json: z.string().optional(),
+    manifest_hash: z.string().optional(),
     publisher_did: z.string().optional(),
     signature: z.string().optional(),
     review_snapshot_json: z.string().optional(),

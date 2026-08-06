@@ -52,6 +52,7 @@ import {
     countInstalledAppsForProfile,
     checkIfProfileInstalledApp,
 } from '@accesslayer/app-store-listing/read';
+import { readListingVersionsForListing } from '@accesslayer/listing-version/read';
 import { updateAppStoreListing } from '@accesslayer/app-store-listing/update';
 import { deleteAppStoreListing } from '@accesslayer/app-store-listing/delete';
 import {
@@ -137,6 +138,10 @@ import {
     handleGetCountersEvent,
 } from '@helpers/app-counter.helpers';
 import { filterListingsByCatalogPolicy } from '@helpers/catalog-policy.helpers';
+import {
+    assertSignedListingVersionOrThrow,
+    listingKindRequiresSignedManifest,
+} from '@helpers/manifest-signature.helpers';
 
 // =============================================================================
 // VALIDATION HELPERS
@@ -2930,6 +2935,26 @@ export const appStoreRouter = t.router({
 
             const listing = await getListingOrThrow(input.listingId);
             const previousStatus = listing.app_listing_status;
+
+            if (input.status === 'LISTED' && listingKindRequiresSignedManifest(listing.kind)) {
+                const versions = await readListingVersionsForListing(listing.listing_id);
+                const listedVersions = versions.filter(version => version.status === 'LISTED');
+
+                if (listedVersions.length === 0) {
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message: `Listing ${listing.listing_id} cannot be published without a LISTED signed manifest version.`,
+                    });
+                }
+
+                for (const version of listedVersions) {
+                    await assertSignedListingVersionOrThrow(
+                        listing.kind,
+                        version,
+                        `Listing ${listing.listing_id} version ${version.version_id} is not publishable`
+                    );
+                }
+            }
 
             const result = await updateAppStoreListing(listing, {
                 app_listing_status: input.status,

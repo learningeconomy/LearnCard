@@ -4,8 +4,10 @@ import {
     ApprovalArtifactValidator,
     BindingValidator,
     BundleManifestValidator,
+    CAPABILITY_TABLE_VERSION,
     ConsentDecisionRecordValidator,
     EntitlementPolicyValidator,
+    IntegrationManifestValidator,
     InstallIntentValidator,
     WalletManifestValidator,
 } from '../src/education-os';
@@ -172,6 +174,7 @@ describe('@learncard/types EducationOS validators', () => {
             apiVersion: 'lc.bundle/v1',
             id: 'bundle_1',
             version: '1.0.0',
+            publisherDid: 'did:key:z6Mkpublisher',
             contains: [
                 {
                     declarationId: 'issuer',
@@ -189,6 +192,11 @@ describe('@learncard/types EducationOS validators', () => {
                 },
             ],
             preflight: [{ entitlementKey: 'issuance', isolationTier: 'DEDICATED_STACK' }],
+            signature: {
+                alg: 'EdDSA',
+                sig: 'bundle-signature',
+                verificationMethod: 'did:key:z6Mkpublisher#z6Mkpublisher',
+            },
         });
 
         expect(parsed.apiVersion).toBe('lc.bundle/v1');
@@ -201,6 +209,7 @@ describe('@learncard/types EducationOS validators', () => {
             version: '1.0.0',
             listingKind: 'WALLET',
             walletName: 'LearnCard',
+            publisherDid: 'did:key:z6Mkwallet',
             claimProtocols: ['chapi', 'oid4vci'],
             platforms: ['ios', 'android', 'web'],
             endpoints: {
@@ -210,9 +219,85 @@ describe('@learncard/types EducationOS validators', () => {
             },
             provides: ['wallet-claim'],
             supportsApps: true,
+            signature: {
+                alg: 'EdDSA',
+                sig: 'wallet-signature',
+                verificationMethod: 'did:key:z6Mkwallet#z6Mkwallet',
+            },
         });
 
         expect(parsed.apiVersion).toBe('lc.wallet/v1');
+    });
+
+    it('round-trips IntegrationManifest v1.2', () => {
+        const parsed = roundTrip(IntegrationManifestValidator, {
+            apiVersion: 'lc.integration/v1.2',
+            id: 'com.example.roster-sync',
+            version: '1.2.3',
+            listingKind: 'INTEGRATION',
+            publisherDid: 'did:key:z6Mkintegration',
+            category: 'sis',
+            scopes: [
+                {
+                    resource: 'group',
+                    action: 'sync',
+                    selectorKind: 'tree',
+                    selectorValue: '$installEcosystemId',
+                    reason: 'Import sections',
+                },
+            ],
+            consentRequirements: ['directory', 'employment-record'],
+            capabilities: {
+                provided: ['record-provisioning'],
+                consumed: ['roster-source'],
+            },
+            supportedRecordClasses: ['academic', 'employment'],
+            extensionPoints: [
+                {
+                    point: 'roster.import',
+                    annotations: { readOnly: false, destructive: false, idempotent: true },
+                },
+            ],
+            endpoints: {
+                connectUrl: 'https://example.com/connect',
+                healthUrl: 'https://example.com/health',
+                syncUrl: 'https://example.com/sync',
+            },
+            signature: {
+                alg: 'EdDSA',
+                sig: 'integration-signature',
+                verificationMethod: 'did:key:z6Mkintegration#z6Mkintegration',
+            },
+        });
+
+        expect(parsed.apiVersion).toBe('lc.integration/v1.2');
+    });
+
+    it('rejects capabilities outside the pinned wallet capability set', () => {
+        expect(() =>
+            WalletManifestValidator.parse({
+                apiVersion: 'lc.wallet/v1',
+                id: 'wallet.learncard',
+                version: '1.0.0',
+                listingKind: 'WALLET',
+                walletName: 'LearnCard',
+                publisherDid: 'did:key:z6Mkwallet',
+                claimProtocols: ['chapi'],
+                platforms: ['web'],
+                endpoints: {},
+                provides: ['record-provisioning'],
+                supportsApps: false,
+                signature: {
+                    alg: 'EdDSA',
+                    sig: 'wallet-signature',
+                    verificationMethod: 'did:key:z6Mkwallet#z6Mkwallet',
+                },
+            })
+        ).toThrow(/pinned capability set v1/i);
+    });
+
+    it('tracks the additive capability-set register at v1.2', () => {
+        expect(CAPABILITY_TABLE_VERSION).toBe('v1.2');
     });
 
     it('round-trips ConsentDecisionRecord', () => {
