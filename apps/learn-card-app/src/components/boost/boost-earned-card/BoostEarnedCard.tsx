@@ -72,6 +72,7 @@ type BoostEarnedCardProps = {
     className?: string;
     loading?: boolean;
     isInSkillsModal?: boolean;
+    /** Hides the options trigger on the card without disabling options in the credential preview. */
     hideOptionsMenu?: boolean;
     textColor?: string;
     isClrChildCredential?: boolean;
@@ -282,10 +283,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             lifecycleStatus,
             handleCloseModal: () => closeModal(),
             handleShareBoost: () => presentShareBoostLink(),
-            onDotsClick: () => {
-                if (hideOptionsMenu) return;
-                handleOptionsMenu();
-            },
+            onDotsClick: handleOptionsMenu,
             subjectDID: idSubjectDID,
             subjectImageComponent: subjectProfileImageElement,
             issuerImageComponent: issuerProfileImageElement,
@@ -338,10 +336,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             handleCloseModal: () => closeModal(),
             subjectImageComponent: subjectProfileImageElement,
             issuerImageComponent: issuerProfileImageElement,
-            onDotsClick: () => {
-                if (hideOptionsMenu) return;
-                handleOptionsMenu();
-            },
+            onDotsClick: handleOptionsMenu,
             customThumbComponent: (
                 <CredentialBadgeNew
                     achievementType={achievementType}
