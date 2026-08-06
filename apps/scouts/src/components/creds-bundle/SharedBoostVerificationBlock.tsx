@@ -1,19 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
 
-import {
-    IonPage,
-    IonGrid,
-    IonRow,
-    IonContent,
-    IonHeader,
-    IonToolbar,
-    IonModal,
-    IonButtons,
-    IonButton,
-    IonTitle,
-} from '@ionic/react';
-import { useIsLoggedIn, useToast, ToastTypeEnum } from 'learn-card-base';
+import { IonPage, IonContent, IonHeader, IonToolbar } from '@ionic/react';
+import { useIsLoggedIn, useToast, ToastTypeEnum, useModal, ModalTypes } from 'learn-card-base';
 
 import X from '../svgs/X';
 import InfoIcon from '../svgs/InfoIcon';
@@ -61,9 +50,8 @@ const SharedBoostVerificationBlock: React.FC<{
 }) => {
     const isLoggedIn = useIsLoggedIn();
     const { presentToast } = useToast();
+    const { newModal, closeModal } = useModal();
     const [viewJson, setViewJson] = useState<boolean>(false);
-    const [isJsonModalOpen, setIsJsonModalOpen] = useState<boolean>(false);
-    const jsonModalRef = useRef<HTMLIonModalElement>(null);
 
     const jsonPrettyPrint = JSON.stringify(boost, null, 2);
 
@@ -233,37 +221,35 @@ const SharedBoostVerificationBlock: React.FC<{
         );
     }
 
-    const renderJsonModal = () => (
-        <IonModal
-            isOpen={isJsonModalOpen}
-            onDidDismiss={() => setIsJsonModalOpen(false)}
-            ref={jsonModalRef}
-        >
-            <IonHeader>
-                <IonToolbar>
-                    <IonTitle>JSON View</IonTitle>
-                    <IonButtons slot="end">
-                        <IonButton onClick={() => setIsJsonModalOpen(false)}>
-                            <X className="text-red-600 w-[20px] h-[20px] mr-2" /> Close
-                        </IonButton>
-                    </IonButtons>
-                </IonToolbar>
-            </IonHeader>
-            <IonContent className="ion-padding">
-                <div className="w-full flex items-center justify-end mb-4">
+    const openJsonModal = () => {
+        if (!boost) return;
+
+        newModal(
+            <>
+                <div className="flex items-center justify-between w-full px-4 py-3 border-b border-grayscale-200 bg-white">
+                    <h2 className="text-grayscale-900 text-base font-medium m-0">JSON View</h2>
+                    <button
+                        onClick={() => closeModal()}
+                        type="button"
+                        className="flex items-center"
+                    >
+                        <X className="text-red-600 w-[20px] h-[20px] mr-2" /> Close
+                    </button>
+                </div>
+                <div className="w-full flex items-center justify-end px-4 pt-4">
                     <button onClick={copyToClipBoard} type="button" className="flex items-center">
                         <CopyStack className="text-[#2F99F0] w-[24px] h-[24px] mr-2" />
                         Copy JSON
                     </button>
                 </div>
-                {boost && (
-                    <pre className="w-full overflow-x-auto overflow-y-auto max-h-[calc(100vh-200px)] text-grayscale-900">
-                        {jsonPrettyPrint}
-                    </pre>
-                )}
-            </IonContent>
-        </IonModal>
-    );
+                <pre className="w-full overflow-x-auto overflow-y-auto max-h-[calc(100vh-200px)] px-4 pb-4 text-grayscale-900">
+                    {jsonPrettyPrint}
+                </pre>
+            </>,
+            {},
+            { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
+        );
+    };
 
     return (
         <div className={containerStyles}>
@@ -312,7 +298,7 @@ const SharedBoostVerificationBlock: React.FC<{
                         <button
                             type="button"
                             className="w-full rounded-[12px] text-left mt-2 text-[#2F99F0] font-notoSans font-[400] mb-2"
-                            onClick={() => boost && setIsJsonModalOpen(true)}
+                            onClick={openJsonModal}
                             disabled={!boost}
                         >
                             View JSON
@@ -326,8 +312,6 @@ const SharedBoostVerificationBlock: React.FC<{
                         </button>
                     </div>
                 </div>
-
-                {renderJsonModal()}
             </div>
         </div>
     );

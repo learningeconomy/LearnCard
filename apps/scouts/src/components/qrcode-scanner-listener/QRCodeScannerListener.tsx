@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { BarcodeScanner, BarcodeFormat, LensFacing } from '@capacitor-mlkit/barcode-scanning';
 import { Capacitor } from '@capacitor/core';
 
-import { useWallet } from 'learn-card-base';
+import { useWallet, useModal, ModalTypes, getLogger } from 'learn-card-base';
 
-import { IonModal, IonContent, IonPage, IonSpinner } from '@ionic/react';
 import { ClaimBoostModal } from '../../pages/claimBoost/ClaimBoost';
 import MiniGhost from 'learn-card-base/assets/images/emptystate-ghost.png';
 import AddContactView, {
@@ -12,21 +11,12 @@ import AddContactView, {
 } from '../../pages/addressBook/addContactView/AddContactView';
 
 import QRCodeScannerStore from 'learn-card-base/stores/QRCodeScannerStore';
-import { AddressBookContact } from '../../pages/addressBook/addressBookHelpers';
-import { getLogger } from 'learn-card-base';
 const log = getLogger('qr-code-scanner-listener');
 
 export const QRCodeScannerListener: React.FC = () => {
     const { initWallet } = useWallet();
+    const { newModal, closeModal } = useModal();
     const showScanner = QRCodeScannerStore.useTracked.showScanner();
-
-    const [isOpen, setIsOpen] = useState<boolean>(false);
-    const [contact, setContact] = useState<AddressBookContact | null>(null);
-
-    const [isClaimModalOpen, setIsClaimModalOpen] = useState<boolean>(false);
-    const [boost, setBoost] = useState<{ uri: string; challenge: string } | null>(null);
-
-    const [loading, setLoading] = useState<boolean>(false);
 
     const handleStartScanning = async () => {
         return new Promise(async resolve => {
@@ -43,14 +33,40 @@ export const QRCodeScannerListener: React.FC = () => {
         });
     };
 
+    const presentScannerFailedModal = () => {
+        newModal(
+            <section className="flex flex-col items-center text-center justify-center h-[90%]">
+                <img
+                    src={MiniGhost}
+                    alt="ghost"
+                    className="relative max-w-[250px] m-auto mb-0"
+                />
+                <h1 className="text-center text-3xl font-bold text-grayscale-800 m-0 p-0 mt-4">
+                    Eeek!
+                </h1>
+                <strong className="text-center font-medium text-grayscale-600 m-0 p-0">
+                    An error ocurred!
+                </strong>
+                <div className="w-full flex items-center justify-center mt-8">
+                    <button
+                        onClick={() => closeModal()}
+                        className="text-grayscale-900 text-center text-sm"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </section>,
+            { hideButton: true, hideDimmer: true },
+            { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
+        );
+    };
+
     const handleScan = async (qrCodeValue: string) => {
         const wallet = await initWallet();
         await handleCancelScanning();
 
         try {
             if (qrCodeValue) {
-                await handleCancelScanning();
-
                 const query = new URLSearchParams(qrCodeValue);
 
                 let profileId = null;
@@ -64,8 +80,15 @@ export const QRCodeScannerListener: React.FC = () => {
                 const isLCNetworkUrl = userDid.includes(`did:web:scoutnetwork.org`);
 
                 if (boostUri && challenge) {
-                    setBoost({ uri: boostUri, challenge: challenge });
-                    setIsClaimModalOpen(true);
+                    newModal(
+                        <ClaimBoostModal
+                            uri={boostUri}
+                            claimChallenge={challenge}
+                            dismissClaimModal={() => closeModal()}
+                        />,
+                        { hideButton: true },
+                        { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                    );
                     return;
                 } else if (isLCNetworkUrl) {
                     const regex = /(users:)(.*)/;
@@ -73,30 +96,26 @@ export const QRCodeScannerListener: React.FC = () => {
 
                     if (profileId) {
                         try {
-                            setLoading(true);
                             const user = await wallet?.invoke?.getProfile(profileId);
                             if (user) {
-                                setContact(user);
-                                setIsOpen(true);
-                                setLoading(false);
+                                newModal(
+                                    <AddContactView
+                                        handleCancel={() => closeModal()}
+                                        user={user}
+                                        mode={AddContactViewMode.requestConnection}
+                                    />,
+                                    { hideButton: true, hideDimmer: true },
+                                    { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
+                                );
                                 return;
                             }
                         } catch (err) {
-                            setIsOpen(true);
-                            setLoading(false);
+                            log.debug('❌❌ scanner::error ❌❌', err);
                         }
+                        presentScannerFailedModal();
                     }
                 } else {
-                    // if (!isLCNetworkUrl ) {
-                    setContact(null);
-                    setIsOpen(true);
-
-                    setBoost(null);
-                    setIsClaimModalOpen(false);
-
-                    setLoading(false);
-                    return;
-                    // }
+                    presentScannerFailedModal();
                 }
             }
         } catch (error) {
@@ -134,64 +153,7 @@ export const QRCodeScannerListener: React.FC = () => {
         }
     }, [showScanner]);
 
-    return (
-        <>
-            <IonModal
-                isOpen={isOpen}
-                className="center-modal add-contact-modal"
-                backdropDismiss={false}
-                showBackdrop={false}
-            >
-                <IonPage>
-                    <IonContent fullscreen>
-                        {loading && (
-                            <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
-                                <IonSpinner color="black" />
-                                <p className="mt-2 font-bold text-lg">Loading...</p>
-                            </section>
-                        )}
-                        {!loading && contact && (
-                            <AddContactView
-                                handleCancel={() => setIsOpen(false)}
-                                user={contact}
-                                mode={AddContactViewMode.requestConnection}
-                            />
-                        )}
-                        {!loading && !contact && (
-                            <section className="flex flex-col items-center text-center justify-center h-[90%]">
-                                <img
-                                    src={MiniGhost}
-                                    alt="ghost"
-                                    className="relative max-w-[250px] m-auto mb-0"
-                                />
-                                <h1 className="text-center text-3xl font-bold text-grayscale-800 m-0 p-0 mt-4">
-                                    Eeek!
-                                </h1>
-                                <strong className="text-center font-medium text-grayscale-600 m-0 p-0">
-                                    An error ocurred!
-                                </strong>
-                                <div className="w-full flex items-center justify-center mt-8">
-                                    <button
-                                        onClick={() => setIsOpen(false)}
-                                        className="text-grayscale-900 text-center text-sm"
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
-                            </section>
-                        )}
-                    </IonContent>
-                </IonPage>
-            </IonModal>
-            <IonModal isOpen={isClaimModalOpen} backdropDismiss={false} showBackdrop={false}>
-                <ClaimBoostModal
-                    uri={boost?.uri}
-                    claimChallenge={boost?.challenge}
-                    dismissClaimModal={() => setIsClaimModalOpen(false)}
-                />
-            </IonModal>
-        </>
-    );
+    return null;
 };
 
 export default QRCodeScannerListener;
