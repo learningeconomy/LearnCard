@@ -5,11 +5,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { IonApp, setupIonicReact } from '@ionic/react';
 import {
     ModalsProvider,
-    Modals,
     TenantConfigProvider,
     DEFAULT_LEARNCARD_TENANT_CONFIG,
 } from 'learn-card-base';
-import { LocaleProvider } from '../src/i18n';
 import { Buffer } from 'buffer';
 
 (window as any).Buffer = (window as any).Buffer ?? Buffer;
@@ -33,22 +31,6 @@ setupIonicReact({ swipeBackEnabled: false });
 const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
 });
-
-const StorybookContent: React.FC<{ Story: React.ComponentType }> = ({ Story }) => {
-    const [portalReady, setPortalReady] = React.useState(false);
-
-    React.useEffect(() => setPortalReady(true), []);
-
-    return (
-        <>
-            <div id="modal-mid-root" />
-            <div className="font-poppins bg-grayscale-100 h-screen overflow-y-auto">
-                <Story />
-            </div>
-            {portalReady && <Modals />}
-        </>
-    );
-};
 
 const preview: Preview = {
     parameters: {
@@ -76,18 +58,21 @@ const preview: Preview = {
                     TenantConfigProvider,
                     { config: DEFAULT_LEARNCARD_TENANT_CONFIG },
                     React.createElement(
-                        LocaleProvider,
-                        null,
+                        QueryClientProvider,
+                        { client: queryClient },
                         React.createElement(
-                            QueryClientProvider,
-                            { client: queryClient },
+                            MemoryRouter,
+                            null,
                             React.createElement(
-                                MemoryRouter,
+                                ModalsProvider,
                                 null,
                                 React.createElement(
-                                    ModalsProvider,
-                                    null,
-                                    React.createElement(StorybookContent, { Story })
+                                    'div',
+                                    {
+                                        className:
+                                            'font-poppins bg-grayscale-100 h-screen overflow-y-auto',
+                                    },
+                                    React.createElement(Story)
                                 )
                             )
                         )
