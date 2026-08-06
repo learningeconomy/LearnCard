@@ -66,7 +66,6 @@
       "name": "learn-card-app",
       "version": "1.98.0",
       "dependencies": {
-        "@capacitor-community/in-app-review": "^8.0.0",
         "@capacitor-community/media": "9.1.0",
         "@capacitor-community/sqlite": "8.1.0",
         "@capacitor-firebase/analytics": "8.2.0",
@@ -759,7 +758,6 @@
         "serverless-plugin-warmup": "^8.1.0",
         "simple-git": "^3.36.0",
         "use-immer": "^0.7.0",
-        "zod": "4.1.13",
       },
       "devDependencies": {
         "@types/aws-lambda": "^8.10.106",
@@ -772,6 +770,7 @@
         "@types/react": "^17.0.2",
         "nodemon": "^2.0.16",
         "serverless-plugin-typescript": "^2.1.0",
+        "shx": "^0.3.4",
         "ts-node": "^10.8.1",
       },
     },
@@ -2181,7 +2180,6 @@
   },
   "patchedDependencies": {
     "libsodium-wrappers@0.7.16": "patches/libsodium-wrappers@0.7.16.patch",
-    "@capacitor-community/in-app-review@8.0.0": "patches/@capacitor-community%2Fin-app-review@8.0.0.patch",
     "capacitor-plugin-safe-area@5.0.0": "patches/capacitor-plugin-safe-area@5.0.0.patch",
   },
   "overrides": {
@@ -2669,8 +2667,6 @@
     "@braidai/lang": ["@braidai/lang@1.1.2", "", {}, "sha512-qBcknbBufNHlui137Hft8xauQMTZDKdophmLFv05r2eNmdIv/MlPuP4TdUknHG68UdWLgVZwgxVe735HzJNIwA=="],
 
     "@braintree/sanitize-url": ["@braintree/sanitize-url@7.1.2", "", {}, "sha512-jigsZK+sMF/cuiB7sERuo9V7N9jx+dhmHHnQyDSVdpZwVutaBu7WvNYqMDLSgFgfB30n452TP3vjDAvFC973mA=="],
-
-    "@capacitor-community/in-app-review": ["@capacitor-community/in-app-review@8.0.0", "", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-AYpEkIjdv27WGS3hnlc7xAQ1BhaBvD2svgQBfHF4P2Olw1N6a7MSCOQC6O4SuxmdBdJ2fM6uFeo1jyNjKLtIPw=="],
 
     "@capacitor-community/media": ["@capacitor-community/media@9.1.0", "", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-HTd+n2pPBE7otRqYzr09sOrAb59t/bVzCME19dVixKmDP09rxB+Mt6aj0c5AhMoKS8Jw4712r5tk+gifHTlW/Q=="],
 

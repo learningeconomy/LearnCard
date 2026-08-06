@@ -8,7 +8,6 @@ import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { Capacitor } from '@capacitor/core';
 import { asyncWithLDProvider, basicLogger } from 'launchdarkly-react-client-sdk';
 import { TenantConfigProvider } from 'learn-card-base';
-import { registerExternalUrlOpener } from 'learn-card-base/helpers/externalUrlOpener';
 import { bootstrapTenantConfig } from './config/bootstrapTenantConfig';
 import { getLaunchDarklyConfig } from './constants/runtimeLaunchDarkly';
 import App from './App';
@@ -16,14 +15,16 @@ import App from './App';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import reportWebVitals from './reportWebVitals';
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
+import { installInsetSimulator } from 'learn-card-base/dev/simulateInsets';
 import * as Sentry from '@sentry/browser';
 
 (window as any).Buffer = Buffer;
 
-(async () => {
-    // Route external links through Capacitor's in-app browser when running natively.
-    registerExternalUrlOpener();
+// Dev-only: simulate device safe-area insets via ?insets so band bugs are
+// visible on desktop. Must run before React renders (sets CSS vars on <html>).
+installInsetSimulator();
 
+(async () => {
     // Resolve and bootstrap TenantConfig before anything else.
     // This sets up Firebase, auth config, network store, Sentry, and Userflow.
     const tenantConfig = await bootstrapTenantConfig();
