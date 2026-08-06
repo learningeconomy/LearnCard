@@ -15,9 +15,14 @@ import App from './App';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import reportWebVitals from './reportWebVitals';
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
+import { installInsetSimulator } from 'learn-card-base/dev/simulateInsets';
 import * as Sentry from '@sentry/browser';
 
 (window as any).Buffer = Buffer;
+
+// Dev-only: simulate device safe-area insets via ?insets so band bugs are
+// visible on desktop. Must run before React renders (sets CSS vars on <html>).
+installInsetSimulator();
 
 (async () => {
     // Resolve and bootstrap TenantConfig before anything else.

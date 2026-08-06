@@ -101,3 +101,17 @@ jobs:
             - name: Run frozen-memo guard
               working-directory: apps/learn-card-app
               run: bun run i18n:check-memos
+
+    # Pure-Node grep gate (no install): safe-area primitives (env(safe-area-*),
+    # --ion-safe-area-*, --lc-safe-*, useSafeArea, …) may only be referenced
+    # inside the surface layer. Legacy call sites are allowlisted shrink-only in
+    # scripts/safe-area-allowlist.json — see LC-1962 design doc.
+    SafeAreaGate:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+
+            - name: Safe-area ownership gate
+              run: node scripts/check-safe-area.mjs
