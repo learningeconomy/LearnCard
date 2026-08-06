@@ -1,13 +1,9 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { fireEvent, render } from '@testing-library/react';
+import { render } from '@testing-library/react';
 
-const { credentialList, openOptions } = vi.hoisted(() => ({
-    credentialList: { value: undefined as unknown },
-    openOptions: vi.fn(),
-}));
+const { credentialList } = vi.hoisted(() => ({ credentialList: { value: undefined as any } }));
 
-// Dynamic import avoids resolving the heavy learn-card-base barrel in this unit test.
 vi.mock('learn-card-base', async () => ({
     ...(await (await import('../../../test-utils/mockLearnCardBase')).learnCardBaseEnumMock()),
     useGetCredentialList: () => ({
@@ -21,23 +17,8 @@ vi.mock('learn-card-base', async () => ({
 }));
 vi.mock('learn-card-base/hooks/useOnScreen', () => ({ default: () => false }));
 vi.mock('../../../components/boost/boost-earned-card/BoostEarnedCard', () => ({
-    default: ({
-        record,
-        hideOptionsMenu,
-    }: {
-        record: { uri: string; title?: string };
-        hideOptionsMenu?: boolean;
-    }) => (
-        <div data-testid="card">
-            {record.title}
-            {!hideOptionsMenu && (
-                <button
-                    type="button"
-                    aria-label={`More options for ${record.title}`}
-                    onClick={() => openOptions(record.uri)}
-                />
-            )}
-        </div>
+    default: ({ record }: { record: { title?: string } }) => (
+        <div data-testid="card">{record.title}</div>
     ),
 }));
 
@@ -81,28 +62,6 @@ describe('AllCredentialsModal', () => {
         expect(getByText('Old')).toBeTruthy();
         expect(queryByText('Hidden')).toBeNull();
         expect(getAllByTestId('card').length).toBe(2);
-    });
-
-    it('opens credential options from the all credentials view', () => {
-        credentialList.value = {
-            pages: [
-                {
-                    records: [
-                        {
-                            uri: 'a',
-                            title: 'Diploma',
-                            category: 'Achievement',
-                            date: isoDaysAgo(0),
-                        },
-                    ],
-                },
-            ],
-        };
-
-        const { getByRole } = render(<AllCredentialsModal onClose={vi.fn()} />);
-        fireEvent.click(getByRole('button', { name: 'More options for Diploma' }));
-
-        expect(openOptions).toHaveBeenCalledWith('a');
     });
 
     it('shows an empty state when there are no credentials', () => {

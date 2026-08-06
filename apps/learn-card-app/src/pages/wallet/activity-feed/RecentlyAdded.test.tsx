@@ -1,20 +1,9 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { fireEvent, render } from '@testing-library/react';
+import { render } from '@testing-library/react';
 
-type TestRecord = {
-    uri: string;
-    title?: string;
-    category?: string;
-    date?: string;
-};
+const { credentialList } = vi.hoisted(() => ({ credentialList: { value: undefined as any } }));
 
-const { credentialList, openOptions } = vi.hoisted(() => ({
-    credentialList: { value: undefined as unknown },
-    openOptions: vi.fn(),
-}));
-
-// Dynamic import avoids resolving the heavy learn-card-base barrel in this unit test.
 vi.mock('learn-card-base', async () => ({
     ...(await (await import('../../../test-utils/mockLearnCardBase')).learnCardBaseEnumMock()),
     useGetCredentialList: () => ({ data: credentialList.value }),
@@ -23,32 +12,17 @@ vi.mock('learn-card-base', async () => ({
     categoryMetadata: {},
 }));
 // BoostEarnedCard and AllCredentialsModal are heavy (modal system, previews);
-// stub them so this test stays focused on the strip's behavior.
+// stub them so this test stays focused on the strip's filter/sort/cap behavior.
 vi.mock('../../../components/boost/boost-earned-card/BoostEarnedCard', () => ({
-    default: ({
-        record,
-        hideOptionsMenu,
-    }: {
-        record: { uri: string; title?: string };
-        hideOptionsMenu?: boolean;
-    }) => (
-        <div data-testid="recent-tile">
-            {record.title}
-            {!hideOptionsMenu && (
-                <button
-                    type="button"
-                    aria-label={`More options for ${record.title}`}
-                    onClick={() => openOptions(record.uri)}
-                />
-            )}
-        </div>
+    default: ({ record }: { record: { title?: string } }) => (
+        <div data-testid="recent-tile">{record.title}</div>
     ),
 }));
 vi.mock('./AllCredentialsModal', () => ({ AllCredentialsModal: () => null }));
 
 import { RecentlyAdded } from './RecentlyAdded';
 
-const withRecords = (records: TestRecord[]) => {
+const withRecords = (records: any[]) => {
     credentialList.value = { pages: [{ records }] };
 };
 
@@ -67,15 +41,6 @@ describe('RecentlyAdded', () => {
         const { getByText, queryByText } = render(<RecentlyAdded />);
         expect(getByText('Diploma')).toBeTruthy();
         expect(queryByText('Hidden Data')).toBeNull();
-    });
-
-    it('opens credential options from the passport overview', () => {
-        withRecords([{ uri: 'a', title: 'Diploma', category: 'Achievement', date: '2026-06-10' }]);
-
-        const { getByRole } = render(<RecentlyAdded />);
-        fireEvent.click(getByRole('button', { name: 'More options for Diploma' }));
-
-        expect(openOptions).toHaveBeenCalledWith('a');
     });
 
     it('sorts newest-first and caps at five tiles', () => {

@@ -359,6 +359,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
                                           }
                                           boostPageViewMode={BoostPageViewMode.List}
                                           useWrapper={false}
+                                          hideOptionsMenu
                                           relativeDate
                                           compact
                                       />

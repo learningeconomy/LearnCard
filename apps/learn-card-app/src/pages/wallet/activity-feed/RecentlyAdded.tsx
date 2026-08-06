@@ -72,6 +72,7 @@ export const RecentlyAdded: React.FC = () => {
                                         ?.defaultImageSrc
                                 }
                                 useWrapper={false}
+                                hideOptionsMenu
                             />
                         </div>
                     );
