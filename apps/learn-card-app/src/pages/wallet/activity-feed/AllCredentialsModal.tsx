@@ -87,7 +87,6 @@ export const AllCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose
                                                 ?.defaultImageSrc
                                         }
                                         useWrapper={false}
-                                        hideOptionsMenu
                                     />
                                 );
                             })}
