@@ -3,8 +3,6 @@ import React, { useState } from 'react';
 import AlignmentRow from './AlignmentRow';
 import InfoIcon from 'learn-card-base/svgs/InfoIcon';
 import InfoBox from './InfoBox';
-import SkillCompetencyAlignmentCard from './SkillCompetencyAlignmentCard';
-import { isSkillCompetencyAlignment } from 'learn-card-base';
 
 type Alignment = {
     targetUrl: string;
@@ -27,9 +25,6 @@ const isOpenSyllabus = (a: Alignment): boolean =>
     a.targetFramework === 'Open Syllabus' ||
     a.targetFramework === 'Open Syllabus Field Classification';
 
-const isSkillOrCompetency = (a: Alignment): boolean =>
-    isSkillCompetencyAlignment({ targetType: a.targetType, targetUrl: a.targetUrl });
-
 const AlignmentsBox: React.FC<AlignmentsBoxProps> = ({ alignment, style }) => {
     const [showInfo, setShowInfo] = useState(false);
     const alignmentText = `
@@ -42,9 +37,8 @@ const AlignmentsBox: React.FC<AlignmentsBoxProps> = ({ alignment, style }) => {
     );
     if (list.length === 0) return null;
 
-    const skillCompetencies = list.filter(isSkillOrCompetency);
-    const verified = list.filter(a => !isSkillOrCompetency(a) && isCredentialEngine(a));
-    const other = list.filter(a => !isSkillOrCompetency(a) && !isCredentialEngine(a));
+    const verified = list.filter(isCredentialEngine);
+    const other = list.filter(a => !isCredentialEngine(a));
 
     const renderRow = (object: Alignment, index: number, isVerified: boolean) => (
         <AlignmentRow
@@ -72,32 +66,15 @@ const AlignmentsBox: React.FC<AlignmentsBoxProps> = ({ alignment, style }) => {
                 </h3>
                 <button
                     className="ml-auto"
-                    aria-label={
-                        showInfo ? 'Hide alignment information' : 'Show alignment information'
-                    }
                     onClick={e => {
                         e.stopPropagation();
                         setShowInfo(!showInfo);
                     }}
                 >
-                    <InfoIcon className={showInfo ? 'text-emerald-500' : 'text-grayscale-900'} />
+                    <InfoIcon color={showInfo ? '#00BA88' : undefined} />
                 </button>
             </div>
             {showInfo && <InfoBox text={alignmentText} handleClose={() => setShowInfo(false)} />}
-
-            {skillCompetencies.length > 0 && (
-                <div className="flex w-full flex-col gap-[8px]">
-                    <span className="font-poppins text-[11px] font-medium text-grayscale-500">
-                        Skills &amp; competencies
-                    </span>
-                    {skillCompetencies.map((object, index) => (
-                        <SkillCompetencyAlignmentCard
-                            key={`${object.targetUrl ?? object.targetName}-${index}`}
-                            alignment={object}
-                        />
-                    ))}
-                </div>
-            )}
 
             {verified.length > 0 && (
                 <div className="flex flex-col gap-[8px] w-full">
@@ -110,9 +87,11 @@ const AlignmentsBox: React.FC<AlignmentsBoxProps> = ({ alignment, style }) => {
 
             {other.length > 0 && (
                 <div className="flex flex-col gap-[8px] w-full">
-                    <span className="text-[11px] font-medium text-grayscale-500 font-poppins">
-                        Occupations &amp; programs
-                    </span>
+                    {verified.length > 0 && (
+                        <span className="text-[11px] font-medium text-grayscale-500 font-poppins">
+                            Occupations &amp; programs
+                        </span>
+                    )}
                     {other.map((object, index) => renderRow(object, index, false))}
                 </div>
             )}

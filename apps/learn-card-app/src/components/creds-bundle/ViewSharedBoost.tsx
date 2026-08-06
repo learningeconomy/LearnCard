@@ -38,7 +38,6 @@ import {
 import endorsementsRequestStore from '../../stores/endorsementsRequestStore';
 import EndorsementDraftRequestSuccess from '../boost-endorsements/EndorsementRequestForm/EndorsementDraftRequestSuccess';
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
-import { createEndorsementShareLinkInfo } from '../boost-endorsements/EndorsementRequestForm/endorsement-request.helpers';
 import * as m from '../../paraglide/messages.js';
 
 const websiteLink = `${getAppBaseUrl()}/login`;
@@ -56,6 +55,7 @@ const ViewSharedBoost: React.FC<{
     const { uri: _uri, seed: _seed, pin: _pin } = queryString.parse(location.search);
     const [isFront, setIsFront] = useState(true);
     const [vc, setVC] = useState<VP>();
+    const [errMsg, setErrMsg] = useState<string | undefined | null>();
     const [verificationItems, setVerificationItems] = useState<VerificationItem[]>([]);
     const [lifecycleStatus, setLifecycleStatus] = useState<CredentialLifecycleStatus>('active');
     const [tryRefetch, setTryRefetch] = useState(false);
@@ -151,14 +151,14 @@ const ViewSharedBoost: React.FC<{
             }
             setLoading(false);
             return vc;
-        } catch (error) {
+        } catch (e) {
             setLoading(false);
-            log.warn('Unable to open shared credential', error);
+            setErrMsg(`Error: wrong PIN: ${e}`);
 
             presentAlert({
                 backdropDismiss: false,
                 cssClass: 'boost-confirmation-alert',
-                header: m['endorsement.viewRequest.errorOpening'](),
+                header: `Error fetching credential: ${e}`,
                 buttons: [
                     {
                         text: 'OK',
@@ -177,25 +177,16 @@ const ViewSharedBoost: React.FC<{
                 ],
             });
 
-            return undefined;
+            throw new Error(`Error fetching credential: ${e}`);
         }
     };
 
     useEffect(() => {
-        if (pin && seed && uri) {
-            setBoost(undefined);
-            setVC(undefined);
-            setExistingEndorsements(null);
-            setShareLinkInfo(
-                createEndorsementShareLinkInfo({
-                    uri: String(uri),
-                    seed: String(seed),
-                    pin: String(pin),
-                })
-            );
-            void fetchCredential((uri as string).replace('localhost:', 'localhost%3A'));
+        if (pin && uri) {
+            fetchCredential((uri as string).replace('localhost:', 'localhost%3A'));
+            setShareLinkInfo(`uri=${uri}&seed=${seed}&pin=${pin}`);
         }
-    }, [pin, seed, uri, tryRefetch]);
+    }, [pin, tryRefetch]);
 
     const [presentModal, dismissModal] = useIonModal(SharedBoostVerificationBlock, {
         handleCloseModal: () => dismissModal(),

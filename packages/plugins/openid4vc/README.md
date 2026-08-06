@@ -460,9 +460,7 @@ All of these expose pre-authorized-code offers, so the harness works as-is.
 When you want deterministic iteration (same offer twice, offline, step-through debugging), run WaltID's issuer in Docker:
 
 ```bash
-# Use the same pinned tag as the interop tests (the WALTID_IMAGE_TAG
-# default in tests/openid4vc-interop-e2e/compose.yaml)
-docker run --rm -p 7002:7002 -p 7003:7003 waltid/issuer-api:0.23.0
+docker run --rm -p 7002:7002 -p 7003:7003 waltid/issuer-api:latest
 # in another terminal, POST an offer config to http://localhost:7002/...
 # then feed the returned offer URI to bun run try-offer
 ```

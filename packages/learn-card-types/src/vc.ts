@@ -102,7 +102,7 @@ export const CredentialSubjectValidator = z.object({ id: z.string().optional() }
 export type CredentialSubject = z.infer<typeof CredentialSubjectValidator>;
 
 export const CredentialStatusValidator = z
-    .object({ type: z.string(), id: z.string().optional() })
+    .object({ type: z.string(), id: z.string() })
     .catchall(z.any());
 export type CredentialStatus = z.infer<typeof CredentialStatusValidator>;
 

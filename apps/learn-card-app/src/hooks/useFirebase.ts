@@ -62,7 +62,6 @@ import {
 } from './socialLoginLock';
 
 import { getLogger } from 'learn-card-base';
-import * as m from '../paraglide/messages.js';
 const log = getLogger('use-firebase');
 
 type SocialLoginProvider = SocialLoginTypes.apple | SocialLoginTypes.google;
@@ -70,8 +69,6 @@ type SocialLoginAuthSurface = 'native_sdk' | 'web_popup';
 type SocialLoginCancellationReason = 'native_cancelled' | 'popup_closed' | 'request_superseded';
 type SocialLoginFailureReason =
     | 'missing_initial_state'
-    | 'missing_popup_result'
-    | 'missing_credential'
     | 'missing_user'
     | 'network'
     | 'popup_blocked'
@@ -84,7 +81,6 @@ interface SocialLoginAttempt {
     lifecycle: FlowLifecycle;
     lockHeartbeatId?: ReturnType<typeof setInterval>;
     lockOwnerId?: string;
-    releaseOnUnload?: () => void;
 }
 
 interface AuthErrorDetails {
@@ -120,16 +116,10 @@ const getSocialLoginCancellationReason = (
         return 'popup_closed';
     }
 
-    const isNativeAppleCancellation =
-        code === '1001' ||
-        (message?.includes('1001') &&
-            (message.includes('AuthenticationServices.AuthorizationError') ||
-                message.includes('ASAuthorizationError')));
-
     if (
         authSurface === 'native_sdk' &&
         provider === SocialLoginTypes.apple &&
-        isNativeAppleCancellation
+        (code === '1001' || message?.includes('1001'))
     ) {
         return 'native_cancelled';
     }
@@ -168,8 +158,6 @@ const getSocialLoginFailureReason = (error: unknown): SocialLoginFailureReason =
     return 'unknown';
 };
 
-let activeSocialLoginAttemptId: string | null = null;
-
 export const useFirebase = () => {
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Cancel,
@@ -178,6 +166,7 @@ export const useFirebase = () => {
     const { presentToast } = useToast();
     const [presentAlert] = useIonAlert();
     const { track } = useAnalytics();
+    const socialLoginInFlightRef = React.useRef(false);
 
     const trackLogin = (method: SocialLoginTypes) => {
         try {
@@ -190,13 +179,7 @@ export const useFirebase = () => {
     };
 
     const beginSocialLogin = (provider: SocialLoginProvider): SocialLoginAttempt | null => {
-        if (activeSocialLoginAttemptId) {
-            presentToast(m['login.social.inProgress'](), {
-                type: ToastTypeEnum.Error,
-                hasDismissButton: true,
-            });
-            return null;
-        }
+        if (socialLoginInFlightRef.current) return null;
 
         const authSurface: SocialLoginAuthSurface = Capacitor.isNativePlatform()
             ? 'native_sdk'
@@ -207,25 +190,19 @@ export const useFirebase = () => {
             authSurface === 'web_popup' ? createSocialLoginLockOwnerId() : undefined;
 
         if (lockOwnerId && !acquireSocialLoginLock(lockOwnerId)) {
-            presentToast(m['login.social.inProgress'](), {
+            presentToast('A sign-in is already in progress. Finish it before trying again.', {
                 type: ToastTypeEnum.Error,
                 hasDismissButton: true,
             });
             return null;
         }
 
-        const lifecycle = createFlowLifecycle();
-        activeSocialLoginAttemptId = lifecycle.id;
-        const releaseOnUnload = lockOwnerId ? () => releaseSocialLoginLock(lockOwnerId) : undefined;
-
-        if (releaseOnUnload && typeof window !== 'undefined') {
-            window.addEventListener('pagehide', releaseOnUnload);
-        }
+        socialLoginInFlightRef.current = true;
 
         const attempt: SocialLoginAttempt = {
             provider,
             authSurface,
-            lifecycle,
+            lifecycle: createFlowLifecycle(),
             lockHeartbeatId: lockOwnerId
                 ? setInterval(
                       () => refreshSocialLoginLock(lockOwnerId),
@@ -233,7 +210,6 @@ export const useFirebase = () => {
                   )
                 : undefined,
             lockOwnerId,
-            releaseOnUnload,
         };
 
         void track(AnalyticsEvents.SOCIAL_LOGIN_STARTED, {
@@ -246,13 +222,7 @@ export const useFirebase = () => {
     };
 
     const releaseSocialLoginAttempt = (attempt: SocialLoginAttempt): void => {
-        if (activeSocialLoginAttemptId === attempt.lifecycle.id) {
-            activeSocialLoginAttemptId = null;
-        }
-
-        if (attempt.releaseOnUnload && typeof window !== 'undefined') {
-            window.removeEventListener('pagehide', attempt.releaseOnUnload);
-        }
+        socialLoginInFlightRef.current = false;
 
         if (attempt.lockHeartbeatId) {
             clearInterval(attempt.lockHeartbeatId);
@@ -329,13 +299,13 @@ export const useFirebase = () => {
         }
     };
 
-    const googleLogin = async (): Promise<boolean> => {
+    const googleLogin = async (): Promise<void> => {
         const firebaseAuth = auth();
 
-        if (!firebaseAuth) return false;
+        if (!firebaseAuth) return;
 
         const attempt = beginSocialLogin(SocialLoginTypes.google);
-        if (!attempt) return false;
+        if (!attempt) return;
 
         emitAuthDebugEvent('auth:login_start', 'Google login initiated', {
             data: { provider: attempt.provider, flowId: attempt.lifecycle.id },
@@ -347,8 +317,7 @@ export const useFirebase = () => {
 
             if (!signInWithGoogleRes.user || !user) {
                 failSocialLogin(attempt, 'missing_user');
-                presentGoogleHelpModal(m['login.social.genericError']());
-                return false;
+                return;
             }
 
             await FirebaseAuthentication.getIdToken();
@@ -381,7 +350,6 @@ export const useFirebase = () => {
 
             completeSocialLogin(attempt);
             // AuthCoordinator auto-handles key derivation when firebaseUser changes
-            return true;
         } catch (error) {
             const { code: errorCode } = getAuthErrorDetails(error);
             const cancellationReason = getSocialLoginCancellationReason(
@@ -401,7 +369,7 @@ export const useFirebase = () => {
                     },
                 });
                 log.warn('Google login cancelled', { reason: cancellationReason });
-                return false;
+                return;
             }
 
             const failureReason = getSocialLoginFailureReason(error);
@@ -420,22 +388,24 @@ export const useFirebase = () => {
                 failureReason === 'missing_initial_state' ||
                 failureReason === 'provider_internal'
             ) {
-                presentGoogleHelpModal(m['login.social.googleStartFailed']());
-                return false;
+                presentGoogleHelpModal(
+                    'Google sign-in failed to start. If the issue persists, please check your browser settings, clear the site data, refresh the page and try again. You may also try using a different browser or incognito mode.'
+                );
+                return;
             }
 
             if (failureReason === 'popup_blocked') {
                 log.warn('Google login popup blocked');
-                presentGoogleHelpModal(m['login.social.popupBlocked']());
+                presentGoogleHelpModal(
+                    'Popups are blocked in your browser. Please enable popups in your browser and try again.'
+                );
             } else {
                 log.error('Google login failed', {
                     failureReason,
                     hasProviderCode: Boolean(errorCode),
                 });
-                presentGoogleHelpModal(m['login.social.genericError']());
+                presentGoogleHelpModal('Something went wrong. Please try again.');
             }
-
-            return false;
         } finally {
             releaseSocialLoginAttempt(attempt);
         }
@@ -771,13 +741,13 @@ export const useFirebase = () => {
         }
     };
 
-    const appleLogin = async (): Promise<boolean> => {
+    const appleLogin = async (): Promise<void> => {
         const firebaseAuth = auth();
 
-        if (!firebaseAuth) return false;
+        if (!firebaseAuth) return;
 
         const attempt = beginSocialLogin(SocialLoginTypes.apple);
-        if (!attempt) return false;
+        if (!attempt) return;
 
         emitAuthDebugEvent('auth:login_start', 'Apple login initiated', {
             data: { provider: attempt.provider, flowId: attempt.lifecycle.id },
@@ -801,8 +771,7 @@ export const useFirebase = () => {
                 const user = firebaseAuth.currentUser;
                 if (!user) {
                     failSocialLogin(attempt, 'missing_user');
-                    presentAlert(m['login.social.genericError']());
-                    return false;
+                    return;
                 }
 
                 // get current firebase user idToken
@@ -824,29 +793,20 @@ export const useFirebase = () => {
 
                 const result = await signInWithPopup(firebaseAuth, provider);
                 if (!result) {
-                    failSocialLogin(attempt, 'missing_popup_result');
-                    presentAlert(m['login.social.genericError']());
-                    return false;
+                    failSocialLogin(attempt, 'missing_user');
+                    return;
                 }
                 const credential = OAuthProvider.credentialFromResult(result);
                 const user = result?.user;
 
-                if (!credential) {
-                    failSocialLogin(attempt, 'missing_credential');
-                    presentAlert(m['login.social.genericError']());
-                    return false;
-                }
-
-                if (!user) {
+                if (!credential || !user) {
                     failSocialLogin(attempt, 'missing_user');
-                    presentAlert(m['login.social.genericError']());
-                    return false;
+                    return;
                 }
 
                 await user.getIdToken(true);
                 authStore.set.typeOfLogin(SocialLoginTypes.apple);
                 trackLogin(SocialLoginTypes.apple);
-                firebaseAuthStore.set.firebaseAuth(FirebaseAuthentication);
 
                 emitAuthSuccess(
                     'firebase:auth_state_change',
@@ -860,7 +820,6 @@ export const useFirebase = () => {
 
             completeSocialLogin(attempt);
             // AuthCoordinator auto-handles key derivation when firebaseUser changes
-            return true;
         } catch (error) {
             const cancellationReason = getSocialLoginCancellationReason(
                 error,
@@ -879,7 +838,7 @@ export const useFirebase = () => {
                     },
                 });
                 log.warn('Apple login cancelled', { reason: cancellationReason });
-                return false;
+                return;
             }
 
             const failureReason = getSocialLoginFailureReason(error);
@@ -895,13 +854,13 @@ export const useFirebase = () => {
 
             if (failureReason === 'popup_blocked') {
                 log.warn('Apple login popup blocked');
-                presentAlert(m['login.social.popupBlocked']());
+                presentAlert(
+                    'Popups are blocked in your browser. Please enable popups and try again.'
+                );
             } else {
                 log.error('Apple login failed', { failureReason });
-                presentAlert(m['login.social.genericError']());
+                presentAlert('Something went wrong. Please try again.');
             }
-
-            return false;
         } finally {
             releaseSocialLoginAttempt(attempt);
         }

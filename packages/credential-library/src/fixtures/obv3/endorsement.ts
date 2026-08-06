@@ -17,7 +17,6 @@ export const obv3EndorsementCredential: CredentialFixture = {
         '@context': [
             'https://www.w3.org/ns/credentials/v2',
             'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
-            'https://purl.imsglobal.org/spec/ob/v3p0/extensions.json',
         ],
         id: 'urn:uuid:a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
         type: ['VerifiableCredential', 'EndorsementCredential'],

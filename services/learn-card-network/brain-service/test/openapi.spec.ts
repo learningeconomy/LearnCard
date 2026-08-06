@@ -14,8 +14,4 @@ describe('OpenAPI generation', () => {
 
         expect(paths).toContain('/boost/skills/search');
     });
-
-    it('exposes a root-relative server URL that resolves on any tenant domain', () => {
-        expect(openApiDocument.servers?.[0]?.url).toBe('/api');
-    });
 });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
 import { useHistory } from 'react-router-dom';
@@ -275,22 +275,25 @@ export const LoginContent: React.FC = () => {
         coordinatorState.status === 'ready' || coordinatorState.status === 'needs_recovery';
 
     // custom logins associated with the app
-    const extraSocialLogins = [
-        {
-            id: 1,
-            src: AppleIcon,
-            alt: 'apple',
-            onClick: appleLogin,
-            type: SocialLoginTypes.apple,
-        },
-        {
-            id: 2,
-            src: GoogleIcon,
-            alt: 'google',
-            onClick: googleLogin,
-            type: SocialLoginTypes.google,
-        },
-    ];
+    const extraSocialLogins = useMemo(
+        () => [
+            {
+                id: 1,
+                src: AppleIcon,
+                alt: 'apple',
+                onClick: appleLogin,
+                type: SocialLoginTypes.apple,
+            },
+            {
+                id: 2,
+                src: GoogleIcon,
+                alt: 'google',
+                onClick: googleLogin,
+                type: SocialLoginTypes.google,
+            },
+        ],
+        [appleLogin, googleLogin]
+    );
 
     // Redirect-pending gate: once the wallet is built and the user counts as
     // logged in, the effect above will history.push away from /login — but

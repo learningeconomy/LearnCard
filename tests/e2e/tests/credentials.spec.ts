@@ -28,10 +28,7 @@ describe('Credentials', () => {
         const c = await getLearnCardForUser('c');
 
         const unsignedVc: UnsignedVC = {
-            '@context': [
-                'https://www.w3.org/ns/credentials/v2',
-                'https://www.w3.org/ns/credentials/examples/v2',
-            ],
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
             id: 'http://university.example/credentials/3732',
             type: ['VerifiableCredential', 'ExampleDegreeCredential'],
             issuer: a.id.did(),
@@ -499,11 +496,12 @@ describe('Credentials', () => {
         test('DataIntegrity proof context is placed at top-level vc["@context"] for interoperability', async () => {
             const c = await getLearnCardForUser('c');
 
+            // Create an unsigned credential with minimal context
             const unsignedVc: UnsignedVC = {
                 '@context': ['https://www.w3.org/ns/credentials/v2'],
                 id: 'http://university.example/credentials/context-placement-test',
                 type: ['VerifiableCredential'],
-                issuer: c.id.did(),
+                issuer: c.id.did(), // Fix: Use the same user who will sign the credential
                 validFrom: new Date().toISOString(),
                 credentialSubject: {
                     id: b.id.did(),
@@ -511,24 +509,37 @@ describe('Credentials', () => {
                 },
             };
 
+            // Issue credential with DataIntegrity proof (auto-detects cryptosuite)
             const vc = await c.invoke.issueCredential(unsignedVc, {
                 type: 'DataIntegrityProof',
                 proofPurpose: 'assertionMethod',
             });
 
-            expect(vc.proof).toMatchObject({
-                type: 'DataIntegrityProof',
-                cryptosuite: expect.any(String),
-            });
-            expect(vc.proof).not.toHaveProperty('@context');
+            // Verify the credential structure
+            expect(vc).toBeDefined();
+            expect(vc.proof).toBeDefined();
+            expect((vc.proof as any).type).toBe('DataIntegrityProof');
+            expect((vc.proof as any).cryptosuite).toBeDefined();
 
+            // Debug: Log the proof structure to see if it now has context
+            console.log('DEBUG: Proof structure:', JSON.stringify(vc.proof, null, 2));
+
+            // CRITICAL: Verify proof context is NOT in the proof object
+            expect((vc.proof as any)['@context']).toBeUndefined();
+
+            // CRITICAL: Verify DataIntegrity context is at top-level
             expect(vc['@context']).toBeDefined();
             expect(Array.isArray(vc['@context'])).toBe(true);
 
             const contexts = vc['@context'] as string[];
 
+            // Should contain original credential context
             expect(contexts).toContain('https://www.w3.org/ns/credentials/v2');
 
+            // Debug: Log the actual contexts to see what's being added
+            console.log('DEBUG: Actual contexts in credential:', JSON.stringify(contexts, null, 2));
+
+            // Verify the credential is valid
             const verification = await c.invoke.verifyCredential(vc);
             expect(verification.warnings).toHaveLength(0);
             expect(verification.errors).toHaveLength(0);
@@ -539,11 +550,12 @@ describe('Credentials', () => {
             const c = await getLearnCardForUser('c');
             const d = await getLearnCardForUser('d');
 
+            // Create an unsigned credential
             const unsignedVc: UnsignedVC = {
                 '@context': ['https://www.w3.org/ns/credentials/v2'],
                 id: 'http://university.example/credentials/multi-proof-context-test',
                 type: ['VerifiableCredential'],
-                issuer: c.id.did(),
+                issuer: c.id.did(), // Fix: Use the first signing user as issuer
                 validFrom: new Date().toISOString(),
                 credentialSubject: {
                     id: b.id.did(),
@@ -551,37 +563,42 @@ describe('Credentials', () => {
                 },
             };
 
+            // Issue credential with first DataIntegrity proof
             let vc = await c.invoke.issueCredential(unsignedVc, {
                 type: 'DataIntegrityProof',
                 proofPurpose: 'assertionMethod',
             });
 
+            // Add second DataIntegrity proof from different issuer
+            // Note: For multiple proofs, we modify the issuer to match the second signer
             const vcWithSecondIssuer = { ...vc, issuer: d.id.did() };
             vc = await d.invoke.issueCredential(vcWithSecondIssuer, {
                 type: 'DataIntegrityProof',
                 proofPurpose: 'assertionMethod',
             });
 
+            // Verify multiple proofs exist
             expect(vc.proof).toBeDefined();
-            if (!Array.isArray(vc.proof)) throw new Error('Expected two proofs');
-
+            expect(Array.isArray(vc.proof)).toBe(true);
             expect(vc.proof).toHaveLength(2);
 
-            vc.proof.forEach(proof => {
-                expect(proof).toMatchObject({
-                    type: 'DataIntegrityProof',
-                    cryptosuite: expect.any(String),
-                });
-                expect(proof).not.toHaveProperty('@context');
+            // Verify each proof has DataIntegrity type but NO context
+            vc.proof.forEach((proof: any) => {
+                expect((proof as any).type).toBe('DataIntegrityProof');
+                expect((proof as any).cryptosuite).toBeDefined();
+                expect((proof as any)['@context']).toBeUndefined(); // Context should NOT be in proof
             });
 
+            // Verify all contexts are merged at top-level
             expect(vc['@context']).toBeDefined();
             expect(Array.isArray(vc['@context'])).toBe(true);
 
             const contexts = vc['@context'] as string[];
 
+            // Should contain original credential context
             expect(contexts).toContain('https://www.w3.org/ns/credentials/v2');
 
+            // Verify the credential with multiple proofs is valid
             const verification = await c.invoke.verifyCredential(vc);
             expect(verification.warnings).toHaveLength(0);
             expect(verification.errors).toHaveLength(0);

@@ -979,16 +979,7 @@
         "sharedComputer": "Shared or public computer",
         "signInFromAnotherDevice": "Sign in from another device",
         "social": {
-            "or": "OR",
-            "inProgress": "A sign-in is already in progress. Finish it before trying again.",
-            "signingInWith": "Signing in with {{provider}}",
-            "googleStartFailed": "Google sign-in failed to start. If the issue persists, check your browser settings, clear the site data, refresh the page, and try again. You can also try a different browser or private browsing mode.",
-            "popupBlocked": "Popups are blocked in your browser. Enable popups and try again.",
-            "genericError": "Something went wrong. Please try again.",
-            "provider": {
-                "apple": "Apple",
-                "google": "Google"
-            }
+            "or": "OR"
         },
         "welcome": {
             "heading": "Welcome to {{brand}}",
@@ -2622,11 +2613,6 @@
             "placeholder": "Tell us more (optional)",
             "send": "Send Feedback",
             "skip": "Skip"
-        },
-        "github": {
-            "body": "Enjoying LearnCard? It's open source.",
-            "cta": "Star us on GitHub",
-            "dismiss": "Dismiss"
         }
     },
     "toasts": {
@@ -3323,11 +3309,7 @@
                 "approvedPre": "Thanks!",
                 "approvedPost": "Endorsement Approved!",
                 "waitingReview": "Waiting for review by {{name}}",
-                "approvedBy": "Approved by {{name}}",
-                "sendFailedTitle": "Endorsement Not Sent",
-                "sendFailedDescription": "Your endorsement is still saved. Try again.",
-                "missingRequestDescription": "Close this screen and reopen the endorsement link to try again.",
-                "tryAgain": "Try Again"
+                "approvedBy": "Approved by {{name}}"
             },
             "footer": {
                 "viewEndorsement": "View Endorsement"
@@ -3371,7 +3353,7 @@
         },
         "viewRequest": {
             "ok": "OK",
-            "errorOpening": "We couldn't open this credential. Please try again."
+            "errorFetching": "Error fetching credential: {{error}}"
         }
     },
     "verification": {

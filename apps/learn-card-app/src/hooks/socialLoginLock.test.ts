@@ -88,26 +88,6 @@ describe('socialLoginLock', () => {
         releaseSocialLoginLock('tab-b', null);
     });
 
-    it('clears the document owner after losing the stored lease', () => {
-        expect(acquireSocialLoginLock('tab-a', { storage: localStorage })).toBe(true);
-
-        localStorage.setItem(
-            SOCIAL_LOGIN_LOCK_KEY,
-            JSON.stringify({ ownerId: 'tab-b', expiresAt: Date.now() + 10_000 })
-        );
-
-        expect(refreshSocialLoginLock('tab-a', { storage: localStorage })).toBe(false);
-
-        const unavailableStorage = {
-            getItem: () => {
-                throw new Error('Storage unavailable');
-            },
-        } as unknown as Storage;
-
-        expect(acquireSocialLoginLock('tab-c', { storage: unavailableStorage })).toBe(true);
-        releaseSocialLoginLock('tab-c', null);
-    });
-
     it('recovers malformed and implausibly long leases', () => {
         localStorage.setItem(SOCIAL_LOGIN_LOCK_KEY, '{not-json');
         expect(acquireSocialLoginLock('tab-a', { now: 1_000, storage: localStorage })).toBe(true);

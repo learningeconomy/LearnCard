@@ -58,17 +58,12 @@ export const createIssuerKey = async (): Promise<WaltidIssuerKey> => {
         throw new Error('Expected Ed25519 OKP keypair');
     }
 
+    const kid = `kid-${Math.random().toString(36).slice(2, 10)}`;
+
     // did:jwk embeds the *public* JWK.
     const did = `did:jwk:${b64url(
         JSON.stringify({ kty: pubJwk.kty, crv: pubJwk.crv, x: pubJwk.x })
     )}`;
-
-    // The kid MUST reference the did:jwk document's sole verification
-    // method (`#0`). walt.id embeds this kid in the JWT header of every
-    // VC it signs with this key; since PR #1954 ("Crypto2", 2026-08-05)
-    // its verifier resolves issuer keys strictly by kid, so a random
-    // kid fails with "Could not resolve issuer key".
-    const kid = `${did}#0`;
 
     return {
         jwk: {
@@ -124,7 +119,9 @@ export interface MintOfferOptions {
  * URI in `text/plain`, e.g.
  *   `openid-credential-offer://?credential_offer_uri=...`
  */
-export const mintWaltidOffer = async (opts: MintOfferOptions): Promise<string> => {
+export const mintWaltidOffer = async (
+    opts: MintOfferOptions
+): Promise<string> => {
     const {
         issuerBaseUrl,
         issuerKey,
@@ -330,7 +327,9 @@ export const resolveOfferToByValue = async (offerUri: string): Promise<string> =
 
     const res = await fetch(byRef);
     if (!res.ok) {
-        throw new Error(`Failed to resolve credential_offer_uri ${byRef}: HTTP ${res.status}`);
+        throw new Error(
+            `Failed to resolve credential_offer_uri ${byRef}: HTTP ${res.status}`
+        );
     }
 
     const offerJson = await res.json();

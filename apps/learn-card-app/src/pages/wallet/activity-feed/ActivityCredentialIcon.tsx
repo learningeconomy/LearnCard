@@ -33,13 +33,7 @@ export const ActivityCredentialIcon: React.FC<{
     if (isGeneric) return <GenericCredentialGlyph className={className} />;
 
     const { icons } = getThemedCategory(category);
-
-    // LC-1969: the feed always renders the flat solid glyph, never the
-    // illustrated `IconWithShape` art — the shaped variants don't read at
-    // 20-38px and made the feed look different per theme. Sets whose `Icon`
-    // is already the solid glyph (`formal`, and `vetpass` by inheritance)
-    // don't declare `IconSolid` and fall through to it.
-    const CategoryIcon = icons?.IconSolid ?? icons?.Icon;
+    const CategoryIcon = icons?.IconWithShape ?? icons?.Icon;
 
     if (!CategoryIcon) return <GenericCredentialGlyph className={className} />;
 

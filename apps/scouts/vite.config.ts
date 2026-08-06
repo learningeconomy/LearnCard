@@ -10,20 +10,7 @@ import stdlibbrowser from 'node-stdlib-browser';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 
 export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, process.cwd(), [
-        'VITE_',
-        'LCN_URL',
-        'LCN_API_URL',
-        'CLOUD_URL',
-        'LEARN_CLOUD_XAPI_URL',
-        'API_URL',
-        'NODE_ENV',
-        'SENTRY_ENV',
-        'SENTRY_DSN',
-        'GOOGLE_MAPS_API_KEY',
-        'REACT_APP_KEY_DERIVATION_PROVIDER',
-        'REACT_APP_SSS_SERVER_URL',
-    ]);
+    const env = loadEnv(mode, process.cwd(), '');
     const cacheDir = env.VITE_DOCKER_SOURCE === 'true' ? '.vite-docker' : '.vite-local';
 
     return {
@@ -45,8 +32,6 @@ export default defineConfig(({ mode }) => {
             },
         },
         define: {
-            // Only define browser-safe values individually. Defining `process.env` would serialize
-            // the build runner's environment, including credentials, into the browser bundle.
             LCN_URL: env.LCN_URL ? JSON.stringify(env.LCN_URL) : 'undefined',
             LCN_API_URL: env.LCN_API_URL ? JSON.stringify(env.LCN_API_URL) : 'undefined',
             CLOUD_URL: env.CLOUD_URL ? JSON.stringify(env.CLOUD_URL) : 'undefined',
@@ -57,6 +42,7 @@ export default defineConfig(({ mode }) => {
             __PACKAGE_VERSION__: JSON.stringify(process.env.npm_package_version),
             __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
             'process.version': '"1.0.0"',
+            'process.env': env,
             IS_PRODUCTION: env.NODE_ENV === 'production',
             SENTRY_ENV: env.SENTRY_ENV ? JSON.stringify(env.SENTRY_ENV) : '"scouts-development"',
             SENTRY_DSN: env.SENTRY_DSN

@@ -146,8 +146,6 @@ export const hasThreadEnded = (thread: Thread | undefined): boolean =>
  * plan/messages/streaming state don't bleed into the new one.
  */
 export function resetChatSessionStores() {
-    clearSessionStartWatchdog();
-    currentSessionStartRequestId = null;
     messages.set([]);
     streamingMessage.set(null);
     if (streamRaf != null) {
@@ -227,7 +225,6 @@ const beginSessionStartWatchdog = () => {
         isLoading.set(false);
         isTyping.set(false);
         planStreamActive.set(false);
-        lastAiError.set({ at: Date.now(), code: 'startup_timeout' });
         showErrorModal('Something went wrong', 'Please try starting the session again.');
     }, SESSION_START_WATCHDOG_MS);
 };
@@ -756,11 +753,7 @@ export function connectWebSocket() {
             }
 
             if (data.error) {
-                if (
-                    typeof data.requestId === 'string' &&
-                    !isCurrentSessionStartFrame(data.requestId)
-                )
-                    return;
+                if (!isCurrentSessionStartFrame(data.requestId)) return;
                 const isStartupPending = startupWatchdog !== undefined;
                 clearSessionStartWatchdog();
                 log.error('Error:', data.error);
@@ -793,7 +786,6 @@ export function connectWebSocket() {
             /* -------------------------------------------------- */
 
             if (data.assistantMessage) {
-                clearSessionStartWatchdog();
                 const { questions } = JSON.parse(
                     data.assistantMessage.tool_calls?.[0]?.function?.arguments
                 );
@@ -839,7 +831,6 @@ export function connectWebSocket() {
             }
 
             if (data.done) {
-                clearSessionStartWatchdog();
                 // Flush any pending streaming tokens before committing
                 if (streamRaf != null) {
                     cancelAnimationFrame(streamRaf);
@@ -892,7 +883,6 @@ export function connectWebSocket() {
             /* -------------------------------------------------- */
 
             if (typeof data === 'string') {
-                clearSessionStartWatchdog();
                 streamBuffer += data;
                 scheduleFlush();
                 isLoading.set(false);
@@ -944,14 +934,11 @@ export function connectWebSocket() {
         }
         streamingId = null;
 
+        isTyping.set(false);
+        isLoading.set(false);
         ws = null;
 
         const shouldTryReconnect = shouldReconnect && reconnectAttempts < MAX_RECONNECT_ATTEMPTS;
-
-        if (!shouldTryReconnect) {
-            isTyping.set(false);
-            isLoading.set(false);
-        }
 
         if (shouldTryReconnect) {
             reconnectAttempts++;
@@ -1309,8 +1296,6 @@ export async function startInsightsSession(topic: string, initialText?: string) 
     }
 
     const firstMessage = (initialText?.trim() || `Let's do insights on: ${topic}`).trim();
-
-    beginSessionStartWatchdog();
 
     ws!.send(
         JSON.stringify({

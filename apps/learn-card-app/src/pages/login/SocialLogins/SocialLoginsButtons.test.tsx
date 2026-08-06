@@ -62,10 +62,6 @@ vi.mock('../../../theme/hooks/useTheme', () => ({
 
 vi.mock('../../../paraglide/messages.js', () => ({
     'login.social.or': () => 'or',
-    'login.social.provider.apple': () => 'Apple',
-    'login.social.provider.google': () => 'Google',
-    'login.social.signingInWith': ({ provider }: { provider: string }) =>
-        `Signing in with ${provider}`,
 }));
 
 describe('SocialLoginsButtons', () => {
@@ -180,35 +176,5 @@ describe('SocialLoginsButtons', () => {
         expect(screen.queryByRole('status')).not.toBeInTheDocument();
         expect(googleButton).not.toBeDisabled();
         expect(appleButton).not.toBeDisabled();
-    });
-
-    it('keeps the successful provider active until navigation unmounts the login surface', async () => {
-        render(
-            <SocialLoginsButtons
-                branding={BrandingEnum.learncard}
-                activeLoginType={LoginTypesEnum.email}
-                setActiveLoginType={vi.fn()}
-                extraSocialLogins={[
-                    {
-                        id: 1,
-                        src: '/google.svg',
-                        alt: 'Google',
-                        onClick: vi.fn(() => Promise.resolve(true)),
-                        type: SocialLoginTypes.google,
-                    },
-                ]}
-                showSocialLogins
-            />
-        );
-
-        const googleButton = screen.getByRole('button', { name: /google/i });
-
-        await act(async () => {
-            googleButton.click();
-            await Promise.resolve();
-        });
-
-        expect(googleButton).toBeDisabled();
-        expect(screen.getByRole('status', { name: /signing in with google/i })).toBeInTheDocument();
     });
 });

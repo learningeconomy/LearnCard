@@ -7,11 +7,7 @@
     "tags": [],
     "implicitDependencies": ["types", "init"],
     "namedInputs": {
-        "source": [
-            "{projectRoot}/src/**/*",
-            "{projectRoot}/scripts/sync-didkit.ts",
-            "{workspaceRoot}/packages/plugins/didkit/src/didkit/pkg/didkit_wasm_bg.wasm"
-        ],
+        "source": ["{projectRoot}/src/**/*"],
         "dist": ["{projectRoot}/dist/**/*"]
     },
     "targets": {

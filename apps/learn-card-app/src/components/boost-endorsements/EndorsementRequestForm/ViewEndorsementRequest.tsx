@@ -30,6 +30,7 @@ const ViewEndorsementRequest: React.FC<{
 }> = ({ sharedLink, notification, endorsementVC, handleSaveEndorsement, isClaimed, isLoading }) => {
     const location = useLocation();
     const [vc, setVC] = useState<VP>();
+    const [errMsg, setErrMsg] = useState<string | undefined | null>();
     const [verificationItems, setVerificationItems] = useState<VerificationItem[]>([]);
     const [tryRefetch, setTryRefetch] = useState(false);
     const [loading, setLoading] = useState<boolean>(true);
@@ -82,14 +83,14 @@ const ViewEndorsementRequest: React.FC<{
             }
             setLoading(false);
             return vc;
-        } catch (error) {
+        } catch (e) {
             setLoading(false);
-            log.warn('Unable to open endorsement credential', error);
+            setErrMsg(`Error: wrong PIN: ${e}`);
 
             presentAlert({
                 backdropDismiss: false,
                 cssClass: 'boost-confirmation-alert',
-                header: m['endorsement.viewRequest.errorOpening'](),
+                header: m['endorsement.viewRequest.errorFetching']({ error: String(e) }),
                 buttons: [
                     {
                         text: m['endorsement.viewRequest.ok'](),
@@ -108,20 +109,18 @@ const ViewEndorsementRequest: React.FC<{
                 ],
             });
 
-            return undefined;
+            throw new Error(`Error fetching credential: ${e}`);
         }
     };
 
     useEffect(() => {
-        if (pin && seed && uri) {
-            setBoost(undefined);
-            setVC(undefined);
-            void fetchCredential((uri as string).replace('localhost:', 'localhost%3A'));
+        if (pin && uri) {
+            fetchCredential((uri as string).replace('localhost:', 'localhost%3A'));
         }
-    }, [pin, seed, uri, tryRefetch]);
+    }, [pin, tryRefetch]);
 
     return (
-        <section className="h-full w-full flex flex-col items-start justify-start overflow-y-scroll bg-grayscale-50 gap-4 pb-[200px]">
+        <section className="relative h-full w-full flex flex-col items-start justify-start overflow-y-scroll bg-grayscale-50 gap-4 pb-[200px]">
             {!isClaimed && (
                 <EndorsementFormHeader
                     credential={_boost}

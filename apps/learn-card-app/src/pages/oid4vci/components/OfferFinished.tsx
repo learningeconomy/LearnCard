@@ -9,7 +9,7 @@ import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credent
 
 import { BoostEarnedCard } from '../../../components/boost/boost-earned-card/BoostEarnedCard';
 
-import FeedbackMoment from '../../../feedback/FeedbackMoment';
+import SentimentStrip from '../../../feedback/SentimentStrip';
 
 import { prettifyConfigurationId } from '../displayHelpers';
 import CredentialPreviewCard, { type CredentialPreviewClaim } from './CredentialPreviewCard';
@@ -315,7 +315,7 @@ const OfferFinished: React.FC<OfferFinishedProps> = ({
                         </button>
                     </div>
 
-                    {!fullFailure && <FeedbackMoment surface="claim_oidc" />}
+                    {!fullFailure && <SentimentStrip surface="claim_oidc" />}
                 </div>
             </div>
         </div>

@@ -4725,7 +4725,6 @@ dependencies = [
  "lazy_static",
  "locspan",
  "rdf-types",
- "serde_json",
  "ssi-contexts",
  "ssi-crypto",
  "static-iref",

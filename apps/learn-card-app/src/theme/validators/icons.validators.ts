@@ -24,10 +24,6 @@ export const CategoryIconsSchema = z
         IconWithLightShape: componentLike
             .optional()
             .describe('React component for light shaped icon'),
-        // Must stay listed here — Zod strips unknown keys during
-        // validateThemeData, which would silently drop `IconSolid` at
-        // runtime (same failure mode as `navbar.dashboard` in LC-1921).
-        IconSolid: componentLike.optional().describe('React component for flat solid glyph'),
     })
     .describe('Credential Category Icons');
 export type CategoryIcons = z.infer<typeof CategoryIconsSchema>;

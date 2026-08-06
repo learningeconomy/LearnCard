@@ -17,7 +17,6 @@ export const obv3ProfessionalCert: CredentialFixture = {
         '@context': [
             'https://www.w3.org/ns/credentials/v2',
             'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
-            'https://purl.imsglobal.org/spec/ob/v3p0/extensions.json',
         ],
         id: 'urn:uuid:b34ca6cd-29d7-4b2f-9e99-4902fd84c5a1',
         type: ['VerifiableCredential', 'OpenBadgeCredential'],
@@ -61,8 +60,7 @@ export const obv3ProfessionalCert: CredentialFixture = {
                     {
                         type: ['Alignment'],
                         targetName: 'Cloud Solutions Architect',
-                        targetUrl:
-                            'https://credentialengineregistry.org/resources/ce-cloud-arch-001',
+                        targetUrl: 'https://credentialengineregistry.org/resources/ce-cloud-arch-001',
                         targetDescription:
                             'Design and implement cloud infrastructure solutions that meet business requirements.',
                         targetFramework: 'Credential Engine Cloud Computing Competency Framework',
@@ -71,8 +69,7 @@ export const obv3ProfessionalCert: CredentialFixture = {
                     {
                         type: ['Alignment'],
                         targetName: 'Information Technology – Cloud Computing',
-                        targetUrl:
-                            'https://nces.ed.gov/ipeds/cipcode/cipdetail.aspx?y=56&cipid=91456',
+                        targetUrl: 'https://nces.ed.gov/ipeds/cipcode/cipdetail.aspx?y=56&cipid=91456',
                         targetDescription: 'CIP Code 11.0902 – Cloud Computing',
                         targetFramework: 'Classification of Instructional Programs (CIP)',
                         targetType: 'CFItem',
