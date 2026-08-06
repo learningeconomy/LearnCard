@@ -234,8 +234,8 @@ export default defineConfig(async ({ mode, command }) => {
         },
         resolve: {
             // See useSourceConditions above: the `development` condition resolves @learncard/*
-            // to source for the dev server and self-host container builds; Netlify/dist builds
-            // leave it off and use the published dist bundles.
+            // to source only when serving locally or when VITE_DOCKER_SOURCE=true is explicit.
+            // Production and self-host Docker builds use the prebuilt dist bundles.
             ...(useSourceConditions
                 ? { conditions: ['development', 'module', 'browser', 'import', 'default'] }
                 : {}),
