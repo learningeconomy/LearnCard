@@ -336,7 +336,7 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
             <div
                 className="border-b border-grayscale-200 p-6"
                 style={{
-                    paddingTop: 'max(1.5rem, env(safe-area-inset-top))',
+                    paddingTop: 'max(1.5rem, var(--ion-safe-area-top, 0px))',
                 }}
             >
                 <h2 className="text-2xl font-bold text-grayscale-900 text-center">Install App</h2>
@@ -577,9 +577,9 @@ export const AppInstallConsentModal: React.FC<AppInstallConsentModalProps> = ({
             <div
                 className="flex items-center justify-center gap-4 p-6 border-t border-grayscale-200 bg-white"
                 style={{
-                    paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
-                    paddingLeft: 'max(1.5rem, env(safe-area-inset-left))',
-                    paddingRight: 'max(1.5rem, env(safe-area-inset-right))',
+                    paddingBottom: 'max(1.5rem, var(--ion-safe-area-bottom, 0px))',
+                    paddingLeft: 'max(1.5rem, var(--ion-safe-area-left, 0px))',
+                    paddingRight: 'max(1.5rem, var(--ion-safe-area-right, 0px))',
                 }}
             >
                 <button

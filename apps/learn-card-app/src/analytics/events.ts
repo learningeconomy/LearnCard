@@ -81,6 +81,11 @@ export const AnalyticsEvents = {
 
     // Authentication
     LOGIN: 'login',
+    // `platform` is attached centrally by the analytics context.
+    SOCIAL_LOGIN_STARTED: 'social_login_started',
+    SOCIAL_LOGIN_SUCCEEDED: 'social_login_succeeded',
+    SOCIAL_LOGIN_CANCELLED: 'social_login_cancelled',
+    SOCIAL_LOGIN_FAILED: 'social_login_failed',
 
     // AI Features
     AI_CHAT_SESSION_STARTED: 'ai_chat_session_started',
@@ -411,6 +416,43 @@ export interface AnalyticsEventPayloads {
 
     [AnalyticsEvents.LOGIN]: {
         method: string;
+    };
+
+    // Deliberately bounded: never add provider messages, callback URLs,
+    // credentials, authorization codes, state, or tokens to these payloads.
+    [AnalyticsEvents.SOCIAL_LOGIN_STARTED]: {
+        flow_id: string;
+        provider: 'apple' | 'google';
+        auth_surface: 'native_sdk' | 'web_popup';
+    };
+
+    [AnalyticsEvents.SOCIAL_LOGIN_SUCCEEDED]: {
+        flow_id: string;
+        provider: 'apple' | 'google';
+        auth_surface: 'native_sdk' | 'web_popup';
+        duration_ms: number;
+    };
+
+    [AnalyticsEvents.SOCIAL_LOGIN_CANCELLED]: {
+        flow_id: string;
+        provider: 'apple' | 'google';
+        auth_surface: 'native_sdk' | 'web_popup';
+        duration_ms: number;
+        reason: 'native_cancelled' | 'popup_closed' | 'request_superseded';
+    };
+
+    [AnalyticsEvents.SOCIAL_LOGIN_FAILED]: {
+        flow_id: string;
+        provider: 'apple' | 'google';
+        auth_surface: 'native_sdk' | 'web_popup';
+        duration_ms: number;
+        failure_reason:
+            | 'missing_initial_state'
+            | 'missing_user'
+            | 'network'
+            | 'popup_blocked'
+            | 'provider_internal'
+            | 'unknown';
     };
 
     [AnalyticsEvents.AI_CHAT_SESSION_STARTED]: {

@@ -633,7 +633,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 always scrollable from the top. */}
             <section
                 className="min-h-[calc(100%-85px)] px-[20px] pb-[20px] flex items-start justify-center"
-                style={{ paddingTop: 'calc(env(safe-area-inset-top) + 20px)' }}
+                style={{ paddingTop: '20px' }}
             >
                 <div className="max-w-[335px] mx-auto rounded-[15px] overflow-hidden shadow-box-bottom">
                     <div className="bg-white bg-opacity-70 backdrop-blur-[10px]">

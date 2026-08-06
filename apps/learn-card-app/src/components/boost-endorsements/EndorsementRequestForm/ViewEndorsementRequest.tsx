@@ -120,7 +120,7 @@ const ViewEndorsementRequest: React.FC<{
     }, [pin, tryRefetch]);
 
     return (
-        <section className="h-full w-full flex flex-col items-start justify-start overflow-y-scroll bg-grayscale-50 gap-4 pb-[200px]">
+        <section className="relative h-full w-full flex flex-col items-start justify-start overflow-y-scroll bg-grayscale-50 gap-4 pb-[200px]">
             {!isClaimed && (
                 <EndorsementFormHeader
                     credential={_boost}
