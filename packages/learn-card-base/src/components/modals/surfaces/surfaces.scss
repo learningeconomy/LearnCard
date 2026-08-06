@@ -1,0 +1,188 @@
+// packages/learn-card-base/src/components/modals/surfaces/surfaces.scss
+//
+// Surface-owned safe-area insets. The ONLY consumer of --lc-safe-* outside
+// safe-area.scss. Rule for everything else: inside a surface, never mention
+// safe area.
+
+// Full-bleed-style variants: the section paints the surface and owns insets.
+.lc-surface {
+    box-sizing: border-box;
+    padding-top: var(--lc-safe-top);
+    padding-bottom: var(--lc-safe-bottom);
+}
+
+.lc-surface--bottom-sheet {
+    padding-top: 0;
+}
+
+// Centered variants: the aside is the centering container; padding there
+// guarantees the card can never overlap a notch, without inflating the card.
+// --lc-gutter defaults to 0 so zero-inset (web/desktop) renders byte-identical
+// to the legacy shells; a surface can opt into a minimum gutter by setting it.
+.lc-overlay--inset-container {
+    box-sizing: border-box;
+    // !important: these REPLACE the legacy shells' inline styles, which outranked
+    // the per-id scss (e.g. `#cancel-modal { padding: 0.62rem }`). A plain class
+    // would lose to those id selectors and let the sheet clip the screen corners.
+    padding-top: max(var(--lc-safe-top), var(--lc-gutter, 0px)) !important;
+    padding-bottom: max(var(--lc-safe-bottom), var(--lc-gutter, 0px)) !important;
+}
+
+// CancelModal legacy behavior was ADDITIVE: paddingBottom = inset + 10px
+// (see git history: `safeArea.bottom + 10` inline on the aside). Keep the
+// same arithmetic; declared after the container rule so it wins at equal
+// specificity. Must NOT be an inline style on the shell — inline would
+// override the top padding too and detach this from the token cascade.
+.lc-overlay--cancel {
+    padding-bottom: calc(var(--lc-safe-bottom) + 10px) !important;
+}
+
+// Escape hatches.
+.lc-surface--no-inset,
+.lc-surface--full-bleed {
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.lc-overlay--no-inset {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+// Full-bleed surfaces still must keep the status bar legible: scrims, not padding.
+.lc-surface--full-bleed {
+    position: relative;
+
+    &::before,
+    &::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    &::before {
+        top: 0;
+        height: var(--lc-safe-top);
+        background: linear-gradient(rgba(0, 0, 0, 0.35), transparent);
+    }
+
+    &::after {
+        bottom: 0;
+        height: var(--lc-safe-bottom);
+        background: linear-gradient(transparent, rgba(0, 0, 0, 0.35));
+    }
+}
+
+// Ionic-page modal content: an .ion-page root is ABSOLUTELY positioned, so it
+// escapes the surface's padding entirely — surface padding would only indent
+// the (invisible) section while the page ignores it. Hand inset ownership to
+// Ionic wholesale for such content: no surface padding, and (below, after the
+// COMPAT zeroing) real --ion-safe-area-* values, so IonHeader/IonToolbar and
+// `var(--ion-safe-area-*, 0px)` idiom content behave exactly as on a route.
+.lc-surface:has(> .ion-page) {
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+// Published inset for OVERLAY content — absolutely/fixed-positioned elements
+// (frosted footers, floating headers/close buttons) whose offsets resolve
+// against the padding edge and therefore are NOT protected by the surface's
+// padding. Such elements use:
+//   calc(<offset> + var(--lc-overlay-inset-bottom, var(--ion-safe-area-bottom, 0px)))
+// Inside a surface the first var resolves (surface-owned inset); on a route
+// host it is unset and the chain falls back to the real Ionic inset. In-flow
+// content must NOT use these — the surface padding already covers it.
+.lc-surface,
+.lc-overlay--inset-container > section {
+    --lc-overlay-inset-top: var(--lc-safe-top);
+    --lc-overlay-inset-bottom: var(--lc-safe-bottom);
+}
+
+.lc-surface--no-inset {
+    --lc-overlay-inset-top: 0px;
+    --lc-overlay-inset-bottom: 0px;
+}
+
+// CONTAINING-BLOCK CORRECTION: anything DOM-inside the surface's padded
+// content box is already lifted clear of the insets, so overlays anchored to
+// an in-flow positioned wrapper (the `div.h-full.relative` modal-root pattern)
+// must NOT add the inset again — re-publish 0 for the subtree. On a route
+// host these vars are unset and the overlay's fallback chain resolves the
+// real Ionic inset. Rule of thumb for content authors: give your modal root
+// `relative h-full` and overlays inside it just work (see AGENTS.md).
+.lc-surface > *,
+.lc-overlay--inset-container > * {
+    --lc-overlay-inset-top: 0px;
+    --lc-overlay-inset-bottom: 0px;
+}
+
+// Full-bleed surfaces have no padding — overlays there DO need the real inset.
+.lc-surface--full-bleed > * {
+    --lc-overlay-inset-top: var(--lc-safe-top);
+    --lc-overlay-inset-bottom: var(--lc-safe-bottom);
+}
+
+// Ionic-page content likewise has no surface padding (Ionic owns insets) —
+// overlays inside it need the real values too.
+.lc-surface > .ion-page {
+    --lc-overlay-inset-top: var(--lc-safe-top);
+    --lc-overlay-inset-bottom: var(--lc-safe-bottom);
+}
+
+// Content with a floating frosted footer (the bar content scrolls beneath,
+// e.g. checklist / admin-tools / endorsement forms) OWNS the bottom edge:
+// content must run to the physical screen edge under the footer, exactly as
+// on main. Mark the content root with `lc-content-owns-bottom` — the surface
+// drops its bottom padding and republishes the real inset so the overlay
+// footer floats clear of the home indicator.
+.lc-surface:has(.lc-content-owns-bottom) {
+    padding-bottom: 0;
+}
+
+.lc-surface:has(.lc-content-owns-bottom) > * {
+    --lc-overlay-inset-bottom: var(--lc-safe-bottom);
+}
+
+// ─── COMPAT SHIMS — DELETE IN LC-1962 GROUP 5 (Task 11) ─────────────────────
+// Until groups 4–5 remove per-leaf safe-area handling, neutralize it inside
+// surfaces so insets are never double-applied while the stack lands.
+.lc-surface,
+.lc-overlay--inset-container > section {
+    .safe-area-top-margin {
+        margin-top: 0 !important; // COMPAT
+    }
+
+    .safe-area-bottom-padding {
+        padding-bottom: 70px !important; // COMPAT: original is calc(env() + 70px)
+    }
+
+    & * {
+        --ion-safe-area-top: 0px; // COMPAT
+        --ion-safe-area-bottom: 0px; // COMPAT
+    }
+}
+
+// Ionic-page subtrees get the REAL values back (declared after the zeroing so
+// it wins): Ionic owns insets for .ion-page modal content — see the
+// `:has(> .ion-page)` rule above.
+.lc-surface .ion-page,
+.lc-surface .ion-page * {
+    --ion-safe-area-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+    --ion-safe-area-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+}
+
+// The legacy-class COMPAT shims above must ALSO stand down inside ion-page
+// subtrees: the surface doesn't pad there, so phase-2 allowlist content that
+// still uses the legacy classes (e.g. ClrTranscriptDetailModal) needs their
+// real effect back. Uses the restored vars so it tracks the same source.
+.lc-surface .ion-page .safe-area-top-margin {
+    margin-top: var(--ion-safe-area-top) !important; // COMPAT (ion-page carve-out)
+}
+
+.lc-surface .ion-page .safe-area-bottom-padding {
+    padding-bottom: calc(var(--ion-safe-area-bottom) + 70px) !important; // COMPAT (ion-page carve-out)
+}
+// ────────────────────────────────────────────────────────────────────────────

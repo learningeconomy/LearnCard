@@ -5,7 +5,7 @@ import useModal from './useModal';
 import X from '../../svgs/X';
 
 import { ModalContainer } from './types/Modals';
-import GenericErrorBoundary from '../generic/GenericErrorBoundary';
+import AppModal from './surfaces/AppModal';
 
 export const CenterModal: ModalContainer = ({ component, options, open }) => {
     const { closeModal } = useModal();
@@ -22,34 +22,26 @@ export const CenterModal: ModalContainer = ({ component, options, open }) => {
     };
 
     return (
-        <aside
-            id="center-modal"
-            className={`${optionalClass} ${open ? 'open' : 'closed'} ${
-                options?.hideDimmer ? 'hide-dimmer' : ''
-            }`}
-        >
-            {!options?.hideDimmer && (
-                <button
-                    className="center-modal-dimmer"
-                    type="button"
-                    onClick={handleCloseModal}
-                    aria-label="modal-dimmer"
-                    aria-hidden
-                />
-            )}
-            <section
-                className={`${optionalClass} ${options?.widen ? 'widen' : ''} ${
-                    options?.addShadow ? 'add-shadow' : ''
-                } ${customSectionClass}`}
-            >
-                {!hideButton && (
+        <AppModal
+            rootId="center-modal"
+            variant="center"
+            open={open}
+            onDimmerClick={handleCloseModal}
+            hideDimmer={options?.hideDimmer}
+            rootClassName={`${optionalClass} ${options?.hideDimmer ? 'hide-dimmer' : ''}`}
+            sectionClassName={`${optionalClass} ${options?.widen ? 'widen' : ''} ${
+                options?.addShadow ? 'add-shadow' : ''
+            } ${customSectionClass}`}
+            header={
+                !hideButton ? (
                     <button type="button" className="center-modal-x" onClick={handleCloseModal}>
                         <X strokeWidth="4" />
                     </button>
-                )}
-                <GenericErrorBoundary>{component}</GenericErrorBoundary>
-            </section>
-        </aside>
+                ) : undefined
+            }
+        >
+            {component}
+        </AppModal>
     );
 };
 
