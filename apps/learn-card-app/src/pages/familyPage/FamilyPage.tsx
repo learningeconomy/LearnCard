@@ -5,7 +5,7 @@ import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore'
 import { lazyWithRetry } from 'learn-card-base';
 import { m } from '../../paraglide/messages.js';
 import { ErrorBoundary } from 'react-error-boundary';
-import { IonContent, IonModal, IonPage } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
 import {
     SubheaderContentType,
     SubheaderTypeEnum,
@@ -126,6 +126,20 @@ const FamilyPage: React.FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [credentialsLoading]);
 
+    // Auto-open the shared boost preview when requested via query params
+    // (?boostUri=<uri>&showPreview). The same wrapper is opened via newModal
+    // from LaunchPadActionModal's "View Family" action — mirror its modal
+    // type + options for consistency.
+    useEffect(() => {
+        if (_showPreview && _boostUri) {
+            newModal(
+                <FamilyBoostPreviewWrapper uri={_boostUri} />,
+                {},
+                { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+            );
+        }
+    }, [_showPreview, _boostUri, newModal]);
+
     const imgSrc = RelationshipCats;
     const { iconColor, textColor } = SubheaderContentType[SubheaderTypeEnum.Family];
 
@@ -210,9 +224,6 @@ const FamilyPage: React.FC = () => {
                     {activeTab === CredentialListTabEnum.Managed && (
                         <BoostManagedList {...listProps} />
                     )}
-                    <IonModal isOpen={Boolean(_showPreview) && _boostUri}>
-                        <FamilyBoostPreviewWrapper uri={_boostUri as string} />
-                    </IonModal>
                 </IonContent>
             </GenericErrorBoundary>
         </IonPage>

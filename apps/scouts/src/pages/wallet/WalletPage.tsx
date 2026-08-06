@@ -1,17 +1,12 @@
-import React, { ReactElement, useState, useEffect } from 'react';
+import React, { ReactElement, useEffect } from 'react';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { useHistory, useLocation } from 'react-router-dom';
 
-import { IonPage, IonContent, IonRow, IonCol, IonModal, useIonModal } from '@ionic/react';
+import { IonPage, IonContent, IonRow, IonCol } from '@ionic/react';
 
 import WalletSquare from './WalletSquare';
 import MainHeader from '../../components/main-header/MainHeader';
-import ShareBoostsBundleModal from '../../components/creds-bundle/ShareBoostsBundleModal';
 import CapGoUpdateModal from '../../components/capGoUpdateModal/CapGoUpdateModal';
-import WalletActionButton from '../../components/main-subheader/WalletActionButton';
-import ViewSharedCredentials from 'learn-card-base/components/sharecreds/ViewSharedCredentials';
-
-import modalStateStore from 'learn-card-base/stores/modalStateStore';
 
 import { ICONS_TO_SOURCE } from './constants';
 import {
@@ -24,7 +19,6 @@ import {
     walletSubtypeToCredentialCategory,
 } from 'learn-card-base';
 
-import { useFlags } from 'launchdarkly-react-client-sdk';
 import BoostOutline2 from 'learn-card-base/svgs/BoostOutline2';
 import MeritBadgesIcon from 'learn-card-base/svgs/MeritBadgesIcon';
 import ScoutsPledge2 from 'learn-card-base/svgs/ScoutsPledge2';
@@ -90,11 +84,6 @@ const WalletPage: React.FC = () => {
     const location = useLocation();
 
     const currentUser = useCurrentUser();
-    const [isOpen, setIsOpen] = useState(false);
-    const [shareCredsIsOpen, setShareCredsIsOpen] = useState(false);
-    const [viewCredsIsOpen, setViewCredsIsOpen] = useState(false);
-    const flags = useFlags();
-    const pathName = location?.pathname?.replace('/', '');
 
     useEffect(() => {
         CapacitorUpdater.addListener('updateAvailable', async res => {
@@ -121,27 +110,6 @@ const WalletPage: React.FC = () => {
             CapacitorUpdater.removeAllListeners();
         };
     }, []);
-
-    const handleShareModal = () => {
-        setShareCredsIsOpen(true);
-    };
-
-    const handleCloseShareModal = () => {
-        setShareCredsIsOpen(false);
-    };
-
-    const handleViewModal = () => {
-        setViewCredsIsOpen(true);
-    };
-
-    const handleCloseViewModal = () => {
-        setViewCredsIsOpen(false);
-    };
-
-    const handleClickModal = () => {
-        modalStateStore.set.issueVcModal({ open: true, name: pathName });
-        setIsOpen(true);
-    };
 
     const handleClickSquare = (subtype: WalletCategoryTypes) => {
         if (subtype === WalletCategoryTypes.meritBadges) {
@@ -182,29 +150,12 @@ const WalletPage: React.FC = () => {
                         <h2 className="text-grayscale-900 font-medium text-2xl tracking-[0.01rem]">
                             Wallet
                         </h2>
-                        {/* <div className="wallet-header-menu-options items-center flex">
-                            {flags?.boostBundleMenu && (
-                                <WalletActionButton
-                                    location={location}
-                                    handleSelfIssue={handleViewModal}
-                                    handleShareCreds={handleShareModal}
-                                />
-                            )}
-                        </div> */}
                     </div>
                 </IonRow>
                 <IonRow className="wallet-squares-wrapper pb-10">
                     <IonCol className="wallet-squares-container">{renderWalletList}</IonCol>
                 </IonRow>
             </IonContent>
-
-            <IonModal className="main-header-modal" isOpen={shareCredsIsOpen}>
-                <ShareBoostsBundleModal onDismiss={handleCloseShareModal} />
-            </IonModal>
-
-            <IonModal className="main-header-modal" isOpen={viewCredsIsOpen}>
-                <ViewSharedCredentials onDismiss={handleCloseViewModal} />
-            </IonModal>
         </IonPage>
     );
 };
