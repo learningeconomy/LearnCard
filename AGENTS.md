@@ -110,6 +110,20 @@ Use the shared `Overlay` component from `packages/learn-card-base/src/auth-coord
 
 Overlay renders a fixed fullscreen backdrop with a white `rounded-[20px]` card, max-width 480px, with `font-poppins` and `animate-fade-in-up` entrance animation.
 
+### Safe-Area Insets (LC-1962 surface contract)
+
+**Rule: inside a modal, never mention safe area.** The shared `AppModal` surface layer (`packages/learn-card-base/src/components/modals/surfaces/`) owns device insets for every modal variant (fullscreen / right / center / cancel / select / bottom-sheet / freeform). Enforced by CI: `node scripts/check-safe-area.mjs` fails on `env(safe-area-*)`, `useSafeArea`, `safe-area-top-margin`, or raw `--ion-safe-area-*` outside the surface layer (`scripts/safe-area-allowlist.json` is shrink-only legacy debt).
+
+Sanctioned patterns for the two exceptions:
+
+-   **Dual-host content** (renders in modals AND on routes): `var(--ion-safe-area-top, 0px)` / `-bottom` — resolves to `0` inside surfaces, real inset on routes.
+-   **Absolutely-positioned overlay elements** (frosted footers, floating headers/close buttons — surface padding cannot protect them): compose the surface-published inset with the route fallback:
+    `calc(<offset> + var(--lc-overlay-inset-bottom, var(--ion-safe-area-bottom, 0px)))`
+
+Dev verification: append `?insets` (47/34) or `?insets=<top>,<bottom>` to any dev URL to simulate device insets in a desktop browser.
+
+Do not add new raw `<IonModal>` usages — present modals via `useModal`/`newModal` (the count is currently zero; keep it there).
+
 ### Loading States
 
 Never leave the user without feedback. Every async action must show a loading state:
@@ -317,23 +331,6 @@ const lc = await initLearnCard({ seed: '...', network: true });
 ```
 
 For repo-wide environment setup and Infisical-managed `.env` generation, see [environment-variables.md](./environment-variables.md). It covers the pull, backup, and compare scripts used across the monorepo.
-
-### Rebuilding DIDKit WASM
-
-Run this from the repository root. This is the standard local workflow: build the Web
-target, optimize the generated binary with Binaryen's `wasm-opt`, copy the package into
-the DIDKit plugin, and return from `pkg` with `cd ..` (compatible with fish):
-
-```bash
-cd lib/didkit/lib/web
-wasm-pack build --target=web && cd pkg && wasm-opt -Oz -o tmp.wasm didkit_wasm_bg.wasm && mv tmp.wasm didkit_wasm_bg.wasm && cp didkit* ../../../../../packages/plugins/didkit/src/didkit/pkg/ && cd ..
-bun --cwd ../../../../packages/plugins/didkit run build
-```
-
-The bridge and LearnCard CLI load
-`@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm`, so the final plugin build is
-required after copying the optimized WASM. Restart any running bridge or CLI process
-afterward because it loads the WASM during initialization.
 
 ## Adding a New Network Route
 
