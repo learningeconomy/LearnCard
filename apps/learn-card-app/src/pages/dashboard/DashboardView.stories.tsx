@@ -2,6 +2,7 @@ import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { MemoryRouter } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { expect, userEvent, within } from '@storybook/test';
 
 import DashboardView from './DashboardView';
 import { DASHBOARD_PERSONAS, personaCredentials } from './dashboard.personas';
@@ -82,6 +83,19 @@ export const BrandNewUser: Story = {
 export const ActiveLearner: Story = {
     args: {
         vm: DASHBOARD_PERSONAS['Active learner'],
+    },
+    tags: ['credential-options'],
+    play: async ({ canvasElement }) => {
+        const canvas = within(canvasElement);
+        const page = within(canvasElement.ownerDocument.body);
+        const [optionsButton] = await canvas.findAllByRole('button', {
+            name: 'More options',
+        });
+
+        await userEvent.click(optionsButton);
+        await expect(await page.findByRole('button', { name: 'Share' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'View Data' })).toBeVisible();
+        await userEvent.click(page.getByRole('button', { name: 'Close' }));
     },
 };
 
