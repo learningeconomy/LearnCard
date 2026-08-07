@@ -10,7 +10,7 @@ type CardWrapperProps = {
 };
 
 type PreviewProps = {
-    onDotsClick: () => void;
+    onDotsClick?: () => void;
 };
 
 const mocks = vi.hoisted(() => ({
@@ -144,7 +144,7 @@ describe('BoostEarnedCard', () => {
         ['Boost', true],
         ['non-Boost', false],
     ])(
-        'keeps preview options active for a %s credential when the card trigger is hidden',
+        'keeps preview options active for a %s credential when only the card trigger is hidden',
         (_credentialKind, isBoost) => {
             mocks.isBoostCredential.mockReturnValue(isBoost);
             render(
@@ -153,7 +153,7 @@ describe('BoostEarnedCard', () => {
                     record={{ uri: 'urn:credential:achievement' }}
                     categoryType="Achievement"
                     useWrapper={false}
-                    hideOptionsMenu
+                    hideCardOptionsMenu
                 />
             );
 
@@ -162,10 +162,38 @@ describe('BoostEarnedCard', () => {
             fireEvent.click(screen.getByRole('button', { name: 'Open credential' }));
 
             expect(mocks.newModal).toHaveBeenCalledOnce();
-            const preview = mocks.newModal.mock.calls[0]?.[0] as React.ReactElement<PreviewProps>;
-            preview.props.onDotsClick();
+            const preview = mocks.newModal.mock.calls[0]?.[0] as
+                | React.ReactElement<PreviewProps>
+                | undefined;
+            expect(preview).toBeDefined();
+            expect(typeof preview!.props.onDotsClick).toBe('function');
+            preview!.props.onDotsClick!();
 
             expect(mocks.presentOptions).toHaveBeenCalledOnce();
         }
     );
+
+    it('keeps preview options hidden when all options are disabled', () => {
+        render(
+            <BoostEarnedCard
+                credential={credential}
+                record={{ uri: 'urn:credential:achievement' }}
+                categoryType="Achievement"
+                useWrapper={false}
+                hideOptionsMenu
+            />
+        );
+
+        expect(screen.queryByRole('button', { name: 'Card options' })).toBeNull();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Open credential' }));
+
+        expect(mocks.newModal).toHaveBeenCalledOnce();
+        const preview = mocks.newModal.mock.calls[0]?.[0] as
+            | React.ReactElement<PreviewProps>
+            | undefined;
+        expect(preview).toBeDefined();
+        expect(preview!.props.onDotsClick).toBeUndefined();
+        expect(mocks.presentOptions).not.toHaveBeenCalled();
+    });
 });
