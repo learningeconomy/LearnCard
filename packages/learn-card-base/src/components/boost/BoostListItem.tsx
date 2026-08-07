@@ -213,12 +213,22 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
         ? '!w-[14px] !h-[14px] !min-w-[14px] !min-h-[14px] mr-1 z-50'
         : '!w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] mr-1 z-50';
 
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+        if (!onClick || (event.key !== 'Enter' && event.key !== ' ')) return;
+
+        event.preventDefault();
+        onClick();
+    };
+
     return (
         <IonRow
             className={`${rowPadding} rounded-[15px] relative overflow-hidden w-full flex ${rowGap} items-center ${backgroundColor} z-[2] ${
                 onClick ? 'cursor-pointer' : ''
             }`}
             onClick={onClick}
+            role={onClick ? 'button' : undefined}
+            tabIndex={onClick ? 0 : undefined}
+            onKeyDown={onClick ? handleKeyDown : undefined}
             data-testid="boost-list-item"
         >
             {showMediaBadge ? (

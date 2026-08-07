@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { VC } from '@learncard/types';
@@ -71,19 +71,24 @@ const credential = {
 } as unknown as VC;
 
 describe('BoostListItem', () => {
-    it('shows a pointer cursor only when the row is clickable', () => {
+    it('exposes clickable rows to pointer and keyboard users', () => {
+        const onClick = vi.fn();
         const { rerender } = render(
             <BoostListItem
                 credential={credential}
                 categoryType="Achievement"
                 title="Example Achievement"
-                onClick={vi.fn()}
+                onClick={onClick}
             />
         );
 
-        expect(screen.getByTestId('boost-list-item').classList.contains('cursor-pointer')).toBe(
-            true
-        );
+        const clickableRow = screen.getByRole('button');
+        expect(clickableRow.classList.contains('cursor-pointer')).toBe(true);
+        expect(clickableRow.getAttribute('tabindex')).toBe('0');
+
+        fireEvent.keyDown(clickableRow, { key: 'Enter' });
+        fireEvent.keyDown(clickableRow, { key: ' ' });
+        expect(onClick).toHaveBeenCalledTimes(2);
 
         rerender(
             <BoostListItem
@@ -93,8 +98,9 @@ describe('BoostListItem', () => {
             />
         );
 
-        expect(screen.getByTestId('boost-list-item').classList.contains('cursor-pointer')).toBe(
-            false
-        );
+        const passiveRow = screen.getByTestId('boost-list-item');
+        expect(passiveRow.classList.contains('cursor-pointer')).toBe(false);
+        expect(passiveRow.getAttribute('role')).toBeNull();
+        expect(passiveRow.getAttribute('tabindex')).toBeNull();
     });
 });
