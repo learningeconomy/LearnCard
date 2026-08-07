@@ -16,26 +16,28 @@ const QuickActionsRow: React.FC<QuickActionsRowProps> = ({ slots }) => {
                         <div
                             key={slot}
                             aria-hidden
-                            className="hidden sm:block rounded-2xl border border-dashed border-grayscale-200 bg-grayscale-10/40"
+                            className="hidden sm:block rounded-[20px] border border-dashed border-grayscale-200 bg-grayscale-10/40"
                         />
                     );
                 }
+
                 const { Icon } = action;
+
                 return (
                     <button
                         key={slot}
                         type="button"
                         onClick={action.onClick}
-                        className="group flex items-center gap-3 bg-white rounded-2xl py-3 px-3 border border-grayscale-200 hover:border-grayscale-300 hover:bg-grayscale-10 transition-all text-left min-w-0"
+                        className="group flex w-full min-h-[76px] items-center gap-4 bg-white rounded-[20px] py-4 px-4 border border-grayscale-200 hover:border-grayscale-300 hover:bg-grayscale-10 transition-all text-left min-w-0"
                     >
-                        <span className="shrink-0 w-9 h-9 rounded-full bg-grayscale-100 group-hover:bg-grayscale-200 transition-colors flex items-center justify-center text-grayscale-800">
-                            <Icon className="w-5 h-5" />
+                        <span className="shrink-0 w-11 h-11 rounded-full bg-grayscale-100 group-hover:bg-grayscale-200 transition-colors flex items-center justify-center text-grayscale-800">
+                            <Icon className="w-[30px] h-[30px]" />
                         </span>
                         <span className="flex flex-col min-w-0">
-                            <span className="text-sm font-semibold text-grayscale-900 truncate">
+                            <span className="text-[12px] font-semibold text-grayscale-900 whitespace-normal">
                                 {action.label}
                             </span>
-                            <span className="inline sm:hidden desktop:inline text-[11px] text-grayscale-500 leading-tight truncate">
+                            <span className="text-[12px] text-grayscale-500 leading-4 whitespace-normal">
                                 {action.caption}
                             </span>
                         </span>
