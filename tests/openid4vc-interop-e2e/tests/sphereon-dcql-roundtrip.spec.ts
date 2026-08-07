@@ -19,15 +19,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { getOpenID4VCPlugin, requestW3cVc } from '@learncard/openid4vc-plugin';
 
-import {
-    createIssuerKey,
-    mintWaltidOffer,
-    resolveOfferToByValue,
-} from '../setup/walt-id-client';
-import {
-    startSphereonVerifier,
-    type SphereonVerifier,
-} from '../setup/sphereon-verifier';
+import { createIssuerKey, mintWaltidOffer, resolveOfferToByValue } from '../setup/walt-id-client';
+import { startSphereonVerifier, type SphereonVerifier } from '../setup/sphereon-verifier';
 import { buildMockLearnCard, type MockLearnCardHandle } from './helpers/mock-learncard';
 
 const ISSUER_BASE_URL = process.env.WALTID_ISSUER_BASE_URL ?? 'http://localhost:7002';
@@ -36,8 +29,7 @@ const getPlugin = (mock: MockLearnCardHandle) => {
     const plugin = getOpenID4VCPlugin(mock.learnCard, {});
     const bound: Record<string, (...args: any[]) => any> = {};
     for (const [name, fn] of Object.entries(plugin.methods)) {
-        bound[name] = (...args: any[]) =>
-            (fn as (...a: any[]) => any)(mock.learnCard, ...args);
+        bound[name] = (...args: any[]) => (fn as (...a: any[]) => any)(mock.learnCard, ...args);
     }
     return bound as any;
 };
@@ -81,9 +73,7 @@ describe('interop: cross-vendor DCQL roundtrip (walt.id issues → Sphereon DCQL
         });
 
         // --- Phase 3: plugin auto-routes to DCQL pipeline ---
-        const resolved = await plugin.resolveAuthorizationRequest(
-            session.authorizationRequestUri
-        );
+        const resolved = await plugin.resolveAuthorizationRequest(session.authorizationRequestUri);
         expect(resolved.dcql_query).toBeDefined();
         expect(resolved.presentation_definition).toBeUndefined();
 
@@ -98,7 +88,7 @@ describe('interop: cross-vendor DCQL roundtrip (walt.id issues → Sphereon DCQL
         expect(present.dcqlBuilt).toBeDefined();
         expect(present.dcqlSigned).toBeDefined();
         expect(present.dcqlVpToken).toEqual(
-            expect.objectContaining({ degree: expect.any(String) })
+            expect.objectContaining({ degree: [expect.any(String)] })
         );
         expect(present.prepared).toBeUndefined(); // PEX field stays unset.
         expect(present.signed).toBeUndefined();

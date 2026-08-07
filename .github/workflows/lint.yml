@@ -119,3 +119,35 @@ jobs:
               run: |
                   bun run i18n:check-memos
                   bun run i18n:check-ast
+
+    # Exercise behavior from the checked-in generated glue and binary directly. Native Rust
+    # tests do not prove that a source change was included in the committed WASM payload.
+    DidkitWasmPayload:
+        name: Check DIDKit WASM payload behavior
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v3
+              with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+
+            - name: Verify numeric Bitstring Status List compatibility
+              run: node packages/plugins/didkit/scripts/check-wasm-numeric-status.mjs
+
+    # Pure-Node static scan (no install/build): the wasm-bindgen glue checked into
+    # packages/plugins/didkit/src/didkit/pkg is version-locked to the binary beside it,
+    # so the content-addressed URL that init() falls back to must name that same binary.
+    # A mismatch fails instantiation with a LinkError for every SDK consumer that does
+    # not pass its own `didkit` argument. Runs standalone rather than as a jest test so a
+    # stale URL does not bail the nx test graph for everything depending on didkit-plugin.
+    DidkitWasmUrl:
+        name: Check DIDKit WASM matches its published URL
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v3
+              with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+
+            - name: Verify checked-in WASM matches the default init() URL
+              run: node packages/plugins/didkit/scripts/check-wasm-url.mjs

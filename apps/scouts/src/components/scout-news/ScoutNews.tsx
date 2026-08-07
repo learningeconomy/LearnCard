@@ -5,8 +5,8 @@ import { useQuery, useQueries } from '@tanstack/react-query';
 import { formatLocaleDate } from '../../i18n/formatters';
 import ExternalLink from 'learn-card-base/svgs/ExternalLink';
 import { openExternalLink } from '../../helpers/externalLinkHelpers';
-import Lottie from 'react-lottie-player';
-import HourGlass from '../../assets/lotties/hourglass.json';
+
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import ScoutNewsDefaultData from './scoutnewsdefault.json';
 
 const SCOUTS_NEWS_API_ENDPOINT =
@@ -101,12 +101,7 @@ export const ScoutsNewsList: React.FC = () => {
             {!data && isLoading && (
                 <section className="loading-spinner-container flex items-center mt-[20px] justify-center w-full ">
                     <div className="max-w-[180px]">
-                        <Lottie
-                            loop
-                            animationData={HourGlass}
-                            play
-                            style={{ width: '100%', height: '100%' }}
-                        />
+                        <LoadingSpinner />
                     </div>
                 </section>
             )}

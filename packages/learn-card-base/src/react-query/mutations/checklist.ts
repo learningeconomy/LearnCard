@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useWallet } from 'learn-card-base';
 import { newCredsStore } from 'learn-card-base/stores/newCredsStore';
 
@@ -7,6 +7,8 @@ const log = getLogger('checklist');
 
 export const useDeleteChecklistCredentialMutation = () => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
+
     return useMutation({
         mutationFn: async ({ id, uri }: { id: string; uri: string }) => {
             const wallet = await initWallet();
@@ -22,6 +24,9 @@ export const useDeleteChecklistCredentialMutation = () => {
             } catch (error) {
                 log.error('Failed to remove credential from LearnCloud', error);
             }
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['getChecklistCredentialCounts'] });
         },
         onError: error => {
             log.error('Failed to delete checklist credential', error);

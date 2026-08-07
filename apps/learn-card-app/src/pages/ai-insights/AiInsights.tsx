@@ -46,6 +46,7 @@ import { useGetCurrentLCNUser } from 'learn-card-base';
 import { useAllContractRequestsForProfile } from 'learn-card-base';
 import { AiInsightsTabsEnum } from './ai-insight-tabs/ai-insights-tabs.helpers';
 import AiInsightsWidgets from './AiInsightsWidgets';
+import { useGlobalSkillFrameworks } from '../../helpers/globalSkillFrameworks.helpers';
 
 type Flags = {
     hideAiPathways?: boolean;
@@ -63,6 +64,11 @@ const AiInsights: React.FC = () => {
     const { isAiEnabled, isLoading: aiFeatureGateLoading } = useAiFeatureGate();
     const { presentToast } = useToast();
     const location = useLocation();
+    const globalSkillFrameworks = useGlobalSkillFrameworks();
+    const globalSkillFrameworkIds = useMemo(
+        () => globalSkillFrameworks.map(framework => framework.frameworkId),
+        [globalSkillFrameworks]
+    );
 
     const [selectedTab, setSelectedTab] = useState(AiInsightsTabsEnum.MyInsights);
     const autoGenerateAiInsightsAttemptedRef = useRef(false);
@@ -203,8 +209,8 @@ const AiInsights: React.FC = () => {
     }, [canAutoGenerateAiInsights, generateAiInsights]);
 
     const skillsMap = useMemo(() => {
-        return mapBoostsToSkills(allResolvedCreds);
-    }, [allResolvedCreds]);
+        return mapBoostsToSkills(allResolvedCreds, globalSkillFrameworkIds);
+    }, [allResolvedCreds, globalSkillFrameworkIds]);
 
     const categorizedSkills = useMemo(
         () =>

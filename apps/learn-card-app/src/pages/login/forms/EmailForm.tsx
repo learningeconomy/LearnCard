@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import * as m from '../../../paraglide/messages.js';
 import { TransP } from '../../../i18n/TransP';
+import { useLocale } from '../../../i18n';
 import Countdown from 'react-countdown';
 import { useHistory } from 'react-router-dom';
 import ReactCodeInput from 'react-code-input';
@@ -106,6 +107,9 @@ const EmailForm: React.FC<EmailFormProps> = ({
 
     const { mutateAsync: sendLoginVerificationCode } = useSendLoginVerificationCode();
     const { mutateAsync: verifyLoginVerificationCode } = useVerifyLoginVerificationCode();
+    // Active UI locale — sent so the (pre-auth) login-code email matches the
+    // language the user is currently viewing the app in.
+    const locale = useLocale();
 
     const [isResendCodeLoading, setIsResendCodeLoading] = useState<boolean>(false);
 
@@ -261,7 +265,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                     } else {
                         try {
                             setIsLoading(true);
-                            await sendLoginVerificationCode({ email });
+                            await sendLoginVerificationCode({ email, locale });
                             redirectStore.set.email(email);
                             setCurrentStep(EmailFormStepsEnum.verification);
                             setIsLoading(false);
@@ -282,7 +286,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
     const handleResendCode = async () => {
         setIsResendCodeLoading(true);
         try {
-            await sendLoginVerificationCode({ email: verificationEmail as string });
+            await sendLoginVerificationCode({ email: verificationEmail as string, locale });
             setIsResendCodeLoading(false);
         } catch (e) {
             setIsResendCodeLoading(false);

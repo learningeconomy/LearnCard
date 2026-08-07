@@ -22,8 +22,7 @@ const FALLBACK_ENV_PATH = resolve(LCA_API_ROOT, '.env');
  * ScoutPass is single-tenant, so unlike learn-card-app's lc there is no tenant
  * picker — just stages. Stages are discovered from environments/scoutpass:
  * every config.<stage>.json overlay is a stage, plus the implicit 'production'
- * stage which is the base config.json with no overlay. ScoutPass has no staging
- * environment, so this normally yields ['local', 'production'].
+ * stage which is the base config.json with no overlay.
  */
 const PROJECT_ID = 'scoutpass';
 
@@ -213,6 +212,7 @@ const configToEnv = (config: Record<string, any>): Record<string, string> => {
     if (apis.cloudService) env.CLOUD_URL = apis.cloudService;
     if (apis.xapi) env.LEARN_CLOUD_XAPI_URL = apis.xapi;
     if (apis.lcaApi) env.API_URL = apis.lcaApi;
+    if (config.auth?.sss?.serverUrl) env.VITE_SSS_SERVER_URL = config.auth.sss.serverUrl;
     if (config.observability?.sentryEnv) env.SENTRY_ENV = config.observability.sentryEnv;
 
     return env;
@@ -551,6 +551,11 @@ const printHelp = (): void => {
         )}`
     );
     log.info(
+        `  ${cyan('bun run lc stage-env [stage]')}            ${dim(
+            'Print env vars as KEY=VALUE for CI (errors on unknown stage)'
+        )}`
+    );
+    log.info(
         dim(
             `  Stages are discovered from environments/${PROJECT_ID} (config.<stage>.json + implicit 'production').`
         )
@@ -665,6 +670,27 @@ const handleShortcuts = async (): Promise<boolean> => {
         case 'resolve':
             printResolvedStage(asStage(args[1]) ?? args[1]);
             return true;
+
+        // Machine-readable KEY=VALUE output for CI ($GITHUB_OUTPUT). Unlike
+        // `resolve`, unknown stages are a hard error: silently falling back to
+        // the base config would point a staging build at production backends.
+        case 'stage-env': {
+            const requestedStage = args[1] ?? 'production';
+
+            if (!asStage(requestedStage)) {
+                console.error(
+                    `Unknown stage: ${requestedStage}. Available: ${discoverStages().join(', ')}`
+                );
+                process.exit(1);
+            }
+
+            for (const [key, value] of Object.entries(resolveStageEnv(requestedStage))) {
+                process.stdout.write(`${key}=${value}\n`);
+            }
+
+            rl.close();
+            return true;
+        }
 
         case 'build':
             runCommand('bun run build', 'Building Scouts web app', 'bun run lc build');

@@ -1,0 +1,460 @@
+name: Update DIDKit WASM
+
+on:
+    pull_request:
+        branches:
+            - main
+        paths:
+            - '.github/workflows/update-didkit-wasm.yml'
+            - '.gitmodules'
+            - '.github/actions/setup/**'
+            - 'packages/plugins/didkit/**'
+            - 'lib/didkit'
+            - 'lib/ssi'
+    repository_dispatch:
+        types:
+            - didkit-main-updated
+            - ssi-main-updated
+    workflow_dispatch:
+        inputs:
+            didkit_ref:
+                description: 'DIDKit branch or tag to build'
+                required: false
+                default: main
+            ssi_ref:
+                description: 'SSI branch or tag to build'
+                required: false
+                default: main
+            force_rebuild:
+                description: 'Rebuild even when the source refs are unchanged'
+                required: false
+                type: boolean
+                default: false
+
+concurrency:
+    group: update-didkit-wasm-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'publish' }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+    contents: read
+
+env:
+    CARGO_TERM_COLOR: always
+    BINARYEN_VERSION: '130'
+    BINARYEN_X86_64_LINUX_SHA256: 0a18362361ad05465118cd8eeb72edaeec89de6894bc283576ef4e07aa3babcc
+
+jobs:
+    validate:
+        name: Validate DIDKit WASM build
+        if: github.event_name == 'pull_request'
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout LearnCard
+              uses: actions/checkout@v5
+              with:
+                  submodules: recursive
+
+            - name: Setup Rust
+              uses: dtolnay/rust-toolchain@stable
+              with:
+                  targets: wasm32-unknown-unknown
+
+            - name: Cache Cargo
+              uses: actions/cache@v6
+              with:
+                  path: |
+                      ~/.cargo/bin/
+                      ~/.cargo/registry/index/
+                      ~/.cargo/registry/cache/
+                      ~/.cargo/git/db/
+                      lib/didkit/target/
+                  key: ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-${{ hashFiles('packages/plugins/didkit/wasm/didkit-wasm.Cargo.lock', 'lib/didkit/**/*.toml', 'lib/ssi/**/*.toml') }}
+                  restore-keys: |
+                      ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-
+
+            - name: Cache Binaryen
+              uses: actions/cache@v6
+              with:
+                  path: ~/.cache/binaryen
+                  key: ${{ runner.os }}-${{ runner.arch }}-binaryen-${{ env.BINARYEN_VERSION }}-${{ env.BINARYEN_X86_64_LINUX_SHA256 }}
+
+            - name: Install wasm-pack
+              run: |
+                  set -euo pipefail
+
+                  if [ "$(wasm-pack --version 2>/dev/null || true)" != "wasm-pack 0.15.0" ]; then
+                      cargo install wasm-pack --version 0.15.0 --locked --force
+                  fi
+
+            - name: Install Binaryen
+              run: |
+                  set -euo pipefail
+
+                  archive_name="binaryen-version_${BINARYEN_VERSION}-x86_64-linux.tar.gz"
+                  archive="${HOME}/.cache/binaryen/${archive_name}"
+                  install_dir="${RUNNER_TEMP}/binaryen"
+
+                  mkdir -p "$(dirname "${archive}")" "${install_dir}"
+
+                  if [ ! -f "${archive}" ]; then
+                      curl --fail --location --retry 3 --silent --show-error \
+                          --output "${archive}" \
+                          "https://github.com/WebAssembly/binaryen/releases/download/version_${BINARYEN_VERSION}/${archive_name}"
+                  fi
+
+                  printf '%s  %s\n' "${BINARYEN_X86_64_LINUX_SHA256}" "${archive}" | sha256sum --check
+                  tar -xzf "${archive}" --strip-components=1 -C "${install_dir}"
+
+                  "${install_dir}/bin/wasm-opt" --version
+                  echo "${install_dir}/bin" >> "${GITHUB_PATH}"
+
+            - name: Build DIDKit WASM
+              run: packages/plugins/didkit/scripts/build-wasm-from-submodules.sh
+
+            - name: Setup Bun and install dependencies
+              uses: ./.github/actions/setup
+
+            - name: Build DIDKit plugin
+              run: bunx nx build didkit-plugin
+
+            - name: Test DIDKit plugin
+              run: bunx nx test didkit-plugin
+
+            - name: Smoke test generated DIDKit WASM
+              run: bun packages/plugins/didkit/scripts/smoke-test-wasm.mjs
+
+    update:
+        name: Publish and propose DIDKit WASM update
+        if: github.event_name != 'pull_request'
+        runs-on: ubuntu-latest
+        environment: didkit-wasm-publish
+        permissions:
+            contents: write
+            id-token: write
+            pull-requests: write
+        env:
+            AWS_REGION: ${{ vars.DIDKIT_WASM_AWS_REGION || 'us-east-1' }}
+            DIDKIT_REF: ${{ inputs.didkit_ref || github.event.client_payload.didkit_ref || 'main' }}
+            DIDKIT_WASM_BUCKET: ${{ vars.DIDKIT_WASM_S3_BUCKET }}
+            DIDKIT_WASM_PUBLIC_BASE_URL: ${{ vars.DIDKIT_WASM_PUBLIC_BASE_URL }}
+            FORCE_REBUILD: ${{ inputs.force_rebuild || github.event.client_payload.force_rebuild || 'false' }}
+            SSI_REF: ${{ inputs.ssi_ref || github.event.client_payload.ssi_ref || 'main' }}
+        steps:
+            - name: Validate publish configuration
+              env:
+                  DIDKIT_WASM_AWS_ROLE_ARN: ${{ secrets.DIDKIT_WASM_AWS_ROLE_ARN }}
+              run: |
+                  set -euo pipefail
+
+                  if [ -z "${DIDKIT_WASM_BUCKET}" ]; then
+                      echo "::error::Set DIDKIT_WASM_S3_BUCKET on the didkit-wasm-publish environment."
+                      exit 1
+                  fi
+
+                  if [ -z "${DIDKIT_WASM_PUBLIC_BASE_URL}" ]; then
+                      echo "::error::Set DIDKIT_WASM_PUBLIC_BASE_URL on the didkit-wasm-publish environment."
+                      exit 1
+                  fi
+
+                  if [ -z "${DIDKIT_WASM_AWS_ROLE_ARN}" ]; then
+                      echo "::error::Set DIDKIT_WASM_AWS_ROLE_ARN on the didkit-wasm-publish environment."
+                      exit 1
+                  fi
+
+                  # repository_dispatch bypasses branch protection, and these refs are checked out
+                  # and then compiled, so a Cargo build script runs whatever they point at. Keep
+                  # them to plain ref characters; reject option-like and traversal forms.
+                  for ref_name in DIDKIT_REF SSI_REF; do
+                      ref_value="${!ref_name}"
+
+                      if ! printf '%s' "${ref_value}" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9._/-]*$'; then
+                          echo "::error::${ref_name} is not a valid git ref: ${ref_value}"
+                          exit 1
+                      fi
+
+                      case "${ref_value}" in
+                          *..*)
+                              echo "::error::${ref_name} must not contain '..': ${ref_value}"
+                              exit 1
+                              ;;
+                      esac
+                  done
+
+            - name: Checkout LearnCard source
+              uses: actions/checkout@v5
+              with:
+                  fetch-depth: 0
+                  ref: ${{ github.event_name == 'workflow_dispatch' && github.ref_name || 'main' }}
+                  submodules: recursive
+                  token: ${{ secrets.LEARNCARD_BOT_TOKEN || github.token }}
+
+            - name: Update DIDKit and SSI submodules
+              id: submodules
+              run: |
+                  set -euo pipefail
+
+                  # These checked-in remotes point to the learningeconomy-maintained forks.
+                  # Publishing still requires the protected environment and a reviewed update PR.
+                  git -C lib/didkit fetch origin "${DIDKIT_REF}"
+                  git -C lib/didkit checkout --detach FETCH_HEAD
+                  git -C lib/didkit submodule update --init --recursive
+
+                  git -C lib/ssi fetch origin "${SSI_REF}"
+                  git -C lib/ssi checkout --detach FETCH_HEAD
+                  git -C lib/ssi submodule update --init --recursive
+
+                  SSI_SHA="$(git -C lib/ssi rev-parse HEAD)"
+                  DIDKIT_SHA="$(git -C lib/didkit rev-parse HEAD)"
+                  BASE_URL="${DIDKIT_WASM_PUBLIC_BASE_URL%/}"
+
+                  echo "ssi_sha=${SSI_SHA}" >> "${GITHUB_OUTPUT}"
+                  echo "ssi_short_sha=${SSI_SHA::12}" >> "${GITHUB_OUTPUT}"
+                  echo "didkit_sha=${DIDKIT_SHA}" >> "${GITHUB_OUTPUT}"
+                  echo "didkit_short_sha=${DIDKIT_SHA::12}" >> "${GITHUB_OUTPUT}"
+
+                  # Once a hosted artifact exists, unchanged source pointers deliberately skip.
+                  # Toolchain-only rebuilds require a manual run with force_rebuild enabled.
+                  if git diff --quiet -- lib/didkit lib/ssi \
+                      && [ "${FORCE_REBUILD}" != "true" ] \
+                      && grep -Fq "${BASE_URL}/didkit/sha256-" packages/plugins/didkit/src/didkit/index.ts; then
+                      echo "has_updates=false" >> "${GITHUB_OUTPUT}"
+                  else
+                      echo "has_updates=true" >> "${GITHUB_OUTPUT}"
+                  fi
+
+            - name: Report current sources
+              if: steps.submodules.outputs.has_updates == 'false'
+              run: echo 'DIDKit and SSI are already current; no WASM update is needed.' >> "${GITHUB_STEP_SUMMARY}"
+
+            - name: Setup Rust
+              if: steps.submodules.outputs.has_updates == 'true'
+              uses: dtolnay/rust-toolchain@stable
+              with:
+                  targets: wasm32-unknown-unknown
+
+            - name: Cache Cargo
+              if: steps.submodules.outputs.has_updates == 'true'
+              uses: actions/cache@v6
+              with:
+                  path: |
+                      ~/.cargo/bin/
+                      ~/.cargo/registry/index/
+                      ~/.cargo/registry/cache/
+                      ~/.cargo/git/db/
+                      lib/didkit/target/
+                  key: ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-${{ hashFiles('packages/plugins/didkit/wasm/didkit-wasm.Cargo.lock', 'lib/didkit/**/*.toml', 'lib/ssi/**/*.toml') }}
+                  restore-keys: |
+                      ${{ runner.os }}-didkit-wasm-cargo-wasm-pack-0.15.0-
+
+            - name: Cache Binaryen
+              if: steps.submodules.outputs.has_updates == 'true'
+              uses: actions/cache@v6
+              with:
+                  path: ~/.cache/binaryen
+                  key: ${{ runner.os }}-${{ runner.arch }}-binaryen-${{ env.BINARYEN_VERSION }}-${{ env.BINARYEN_X86_64_LINUX_SHA256 }}
+
+            - name: Install wasm-pack
+              if: steps.submodules.outputs.has_updates == 'true'
+              run: |
+                  set -euo pipefail
+
+                  if [ "$(wasm-pack --version 2>/dev/null || true)" != "wasm-pack 0.15.0" ]; then
+                      cargo install wasm-pack --version 0.15.0 --locked --force
+                  fi
+
+            - name: Install Binaryen
+              if: steps.submodules.outputs.has_updates == 'true'
+              run: |
+                  set -euo pipefail
+
+                  archive_name="binaryen-version_${BINARYEN_VERSION}-x86_64-linux.tar.gz"
+                  archive="${HOME}/.cache/binaryen/${archive_name}"
+                  install_dir="${RUNNER_TEMP}/binaryen"
+
+                  mkdir -p "$(dirname "${archive}")" "${install_dir}"
+
+                  if [ ! -f "${archive}" ]; then
+                      curl --fail --location --retry 3 --silent --show-error \
+                          --output "${archive}" \
+                          "https://github.com/WebAssembly/binaryen/releases/download/version_${BINARYEN_VERSION}/${archive_name}"
+                  fi
+
+                  printf '%s  %s\n' "${BINARYEN_X86_64_LINUX_SHA256}" "${archive}" | sha256sum --check
+                  tar -xzf "${archive}" --strip-components=1 -C "${install_dir}"
+
+                  "${install_dir}/bin/wasm-opt" --version
+                  echo "${install_dir}/bin" >> "${GITHUB_PATH}"
+
+            - name: Build DIDKit WASM
+              if: steps.submodules.outputs.has_updates == 'true'
+              env:
+                  UPDATE_DIDKIT_WASM_LOCKFILE: '1'
+              run: packages/plugins/didkit/scripts/build-wasm-from-submodules.sh
+
+            - name: Prepare WASM upload metadata
+              if: steps.submodules.outputs.has_updates == 'true'
+              id: wasm
+              run: |
+                  set -euo pipefail
+
+                  WASM_PATH="packages/plugins/didkit/src/didkit/pkg/didkit_wasm_bg.wasm"
+                  SHA256="$(sha256sum "${WASM_PATH}" | cut -d ' ' -f 1)"
+                  S3_KEY="didkit/sha256-${SHA256}/didkit_wasm_bg.wasm"
+                  BASE_URL="${DIDKIT_WASM_PUBLIC_BASE_URL%/}"
+                  WASM_URL="${BASE_URL}/${S3_KEY}"
+
+                  echo "path=${WASM_PATH}" >> "${GITHUB_OUTPUT}"
+                  echo "sha256=${SHA256}" >> "${GITHUB_OUTPUT}"
+                  echo "s3_key=${S3_KEY}" >> "${GITHUB_OUTPUT}"
+                  echo "url=${WASM_URL}" >> "${GITHUB_OUTPUT}"
+
+            - name: Update default WASM URL
+              if: steps.submodules.outputs.has_updates == 'true'
+              env:
+                  WASM_URL: ${{ steps.wasm.outputs.url }}
+              run: |
+                  set -euo pipefail
+
+                  node packages/plugins/didkit/scripts/set-default-wasm-url.mjs "${WASM_URL}"
+
+                  # Guards against the rewrite silently no-opping and shipping a binary that the
+                  # committed default URL does not point at.
+                  if ! grep -Fq "${WASM_URL}" packages/plugins/didkit/src/didkit/index.ts; then
+                      echo "::error::index.ts does not reference ${WASM_URL} after the rewrite."
+                      exit 1
+                  fi
+
+            - name: Setup Bun and install dependencies
+              if: steps.submodules.outputs.has_updates == 'true'
+              uses: ./.github/actions/setup
+
+            - name: Build DIDKit plugin
+              if: steps.submodules.outputs.has_updates == 'true'
+              run: bunx nx build didkit-plugin
+
+            - name: Test DIDKit plugin
+              if: steps.submodules.outputs.has_updates == 'true'
+              run: bunx nx test didkit-plugin
+
+            - name: Smoke test generated DIDKit WASM
+              if: steps.submodules.outputs.has_updates == 'true'
+              run: bun packages/plugins/didkit/scripts/smoke-test-wasm.mjs
+
+            - name: Prepare changeset
+              if: steps.submodules.outputs.has_updates == 'true'
+              id: changes
+              env:
+                  DIDKIT_SHORT_SHA: ${{ steps.submodules.outputs.didkit_short_sha }}
+                  SSI_SHORT_SHA: ${{ steps.submodules.outputs.ssi_short_sha }}
+              run: |
+                  set -euo pipefail
+
+                  if git diff --quiet -- \
+                      lib/didkit \
+                      lib/ssi \
+                      packages/plugins/didkit/wasm/didkit-wasm.Cargo.lock \
+                      packages/plugins/didkit/src/didkit; then
+                      echo "has_changes=false" >> "${GITHUB_OUTPUT}"
+                      exit 0
+                  fi
+
+                  cat > .changeset/update-didkit-wasm.md <<EOF
+                  ---
+                  '@learncard/didkit-plugin': patch
+                  ---
+
+                  Update DIDKit WASM from didkit ${DIDKIT_SHORT_SHA} and ssi ${SSI_SHORT_SHA}.
+                  EOF
+
+                  echo "has_changes=true" >> "${GITHUB_OUTPUT}"
+
+            - name: Report no generated changes
+              if: steps.changes.outputs.has_changes == 'false'
+              run: echo 'The rebuilt artifact matches the current sources; nothing was uploaded.' >> "${GITHUB_STEP_SUMMARY}"
+
+            - name: Configure AWS credentials
+              if: steps.changes.outputs.has_changes == 'true'
+              uses: aws-actions/configure-aws-credentials@v6
+              with:
+                  aws-region: ${{ env.AWS_REGION }}
+                  role-to-assume: ${{ secrets.DIDKIT_WASM_AWS_ROLE_ARN }}
+                  role-session-name: learncard-didkit-wasm
+
+            - name: Upload DIDKit WASM
+              if: steps.changes.outputs.has_changes == 'true'
+              env:
+                  S3_KEY: ${{ steps.wasm.outputs.s3_key }}
+                  WASM_PATH: ${{ steps.wasm.outputs.path }}
+                  WASM_SHA256: ${{ steps.wasm.outputs.sha256 }}
+              run: |
+                  aws s3 cp \
+                      "${WASM_PATH}" \
+                      "s3://${DIDKIT_WASM_BUCKET}/${S3_KEY}" \
+                      --content-type application/wasm \
+                      --cache-control public,max-age=31536000,immutable \
+                      --metadata "sha256=${WASM_SHA256}"
+
+            - name: Verify CloudFront serves Brotli
+              if: steps.changes.outputs.has_changes == 'true'
+              env:
+                  WASM_URL: ${{ steps.wasm.outputs.url }}
+              run: |
+                  set -euo pipefail
+
+                  headers="$(mktemp)"
+                  body="$(mktemp)"
+                  trap 'rm -f "${headers}" "${body}"' EXIT
+
+                  downloaded_bytes="$(
+                      curl --fail --location --retry 20 --retry-all-errors --retry-delay 3 \
+                          --retry-max-time 300 \
+                          --header 'Accept-Encoding: br' \
+                          --dump-header "${headers}" \
+                          --output "${body}" \
+                          --silent --show-error \
+                          --write-out '%{size_download}' \
+                          "${WASM_URL}"
+                  )"
+
+                  grep -Eiq '^content-type:[[:space:]]*application/wasm([[:space:]]*;|[[:space:]]*$)' "${headers}"
+                  grep -Eiq '^content-encoding:[[:space:]]*br[[:space:]]*$' "${headers}"
+
+                  {
+                      echo 'CloudFront served the generated WASM with Brotli compression.'
+                      echo
+                      echo "- Compressed transfer: ${downloaded_bytes} bytes"
+                  } >> "${GITHUB_STEP_SUMMARY}"
+
+            - name: Create pull request
+              if: steps.changes.outputs.has_changes == 'true'
+              uses: peter-evans/create-pull-request@v7
+              with:
+                  token: ${{ secrets.LEARNCARD_BOT_TOKEN || github.token }}
+                  commit-message: 'chore: update didkit wasm'
+                  branch: automation/update-didkit-wasm
+                  delete-branch: true
+                  title: '[Auto] Update DIDKit WASM'
+                  body: |
+                      This PR was generated automatically after a DIDKit or SSI update.
+
+                      Sources:
+                      - DIDKit: `${{ steps.submodules.outputs.didkit_sha }}`
+                      - SSI: `${{ steps.submodules.outputs.ssi_sha }}`
+                      - WASM SHA-256: `${{ steps.wasm.outputs.sha256 }}`
+                      - WASM URL: `${{ steps.wasm.outputs.url }}`
+
+                      Trigger:
+                      - Event: `${{ github.event_name }}`
+                      - Source repository: `${{ github.event.client_payload.source_repo || 'manual' }}`
+                      - Source SHA: `${{ github.event.client_payload.source_sha || 'n/a' }}`
+                  labels: |
+                      automated pr
+                  assignees: TaylorBeeston
+                  reviewers: TaylorBeeston
+                  add-paths: |
+                      .changeset/update-didkit-wasm.md
+                      lib/didkit
+                      lib/ssi
+                      packages/plugins/didkit/wasm/didkit-wasm.Cargo.lock
+                      packages/plugins/didkit/src/didkit/index.ts
+                      packages/plugins/didkit/src/didkit/pkg

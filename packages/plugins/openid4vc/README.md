@@ -19,6 +19,7 @@ OpenID for Verifiable Credentials **holder-side** support for LearnCard:
 | Issuer + authorization-server metadata fetching                                                     | ✅ Slice 2                                                                                                      |
 | Pre-authorized code flow (`jwt_vc_json`)                                                            | ✅ Slice 2                                                                                                      |
 | Proof-of-possession JWT (EdDSA, default signer from host LearnCard)                                 | ✅ Slice 2                                                                                                      |
+| `di_vp` key proofs (Data-Integrity-signed VP, auto-selected from `proof_types_supported`)           | ✅                                                                                                              |
 | Wallet index / LearnCloud integration (one-call `acceptAndStoreCredentialOffer`)                    | ✅ Slice 3                                                                                                      |
 | JWT VC → W3C VC reconstruction (VCDM §6.3.1) with raw JWT preserved under `proof.jwt`               | ✅ Slice 3                                                                                                      |
 | Partial-failure reporting (one bad credential doesn't abort a batch)                                | ✅ Slice 3                                                                                                      |
@@ -459,7 +460,9 @@ All of these expose pre-authorized-code offers, so the harness works as-is.
 When you want deterministic iteration (same offer twice, offline, step-through debugging), run WaltID's issuer in Docker:
 
 ```bash
-docker run --rm -p 7002:7002 -p 7003:7003 waltid/issuer-api:latest
+# Use the same pinned tag as the interop tests (the WALTID_IMAGE_TAG
+# default in tests/openid4vc-interop-e2e/compose.yaml)
+docker run --rm -p 7002:7002 -p 7003:7003 waltid/issuer-api:0.23.0
 # in another terminal, POST an offer config to http://localhost:7002/...
 # then feed the returned offer URI to bun run try-offer
 ```

@@ -6,8 +6,46 @@ export const DEFAULT_LCA_NOTIFICATIONS_ENDPOINT =
 export const DEFAULT_SCOUTPASS_NOTIFICATIONS_ENDPOINT =
     'https://api.scoutnetwork.org/api/notifications/send';
 
+const isScoutNetworkApiEndpoint = (apiEndpoint?: string): boolean => {
+    if (!apiEndpoint) return false;
+
+    try {
+        const { hostname } = new URL(apiEndpoint);
+        const normalizedHostname = hostname.toLowerCase();
+
+        return (
+            normalizedHostname === 'scoutnetwork.org' ||
+            normalizedHostname.endsWith('.scoutnetwork.org')
+        );
+    } catch {
+        return false;
+    }
+};
+
 export const getNotificationsEndpoint = (): string => {
+    const tenantNotificationsEndpoint = networkStore.get.notificationsEndpoint();
+
+    if (tenantNotificationsEndpoint) return tenantNotificationsEndpoint;
+
     const apiEndpoint = networkStore.get.apiEndpoint();
+    const tenantId = networkStore.get.tenantId();
+
+    if (tenantId === 'scoutpass') {
+        if (apiEndpoint?.includes('trpc')) {
+            return apiEndpoint.replace('trpc', 'api/notifications/send');
+        }
+
+        return DEFAULT_SCOUTPASS_NOTIFICATIONS_ENDPOINT;
+    }
+
+    if (isScoutNetworkApiEndpoint(apiEndpoint)) {
+        if (apiEndpoint.includes('trpc')) {
+            return apiEndpoint.replace('trpc', 'api/notifications/send');
+        }
+
+        return DEFAULT_SCOUTPASS_NOTIFICATIONS_ENDPOINT;
+    }
+
     if (!apiEndpoint || apiEndpoint === LCA_API_ENDPOINT) return DEFAULT_LCA_NOTIFICATIONS_ENDPOINT;
     if (apiEndpoint === SCOUTPASS_API_ENDPOINT) return DEFAULT_SCOUTPASS_NOTIFICATIONS_ENDPOINT;
 

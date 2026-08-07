@@ -155,15 +155,23 @@ export interface JarmClientMetadata {
     jwks_uri?: string;
 
     /**
-     * JWE key-wrap algorithm the verifier expects. Common values:
-     * `ECDH-ES`, `ECDH-ES+A256KW`, `RSA-OAEP-256`. When omitted the
-     * spec recommends `ECDH-ES` (§8.3 paragraph 4).
+     * OID4VP 1.0 §5.1/§11.1 — content-encryption (`enc`) algorithms the
+     * verifier's Response Endpoint accepts. The Wallet picks one; the spec
+     * default when absent is `A128GCM`. The JWE key-wrap (`alg`) is NOT a
+     * metadata field in 1.0 — it is taken from the chosen JWK's `alg` (§8.3).
+     */
+    encrypted_response_enc_values_supported?: string[];
+
+    /**
+     * [jarm-compat] JARM / pre-1.0 `alg` hint. OID4VP 1.0 derives the JWE
+     * `alg` from the chosen JWK instead, but some verifiers still send this.
+     * Used only as a key-selection hint / fallback.
      */
     authorization_encrypted_response_alg?: string;
 
     /**
-     * JWE content-encryption algorithm. Common values: `A256GCM`,
-     * `A128CBC-HS256`. Spec default: `A256GCM`.
+     * [jarm-compat] JARM / pre-1.0 singular `enc` field. Superseded by
+     * `encrypted_response_enc_values_supported` in 1.0; read as a fallback.
      */
     authorization_encrypted_response_enc?: string;
 
@@ -233,11 +241,7 @@ export type JarmEncryptErrorCode =
 export class JarmEncryptError extends Error {
     readonly code: JarmEncryptErrorCode;
 
-    constructor(
-        code: JarmEncryptErrorCode,
-        message: string,
-        extra: { cause?: unknown } = {}
-    ) {
+    constructor(code: JarmEncryptErrorCode, message: string, extra: { cause?: unknown } = {}) {
         super(message);
         this.name = 'JarmEncryptError';
         this.code = code;
@@ -258,7 +262,8 @@ export class JarmEncryptError extends Error {
  * algorithms still gets something it's likely to accept.
  */
 export const DEFAULT_JWE_ALG = 'ECDH-ES';
-export const DEFAULT_JWE_ENC = 'A256GCM';
+/** OID4VP 1.0 §8.3: the default content-encryption algorithm is A128GCM. */
+export const DEFAULT_JWE_ENC = 'A128GCM';
 
 /**
  * Build the JOSE blob to put in the `response` form field for a
@@ -268,18 +273,15 @@ export const DEFAULT_JWE_ENC = 'A256GCM';
 export const encryptResponseObject = async (
     options: EncryptResponseObjectOptions
 ): Promise<string> => {
-    const {
-        payload,
-        clientMetadata,
-        verifierNonce,
-        walletNonce,
-        signer,
-    } = options;
+    const { payload, clientMetadata, verifierNonce, walletNonce, signer } = options;
 
-    const alg =
-        clientMetadata.authorization_encrypted_response_alg ?? DEFAULT_JWE_ALG;
+    // enc: OID4VP 1.0 §8.3 — chosen from `encrypted_response_enc_values_supported`,
+    // default A128GCM. [jarm-compat] fall back to the pre-1.0 singular field.
     const enc =
-        clientMetadata.authorization_encrypted_response_enc ?? DEFAULT_JWE_ENC;
+        pickSupportedEnc(clientMetadata.encrypted_response_enc_values_supported) ??
+        clientMetadata.authorization_encrypted_response_enc ??
+        DEFAULT_JWE_ENC;
+
     const signAlg = clientMetadata.authorization_signed_response_alg;
 
     // Resolve the verifier's encryption key. Inline `jwks` wins over
@@ -287,7 +289,16 @@ export const encryptResponseObject = async (
     // already authenticates inline metadata), and we only fetch when
     // forced to. This keeps offline / no-network test runs working.
     const jwks = await resolveVerifierJwks(clientMetadata, options.fetchImpl);
-    const encKey = pickEncryptionKey(jwks, alg);
+
+    // alg: OID4VP 1.0 §8.3 requires the JWE `alg` to equal the chosen JWK's
+    // `alg`. [jarm-compat] an explicit authorization_encrypted_response_alg is
+    // used only as a key-selection hint / final fallback.
+    const algHint = clientMetadata.authorization_encrypted_response_alg;
+    const encKey = pickEncryptionKey(jwks, algHint);
+    const alg =
+        typeof encKey.alg === 'string' && encKey.alg.length > 0
+            ? encKey.alg
+            : algHint ?? DEFAULT_JWE_ALG;
 
     // Build the plaintext bytes that will become the JWE plaintext.
     // When signing is requested we sign first and the JWE plaintext
@@ -324,7 +335,9 @@ export const encryptResponseObject = async (
     } catch (e) {
         throw new JarmEncryptError(
             'unsupported_alg',
-            `Failed to import verifier encryption key (alg=${alg}, kty=${encKey.kty}): ${describe(e)}`,
+            `Failed to import verifier encryption key (alg=${alg}, kty=${encKey.kty}): ${describe(
+                e
+            )}`,
             { cause: e }
         );
     }
@@ -350,7 +363,10 @@ export const encryptResponseObject = async (
 
     // OID4VP §8.3 paragraph 6: `apv` MUST equal base64url(verifier
     // nonce). jose's `setKeyManagementParameters` accepts the raw
-    // nonce bytes and handles base64url encoding internally.
+    // nonce bytes and handles base64url encoding internally. These are
+    // ECDH key-agreement KDF inputs; jose ignores them for RSA-OAEP /
+    // AES-KW enc keys, so those (rare) responses carry no apv nonce
+    // binding — ECDH is the expected path here.
     const keyManagementParameters: { apv: Uint8Array; apu?: Uint8Array } = {
         apv: new TextEncoder().encode(verifierNonce),
     };
@@ -362,9 +378,7 @@ export const encryptResponseObject = async (
     try {
         const jwe = await new CompactEncrypt(plaintext)
             .setProtectedHeader(
-                protectedHeader as Parameters<
-                    CompactEncrypt['setProtectedHeader']
-                >[0]
+                protectedHeader as Parameters<CompactEncrypt['setProtectedHeader']>[0]
             )
             .setKeyManagementParameters(keyManagementParameters)
             .encrypt(key);
@@ -471,12 +485,33 @@ const resolveVerifierJwks = async (
  *   2. one with no `alg` claim (algorithm-agnostic key)
  *   3. otherwise — first match wins
  */
-const pickEncryptionKey = (jwks: readonly JWK[], requestedAlg: string): JWK => {
+/** JWE content-encryption algorithms this wallet can actually perform via jose. */
+const PERFORMABLE_ENC = new Set([
+    'A128GCM',
+    'A192GCM',
+    'A256GCM',
+    'A128CBC-HS256',
+    'A192CBC-HS384',
+    'A256CBC-HS512',
+]);
+
+/**
+ * Pick a content-encryption (`enc`) algorithm from the verifier's advertised
+ * `encrypted_response_enc_values_supported` list (OID4VP 1.0 §8.3). Prefers the
+ * first advertised value the wallet can actually perform, so an exotic value
+ * listed first doesn't force a later `encrypt_failed`. Falls back to the first
+ * advertised value if none are recognized, or `undefined` when the list is
+ * absent/empty so the caller can apply the spec default.
+ */
+const pickSupportedEnc = (supported: string[] | undefined): string | undefined => {
+    if (!Array.isArray(supported)) return undefined;
+    const values = supported.filter(v => typeof v === 'string' && v.length > 0);
+    return values.find(v => PERFORMABLE_ENC.has(v)) ?? values[0];
+};
+
+const pickEncryptionKey = (jwks: readonly JWK[], requestedAlg?: string): JWK => {
     if (jwks.length === 0) {
-        throw new JarmEncryptError(
-            'no_encryption_key',
-            'Verifier JWKS contained no keys'
-        );
+        throw new JarmEncryptError('no_encryption_key', 'Verifier JWKS contained no keys');
     }
 
     const candidates = jwks.filter(k => k.use !== 'sig');
@@ -488,11 +523,16 @@ const pickEncryptionKey = (jwks: readonly JWK[], requestedAlg: string): JWK => {
         );
     }
 
-    const exact = candidates.find(k => k.alg === requestedAlg);
-    if (exact) return exact;
+    // [jarm-compat] honor an explicit alg hint when the verifier sent one.
+    if (requestedAlg) {
+        const exact = candidates.find(k => k.alg === requestedAlg);
+        if (exact) return exact;
+    }
 
-    const algAgnostic = candidates.find(k => !k.alg);
-    if (algAgnostic) return algAgnostic;
+    // OID4VP 1.0 §8.3: the JWE `alg` is taken from the chosen JWK, so prefer
+    // a key that declares its own `alg`.
+    const withAlg = candidates.find(k => typeof k.alg === 'string' && k.alg.length > 0);
+    if (withAlg) return withAlg;
 
     return candidates[0]!;
 };
@@ -527,5 +567,4 @@ const signResponse = async (
     }
 };
 
-const describe = (e: unknown): string =>
-    e instanceof Error ? e.message : String(e);
+const describe = (e: unknown): string => (e instanceof Error ? e.message : String(e));

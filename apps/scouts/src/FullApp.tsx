@@ -24,6 +24,7 @@ import {
     useSQLiteInitWeb,
     lazyWithRetry,
     Toast,
+    InAppMessageHost,
 } from 'learn-card-base';
 import { AuthCoordinatorProvider } from './providers/AuthCoordinatorProvider';
 import { SharedI18nProvider } from './i18n/SharedI18nProvider';
@@ -123,6 +124,7 @@ const FullApp: React.FC = () => {
                                     <PresentVcModalListener />
                                     <UserProfileSetupListener />
                                     <AppRouter />
+                                    <InAppMessageHost />
                                     <QRCodeScannerListener />
                                     {showScannerOverlay && <QRCodeScannerOverlay />}
                                     <AuthKeyDebugWidget />

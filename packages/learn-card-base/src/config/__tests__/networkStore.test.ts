@@ -20,7 +20,9 @@ describe('initNetworkStoreFromTenant', () => {
         networkStore.set.cloudUrl('https://cloud.learncard.com/trpc');
         networkStore.set.xapiUrl('');
         networkStore.set.apiEndpoint('https://api.learncard.app/trpc');
+        networkStore.set.notificationsEndpoint('https://api.learncard.app/api/notifications/send');
         networkStore.set.aiServiceUrl('https://api.learncloud.ai');
+        networkStore.set.tenantId('');
     });
 
     it('populates all store fields from tenant API config', () => {
@@ -31,6 +33,9 @@ describe('initNetworkStoreFromTenant', () => {
         expect(networkStore.get.cloudUrl()).toBe('https://cloud.test.com/trpc');
         expect(networkStore.get.xapiUrl()).toBe('https://cloud.test.com/xapi');
         expect(networkStore.get.apiEndpoint()).toBe('https://api.test.com/trpc');
+        expect(networkStore.get.notificationsEndpoint()).toBe(
+            'https://api.test.com/api/notifications/send'
+        );
         expect(networkStore.get.aiServiceUrl()).toBe('https://ai.test.com');
     });
 
@@ -58,5 +63,16 @@ describe('initNetworkStoreFromTenant', () => {
         initNetworkStoreFromTenant(apisNoAi);
 
         expect(networkStore.get.aiServiceUrl()).toBe('https://api.learncloud.ai');
+    });
+
+    it('uses explicit tenant notifications endpoint when provided', () => {
+        initNetworkStoreFromTenant({
+            ...testApis,
+            notificationsEndpoint: 'https://notifications.test.com/send',
+        });
+
+        expect(networkStore.get.notificationsEndpoint()).toBe(
+            'https://notifications.test.com/send'
+        );
     });
 });

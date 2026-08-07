@@ -24,6 +24,8 @@ export interface TemplateNotification {
     messageStream?: string;
     /** Optional tenant branding. When present, emails are rendered locally via @learncard/email-templates. */
     branding?: Partial<TenantBranding>;
+    /** Recipient locale (BCP-47), resolved via resolveRecipientLocale. Defaults to English at render time. */
+    locale?: string;
 }
 
 export type Notification = EmailNotification | TemplateNotification;

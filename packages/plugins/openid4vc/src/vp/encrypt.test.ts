@@ -57,9 +57,7 @@ const PAYLOAD: ResponseObjectPayload = {
     presentation_submission: {
         id: 'sub-1',
         definition_id: 'pd-1',
-        descriptor_map: [
-            { id: 'd1', format: 'jwt_vp_json', path: '$' },
-        ],
+        descriptor_map: [{ id: 'd1', format: 'jwt_vp_json', path: '$' }],
     },
     state: 'state-xyz',
 };
@@ -74,9 +72,7 @@ interface VerifierEncKey {
  * suitable to embed in `client_metadata.jwks`, and keep the private
  * half for the test's verifier-side decrypt.
  */
-const makeEcVerifierKey = async (
-    overrides: Partial<JWK> = {}
-): Promise<VerifierEncKey> => {
+const makeEcVerifierKey = async (overrides: Partial<JWK> = {}): Promise<VerifierEncKey> => {
     const { privateKey, publicKey } = await generateKeyPair('ECDH-ES', {
         crv: 'P-256',
         extractable: true,
@@ -132,10 +128,7 @@ const decryptToJson = async (
     // We surface the JWS payload (not the JWS itself) so tests can
     // assert on the underlying response-object claims uniformly
     // regardless of whether nested signing was enabled.
-    if (
-        typeof protectedHeader.cty === 'string' &&
-        protectedHeader.cty.toUpperCase() === 'JWT'
-    ) {
+    if (typeof protectedHeader.cty === 'string' && protectedHeader.cty.toUpperCase() === 'JWT') {
         const innerPayload = decodeJwt(decoded);
         return {
             payload: innerPayload as Record<string, unknown>,
@@ -160,7 +153,7 @@ const b64url = (s: string): string =>
 /*                            encryption happy paths                          */
 /* -------------------------------------------------------------------------- */
 
-describe('encryptResponseObject — ECDH-ES + A256GCM (default JWE algs)', () => {
+describe('encryptResponseObject — JWE algorithm negotiation', () => {
     it('round-trips the response-object payload through jose decryption', async () => {
         const verifier = await makeEcVerifierKey();
 
@@ -176,22 +169,19 @@ describe('encryptResponseObject — ECDH-ES + A256GCM (default JWE algs)', () =>
             verifierNonce: VERIFIER_NONCE,
         });
 
-        const { payload, protectedHeader } = await decryptToJson(
-            jwe,
-            verifier.privateKey
-        );
+        const { payload, protectedHeader } = await decryptToJson(jwe, verifier.privateKey);
 
         expect(payload).toEqual(PAYLOAD);
         expect(protectedHeader.alg).toBe('ECDH-ES');
         expect(protectedHeader.enc).toBe('A256GCM');
     });
 
-    it('falls back to ECDH-ES + A256GCM when client_metadata omits both alg fields', async () => {
+    it('falls back to the ECDH-ES + A128GCM defaults when client_metadata omits alg/enc', async () => {
         const verifier = await makeEcVerifierKey({ alg: undefined });
 
         const clientMetadata: JarmClientMetadata = {
             jwks: { keys: [verifier.publicJwk] },
-            // no authorization_encrypted_response_alg / _enc declared
+            // no enc metadata declared
         };
 
         const jwe = await encryptResponseObject({
@@ -204,6 +194,29 @@ describe('encryptResponseObject — ECDH-ES + A256GCM (default JWE algs)', () =>
 
         expect(protectedHeader.alg).toBe(DEFAULT_JWE_ALG);
         expect(protectedHeader.enc).toBe(DEFAULT_JWE_ENC);
+        expect(DEFAULT_JWE_ENC).toBe('A128GCM'); // OID4VP 1.0 §8.3 default
+    });
+
+    it('takes enc from OID4VP 1.0 `encrypted_response_enc_values_supported` and alg from the chosen JWK', async () => {
+        const verifier = await makeEcVerifierKey(); // JWK declares alg: ECDH-ES
+
+        const clientMetadata: JarmClientMetadata = {
+            jwks: { keys: [verifier.publicJwk] },
+            encrypted_response_enc_values_supported: ['A128GCM'],
+            // no pre-1.0 authorization_encrypted_response_* fields
+        };
+
+        const jwe = await encryptResponseObject({
+            payload: PAYLOAD,
+            clientMetadata,
+            verifierNonce: VERIFIER_NONCE,
+        });
+
+        const { payload, protectedHeader } = await decryptToJson(jwe, verifier.privateKey);
+
+        expect(payload).toEqual(PAYLOAD);
+        expect(protectedHeader.enc).toBe('A128GCM');
+        expect(protectedHeader.alg).toBe('ECDH-ES'); // from the JWK, not a metadata field
     });
 
     it('echoes the verifier nonce as base64url(nonce) in `apv`', async () => {
@@ -218,10 +231,7 @@ describe('encryptResponseObject — ECDH-ES + A256GCM (default JWE algs)', () =>
         // OID4VP §8.3 paragraph 6 mandates apv on ECDH-ES KDFs.
         // Without round-tripping decryption we can also assert it
         // directly off the unparsed protected header.
-        const protectedHeader = decodeProtectedHeader(jwe) as Record<
-            string,
-            unknown
-        >;
+        const protectedHeader = decodeProtectedHeader(jwe) as Record<string, unknown>;
         expect(protectedHeader.apv).toBe(b64url(VERIFIER_NONCE));
     });
 
@@ -236,10 +246,7 @@ describe('encryptResponseObject — ECDH-ES + A256GCM (default JWE algs)', () =>
             walletNonce,
         });
 
-        const protectedHeader = decodeProtectedHeader(jwe) as Record<
-            string,
-            unknown
-        >;
+        const protectedHeader = decodeProtectedHeader(jwe) as Record<string, unknown>;
         expect(protectedHeader.apu).toBe(b64url(walletNonce));
     });
 
@@ -252,10 +259,7 @@ describe('encryptResponseObject — ECDH-ES + A256GCM (default JWE algs)', () =>
             verifierNonce: VERIFIER_NONCE,
         });
 
-        const protectedHeader = decodeProtectedHeader(jwe) as Record<
-            string,
-            unknown
-        >;
+        const protectedHeader = decodeProtectedHeader(jwe) as Record<string, unknown>;
         expect(protectedHeader.apu).toBeUndefined();
     });
 
@@ -268,10 +272,7 @@ describe('encryptResponseObject — ECDH-ES + A256GCM (default JWE algs)', () =>
             verifierNonce: VERIFIER_NONCE,
         });
 
-        const protectedHeader = decodeProtectedHeader(jwe) as Record<
-            string,
-            unknown
-        >;
+        const protectedHeader = decodeProtectedHeader(jwe) as Record<string, unknown>;
         expect(protectedHeader.kid).toBe('unique-enc-1');
     });
 });
@@ -292,10 +293,7 @@ describe('encryptResponseObject — RSA-OAEP-256 + A256GCM', () => {
             verifierNonce: VERIFIER_NONCE,
         });
 
-        const { payload, protectedHeader } = await decryptToJson(
-            jwe,
-            verifier.privateKey
-        );
+        const { payload, protectedHeader } = await decryptToJson(jwe, verifier.privateKey);
 
         expect(payload).toEqual(PAYLOAD);
         expect(protectedHeader.alg).toBe('RSA-OAEP-256');
@@ -326,9 +324,7 @@ describe('encryptResponseObject — nested signed-then-encrypted (JWS-in-JWE)', 
             kid: 'did:jwk:wallet#0',
             sign: async (header, payload) =>
                 new SignJWT(payload as Record<string, unknown>)
-                    .setProtectedHeader(
-                        header as Parameters<SignJWT['setProtectedHeader']>[0]
-                    )
+                    .setProtectedHeader(header as Parameters<SignJWT['setProtectedHeader']>[0])
                     .sign(privateKey),
         };
 
@@ -354,10 +350,7 @@ describe('encryptResponseObject — nested signed-then-encrypted (JWS-in-JWE)', 
         });
 
         // Decrypt → recover the inner JWS string.
-        const { plaintext, protectedHeader } = await compactDecrypt(
-            jwe,
-            verifier.privateKey
-        );
+        const { plaintext, protectedHeader } = await compactDecrypt(jwe, verifier.privateKey);
         expect(protectedHeader.cty).toBe('JWT');
 
         const innerJws = new TextDecoder().decode(plaintext);
@@ -682,11 +675,7 @@ describe('encryptResponseObject — interop with jose CompactSign signer', () =>
             sign: async (header, payload) => {
                 const enc = new TextEncoder().encode(JSON.stringify(payload));
                 return new CompactSign(enc)
-                    .setProtectedHeader(
-                        header as Parameters<
-                            CompactSign['setProtectedHeader']
-                        >[0]
-                    )
+                    .setProtectedHeader(header as Parameters<CompactSign['setProtectedHeader']>[0])
                     .sign(privateKey);
             },
         };

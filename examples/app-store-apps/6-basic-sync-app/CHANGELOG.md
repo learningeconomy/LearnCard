@@ -1,5 +1,29 @@
 # @learncard/app-store-demo-basic-sync
 
+## 1.0.7
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.4.10
+    -   @learncard/partner-connect@0.4.2
+
+## 1.0.6
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.4.9
+    -   @learncard/partner-connect@0.4.1
+
+## 1.0.5
+
+### Patch Changes
+
+-   Updated dependencies [[`f31566902ac5f458312800c4cadcd615d6ca949f`](https://github.com/learningeconomy/LearnCard/commit/f31566902ac5f458312800c4cadcd615d6ca949f)]:
+    -   @learncard/partner-connect@0.4.0
+    -   @learncard/init@2.4.8
+
 ## 1.0.4
 
 ### Patch Changes

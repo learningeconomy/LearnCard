@@ -22,11 +22,12 @@ const StateValidator = z.object({
 });
 
 type ComponentProps = {
-    handleCloseModal: () => void;
+    handleCloseModal?: () => void;
     category?: BoostCategoryOptionsEnum;
     useCMSModal?: boolean;
     parentUri?: string;
     overrideCustomize?: boolean;
+    returnToParentAfterSave?: boolean;
 };
 
 const NewBoostSelectMenuCustomTypeButton: React.FC<ComponentProps> = ({
@@ -35,6 +36,7 @@ const NewBoostSelectMenuCustomTypeButton: React.FC<ComponentProps> = ({
     useCMSModal,
     parentUri,
     overrideCustomize,
+    returnToParentAfterSave = false,
 }) => {
     const history = useHistory();
     const { newModal, closeModal } = useModal({
@@ -77,9 +79,11 @@ const NewBoostSelectMenuCustomTypeButton: React.FC<ComponentProps> = ({
         });
 
         if (useCMSModal) {
+            if (returnToParentAfterSave) handleCloseModal?.();
             newModal(
                 <BoostCMS
                     handleCloseModal={closeModal}
+                    returnToParentAfterSave={returnToParentAfterSave}
                     showCustomTypeInput={category === BoostCategoryOptionsEnum.socialBadge}
                     parentUri={parentUri}
                     overrideCustomize={overrideCustomize}
@@ -89,12 +93,23 @@ const NewBoostSelectMenuCustomTypeButton: React.FC<ComponentProps> = ({
                 />
             );
         } else {
-            handleCloseModal();
+            handleCloseModal?.();
             history.push(`/boost?${queryParams}`);
         }
 
         setCustomType('');
-    }, [validationResult, customType, parentUri, useCMSModal, category]);
+    }, [
+        validationResult,
+        customType,
+        parentUri,
+        useCMSModal,
+        category,
+        handleCloseModal,
+        newModal,
+        closeModal,
+        overrideCustomize,
+        returnToParentAfterSave,
+    ]);
 
     return (
         <IonCol

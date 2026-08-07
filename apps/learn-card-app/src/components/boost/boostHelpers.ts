@@ -22,7 +22,7 @@ import {
     getBoostMetadata,
 } from 'learn-card-base';
 import { CATEGORY_TO_SUBCATEGORY_LIST } from './boost-options/boostOptions';
-import { alignmentsFromSkills, extractSkillIdsFromAlignments } from './alignmentHelpers';
+import { extractSkillIdsFromAlignments } from './alignmentHelpers';
 
 type SendBoostCredentialOptions = {
     skipNotification?: boolean;
@@ -264,8 +264,7 @@ export const getBoostCredentialPreview = (vcInput: BoostCMSState) => {
                 description: vcInput?.basicInfo?.description, // description
                 name: vcInput?.basicInfo?.name || fallbackCredentialValues?.title, // title
                 image: vcInput?.appearance?.badgeThumbnail, // badge image
-                alignment:
-                    (vcInput as any)?.alignments ?? alignmentsFromSkills(vcInput?.skills ?? []),
+                alignment: vcInput.alignments ?? [],
             },
         },
         display: {
@@ -276,7 +275,6 @@ export const getBoostCredentialPreview = (vcInput: BoostCMSState) => {
         },
         image: vcInput?.appearance?.badgeThumbnail, // badge image,
         attachments: vcInput?.mediaAttachments, // media attachments
-        skills: vcInput?.skills ?? [],
     };
 
     return credentialPreview;
@@ -335,9 +333,6 @@ export const updateBoost = async (
         },
         evidence, // ! attachments are deprecated in favor of evidence
         attachments,
-        skills: vcInput?.skills ?? [],
-        // TODO need to add alignment handling to the backend
-        // alignment: (vcInput as any)?.alignments ?? alignmentsFromSkills(vcInput?.skills ?? []),
         address: vcInput?.address,
         boostID: {
             fontColor: vcInput?.appearance?.fontColor,
@@ -364,11 +359,11 @@ export const updateBoost = async (
     const updatedCredential = await wallet.invoke.newCredential({
         ...credentialPayload,
     });
+    const skills = extractSkillIdsFromAlignments(vcInput.alignments ?? []) ?? [];
 
     // Ensure OBv3 alignments live under credential.credentialSubject.achievement.alignment
     try {
-        const alignments =
-            (vcInput as any)?.alignments ?? alignmentsFromSkills(vcInput?.skills ?? []);
+        const alignments = vcInput.alignments ?? [];
         updatedCredential.credentialSubject = updatedCredential.credentialSubject ?? {};
         (updatedCredential.credentialSubject as any).achievement =
             (updatedCredential.credentialSubject as any).achievement ?? {};
@@ -383,6 +378,7 @@ export const updateBoost = async (
         category: vcInput?.basicInfo?.type,
         status: boostStatus,
         credential: updatedCredential,
+        skills,
         defaultPermissions: {
             canView:
                 typeof vcInput?.boostPermissions?.canView === 'boolean'
@@ -640,10 +636,6 @@ export const createBoost = async (vcInput: BoostCMSState, wallet: BespokeLearnCa
     // Prefer new framework-based alignments if present
     if (vcInput?.alignments && vcInput.alignments.length > 0) {
         alignments = vcInput.alignments;
-    }
-    // Legacy fallback: convert old-style skills to alignments
-    else if (vcInput?.skills && vcInput.skills.length > 0) {
-        alignments = alignmentsFromSkills(vcInput.skills);
     }
 
     const newCredential = {

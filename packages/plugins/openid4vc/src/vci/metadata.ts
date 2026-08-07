@@ -1,15 +1,22 @@
-import {
-    AuthorizationServerMetadata,
-    CredentialIssuerMetadata,
-} from './types';
+import { AuthorizationServerMetadata, CredentialIssuerMetadata, SpecVersion } from './types';
 import { VciError } from './errors';
 
 const ISSUER_WELL_KNOWN = '/.well-known/openid-credential-issuer';
 const OAUTH_AS_WELL_KNOWN = '/.well-known/oauth-authorization-server';
 const OIDC_WELL_KNOWN = '/.well-known/openid-configuration';
 
+export interface CredentialIssuerMetadataResult {
+    metadata: CredentialIssuerMetadata;
+    /** Which spec revision the issuer serves, inferred from discovery. */
+    specVersion: SpecVersion;
+}
+
 /**
  * Fetch and validate the Credential Issuer Metadata for a given issuer URL.
+ *
+ * Returns the metadata plus the detected {@link SpecVersion}: `final` when the
+ * 1.0 insert-style well-known URL served it, `draft-13` when we had to fall
+ * back to the legacy append-style URL.
  *
  * @throws {VciError} with code `metadata_fetch_failed` for network / HTTP
  *   errors, `metadata_invalid` for shape issues, and `metadata_issuer_mismatch`
@@ -18,7 +25,7 @@ const OIDC_WELL_KNOWN = '/.well-known/openid-configuration';
 export const fetchCredentialIssuerMetadata = async (
     credentialIssuer: string,
     fetchImpl: typeof fetch = globalThis.fetch
-): Promise<CredentialIssuerMetadata> => {
+): Promise<CredentialIssuerMetadataResult> => {
     if (typeof fetchImpl !== 'function') {
         throw new VciError(
             'metadata_fetch_failed',
@@ -26,9 +33,7 @@ export const fetchCredentialIssuerMetadata = async (
         );
     }
 
-    const url = joinWellKnown(credentialIssuer, ISSUER_WELL_KNOWN);
-
-    const json = await getJson(url, fetchImpl, 'metadata_fetch_failed');
+    const { json, specVersion } = await fetchIssuerMetadataDocument(credentialIssuer, fetchImpl);
 
     if (!isObject(json)) {
         throw new VciError('metadata_invalid', 'Issuer metadata response was not a JSON object', {
@@ -37,22 +42,18 @@ export const fetchCredentialIssuerMetadata = async (
     }
 
     if (typeof json.credential_issuer !== 'string' || json.credential_issuer.length === 0) {
-        throw new VciError(
-            'metadata_invalid',
-            'Issuer metadata is missing `credential_issuer`',
-            { body: json }
-        );
+        throw new VciError('metadata_invalid', 'Issuer metadata is missing `credential_issuer`', {
+            body: json,
+        });
     }
 
     if (typeof json.credential_endpoint !== 'string' || json.credential_endpoint.length === 0) {
-        throw new VciError(
-            'metadata_invalid',
-            'Issuer metadata is missing `credential_endpoint`',
-            { body: json }
-        );
+        throw new VciError('metadata_invalid', 'Issuer metadata is missing `credential_endpoint`', {
+            body: json,
+        });
     }
 
-    if (!originsMatch(json.credential_issuer, credentialIssuer)) {
+    if (!issuerIdentifiersMatch(json.credential_issuer, credentialIssuer)) {
         throw new VciError(
             'metadata_issuer_mismatch',
             `Issuer metadata advertises \`credential_issuer\` as ${json.credential_issuer} but was fetched for ${credentialIssuer}`,
@@ -60,7 +61,50 @@ export const fetchCredentialIssuerMetadata = async (
         );
     }
 
-    return json as CredentialIssuerMetadata;
+    return { metadata: json as CredentialIssuerMetadata, specVersion };
+};
+
+/**
+ * Fetch the raw issuer metadata document, detecting the spec revision from
+ * which well-known URL served it. Tries the 1.0 insert-style URL first.
+ *
+ * [draft-13-compat] Detection keys off the insert-vs-append URL-shape
+ * difference, which only exists when the issuer identifier has a path. A
+ * path-less issuer (`https://issuer.example.com`) produces the identical URL
+ * both ways, so the insert probe always succeeds and we report `final`. A
+ * path-less *Draft 13* issuer is therefore treated as 1.0 and would get a 1.0
+ * request body. This is an accepted limitation: Draft 13 metadata is otherwise
+ * indistinguishable from 1.0 (no reliable positive signal to sniff), Draft 13
+ * issuers in practice serve under a path (e.g. walt.id's `/draftNN`), and the
+ * ecosystem is converging on 1.0.
+ */
+const fetchIssuerMetadataDocument = async (
+    credentialIssuer: string,
+    fetchImpl: typeof fetch
+): Promise<{ json: unknown; specVersion: SpecVersion }> => {
+    const insertUrl = insertWellKnown(credentialIssuer, ISSUER_WELL_KNOWN);
+
+    try {
+        return {
+            json: await getJson(insertUrl, fetchImpl, 'metadata_fetch_failed'),
+            specVersion: 'final',
+        };
+    } catch (insertError) {
+        // [draft-13-compat] Draft 13 §11.2.2 appended the well-known string to
+        // the END of the identifier instead of inserting it after the host.
+        // Retry the legacy shape when it differs (i.e. the issuer identifier
+        // has a path), so path-bearing Draft 13 issuers still resolve.
+        const appendUrl = appendWellKnown(credentialIssuer, ISSUER_WELL_KNOWN);
+        const insertFailed =
+            insertError instanceof VciError && insertError.code === 'metadata_fetch_failed';
+
+        if (appendUrl === insertUrl || !insertFailed) throw insertError;
+
+        return {
+            json: await getJson(appendUrl, fetchImpl, 'metadata_fetch_failed'),
+            specVersion: 'draft-13',
+        };
+    }
 };
 
 /**
@@ -78,13 +122,16 @@ export const fetchAuthorizationServerMetadata = async (
         );
     }
 
-    const oauthUrl = joinWellKnown(authServer, OAUTH_AS_WELL_KNOWN);
+    const oauthUrl = insertWellKnown(authServer, OAUTH_AS_WELL_KNOWN);
 
     const tryUrl = async (url: string): Promise<unknown | null> => {
         let response: Response;
 
         try {
-            response = await fetchImpl(url, { method: 'GET' });
+            response = await fetchImpl(url, {
+                method: 'GET',
+                headers: { Accept: 'application/json' },
+            });
         } catch {
             return null;
         }
@@ -101,14 +148,22 @@ export const fetchAuthorizationServerMetadata = async (
     let json = await tryUrl(oauthUrl);
 
     if (json == null) {
-        const oidcUrl = joinWellKnown(authServer, OIDC_WELL_KNOWN);
+        const oidcUrl = appendWellKnown(authServer, OIDC_WELL_KNOWN);
         json = await tryUrl(oidcUrl);
+    }
+
+    if (json == null) {
+        // [draft-13-compat] Draft 13 issuers that act as their own AS under a
+        // path serve AS metadata at the append-style oauth-authorization-server
+        // URL (rather than the RFC 8414 insert-style one). Try it last.
+        const legacyOauthUrl = appendWellKnown(authServer, OAUTH_AS_WELL_KNOWN);
+        if (legacyOauthUrl !== oauthUrl) json = await tryUrl(legacyOauthUrl);
     }
 
     if (json == null) {
         throw new VciError(
             'metadata_fetch_failed',
-            `Authorization server metadata not reachable at ${oauthUrl} or the OIDC fallback`
+            `Authorization server metadata not reachable at ${oauthUrl} or the OIDC / legacy fallbacks`
         );
     }
 
@@ -159,7 +214,48 @@ export const resolveAuthorizationServer = (
 
 // ---------- helpers ----------
 
-const joinWellKnown = (base: string, path: string): string => {
+/**
+ * Insert a well-known path segment between the origin (scheme + host +
+ * optional port) and the path component of an identifier.
+ *
+ * This is the construction mandated by OID4VCI 1.0 Final §12.2.2 for the
+ * Credential Issuer well-known endpoint, and by RFC 8414 §3 for the
+ * `oauth-authorization-server` endpoint:
+ *
+ *   `https://issuer.example.com/tenant`
+ *     → `https://issuer.example.com/.well-known/openid-credential-issuer/tenant`
+ *   `https://issuer.example.com`
+ *     → `https://issuer.example.com/.well-known/openid-credential-issuer`
+ *
+ * Credential Issuer Identifiers carry no query or fragment (§12.2.1), so we
+ * only preserve scheme/host/port and path. Falls back to append semantics
+ * if the identifier can't be parsed as a URL.
+ */
+const insertWellKnown = (base: string, wellKnown: string): string => {
+    let url: URL;
+
+    try {
+        url = new URL(base);
+    } catch {
+        return appendWellKnown(base, wellKnown);
+    }
+
+    // Strip trailing slashes from the path (character-wise loop — linear, no
+    // regex, to keep static analyzers happy on network-sourced input).
+    let path = url.pathname;
+    let end = path.length;
+    while (end > 0 && path.charCodeAt(end - 1) === 0x2f /* '/' */) end--;
+    path = path.slice(0, end);
+
+    return path.length > 0 ? `${url.origin}${wellKnown}${path}` : `${url.origin}${wellKnown}`;
+};
+
+/**
+ * Append a well-known path segment to the end of an identifier, stripping any
+ * terminating slash first. This is the OpenID Connect Discovery 1.0 rule and
+ * is retained for the `openid-configuration` authorization-server fallback.
+ */
+const appendWellKnown = (base: string, path: string): string => {
     // Strip any trailing slashes from the base, then append the well-known path.
     // Implemented as a loop rather than `base.replace(/\/+$/, '')` to silence
     // CodeQL's polynomial-ReDoS heuristic (the regex is linear, but static
@@ -169,10 +265,10 @@ const joinWellKnown = (base: string, path: string): string => {
     return `${base.slice(0, end)}${path}`;
 };
 
-const originsMatch = (a: string, b: string): boolean => {
-    // Compare canonicalized forms — strip trailing slashes and lower-case
-    // the scheme. Host is compared case-sensitively and the path (if any)
-    // is preserved, matching the previous regex-based normalizer.
+const issuerIdentifiersMatch = (a: string, b: string): boolean => {
+    // Compare the full canonicalized identifiers — strip trailing slashes and
+    // lower-case the scheme. Host is compared case-sensitively and the path
+    // (if any) is preserved, so identifiers must match including their path.
     return normalizeIssuerId(a) === normalizeIssuerId(b);
 };
 
@@ -218,7 +314,10 @@ const getJson = async (
     let response: Response;
 
     try {
-        response = await fetchImpl(url, { method: 'GET' });
+        response = await fetchImpl(url, {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+        });
     } catch (e) {
         throw new VciError(
             failCode,
@@ -228,9 +327,13 @@ const getJson = async (
     }
 
     if (!response.ok) {
-        throw new VciError(failCode, `Fetch of ${url} returned ${response.status} ${response.statusText}`, {
-            status: response.status,
-        });
+        throw new VciError(
+            failCode,
+            `Fetch of ${url} returned ${response.status} ${response.statusText}`,
+            {
+                status: response.status,
+            }
+        );
     }
 
     try {

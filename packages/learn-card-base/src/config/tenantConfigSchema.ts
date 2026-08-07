@@ -36,6 +36,7 @@ export const tenantApiConfigSchema = z
         cloudService: urlOrPlaceholder(),
         lcaApi: urlOrPlaceholder(),
         xapi: urlOrPlaceholder().optional(),
+        notificationsEndpoint: urlOrPlaceholder().optional(),
         aiService: urlOrPlaceholder().optional(),
         corsProxyApiKey: z.string().optional(),
     })

@@ -60,6 +60,69 @@ type BoostEarnedCardProps = {
     branding?: BrandingEnum;
     loading?: boolean;
 };
+type BoostEarnedCardSkeletonProps = Pick<
+    BoostEarnedCardProps,
+    'categoryType' | 'boostPageViewMode' | 'branding'
+>;
+
+export const BoostEarnedCardSkeleton: React.FC<BoostEarnedCardSkeletonProps> = ({
+    categoryType,
+    boostPageViewMode = BoostPageViewMode.Card,
+    branding,
+}) => {
+    const isCardView = boostPageViewMode === BoostPageViewMode.Card;
+    const type = categoryMetadata[categoryType].walletSubtype;
+
+    return (
+        <ErrorBoundary fallback={<div>Something went wrong</div>}>
+            <IonCol
+                size={isCardView ? '6' : '12'}
+                size-sm={isCardView ? '4' : undefined}
+                size-md={isCardView ? '4' : undefined}
+                size-lg={isCardView ? '4' : undefined}
+                className={`flex justify-center items-center relative ${isCardView ? '' : 'p-0'}`}
+                aria-hidden="true"
+                inert
+            >
+                <BoostGenericCardWrapper
+                    className="bg-white text-grayscale-900 z-[1000]"
+                    customHeaderClass="boost-managed-card"
+                    customDateDisplay={
+                        <BoostTextSkeleton
+                            containerClassName="w-full flex items-center justify-center"
+                            skeletonStyles={{ width: '50%' }}
+                        />
+                    }
+                    customIssuerName={
+                        <BoostTextSkeleton
+                            containerClassName="w-full flex items-center justify-center"
+                            skeletonStyles={{ width: '80%' }}
+                        />
+                    }
+                    customThumbComponent={
+                        <BadgeSkeleton
+                            badgeContainerCustomClass="mt-[0px] mb-[8px]"
+                            badgeCircleCustomClass="w-[116px] h-[116px] shadow-3xl mt-1"
+                        />
+                    }
+                    customTitle={
+                        <div className="w-full flex items-center justify-center pt-2">
+                            <BoostTextSkeleton
+                                containerClassName="w-full flex items-center justify-center"
+                                skeletonStyles={{ width: '80%' }}
+                            />
+                        </div>
+                    }
+                    type={type}
+                    categoryType={categoryType}
+                    boostPageViewMode={boostPageViewMode}
+                    branding={branding}
+                    loading
+                />
+            </IonCol>
+        </ErrorBoundary>
+    );
+};
 
 export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     credential: _credential,
@@ -109,7 +172,10 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     // Extract user ID from DID (e.g., "jpgclub" from "did:web:localhost%3A4000:users:jpgclub")
     const profileID = issuerDid?.split(':').pop();
 
-    const { credentials: highlightedCreds } = useHighlightedCredentials(profileID);
+    const { credentials: highlightedCreds } = useHighlightedCredentials(
+        profileID,
+        Boolean(profileID)
+    );
 
     const unknownVerifierTitle = React.useMemo(() => {
         if (!highlightedCreds || highlightedCreds.length === 0) return undefined;

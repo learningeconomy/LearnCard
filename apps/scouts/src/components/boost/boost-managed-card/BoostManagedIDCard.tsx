@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import Lottie from 'react-lottie-player';
 import { useHistory } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 import * as m from '../../../paraglide/messages.js';
@@ -12,8 +11,7 @@ import BoostPreview from '../../boost/boostCMS/BoostPreview/BoostPreview';
 import BoostPreviewBody from '../../boost/boostCMS/BoostPreview/BoostPreviewBody';
 import BoostPreviewFooter from '../../boost/boostCMS/BoostPreview/BoostPreviewFooter';
 import CredentialBadge from 'learn-card-base/components/CredentialBadge/CredentialBadge';
-// @ts-ignore
-import HourGlass from '../../../assets/lotties/hourglass.json';
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import IDDisplayCard from 'learn-card-base/components/id/IDDisplayCard';
 import IdDisplayContainer from '../../../pages/ids/IdDisplayContainer';
 import { BoostIssuanceLoading } from '../boostLoader/BoostLoader';
@@ -356,12 +354,7 @@ export const BoostManagedIDCard: React.FC<BoostManagedIDCardProps> = ({
             customBody = (
                 <div className="relative w-full text-center flex flex-col items-center justify-center">
                     <div className="max-w-[50px]">
-                        <Lottie
-                            loop
-                            animationData={HourGlass}
-                            play
-                            style={{ width: '100%', height: '100%' }}
-                        />
+                        <LoadingSpinner />
                     </div>
                 </div>
             );

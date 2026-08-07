@@ -866,6 +866,16 @@ export type LearnCardNetworkPluginMethods = {
         integrationId?: string;
     }) => Promise<PaginatedCredentialActivities>;
 
+    /**
+     * Authoritative lifecycle status ('active' | 'revoked' | 'suspended') for the holder's
+     * credentials, keyed by URI. Backed by the CREDENTIAL_SENT/RECEIVED relationship status
+     * (the same source the issuer view and activity feed use). URIs the holder did not
+     * receive are omitted from the result.
+     */
+    getMyCredentialLifecycleStatuses: (options: {
+        uris: string[];
+    }) => Promise<Record<string, 'active' | 'revoked' | 'suspended'>>;
+
     getActivityStats: (options?: {
         boostUris?: string[];
         integrationId?: string;

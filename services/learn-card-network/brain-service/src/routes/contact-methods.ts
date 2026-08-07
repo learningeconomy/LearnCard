@@ -5,21 +5,33 @@ import { t, profileRoute, openRoute } from '@routes';
 import type { DidAuthVP } from '@routes';
 
 import { createContactMethod } from '@accesslayer/contact-method/create';
-import { getContactMethodByValue, getContactMethodById } from '@accesslayer/contact-method/read';
-import { setPrimaryContactMethod, unverifyContactMethod, verifyContactMethod } from '@accesslayer/contact-method/update';
+import {
+    getContactMethodByValue,
+    getContactMethodById,
+    getProfileByContactMethod,
+} from '@accesslayer/contact-method/read';
+import {
+    setPrimaryContactMethod,
+    unverifyContactMethod,
+    verifyContactMethod,
+} from '@accesslayer/contact-method/update';
 import { deleteContactMethod } from '@accesslayer/contact-method/delete';
 import { createProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/create';
 import {
     checkProfileContactMethodRelationship,
     getProfileContactMethodRelationships,
 } from '@accesslayer/contact-method/relationships/read';
-import { deleteAllProfileContactMethodRelationshipsExceptForProfileId, deleteProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/delete';
+import {
+    deleteAllProfileContactMethodRelationshipsExceptForProfileId,
+    deleteProfileContactMethodRelationship,
+} from '@accesslayer/contact-method/relationships/delete';
 import {
     generateContactMethodVerificationToken,
     validateContactMethodVerificationToken,
 } from '@helpers/contact-method.helpers';
 import { claimPendingGuardianLinksForProfile } from '@helpers/guardian-links.helpers';
 import { getDidWebLearnCard, isTrustedLoginProviderDID } from '@helpers/learnCard.helpers';
+import { resolveRecipientLocale } from '@helpers/getRecipientLocale.helpers';
 import jwtDecode from 'jwt-decode';
 import {
     ContactMethodValidator,
@@ -66,7 +78,7 @@ export const contactMethodsRouter = t.router({
                 tags: ['Contact Methods'],
                 summary: 'Verify Contact Method With Credential',
                 description:
-                    "Verify ownership of a contact method using a cryptographically verified proof-of-login Verifiable Presentation JWT.",
+                    'Verify ownership of a contact method using a cryptographically verified proof-of-login Verifiable Presentation JWT.',
             },
             requiredScope: 'contact-methods:write',
         })
@@ -92,7 +104,10 @@ export const contactMethodsRouter = t.router({
             });
 
             if (!verification || (verification as any).errors?.length) {
-                throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid Verifiable Presentation' });
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Invalid Verifiable Presentation',
+                });
             }
 
             // 2) Extract challenge from the VP-JWT payload
@@ -101,32 +116,47 @@ export const contactMethodsRouter = t.router({
 
             const holder = decoded?.vp?.holder;
 
-            if(!holder || !isTrustedLoginProviderDID(holder)) {
+            if (!holder || !isTrustedLoginProviderDID(holder)) {
                 throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Unauthorized holder' });
             }
 
             if (!challenge || typeof challenge !== 'string') {
-                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Missing challenge in VP-JWT' });
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Missing challenge in VP-JWT',
+                });
             }
 
             // 3) Validate and parse challenge: 'proof-of-login:<type>:<value>'
             if (!challenge.startsWith('proof-of-login:')) {
-                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid proof-of-login challenge' });
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Invalid proof-of-login challenge',
+                });
             }
 
             const parts = challenge.split(':');
             if (parts.length < 3) {
-                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Malformed proof-of-login challenge' });
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Malformed proof-of-login challenge',
+                });
             }
 
             const type = parts[1] as 'email' | 'phone';
             const value = parts.slice(2).join(':');
 
             if (type !== 'email' && type !== 'phone') {
-                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unsupported contact method type' });
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Unsupported contact method type',
+                });
             }
             if (!value) {
-                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Missing contact method value' });
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Missing contact method value',
+                });
             }
 
             // 4) Find or create the contact method by value
@@ -167,7 +197,10 @@ export const contactMethodsRouter = t.router({
             try {
                 await claimPendingGuardianLinksForProfile(profile);
             } catch (err) {
-                console.error('[verifyWithCredential] Auto-claim guardian links failed (non-fatal):', err);
+                console.error(
+                    '[verifyWithCredential] Auto-claim guardian links failed (non-fatal):',
+                    err
+                );
             }
 
             return {
@@ -203,8 +236,11 @@ export const contactMethodsRouter = t.router({
             if (!contactMethodFromChallenge) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Contact method not found' });
             }
- 
-            if (contactMethodFromChallenge.type !== contactMethod.type || contactMethodFromChallenge.value !== contactMethod.value) {
+
+            if (
+                contactMethodFromChallenge.type !== contactMethod.type ||
+                contactMethodFromChallenge.value !== contactMethod.value
+            ) {
                 throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid contact method' });
             }
 
@@ -212,8 +248,8 @@ export const contactMethodsRouter = t.router({
                 const learnCard = await getDidWebLearnCard();
 
                 const sessionJwt = (await learnCard.invoke.getDidAuthVp({
-                   proofFormat: 'jwt',
-                   challenge: `${CONTACT_METHOD_SESSION_PREFIX}${contactMethodId}:${contactMethod.type}:${contactMethod.value}`
+                    proofFormat: 'jwt',
+                    challenge: `${CONTACT_METHOD_SESSION_PREFIX}${contactMethodId}:${contactMethod.type}:${contactMethod.value}`,
                 })) as unknown as string;
 
                 return { sessionJwt };
@@ -240,8 +276,13 @@ export const contactMethodsRouter = t.router({
                     'Generates a 6-digit OTP and sends it to the specified contact method, caching it for short-lived verification.',
             },
         })
-        .input(ContactMethodVerificationRequestValidator.extend({ configuration: z.object({ 
-            publishableKey: z.string() }) }))
+        .input(
+            ContactMethodVerificationRequestValidator.extend({
+                configuration: z.object({
+                    publishableKey: z.string(),
+                }),
+            })
+        )
         .output(
             z.object({
                 message: z.string(),
@@ -254,20 +295,22 @@ export const contactMethodsRouter = t.router({
             const { publishableKey } = configuration;
 
             const integration = await readIntegrationByPublishableKey(publishableKey);
-            if (!integration) throw new TRPCError({ code: 'NOT_FOUND' });   
-            
-            if (!isDomainWhitelisted(domain, integration.whitelistedDomains)) throw new TRPCError({ code: 'UNAUTHORIZED' });
+            if (!integration) throw new TRPCError({ code: 'NOT_FOUND' });
+
+            if (!isDomainWhitelisted(domain, integration.whitelistedDomains))
+                throw new TRPCError({ code: 'UNAUTHORIZED' });
 
             /**
              * Phone numbers can only be added and verified by trusted integrations
-            */
+             */
             if (type === 'phone') {
                 // TODO: This should be a trusted integration, not a trusted issuer
                 const isTrusted = await getRegistryService().isTrusted(integration.id);
                 if (!isTrusted) {
                     throw new TRPCError({
                         code: 'FORBIDDEN',
-                        message: 'Sending a challenge to a phone is a feature reserved for members of the LearnCard Trusted Registry. To verify your DID, visit: https://docs.learncard.com/how-to-guides/verify-my-issuer',
+                        message:
+                            'Sending a challenge to a phone is a feature reserved for members of the LearnCard Trusted Registry. To verify your DID, visit: https://docs.learncard.com/how-to-guides/verify-my-issuer',
                     });
                 }
             }
@@ -293,6 +336,8 @@ export const contactMethodsRouter = t.router({
             );
 
             const deliveryService = getDeliveryService(contactMethodToVerify);
+            // Open integration route: recipient profile may be unknown. Resolve best-effort, else 'en'.
+            const challengeProfile = await getProfileByContactMethod(contactMethodToVerify.id);
             await deliveryService.send({
                 contactMethod: contactMethodToVerify,
                 templateId: 'embed-email-verification',
@@ -301,6 +346,7 @@ export const contactMethodsRouter = t.router({
                     verificationEmail: value,
                 },
                 branding: ctx.tenant?.emailBranding,
+                locale: resolveRecipientLocale(challengeProfile),
             });
 
             return {
@@ -335,15 +381,16 @@ export const contactMethodsRouter = t.router({
 
             /**
              * Phone numbers can only be added and verified by trusted issuers
-             * TODO: Remove this check once we have a way to add progressive trust verification: i.e. 
+             * TODO: Remove this check once we have a way to add progressive trust verification: i.e.
              * Allow after verifying email, etc. with significant captcha + rate limits in place.
-            */
+             */
             if (type === 'phone') {
                 const isTrusted = await getRegistryService().isTrusted(profile.did);
                 if (!isTrusted) {
                     throw new TRPCError({
                         code: 'FORBIDDEN',
-                        message: 'Manually adding and verifying a phone is a feature reserved for members of the LearnCard Trusted Registry. To verify your DID, visit: https://docs.learncard.com/how-to-guides/verify-my-issuer',
+                        message:
+                            'Manually adding and verifying a phone is a feature reserved for members of the LearnCard Trusted Registry. To verify your DID, visit: https://docs.learncard.com/how-to-guides/verify-my-issuer',
                     });
                 }
             }
@@ -382,7 +429,10 @@ export const contactMethodsRouter = t.router({
             }
 
             // Create relationship with profile
-            await createProfileContactMethodRelationship(profile.profileId, contactMethodToVerify.id);
+            await createProfileContactMethodRelationship(
+                profile.profileId,
+                contactMethodToVerify.id
+            );
 
             // Generate verification token
             const verificationToken = await generateContactMethodVerificationToken(
@@ -398,6 +448,7 @@ export const contactMethodsRouter = t.router({
                     verificationToken,
                 },
                 branding: ctx.tenant?.emailBranding,
+                locale: resolveRecipientLocale(profile),
             });
 
             return {
@@ -454,7 +505,10 @@ export const contactMethodsRouter = t.router({
             }
 
             // Delete all other contact method relationships for this profile
-            await deleteAllProfileContactMethodRelationshipsExceptForProfileId(profile.profileId, contactMethodId);
+            await deleteAllProfileContactMethodRelationshipsExceptForProfileId(
+                profile.profileId,
+                contactMethodId
+            );
 
             // Mark contact method as verified
             const updatedContactMethod = await verifyContactMethod(contactMethodId);
@@ -470,7 +524,10 @@ export const contactMethodsRouter = t.router({
             try {
                 await claimPendingGuardianLinksForProfile(profile);
             } catch (err) {
-                console.error('[verifyContactMethod] Auto-claim guardian links failed (non-fatal):', err);
+                console.error(
+                    '[verifyContactMethod] Auto-claim guardian links failed (non-fatal):',
+                    err
+                );
             }
 
             return {

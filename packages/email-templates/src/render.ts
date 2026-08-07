@@ -239,10 +239,12 @@ export async function renderEmail<T extends TemplateId>(
     templateId: T,
     branding: Partial<TenantBranding> | TenantBranding,
     data: TemplateDataMap[T],
+    /** Recipient locale (BCP-47). Defaults to English. */
+    locale?: string
 ): Promise<RenderedEmail> {
     const resolved = resolveBranding(branding);
 
-    const { element, subject } = buildElement(templateId, resolved, data);
+    const { element, subject } = buildElement(templateId, resolved, data, locale);
 
     const html = await render(element);
     const text = await render(element, { plainText: true });
@@ -258,6 +260,7 @@ function buildVerificationElement(
     branding: TenantBranding,
     data: VerificationCodeData,
     variant: VerificationCodeVariant,
+    locale?: string
 ): { element: React.ReactElement; subject: string } {
     return {
         element: React.createElement(VerificationCode, {
@@ -265,8 +268,9 @@ function buildVerificationElement(
             verificationCode: data.verificationCode,
             verificationEmail: data.verificationEmail,
             variant,
+            locale,
         }),
-        subject: getVerificationCodeSubject(branding, variant),
+        subject: getVerificationCodeSubject(branding, variant, locale),
     };
 }
 
@@ -274,48 +278,63 @@ function buildElement(
     templateId: TemplateId,
     branding: TenantBranding,
     data: TemplateDataMap[TemplateId],
+    locale?: string
 ): { element: React.ReactElement; subject: string } {
-
     switch (templateId) {
         case 'embed-email-verification':
-            return buildVerificationElement(branding, data as VerificationCodeData, 'embed-verification');
+            return buildVerificationElement(
+                branding,
+                data as VerificationCodeData,
+                'embed-verification',
+                locale
+            );
 
         case 'contact-method-verification': {
             const d = data as EmailVerificationData;
-            const props: EmailVerificationProps = { branding, ...d };
+            const props: EmailVerificationProps = { branding, ...d, locale };
 
             return {
                 element: React.createElement(EmailVerification, props),
-                subject: getEmailVerificationSubject(branding),
+                subject: getEmailVerificationSubject(branding, locale),
             };
         }
 
         case 'login-verification-code':
         case 'contact-method-verification-1':
-            return buildVerificationElement(branding, data as VerificationCodeData, 'login');
+            return buildVerificationElement(
+                branding,
+                data as VerificationCodeData,
+                'login',
+                locale
+            );
 
         case 'recovery-email-code':
         case 'recovery-email-verification':
-            return buildVerificationElement(branding, data as VerificationCodeData, 'recovery-email');
+            return buildVerificationElement(
+                branding,
+                data as VerificationCodeData,
+                'recovery-email',
+                locale
+            );
 
         case 'inbox-claim':
         case 'universal-inbox-claim': {
             const d = data as InboxClaimData;
-            const props: InboxClaimProps = { branding, ...d };
+            const props: InboxClaimProps = { branding, ...d, locale };
 
             return {
                 element: React.createElement(InboxClaim, props),
-                subject: getInboxClaimSubject(branding, props),
+                subject: getInboxClaimSubject(branding, props, locale),
             };
         }
 
         case 'guardian-approval': {
             const d = data as GuardianApprovalData;
-            const props: GuardianApprovalProps = { branding, ...d };
+            const props: GuardianApprovalProps = { branding, ...d, locale };
 
             return {
                 element: React.createElement(GuardianApproval, props),
-                subject: getGuardianApprovalSubject(branding, props),
+                subject: getGuardianApprovalSubject(branding, props, locale),
             };
         }
 
@@ -324,80 +343,80 @@ function buildElement(
             const d = data as AccountApprovedData;
 
             return {
-                element: React.createElement(AccountApproved, { branding, ...d }),
-                subject: getAccountApprovedSubject(branding),
+                element: React.createElement(AccountApproved, { branding, ...d, locale }),
+                subject: getAccountApprovedSubject(branding, locale),
             };
         }
 
         case 'recovery-key':
         case 'recovery-key-backup': {
             const d = data as RecoveryKeyData;
-            const props: RecoveryKeyProps = { branding, ...d };
+            const props: RecoveryKeyProps = { branding, ...d, locale };
 
             return {
                 element: React.createElement(RecoveryKey, props),
-                subject: getRecoveryKeySubject(branding),
+                subject: getRecoveryKeySubject(branding, locale),
             };
         }
 
         case 'endorsement-request':
         case 'universal-inbox-claim-1': {
             const d = data as EndorsementRequestData;
-            const props: EndorsementRequestProps = { branding, ...d };
+            const props: EndorsementRequestProps = { branding, ...d, locale };
 
             return {
                 element: React.createElement(EndorsementRequest, props),
-                subject: getEndorsementRequestSubject(branding, props),
+                subject: getEndorsementRequestSubject(branding, props, locale),
             };
         }
 
         case 'credential-awaiting-guardian': {
             const d = data as CredentialAwaitingGuardianData;
-            const props: CredentialAwaitingGuardianProps = { branding, ...d };
+            const props: CredentialAwaitingGuardianProps = { branding, ...d, locale };
 
             return {
                 element: React.createElement(CredentialAwaitingGuardian, props),
-                subject: getCredentialAwaitingGuardianSubject(branding),
+                subject: getCredentialAwaitingGuardianSubject(branding, locale),
             };
         }
 
         case 'guardian-approved-claim': {
             const d = data as GuardianApprovedClaimData;
-            const props: GuardianApprovedClaimProps = { branding, ...d };
+            const props: GuardianApprovedClaimProps = { branding, ...d, locale };
 
             return {
                 element: React.createElement(GuardianApprovedClaim, props),
-                subject: getGuardianApprovedClaimSubject(branding),
+                subject: getGuardianApprovedClaimSubject(branding, locale),
             };
         }
 
         case 'guardian-credential-approval': {
             const d = data as GuardianCredentialApprovalData;
-            const props: GuardianCredentialApprovalProps = { branding, ...d };
+            const props: GuardianCredentialApprovalProps = { branding, ...d, locale };
 
             return {
                 element: React.createElement(GuardianCredentialApproval, props),
-                subject: getGuardianCredentialApprovalSubject(branding),
+                subject: getGuardianCredentialApprovalSubject(branding, locale),
             };
         }
 
         case 'guardian-email-otp': {
             const d = data as GuardianEmailOtpData;
-            const props: GuardianEmailOtpProps = { branding, ...d };
+            const props: GuardianEmailOtpProps = { branding, ...d, locale };
 
             return {
                 element: React.createElement(GuardianEmailOtp, props),
-                subject: getGuardianEmailOtpSubject(branding),
+                subject: getGuardianEmailOtpSubject(branding, locale),
             };
         }
 
         case 'guardian-rejected-credential': {
             const d = data as GuardianRejectedCredentialData;
-            const props: GuardianRejectedCredentialProps = { branding, ...d };
+            const props: GuardianRejectedCredentialProps = { branding, ...d, locale };
 
             return {
                 element: React.createElement(GuardianRejectedCredential, props),
-                subject: getGuardianRejectedCredentialSubject(branding),
+                subject: getGuardianRejectedCredentialSubject(branding, locale),
             };
         }
 

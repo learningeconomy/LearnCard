@@ -35,6 +35,7 @@ interface NewBoostSelectMenuProps {
     handleCloseModal: () => void;
     parentUri?: string;
     useCMSModal?: boolean;
+    returnToParentAfterSave?: boolean;
     category?: BoostCategoryOptionsEnum;
 }
 
@@ -43,6 +44,7 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
     category = BoostCategoryOptionsEnum.socialBadge,
     parentUri,
     useCMSModal,
+    returnToParentAfterSave = false,
 }) => {
     const flags = useFlags();
     const { data: stylePack, isLoading: stylePackLoading } = useScoutPassStylesPackRegistry();
@@ -122,6 +124,7 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
                         useCMSModal={useCMSModal}
                         overrideCustomize
                         parentUri={parentUri}
+                        returnToParentAfterSave={returnToParentAfterSave}
                     />
 
                     {(filteredBoostPack?.length > 0 ? filteredBoostPack : boostPack)?.map(item => (
@@ -130,6 +133,7 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
                             category={category}
                             parentUri={parentUri}
                             useCMSModal={useCMSModal}
+                            returnToParentAfterSave={returnToParentAfterSave}
                             boostPackItem={item}
                             handleCloseModal={handleCloseModal}
                             stylePack={stylePack}
@@ -159,6 +163,7 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
                         useCMSModal={useCMSModal}
                         overrideCustomize
                         parentUri={parentUri}
+                        returnToParentAfterSave={returnToParentAfterSave}
                         handleCloseModal={handleCloseModal}
                     />
                 )}

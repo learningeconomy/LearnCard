@@ -7,6 +7,7 @@ import {
     getActivityById,
     getActivityChain,
 } from '@accesslayer/credential-activity/read';
+import { getLifecycleStatusesForCredentialUris } from '@accesslayer/credential/read';
 import {
     CredentialActivityEventTypeValidator,
     PaginatedCredentialActivitiesValidator,
@@ -76,6 +77,26 @@ export const activityRouter = t.router({
                 hasMore,
                 cursor: hasMore ? returnRecords.at(-1)?.timestamp : undefined,
             };
+        }),
+
+    getMyCredentialLifecycleStatuses: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/activity/credentials/lifecycle-statuses',
+                tags: ['Activity'],
+                summary: 'Get Credential Lifecycle Statuses',
+                description:
+                    "Returns the authoritative lifecycle status ('active' | 'revoked' | 'suspended') for the authenticated holder's credentials, keyed by URI. URIs the holder did not receive are omitted.",
+            },
+            requiredScope: 'activity:read',
+        })
+        .input(z.object({ uris: z.array(z.string()).max(100) }))
+        .output(z.record(z.string(), z.enum(['active', 'revoked', 'suspended'])))
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            return getLifecycleStatusesForCredentialUris(profile.profileId, input.uris);
         }),
 
     getActivityStats: profileRoute

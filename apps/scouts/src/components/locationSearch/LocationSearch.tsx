@@ -18,11 +18,9 @@ import GoogleLogo from 'learn-card-base/assets/images/google-logo.png';
 import X from 'learn-card-base/svgs/X';
 
 import PurpGhost from '../../assets/lotties/purpghost.json';
-import HourGlass from '../../assets/lotties/hourglass.json';
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 
 import { AddressSpec, formatLocationObject } from './location.helpers';
-
-const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 
 const LocationSearch: React.FC<{
     showCloseButton?: boolean;
@@ -98,12 +96,7 @@ const LocationSearch: React.FC<{
                         {isPlacePredictionsLoading && (
                             <section className="relative loading-spinner-container flex flex-col items-center justify-center h-[80%] w-full ">
                                 <div className="max-w-[150px]">
-                                    <Lottie
-                                        loop
-                                        animationData={HourGlass}
-                                        play
-                                        style={{ width: '100%', height: '100%' }}
-                                    />
+                                    <LoadingSpinner />
                                 </div>
                             </section>
                         )}

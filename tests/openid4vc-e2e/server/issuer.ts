@@ -132,8 +132,7 @@ export const createPreAuthOffer = (
     // mandates https:// for that field and our in-process test server
     // runs on plain http://127.0.0.1:<port>.
     const offerUri =
-        'openid-credential-offer://?credential_offer=' +
-        encodeURIComponent(JSON.stringify(offer));
+        'openid-credential-offer://?credential_offer=' + encodeURIComponent(JSON.stringify(offer));
 
     return { offerUri, preAuthCode, offerId };
 };
@@ -166,8 +165,7 @@ export const createAuthCodeOffer = (
 
     // By-value offer URI (see comment in createPreAuthOffer).
     const offerUri =
-        'openid-credential-offer://?credential_offer=' +
-        encodeURIComponent(JSON.stringify(offer));
+        'openid-credential-offer://?credential_offer=' + encodeURIComponent(JSON.stringify(offer));
 
     return { offerUri, offerId };
 };
@@ -191,9 +189,7 @@ export interface HandlerResponse {
     contentType?: string;
 }
 
-export const handleIssuerRequest = async (
-    ctx: HandlerContext
-): Promise<HandlerResponse | null> => {
+export const handleIssuerRequest = async (ctx: HandlerContext): Promise<HandlerResponse | null> => {
     const { method, path } = ctx;
 
     if (method === 'GET' && path === '/.well-known/openid-credential-issuer') {
@@ -315,10 +311,7 @@ const handleToken = async (ctx: HandlerContext): Promise<HandlerResponse> => {
     return oauthError('unsupported_grant_type', `grant_type=${grantType}`);
 };
 
-const issueAccessToken = (
-    state: IssuerState,
-    configurationIds: string[]
-): HandlerResponse => {
+const issueAccessToken = (state: IssuerState, configurationIds: string[]): HandlerResponse => {
     const accessToken = randomId();
     const cNonce = randomId();
 
@@ -359,14 +352,30 @@ const handleCredential = async (ctx: HandlerContext): Promise<HandlerResponse> =
         return oauthError('invalid_request', 'credential request body not JSON');
     }
 
-    const format = body.format ?? 'jwt_vc_json';
-    if (format !== 'jwt_vc_json') {
-        return oauthError('unsupported_credential_format', `format=${String(format)}`);
+    const credentialIdentifier = body.credential_identifier;
+    const credentialConfigurationId = body.credential_configuration_id;
+
+    if (typeof credentialIdentifier === 'string' && typeof credentialConfigurationId === 'string') {
+        return oauthError(
+            'invalid_credential_request',
+            'credential_identifier and credential_configuration_id are mutually exclusive (§8.2)'
+        );
     }
 
-    const proof = body.proof as { proof_type?: string; jwt?: string } | undefined;
-    if (!proof?.jwt || proof.proof_type !== 'jwt') {
-        return oauthError('invalid_proof', 'jwt proof required');
+    if (
+        typeof credentialConfigurationId === 'string' &&
+        !token.configurationIds.includes(credentialConfigurationId)
+    ) {
+        return oauthError(
+            'invalid_credential_request',
+            `unknown credential_configuration_id=${credentialConfigurationId}`
+        );
+    }
+
+    const proofs = body.proofs as { jwt?: unknown } | undefined;
+    const proofJwt = Array.isArray(proofs?.jwt) ? proofs?.jwt[0] : undefined;
+    if (typeof proofJwt !== 'string' || proofJwt.length === 0) {
+        return oauthError('invalid_proof', 'proofs.jwt[] with at least one JWT required');
     }
 
     // Extract holder subject from the proof JWT without verifying
@@ -378,13 +387,13 @@ const handleCredential = async (ctx: HandlerContext): Promise<HandlerResponse> =
     // `kid` (which points to a verification method under the holder's
     // DID). The payload `iss` is the client_id, and is omitted for
     // pre-auth anonymous flows. So prefer `kid`, fall back to `iss`.
-    const holderSubject = extractHolderSubject(proof.jwt);
+    const holderSubject = extractHolderSubject(proofJwt);
     if (!holderSubject) {
         return oauthError('invalid_proof', 'proof JWT missing iss / kid');
     }
 
     // Verify c_nonce echoes what we gave out at /token.
-    const proofPayload = decodeJwtPayload(proof.jwt);
+    const proofPayload = decodeJwtPayload(proofJwt);
     if (proofPayload?.nonce !== token.cNonce) {
         return oauthError('invalid_proof', 'c_nonce mismatch');
     }
@@ -394,7 +403,7 @@ const handleCredential = async (ctx: HandlerContext): Promise<HandlerResponse> =
     return {
         status: 200,
         body: {
-            credential: vcJwt,
+            credentials: [{ credential: vcJwt }],
             c_nonce: token.cNonce,
             c_nonce_expires_in: 300,
         },
@@ -554,11 +563,7 @@ const verifyPkce = async (
 };
 
 const toB64url = (s: string): string =>
-    Buffer.from(s)
-        .toString('base64')
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '');
+    Buffer.from(s).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
 const b64urlToUtf8 = (s: string): string => {
     const pad = '='.repeat((4 - (s.length % 4)) % 4);
