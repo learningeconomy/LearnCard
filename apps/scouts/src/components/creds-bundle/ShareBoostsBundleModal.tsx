@@ -222,7 +222,7 @@ const ShareBoostsBundleModal = ({
                 <IonToolbar className=" ion-no-border ">
                     <IonButtons slot="start">
                         <IonButton className="text-graye-600" onClick={() => handleDismiss()}>
-                            <LeftArrow className="w-10 h-auto text-gray-600" />
+                            <LeftArrow className="rtl-mirror w-10 h-auto text-gray-600" />
                         </IonButton>
                     </IonButtons>
                 </IonToolbar>

@@ -11,7 +11,7 @@ import {
     BoostAddressBookViewMode,
     BoostAddressBookEditMode,
 } from '../boostCMS/boostCMSForms/boostCMSIssueTo/BoostAddressBook';
-import { conditionalPluralize, useWallet } from 'learn-card-base';
+import { useWallet } from 'learn-card-base';
 import { BoostCMSIssueTo, ShortBoostState } from '../boost';
 import { LCNProfile } from '@learncard/types';
 import { UnsignedVC, VC } from '@learncard/types';
@@ -24,6 +24,7 @@ import { ScoutsRoleEnum } from '../../../stores/troopPageStore';
 import { MemberTabsEnum } from '../../../pages/troop/TroopPageMembersBox';
 import { getLogger } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
+import { formatLocaleCount } from '../../../i18n/formatters';
 const log = getLogger('boost-search');
 
 type BoostSearchProps = {
@@ -150,7 +151,10 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
         !searchLoading && search?.length > 0 && searchResults && searchResults.length === 0;
 
     let noConnectionsString = m['boost.noConnectionsYet']();
-    let headerText = conditionalPluralize(contactCount ?? 0, m['boost.contactOne']());
+    let headerText = formatLocaleCount(contactCount ?? 0, {
+        one: m['boost.contactOne'](),
+        other: m['boost.contactOther'](),
+    });
     let searchPlaceholder = m['boost.searchScoutPass']();
 
     let connectionsToShow = connections;
@@ -165,7 +169,10 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
             showSearchResults = false; // Again, doesn't use network profile search
             showNoSearchResults = !scoutsLoading && scouts?.length === 0 && search?.length > 0;
             noConnectionsString = m['boost.noTroopMembers']();
-            headerText = conditionalPluralize(scouts?.length ?? 0, m['boost.scoutMemberOne']());
+            headerText = formatLocaleCount(scouts?.length ?? 0, {
+                one: m['boost.scoutMemberOne'](),
+                other: m['boost.scoutMemberOther'](),
+            });
             searchPlaceholder = m['boost.searchTroop']({
                 name: contextCredential?.name ?? m['boost.troop'](),
             });
@@ -182,10 +189,10 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
             showNoSearchResults =
                 !networkLoading && networkMembers?.length === 0 && search?.length > 0;
             noConnectionsString = m['boost.noNetworkMembers']();
-            headerText = conditionalPluralize(
-                networkMembers?.length ?? 0,
-                m['boost.networkMemberLabelOne']()
-            );
+            headerText = formatLocaleCount(networkMembers?.length ?? 0, {
+                one: m['boost.networkMemberLabelOne'](),
+                other: m['boost.networkMemberLabelOther'](),
+            });
             searchPlaceholder = m['boost.searchNetwork']({
                 name: contextCredential?.name ?? m['boost.network'](),
             });
@@ -209,7 +216,7 @@ const BoostSearch: React.FC<BoostSearchProps> = ({
                                             setSearch?.('');
                                         }}
                                     >
-                                        <CaretLeft className="h-auto w-3 text-grayscale-900" />
+                                        <CaretLeft className="rtl-mirror h-auto w-3 text-grayscale-900" />
                                     </button>
                                     <h3 className="text-grayscale-900 flex items-center justify-start text-2xl">
                                         {headerText}

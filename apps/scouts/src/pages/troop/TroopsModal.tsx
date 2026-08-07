@@ -19,11 +19,12 @@ const TroopListItemCard = lazyWithRetry(() => import('./TroopListItemCard'));
 import { GreenScoutsPledge2 } from 'learn-card-base/svgs/ScoutsPledge2';
 import { IonRow, IonCol, IonInput, IonSpinner } from '@ionic/react';
 
-import { pluralize, ModalTypes } from 'learn-card-base';
+import { ModalTypes } from 'learn-card-base';
 import { TroopsCMSViewModeEnum } from '../../components/troopsCMS/troopCMSState';
 import * as m from '../../paraglide/messages.js';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { TroopParentLevel, troopParentLevelToChildDepth } from './troopConstants';
+import { selectLocalePlural } from '../../i18n/formatters';
 
 type TroopsModalProps = {
     credentialType: CredentialCategoryEnum.troops;
@@ -62,7 +63,10 @@ const TroopsModal: React.FC<TroopsModalProps> = ({
         switch (credentialType) {
             case CredentialCategoryEnum.troops:
                 return {
-                    title: 'Troop',
+                    title: selectLocalePlural(troopsCount ?? 0, {
+                        one: m['common.countLabels.troopOne'](),
+                        other: m['common.countLabels.troopOther'](),
+                    }),
                     icon: <GreenScoutsPledge2 className="h-[50px] w-[50px]" />,
                     color: 'sp-green-forest',
                 };
@@ -89,7 +93,7 @@ const TroopsModal: React.FC<TroopsModalProps> = ({
                         <span className="text-grayscale-900 text-[22px] font-notoSans leading-[130%] tracking-[-0.25px]">
                             <span className="mr-[5px]">{troopsCount}</span>
                             <span className={`font-[600] font-notoSans text-${color}`}>
-                                {pluralize(title, troopsCount ?? 0)}
+                                {title}
                             </span>
                         </span>
                         <span className="text-grayscale-800 font-notoSans text-[14px] font-[600]">

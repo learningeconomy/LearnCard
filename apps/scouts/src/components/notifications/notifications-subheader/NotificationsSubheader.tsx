@@ -108,7 +108,7 @@ export const NotificationsSubHeader: React.FC<{
                         }}
                         aria-label={m['notifications.backButton']()}
                     >
-                        <LeftArrow className="w-6 mr-[10px] h-auto text-black desktop:hidden" />
+                        <LeftArrow className="rtl-mirror w-6 mr-[10px] h-auto text-black desktop:hidden" />
                         <span className="text-grayscale-900 text-[25px] font-semibold font-rubik tracking-[0.01rem]">
                             {m['notifications.alerts']()}
                         </span>

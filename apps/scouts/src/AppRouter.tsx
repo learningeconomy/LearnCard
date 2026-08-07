@@ -48,6 +48,7 @@ import { useIsChapiInteraction } from 'learn-card-base/stores/chapiStore';
 import { useSentryIdentify, initSentry } from './constants/sentry';
 import { useSetFirebaseAnalyticsUserId } from './hooks/useSetFirebaseAnalyticsUserId';
 import * as m from './paraglide/messages.js';
+import { useLocale } from './i18n';
 
 const Routes = lazyWithRetry(() => import('./Routes').then(module => ({ default: module.Routes })));
 
@@ -65,6 +66,9 @@ const getBackgroundGradientForNavbar = ({ path }: NavbarGradientProps): string =
 };
 
 const AppRouter: React.FC = () => {
+    // AppRouter is memoized, so it must subscribe to locale context for its
+    // message calls below to rerender after an in-place language switch.
+    useLocale();
     const { isLoading: coordinatorLoading, walletReady } = useAppAuth();
 
     // The coordinator detects Firebase auth changes via firebaseAuthStore and

@@ -158,7 +158,7 @@ const ConnectionRequestCard: React.FC<ConnectionRequestCardProps> = ({
                                 <img
                                     src={ArrowArcLeft ?? ''}
                                     alt={m['common.cancel']()}
-                                    className="notification-card-x"
+                                    className="rtl-mirror notification-card-x"
                                 />
                             )}
                         </button>

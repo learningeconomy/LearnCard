@@ -12,8 +12,8 @@
  * full page reload that Paraglide's default setLocale triggers.
  */
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { setLocale as paraglideSetLocale, getLocale } from '../paraglide/runtime.js';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { setLocale as paraglideSetLocale } from '../paraglide/runtime.js';
 
 import {
     detectInitialLocale,
@@ -21,6 +21,7 @@ import {
     getEffectiveSupportedLanguages,
 } from './detectLocale';
 import { applyLocaleChange } from './localeChange';
+import { getLocaleStorage, readPersistedLocale } from './localeStorage';
 
 // Mirror of Paraglide's runtime `MessagePart` (a JSDoc typedef in
 // ../paraglide/runtime.js, not a TS export). Field types match the generated
@@ -76,17 +77,7 @@ const LocaleContext = createContext<LocaleContextValue | null>(null);
  */
 function resolveInitialLocale(): SupportedLanguage {
     const supportedLanguages = getEffectiveSupportedLanguages(SUPPORTED_LANGUAGES);
-    const detected = detectInitialLocaleSync(supportedLanguages, 'en');
-    // Paraglide's getLocale() is the runtime baseLocale (typically 'en'). If the
-    // sync chain returned that and it's a no-op, prefer Paraglide's own value
-    // so any future server-side strategy stays consistent.
-    if (detected === 'en') {
-        const gl = getLocale();
-        if ((supportedLanguages as readonly string[]).includes(gl)) {
-            return gl as SupportedLanguage;
-        }
-    }
-    return detected as SupportedLanguage;
+    return detectInitialLocaleSync(supportedLanguages, 'en') as SupportedLanguage;
 }
 
 /**
@@ -101,17 +92,19 @@ function resolveInitialLocale(): SupportedLanguage {
  * subsequent launches.
  */
 export const LocaleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const manualChangeVersion = useRef(0);
     const [locale, setLocaleState] = useState<SupportedLanguage>(() => {
         const initial = resolveInitialLocale();
         paraglideSetLocale(initial, { reload: false });
         return initial;
     });
     const changeLocale = useCallback((lang: SupportedLanguage) => {
+        manualChangeVersion.current += 1;
         applyLocaleChange(
             lang,
             nextLocale => paraglideSetLocale(nextLocale, { reload: false }),
             setLocaleState,
-            typeof localStorage === 'undefined' ? undefined : localStorage
+            getLocaleStorage()
         );
     }, []);
 
@@ -119,11 +112,12 @@ export const LocaleProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // manually picked a locale (i.e. no localStorage entry) — once a choice is
     // persisted, we never override it from autodetection on later launches.
     useEffect(() => {
-        const hasManualChoice =
-            typeof localStorage !== 'undefined' && !!localStorage.getItem('i18n.language');
+        const hasManualChoice = !!readPersistedLocale();
         if (hasManualChoice) return;
+        const requestVersion = manualChangeVersion.current;
         const supportedLanguages = getEffectiveSupportedLanguages(SUPPORTED_LANGUAGES);
         void detectInitialLocale(supportedLanguages, 'en').then(detected => {
+            if (manualChangeVersion.current !== requestVersion || readPersistedLocale()) return;
             if (
                 detected !== locale &&
                 (supportedLanguages as readonly string[]).includes(detected)
@@ -215,6 +209,18 @@ export function renderParts(
                       ...frame.children
                   )
                 : frame.children;
+            if (stack.length > 0) {
+                stack[stack.length - 1].children.push(child);
+            } else {
+                result.push(child);
+            }
+        } else if (part.type === 'markup-standalone') {
+            const el = components[part.name];
+            if (!el) continue;
+
+            const child = React.cloneElement(el, {
+                key: `m-${part.name}-${keyCounter++}`,
+            });
             if (stack.length > 0) {
                 stack[stack.length - 1].children.push(child);
             } else {

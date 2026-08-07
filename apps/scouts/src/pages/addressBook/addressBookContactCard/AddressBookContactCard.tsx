@@ -45,7 +45,7 @@ const AddressBookContactCard: React.FC = () => {
                 <section className="flex justify-center items-center h-9 w-9">
                     <QRCodeScanner className="h-[70%]" />
                 </section>
-                <SlimCaretRight className="text-grayscale-400 w-[24px] h-auto" />
+                <SlimCaretRight className="rtl-mirror text-grayscale-400 w-[24px] h-auto" />
             </button>
         </div>
     );

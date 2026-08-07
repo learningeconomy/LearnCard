@@ -12,10 +12,10 @@ import CredentialVerificationDisplay from 'learn-card-base/components/Credential
 import { getRoleFromCred } from '../../helpers/troop.helpers';
 import {
     useCountBoostChildren,
-    conditionalPluralize,
     BoostCategoryOptionsEnum,
     useGetCredentialWithEdits,
 } from 'learn-card-base';
+import { formatLocaleCount } from '../../i18n/formatters';
 
 import * as m from '../../paraglide/messages.js';
 import { VC } from '@learncard/types';
@@ -164,12 +164,18 @@ const ViewTroopIdTemplate: React.FC<ViewTroopIdTemplateProps> = ({
                             <div className="flex flex-col items-center">
                                 <span className="text-grayscale-700 font-notoSans text-[12px] font-[600]">
                                     {!isNetwork &&
-                                        `${conditionalPluralize(
-                                            scoutCount,
-                                            'Scout'
-                                        )}, ${conditionalPluralize(leaderCount, 'Leader')}`}
+                                        `${formatLocaleCount(scoutCount, {
+                                            one: m['troops.scoutOne'](),
+                                            other: m['troops.scoutOther'](),
+                                        })}, ${formatLocaleCount(leaderCount, {
+                                            one: m['troops.leaderOne'](),
+                                            other: m['troops.leaderOther'](),
+                                        })}`}
                                     {isNetwork &&
-                                        `${conditionalPluralize(currentBoostCount, 'Admin')}`}
+                                        formatLocaleCount(currentBoostCount, {
+                                            one: m['troops.adminOne'](),
+                                            other: m['troops.adminOther'](),
+                                        })}
                                 </span>
                             </div>
                         )}

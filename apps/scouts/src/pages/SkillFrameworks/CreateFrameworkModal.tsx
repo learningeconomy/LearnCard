@@ -5,13 +5,13 @@ import {
     useModal,
     useWallet,
     useImageUpload,
-    conditionalPluralize,
     BoostUserTypeEnum,
     ShortBoostState,
     useGetSkillFrameworkAdmins,
     useGetBoostsThatUseFramework,
     CredentialCategoryEnum,
 } from 'learn-card-base';
+import { formatLocaleCount } from '../../i18n/formatters';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import * as m from '../../paraglide/messages.js';
@@ -384,7 +384,10 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
 
                 <div className="flex flex-col gap-[20px] bg-white p-[20px] rounded-[20px] shadow-bottom-0-4">
                     <div className="font-poppins text-[20px] text-grayscale-900 flex items-center">
-                        {conditionalPluralize(selectedNetworks.length, 'Attached Network')}
+                        {formatLocaleCount(selectedNetworks.length, {
+                            one: m['common.countLabels.attachedNetworkOne'](),
+                            other: m['common.countLabels.attachedNetworkOther'](),
+                        })}
                         <button
                             onClick={handleSelectNetwork}
                             className="ml-auto bg-emerald-700 p-[10px] rounded-full"
@@ -404,7 +407,10 @@ const CreateFrameworkModal: React.FC<CreateFrameworkModalProps> = ({ isEdit, fra
 
                 <div className="flex flex-col gap-[20px] bg-white p-[20px] rounded-[20px] shadow-bottom-0-4">
                     <div className="font-poppins text-[20px] text-grayscale-900 flex items-center">
-                        {conditionalPluralize(selectedAdmins.issueTo.length, 'Admin')}
+                        {formatLocaleCount(selectedAdmins.issueTo.length, {
+                            one: m['troops.adminOne'](),
+                            other: m['troops.adminOther'](),
+                        })}
                         <button
                             onClick={handleSelectAdmin}
                             className="ml-auto bg-emerald-700 p-[10px] rounded-full"

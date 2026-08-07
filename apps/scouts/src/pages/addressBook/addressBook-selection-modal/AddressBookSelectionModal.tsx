@@ -124,7 +124,7 @@ const AddressBookSelectionModal: React.FC<AddressBookSelectionModalProps> = ({
             <IonRow class="w-full max-w-[600px] px-3 py-[20px]">
                 <IonCol className="flex w-full items-center justify-start">
                     <div className="cursor-pointer text-grayscale-900" onClick={closeModal}>
-                        <CaretLeft />
+                        <CaretLeft className="rtl-mirror" />
                     </div>
                     <h1 className="text-[22px] font-notoSans font-normal text-grayscale-900 ml-[15px]">
                         {m['addressBook.selectFromContacts']()}

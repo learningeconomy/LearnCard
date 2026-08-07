@@ -30,33 +30,19 @@
  */
 
 import { Capacitor } from '@capacitor/core';
+import { readPersistedLocale } from './localeStorage';
 
 /**
  * Reads `navigator.language` / `navigator.languages[0]` if running in a
  * browser-like environment. Returns the raw locale string (possibly regional,
  * e.g. `'ko-KR'`) or undefined if `navigator` is unavailable.
  */
-function readBrowserLocale(): string | undefined {
-    if (typeof navigator === 'undefined') return undefined;
+function readBrowserLocales(): string[] {
+    if (typeof navigator === 'undefined') return [];
     if (Array.isArray(navigator.languages) && navigator.languages.length > 0) {
-        return navigator.languages[0];
+        return [...navigator.languages];
     }
-    return navigator.language || undefined;
-}
-
-/**
- * Reads the previously-persisted user choice from localStorage. Returns
- * undefined if there's no entry or the storage layer is unavailable
- * (e.g. SSR).
- */
-function readPersistedLocale(): string | undefined {
-    if (typeof localStorage === 'undefined') return undefined;
-    try {
-        return localStorage.getItem('i18n.language') ?? undefined;
-    } catch {
-        // localStorage can throw in private mode / some Capacitor contexts
-        return undefined;
-    }
+    return navigator.language ? [navigator.language] : [];
 }
 
 /**
@@ -128,7 +114,7 @@ function pickSupported(
 export function detectInitialLocaleSync(supported: readonly string[], fallback = 'en'): string {
     return (
         pickSupported([readPersistedLocale()], supported) ??
-        pickSupported([readBrowserLocale()], supported) ??
+        pickSupported(readBrowserLocales(), supported) ??
         pickSupported([readTenantDefaultLocale()], supported) ??
         fallback
     );
@@ -177,7 +163,7 @@ export async function detectInitialLocale(
     }
 
     return (
-        pickSupported([readBrowserLocale()], supported) ??
+        pickSupported(readBrowserLocales(), supported) ??
         pickSupported([readTenantDefaultLocale()], supported) ??
         fallback
     );

@@ -555,7 +555,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                         });
                     }}
                 >
-                    <CaretLeft className="text-grayscale-900 w-10 rotate-180" />
+                    <CaretLeft className="rtl-mirror text-grayscale-900 w-10 rotate-180" />
                 </div>
             </div>
         )

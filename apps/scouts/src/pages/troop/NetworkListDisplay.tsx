@@ -6,7 +6,6 @@ import {
     useCountBoostChildren,
     useGetPaginatedBoostChildren,
     ModalTypes,
-    pluralize,
 } from 'learn-card-base';
 
 import X from '../../components/svgs/X';
@@ -20,6 +19,7 @@ import { IonRow, IonCol, IonInput, IonSpinner } from '@ionic/react';
 import * as m from '../../paraglide/messages.js';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
 import { TroopsCMSViewModeEnum } from '../../components/troopsCMS/troopCMSState';
+import { selectLocalePlural } from '../../i18n/formatters';
 
 export enum TroopParentLevel {
     global,
@@ -66,7 +66,10 @@ const NetworkListDisplay: React.FC<NetworkListDisplayProps> = ({
 
     const getCredentialMeta = () => {
         return {
-            title: 'National Network',
+            title: selectLocalePlural(count ?? 0, {
+                one: m['common.countLabels.nationalNetworkOne'](),
+                other: m['common.countLabels.nationalNetworkOther'](),
+            }),
             icon: <OrangeScoutsNetworkTent className="h-[50px] w-[50px]" />,
             color: 'sp-fire-red',
         };
@@ -83,7 +86,7 @@ const NetworkListDisplay: React.FC<NetworkListDisplayProps> = ({
                         <span className="text-grayscale-900 text-[22px] font-notoSans leading-[130%] tracking-[-0.25px]">
                             <span className="mr-[5px]">{count}</span>
                             <span className={`font-[600] font-notoSans text-${color}`}>
-                                {pluralize(title, count ?? 0)}
+                                {title}
                             </span>
                         </span>
                         <span className="text-grayscale-800 font-notoSans text-[14px] font-[600]">

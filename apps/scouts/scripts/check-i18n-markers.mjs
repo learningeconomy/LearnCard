@@ -2,6 +2,12 @@ import { existsSync, readFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
+import {
+    interpolationVariables,
+    malformedInterpolations,
+    markupMarkers,
+} from './i18n-marker-validation.mjs';
+
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const locales = ['es', 'fr', 'ar'];
 const strict = process.argv.includes('--strict');
@@ -19,25 +25,44 @@ const flatten = (value, prefix = '', output = {}) => {
 
 const load = locale =>
     flatten(JSON.parse(readFileSync(join(root, 'public', 'locales', locale, 'translation.json'))));
-const variables = value =>
-    [...String(value).matchAll(/\{\{?\s*([^{}]+?)\s*\}\}?/g)].map(match => match[1]);
-const markup = value => (String(value).match(/<\/?\d+>/g) ?? []).sort();
 const base = load('en');
 const failures = [];
+
+for (const [key, source] of Object.entries(base)) {
+    if (typeof source !== 'string') continue;
+    const malformed = malformedInterpolations(source);
+    if (malformed.length) {
+        failures.push({
+            locale: 'en',
+            key,
+            malformed,
+            unknown: [],
+            dropped: [],
+            markerMismatch: false,
+        });
+    }
+}
 
 for (const locale of locales) {
     const catalog = load(locale);
     for (const [key, source] of Object.entries(base)) {
         if (typeof source !== 'string' || typeof catalog[key] !== 'string') continue;
-        const sourceVariables = new Set(variables(source));
-        const translatedVariables = new Set(variables(catalog[key]));
-        const markerMismatch = markup(source).join('|') !== markup(catalog[key]).join('|');
+        const sourceVariables = new Set(interpolationVariables(source));
+        const translatedVariables = new Set(interpolationVariables(catalog[key]));
+        const malformed = malformedInterpolations(catalog[key]);
+        const markerMismatch =
+            markupMarkers(source).join('|') !== markupMarkers(catalog[key]).join('|');
         const unknown = [...translatedVariables].filter(variable => !sourceVariables.has(variable));
         const dropped = [...sourceVariables].filter(variable => !translatedVariables.has(variable));
         const allowed = allowlist.has(key) || allowlist.has(`${locale}:${key}`);
 
-        if (unknown.length || markerMismatch || (strict && dropped.length && !allowed)) {
-            failures.push({ locale, key, unknown, dropped, markerMismatch });
+        if (
+            malformed.length ||
+            unknown.length ||
+            markerMismatch ||
+            (strict && dropped.length && !allowed)
+        ) {
+            failures.push({ locale, key, malformed, unknown, dropped, markerMismatch });
         }
     }
 }

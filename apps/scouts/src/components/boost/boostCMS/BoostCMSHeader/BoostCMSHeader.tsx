@@ -102,7 +102,7 @@ const BoostCMSHeader: React.FC<BoostCMSHeaderProps> = ({
                                     onClick={handleGoBack}
                                     aria-label="Quit boost creation"
                                 >
-                                    <LeftArrow className="w-7 h-auto text-white" />
+                                    <LeftArrow className="rtl-mirror w-7 h-auto text-white" />
                                 </button>
                             )}
                             <div>

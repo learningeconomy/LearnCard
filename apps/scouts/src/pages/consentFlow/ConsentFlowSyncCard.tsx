@@ -388,7 +388,8 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                         className="text-indigo-500 font-bold text-base flex mt-2 items-center justify-center disabled:opacity-50"
                         disabled={!contractDetails?.contract || isPreview}
                     >
-                        {m['consentFlow.editAccess']()} <RightArrow className="w-[20px] h-[20px]" />
+                        {m['consentFlow.editAccess']()}{' '}
+                        <RightArrow className="rtl-mirror w-[20px] h-[20px]" />
                     </button>
                 </div>
 

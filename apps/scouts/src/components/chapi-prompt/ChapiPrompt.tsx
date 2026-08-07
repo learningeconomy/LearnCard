@@ -21,7 +21,8 @@ export const ChapiPrompt: React.FC<{ handleCloseModal: () => void }> = ({ handle
                     className="text-grayscale-900 flex items-center justify-center p-0 mr-[1px] z-50"
                     onClick={handleCloseModal}
                 >
-                    <LeftArrow className="w-7 h-auto text-grayscale-900" /> {m['common.back']()}
+                    <LeftArrow className="rtl-mirror w-7 h-auto text-grayscale-900" />{' '}
+                    {m['common.back']()}
                 </button>
             </div>
 

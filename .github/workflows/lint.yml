@@ -119,6 +119,7 @@ jobs:
               run: |
                   bun run i18n:check-memos
                   bun run i18n:check-ast
+                  bun run test:i18n
 
     # Exercise behavior from the checked-in generated glue and binary directly. Native Rust
     # tests do not prove that a source change was included in the committed WASM payload.

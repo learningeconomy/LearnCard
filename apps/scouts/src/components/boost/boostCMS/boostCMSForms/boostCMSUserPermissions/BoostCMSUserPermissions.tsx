@@ -37,7 +37,7 @@ const BoostCMSUserPermissions: React.FC<{
                 <h1 className="text-black text-2xl p-0 m-0">{m['boostCMS.userPerms']()}</h1>
                 <button onClick={() => setShowAbout(!showAbout)}>
                     <CaretLeft
-                        className={`h-auto w-3 text-grayscale-800 ${
+                        className={`rtl-mirror h-auto w-3 text-grayscale-800 ${
                             showAbout ? 'rotate-[-90deg]' : 'rotate-180'
                         }`}
                     />

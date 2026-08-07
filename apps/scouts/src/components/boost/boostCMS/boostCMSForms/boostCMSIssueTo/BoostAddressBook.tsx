@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { formatLocaleDate, formatLocaleTime } from '../../../../../i18n/formatters';
+import {
+    formatLocaleCount,
+    formatLocaleDate,
+    formatLocaleTime,
+} from '../../../../../i18n/formatters';
 
 import useTroopMembers from '../../../../../hooks/useTroopMembers';
 import useNetworkMembers from '../../../../../hooks/useNetworkMembers';
@@ -25,7 +29,6 @@ import {
     useResolveBoost,
     useGetBoostParents,
     UserProfilePicture,
-    conditionalPluralize,
     BoostUserTypeEnum,
     useModal,
     ModalTypes,
@@ -275,7 +278,10 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
     }
 
     let noConnectionsString = m['boostCMS.noConnections']();
-    let headerText = conditionalPluralize(contactCount ?? 0, m['boostCMS.contact']());
+    let headerText = formatLocaleCount(contactCount ?? 0, {
+        one: m['boostCMS.contact'](),
+        other: m['boostCMS.contacts'](),
+    });
     let searchPlaceholder = m['boostCMS.searchNetwork']();
     let connectionsToShow = connections;
 
@@ -298,7 +304,10 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
             showNoSearchResults =
                 !scoutsLoading && scouts?.length === 0 && (search?.length ?? 0) > 0;
             noConnectionsString = m['boostCMS.noTroopMembers']();
-            headerText = conditionalPluralize(scouts?.length ?? 0, m['boostCMS.scout']());
+            headerText = formatLocaleCount(scouts?.length ?? 0, {
+                one: m['boostCMS.scout'](),
+                other: m['boostCMS.scouts'](),
+            });
             searchPlaceholder = m['boostCMS.searchTroop']({
                 name: contextCredential?.name ?? 'Troop',
             });
@@ -313,10 +322,10 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
             showNoSearchResults =
                 !networkLoading && networkMembers?.length === 0 && (search?.length ?? 0) > 0;
             noConnectionsString = m['boostCMS.noNetworkMembers']();
-            headerText = conditionalPluralize(
-                networkMembers?.length ?? 0,
-                m['boostCMS.networkMember']()
-            );
+            headerText = formatLocaleCount(networkMembers?.length ?? 0, {
+                one: m['boostCMS.networkMember'](),
+                other: m['boostCMS.networkMembers'](),
+            });
             searchPlaceholder = m['boostCMS.searchNetworkSpecific']({
                 name: contextCredential?.name ?? 'Network',
             });
@@ -340,7 +349,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                                 setSearch?.('');
                                             }}
                                         >
-                                            <CaretLeft className="h-auto w-3 text-grayscale-900" />
+                                            <CaretLeft className="rtl-mirror h-auto w-3 text-grayscale-900" />
                                         </button>
                                         <h3 className="text-grayscale-900 flex items-center justify-start text-2xl">
                                             {headerText}

@@ -53,7 +53,7 @@ const ConsentFlowWriteSharingItem: React.FC<ConsentFlowWriteSharingItemProps> = 
                     </h4>
                 </section>
 
-                <SkinnyCaretRight className="h-[20px] w-[20px] text-grayscale-500" />
+                <SkinnyCaretRight className="rtl-mirror h-[20px] w-[20px] text-grayscale-500" />
 
                 <IonRippleEffect />
             </button>

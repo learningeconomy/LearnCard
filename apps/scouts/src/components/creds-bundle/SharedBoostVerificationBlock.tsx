@@ -141,7 +141,7 @@ const SharedBoostVerificationBlock: React.FC<{
                             )}
                         </div>
                         <button onClick={handleOnClick}>
-                            <RightArrow className="text-black w-[20px] h-[20px]" />
+                            <RightArrow className="rtl-mirror text-black w-[20px] h-[20px]" />
                         </button>
                     </div>
                 </div>
@@ -157,7 +157,7 @@ const SharedBoostVerificationBlock: React.FC<{
                         <div className="w-full flex items-center justify-center pt-4 px-4">
                             <div className="w-full max-w-[600px] flex items-center justify-start mb-2">
                                 <button onClick={handleCloseModal} className="mr-2">
-                                    <LeftArrow className="text-black w-[20px] h-[20px]" />
+                                    <LeftArrow className="rtl-mirror text-black w-[20px] h-[20px]" />
                                 </button>
                                 <h1 className="text-grayscale-900 text-lg font-medium">
                                     {m['credsBundle.credStatus']()}{' '}

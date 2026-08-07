@@ -287,7 +287,7 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
                             onClick={() => setNavigationPath(navigationPath.slice(0, -1))}
                             className="bg-white rounded-full text-grayscale-900 shadow-button-bottom flex items-center justify-center h-[44px] w-[44px]"
                         >
-                            <SlimCaretLeft className="w-[20px] h-[20px]" />
+                            <SlimCaretLeft className="rtl-mirror w-[20px] h-[20px]" />
                         </button>
                     )}
                     <button

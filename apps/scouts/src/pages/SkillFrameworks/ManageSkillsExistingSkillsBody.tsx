@@ -103,7 +103,7 @@ const ManageSkillsExistingSkillsBody: React.FC<ManageSkillsExistingSkillsBodyPro
                     </div>
 
                     <SlimCaretRight
-                        className="text-grayscale-600 ml-auto h-[30px] w-[30px]"
+                        className="rtl-mirror text-grayscale-600 ml-auto h-[30px] w-[30px]"
                         strokeWidth="2"
                     />
                 </button>

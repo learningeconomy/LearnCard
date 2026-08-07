@@ -41,6 +41,7 @@ import { useFlags } from 'launchdarkly-react-client-sdk';
 import * as m from '../../paraglide/messages.js';
 import { TransP } from '../../i18n/TransP';
 import { getLogger } from 'learn-card-base';
+import { LanguagePickerCompact } from '../../components/sidemenu/LanguagePicker';
 const log = getLogger('login-page');
 
 const LoginPage: React.FC = () => {
@@ -143,14 +144,14 @@ const LoginPage: React.FC = () => {
         {
             id: 1,
             src: GoogleIcon,
-            alt: 'google',
+            alt: m['login.accessibility.googleLogin'](),
             onClick: googleLogin,
             type: SocialLoginTypes.google,
         },
         {
             id: 2,
             src: AppleIcon,
-            alt: 'apple',
+            alt: m['login.accessibility.appleLogin'](),
             onClick: appleLogin,
             type: SocialLoginTypes.apple,
         }
@@ -166,6 +167,7 @@ const LoginPage: React.FC = () => {
             <IonContent fullscreen>
                 <IonGrid className="p-0 m-0 w-full flex-col items-center justify-center">
                     <IonRow className="p-0 m-0 w-full flex items-center justify-center bg-sp-purple-base relative login-page-header !overflow-hidden">
+                        <LanguagePickerCompact className="absolute top-4 right-4 z-10" />
                         <IonCol size="12" className="flex flex-col items-center justify-center">
                             <img src={ScoutPassLogo} alt="ScoutPass logo" className="w-[55px]" />
                             <img
@@ -299,6 +301,7 @@ const LoginPage: React.FC = () => {
                                 <div className="w-full flex items-center justify-center">
                                     {enableWorldScoutsLogin && (
                                         <button
+                                            aria-label={m['login.accessibility.worldScoutsLogin']()}
                                             className={`flex items-center justify-center border-solid border-2 rounded-full mr-2 h-[50px] w-[50px] max-w-[50px] max-h-[50px] z-[9999] ${
                                                 activeLoginType === LoginTypesEnum.scoutsSSO
                                                     ? activeLoginTypeStyles
@@ -310,13 +313,14 @@ const LoginPage: React.FC = () => {
                                         >
                                             <img
                                                 src={WorldScoutsIcon}
-                                                alt="world scouts icon"
+                                                alt=""
                                                 className="w-[50px] h-auto rounded-full"
                                             />
                                         </button>
                                     )}
 
                                     <button
+                                        aria-label={m['login.accessibility.emailLogin']()}
                                         className={`flex items-center justify-center border-solid border-2 p-2 bg-[#0094F6] rounded-full mr-2 h-[50px] w-[50px] max-w-[50px] max-h-[50px] z-[9999] ${
                                             activeLoginType === LoginTypesEnum.email
                                                 ? activeLoginTypeStyles
@@ -324,15 +328,12 @@ const LoginPage: React.FC = () => {
                                         }`}
                                         onClick={() => setActiveLoginType(LoginTypesEnum.email)}
                                     >
-                                        <img
-                                            src={EmailIcon}
-                                            alt="email icon"
-                                            className="w-[30px] h-[30px]"
-                                        />
+                                        <img src={EmailIcon} alt="" className="w-[30px] h-[30px]" />
                                     </button>
 
                                     {enableSmsLogin && (
                                         <button
+                                            aria-label={m['login.accessibility.phoneLogin']()}
                                             className={`flex items-center justify-center border-solid border-2 p-2 bg-[#0094F6] rounded-full mr-2 h-[50px] w-[50px] max-w-[50px] max-h-[50px] z-[9999] ${
                                                 activeLoginType === LoginTypesEnum.phone
                                                     ? activeLoginTypeStyles
@@ -342,7 +343,7 @@ const LoginPage: React.FC = () => {
                                         >
                                             <img
                                                 src={PhoneIcon}
-                                                alt="phone icon"
+                                                alt=""
                                                 className="w-[30px] h-[30px]"
                                             />
                                         </button>

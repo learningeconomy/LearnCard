@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 
 import { IonContent } from '@ionic/react';
 import * as m from '../../../paraglide/messages.js';
-import { conditionalPluralize, useGetSearchProfiles, useModal, ModalTypes } from 'learn-card-base';
+import { useGetSearchProfiles, useModal, ModalTypes } from 'learn-card-base';
+import { formatLocaleCount } from '../../../i18n/formatters';
 
 import Pencil from '../../svgs/Pencil';
 import ScoutDiamond from '../../svgs/ScoutDiamond';
@@ -148,7 +149,10 @@ export const TroopIDTypeButton: React.FC<TroopIDTypeButtonProps> = ({
                             {m['troops.scoutId']()}
                             {scoutsListLength > 0 && (
                                 <span className="text-[14px] text-grayscale-500 font-notoSans font-[500] leading-normal">
-                                    {conditionalPluralize(scoutsListLength, m['troops.scoutOne']())}
+                                    {formatLocaleCount(scoutsListLength, {
+                                        one: m['troops.scoutOne'](),
+                                        other: m['troops.scoutOther'](),
+                                    })}
                                 </span>
                             )}
                         </p>
@@ -192,10 +196,10 @@ export const TroopIDTypeButton: React.FC<TroopIDTypeButtonProps> = ({
                             {m['troops.leaderId']()}
                             {leadersListLength > 0 && (
                                 <span className="text-[14px] text-grayscale-500 font-notoSans font-[500] leading-normal">
-                                    {conditionalPluralize(
-                                        leadersListLength,
-                                        m['troops.leaderOne']()
-                                    )}
+                                    {formatLocaleCount(leadersListLength, {
+                                        one: m['troops.leaderOne'](),
+                                        other: m['troops.leaderOther'](),
+                                    })}
                                 </span>
                             )}
                         </p>
@@ -241,7 +245,10 @@ export const TroopIDTypeButton: React.FC<TroopIDTypeButtonProps> = ({
                     {title}
                     {leadersListLength > 0 && (
                         <span className="text-[14px] text-grayscale-500 font-notoSans font-[500]">
-                            {conditionalPluralize(leadersListLength, m['troops.adminOne']())}
+                            {formatLocaleCount(leadersListLength, {
+                                one: m['troops.adminOne'](),
+                                other: m['troops.adminOther'](),
+                            })}
                         </span>
                     )}
                 </p>

@@ -206,7 +206,7 @@ const ConsentFlowReadSharingModal: React.FC<ConsentFlowReadSharingModalProps> = 
                         <IonRow className="w-full flex items-center gap-3 max-w-[760px] mx-auto">
                             <IonCol size="12" className="flex items-center gap-3">
                                 <button type="button" onClick={saveAndClose} className="shrink-0">
-                                    <CaretLeft />
+                                    <CaretLeft className="rtl-mirror" />
                                 </button>
 
                                 <IconComponent className="h-[30px] w-[30px] shrink-0" />

@@ -614,7 +614,7 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                                 className="p-[12px] bg-white rounded-full shadow-bottom-3-4"
                             >
                                 <SlimCaretLeft
-                                    className="w-[20px] h-[20px] text-grayscale-900"
+                                    className="rtl-mirror w-[20px] h-[20px] text-grayscale-900"
                                     color="currentColor"
                                 />
                             </button>

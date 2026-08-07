@@ -172,7 +172,7 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
                                 className={`ion-no-padding p-0 text-grayscale-800 ${headerBackButtonStyles}`}
                                 onClick={handleGoBack}
                             >
-                                <CaretLeft className="h-auto w-3 text-black" />
+                                <CaretLeft className="rtl-mirror h-auto w-3 text-black" />
                             </button>
                         )}
                         <p

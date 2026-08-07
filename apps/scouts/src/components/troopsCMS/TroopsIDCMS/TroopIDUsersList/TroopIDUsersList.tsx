@@ -4,7 +4,8 @@ import TrashBin from '../../../svgs/TrashBin';
 import { IonInput } from '@ionic/react';
 import * as m from '../../../../paraglide/messages.js';
 
-import { BoostCMSIssueTo, conditionalPluralize, UserProfilePicture } from 'learn-card-base';
+import { BoostCMSIssueTo, UserProfilePicture } from 'learn-card-base';
+import { formatLocaleCount } from '../../../../i18n/formatters';
 import { TroopsCMSState } from '../../troopCMSState';
 
 export enum TroopIDUserListTabsEnum {
@@ -111,7 +112,10 @@ export const TroopIDUsersList: React.FC<TroopIDUsersListProps> = ({
             {scoutsAndLeadersListCount > 0 && (
                 <div className="w-full flex items-start justify-center flex-col">
                     <h3 className="font-notoSans text-xl font-normal mb-2 text-grayscale-900">
-                        {conditionalPluralize(scoutsAndLeadersListCount, m['troops.memberOne']())}
+                        {formatLocaleCount(scoutsAndLeadersListCount, {
+                            one: m['troops.memberOne'](),
+                            other: m['troops.memberOther'](),
+                        })}
                     </h3>
                     {isInTroopViewMode && scoutsListCount > 0 && leadersListCount > 0 && (
                         <div className="flex mb-2">
@@ -134,8 +138,10 @@ export const TroopIDUsersList: React.FC<TroopIDUsersListProps> = ({
                                             : 'text-grayscale-700'
                                     }`}
                                 >
-                                    {scoutsListCount}{' '}
-                                    {conditionalPluralize(scoutsListCount, m['troops.scoutOne']())}
+                                    {formatLocaleCount(scoutsListCount, {
+                                        one: m['troops.scoutOne'](),
+                                        other: m['troops.scoutOther'](),
+                                    })}
                                 </button>
                             )}
 
@@ -148,11 +154,10 @@ export const TroopIDUsersList: React.FC<TroopIDUsersListProps> = ({
                                             : 'text-grayscale-700'
                                     }`}
                                 >
-                                    {leadersListCount}{' '}
-                                    {conditionalPluralize(
-                                        leadersListCount,
-                                        m['troops.leaderOne']()
-                                    )}
+                                    {formatLocaleCount(leadersListCount, {
+                                        one: m['troops.leaderOne'](),
+                                        other: m['troops.leaderOther'](),
+                                    })}
                                 </button>
                             )}
                         </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import * as m from '../../paraglide/messages.js';
+import { formatLocaleDate } from '../../i18n/formatters';
 import { useModal, ModalTypes, useWallet } from 'learn-card-base';
 import { useQuery } from '@tanstack/react-query';
 import { IonSpinner } from '@ionic/react';
@@ -108,10 +109,8 @@ const SkillFrameworks: React.FC = () => {
                     <div className="flex flex-col text-grayscale-900">
                         {frameworks.map(framework => {
                             const createdDate = framework.createdAt
-                                ? new Date(framework.createdAt).toLocaleDateString('en-US', {
-                                      year: 'numeric',
-                                      month: 'long',
-                                      day: 'numeric',
+                                ? formatLocaleDate(framework.createdAt, {
+                                      dateStyle: 'long',
                                   })
                                 : m['skillFrameworks.unknown']();
 

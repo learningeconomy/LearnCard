@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Clipboard } from '@capacitor/clipboard';
 import { QRCodeSVG } from 'qrcode.react';
-import moment from 'moment';
 
 import { IonGrid, IonSpinner } from '@ionic/react';
 import X from 'learn-card-base/svgs/X';
@@ -33,6 +32,7 @@ import { boostCategoryOptions } from '../boost-options/boostOptions';
 import { getEmojiFromDidString } from 'learn-card-base/helpers/walletHelpers';
 import useFirebaseAnalytics from '../../../hooks/useFirebaseAnalytics';
 import * as m from '../../../paraglide/messages.js';
+import { formatLocaleDate } from '../../../i18n/formatters';
 
 const ShareBoostLink: React.FC<{
     handleClose: () => void;
@@ -62,7 +62,7 @@ const ShareBoostLink: React.FC<{
     const displayType = cred?.display?.displayType;
     const isID = cred?.display?.displayType === 'id' || categoryType === 'ID';
     const title = isBoost ? boost?.boostCredential?.name : getCredentialName(boost);
-    const issueDate = moment(cred?.issuanceDate).format('MM/D/YYYY');
+    const issueDate = formatLocaleDate(cred?.issuanceDate, { dateStyle: 'short' });
     const credImg = getUrlFromImage(getCredentialSubject(cred)?.image ?? '');
     const backgroundImage = cred?.display?.backgroundImage;
     const thumbImage = (cred && getImageUrlFromCredential(cred)) || CategoryImage;

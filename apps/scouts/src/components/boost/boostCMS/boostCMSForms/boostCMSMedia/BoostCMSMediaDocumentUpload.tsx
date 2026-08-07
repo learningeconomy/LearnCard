@@ -65,7 +65,7 @@ const BoostCMSMediaDocumentUpload: React.FC<{
                                 className="text-grayscale-50 p-0 mr-[10px]"
                                 onClick={() => setActiveMediaType(null)}
                             >
-                                <CaretLeft className="h-auto w-3 text-grayscale-800" />
+                                <CaretLeft className="rtl-mirror h-auto w-3 text-grayscale-800" />
                             </button>
                         )}
                         {title}

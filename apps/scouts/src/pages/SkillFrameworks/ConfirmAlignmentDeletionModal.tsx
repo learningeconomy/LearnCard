@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { useModal, useCountSkillsInFramework, conditionalPluralize } from 'learn-card-base';
+import { useModal, useCountSkillsInFramework } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
 
 import TierIcon from './TierIcon';

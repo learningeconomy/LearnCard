@@ -124,13 +124,13 @@ const ScoutSlideDesktopNav: React.FC<ScoutSlideDesktopNavProps> = ({
                 className="bg-white rounded-l-full px-[10px] py-[5px]"
                 onClick={() => handlePrevSlide()}
             >
-                <SlimCaretRight className={`${prevButtonStateClass} rotate-180`} />
+                <SlimCaretRight className={`rtl-mirror ${prevButtonStateClass} rotate-180`} />
             </button>
             <button
                 className="bg-white rounded-r-full px-[10px] py-[5px]"
                 onClick={() => handleNextSlide()}
             >
-                <SlimCaretRight className={nextButtonStateClass} />
+                <SlimCaretRight className={`rtl-mirror ${nextButtonStateClass}`} />
             </button>
         </>
     );

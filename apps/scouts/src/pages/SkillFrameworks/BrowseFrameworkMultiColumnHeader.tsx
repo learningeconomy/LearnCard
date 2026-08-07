@@ -11,7 +11,6 @@ import FrameworkSearchResults from './FrameworkSearchResults';
 
 import { SetState } from 'packages/shared-types/dist';
 import { ApiFrameworkInfo } from '../../helpers/skillFramework.helpers';
-import { conditionalPluralize } from 'learn-card-base';
 import { SkillFrameworkNode, SkillFrameworkNodeWithSearchInfo } from '../../components/boost/boost';
 
 type BrowseFrameworkMultiColumnHeaderProps = {
@@ -88,7 +87,7 @@ const BrowseFrameworkMultiColumnHeader: React.FC<BrowseFrameworkMultiColumnHeade
                     disabled={backDisabled}
                     className="text-grayscale-900 disabled:text-grayscale-400"
                 >
-                    <SkinnyArrowLeft version="2" />
+                    <SkinnyArrowLeft version="2" className="rtl-mirror" />
                 </button>
             </div>
 

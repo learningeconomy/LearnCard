@@ -8,7 +8,6 @@ import {
     useGetCurrentUserTroopIds,
     useGetBoostParents,
 } from 'learn-card-base';
-import { pluralize } from 'learn-card-base';
 
 import CaretLeft from '../../svgs/CaretLeft';
 import WorldScoutIcon from '../../svgs/WorldScoutsIcon';
@@ -24,6 +23,7 @@ import {
 } from './badge-pack.helper';
 import { CATEGORY_TO_SUBCATEGORY_LIST } from '../boost-options/boostOptions';
 import useGetTroopNetwork from '../../hooks/useGetTroopNetwork';
+import { selectLocalePlural } from '../../../i18n/formatters';
 
 export const BoostPackOptionsModal: React.FC<{
     boostPackSelected: BadgePackOption;
@@ -84,7 +84,7 @@ export const BoostPackOptionsModal: React.FC<{
                     className="flex items-center mr-3 mt-1"
                     aria-label="Close modal"
                 >
-                    <CaretLeft className="text-grayscale-900 h-4 w-auto" />
+                    <CaretLeft className="rtl-mirror text-grayscale-900 h-4 w-auto" />
                 </button>
                 <h1 className="text-grayscale-900 text-[22px] font-notoSans">
                     {m['boost.selectBoostPack']()}
@@ -183,9 +183,17 @@ const BoostPackOptionItem: React.FC<{
 
     const parentName = parentBoosts?.records?.filter(r => r?.type !== 'ext:TroopID')?.[0]?.name;
 
-    const categoryDisplayWord =
-        category === BoostCategoryOptionsEnum.socialBadge ? 'Social Boost' : category;
-    const countName = pluralize(categoryDisplayWord, troopBoostCount || badgePackItemsCount);
+    const itemCount = troopBoostCount || badgePackItemsCount;
+    const countName =
+        category === BoostCategoryOptionsEnum.socialBadge
+            ? selectLocalePlural(itemCount, {
+                  one: m['common.countLabels.socialBoostOne'](),
+                  other: m['common.countLabels.socialBoostOther'](),
+              })
+            : selectLocalePlural(itemCount, {
+                  one: m['common.countLabels.meritBadgeOne'](),
+                  other: m['common.countLabels.meritBadgeOther'](),
+              });
     let displayCount = !troopIdDataLoading ? troopBoostCount : '--';
     if (badgePackOption?.type !== 'network' && badgePackOption?.type !== 'troop') {
         displayCount = badgePackItemsCount;

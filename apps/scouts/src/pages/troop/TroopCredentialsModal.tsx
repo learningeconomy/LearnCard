@@ -4,7 +4,6 @@ import {
     useCountFamilialBoosts,
     useGetBoostPermissions,
     useModal,
-    pluralize,
     ModalTypes,
     BoostPageViewMode,
     CredentialCategoryEnum,
@@ -19,6 +18,7 @@ import { BlueBoostOutline2 } from 'learn-card-base/svgs/BoostOutline2';
 import { PurpleMeritBadgesIcon } from 'learn-card-base/svgs/MeritBadgesIcon';
 import { IonRow, IonCol, IonInput, IonContent } from '@ionic/react';
 import * as m from '../../paraglide/messages.js';
+import { selectLocalePlural } from '../../i18n/formatters';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('troop-credentials-modal');
 
@@ -111,14 +111,20 @@ const TroopCredentialsModal: React.FC<TroopCredentialsModalProps> = ({
         switch (credentialType) {
             case CredentialCategoryEnum.meritBadge:
                 return {
-                    title: pluralize('Merit Badge', troopBadgeCount),
+                    title: selectLocalePlural(troopBadgeCount ?? 0, {
+                        one: m['common.countLabels.meritBadgeOne'](),
+                        other: m['common.countLabels.meritBadgeOther'](),
+                    }),
                     count: troopBadgeCount,
                     icon: <PurpleMeritBadgesIcon className="h-[50px] w-[50px]" />,
                     color: 'sp-purple-base',
                 };
             case CredentialCategoryEnum.socialBadge:
                 return {
-                    title: pluralize('Social Boost', troopBoostCount),
+                    title: selectLocalePlural(troopBoostCount ?? 0, {
+                        one: m['common.countLabels.socialBoostOne'](),
+                        other: m['common.countLabels.socialBoostOther'](),
+                    }),
                     count: troopBoostCount,
                     icon: <BlueBoostOutline2 className="h-[50px] w-[50px]" />,
                     color: 'sp-blue-ocean',

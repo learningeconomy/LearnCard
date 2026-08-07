@@ -165,7 +165,7 @@ const ConsentFlowEditAccess: React.FC<ConsentFlowEditAccessProps> = ({
                                             closeModal();
                                         }}
                                     >
-                                        <CaretLeft className="h-auto w-3 text-white" />
+                                        <CaretLeft className="rtl-mirror h-auto w-3 text-white" />
                                     </button>
 
                                     <div className="flex items-center justify-normal">

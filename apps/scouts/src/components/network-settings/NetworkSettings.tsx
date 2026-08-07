@@ -50,7 +50,7 @@ const NetworkSettings: React.FC<{
                         className="text-grayscale-50 p-0 mr-[10px]"
                         onClick={() => handleCloseModal()}
                     >
-                        <CaretLeft className="h-auto w-3 text-grayscale-900" />
+                        <CaretLeft className="rtl-mirror h-auto w-3 text-grayscale-900" />
                     </button>
                     <p className="font-bold text-black font-mouse text-3xl">
                         {m['networkPrompts.settings.editAccess']()}

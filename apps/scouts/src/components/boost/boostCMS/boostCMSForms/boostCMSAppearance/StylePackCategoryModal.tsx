@@ -56,7 +56,7 @@ export const StylePackCategoryModal: React.FC<StylePackCategoryModalProps> = ({
                     className="flex items-center mr-3 mt-1"
                     aria-label="Close modal"
                 >
-                    <CaretLeft className="text-grayscale-900 h-4 w-auto" />
+                    <CaretLeft className="rtl-mirror text-grayscale-900 h-4 w-auto" />
                 </button>
                 <h1 className="text-grayscale-900 text-[22px] font-notoSans">
                     {m['boostCMS.selectCategory']()}

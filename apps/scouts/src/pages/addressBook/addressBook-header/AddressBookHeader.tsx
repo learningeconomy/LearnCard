@@ -69,7 +69,7 @@ export const AddressBookHeader: React.FC<{
                             }}
                             aria-label={m['addressBook.backBtnAria']()}
                         >
-                            <LeftArrow className="w-[30px] mr-[10px] h-auto font text-grayscale-800 desktop:hidden" />{' '}
+                            <LeftArrow className="rtl-mirror w-[30px] mr-[10px] h-auto font text-grayscale-800 desktop:hidden" />{' '}
                             {m['addressBook.contactsLabel']()}
                         </button>
                     </IonCol>

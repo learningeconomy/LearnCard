@@ -340,7 +340,7 @@ export const BoostCMSSkillsForm: React.FC<{
                                                     </h3>
                                                     <p className="flex items-center justify-start w-full pl-3 font-semibold font-mouse tracking-wider text-xl text-black">
                                                         <button className="flex items-center justify-center text-grayscale-800 rounded-full bg-white shadow-3xl w-[24px] h-[24px] mr-2">
-                                                            <ArrowFatRight className="w-[18px] h-[18px]" />
+                                                            <ArrowFatRight className="rtl-mirror w-[18px] h-[18px]" />
                                                         </button>{' '}
                                                         {subskill}
                                                     </p>

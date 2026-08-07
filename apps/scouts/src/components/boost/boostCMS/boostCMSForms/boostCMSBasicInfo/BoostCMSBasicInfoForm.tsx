@@ -14,6 +14,7 @@ import { AddressSpec } from '../../../../locationSearch/location.helpers';
 import { SetState } from 'packages/shared-types/dist';
 import { boostCategoryOptions } from '../../../boost-options/boostOptions';
 import * as m from '../../../../../paraglide/messages.js';
+import { formatLocaleDate } from '../../../../../i18n/formatters';
 
 const BoostCMSBasicInfoForm: React.FC<{
     state: BoostCMSState;
@@ -113,7 +114,7 @@ const BoostCMSBasicInfoForm: React.FC<{
                 <h1 className="text-black text-xl p-0 m-0 font-notoSans">{m['common.about']()}</h1>
                 <button onClick={() => setShowAbout(!showAbout)}>
                     <CaretLeft
-                        className={`h-auto w-3 text-grayscale-800 ${
+                        className={`rtl-mirror h-auto w-3 text-grayscale-800 ${
                             showAbout ? 'rotate-[-90deg]' : 'rotate-180'
                         }`}
                     />
@@ -214,9 +215,9 @@ const BoostCMSBasicInfoForm: React.FC<{
                                         }}
                                     >
                                         {basicInfo?.expirationDate
-                                            ? moment(basicInfo?.expirationDate).format(
-                                                  'MMMM Do, YYYY'
-                                              )
+                                            ? formatLocaleDate(basicInfo?.expirationDate, {
+                                                  dateStyle: 'long',
+                                              })
                                             : m['boostCMS.expDate']()}
                                         <Calendar className="w-[30px] text-grayscale-700" />
                                     </button>

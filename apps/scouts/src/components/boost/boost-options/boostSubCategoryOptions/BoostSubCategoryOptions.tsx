@@ -145,7 +145,7 @@ export const BoostSubCategoryOptions: React.FC<BoostSubCategoryOptionsProps> = (
                                             className="text-grayscale-50 p-0 mr-[10px]"
                                             onClick={() => setSelectedCategoryType(null)}
                                         >
-                                            <CaretLeft className="h-auto w-3 text-white" />
+                                            <CaretLeft className="rtl-mirror h-auto w-3 text-white" />
                                         </button>
                                     )}
                                     {_title}

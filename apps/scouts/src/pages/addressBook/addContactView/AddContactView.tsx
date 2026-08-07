@@ -386,7 +386,7 @@ export const AddContactView: React.FC<AddContactViewProps> = ({
                         )}
 
                         {isLoggedIn && !isIssuingBoost && (
-                            <ArrowRight className="w-[30px] h-[30px] mx-3" />
+                            <ArrowRight className="rtl-mirror w-[30px] h-[30px] mx-3" />
                         )}
 
                         <UserProfilePicture

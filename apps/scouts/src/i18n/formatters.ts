@@ -1,6 +1,7 @@
 import { getLocale } from '../paraglide/runtime.js';
 
 type DateValue = Date | string | number | null | undefined;
+type PluralForms = Partial<Record<Intl.LDMLPluralRule, string>> & { other: string };
 
 const toValidDate = (value: DateValue): Date | null => {
     if (value === null || value === undefined || value === '') return null;
@@ -24,3 +25,12 @@ export const formatLocaleTime = (value: DateValue, options?: Intl.DateTimeFormat
 
 export const formatLocaleNumber = (value: number, options?: Intl.NumberFormatOptions): string =>
     new Intl.NumberFormat(getLocale(), options).format(value);
+
+export const selectLocalePlural = (count: number, forms: PluralForms): string => {
+    const category = new Intl.PluralRules(getLocale()).select(count);
+
+    return forms[category] ?? forms.other;
+};
+
+export const formatLocaleCount = (count: number, forms: PluralForms): string =>
+    `${formatLocaleNumber(count)} ${selectLocalePlural(count, forms)}`;

@@ -10,12 +10,12 @@ import Search from 'learn-card-base/svgs/Search';
 import {
     useModal,
     useGetBoostPermissions,
-    conditionalPluralize,
     ModalTypes,
     ProfilePicture,
     useGetCurrentUserTroopIds,
 } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
+import { formatLocaleCount } from '../../i18n/formatters';
 import { getScoutsRole, getScoutsRoleLabelForCred } from '../../helpers/troop.helpers';
 import { ScoutsRoleEnum } from '../../stores/troopPageStore';
 import { useCanInviteTroop } from './useCanInviteTroop';
@@ -234,11 +234,17 @@ const TroopPageMembersBox: React.FC<TroopPageMembersBoxProps> = ({
                                     >
                                         {tabOption === MemberTabsEnum.All
                                             ? m['troops.members.allTab']()
-                                            : conditionalPluralize(
+                                            : formatLocaleCount(
                                                   count,
                                                   tabOption === MemberTabsEnum.Scouts
-                                                      ? m['troops.members.scoutLabel']()
-                                                      : m['troops.members.leaderLabel']()
+                                                      ? {
+                                                            one: m['troops.scoutOne'](),
+                                                            other: m['troops.scoutOther'](),
+                                                        }
+                                                      : {
+                                                            one: m['troops.leaderOne'](),
+                                                            other: m['troops.leaderOther'](),
+                                                        }
                                               )}
                                     </button>
                                 );

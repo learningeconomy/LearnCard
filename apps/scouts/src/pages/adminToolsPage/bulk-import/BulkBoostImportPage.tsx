@@ -4,7 +4,6 @@ import { useHistory } from 'react-router';
 import Papa from 'papaparse';
 import JSZip from 'jszip';
 import {
-    conditionalPluralize,
     isValidUrl,
     ModalTypes,
     BrandingEnum,
@@ -21,6 +20,7 @@ import {
     useToast,
     BoostCategoryOptionsEnum,
 } from 'learn-card-base';
+import { formatLocaleCount } from '../../../i18n/formatters';
 
 import X from 'learn-card-base/svgs/X';
 import BoostLoader from '../../../components/boost/boostLoader/BoostLoader';
@@ -421,8 +421,14 @@ const BulkBoostImportPage: React.FC = () => {
         const numBadges = csvData.filter(data => data[DataKeys.category] === 'Merit Badge').length;
         await confirm({
             text: m['adminTools.bulkImport.confirmUpload']({
-                badges: conditionalPluralize(numBadges, 'Merit Badge'),
-                boosts: conditionalPluralize(numBoosts, 'Social Boost'),
+                badges: formatLocaleCount(numBadges, {
+                    one: m['common.countLabels.meritBadgeOne'](),
+                    other: m['common.countLabels.meritBadgeOther'](),
+                }),
+                boosts: formatLocaleCount(numBoosts, {
+                    one: m['common.countLabels.socialBoostOne'](),
+                    other: m['common.countLabels.socialBoostOther'](),
+                }),
                 network: networkName,
             }),
             onConfirm: handleBulkImport,

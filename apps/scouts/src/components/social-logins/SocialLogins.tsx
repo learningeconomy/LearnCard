@@ -56,6 +56,7 @@ export const SocialLogins: React.FC<{
 
                         return (
                             <button
+                                aria-label={socialLogin.alt}
                                 className={`flex items-center justify-center rounded-full overflow-hidden mr-2 h-[50px] w-[50px] max-w-[50px] max-h-[50px] ${buttonStyles}`}
                                 onClick={socialLogin.onClick}
                                 key={socialLogin.id}
@@ -63,7 +64,7 @@ export const SocialLogins: React.FC<{
                                 <img
                                     src={socialLogin.src}
                                     key={socialLogin.id}
-                                    alt={socialLogin.alt}
+                                    alt=""
                                     className={`rounded-full ${iconStyles}`}
                                 />
                             </button>

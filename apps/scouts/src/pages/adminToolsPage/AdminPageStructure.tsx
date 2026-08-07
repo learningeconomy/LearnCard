@@ -36,7 +36,7 @@ const AdminPageStructure: React.FC<AdminPageStructureProps> = ({
                             <h1 className="text-grayscale-900 text-[28px] font-notoSans font-[600] flex gap-[20px] items-center">
                                 {!hideBackButton && (
                                     <button onClick={() => history.goBack()}>
-                                        <CaretLeft />
+                                        <CaretLeft className="rtl-mirror" />
                                     </button>
                                 )}
                                 {title}
