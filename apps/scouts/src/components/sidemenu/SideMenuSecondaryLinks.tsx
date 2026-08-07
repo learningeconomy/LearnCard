@@ -12,6 +12,8 @@ import { BrandingEnum } from 'learn-card-base/components/headerBranding/headerBr
 import { useIsLoggedIn } from 'learn-card-base/stores/currentUserStore';
 import { useGetCurrentUserTroopIdsResolved } from 'learn-card-base';
 
+import LanguagePicker from './LanguagePicker';
+
 const SideMenuSecondaryLinks: React.FC<{
     activeTab: string;
     setActiveTab: React.Dispatch<React.SetStateAction<string>>;
@@ -75,6 +77,7 @@ const SideMenuSecondaryLinks: React.FC<{
             >
                 {secondaryLinks}
             </ul>
+            <LanguagePicker />
         </div>
     );
 };

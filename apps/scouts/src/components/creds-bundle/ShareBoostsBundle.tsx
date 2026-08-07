@@ -19,6 +19,7 @@ import { Navigation } from 'swiper/modules';
 import 'swiper/css/navigation';
 import { VC } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
+import * as m from '../../paraglide/messages.js';
 const log = getLogger('share-boosts-bundle');
 
 type ShareCredentialsProps = {
@@ -110,7 +111,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                     <section className="w-full">
                         <div className="flex flex-col gap-[15px] text-grayscale-900">
                             <h1 className="text-[17px] font-[500] leading-[21px]">
-                                Select Earned Boosts To Share
+                                {m['credsBundle.selectBoostsToShare']()}
                             </h1>
                         </div>
 
@@ -130,15 +131,13 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                                         </p>
 
                                         <p className="font-[500] text-grayscale-700 text-center">
-                                            This will create a shared boost bundle that can shared
-                                            and viewed.
+                                            {m['credsBundle.createBundleDesc']()}
                                         </p>
                                         <p className="font-[500] text-grayscale-700 text-center">
-                                            You have selected{' '}
-                                            <span className="font-[700] text-grayscale-900">
-                                                {totalSelectedCount}
-                                            </span>{' '}
-                                            {name}s to share
+                                            {m['credsBundle.selectedCount']({
+                                                count: totalSelectedCount,
+                                                type: name,
+                                            })}
                                         </p>
                                     </div>
 
@@ -147,7 +146,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                                             <div className="w-full h-full flex flex-col opacity-[50%] items-center justify-center mt-[40px]">
                                                 <IonSpinner />
                                                 <p className="mt-[20px]">
-                                                    Fetching your earned boosts...
+                                                    {m['credsBundle.fetchingBoosts']()}
                                                 </p>
                                             </div>
                                         )}
@@ -155,8 +154,10 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                                         {errorMessage && !credentialsLoading && (
                                             <div className="mt-[50px]">
                                                 <p className="text-red-500 font-bold">
-                                                    Sorry! There was an error fetching your {name}s:{' '}
-                                                    {errorMessage}
+                                                    {m['credsBundle.errorFetching']({
+                                                        type: name,
+                                                        error: errorMessage,
+                                                    })}
                                                 </p>
                                             </div>
                                         )}
@@ -170,12 +171,10 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                                                 />
                                                 <div className="flex flex-col gap-[20px] text-grayscale-900 font-[700] font-montserrat">
                                                     <span className="text-[30px]">
-                                                        No Credentials
+                                                        {m['credsBundle.noCredentials']()}
                                                     </span>
                                                     <span className="text-[17px]">
-                                                        "Love doesn't just sit there, like a stone,
-                                                        it has to be made, like bread; remade all
-                                                        the time, made new."
+                                                        {m['credsBundle.emptyQuote']()}
                                                     </span>
                                                 </div>
                                             </section>
@@ -185,7 +184,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                                     {!credentialsLoading && totalCredentialsCount > 0 && (
                                         <div className="flex items-center justify-center text-[13px] mt-[25px]">
                                             <span className="mr-[10px] text-[14px] font-semibold">
-                                                Share all {name}s
+                                                {m['credsBundle.shareAll']({ type: name })}
                                             </span>
                                             <IonToggle
                                                 slot="end"
@@ -212,7 +211,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
 
                                                     {!readOnly && (
                                                         <span className="flex justify-center items-center font-medium">
-                                                            All
+                                                            {m['boostCMS.all']()}
                                                             <IonToggle
                                                                 onClick={() =>
                                                                     handleToggleSelectAllType(
@@ -280,8 +279,8 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                             }`}
                             disabled={totalSelectedCount === 0}
                         >
-                            {!isSharing && 'Share Boosts'}
-                            {isSharing && 'Sharing...'}
+                            {!isSharing && m['credsBundle.shareBoosts']()}
+                            {isSharing && m['credsBundle.sharing']()}
                         </button>
                     </section>
                 )}

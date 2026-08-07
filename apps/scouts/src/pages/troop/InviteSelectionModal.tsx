@@ -3,6 +3,7 @@ import IdentificationCard from '../../components/svgs/IdentificationCard';
 import TroopUserIcon from '../../components/svgs/TroopUserIcon';
 import ScoutIdThumbPlaceholder from '../../components/svgs/ScoutIdThumbPlaceholder';
 import LeaderIdThumbPlaceholder from '../../components/svgs/LeaderIdThumbPlaceholder';
+import * as m from '../../paraglide/messages.js';
 
 interface InviteSelectionModalProps {
     onInviteLeader: () => void;
@@ -24,7 +25,7 @@ const InviteSelectionModal: React.FC<InviteSelectionModalProps> = ({
     return (
         <div className="w-full flex flex-col items-center justify-center px-3 py-7 bg-white rounded-2xl">
             <h2 className="text-xl font-poppins font-semibold text-grayscale-900 mb-6 text-center">
-                Who would you like to invite?
+                {m['troops.invite.title']()}
             </h2>
 
             <div className="flex flex-col gap-4 w-full">
@@ -47,10 +48,10 @@ const InviteSelectionModal: React.FC<InviteSelectionModalProps> = ({
                     </div>
                     <div>
                         <p className="font-semibold text-grayscale-900 line-clamp-1">
-                            Invite Troop Leader
+                            {m['troops.invite.lLeader']()}
                         </p>
                         <p className="text-sm text-grayscale-500 line-clamp-2">
-                            Add a scout leader to this troop
+                            {m['troops.invite.lDesc']()}
                         </p>
                     </div>
                 </button>
@@ -74,10 +75,10 @@ const InviteSelectionModal: React.FC<InviteSelectionModalProps> = ({
                     </div>
                     <div>
                         <p className="font-semibold text-grayscale-900 line-clamp-1">
-                            Invite Scout
+                            {m['troops.invite.lScout']()}
                         </p>
                         <p className="text-sm text-grayscale-500 line-clamp-2">
-                            Add a new scout to this troop
+                            {m['troops.invite.sDesc']()}
                         </p>
                     </div>
                 </button>
@@ -87,7 +88,7 @@ const InviteSelectionModal: React.FC<InviteSelectionModalProps> = ({
                 onClick={handleCloseModal}
                 className="mt-6 text-grayscale-500 font-medium hover:text-grayscale-900 transition-colors"
             >
-                Cancel
+                {m['common.cancel']()}
             </button>
         </div>
     );

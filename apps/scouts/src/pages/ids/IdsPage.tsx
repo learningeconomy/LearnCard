@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+
+import * as m from '../../paraglide/messages.js';
 import { ErrorBoundary } from 'react-error-boundary';
 import BoostErrorsDisplay, {
     ErrorBoundaryFallback,
@@ -135,7 +137,7 @@ const IdsPage: React.FC = () => {
                             activeTab === CredentialListTabEnum.Earned && (
                                 <section className="relative flex flex-col pt-[10px] px-[20px] text-center justify-center">
                                     <img src={imgSrc} alt="ids" className="max-w-[250px] m-auto" />
-                                    <strong>No troops yet</strong>
+                                    <strong>{m['ids.noTroops']()}</strong>
                                 </section>
                             )}
 
@@ -159,7 +161,7 @@ const IdsPage: React.FC = () => {
                             activeTab === CredentialListTabEnum.Managed && (
                                 <section className="flex relative flex-col achievements-list-container pt-[10px] px-[20px] text-center justify-center">
                                     <img src={imgSrc} alt="ids" className="max-w-[250px] m-auto" />
-                                    <strong>No troops to manage yet</strong>
+                                    <strong>{m['ids.noTroopsMng']()}</strong>
                                 </section>
                             )}
                         {boostError && <BoostErrorsDisplay refetch={handleRefetch} />}

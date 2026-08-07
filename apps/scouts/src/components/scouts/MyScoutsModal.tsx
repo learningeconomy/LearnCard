@@ -1,3 +1,4 @@
+import * as m from '../../paraglide/messages.js';
 import React, { useState } from 'react';
 import { useHistory } from 'react-router-dom';
 
@@ -140,7 +141,7 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
 
     rows.push(
         {
-            title: 'My Contacts',
+            title: m['auth.myContacts'](),
             Icon: ScoutsGlobe2Colored,
             caretText: connections?.length.toString() ?? '...',
             onClick: () => {
@@ -150,13 +151,13 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
             hide: notInNetwork,
         },
         {
-            title: 'My Account',
+            title: m['auth.myAccount'](),
             Icon: OrangeProfileIcon,
             caretText: '',
             onClick: () => {
                 newModal(
                     <UserProfileSetup
-                        title="My Account"
+                        title={m['auth.myAccount']()}
                         handleCloseModal={closeModal}
                         handleLogout={() => handleLogout(branding)}
                         showNetworkSettings={true}
@@ -171,7 +172,7 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
 
     if (!hideEdit) {
         rows.push({
-            title: 'Edit Contact Card',
+            title: m['auth.editCard'](),
             Icon: BluePaintBrush,
             caretText: '',
             onClick: () => {
@@ -225,7 +226,7 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
 
     if (enableAdminTools) {
         rows.push({
-            title: 'Admin Tools',
+            title: m['auth.adminTools'](),
             Icon: WrenchColorFillIcon,
             caretText: '',
             onClick: () => {
@@ -240,7 +241,7 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
 
     if (capabilities.recovery) {
         rows.push({
-            title: 'Account Recovery',
+            title: m['auth.acctRecover'](),
             Icon: ShieldCheck,
             caretText: '',
             onClick: async () => {
@@ -475,7 +476,7 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
 
     if (capabilities.deviceLinking) {
         rows.push({
-            title: 'Link a Device',
+            title: m['auth.linkDevice'](),
             Icon: QRCodeScanner,
             caretText: '',
             onClick: () => {
@@ -610,7 +611,7 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
                                 disabled={isLoggingOut}
                             >
                                 <SignOutIcon />
-                                Logout
+                                {m['auth.logout']()}
                             </button>
                         )}
                     </div>

@@ -1,35 +1,31 @@
 import React from 'react';
+import * as m from '../../../paraglide/messages.js';
+import TransP from '../../../i18n/TransP';
 
 const BulkBoostImportInstructions: React.FC = () => {
     return (
         <ol className="flex flex-col w-[550px] mx-auto">
             <li>
-                1. Fill out this{' '}
-                <a
-                    className="text-blue-700 underline"
-                    target="_blank"
-                    href="https://docs.google.com/spreadsheets/d/1CQNRq3c3mMRA6FQWC3iw8X27OxD98E7LjtyI5dgv0jo/copy"
-                >
-                    Google Sheet
-                </a>{' '}
-                using:
+                <TransP
+                    m={m['adminTools.bulkImport.step1FillSheet']}
+                    components={[
+                        <a
+                            className="text-blue-700 underline"
+                            target="_blank"
+                            href="https://docs.google.com/spreadsheets/d/1CQNRq3c3mMRA6FQWC3iw8X27OxD98E7LjtyI5dgv0jo/copy"
+                        />,
+                    ]}
+                />
                 <ul className="ml-8 mt-2 list-disc">
-                    <li>Full image URLs (https://...) for direct use</li>
-                    <li>OR simple filenames (image.png) for images you'll upload in a ZIP</li>
+                    <li>{m['adminTools.bulkImport.fullImageUrls']()}</li>
+                    <li>{m['adminTools.bulkImport.simpleFilenames']()}</li>
                 </ul>
             </li>
-            <li className="mt-2">
-                2. Export to CSV: File -{'>'} Download -{'>'} Comma Separated Values (.csv)
-            </li>
-            <li className="mt-2">3. Upload the .csv file using the "Choose File" button below</li>
-            <li className="mt-2">
-                4. If you used filenames instead of URLs, upload a ZIP file containing those image
-                files
-            </li>
-            <li className="mt-2">
-                5. (Optional) Select the parent boost that these boosts will be created under
-            </li>
-            <li className="mt-2">6. Click "Upload!" once all image issues are resolved</li>
+            <li className="mt-2">{m['adminTools.bulkImport.exportToCsv']()}</li>
+            <li className="mt-2">{m['adminTools.bulkImport.uploadCsvInstruction']()}</li>
+            <li className="mt-2">{m['adminTools.bulkImport.uploadZipInstruction']()}</li>
+            <li className="mt-2">{m['adminTools.bulkImport.selectParentOptional']()}</li>
+            <li className="mt-2">{m['adminTools.bulkImport.clickUploadInstruction']()}</li>
         </ol>
     );
 };

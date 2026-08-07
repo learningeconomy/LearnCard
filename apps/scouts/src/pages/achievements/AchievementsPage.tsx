@@ -26,6 +26,7 @@ import {
 } from 'learn-card-base';
 import BoostErrorsDisplay from '../../components/boost/boostErrors/BoostErrorsDisplay';
 import { ErrorBoundaryFallback } from '../../components/boost/boostErrors/BoostErrorsDisplay';
+import * as m from '../../paraglide/messages.js';
 
 const AchievementsPage: React.FC = () => {
     //Query gets 'earned' credentials
@@ -143,10 +144,10 @@ const AchievementsPage: React.FC = () => {
                             <section className="flex relative  min-h-[200px]  flex-col achievements-list-container pt-[10px] px-[20px] text-center justify-center">
                                 <img
                                     src={imgSrc}
-                                    alt="Achievements"
+                                    alt={m['achievements.altImg']()}
                                     className="w-[250px] h-[250px] m-auto"
                                 />
-                                <strong>No achievements yet</strong>
+                                <strong>{m['achievements.none']()}</strong>
                             </section>
                         )}
 
@@ -175,10 +176,10 @@ const AchievementsPage: React.FC = () => {
                             <section className="flex relative min-h-[200px] flex-col achievements-list-container pt-[10px] px-[20px] text-center justify-center">
                                 <img
                                     src={imgSrc}
-                                    alt="Achievements"
+                                    alt={m['achievements.altImg']()}
                                     className="w-[250px] h-[250px] m-auto"
                                 />
-                                <strong>No boosts to manage yet</strong>
+                                <strong>{m['achievements.noBoosts']()}</strong>
                             </section>
                         )}
                     {boostError && <BoostErrorsDisplay refetch={handleRefetch} />}

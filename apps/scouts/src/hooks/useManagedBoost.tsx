@@ -1,5 +1,4 @@
 import React from 'react';
-import moment from 'moment';
 import { useHistory } from 'react-router-dom';
 
 import useBoostMenu, { BoostMenuType } from '../components/boost/hooks/useBoostMenu';
@@ -37,6 +36,7 @@ import {
 } from 'learn-card-base/helpers/credentialHelpers';
 
 import { Boost, VC } from '@learncard/types';
+import { formatLocaleDate, formatLocaleTime } from '../i18n/formatters';
 
 export const useManagedBoost = (
     boost: Boost,
@@ -226,7 +226,10 @@ export const useManagedBoost = (
                     />
                 }
                 customIssueHistoryComponent={
-                    <IonList lines="none" className="flex flex-col items-center justify-center w-full">
+                    <IonList
+                        lines="none"
+                        className="flex flex-col items-center justify-center w-full"
+                    >
                         {recipients?.map((recipient, index) => {
                             return (
                                 <IonItem
@@ -245,16 +248,25 @@ export const useManagedBoost = (
                                         </div>
                                         <div className="flex flex-col items-start justify-center pt-1 pr-1 pb-1 text-sm">
                                             <p className="text-grayscale-900 font-semibold capitalize">
-                                                {recipient?.to?.displayName || recipient?.to?.profileId}
+                                                {recipient?.to?.displayName ||
+                                                    recipient?.to?.profileId}
                                             </p>
                                             <p className="text-grayscale-600 font-normal text-sm">
-                                                {moment(
-                                                    recipient?.received ?? resolvedBoost?.issuanceDate
-                                                ).format('DD MMMM YYYY')}{' '}
+                                                {formatLocaleDate(
+                                                    recipient?.received ??
+                                                        resolvedBoost?.issuanceDate,
+                                                    {
+                                                        day: '2-digit',
+                                                        month: 'long',
+                                                        year: 'numeric',
+                                                    }
+                                                )}{' '}
                                                 &bull;{' '}
-                                                {moment(
-                                                    recipient?.received ?? resolvedBoost?.issuanceDate
-                                                ).format('h:mm A')}
+                                                {formatLocaleTime(
+                                                    recipient?.received ??
+                                                        resolvedBoost?.issuanceDate,
+                                                    { hour: 'numeric', minute: '2-digit' }
+                                                )}
                                             </p>
                                         </div>
                                     </div>

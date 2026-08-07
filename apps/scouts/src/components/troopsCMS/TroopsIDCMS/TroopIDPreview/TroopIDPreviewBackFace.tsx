@@ -1,6 +1,7 @@
 import React from 'react';
 
 import TruncateTextBox from '../../../../pages/troop/TroopIdDetails/TruncateTextBox';
+import * as m from '../../../../paraglide/messages.js';
 
 import { scoutPermissions, TroopsCMSState, TroopsCMSViewModeEnum } from '../../troopCMSState';
 
@@ -27,16 +28,16 @@ export const TroopIDPreviewBackFace: React.FC<{
     let permissionsTitle = '';
     let permissions = [];
     if (isInGlobalViewMode) {
-        permissionsTitle = 'Global Admin Permissions';
+        permissionsTitle = m['troops.globalAdminPermissions']();
         permissions = scoutPermissions?.global ?? [];
     } else if (isInNetworkViewMode) {
-        permissionsTitle = 'National Admin Permissions';
+        permissionsTitle = m['troops.nationalAdminPermissions']();
         permissions = scoutPermissions?.network ?? [];
     } else if (isInTroopViewMode && isInLeaderViewMode) {
-        permissionsTitle = 'Leader Permissions';
+        permissionsTitle = m['troops.leaderPermissions']();
         permissions = scoutPermissions?.leader ?? [];
     } else if (isInTroopViewMode && isInMemberViewMode) {
-        permissionsTitle = 'Scout Permissions';
+        permissionsTitle = m['troops.scoutPermissions']();
         permissions = scoutPermissions?.member ?? [];
     }
 
@@ -44,23 +45,23 @@ export const TroopIDPreviewBackFace: React.FC<{
         <div className="rounded-t-[20px] rounded-b-[20px] shadow-box-bottom overflow-hidden flex flex-col">
             <TruncateTextBox
                 className="mb-4"
-                headerText="Details"
-                subHeaderText="About"
+                headerText={m['common.details']()}
+                subHeaderText={m['common.about']()}
                 text={networkDescription}
             >
                 <div className="flex flex-col gap-[5px] font-notoSans text-[14px] pt-[10px] border-t-[1px] border-solid border-grayscale-200 w-full">
                     <div className="flex gap-[4px]">
                         <span className="font-[600] text-grayscale-900 font-notoSans">
-                            Issued by:
+                            {m['troops.issuedBy']()}
                         </span>
                         <span className="text-grayscale-700 font-notoSans">
-                            {isInTroopViewMode && 'Troop'} {network?.basicInfo?.name}
+                            {isInTroopViewMode && m['troops.troop']()} {network?.basicInfo?.name}
                         </span>
                     </div>
                     {!isInGlobalViewMode && !isInNetworkViewMode && (
                         <div className="flex gap-[4px]">
                             <span className="font-[600] text-grayscale-900 font-notoSans">
-                                National Network:
+                                {m['troops.nationalNetwork']()}
                             </span>
                             <span className="text-grayscale-700 font-notoSans">{networkName}</span>
                         </div>
@@ -68,7 +69,7 @@ export const TroopIDPreviewBackFace: React.FC<{
                     {!isInGlobalViewMode && (
                         <div className="flex gap-[4px]">
                             <span className="font-[600] text-grayscale-900 font-notoSans">
-                                Global Network:
+                                {m['troops.globalNetwork']()}
                             </span>
                             <span className="text-grayscale-700 font-notoSans">
                                 {globalNetworkName}

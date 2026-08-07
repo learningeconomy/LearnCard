@@ -7,6 +7,7 @@ import { BoostPackOptionsModal } from './BoostPackOptionsModal';
 import { BadgePackOption, BadgePackOptionsEnum } from './badge-pack.helper';
 import { useGetCurrentUserTroopIdsResolved } from 'learn-card-base';
 import { VC } from '@learncard/types';
+import * as m from '../../../paraglide/messages.js';
 
 interface BoostPackSelectorProps {
     boostPackType: BoostCategoryOptionsEnum;
@@ -171,7 +172,7 @@ const BoostPackListItem: React.FC<BoostPackListItemProps> = ({
             )}
             <div className="flex flex-col items-start justify-center">
                 <h3 className="font-semibold text-grayscale-900 uppercase text-xs font-notoSans">
-                    {title} Pack
+                    {m['boost.titlePack']({ title })}
                 </h3>
                 <p className="text-[17px] font-normal font-notoSans line-clamp-1">{name}</p>
             </div>

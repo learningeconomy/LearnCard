@@ -51,6 +51,7 @@ import {
     getAuthDebugEvents,
     clearAuthDebugEvents,
 } from './authDebugEvents';
+import { formatLocaleDate, formatLocaleNumber, formatLocaleTime } from '../../i18n/formatters';
 
 // ---------------------------------------------------------------------------
 // Status config — maps each coordinator status to display metadata
@@ -172,14 +173,14 @@ const WIDGET_ENABLED =
 const truncate = (s: string, len: number): string => (s.length > len ? s.slice(0, len) + '...' : s);
 
 const formatTime = (date: Date): string =>
-    date.toLocaleTimeString('en-US', {
+    formatLocaleTime(date, {
         hour12: false,
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
     }) +
     '.' +
-    date.getMilliseconds().toString().padStart(3, '0');
+    formatLocaleNumber(date.getMilliseconds(), { minimumIntegerDigits: 3, useGrouping: false });
 
 const levelDot: Record<string, string> = {
     success: 'bg-emerald-400',
@@ -308,7 +309,7 @@ const Section: React.FC<{
                     {open ? (
                         <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
                     ) : (
-                        <ChevronRight className="w-3.5 h-3.5 text-gray-500" />
+                        <ChevronRight className="rtl-mirror w-3.5 h-3.5 text-gray-500" />
                     )}
                 </div>
             </div>
@@ -1278,9 +1279,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
 
                                                 {rm.createdAt && (
                                                     <span className="text-gray-600 text-[8px]">
-                                                        {new Date(
-                                                            rm.createdAt
-                                                        ).toLocaleDateString()}
+                                                        {formatLocaleDate(rm.createdAt)}
                                                     </span>
                                                 )}
 
@@ -1607,7 +1606,7 @@ export const AuthKeyDebugWidget: React.FC = () => {
                                                         </div>
 
                                                         <ChevronRight
-                                                            className={`w-2.5 h-2.5 text-gray-600 shrink-0 mt-1 transition-transform ${
+                                                            className={`rtl-mirror w-2.5 h-2.5 text-gray-600 shrink-0 mt-1 transition-transform ${
                                                                 isExpanded ? 'rotate-90' : ''
                                                             }`}
                                                         />

@@ -1,6 +1,8 @@
 import React from 'react';
 import { UserProfilePicture, useCurrentUser } from 'learn-card-base';
 import { IonGrid, IonRow } from '@ionic/react';
+import * as m from '../../../../paraglide/messages.js';
+import { TransP } from '../../../../i18n/TransP';
 
 // import { IonSpinner } from '@ionic/react';
 
@@ -93,17 +95,35 @@ export const BoostPreviewBody: React.FC<BoostPreviewBodyProps> = ({
                     <>
                         {count > 0 && (
                             <p>
-                                Issued to{' '}
-                                <span className="text-grayscale-900 font-semibold">
-                                    {count} {count > 1 ? 'people' : 'person'}
-                                </span>
+                                <TransP
+                                    m={m['boostCMS.issuedToCount']}
+                                    values={{
+                                        count: String(count),
+                                        person:
+                                            count === 1
+                                                ? m['boostCMS.person']()
+                                                : m['boostCMS.people'](),
+                                    }}
+                                    components={[
+                                        <span
+                                            key="c"
+                                            className="text-grayscale-900 font-semibold"
+                                        />,
+                                    ]}
+                                />
                             </p>
                         )}
                         <p className="text-grayscale-600 font-semibold">
-                            by{' '}
-                            <span className="font-bold text-gray-900 text-center">
-                                {currentUser?.name}
-                            </span>
+                            <TransP
+                                m={m['boostCMS.by']}
+                                values={{ name: currentUser?.name ?? '' }}
+                                components={[
+                                    <span
+                                        key="n"
+                                        className="font-bold text-gray-900 text-center"
+                                    />,
+                                ]}
+                            />
                         </p>
                     </>
                 )}
@@ -112,7 +132,7 @@ export const BoostPreviewBody: React.FC<BoostPreviewBodyProps> = ({
 
                 {!hideBodyPreviewOnCard && count === 0 && (
                     <p className="text-grayscale-600 font-semibold text-center mt-0 text-sm leading-5">
-                        Not yet claimed.
+                        {m['boostCMS.notClaimed']()}
                     </p>
                 )}
 

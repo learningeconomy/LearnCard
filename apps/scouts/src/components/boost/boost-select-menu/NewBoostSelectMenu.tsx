@@ -31,6 +31,7 @@ import { BadgePackOption, BadgePackOptionsEnum } from './badge-pack.helper';
 import Lottie from 'react-lottie-player';
 import Pulpo from '../../../assets/lotties/cuteopulpo.json';
 import boostSearchStore from '../../../stores/boostSearchStore';
+import * as m from '../../../paraglide/messages.js';
 
 interface NewBoostSelectMenuProps {
     handleCloseModal: () => void;
@@ -292,12 +293,12 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
 
                         {!troopIdDataLoading && error && (
                             <div className="text-red-600 font-medium w-full max-w-[600px] flex flex-col items-center justify-center">
-                                There was an error!
+                                {m['boost.thereWasAnError']()}
                                 <button
                                     onClick={() => refetch()}
                                     className="flex items-center mt-[20px] justify-center max-w-[200px] bg-sp-purple-base rounded-full w-full px-[18px] py-[12px] text-white text-[20px] font-medium"
                                 >
-                                    Try again
+                                    {m['error.retry']()}
                                 </button>
                             </div>
                         )}
@@ -317,7 +318,7 @@ const HeaderSection: React.FC<{
 }> = ({ title, subTitle, color, handleCloseModal }) => (
     <div className="flex items-center justify-between w-full max-w-[600px]">
         <h3 className="text-[22px] text-grayscale-900 font-notoSans">
-            Issue a{' '}
+            {m['boost.issueA']()}{' '}
             <span style={{ color }} className="font-semi-bold">
                 {subTitle ?? title}
             </span>
@@ -341,9 +342,9 @@ const SearchInput: React.FC<{
         <IonRow class="w-full max-w-[600px] mt-6 ion-no-padding">
             <IonCol className="flex w-full items-center justify-start ion-no-padding">
                 <IonInput
-                    aria-label="Search boosts"
+                    aria-label={m['boost.searchPlaceholder']()}
                     autocapitalize="on"
-                    placeholder="Search..."
+                    placeholder={m['boost.searchPlaceholder']()}
                     value={search}
                     className="boost-search-input"
                     onIonInput={e => onSearchChange(e.detail.value || '')}
@@ -358,7 +359,7 @@ const SearchInput: React.FC<{
 export const EmptyState: React.FC<{
     message?: string;
     refetch?: () => void;
-}> = ({ message = 'No boosts yet', refetch }) => (
+}> = ({ message = m['boost.noBoostsYetEmpty'](), refetch }) => (
     <div className="flex items-center justify-center w-full max-w-[600px]">
         <section className="relative flex flex-col pt-[10px] px-[20px] text-center justify-center">
             <div className="max-w-[300px] m-auto flex justify-center">
