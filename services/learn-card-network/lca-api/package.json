@@ -1,12 +1,12 @@
 {
     "name": "@learncard/lca-api-service",
-    "version": "1.2.22",
+    "version": "1.2.23",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
         "test": "vitest",
-        "build": "shx rm -rf dist && node esbuild.mjs && tsc --p tsconfig.build.json",
+        "build": "shx rm -rf dist && node bundle.mjs && tsc --p tsconfig.build.json",
         "build:docker": "shx rm -rf dist && node esbuild-docker.mjs",
         "start": "PORT=3000 serverless offline --httpPort 3000 --websocketPort 3001 --lambdaPort 3002 --albPort 3003 --config serverless-local.yml",
         "start-p-4000": "PORT=4000 serverless offline --httpPort 4000 --websocketPort 4001 --lambdaPort 4002 --albPort 4003 --config serverless-local.yml",
