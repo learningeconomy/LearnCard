@@ -5,12 +5,16 @@ import { CheckCircle2, FileText, Settings, Link2, ExternalLink, Smartphone } fro
 
 import type { AppStoreListingCreate } from '../types';
 import { LAUNCH_TYPE_INFO, CATEGORY_OPTIONS } from '../types';
+import type { CapturedAppManifest } from '@learncard/partner-connect-core';
+import { IonIcon } from '@ionic/react';
+import { shieldCheckmarkOutline } from 'ionicons/icons';
 
 interface ReviewStepProps {
     data: Partial<AppStoreListingCreate>;
+    capturedManifest?: CapturedAppManifest;
 }
 
-export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
+export const ReviewStep: React.FC<ReviewStepProps> = ({ data, capturedManifest }) => {
     const getCategoryLabel = (value?: string) => {
         const cat = CATEGORY_OPTIONS.find(c => c.value === value);
         return cat
@@ -169,6 +173,85 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ data }) => {
                         ))}
                     </div>
                 </div>
+
+                {capturedManifest && (
+                    <div className="bg-white rounded-xl border border-gray-200 p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                            <h4 className="font-medium text-gray-600 text-sm">
+                                Captured Integrations
+                            </h4>
+                        </div>
+
+                        <div className="space-y-4">
+                            {capturedManifest.templates.length > 0 && (
+                                <div>
+                                    <h5 className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">
+                                        Credential Templates
+                                    </h5>
+                                    <div className="space-y-2">
+                                        {capturedManifest.templates.map(t => (
+                                            <div
+                                                key={t.alias}
+                                                className="p-2 bg-gray-50 rounded-lg border border-gray-100 text-sm"
+                                            >
+                                                <div className="font-medium text-gray-700">
+                                                    {t.template.name || t.alias}
+                                                </div>
+                                                <div className="text-xs text-gray-500 mt-0.5">
+                                                    Alias: {t.alias}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {capturedManifest.consentRequests.length > 0 && (
+                                <div>
+                                    <h5 className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">
+                                        Consent Requests
+                                    </h5>
+                                    <div className="space-y-2">
+                                        {capturedManifest.consentRequests.map((c, i) => (
+                                            <div
+                                                key={i}
+                                                className="p-2 bg-gray-50 rounded-lg border border-gray-100 text-sm"
+                                            >
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {c.scopes.read.personalFields.map(f => (
+                                                        <span
+                                                            key={`read-pf-${f}`}
+                                                            className="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded text-xs flex items-center gap-1"
+                                                        >
+                                                            <IonIcon
+                                                                icon={shieldCheckmarkOutline}
+                                                                className="w-3 h-3"
+                                                            />{' '}
+                                                            Read: {f}
+                                                        </span>
+                                                    ))}
+                                                    {c.scopes.read.credentialCategories.map(cat => (
+                                                        <span
+                                                            key={`read-cat-${cat}`}
+                                                            className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded text-xs flex items-center gap-1"
+                                                        >
+                                                            <IonIcon
+                                                                icon={shieldCheckmarkOutline}
+                                                                className="w-3 h-3"
+                                                            />{' '}
+                                                            Read: {cat}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {data.min_age && (
                     <div className="bg-white rounded-xl border border-gray-200 p-4">

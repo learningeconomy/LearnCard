@@ -1922,12 +1922,115 @@ export const AppBoostValidator = z.object({
 export type AppBoost = z.infer<typeof AppBoostValidator>;
 
 // App Event Types (discriminated union for type safety)
-export const SendCredentialEventValidator = z.object({
+export const InlineWalletCategoryValidator = z.enum([
+    'Achievement',
+    'Skill',
+    'ID',
+    'Learning History',
+    'Work History',
+    'Social Badges',
+    'Membership',
+    'Accomplishment',
+    'Experiences',
+    'Accommodation',
+    'Family',
+]);
+
+export const InlineAlignmentValidator = z
+    .object({
+        name: z.string(),
+        url: z.string(),
+        framework: z.string().optional(),
+        code: z.string().optional(),
+    })
+    .passthrough();
+
+export const InlineEvidenceValidator = z
+    .object({
+        id: z.string().optional(),
+        name: z.string().optional(),
+        narrative: z.string().optional(),
+    })
+    .passthrough();
+
+export const InlineWalletSkillTagValidator = z
+    .object({
+        frameworkId: z.string(),
+        id: z.string(),
+        proficiencyLevel: z.string().optional(),
+    })
+    .passthrough();
+
+export const SimpleInlineCredentialTemplateValidator = z
+    .object({
+        rawCredential: z.undefined().optional(),
+        name: z.string(),
+        description: z.string().optional(),
+        image: z.string().optional(),
+        issuerName: z.string().optional(),
+        achievementType: z.string().optional(),
+        category: InlineWalletCategoryValidator.optional(),
+        criteria: z
+            .object({
+                narrative: z.string().optional(),
+                url: z.string().optional(),
+            })
+            .passthrough()
+            .optional(),
+        alignments: z.array(InlineAlignmentValidator).optional(),
+        tags: z.array(z.string()).optional(),
+        activity: z
+            .object({
+                startDate: z.string().optional(),
+                endDate: z.string().optional(),
+            })
+            .passthrough()
+            .optional(),
+        credits: z
+            .object({
+                earned: z.union([z.number(), z.string()]).optional(),
+                available: z.union([z.number(), z.string()]).optional(),
+            })
+            .passthrough()
+            .optional(),
+        validUntil: z.string().optional(),
+        evidence: z.array(InlineEvidenceValidator).optional(),
+        walletSkills: z.array(InlineWalletSkillTagValidator).optional(),
+    })
+    .passthrough();
+
+export const RawInlineCredentialTemplateValidator = z
+    .object({
+        rawCredential: z.record(z.string(), z.unknown()),
+        category: InlineWalletCategoryValidator.optional(),
+        walletSkills: z.array(InlineWalletSkillTagValidator).optional(),
+    })
+    .passthrough();
+
+export const InlineCredentialTemplateValidator = z.union([
+    RawInlineCredentialTemplateValidator,
+    SimpleInlineCredentialTemplateValidator,
+]);
+
+export const LegacySendCredentialEventValidator = z.object({
     type: z.literal('send-credential'),
     templateAlias: z.string(),
     templateData: z.record(z.string(), z.unknown()).optional(),
     preventDuplicateClaim: z.boolean().optional(),
 });
+
+export const InlineSendCredentialEventValidator = z.object({
+    type: z.literal('send-credential'),
+    alias: z.string(),
+    template: InlineCredentialTemplateValidator,
+    templateData: z.record(z.string(), z.unknown()).optional(),
+    preventDuplicateClaim: z.boolean().optional(),
+});
+
+export const SendCredentialEventValidator = z.union([
+    LegacySendCredentialEventValidator,
+    InlineSendCredentialEventValidator,
+]);
 
 export type SendCredentialEvent = z.infer<typeof SendCredentialEventValidator>;
 
@@ -2083,8 +2186,62 @@ export const GetCountersEventValidator = z.object({
 
 export type GetCountersEvent = z.infer<typeof GetCountersEventValidator>;
 
+export const ConsentRequestWalletCategoryValidator = z.enum([
+    'Achievement',
+    'Skill',
+    'ID',
+    'Learning History',
+    'Work History',
+    'Social Badges',
+    'Membership',
+    'Accomplishment',
+    'Experiences',
+    'Accommodation',
+    'Family',
+]);
+
+export const ConsentRequestPersonalFieldValidator = z.enum([
+    'name',
+    'email',
+    'phone',
+    'birthDate',
+    'country',
+    'avatar',
+]);
+
+export const ConsentRequestValidator = z.object({
+    read: z
+        .object({
+            credentialCategories: z.array(ConsentRequestWalletCategoryValidator).optional(),
+            personalFields: z.array(ConsentRequestPersonalFieldValidator).optional(),
+        })
+        .optional(),
+    write: z
+        .object({
+            credentialCategories: z.array(ConsentRequestWalletCategoryValidator).optional(),
+        })
+        .optional(),
+    reason: z.string().optional(),
+});
+
+export type ConsentRequest = z.infer<typeof ConsentRequestValidator>;
+
+export const UpsertConsentContractEventValidator = z.object({
+    type: z.literal('upsert-consent-contract'),
+    scopes: ConsentRequestValidator,
+});
+
+export type UpsertConsentContractEvent = z.infer<typeof UpsertConsentContractEventValidator>;
+
+export const UpsertConsentContractResponseValidator = z.object({
+    contractUri: z.string(),
+    created: z.boolean(),
+});
+
+export type UpsertConsentContractResponse = z.infer<typeof UpsertConsentContractResponseValidator>;
+
 // Add new event types here as the union grows
-export const AppEventValidator = z.discriminatedUnion('type', [
+export const AppEventValidator = z.union([
     SendCredentialEventValidator,
     CheckCredentialEventValidator,
     CheckIssuanceStatusEventValidator,
@@ -2095,6 +2252,7 @@ export const AppEventValidator = z.discriminatedUnion('type', [
     IncrementCounterEventValidator,
     GetCounterEventValidator,
     GetCountersEventValidator,
+    UpsertConsentContractEventValidator,
 ]);
 
 export type AppEvent = z.infer<typeof AppEventValidator>;

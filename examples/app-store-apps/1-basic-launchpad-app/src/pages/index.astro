@@ -1,18 +1,6 @@
 ---
-// Server-side data (if needed for backend integration in the future)
-//const hostOriginEnv = import.meta.env.HOST_ORIGIN || 'https://learncard.app';
-// Split by spaces to support multiple origins (e.g., "https://learncard.app https://staging.learncard.app")
-const hostOrigin = 'http://*.learncard.app:3000';
-
 const config = {
-    contractUri:
-        import.meta.env.CONTRACT_URI ||
-        'lc:network:network.learncard.com/trpc:contract:fc430a19-5f0d-46e2-95c5-15fa57f753c9',
-    boostUri:
-        import.meta.env.BOOST_URI ||
-        'lc:network:network.learncard.com/trpc:boost:fbe30973-68b2-4a87-b0ac-80938ff382c4',
-    templateAlias: import.meta.env.TEMPLATE_ALIAS || 'default',
-    hostOrigin,
+    optionalBoostUri: import.meta.env.BOOST_URI || undefined,
 };
 ---
 
@@ -24,10 +12,8 @@ const config = {
         <title>LC Partner Demo: Identity & Actions</title>
         <meta
             name="description"
-            content="LearnCard App Store Partner Demo - SSO, Credential Issuance, Feature Launch, and Credential Requests"
+            content="LearnCard Partner Connect demo for zero-config credentials, consent, publishing, notifications, and counters"
         />
-
-        <!-- Tailwind CSS is loaded via Astro integration -->
         <link rel="stylesheet" href="/src/styles/global.css" />
     </head>
 
@@ -35,90 +21,232 @@ const config = {
         <div id="app-container" class="card bg-white p-8 rounded-2xl shadow-2xl space-y-6">
             <h1 class="text-3xl font-extrabold text-gray-800">LearnCard Partner App Demo</h1>
 
-            <!-- Status Indicator -->
             <div id="status-box" class="p-4 rounded-xl border-l-4 font-medium" role="alert">
                 <p id="auth-status" class="text-gray-700">Initializing connection...</p>
             </div>
 
-            <!-- Controls (Hidden until authenticated) -->
-            <div id="controls" class="space-y-4 hidden">
-                <p class="text-lg font-semibold text-indigo-700">Core Feature Demos:</p>
+            <div id="controls" class="space-y-5">
+                <p class="text-lg font-semibold text-indigo-700">Zero-config Partner Connect demos</p>
 
-                <button
-                    id="issue-cred-btn"
-                    class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
-                >
-                    1. Issue Credential (SDK: sendCredential + preventDuplicateClaim)
-                </button>
+                <div class="bg-sky-50 rounded-xl p-4 space-y-3 border border-sky-200">
+                    <div class="flex items-start justify-between gap-4 flex-wrap">
+                        <div>
+                            <p class="text-lg font-semibold text-sky-700">1. Identity / SSO</p>
+                            <p class="text-sm text-gray-600">
+                                Request identity when available. Other sections keep working even if this fails.
+                            </p>
+                        </div>
 
-                <button
-                    id="check-credential-btn"
-                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
-                >
-                    2. Check Credential Status (SDK: checkUserHasCredential)
-                </button>
+                        <button
+                            id="request-identity-btn"
+                            class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-lg"
+                        >
+                            Request Identity
+                        </button>
+                    </div>
 
-                <button
-                    id="check-issuance-btn"
-                    class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
-                >
-                    2a. Check Issuance Status (SDK: getTemplateIssuanceStatus)
-                </button>
+                    <div id="identity-result" class="hidden text-sm p-3 rounded-lg whitespace-pre-wrap"></div>
+                </div>
 
-                <button
-                    id="get-recipients-btn"
-                    class="w-full bg-indigo-400 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
-                >
-                    2b. Get Template Recipients (SDK: getTemplateRecipients)
-                </button>
+                <div class="bg-green-50 rounded-xl p-4 space-y-4 border border-green-200">
+                    <div>
+                        <p class="text-lg font-semibold text-green-700">2. Inline credential template</p>
+                        <p class="text-sm text-gray-600">
+                            Alias <span class="font-mono">demo-achievement</span> auto-creates and versions a template. No pre-created boost required.
+                        </p>
+                    </div>
 
-                <button
-                    id="arbitrary-boost-btn"
-                    class="w-full bg-indigo-300 hover:bg-indigo-400 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
-                >
-                    2c. Use Arbitrary Boost URI
-                </button>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Course Name</label>
+                            <input
+                                type="text"
+                                id="course-name"
+                                value="LearnCard 101"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                            />
+                        </div>
 
-                <button
-                    id="launch-ai-btn"
-                    class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
-                >
-                    3. Launch AI Tutor (SDK: launchFeature)
-                </button>
+                        <div class="flex items-end">
+                            <p class="text-xs text-gray-500 leading-relaxed">
+                                Template variables come from <span class="font-mono">templateData.courseName</span>. Blank it out to demo validation errors.
+                            </p>
+                        </div>
+                    </div>
 
-                <button
-                    id="ask-cred-btn"
-                    class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
-                >
-                    4. Request Credential (SDK: askCredentialSearch)
-                </button>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2">
+                        <button
+                            id="validate-template-btn"
+                            class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg text-sm"
+                        >
+                            Validate Template
+                        </button>
+                        <button
+                            id="issue-cred-btn"
+                            class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg text-sm"
+                        >
+                            Issue Credential
+                        </button>
+                        <button
+                            id="check-credential-btn"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg text-sm"
+                        >
+                            Check User Status
+                        </button>
+                        <button
+                            id="check-issuance-btn"
+                            class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg text-sm"
+                        >
+                            Check Issuance
+                        </button>
+                        <button
+                            id="get-recipients-btn"
+                            class="bg-indigo-400 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg text-sm"
+                        >
+                            Get Recipients
+                        </button>
+                    </div>
 
-                <button
-                    id="request-consent-btn"
-                    class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
-                >
-                    5. Request Consent (SDK: requestConsent)
-                </button>
+                    <div id="credential-result" class="hidden text-sm p-3 rounded-lg whitespace-pre-wrap"></div>
 
-                <button
-                    id="ask-specific-cred-btn"
-                    class="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
-                >
-                    6. Request Specific Credential (SDK: askCredentialSpecific)
-                </button>
+                    <div class="border-t border-green-200 pt-4 space-y-3">
+                        <div>
+                            <p class="text-sm font-semibold text-indigo-700">Optional arbitrary boost URI</p>
+                            <p class="text-xs text-gray-500">
+                                Paste any boost URI to inspect it. Leave empty to keep using the zero-config alias flow above.
+                            </p>
+                        </div>
 
-                <button
-                    id="initiate-template-issue-btn"
-                    class="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
-                >
-                    7. Initiate Template Issue (SDK: initiateTemplateIssue)
-                </button>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Boost URI</label>
+                                <input
+                                    type="text"
+                                    id="boost-uri-input"
+                                    value={config.optionalBoostUri}
+                                    placeholder="lc:network:...:boost:abc123"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                />
+                            </div>
 
-                <!-- ═══════════════════════════════════════════════════ -->
-                <!-- Notifications Section                              -->
-                <!-- ═══════════════════════════════════════════════════ -->
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Recipient (optional)</label>
+                                <input
+                                    type="text"
+                                    id="boost-recipient-input"
+                                    placeholder="Profile ID or DID; leave empty to use your own DID"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                />
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <button
+                                id="optional-boost-issuance-btn"
+                                class="bg-indigo-300 hover:bg-indigo-400 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg text-sm"
+                            >
+                                Check Optional Boost Issuance
+                            </button>
+                            <button
+                                id="optional-boost-recipients-btn"
+                                class="bg-indigo-200 hover:bg-indigo-300 text-gray-800 font-bold py-3 rounded-xl transition duration-200 shadow-lg text-sm"
+                            >
+                                Get Optional Boost Recipients
+                            </button>
+                        </div>
+
+                        <div id="boost-result" class="hidden text-sm p-3 rounded-lg whitespace-pre-wrap"></div>
+                    </div>
+                </div>
+
+                <div class="bg-orange-50 rounded-xl p-4 space-y-3 border border-orange-200">
+                    <div>
+                        <p class="text-lg font-semibold text-orange-700">3. Scoped consent</p>
+                        <p class="text-sm text-gray-600">
+                            Zero-config scopes: read <span class="font-medium">Achievement</span> credentials and personal field <span class="font-medium">name</span>.
+                        </p>
+                    </div>
+
+                    <ul class="text-sm text-gray-600 list-disc list-inside space-y-1">
+                        <li><span class="font-medium">credentialCategories</span>: Achievement</li>
+                        <li><span class="font-medium">personalFields</span>: name</li>
+                        <li><span class="font-medium">reason</span>: Show off what LearnCard can share</li>
+                    </ul>
+
+                    <button
+                        id="request-consent-btn"
+                        class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+                    >
+                        Request Scoped Consent
+                    </button>
+
+                    <div id="consent-result" class="hidden text-sm p-3 rounded-lg whitespace-pre-wrap"></div>
+                </div>
+
+                <div class="bg-yellow-50 rounded-xl p-4 space-y-3 border border-yellow-200">
+                    <p class="text-lg font-semibold text-yellow-700">4. Launch AI tutor</p>
+                    <button
+                        id="launch-ai-btn"
+                        class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+                    >
+                        Launch AI Tutor
+                    </button>
+                    <div id="launch-result" class="hidden text-sm p-3 rounded-lg whitespace-pre-wrap"></div>
+                </div>
+
+                <div class="bg-purple-50 rounded-xl p-4 space-y-3 border border-purple-200">
+                    <p class="text-lg font-semibold text-purple-700">5. Request credential search</p>
+                    <button
+                        id="ask-cred-btn"
+                        class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+                    >
+                        Request Credential Search
+                    </button>
+                    <div id="cred-search-result" class="hidden text-sm p-3 rounded-lg whitespace-pre-wrap"></div>
+                </div>
+
+                <div class="bg-pink-50 rounded-xl p-4 space-y-3 border border-pink-200">
+                    <p class="text-lg font-semibold text-pink-700">6. Request specific credential</p>
+                    <button
+                        id="ask-specific-cred-btn"
+                        class="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+                    >
+                        Request Specific Credential
+                    </button>
+                    <div id="specific-cred-result" class="hidden text-sm p-3 rounded-lg whitespace-pre-wrap"></div>
+                </div>
+
+                <div class="bg-rose-50 rounded-xl p-4 space-y-3 border border-rose-200">
+                    <p class="text-lg font-semibold text-rose-700">7. Initiate existing template issue</p>
+                    <p class="text-sm text-gray-600">
+                        Still useful for existing boosts. This demo is now optional and no longer required for the happy path.
+                    </p>
+                    <button
+                        id="initiate-template-issue-btn"
+                        class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+                    >
+                        Initiate Template Issue
+                    </button>
+                    <div id="template-issue-result" class="hidden text-sm p-3 rounded-lg whitespace-pre-wrap"></div>
+                </div>
+
+                <div class="bg-cyan-50 rounded-xl p-4 space-y-3 border border-cyan-200">
+                    <p class="text-lg font-semibold text-cyan-700">8. Learner context</p>
+                    <button
+                        id="learner-context-btn"
+                        class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
+                    >
+                        Request Learner Context
+                    </button>
+                    <div id="learner-context-result" class="hidden text-sm p-3 rounded-lg whitespace-pre-wrap"></div>
+                    <pre
+                        id="learner-context-json"
+                        class="hidden bg-white rounded-lg p-3 border border-cyan-200 text-xs text-gray-700 overflow-x-auto whitespace-pre-wrap"
+                    ></pre>
+                </div>
+
                 <hr class="border-gray-200 my-2" />
-                <p class="text-lg font-semibold text-teal-700">App Notifications:</p>
+                <p class="text-lg font-semibold text-teal-700">9. App Notifications</p>
 
                 <div class="bg-teal-50 rounded-xl p-4 space-y-3 border border-teal-200">
                     <div class="grid grid-cols-2 gap-3">
@@ -182,20 +310,16 @@ const config = {
                         id="send-notif-btn"
                         class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg"
                     >
-                        8. Send Notification (SDK: sendNotification)
+                        Send Notification
                     </button>
 
-                    <div id="notif-result" class="hidden text-sm p-3 rounded-lg"></div>
+                    <div id="notif-result" class="hidden text-sm p-3 rounded-lg whitespace-pre-wrap"></div>
                 </div>
 
-                <!-- ═══════════════════════════════════════════════════ -->
-                <!-- Counters Section                                   -->
-                <!-- ═══════════════════════════════════════════════════ -->
                 <hr class="border-gray-200 my-2" />
-                <p class="text-lg font-semibold text-amber-700">App Counters:</p>
+                <p class="text-lg font-semibold text-amber-700">10. App Counters</p>
 
                 <div class="bg-amber-50 rounded-xl p-4 space-y-3 border border-amber-200">
-                    <!-- Counter key + amount inputs -->
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">Counter Key</label>
@@ -219,31 +343,29 @@ const config = {
                         </div>
                     </div>
 
-                    <!-- Action buttons row -->
                     <div class="grid grid-cols-3 gap-2">
                         <button
                             id="increment-counter-btn"
                             class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl transition duration-200 shadow-lg text-sm"
                         >
-                            9. Increment
+                            Increment
                         </button>
 
                         <button
                             id="get-counter-btn"
                             class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl transition duration-200 shadow-lg text-sm"
                         >
-                            10. Get Counter
+                            Get Counter
                         </button>
 
                         <button
                             id="get-all-counters-btn"
                             class="bg-amber-400 hover:bg-amber-500 text-white font-bold py-2.5 rounded-xl transition duration-200 shadow-lg text-sm"
                         >
-                            11. Get All
+                            Get All
                         </button>
                     </div>
 
-                    <!-- Live counter display -->
                     <div id="counter-display" class="bg-white rounded-lg p-3 border border-amber-200">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Counter Values</span>
@@ -255,77 +377,42 @@ const config = {
                         </div>
                     </div>
 
-                    <!-- Result feedback -->
-                    <div id="counter-result" class="hidden text-sm p-3 rounded-lg"></div>
+                    <div id="counter-result" class="hidden text-sm p-3 rounded-lg whitespace-pre-wrap"></div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Modal for Arbitrary Boost URI -->
-        <div
-            id="boost-modal"
-            class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50"
-        >
-            <div class="bg-white rounded-2xl p-8 max-w-lg w-full mx-4 shadow-2xl">
-                <h3 class="text-xl font-bold text-gray-800 mb-4">Query Boost by URI</h3>
-
-                <div class="space-y-4">
+                <div class="bg-slate-50 rounded-xl p-4 space-y-3 border border-slate-200">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Boost URI</label
-                        >
-                        <input
-                            type="text"
-                            id="boost-uri-input"
-                            placeholder="lc:network:network.learncard.com/trpc:boost:abc123"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        />
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Action</label>
-                        <select
-                            id="boost-action-select"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        >
-                            <option value="check-issuance">Check Issuance Status</option>
-                            <option value="get-recipients">Get Recipients</option>
-                        </select>
-                    </div>
-
-                    <div id="recipient-input-container">
-                        <label class="block text-sm font-medium text-gray-700 mb-1"
-                            >Recipient (Profile ID or DID)</label
-                        >
-                        <input
-                            type="text"
-                            id="recipient-input"
-                            placeholder="user123 or did:web:network.learncard.com:users:user123"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        />
-                        <p class="text-xs text-gray-500 mt-1">
-                            Leave empty to use your own profile
+                        <p class="text-lg font-semibold text-slate-700">11. Publish</p>
+                        <p class="text-sm text-gray-600">
+                            Mock mode captures a manifest automatically as you use zero-config templates, consent scopes, counters, notifications, and feature launches.
                         </p>
                     </div>
-                </div>
 
-                <div class="flex gap-3 mt-6">
-                    <button
-                        id="boost-modal-cancel"
-                        class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        id="boost-modal-submit"
-                        class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
-                    >
-                        Execute
-                    </button>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <button
+                            id="captured-manifest-btn"
+                            class="bg-slate-700 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg text-sm"
+                        >
+                            Get Captured Manifest
+                        </button>
+                        <button
+                            id="publish-url-btn"
+                            class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-lg text-sm"
+                        >
+                            Get Publish URL
+                        </button>
+                    </div>
+
+                    <div id="publish-result" class="hidden text-sm p-3 rounded-lg whitespace-pre-wrap"></div>
+                    <div id="publish-link" class="hidden text-sm p-3 rounded-lg bg-white border border-slate-200"></div>
+                    <pre
+                        id="manifest-json"
+                        class="hidden bg-white rounded-lg p-3 border border-slate-200 text-xs text-gray-700 overflow-x-auto whitespace-pre-wrap"
+                    ></pre>
                 </div>
             </div>
         </div>
 
-        <!-- Config variables for the module script -->
         <script define:vars={{ config }}>
             window.__LC_CONFIG = config;
         </script>
@@ -333,374 +420,427 @@ const config = {
         <script>
             import { createPartnerConnect } from '@learncard/partner-connect';
 
-            // --- CONFIGURATION ---
-            // Initialize the LearnCard Partner Connect SDK
-            const learnCard = createPartnerConnect({ hostOrigin: window.__LC_CONFIG.hostOrigin, disableDefaultTenants: true, allowNativeAppOrigins: false });
+            const learnCard = createPartnerConnect();
 
-            // --- STATE & UTILITIES ---
             const statusBox = document.getElementById('status-box');
             const statusText = document.getElementById('auth-status');
-            const controls = document.getElementById('controls');
-            let lastIssuedCredentialId = null; // Track the last issued credential ID
+            const identityResult = document.getElementById('identity-result');
+            const manifestPre = document.getElementById('manifest-json');
+            const publishLink = document.getElementById('publish-link');
+            const learnerContextPre = document.getElementById('learner-context-json');
 
-            // Helper to update the status UI
-            function updateStatus(message, type = 'info') {
+            const INLINE_TEMPLATE_ALIAS = 'demo-achievement';
+            const INLINE_TEMPLATE = {
+                name: 'Demo Achievement: {{courseName}}',
+                description: 'Awarded for completing {{courseName}} in the Partner Connect demo.',
+                achievementType: 'Badge',
+                criteria: {
+                    narrative: 'Complete the Partner Connect walkthrough and claim the demo achievement.',
+                },
+            };
+            const CONSENT_SCOPES = {
+                read: {
+                    credentialCategories: ['Achievement'],
+                    personalFields: ['name'],
+                },
+                reason: 'Show off what LearnCard can share',
+            };
+
+            const appState = {
+                identity: null,
+                lastIssuedCredentialId: null,
+            };
+
+            function setBanner(message, type = 'info') {
                 statusText.textContent = message;
-                statusBox.className = 'p-4 rounded-xl border-l-4 font-medium'; // Reset classes
+                statusBox.className = 'p-4 rounded-xl border-l-4 font-medium';
 
                 if (type === 'success') {
                     statusBox.classList.add('bg-green-100', 'border-green-500', 'text-green-800');
-                    controls.classList.remove('hidden');
                 } else if (type === 'error') {
                     statusBox.classList.add('bg-red-100', 'border-red-500', 'text-red-800');
-                    controls.classList.add('hidden');
+                } else if (type === 'warning') {
+                    statusBox.classList.add('bg-amber-100', 'border-amber-500', 'text-amber-800');
                 } else {
-                    // info/loading
-                    statusBox.classList.add(
-                        'bg-indigo-100',
-                        'border-indigo-500',
-                        'text-indigo-800'
-                    );
+                    statusBox.classList.add('bg-indigo-100', 'border-indigo-500', 'text-indigo-800');
                 }
             }
 
-            // --- IMPLEMENTATION OF ACTIONS ---
+            function showResult(elementId, message, type = 'info') {
+                const element = document.getElementById(elementId);
+                if (!element) return;
 
-            // A. SSO - Identity Request
-            async function initiateSSO() {
-                updateStatus(`Attempting LearnCard Single Sign-On...`);
+                element.className = 'text-sm p-3 rounded-lg whitespace-pre-wrap';
 
+                if (type === 'success') {
+                    element.classList.add('bg-green-100', 'text-green-800');
+                } else if (type === 'error') {
+                    element.classList.add('bg-red-100', 'text-red-800');
+                } else {
+                    element.classList.add('bg-blue-100', 'text-blue-800');
+                }
+
+                element.textContent = message;
+                element.classList.remove('hidden');
+            }
+
+            function hideElement(element) {
+                if (!element) return;
+                element.classList.add('hidden');
+                element.textContent = '';
+            }
+
+            function formatError(error) {
+                const code = error?.code || 'UNKNOWN_ERROR';
+                const message = error?.message || 'Unknown error';
+                return `${code}: ${message}`;
+            }
+
+            function getTemplateData() {
+                return {
+                    courseName: document.getElementById('course-name').value.trim(),
+                };
+            }
+
+            function getBoostUri() {
+                return document.getElementById('boost-uri-input').value.trim();
+            }
+
+            function getBoostRecipient() {
+                return document.getElementById('boost-recipient-input').value.trim();
+            }
+
+            function renderIdentity(identity) {
+                appState.identity = identity;
+                showResult(
+                    'identity-result',
+                    `Signed in as ${identity.user.did}\nJWT received and ready for your backend session flow.`,
+                    'success'
+                );
+
+                const modeLabel = typeof learnCard.isMocked === 'function' && learnCard.isMocked()
+                    ? 'Mock host active.'
+                    : 'Connected to LearnCard host.';
+                setBanner(`${modeLabel} Identity is ready.`, 'success');
+            }
+
+            async function requestIdentityForSession(resultId = 'identity-result') {
                 try {
                     const identity = await learnCard.requestIdentity();
-
-                    // --- PARTNER BACKEND SIMULATION ---
-                    // PARTNER ACTION: Send this token securely to your own backend (Astro endpoint)
-                    console.log('RECEIVED JWT IDENTITY TOKEN:', identity.token);
-                    // Your backend would validate the JWT, look up the user, and set a partner cookie here.
-                    // If validation fails, your backend should fail, and the client should show an error.
-                    // ---------------------------------
-
-                    updateStatus(
-                        `SSO Success! User ID received. Token passed to simulated backend.`,
-                        'success'
-                    );
+                    renderIdentity(identity);
+                    return identity;
                 } catch (error) {
-                    if (error.code === 'LC_UNAUTHENTICATED') {
-                        // Host responded that user is not logged in to LearnCard
-                        updateStatus(
-                            'Please log into your LearnCard app to enable this partner application.',
+                    const message = formatError(error);
+                    if (error?.code === 'LC_UNAUTHENTICATED') {
+                        showResult(
+                            resultId,
+                            `Sign-in required. ${message}`,
                             'error'
                         );
+                        setBanner(
+                            'Connected, but no LearnCard user session is available yet. Other demos remain usable.',
+                            'warning'
+                        );
+                        return null;
+                    }
+
+                    showResult(resultId, message, 'error');
+                    setBanner(`Connection issue: ${message}`, 'error');
+                    return null;
+                }
+            }
+
+            async function ensureIdentity(resultId, actionLabel) {
+                if (appState.identity) return appState.identity;
+
+                const identity = await requestIdentityForSession(resultId);
+                if (!identity) {
+                    showResult(
+                        resultId,
+                        `Sign-in required for ${actionLabel}. Try "Request Identity" after logging into LearnCard.`,
+                        'error'
+                    );
+                }
+
+                return identity;
+            }
+
+            function renderRecipients(records) {
+                return records
+                    .map(record => {
+                        const name = record.recipientDisplayName || record.recipientProfileId;
+                        return `${name} (${record.status})`;
+                    })
+                    .join(', ');
+            }
+
+            async function handleRequestIdentity() {
+                showResult('identity-result', 'Requesting identity...', 'info');
+                await requestIdentityForSession('identity-result');
+            }
+
+            function handleValidateTemplate() {
+                hideElement(manifestPre);
+                hideElement(publishLink);
+
+                try {
+                    const validation = learnCard.validateCredentialTemplate(
+                        INLINE_TEMPLATE,
+                        getTemplateData()
+                    );
+
+                    if (validation.valid) {
+                        showResult(
+                            'credential-result',
+                            'Template is valid. The inline template and templateData are ready to send.',
+                            'success'
+                        );
                     } else {
-                        updateStatus(
-                            `SSO Error: ${
-                                error.message || 'Unknown error during identity request.'
-                            }`,
+                        const details = validation.errors
+                            .map(error => `${error.path}: ${error.message}`)
+                            .join('\n');
+                        showResult(
+                            'credential-result',
+                            `TEMPLATE_DATA_INVALID: Offline validation failed.\n${details}`,
                             'error'
                         );
                     }
+                } catch (error) {
+                    showResult('credential-result', formatError(error), 'error');
                 }
             }
 
-            // B. Issue Credential
             async function handleIssueCredential() {
-                updateStatus(
-                    'Issuing credential request. Waiting for user consent popup...',
+                showResult(
+                    'credential-result',
+                    'Issuing inline credential template. Waiting for LearnCard...',
                     'info'
                 );
 
                 try {
                     const response = await learnCard.sendCredential({
-                        templateAlias: window.__LC_CONFIG.templateAlias,
-                        templateData: {
-                            issuedAt: new Date().toISOString(),
-                        },
+                        alias: INLINE_TEMPLATE_ALIAS,
+                        template: INLINE_TEMPLATE,
+                        templateData: getTemplateData(),
                         preventDuplicateClaim: true,
                     });
 
+                    if (response.credentialId) {
+                        appState.lastIssuedCredentialId = response.credentialId;
+                    }
+
                     if (response.alreadyClaimed) {
-                        updateStatus(
-                            `Already earned! Existing credential: ${response.credentialUri}`,
+                        showResult(
+                            'credential-result',
+                            `Already claimed. URI: ${response.credentialUri}\nVersion: ${response.templateVersion ?? 'unknown'}`,
                             'info'
                         );
                         return;
                     }
 
-                    if (response.credentialId) {
-                        lastIssuedCredentialId = response.credentialId;
-                        updateStatus(
-                            `Credential Issued! New ID: ${response.credentialId}`,
-                            'success'
-                        );
-                        return;
-                    }
-
-                    updateStatus(`Credential Issued! URI: ${response.credentialUri}`, 'success');
-                } catch (error) {
-                    updateStatus(
-                        `Issue Failed: ${error.message || 'User rejected credential.'}`,
-                        'error'
+                    showResult(
+                        'credential-result',
+                        `Issued credential.\nURI: ${response.credentialUri}\nBoost URI: ${response.boostUri}\nVersion: ${response.templateVersion ?? 'unknown'}`,
+                        'success'
                     );
+                } catch (error) {
+                    showResult('credential-result', formatError(error), 'error');
                 }
             }
 
-            // C. Check Credential Status
             async function handleCheckCredentialStatus() {
-                updateStatus('Checking credential status silently...', 'info');
+                showResult('credential-result', 'Checking credential status...', 'info');
 
                 try {
                     const result = await learnCard.checkUserHasCredential({
-                        templateAlias: window.__LC_CONFIG.templateAlias,
+                        templateAlias: INLINE_TEMPLATE_ALIAS,
                     });
 
                     if (result.hasCredential) {
-                        updateStatus(
-                            `Already earned! Status: ${result.status} (${result.credentialUri})`,
+                        showResult(
+                            'credential-result',
+                            `User has credential.\nStatus: ${result.status || 'claimed'}\nURI: ${result.credentialUri || 'n/a'}`,
                             'success'
                         );
                     } else if (result.status === 'revoked') {
-                        updateStatus(
+                        showResult(
+                            'credential-result',
                             'Credential was previously issued but is now revoked.',
                             'error'
                         );
                     } else {
-                        updateStatus(
-                            'Not earned yet. Click "Issue Credential" to claim it.',
+                        showResult(
+                            'credential-result',
+                            'User does not have the demo achievement yet.',
                             'info'
                         );
                     }
                 } catch (error) {
-                    updateStatus(
-                        `Check Failed: ${error.message || 'Unable to check credential status.'}`,
-                        'error'
-                    );
+                    showResult('credential-result', formatError(error), 'error');
                 }
             }
 
-            // C2. Check Template Issuance Status
             async function handleCheckIssuanceStatus() {
-                updateStatus('Checking if you have issued this template to yourself...', 'info');
+                showResult('credential-result', 'Checking issuance status for your DID...', 'info');
+
+                const identity = await ensureIdentity('credential-result', 'issuance status checks');
+                if (!identity) return;
 
                 try {
-                    const identity = await learnCard.requestIdentity();
                     const result = await learnCard.getTemplateIssuanceStatus({
-                        templateAlias: window.__LC_CONFIG.templateAlias,
+                        templateAlias: INLINE_TEMPLATE_ALIAS,
                         recipient: identity.user.did,
                     });
 
                     if (result.sent) {
-                        updateStatus(
-                            `You issued this credential on ${new Date(
-                                result.sentDate
-                            ).toLocaleDateString()}. ` +
-                                `Status: ${result.status}${
-                                    result.claimedDate
-                                        ? ' (claimed on ' +
-                                          new Date(result.claimedDate).toLocaleDateString() +
-                                          ')'
-                                        : ' (pending)'
-                                }`,
+                        showResult(
+                            'credential-result',
+                            `Credential was sent.\nStatus: ${result.status}\nSent: ${result.sentDate || 'unknown'}\nClaimed: ${result.claimedDate || 'not yet'}\nURI: ${result.credentialUri || 'n/a'}`,
                             'success'
                         );
                     } else {
-                        updateStatus(
-                            'You have not issued this template to this recipient yet.',
+                        showResult(
+                            'credential-result',
+                            'No issuance record yet for your current DID.',
                             'info'
                         );
                     }
                 } catch (error) {
-                    updateStatus(
-                        `Issuance Check Failed: ${
-                            error.message || 'Unable to check issuance status.'
-                        }`,
-                        'error'
-                    );
+                    showResult('credential-result', formatError(error), 'error');
                 }
             }
 
-            // C3. Get Template Recipients
             async function handleGetTemplateRecipients() {
-                updateStatus('Fetching list of recipients for this template...', 'info');
+                showResult('credential-result', 'Loading template recipients...', 'info');
 
                 try {
                     const result = await learnCard.getTemplateRecipients({
-                        templateAlias: window.__LC_CONFIG.templateAlias,
+                        templateAlias: INLINE_TEMPLATE_ALIAS,
                         limit: 10,
                     });
 
                     if (result.records.length === 0) {
-                        updateStatus('No recipients found for this template yet.', 'info');
-                    } else {
-                        const recipientList = result.records
-                            .map(
-                                r =>
-                                    `${r.recipientDisplayName || r.recipientProfileId} (${
-                                        r.status
-                                    })`
-                            )
-                            .join(', ');
-                        updateStatus(
-                            `Found ${result.records.length} recipient(s): ${recipientList}${
-                                result.hasMore ? '...' : ''
-                            }`,
-                            'success'
-                        );
+                        showResult('credential-result', 'No recipients found yet.', 'info');
+                        return;
                     }
-                } catch (error) {
-                    updateStatus(
-                        `Recipients Fetch Failed: ${
-                            error.message || 'Unable to fetch recipients.'
-                        }`,
-                        'error'
+
+                    showResult(
+                        'credential-result',
+                        `Found ${result.records.length} recipient(s).\n${renderRecipients(result.records)}${result.hasMore ? '\nMore recipients are available.' : ''}`,
+                        'success'
                     );
+                } catch (error) {
+                    showResult('credential-result', formatError(error), 'error');
                 }
             }
 
-            // C4. Use Arbitrary Boost URI - Modal-based UI
-            const boostModal = document.getElementById('boost-modal');
-            const boostUriInput = document.getElementById('boost-uri-input');
-            const boostActionSelect = document.getElementById('boost-action-select');
-            const recipientInput = document.getElementById('recipient-input');
-            const recipientContainer = document.getElementById('recipient-input-container');
-            const boostModalCancel = document.getElementById('boost-modal-cancel');
-            const boostModalSubmit = document.getElementById('boost-modal-submit');
-
-            function openBoostModal() {
-                boostModal.classList.remove('hidden');
-                boostModal.classList.add('flex');
-                boostUriInput.focus();
-            }
-
-            function closeBoostModal() {
-                boostModal.classList.add('hidden');
-                boostModal.classList.remove('flex');
-                boostUriInput.value = '';
-                recipientInput.value = '';
-            }
-
-            boostActionSelect.addEventListener('change', () => {
-                if (boostActionSelect.value === 'get-recipients') {
-                    recipientContainer.classList.add('hidden');
-                } else {
-                    recipientContainer.classList.remove('hidden');
-                }
-            });
-
-            boostModalCancel.addEventListener('click', closeBoostModal);
-
-            boostModal.addEventListener('click', e => {
-                if (e.target === boostModal) closeBoostModal();
-            });
-
-            async function handleBoostModalSubmit() {
-                const boostUri = boostUriInput.value.trim();
-                const action = boostActionSelect.value;
-                let recipient = recipientInput.value.trim();
-
+            async function handleOptionalBoostIssuance() {
+                const boostUri = getBoostUri();
                 if (!boostUri) {
-                    updateStatus('Please enter a boost URI.', 'error');
+                    showResult(
+                        'boost-result',
+                        'Optional section: paste a boost URI if you want to inspect an existing host template.',
+                        'info'
+                    );
                     return;
                 }
 
-                closeBoostModal();
+                showResult('boost-result', 'Checking optional boost issuance...', 'info');
 
-                if (action === 'check-issuance') {
-                    if (!recipient) {
-                        const identity = await learnCard.requestIdentity();
-                        recipient = identity.user.did;
-                    }
+                let recipient = getBoostRecipient();
+                if (!recipient) {
+                    const identity = await ensureIdentity('boost-result', 'optional boost issuance checks');
+                    if (!identity) return;
+                    recipient = identity.user.did;
+                }
 
-                    updateStatus(`Checking issuance status for ${boostUri}...`, 'info');
-                    try {
-                        const result = await learnCard.getTemplateIssuanceStatus({
-                            boostUri,
-                            recipient,
-                        });
+                try {
+                    const result = await learnCard.getTemplateIssuanceStatus({
+                        boostUri,
+                        recipient,
+                    });
 
-                        if (result.sent) {
-                            updateStatus(
-                                `Credential sent on ${new Date(
-                                    result.sentDate
-                                ).toLocaleDateString()}. ` +
-                                    `Status: ${result.status}${
-                                        result.claimedDate ? ' (claimed)' : ' (pending)'
-                                    }`,
-                                'success'
-                            );
-                        } else {
-                            updateStatus(
-                                'No credential found for this boost and recipient.',
-                                'info'
-                            );
-                        }
-                    } catch (error) {
-                        updateStatus(
-                            `Check Failed: ${error.message || 'Error checking issuance status.'}`,
-                            'error'
+                    if (result.sent) {
+                        showResult(
+                            'boost-result',
+                            `Boost issuance found.\nStatus: ${result.status}\nSent: ${result.sentDate || 'unknown'}\nClaimed: ${result.claimedDate || 'not yet'}\nURI: ${result.credentialUri || 'n/a'}`,
+                            'success'
                         );
+                    } else {
+                        showResult('boost-result', 'No issuance found for that boost and recipient.', 'info');
                     }
-                } else if (action === 'get-recipients') {
-                    updateStatus(`Fetching recipients for ${boostUri}...`, 'info');
-                    try {
-                        const result = await learnCard.getTemplateRecipients({
-                            boostUri,
-                            limit: 10,
-                        });
-
-                        if (result.records.length === 0) {
-                            updateStatus('No recipients found for this boost.', 'info');
-                        } else {
-                            const recipientList = result.records
-                                .map(
-                                    r =>
-                                        `${r.recipientDisplayName || r.recipientProfileId} (${
-                                            r.status
-                                        })`
-                                )
-                                .join(', ');
-                            updateStatus(
-                                `Found ${result.records.length} recipient(s): ${recipientList}${
-                                    result.hasMore ? '...' : ''
-                                }`,
-                                'success'
-                            );
-                        }
-                    } catch (error) {
-                        updateStatus(
-                            `Fetch Failed: ${error.message || 'Error fetching recipients.'}`,
-                            'error'
-                        );
-                    }
+                } catch (error) {
+                    showResult('boost-result', formatError(error), 'error');
                 }
             }
 
-            boostModalSubmit.addEventListener('click', handleBoostModalSubmit);
+            async function handleOptionalBoostRecipients() {
+                const boostUri = getBoostUri();
+                if (!boostUri) {
+                    showResult(
+                        'boost-result',
+                        'Optional section: paste a boost URI if you want recipient data for an existing host template.',
+                        'info'
+                    );
+                    return;
+                }
 
-            function handleArbitraryBoostUri() {
-                openBoostModal();
+                showResult('boost-result', 'Loading optional boost recipients...', 'info');
+
+                try {
+                    const result = await learnCard.getTemplateRecipients({
+                        boostUri,
+                        limit: 10,
+                    });
+
+                    if (result.records.length === 0) {
+                        showResult('boost-result', 'No recipients found for that boost.', 'info');
+                        return;
+                    }
+
+                    showResult(
+                        'boost-result',
+                        `Found ${result.records.length} recipient(s).\n${renderRecipients(result.records)}${result.hasMore ? '\nMore recipients are available.' : ''}`,
+                        'success'
+                    );
+                } catch (error) {
+                    showResult('boost-result', formatError(error), 'error');
+                }
             }
 
-            // D. Launch Feature
+            async function handleRequestConsent() {
+                showResult('consent-result', 'Requesting scoped consent...', 'info');
+
+                try {
+                    const response = await learnCard.requestConsent(CONSENT_SCOPES);
+                    showResult(
+                        'consent-result',
+                        response.granted
+                            ? 'Consent granted for Achievement credentials + name.'
+                            : 'Consent denied.',
+                        response.granted ? 'success' : 'info'
+                    );
+                } catch (error) {
+                    showResult('consent-result', formatError(error), 'error');
+                }
+            }
+
             async function handleLaunchFeature() {
-                updateStatus('Requesting LearnCard Host to launch AI Tutor...');
+                showResult('launch-result', 'Launching AI tutor...', 'info');
 
                 try {
                     await learnCard.launchFeature(
                         '/ai/topics?shortCircuitStep=newTopic&selectedAppId=null',
                         'Summarize the postMessage security model for me.'
                     );
-                    updateStatus('AI Tutor launched in the main LearnCard window!', 'info');
+                    showResult('launch-result', 'AI tutor launch requested.', 'success');
                 } catch (error) {
-                    updateStatus(`Launch Failed: ${error.message}`, 'error');
+                    showResult('launch-result', formatError(error), 'error');
                 }
             }
 
-            // E. Request Credential (Gated Content)
             async function handleAskCredential() {
-                updateStatus(
-                    'Requesting user to share a credential (searching for "Learning History"). Waiting for consent...',
-                    'info'
-                );
+                showResult('cred-search-result', 'Requesting credential search...', 'info');
 
                 try {
                     const response = await learnCard.askCredentialSearch({
@@ -713,197 +853,119 @@ const config = {
                                 },
                             },
                         ],
-                        challenge: `challenge-${Date.now()}-${Math.random()
-                            .toString(36)
-                            .substring(2, 9)}`,
+                        challenge: `challenge-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
                         domain: window.location.hostname,
                     });
 
-                    console.log('VPR RESPONSE:', response);
-                    if (response && response.verifiablePresentation) {
-                        // Successfully received a signed Verifiable Presentation
-                        const vp = response.verifiablePresentation;
-                        const credCount = Array.isArray(vp.verifiableCredential)
-                            ? vp.verifiableCredential.length
+                    if (response?.verifiablePresentation) {
+                        const credentials = Array.isArray(
+                            response.verifiablePresentation.verifiableCredential
+                        )
+                            ? response.verifiablePresentation.verifiableCredential.length
                             : 0;
 
-                        console.log('RECEIVED VERIFIABLE PRESENTATION:', vp);
-                        updateStatus(
-                            `Success! User shared ${credCount} credential(s) in a signed VP. Gated content unlocked.`,
+                        showResult(
+                            'cred-search-result',
+                            `Received a verifiable presentation with ${credentials} credential(s).`,
                             'success'
                         );
                     } else {
-                        updateStatus('User declined to share the requested credential.', 'error');
+                        showResult('cred-search-result', 'No credential was shared.', 'info');
                     }
                 } catch (error) {
-                    updateStatus(
-                        `Request Failed: ${error.message || 'Error requesting credential.'}`,
-                        'error'
-                    );
+                    showResult('cred-search-result', formatError(error), 'error');
                 }
             }
 
-            // F. Request Consent
-            async function handleRequestConsent() {
-                updateStatus(
-                    'Requesting user consent for general permissions. Waiting for consent...',
-                    'info'
-                );
-
-                try {
-                    const response = await learnCard.requestConsent(window.__LC_CONFIG.contractUri);
-
-                    console.log('CONSENT RESPONSE:', response);
-                    if (response.granted) {
-                        updateStatus(
-                            'Consent granted! You can now access advanced features.',
-                            'success'
-                        );
-                    } else {
-                        updateStatus('Consent denied. Some features may be limited.', 'error');
-                    }
-                } catch (error) {
-                    updateStatus(
-                        `Consent Request Failed: ${error.message || 'Error requesting consent.'}`,
-                        'error'
-                    );
-                }
-            }
-
-            // G. Request Specific Credential
             async function handleAskSpecificCredential() {
-                updateStatus(
-                    'Requesting a specific credential by ID. Waiting for user to share...',
-                    'info'
-                );
-
-                // For demo purposes, use a placeholder credential ID
-                // In a real app, you would know the ID from a previous interaction or database
-                // Use the last issued credential ID if available, otherwise use a demo ID
-                const defaultId = lastIssuedCredentialId || 'demo-credential-id-12345';
-                const demoCredentialId = prompt(
-                    'Enter a credential ID to request (or leave empty for the last issued credential):',
+                const defaultId = appState.lastIssuedCredentialId || 'demo-credential-id-12345';
+                const credentialId = prompt(
+                    'Enter a credential ID to request (or use the last issued credential ID):',
                     defaultId
                 );
 
-                if (!demoCredentialId) {
-                    updateStatus('Credential request cancelled.', 'error');
+                if (!credentialId) {
+                    showResult('specific-cred-result', 'Request cancelled.', 'info');
                     return;
                 }
 
-                try {
-                    const response = await learnCard.askCredentialSpecific(demoCredentialId);
+                showResult('specific-cred-result', 'Requesting specific credential...', 'info');
 
-                    console.log('RECEIVED SPECIFIC CREDENTIAL:', response);
+                try {
+                    const response = await learnCard.askCredentialSpecific(credentialId);
+
                     if (response.credential) {
-                        updateStatus(
-                            `Success! Received credential: ${
-                                response.credential.type?.join(', ') || 'Unknown type'
-                            }`,
-                            'success'
-                        );
+                        showResult('specific-cred-result', 'Specific credential returned successfully.', 'success');
                     } else {
-                        updateStatus('No credential returned.', 'error');
+                        showResult('specific-cred-result', 'No credential returned.', 'info');
                     }
                 } catch (error) {
-                    if (error.code === 'CREDENTIAL_NOT_FOUND') {
-                        updateStatus(`Credential not found: ${demoCredentialId}`, 'error');
-                    } else if (error.code === 'USER_REJECTED') {
-                        updateStatus('User declined to share the credential.', 'error');
-                    } else {
-                        updateStatus(
-                            `Request Failed: ${
-                                error.message || 'Error requesting specific credential.'
-                            }`,
-                            'error'
-                        );
-                    }
+                    showResult('specific-cred-result', formatError(error), 'error');
                 }
             }
 
-            // H. Initiate Template Issue (Boost)
             async function handleInitiateTemplateIssue() {
-                updateStatus('Initiating template issue flow. Opening Send Boost modal...', 'info');
-
-                // For demo purposes, prompt for template ID
-                // In a real app, you would know the template ID from your system
+                const defaultBoost = getBoostUri();
                 const templateId = prompt(
-                    'Enter a template/boost ID to issue:',
-                    window.__LC_CONFIG.boostUri
+                    'Enter an existing boost/template URI to issue:',
+                    defaultBoost || ''
                 );
 
                 if (!templateId) {
-                    updateStatus('Template issue cancelled.', 'error');
+                    showResult('template-issue-result', 'Template issue cancelled.', 'info');
                     return;
                 }
 
-                // Optional: prompt for draft recipients
                 const recipientsInput = prompt(
-                    'Enter draft recipients (comma-separated DIDs, or leave empty):',
+                    'Optional draft recipients (comma-separated DIDs):',
                     ''
                 );
-
                 const draftRecipients = recipientsInput
                     ? recipientsInput
                           .split(',')
-                          .map(did => did.trim())
+                          .map(recipient => recipient.trim())
                           .filter(Boolean)
                     : [];
 
+                showResult('template-issue-result', 'Opening template issue flow...', 'info');
+
                 try {
-                    const response = await learnCard.initiateTemplateIssue(
-                        templateId,
-                        draftRecipients
+                    const response = await learnCard.initiateTemplateIssue(templateId, draftRecipients);
+                    showResult(
+                        'template-issue-result',
+                        response.issued
+                            ? 'Template issued successfully.'
+                            : 'User cancelled the template issue flow.',
+                        response.issued ? 'success' : 'info'
                     );
-
-                    console.log('TEMPLATE ISSUE RESPONSE:', response);
-
-                    if (response.issued) {
-                        updateStatus(
-                            'Template issued successfully! User completed the boost send.',
-                            'success'
-                        );
-                    } else {
-                        updateStatus('User cancelled the boost send flow.', 'info');
-                    }
                 } catch (error) {
-                    if (error.code === 'UNAUTHORIZED') {
-                        updateStatus(
-                            'Unauthorized: You are not an admin of this template.',
-                            'error'
-                        );
-                    } else if (error.code === 'TEMPLATE_NOT_FOUND') {
-                        updateStatus(`Template not found: ${templateId}`, 'error');
-                    } else {
-                        updateStatus(
-                            `Template Issue Failed: ${
-                                error.message || 'Error initiating template issue.'
-                            }`,
-                            'error'
-                        );
-                    }
+                    showResult('template-issue-result', formatError(error), 'error');
                 }
             }
 
-            // ==================== NOTIFICATIONS ====================
+            async function handleLearnerContext() {
+                showResult('learner-context-result', 'Requesting learner context...', 'info');
+                hideElement(learnerContextPre);
 
-            // Inline feedback helper for section-specific result divs
-            function showResult(elementId, message, type) {
-                const el = document.getElementById(elementId);
-                el.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'bg-blue-100', 'text-blue-800');
+                try {
+                    const context = await learnCard.requestLearnerContext({
+                        includeCredentials: true,
+                        waitForSync: true,
+                        format: 'structured',
+                    });
 
-                if (type === 'success') {
-                    el.classList.add('bg-green-100', 'text-green-800');
-                } else if (type === 'error') {
-                    el.classList.add('bg-red-100', 'text-red-800');
-                } else {
-                    el.classList.add('bg-blue-100', 'text-blue-800');
+                    showResult(
+                        'learner-context-result',
+                        `Learner context status: ${context.status || 'ready'}\nDID: ${context.did}`,
+                        'success'
+                    );
+                    learnerContextPre.textContent = JSON.stringify(context, null, 2);
+                    learnerContextPre.classList.remove('hidden');
+                } catch (error) {
+                    showResult('learner-context-result', formatError(error), 'error');
                 }
-
-                el.textContent = message;
             }
 
-            // I. Send Notification
             async function handleSendNotification() {
                 const title = document.getElementById('notif-title').value.trim();
                 const body = document.getElementById('notif-body').value.trim();
@@ -927,22 +989,16 @@ const config = {
                         priority,
                     });
 
-                    console.log('NOTIFICATION RESULT:', result);
-
-                    if (result.sent) {
-                        showResult('notif-result', `Notification sent! Check your LearnCard inbox.`, 'success');
-                    } else {
-                        showResult('notif-result', 'Notification was not sent.', 'error');
-                    }
+                    showResult(
+                        'notif-result',
+                        result.sent ? 'Notification sent.' : 'Notification was not sent.',
+                        result.sent ? 'success' : 'info'
+                    );
                 } catch (error) {
-                    console.error('Notification error:', error);
-                    showResult('notif-result', `Failed: ${error.message || 'Unknown error'}`, 'error');
+                    showResult('notif-result', formatError(error), 'error');
                 }
             }
 
-            // ==================== COUNTERS ====================
-
-            // Render counter values into the display panel
             function renderCounters(counters) {
                 const container = document.getElementById('counter-values');
                 const timestamp = document.getElementById('counter-updated');
@@ -954,13 +1010,15 @@ const config = {
                 }
 
                 container.innerHTML = counters
-                    .map(c => {
-                        const time = c.updatedAt ? new Date(c.updatedAt).toLocaleTimeString() : 'never';
+                    .map(counter => {
+                        const time = counter.updatedAt
+                            ? new Date(counter.updatedAt).toLocaleTimeString()
+                            : 'never';
                         return `
                             <div class="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-amber-50 transition">
-                                <span class="font-mono text-sm font-semibold text-gray-700">${c.key}</span>
+                                <span class="font-mono text-sm font-semibold text-gray-700">${counter.key}</span>
                                 <div class="flex items-center gap-3">
-                                    <span class="text-lg font-bold text-amber-700">${c.value}</span>
+                                    <span class="text-lg font-bold text-amber-700">${counter.value}</span>
                                     <span class="text-xs text-gray-400">${time}</span>
                                 </div>
                             </div>
@@ -971,7 +1029,12 @@ const config = {
                 timestamp.textContent = `Updated ${new Date().toLocaleTimeString()}`;
             }
 
-            // J. Increment Counter
+            async function refreshAllCounters() {
+                const result = await learnCard.getCounters();
+                renderCounters(result.counters);
+                return result;
+            }
+
             async function handleIncrementCounter() {
                 const key = document.getElementById('counter-key').value.trim();
                 const amount = parseInt(document.getElementById('counter-amount').value, 10);
@@ -981,34 +1044,30 @@ const config = {
                     return;
                 }
 
-                if (isNaN(amount) || amount === 0 || !Number.isInteger(amount)) {
+                if (Number.isNaN(amount) || !Number.isInteger(amount) || amount === 0) {
                     showResult('counter-result', 'Amount must be a non-zero integer.', 'error');
                     return;
                 }
 
-                showResult('counter-result', `Incrementing "${key}" by ${amount}...`, 'info');
+                showResult('counter-result', `Incrementing ${key} by ${amount}...`, 'info');
 
                 try {
                     const result = await learnCard.incrementCounter(key, amount);
-
-                    console.log('INCREMENT RESULT:', result);
-
-                    const direction = amount > 0 ? '+' : '';
                     showResult(
                         'counter-result',
-                        `${result.key}: ${result.previousValue} → ${result.newValue} (${direction}${amount})`,
+                        `${result.key}: ${result.previousValue} → ${result.newValue}`,
                         'success'
                     );
-
-                    // Refresh the display with all counters
-                    await refreshAllCounters();
+                    try {
+                        await refreshAllCounters();
+                    } catch (error) {
+                        showResult('counter-result', `Increment worked, but refresh failed.\n${formatError(error)}`, 'error');
+                    }
                 } catch (error) {
-                    console.error('Increment error:', error);
-                    showResult('counter-result', `Failed: ${error.message || 'Unknown error'}`, 'error');
+                    showResult('counter-result', formatError(error), 'error');
                 }
             }
 
-            // K. Get Single Counter
             async function handleGetCounter() {
                 const key = document.getElementById('counter-key').value.trim();
 
@@ -1017,72 +1076,136 @@ const config = {
                     return;
                 }
 
-                showResult('counter-result', `Reading "${key}"...`, 'info');
+                showResult('counter-result', `Reading ${key}...`, 'info');
 
                 try {
                     const result = await learnCard.getCounter(key);
-
-                    console.log('GET COUNTER RESULT:', result);
-
                     showResult(
                         'counter-result',
-                        `${result.key} = ${result.value}${result.updatedAt ? ` (last updated ${new Date(result.updatedAt).toLocaleString()})` : ''}`,
+                        `${result.key} = ${result.value}${result.updatedAt ? `\nLast updated: ${new Date(result.updatedAt).toLocaleString()}` : ''}`,
                         'success'
                     );
-
-                    // Also refresh display
-                    await refreshAllCounters();
+                    try {
+                        await refreshAllCounters();
+                    } catch (error) {
+                        showResult('counter-result', `Counter read worked, but refresh failed.\n${formatError(error)}`, 'error');
+                    }
                 } catch (error) {
-                    console.error('Get counter error:', error);
-                    showResult('counter-result', `Failed: ${error.message || 'Unknown error'}`, 'error');
-                }
-            }
-
-            // L. Get All Counters
-            async function refreshAllCounters() {
-                try {
-                    const result = await learnCard.getCounters();
-
-                    console.log('GET ALL COUNTERS RESULT:', result);
-
-                    renderCounters(result.counters);
-                } catch (error) {
-                    console.error('Get all counters error:', error);
-                    renderCounters([]);
+                    showResult('counter-result', formatError(error), 'error');
                 }
             }
 
             async function handleGetAllCounters() {
-                showResult('counter-result', 'Loading all counters...', 'info');
+                showResult('counter-result', 'Loading counters...', 'info');
 
                 try {
-                    const result = await learnCard.getCounters();
-
-                    console.log('GET ALL COUNTERS RESULT:', result);
-
-                    renderCounters(result.counters);
-
-                    const count = result.counters.length;
+                    const result = await refreshAllCounters();
                     showResult(
                         'counter-result',
-                        `Found ${count} counter${count !== 1 ? 's' : ''}`,
-                        count > 0 ? 'success' : 'info'
+                        `Found ${result.counters.length} counter${result.counters.length === 1 ? '' : 's'}.`,
+                        result.counters.length > 0 ? 'success' : 'info'
                     );
                 } catch (error) {
-                    console.error('Get all counters error:', error);
-                    showResult('counter-result', `Failed: ${error.message || 'Unknown error'}`, 'error');
+                    renderCounters([]);
+                    showResult('counter-result', formatError(error), 'error');
                 }
             }
 
-            // --- INITIALIZATION ---
-            window.onload = function () {
-                // Attach event listeners to the buttons
+            async function handleCapturedManifest() {
+                hideElement(publishLink);
+                showResult('publish-result', 'Reading captured manifest...', 'info');
+
+                try {
+                    const manifest = learnCard.getCapturedManifest?.();
+                    if (!manifest) {
+                        hideElement(manifestPre);
+                        showResult(
+                            'publish-result',
+                            'No captured manifest is available yet. In mock mode, use a few zero-config actions first.',
+                            'info'
+                        );
+                        return;
+                    }
+
+                    manifestPre.textContent = JSON.stringify(manifest, null, 2);
+                    manifestPre.classList.remove('hidden');
+                    showResult('publish-result', 'Captured manifest loaded.', 'success');
+                } catch (error) {
+                    showResult('publish-result', formatError(error), 'error');
+                }
+            }
+
+            async function handlePublishUrl() {
+                hideElement(manifestPre);
+                showResult('publish-result', 'Building publish URL...', 'info');
+
+                try {
+                    const url = learnCard.getPublishUrl?.();
+                    publishLink.innerHTML = '';
+
+                    if (!url) {
+                        publishLink.classList.add('hidden');
+                        showResult(
+                            'publish-result',
+                            'No publish URL yet. Mock mode needs enough captured surface area to make the manifest publishable.',
+                            'info'
+                        );
+                        return;
+                    }
+
+                    const anchor = document.createElement('a');
+                    anchor.href = url;
+                    anchor.target = '_blank';
+                    anchor.rel = 'noreferrer';
+                    anchor.className = 'text-blue-600 underline break-all';
+                    anchor.textContent = url;
+                    publishLink.appendChild(anchor);
+                    publishLink.classList.remove('hidden');
+
+                    showResult('publish-result', 'Publish URL is ready.', 'success');
+                } catch (error) {
+                    showResult('publish-result', formatError(error), 'error');
+                }
+            }
+
+            async function bootstrap() {
+                const mocked = typeof learnCard.isMocked === 'function' && learnCard.isMocked();
+                const embedded = typeof learnCard.isEmbedded === 'function' && learnCard.isEmbedded();
+
+                if (mocked) {
+                    setBanner('Standalone mock mode is active. Zero-config demos will still work and capture a publishable manifest.', 'info');
+                } else if (embedded) {
+                    setBanner('Embedded in LearnCard. Requesting identity if available...', 'info');
+                } else {
+                    setBanner('Running standalone without a LearnCard host. Some actions may return LC_NOT_EMBEDDED unless mock mode is active.', 'warning');
+                }
+
+                try {
+                    await requestIdentityForSession('identity-result');
+                } catch (error) {
+                    showResult('identity-result', formatError(error), 'error');
+                }
+
+                try {
+                    await refreshAllCounters();
+                } catch {
+                    renderCounters([]);
+                }
+            }
+
+            window.addEventListener('load', () => {
+                document
+                    .getElementById('request-identity-btn')
+                    ?.addEventListener('click', handleRequestIdentity);
+                document
+                    .getElementById('validate-template-btn')
+                    ?.addEventListener('click', handleValidateTemplate);
                 document
                     .getElementById('issue-cred-btn')
-                    .addEventListener('click', handleIssueCredential);
+                    ?.addEventListener('click', handleIssueCredential);
                 document
                     .getElementById('check-credential-btn')
-                    .addEventListener('click', handleCheckCredentialStatus);
+                    ?.addEventListener('click', handleCheckCredentialStatus);
                 document
                     .getElementById('check-issuance-btn')
                     ?.addEventListener('click', handleCheckIssuanceStatus);
@@ -1090,30 +1213,32 @@ const config = {
                     .getElementById('get-recipients-btn')
                     ?.addEventListener('click', handleGetTemplateRecipients);
                 document
-                    .getElementById('arbitrary-boost-btn')
-                    ?.addEventListener('click', handleArbitraryBoostUri);
+                    .getElementById('optional-boost-issuance-btn')
+                    ?.addEventListener('click', handleOptionalBoostIssuance);
                 document
-                    .getElementById('launch-ai-btn')
-                    .addEventListener('click', handleLaunchFeature);
-                document
-                    .getElementById('ask-cred-btn')
-                    .addEventListener('click', handleAskCredential);
+                    .getElementById('optional-boost-recipients-btn')
+                    ?.addEventListener('click', handleOptionalBoostRecipients);
                 document
                     .getElementById('request-consent-btn')
-                    .addEventListener('click', handleRequestConsent);
+                    ?.addEventListener('click', handleRequestConsent);
+                document
+                    .getElementById('launch-ai-btn')
+                    ?.addEventListener('click', handleLaunchFeature);
+                document
+                    .getElementById('ask-cred-btn')
+                    ?.addEventListener('click', handleAskCredential);
                 document
                     .getElementById('ask-specific-cred-btn')
-                    .addEventListener('click', handleAskSpecificCredential);
+                    ?.addEventListener('click', handleAskSpecificCredential);
                 document
                     .getElementById('initiate-template-issue-btn')
-                    .addEventListener('click', handleInitiateTemplateIssue);
-
-                // Notifications
+                    ?.addEventListener('click', handleInitiateTemplateIssue);
+                document
+                    .getElementById('learner-context-btn')
+                    ?.addEventListener('click', handleLearnerContext);
                 document
                     .getElementById('send-notif-btn')
                     ?.addEventListener('click', handleSendNotification);
-
-                // Counters
                 document
                     .getElementById('increment-counter-btn')
                     ?.addEventListener('click', handleIncrementCounter);
@@ -1123,10 +1248,17 @@ const config = {
                 document
                     .getElementById('get-all-counters-btn')
                     ?.addEventListener('click', handleGetAllCounters);
+                document
+                    .getElementById('captured-manifest-btn')
+                    ?.addEventListener('click', handleCapturedManifest);
+                document
+                    .getElementById('publish-url-btn')
+                    ?.addEventListener('click', handlePublishUrl);
 
-                // Begin the SSO flow immediately when the app loads
-                initiateSSO();
-            };
+                bootstrap().catch(error => {
+                    setBanner(`Initialization failed: ${formatError(error)}`, 'error');
+                });
+            });
         </script>
     </body>
 </html>

@@ -90,15 +90,15 @@ const identity = await learnCard.requestIdentity();
 
 ## API Method Mappings
 
-| Manual postMessage                                                            | SDK Method                                                     |
-| ----------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `sendPostMessage('REQUEST_IDENTITY')`                                         | `learnCard.requestIdentity()`                                  |
-| `sendPostMessage('SEND_CREDENTIAL', { credential })`                          | `learnCard.sendCredential(credential)`                         |
-| `sendPostMessage('LAUNCH_FEATURE', { featurePath, initialPrompt })`           | `learnCard.launchFeature(featurePath, initialPrompt)`          |
-| `sendPostMessage('ASK_CREDENTIAL_SEARCH', { verifiablePresentationRequest })` | `learnCard.askCredentialSearch(vpr)`                           |
-| `sendPostMessage('ASK_CREDENTIAL_SPECIFIC', { credentialId })`                | `learnCard.askCredentialSpecific(credentialId)`                |
-| `sendPostMessage('REQUEST_CONSENT', { contractUri })`                         | `learnCard.requestConsent(contractUri)`                        |
-| `sendPostMessage('INITIATE_TEMPLATE_ISSUE', { templateId, draftRecipients })` | `learnCard.initiateTemplateIssue(templateId, draftRecipients)` |
+| Manual postMessage                                                            | SDK Method                                                                    |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `sendPostMessage('REQUEST_IDENTITY')`                                         | `learnCard.requestIdentity()`                                                 |
+| `sendPostMessage('SEND_CREDENTIAL', { credential })`                          | `learnCard.sendCredential(credential)`                                        |
+| `sendPostMessage('LAUNCH_FEATURE', { featurePath, initialPrompt })`           | `learnCard.launchFeature(featurePath, initialPrompt)`                         |
+| `sendPostMessage('ASK_CREDENTIAL_SEARCH', { verifiablePresentationRequest })` | `learnCard.askCredentialSearch(vpr)`                                          |
+| `sendPostMessage('ASK_CREDENTIAL_SPECIFIC', { credentialId })`                | `learnCard.askCredentialSpecific(credentialId)`                               |
+| `sendPostMessage('REQUEST_CONSENT', { contractUri })`                         | `learnCard.requestConsent(scopes)` or `learnCard.requestConsent(contractUri)` |
+| `sendPostMessage('INITIATE_TEMPLATE_ISSUE', { templateId, draftRecipients })` | `learnCard.initiateTemplateIssue(templateId, draftRecipients)`                |
 
 ## Benefits
 
@@ -134,7 +134,10 @@ All methods return properly typed responses:
 ```typescript
 const identity: IdentityResponse = await learnCard.requestIdentity();
 const response: SendCredentialResponse = await learnCard.sendCredential(credential);
-const consent: ConsentResponse = await learnCard.requestConsent(contractUri);
+const consent: ConsentResponse = await learnCard.requestConsent({
+    read: { credentialCategories: ['Achievement'], personalFields: ['name'] },
+    reason: 'Show off what LearnCard can share',
+});
 ```
 
 ## Migration Steps for Other Apps
@@ -189,3 +192,4 @@ The app will be available at `http://localhost:4321` (or similar).
 -   Request timeouts default to 30 seconds (configurable)
 -   All methods return Promises with proper error handling
 -   The SDK is framework-agnostic and works with any JS framework
+-   Zero-config flows now cover inline credential templates and scoped consent without hardcoded environment URIs
