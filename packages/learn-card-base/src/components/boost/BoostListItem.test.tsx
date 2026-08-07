@@ -103,4 +103,28 @@ describe('BoostListItem', () => {
         expect(passiveRow.getAttribute('role')).toBeNull();
         expect(passiveRow.getAttribute('tabindex')).toBeNull();
     });
+
+    it('does not activate the row from nested controls', () => {
+        const onClick = vi.fn();
+        const onOptionsClick = vi.fn();
+        render(
+            <BoostListItem
+                credential={credential}
+                categoryType="Achievement"
+                title="Example Achievement"
+                onClick={onClick}
+                onOptionsClick={onOptionsClick}
+            />
+        );
+
+        const optionsButton = screen.getByRole('button', { name: 'More options' });
+
+        fireEvent.keyDown(optionsButton, { key: 'Enter' });
+        fireEvent.keyDown(optionsButton, { key: ' ' });
+        expect(onClick).not.toHaveBeenCalled();
+
+        fireEvent.click(optionsButton);
+        expect(onOptionsClick).toHaveBeenCalledOnce();
+        expect(onClick).not.toHaveBeenCalled();
+    });
 });

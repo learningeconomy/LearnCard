@@ -214,6 +214,7 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
         : '!w-[20px] !h-[20px] !min-w-[20px] !min-h-[20px] mr-1 z-50';
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+        if (event.target !== event.currentTarget) return;
         if (!onClick || (event.key !== 'Enter' && event.key !== ' ')) return;
 
         event.preventDefault();
