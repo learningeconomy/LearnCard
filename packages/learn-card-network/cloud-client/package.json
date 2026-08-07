@@ -34,8 +34,8 @@
     "devDependencies": {
         "@learncard/types": "workspace:*",
         "dts-bundle-generator": "^6.10.0",
-        "esbuild": "^0.27.1",
-        "vitest": "^1.4.0"
+        "esbuild": "^0.28.1",
+        "vitest": "^4.1.10"
     },
     "dependencies": {
         "@learncard/learn-cloud-service": "workspace:*",
