@@ -32,6 +32,7 @@ import {
     type FlowLifecycle,
 } from '@analytics';
 import { useClaimSuccessToast } from '../../feedback/useClaimSuccessToast';
+import { useDuplicateCredentialGuard } from '../../components/credentials/duplicate-credential/useDuplicateCredentialGuard';
 
 import {
     getAchievementType,
@@ -555,6 +556,8 @@ const ClaimFromRequest: React.FC = () => {
 
     const { presentToast } = useToast();
     const presentClaimSuccessToast = useClaimSuccessToast();
+    const { isCheckingDuplicate, requestDuplicateResolution, duplicateCredentialPrompt } =
+        useDuplicateCredentialGuard();
 
     // Resolve the wallet category route for a just-claimed credential (e.g.
     // "/achievements", "/socialBadges"). Falls back to the passport ("/home")
@@ -715,12 +718,23 @@ const ClaimFromRequest: React.FC = () => {
             ]).catch(() => undefined);
         }
 
-        history?.push(route);
+        history.replace(route);
     };
 
     const handleClaimCredential = async () => {
         try {
             if (!credential) return;
+            const duplicateResolution = await requestDuplicateResolution(credential);
+            if (duplicateResolution.action === 'cancel') return;
+            if (duplicateResolution.action === 'skip') {
+                void handleAfterCredentialClaim(credential);
+                presentToast(m['claim.duplicate.skippedToast'](), {
+                    type: ToastTypeEnum.Success,
+                    hasDismissButton: true,
+                });
+                return;
+            }
+
             beginClaimAttempt(credential);
             setClaimingCredential(true);
 
@@ -733,7 +747,11 @@ const ClaimFromRequest: React.FC = () => {
             // in `components/boost/mutations.ts`. Without this publish
             // the reactor silently ignores the claim and no pathway
             // nodes flip.
-            const storeResult = await storeAndAddVCToWallet(credential, { title: name });
+            const storeResult = await storeAndAddVCToWallet(credential, {
+                title: name,
+                allowDuplicate: duplicateResolution.isDuplicate,
+            });
+            if (!storeResult.result) throw new Error('Credential was not added to LearnCard');
 
             const category = getDefaultCategoryForCredential(credential);
             const achievementType = getAchievementType(credential);
@@ -779,23 +797,16 @@ const ClaimFromRequest: React.FC = () => {
             setClaimingCredential(false);
             log.error('Error claiming credential', e);
 
-            if (e instanceof Error && e?.message?.includes('exists')) {
-                presentToast(m['toasts.alreadyClaimed'](), {
-                    type: ToastTypeEnum.Error,
-                    hasDismissButton: true,
-                });
-
-                void handleAfterCredentialClaim(credential);
-            } else {
-                presentToast(m['toasts.claimOops'](), {
-                    type: ToastTypeEnum.Error,
-                    hasDismissButton: true,
-                });
-            }
+            presentToast(m['toasts.claimOops'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         }
     };
 
     const renderExchangeStep = () => {
+        if (isCheckingDuplicate) return <ExchangeLoading />;
+
         switch (exchangeState.state) {
             case ExchangeState.PresentationRequest:
                 return (
@@ -852,6 +863,7 @@ const ClaimFromRequest: React.FC = () => {
     }
     return (
         <IonPage>
+            {duplicateCredentialPrompt}
             <IonContent>{renderExchangeStep()}</IonContent>
         </IonPage>
     );

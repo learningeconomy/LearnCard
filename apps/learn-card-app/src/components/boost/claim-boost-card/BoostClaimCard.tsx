@@ -56,6 +56,7 @@ import ViewEndorsementRequest from '../../boost-endorsements/EndorsementRequestF
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
 import * as m from '../../../paraglide/messages.js';
+import { useDuplicateCredentialGuard } from '../../credentials/duplicate-credential/useDuplicateCredentialGuard';
 
 type BoostClaimCardProps = {
     credential: VC | VP;
@@ -136,6 +137,8 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
 
     const [presentAlert, dismissAlert] = useIonAlert();
     const { presentToast } = useToast();
+    const { isCheckingDuplicate, requestDuplicateResolution, duplicateCredentialPrompt } =
+        useDuplicateCredentialGuard();
 
     const category = getDefaultCategoryForCredential(credential);
     const achievementType = getAchievementType(credential);
@@ -279,7 +282,12 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
             return;
         }
 
-        if (!acceptCredentialLoading && !isClaimLoading && !isClaimed) {
+        if (!acceptCredentialLoading && !isClaimLoading && !isCheckingDuplicate && !isClaimed) {
+            const duplicateResolution = _isEndorsement
+                ? ({ action: 'save', isDuplicate: false } as const)
+                : await requestDuplicateResolution(credential as VC);
+            if (duplicateResolution.action === 'cancel') return;
+
             beginClaimAttempt();
             setIsClaimLoading(true);
             // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
@@ -288,60 +296,87 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                 mutate(
                     { uri: credentialUri, metadata: notification?.data?.metadata },
                     {
-                        async onSuccess(data, variables, context) {
-                            if (_isEndorsement) {
-                                await wallet.invoke.storeEndorsement(credential, {
-                                    credentialId,
-                                    relationship,
-                                    sharedUri,
-                                    visibility: visibility ? 'public' : 'private',
-                                });
-                            } else {
-                                await addVCtoWallet({ uri: credentialUri });
-                            }
+                        async onSuccess() {
+                            try {
+                                if (_isEndorsement) {
+                                    await wallet.invoke.storeEndorsement(credential, {
+                                        credentialId,
+                                        relationship,
+                                        sharedUri,
+                                        visibility: visibility ? 'public' : 'private',
+                                    });
+                                } else if (duplicateResolution.action === 'save') {
+                                    const addedToWallet = await addVCtoWallet({
+                                        uri: credentialUri,
+                                    });
+                                    if (!addedToWallet) {
+                                        throw new Error('Credential was not added to LearnCard');
+                                    }
+                                }
 
-                            if (credential) {
-                                track(AnalyticsEvents.CLAIM_BOOST, {
-                                    category: category,
-                                    boostType: achievementType,
-                                    method: 'Notification',
-                                    msSinceMethodStarted: Date.now() - flowStartedAt.current,
-                                });
-                                completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED);
+                                if (credential) {
+                                    track(AnalyticsEvents.CLAIM_BOOST, {
+                                        category: category,
+                                        boostType: achievementType,
+                                        method: 'Notification',
+                                        msSinceMethodStarted: Date.now() - flowStartedAt.current,
+                                    });
+                                    completeClaimAttempt(
+                                        AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED
+                                    );
 
-                                const now = Date.now();
-                                const sessionStart = Number(
-                                    localStorage.getItem(SESSION_START_KEY) ?? now
+                                    if (_isEndorsement || duplicateResolution.action === 'save') {
+                                        const now = Date.now();
+                                        const sessionStart = Number(
+                                            localStorage.getItem(SESSION_START_KEY) ?? now
+                                        );
+                                        const accountCreatedAt = Number(
+                                            localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
+                                        );
+                                        track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                                            method: ProfileBuildMethod.Notification,
+                                            itemType: 'credential',
+                                            itemCount: 1,
+                                            totalItemsAfter:
+                                                snapshotRef.current.credentialCount + 1,
+                                            msSinceAccountCreated: now - accountCreatedAt,
+                                            msSinceSessionStart: now - sessionStart,
+                                        });
+                                    }
+                                }
+
+                                setIsClaimed(true);
+                                presentToast(
+                                    duplicateResolution.action === 'skip'
+                                        ? m['claim.duplicate.skippedToast']()
+                                        : m['toasts.credentialClaimed'](),
+                                    {
+                                        duration: 3000,
+                                        type: ToastTypeEnum.Success,
+                                    }
                                 );
-                                const accountCreatedAt = Number(
-                                    localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
-                                );
-                                track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
-                                    method: ProfileBuildMethod.Notification,
-                                    itemType: 'credential',
-                                    itemCount: 1,
-                                    totalItemsAfter: snapshotRef.current.credentialCount + 1,
-                                    msSinceAccountCreated: now - accountCreatedAt,
-                                    msSinceSessionStart: now - sessionStart,
+
+                                setIsClaimLoading(false);
+                                await successCallback?.();
+
+                                if (category === CredentialCategoryEnum.family) {
+                                    history.replace(
+                                        `/families?boostUri=${credentialUri}&showPreview=true`
+                                    );
+                                }
+
+                                closeModal();
+                            } catch (error) {
+                                completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, {
+                                    error_code: getClaimErrorCode(error),
+                                });
+                                setIsClaimLoading(false);
+                                log.error('Unable to save accepted credential', error);
+                                presentToast(m['toasts.claimOops'](), {
+                                    duration: 4000,
+                                    type: ToastTypeEnum.Error,
                                 });
                             }
-
-                            setIsClaimed(true);
-                            presentToast(m['toasts.credentialClaimed'](), {
-                                duration: 3000,
-                                type: ToastTypeEnum.Success,
-                            });
-
-                            setIsClaimLoading(false);
-                            await successCallback?.();
-
-                            if (category === CredentialCategoryEnum.family) {
-                                history.replace(
-                                    `/families?boostUri=${credentialUri}&showPreview=true`
-                                );
-                            }
-
-                            closeModal();
                         },
                         onError(err: any) {
                             completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_FAILED, {
@@ -390,9 +425,10 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     const selectedCredential = credential;
 
     let claimStatusText;
-    const disableClaimButton = acceptCredentialLoading || isClaimLoading || isClaimed || isRevoked;
+    const disableClaimButton =
+        acceptCredentialLoading || isClaimLoading || isCheckingDuplicate || isClaimed || isRevoked;
 
-    if (!isClaimLoading && isLoggedIn && credential && isClaimed) {
+    if (!isClaimLoading && !isCheckingDuplicate && isLoggedIn && credential && isClaimed) {
         claimStatusText = m['contacts.claimed']();
         if (isFamily) claimStatusText = m['contacts.joined']();
     }
@@ -400,8 +436,11 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
         claimStatusText = m['contacts.saving']();
         if (isFamily) claimStatusText = m['contacts.joining']();
     }
+    if (isCheckingDuplicate && isLoggedIn) {
+        claimStatusText = m['claim.duplicate.checking']();
+    }
 
-    if (!isClaimLoading && isLoggedIn && credential && !isClaimed) {
+    if (!isClaimLoading && !isCheckingDuplicate && isLoggedIn && credential && !isClaimed) {
         claimStatusText = m['common.accept']();
         if (isFamily) claimStatusText = m['contacts.joinBoost']();
     }
@@ -494,13 +533,14 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                 endorsementVC={credential}
                 handleSaveEndorsement={handleBoostCredential}
                 isClaimed={isClaimed}
-                isLoading={isClaimLoading}
+                isLoading={isClaimLoading || isCheckingDuplicate}
             />
         );
     }
 
     return (
         <IonPage className="flex items-center justify-center boost-cms-preview">
+            {duplicateCredentialPrompt}
             <BoostFooterLayout
                 contentOwnsScroll
                 footerProps={{
@@ -518,7 +558,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                 }}
             >
                 <div className="flex h-full w-full">
-                    {isClaimLoading && (
+                    {(isClaimLoading || isCheckingDuplicate) && (
                         <div className="absolute w-full h-full top-0 left-0 z-[10001] flex items-center justify-center flex-col boost-loading-wrapper">
                             <div className="w-[180px] h-full m-auto mt-[5px] flex items-center justify-center">
                                 <LoadingSpinner size="xl" label="Loading credential" />

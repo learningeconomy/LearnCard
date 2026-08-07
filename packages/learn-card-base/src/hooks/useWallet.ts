@@ -379,12 +379,12 @@ export const useWallet = () => {
 
     const storeAndAddVCToWallet = async (
         vc: VC,
-        metadata: Partial<{ title: string; imgUrl: string }> = {},
+        metadata: Partial<{ title: string; imgUrl: string; allowDuplicate: boolean }> = {},
         location: 'SQLite' | 'LearnCloud' = 'LearnCloud',
         skipLCNUser?: boolean // skip steps requiring a LCN account eg didweb
     ): Promise<{ result: boolean; credentialUri: string; category: string }> => {
-        const { title, imgUrl } = metadata;
-        const _id = vc.id || uuidv4();
+        const { title, imgUrl, allowDuplicate } = metadata;
+        const _id = allowDuplicate ? uuidv4() : vc.id || uuidv4();
         let returnUri: string | undefined;
 
         try {
