@@ -44,6 +44,20 @@ const { readDefaultChannel } = requireFromHere('../../tools/capgo/readDefaultCha
 };
 
 /**
+ * App version read directly from this app's package.json.
+ *
+ * Deliberately NOT `process.env.npm_package_version` — that env var reflects
+ * the package.json of the directory the build command was invoked from, so
+ * CI builds run from the monorepo root (`bunx nx build learn-card-app`) would
+ * bake in the root package's version (e.g. 1.0.1) instead of the app's.
+ */
+const packageVersion = (
+    JSON.parse(readFileSync(path.join(__dirname, 'package.json'), 'utf-8')) as {
+        version: string;
+    }
+).version;
+
+/**
  * Resolve a short build commit SHA at config-eval time.
  *
  * Source preference:
@@ -199,8 +213,8 @@ export default defineConfig(async ({ mode, command }) => {
             },
         },
         define: {
-            __PACKAGE_VERSION__: JSON.stringify(process.env.npm_package_version),
-            __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+            __PACKAGE_VERSION__: JSON.stringify(packageVersion),
+            __APP_VERSION__: JSON.stringify(packageVersion),
             __BUILD_SHA__: JSON.stringify(resolveBuildSha()),
             __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
             __CAPGO_DEFAULT_CHANNEL__: JSON.stringify(
