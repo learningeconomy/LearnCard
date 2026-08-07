@@ -426,7 +426,9 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     showChecked={showChecked}
                     checkStatus={initialCheckmarkState}
                     optionsTriggerOnClick={
-                        hideOptionsMenu || hideCardOptionsMenu ? undefined : handleOptionsMenu
+                        showSkeleton || hideOptionsMenu || hideCardOptionsMenu
+                            ? undefined
+                            : handleOptionsMenu
                     }
                     className={`earned-small-card bg-white text-black z-[1000] mt-[15px] ${className}`}
                     customHeaderClass="boost-managed-card"

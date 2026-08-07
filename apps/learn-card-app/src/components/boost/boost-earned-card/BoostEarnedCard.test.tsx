@@ -140,6 +140,20 @@ describe('BoostEarnedCard', () => {
         mocks.isBoostCredential.mockReturnValue(true);
     });
 
+    it('does not expose card options while the credential is loading', () => {
+        render(
+            <BoostEarnedCard
+                credential={credential}
+                record={{ uri: 'urn:credential:achievement' }}
+                categoryType="Achievement"
+                useWrapper={false}
+                loading
+            />
+        );
+
+        expect(screen.queryByRole('button', { name: 'Card options' })).toBeNull();
+    });
+
     it.each([
         ['Boost', true],
         ['non-Boost', false],
