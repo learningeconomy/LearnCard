@@ -13,139 +13,152 @@
 
 
 from __future__ import annotations
+from inspect import getfullargspec
+import json
 import pprint
 import re  # noqa: F401
-import json
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError, field_validator
+from typing import Optional
+from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of import BoostGetBoostRecipients200ResponseInnerToAnyOf
+from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of1 import BoostGetBoostRecipients200ResponseInnerToAnyOf1
+from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of2 import BoostGetBoostRecipients200ResponseInnerToAnyOf2
+from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of3 import BoostGetBoostRecipients200ResponseInnerToAnyOf3
+from typing import Union, Any, List, Set, TYPE_CHECKING, Optional, Dict
+from typing_extensions import Literal, Self
+from pydantic import Field
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List, Optional
-from typing_extensions import Annotated
-from openapi_client.models.boost_get_boost_recipients200_response_inner_to_display import BoostGetBoostRecipients200ResponseInnerToDisplay
-from typing import Optional, Set
-from typing_extensions import Self
+BOOSTGETBOOSTRECIPIENTS200RESPONSEINNERTO_ANY_OF_SCHEMAS = ["BoostGetBoostRecipients200ResponseInnerToAnyOf", "BoostGetBoostRecipients200ResponseInnerToAnyOf1", "BoostGetBoostRecipients200ResponseInnerToAnyOf2", "BoostGetBoostRecipients200ResponseInnerToAnyOf3"]
 
 class BoostGetBoostRecipients200ResponseInnerTo(BaseModel):
     """
     BoostGetBoostRecipients200ResponseInnerTo
-    """ # noqa: E501
-    profile_id: Annotated[str, Field(min_length=3, strict=True, max_length=40)] = Field(description="Unique, URL-safe identifier for the profile.", alias="profileId")
-    display_name: StrictStr = Field(description="Human-readable display name for the profile.", alias="displayName")
-    short_bio: StrictStr = Field(description="Short bio for the profile.", alias="shortBio")
-    bio: StrictStr = Field(description="Longer bio for the profile.")
-    did: StrictStr = Field(description="Decentralized Identifier for the profile. (auto-assigned)")
-    is_private: Optional[StrictBool] = Field(default=None, description="Whether the profile is private or not and shows up in search results.", alias="isPrivate")
-    email: Optional[StrictStr] = Field(default=None, description="Contact email address for the profile. (deprecated)")
-    image: Optional[StrictStr] = Field(default=None, description="Profile image URL for the profile.")
-    hero_image: Optional[StrictStr] = Field(default=None, description="Hero image URL for the profile.", alias="heroImage")
-    website_link: Optional[StrictStr] = Field(default=None, description="Website link for the profile.", alias="websiteLink")
-    is_service_profile: Optional[StrictBool] = Field(default=False, description="Whether the profile is a service profile or not.", alias="isServiceProfile")
-    type: Optional[StrictStr] = Field(default=None, description="Profile type: e.g. \"person\", \"organization\", \"service\".")
-    notifications_webhook: Optional[Annotated[str, Field(strict=True)]] = Field(default=None, description="URL to send notifications to.", alias="notificationsWebhook")
-    display: Optional[BoostGetBoostRecipients200ResponseInnerToDisplay] = None
-    highlighted_credentials: Optional[Annotated[List[Optional[StrictStr]], Field(max_length=5)]] = Field(default=None, description="Up to 5 unique boost URIs to highlight on the profile.", alias="highlightedCredentials")
-    role: Optional[StrictStr] = Field(default='', description="Role of the profile: e.g. \"teacher\", \"student\".")
-    dob: Optional[StrictStr] = Field(default='', description="Date of birth of the profile: e.g. \"1990-01-01\".")
-    country: Optional[StrictStr] = Field(default=None, description="Country for the profile.")
-    approved: Optional[StrictBool] = Field(default=None, description="Approval status for the profile.")
-    additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "bio", "did", "isPrivate", "email", "image", "heroImage", "websiteLink", "isServiceProfile", "type", "notificationsWebhook", "display", "highlightedCredentials", "role", "dob", "country", "approved"]
+    """
 
-    @field_validator('notifications_webhook')
-    def notifications_webhook_validate_regular_expression(cls, value):
-        """Validates the regular expression"""
-        if value is None:
-            return value
+    # data type: BoostGetBoostRecipients200ResponseInnerToAnyOf
+    anyof_schema_1_validator: Optional[BoostGetBoostRecipients200ResponseInnerToAnyOf] = None
+    # data type: BoostGetBoostRecipients200ResponseInnerToAnyOf1
+    anyof_schema_2_validator: Optional[BoostGetBoostRecipients200ResponseInnerToAnyOf1] = None
+    # data type: BoostGetBoostRecipients200ResponseInnerToAnyOf2
+    anyof_schema_3_validator: Optional[BoostGetBoostRecipients200ResponseInnerToAnyOf2] = None
+    # data type: BoostGetBoostRecipients200ResponseInnerToAnyOf3
+    anyof_schema_4_validator: Optional[BoostGetBoostRecipients200ResponseInnerToAnyOf3] = None
+    if TYPE_CHECKING:
+        actual_instance: Optional[Union[BoostGetBoostRecipients200ResponseInnerToAnyOf, BoostGetBoostRecipients200ResponseInnerToAnyOf1, BoostGetBoostRecipients200ResponseInnerToAnyOf2, BoostGetBoostRecipients200ResponseInnerToAnyOf3]] = None
+    else:
+        actual_instance: Any = None
+    any_of_schemas: Set[str] = { "BoostGetBoostRecipients200ResponseInnerToAnyOf", "BoostGetBoostRecipients200ResponseInnerToAnyOf1", "BoostGetBoostRecipients200ResponseInnerToAnyOf2", "BoostGetBoostRecipients200ResponseInnerToAnyOf3" }
 
-        if not re.match(r"^http.*", value):
-            raise ValueError(r"must validate the regular expression /^http.*/")
-        return value
+    model_config = {
+        "validate_assignment": True,
+        "protected_namespaces": (),
+    }
 
-    model_config = ConfigDict(
-        populate_by_name=True,
-        validate_assignment=True,
-        protected_namespaces=(),
-    )
+    def __init__(self, *args, **kwargs) -> None:
+        if args:
+            if len(args) > 1:
+                raise ValueError("If a position argument is used, only 1 is allowed to set `actual_instance`")
+            if kwargs:
+                raise ValueError("If a position argument is used, keyword arguments cannot be used.")
+            super().__init__(actual_instance=args[0])
+        else:
+            super().__init__(**kwargs)
 
+    @field_validator('actual_instance')
+    def actual_instance_must_validate_anyof(cls, v):
+        instance = BoostGetBoostRecipients200ResponseInnerTo.model_construct()
+        error_messages = []
+        # validate data type: BoostGetBoostRecipients200ResponseInnerToAnyOf
+        if not isinstance(v, BoostGetBoostRecipients200ResponseInnerToAnyOf):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `BoostGetBoostRecipients200ResponseInnerToAnyOf`")
+        else:
+            return v
 
-    def to_str(self) -> str:
-        """Returns the string representation of the model using alias"""
-        return pprint.pformat(self.model_dump(by_alias=True))
+        # validate data type: BoostGetBoostRecipients200ResponseInnerToAnyOf1
+        if not isinstance(v, BoostGetBoostRecipients200ResponseInnerToAnyOf1):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `BoostGetBoostRecipients200ResponseInnerToAnyOf1`")
+        else:
+            return v
+
+        # validate data type: BoostGetBoostRecipients200ResponseInnerToAnyOf2
+        if not isinstance(v, BoostGetBoostRecipients200ResponseInnerToAnyOf2):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `BoostGetBoostRecipients200ResponseInnerToAnyOf2`")
+        else:
+            return v
+
+        # validate data type: BoostGetBoostRecipients200ResponseInnerToAnyOf3
+        if not isinstance(v, BoostGetBoostRecipients200ResponseInnerToAnyOf3):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `BoostGetBoostRecipients200ResponseInnerToAnyOf3`")
+        else:
+            return v
+
+        if error_messages:
+            # no match
+            raise ValueError("No match found when setting the actual_instance in BoostGetBoostRecipients200ResponseInnerTo with anyOf schemas: BoostGetBoostRecipients200ResponseInnerToAnyOf, BoostGetBoostRecipients200ResponseInnerToAnyOf1, BoostGetBoostRecipients200ResponseInnerToAnyOf2, BoostGetBoostRecipients200ResponseInnerToAnyOf3. Details: " + ", ".join(error_messages))
+        else:
+            return v
+
+    @classmethod
+    def from_dict(cls, obj: Dict[str, Any]) -> Self:
+        return cls.from_json(json.dumps(obj))
+
+    @classmethod
+    def from_json(cls, json_str: str) -> Self:
+        """Returns the object represented by the json string"""
+        instance = cls.model_construct()
+        error_messages = []
+        # anyof_schema_1_validator: Optional[BoostGetBoostRecipients200ResponseInnerToAnyOf] = None
+        try:
+            instance.actual_instance = BoostGetBoostRecipients200ResponseInnerToAnyOf.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
+        # anyof_schema_2_validator: Optional[BoostGetBoostRecipients200ResponseInnerToAnyOf1] = None
+        try:
+            instance.actual_instance = BoostGetBoostRecipients200ResponseInnerToAnyOf1.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
+        # anyof_schema_3_validator: Optional[BoostGetBoostRecipients200ResponseInnerToAnyOf2] = None
+        try:
+            instance.actual_instance = BoostGetBoostRecipients200ResponseInnerToAnyOf2.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
+        # anyof_schema_4_validator: Optional[BoostGetBoostRecipients200ResponseInnerToAnyOf3] = None
+        try:
+            instance.actual_instance = BoostGetBoostRecipients200ResponseInnerToAnyOf3.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
+
+        if error_messages:
+            # no match
+            raise ValueError("No match found when deserializing the JSON string into BoostGetBoostRecipients200ResponseInnerTo with anyOf schemas: BoostGetBoostRecipients200ResponseInnerToAnyOf, BoostGetBoostRecipients200ResponseInnerToAnyOf1, BoostGetBoostRecipients200ResponseInnerToAnyOf2, BoostGetBoostRecipients200ResponseInnerToAnyOf3. Details: " + ", ".join(error_messages))
+        else:
+            return instance
 
     def to_json(self) -> str:
-        """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        """Returns the JSON representation of the actual instance"""
+        if self.actual_instance is None:
+            return "null"
 
-    @classmethod
-    def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of BoostGetBoostRecipients200ResponseInnerTo from a JSON string"""
-        return cls.from_dict(json.loads(json_str))
+        if hasattr(self.actual_instance, "to_json") and callable(self.actual_instance.to_json):
+            return self.actual_instance.to_json()
+        else:
+            return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Return the dictionary representation of the model using alias.
-
-        This has the following differences from calling pydantic's
-        `self.model_dump(by_alias=True)`:
-
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
-        * Fields in `self.additional_properties` are added to the output dict.
-        """
-        excluded_fields: Set[str] = set([
-            "additional_properties",
-        ])
-
-        _dict = self.model_dump(
-            by_alias=True,
-            exclude=excluded_fields,
-            exclude_none=True,
-        )
-        # override the default output from pydantic by calling `to_dict()` of display
-        if self.display:
-            _dict['display'] = self.display.to_dict()
-        # puts key-value pairs in additional_properties in the top level
-        if self.additional_properties is not None:
-            for _key, _value in self.additional_properties.items():
-                _dict[_key] = _value
-
-        return _dict
-
-    @classmethod
-    def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of BoostGetBoostRecipients200ResponseInnerTo from a dict"""
-        if obj is None:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], BoostGetBoostRecipients200ResponseInnerToAnyOf, BoostGetBoostRecipients200ResponseInnerToAnyOf1, BoostGetBoostRecipients200ResponseInnerToAnyOf2, BoostGetBoostRecipients200ResponseInnerToAnyOf3]]:
+        """Returns the dict representation of the actual instance"""
+        if self.actual_instance is None:
             return None
 
-        if not isinstance(obj, dict):
-            return cls.model_validate(obj)
+        if hasattr(self.actual_instance, "to_dict") and callable(self.actual_instance.to_dict):
+            return self.actual_instance.to_dict()
+        else:
+            return self.actual_instance
 
-        _obj = cls.model_validate({
-            "profileId": obj.get("profileId"),
-            "displayName": obj.get("displayName") if obj.get("displayName") is not None else '',
-            "shortBio": obj.get("shortBio") if obj.get("shortBio") is not None else '',
-            "bio": obj.get("bio") if obj.get("bio") is not None else '',
-            "did": obj.get("did"),
-            "isPrivate": obj.get("isPrivate"),
-            "email": obj.get("email"),
-            "image": obj.get("image"),
-            "heroImage": obj.get("heroImage"),
-            "websiteLink": obj.get("websiteLink"),
-            "isServiceProfile": obj.get("isServiceProfile") if obj.get("isServiceProfile") is not None else False,
-            "type": obj.get("type"),
-            "notificationsWebhook": obj.get("notificationsWebhook"),
-            "display": BoostGetBoostRecipients200ResponseInnerToDisplay.from_dict(obj["display"]) if obj.get("display") is not None else None,
-            "highlightedCredentials": obj.get("highlightedCredentials"),
-            "role": obj.get("role") if obj.get("role") is not None else '',
-            "dob": obj.get("dob") if obj.get("dob") is not None else '',
-            "country": obj.get("country"),
-            "approved": obj.get("approved")
-        })
-        # store additional fields in additional_properties
-        for _key in obj.keys():
-            if _key not in cls.__properties:
-                _obj.additional_properties[_key] = obj.get(_key)
-
-        return _obj
+    def to_str(self) -> str:
+        """Returns the string representation of the actual instance"""
+        return pprint.pformat(self.model_dump())
 
 

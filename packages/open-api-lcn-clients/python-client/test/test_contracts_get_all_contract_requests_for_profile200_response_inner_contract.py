@@ -35,28 +35,28 @@ class TestContractsGetAllContractRequestsForProfile200ResponseInnerContract(unit
         model = ContractsGetAllContractRequestsForProfile200ResponseInnerContract()
         if include_optional:
             return ContractsGetAllContractRequestsForProfile200ResponseInnerContract(
-                read = openapi_client.models.contracts_get_consent_flow_contract_200_response_contract_read.contracts_getConsentFlowContract_200_response_contract_read(
+                read = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read.storage_resolve_200_response_anyOf_anyOf_1_read(
                     anonymize = True, 
-                    credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_write_credentials.storage_resolve_200_response_anyOf_anyOf_1_write_credentials(
+                    credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write_credentials(
                         categories = {
-                            'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read_personal_value.storage_resolve_200_response_anyOf_anyOf_1_read_personal_value(
+                            'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                                 required = True, 
                                 default_enabled = True, )
                             }, ), 
                     personal = {
-                        'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read_personal_value.storage_resolve_200_response_anyOf_anyOf_1_read_personal_value(
+                        'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                             required = True, 
                             default_enabled = True, )
                         }, ),
-                write = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_write.storage_resolve_200_response_anyOf_anyOf_1_write(
-                    credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_write_credentials.storage_resolve_200_response_anyOf_anyOf_1_write_credentials(
+                write = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write(
+                    credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write_credentials(
                         categories = {
-                            'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read_personal_value.storage_resolve_200_response_anyOf_anyOf_1_read_personal_value(
+                            'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                                 required = True, 
                                 default_enabled = True, )
                             }, ), 
                     personal = {
-                        'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read_personal_value.storage_resolve_200_response_anyOf_anyOf_1_read_personal_value(
+                        'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                             required = True, 
                             default_enabled = True, )
                         }, ),
@@ -64,28 +64,28 @@ class TestContractsGetAllContractRequestsForProfile200ResponseInnerContract(unit
             )
         else:
             return ContractsGetAllContractRequestsForProfile200ResponseInnerContract(
-                read = openapi_client.models.contracts_get_consent_flow_contract_200_response_contract_read.contracts_getConsentFlowContract_200_response_contract_read(
+                read = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read.storage_resolve_200_response_anyOf_anyOf_1_read(
                     anonymize = True, 
-                    credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_write_credentials.storage_resolve_200_response_anyOf_anyOf_1_write_credentials(
+                    credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write_credentials(
                         categories = {
-                            'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read_personal_value.storage_resolve_200_response_anyOf_anyOf_1_read_personal_value(
+                            'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                                 required = True, 
                                 default_enabled = True, )
                             }, ), 
                     personal = {
-                        'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read_personal_value.storage_resolve_200_response_anyOf_anyOf_1_read_personal_value(
+                        'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                             required = True, 
                             default_enabled = True, )
                         }, ),
-                write = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_write.storage_resolve_200_response_anyOf_anyOf_1_write(
-                    credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_write_credentials.storage_resolve_200_response_anyOf_anyOf_1_write_credentials(
+                write = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write(
+                    credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_write_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_write_credentials(
                         categories = {
-                            'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read_personal_value.storage_resolve_200_response_anyOf_anyOf_1_read_personal_value(
+                            'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                                 required = True, 
                                 default_enabled = True, )
                             }, ), 
                     personal = {
-                        'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read_personal_value.storage_resolve_200_response_anyOf_anyOf_1_read_personal_value(
+                        'key' : openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_contract_read_personal_value.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_contract_read_personal_value(
                             required = True, 
                             default_enabled = True, )
                         }, ),

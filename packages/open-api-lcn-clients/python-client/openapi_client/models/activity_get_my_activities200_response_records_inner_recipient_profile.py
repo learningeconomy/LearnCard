@@ -21,6 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ActivityGetMyActivities200ResponseRecordsInnerRecipientProfile(BaseModel):
     """
@@ -28,11 +29,13 @@ class ActivityGetMyActivities200ResponseRecordsInnerRecipientProfile(BaseModel):
     """ # noqa: E501
     profile_id: Optional[StrictStr] = Field(alias="profileId")
     display_name: Optional[StrictStr] = Field(default=None, alias="displayName")
+    image: Optional[StrictStr] = None
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["profileId", "displayName"]
+    __properties: ClassVar[List[str]] = ["profileId", "displayName", "image"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -44,8 +47,7 @@ class ActivityGetMyActivities200ResponseRecordsInnerRecipientProfile(BaseModel):
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -87,6 +89,11 @@ class ActivityGetMyActivities200ResponseRecordsInnerRecipientProfile(BaseModel):
         if self.display_name is None and "display_name" in self.model_fields_set:
             _dict['displayName'] = None
 
+        # set to None if image (nullable) is None
+        # and model_fields_set contains the field
+        if self.image is None and "image" in self.model_fields_set:
+            _dict['image'] = None
+
         return _dict
 
     @classmethod
@@ -100,7 +107,8 @@ class ActivityGetMyActivities200ResponseRecordsInnerRecipientProfile(BaseModel):
 
         _obj = cls.model_validate({
             "profileId": obj.get("profileId"),
-            "displayName": obj.get("displayName")
+            "displayName": obj.get("displayName"),
+            "image": obj.get("image")
         })
         # store additional fields in additional_properties
         for _key in obj.keys():
