@@ -22,6 +22,7 @@
     },
     "scripts": {
         "prepare": "husky install",
+        "lint": "node scripts/lint-a11y.cjs",
         "lint:staged": "lint-staged",
         "build": "nx run-many -t build --all --exclude=docs,reference,chapi-example,snap-chapi-example,snap-example-dapp",
         "build:bootstrap": "nx run-many -t build --projects=types,helpers,core,vc-plugin,email-templates",
@@ -49,6 +50,7 @@
         "eslint-config-airbnb-typescript": "^17.0.0",
         "eslint-import-resolver-typescript": "^2.7.1",
         "eslint-plugin-import": "^2.27.5",
+        "eslint-plugin-jsx-a11y": "^6.10.2",
         "eslint-plugin-prettier": "^4.2.1",
         "eslint-plugin-react": "^7.32.2",
         "husky": "8.0.3",
