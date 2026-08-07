@@ -215,7 +215,9 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
 
     return (
         <IonRow
-            className={`${rowPadding} rounded-[15px] relative overflow-hidden w-full flex ${rowGap} items-center ${backgroundColor} z-[2]`}
+            className={`${rowPadding} rounded-[15px] relative overflow-hidden w-full flex ${rowGap} items-center ${backgroundColor} z-[2] ${
+                onClick ? 'cursor-pointer' : ''
+            }`}
             onClick={onClick}
             data-testid="boost-list-item"
         >
