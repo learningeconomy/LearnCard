@@ -37,6 +37,7 @@ npx @learncard/cli
 # Optionally specify a deterministic seed to instantiate the wallet with
 # npx @learncard/cli 1b498556081a298261313657c32d5d0a9ce8285dc4d659e6787392207e4a7ac2h
 ```
+
 {% endhint %}
 
 ```javascript
@@ -48,25 +49,26 @@ npx @learncard/cli
 // 1. Create a new signing authority managed by the LearnCard App.
 //    We generate and securely store the keys for you.
 const managedAuthority = await learnCard.invoke.createSigningAuthority('default-issuer');
+
+if (!managedAuthority) throw new Error('Could not create signing authority.');
 // returns -> { name: 'default-issuer', did: 'did:key:z...', endpoint: 'https://...' }
 
 // 2. Register this new authority with the LearnCard Network.
 //    This authorizes it to issue credentials on your profile's behalf.
 await learnCard.invoke.registerSigningAuthority(
-  managedAuthority.endpoint,
-  managedAuthority.name,
-  managedAuthority.did
+    managedAuthority.endpoint,
+    managedAuthority.name,
+    managedAuthority.did
 );
 
 // 3. (Optional but Recommended) Set it as your primary authority.
 //    This allows you to omit signing details from your API calls.
 await learnCard.invoke.setPrimaryRegisteredSigningAuthority(
-  managedAuthority.endpoint,
-  managedAuthority.name
+    managedAuthority.endpoint,
+    managedAuthority.name
 );
 
 console.log('Successfully created and registered primary signing authority!');
-
 ```
 
 **Result:** You now have a default Signing Authority. When you call the [`/inbox/issue` endpoint](send-credentials.md) with an unsigned credential, our system will automatically use this authority to sign it. You don't need to specify any `signingAuthority` details in your API call `configuration` object.
@@ -77,7 +79,7 @@ console.log('Successfully created and registered primary signing authority!');
 
 This path is for organizations with specific security, compliance, or existing identity infrastructure needs.
 
-**Prerequisites:** You must have a running, publicly accessible VC-API compliant issuer endpoint. Or, you can [deploy your own](deploy-infrastructure/signing-authority.md).
+**Prerequisites:** You must have a running, publicly accessible VC-API compliant issuer endpoint.
 
 ### **Recipe: Registering an External Authority**
 
@@ -88,16 +90,16 @@ You don't create an external authority through our system; you simply tell our n
 
 // The details of YOUR external signing service.
 const myExternalAuthority = {
-  name: 'my-custom-signer',
-  endpoint: 'https://my-vc-api.my-org.com/issue',
-  did: 'did:web:my-org.com' // The DID of your external service
+    name: 'my-custom-signer',
+    endpoint: 'https://my-vc-api.my-org.com/issue',
+    did: 'did:web:my-org.com', // The DID of your external service
 };
 
 // 1. Register your external authority with the LearnCard Network.
 await learnCard.invoke.registerSigningAuthority(
-  myExternalAuthority.endpoint,
-  myExternalAuthority.name,
-  myExternalAuthority.did
+    myExternalAuthority.endpoint,
+    myExternalAuthority.name,
+    myExternalAuthority.did
 );
 
 console.log(`Successfully registered "${myExternalAuthority.name}".`);
@@ -107,7 +109,6 @@ console.log(`Successfully registered "${myExternalAuthority.name}".`);
 //   myExternalAuthority.endpoint,
 //   myExternalAuthority.name
 // );
-
 ```
 
 **Result:** Your external service is now an authorized signer for your profile. When you want to use it, you must explicitly specify it in your `/inbox/issue` API call.
@@ -117,16 +118,19 @@ console.log(`Successfully registered "${myExternalAuthority.name}".`);
 ```javascript
 // Note the explicit `signingAuthority` object in the configuration.
 await learncardApiClient.post('/inbox/issue', {
-  recipient: { /* ... */ },
-  credential: { /* ...unsigned credential data... */ },
-  configuration: {
-    signingAuthority: {
-      name: 'my-custom-signer',
-      endpoint: 'https://my-vc-api.my-org.com/issue'
-    }
-  }
+    recipient: {
+        /* ... */
+    },
+    credential: {
+        /* ...unsigned credential data... */
+    },
+    configuration: {
+        signingAuthority: {
+            name: 'my-custom-signer',
+            endpoint: 'https://my-vc-api.my-org.com/issue',
+        },
+    },
 });
-
 ```
 
 ## Generate a Signing Authority in LearnCardApp
@@ -134,16 +138,16 @@ await learncardApiClient.post('/inbox/issue', {
 ### Steps to Create a Signing Authority
 
 1. **Navigate to Your Profile:**
-   * Go to **Developer Tools** > **Signing Authority**.
+    - Go to **Developer Tools** > **Signing Authority**.
 2. **Create:**
-   * **Click**: **Create Signing Authority**
-   * **Provide the Following Information:**
-     * **Name** (required)
-     * **Endpoint** (optional)
-     * DID (Endpoint required)
-   * **Click**: Create
+    - **Click**: **Create Signing Authority**
+    - **Provide the Following Information:**
+        - **Name** (required)
+        - **Endpoint** (optional)
+        - DID (Endpoint required)
+    - **Click**: Create
 3. Already Signed In? Deep link below 👇
 
-* [LearnCardApp Signing Authority DevTools](https://learncard.app/passport?showSigningAuthorityDevTools=true)
+-   [LearnCardApp Signing Authority DevTools](https://learncard.app/passport?showSigningAuthorityDevTools=true)
 
 {% embed url="https://www.loom.com/share/080838131d82428289073699d19a2aa8" %}

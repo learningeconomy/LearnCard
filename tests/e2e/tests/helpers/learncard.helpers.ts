@@ -1,12 +1,8 @@
 import { readFile } from 'node:fs/promises';
 
 import type { AddPlugin } from '@learncard/core';
-import {
-    initLearnCard,
-} from '@learncard/init';
+import { initLearnCard } from '@learncard/init';
 import type { NetworkLearnCardFromSeed, NetworkLearnCardFromApiKey } from '@learncard/init';
-import { getSimpleSigningPlugin } from '@learncard/simple-signing-plugin';
-import type { SimpleSigningPlugin } from '@learncard/simple-signing-plugin';
 import { getLCAPlugin } from '@learncard/lca-api-plugin';
 import type { LCAPlugin } from '@learncard/lca-api-plugin';
 
@@ -14,9 +10,7 @@ const didkit = readFile(
     require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
 );
 
-export type LearnCard = AddPlugin<NetworkLearnCardFromSeed['returnValue'], SimpleSigningPlugin>;
-
-export type LearnCardWithLCA = AddPlugin<LearnCard, LCAPlugin>;
+export type LearnCard = AddPlugin<NetworkLearnCardFromSeed['returnValue'], LCAPlugin>;
 
 export type ApiKeyLearnCard = NetworkLearnCardFromApiKey['returnValue'];
 
@@ -35,7 +29,10 @@ export const getLearnCard = async (
     });
 
     return learnCard.addPlugin(
-        await getSimpleSigningPlugin(learnCard as unknown as Parameters<typeof getSimpleSigningPlugin>[0], 'http://localhost:4200/trpc')
+        await getLCAPlugin(
+            learnCard as unknown as Parameters<typeof getLCAPlugin>[0],
+            'http://localhost:5200/trpc'
+        )
     ) as unknown as LearnCard;
 };
 
@@ -145,41 +142,4 @@ export const initApiKeyLearnCard = async (
     });
 
     return apiLc;
-};
-
-export const getLearnCardWithLCA = async (
-    seed = 'a'.repeat(64),
-    debug = false
-): Promise<LearnCardWithLCA> => {
-    const learnCard = await getLearnCard(seed, undefined, debug);
-
-    const lcaPlugin = await getLCAPlugin(
-        learnCard as unknown as Parameters<typeof getLCAPlugin>[0],
-        'http://localhost:5200/trpc'
-    );
-
-    return (await learnCard.addPlugin(lcaPlugin)) as unknown as LearnCardWithLCA;
-};
-
-export const getLearnCardWithLCAForUser = async (
-    userKey: keyof typeof USERS,
-    debug = false
-): Promise<LearnCardWithLCA> => {
-    const user = USERS[userKey];
-
-    const learnCard = await getLearnCardWithLCA(user.seed, debug);
-
-    try {
-        await learnCard.invoke.createProfile({
-            profileId: user.profileId,
-            displayName: user.displayName,
-            bio: '',
-            shortBio: '',
-        });
-    } catch (error: unknown) {
-        const msg = error instanceof Error ? error.message : String(error);
-        if (!/already exists/i.test(msg)) throw error;
-    }
-
-    return learnCard;
 };

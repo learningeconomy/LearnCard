@@ -2,9 +2,9 @@ import { getClient, getUser } from './helpers/getClient';
 import { SigningAuthorities } from '@accesslayer/signing-authority';
 
 /**
-* More info on Signing Authorities:
-* https://docs.learncard.com/core-concepts/identities-and-keys/signing-authorities 
-**/
+ * More info on Signing Authorities:
+ * https://docs.learncard.com/core-concepts/identities-and-keys/signing-authorities
+ **/
 
 import { client } from '@mongo';
 
@@ -49,10 +49,18 @@ describe('Signing Authority', () => {
         ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
     });
 
-    it('should allow you to create a signing authority', async () => {
-        await expect(
-            userA.clients.fullAuth.signingAuthority.createSigningAuthority({ name: 'mysa' })
-        ).resolves.not.toThrow();
+    it('should return a complete signing authority after creation', async () => {
+        const signingAuthority =
+            await userA.clients.fullAuth.signingAuthority.createSigningAuthority({
+                name: 'mysa',
+            });
+
+        expect(signingAuthority).toMatchObject({
+            name: 'mysa',
+            ownerDid: userA.learnCard.id.did(),
+            did: expect.stringMatching(/^did:/),
+            endpoint: expect.stringContaining('/api'),
+        });
     });
 
     it('should prevent creating a signing authority with the same name', async () => {
@@ -74,6 +82,18 @@ describe('Signing Authority', () => {
         } else {
             expect(sas[0]).toBeDefined();
         }
+    });
+
+    it('should ignore legacy signing authorities without a DID', async () => {
+        await SigningAuthorities.insertOne({
+            ownerDid: userA.learnCard.id.did(),
+            name: 'legacy',
+            seed: 'legacy-seed',
+        });
+
+        await expect(userA.clients.fullAuth.signingAuthority.signingAuthorities()).resolves.toEqual(
+            []
+        );
     });
 
     it('should allow you to authorize your signing authority to issue a boost', async () => {
