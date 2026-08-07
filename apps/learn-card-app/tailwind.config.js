@@ -7,6 +7,10 @@ module.exports = {
         '../../packages/learn-card-base/src/**/*.{js,jsx,ts,tsx}',
     ],
     safelist: [
+        // @learncard/react is not in `content`, but this stylesheet overrides its
+        // bundled palette. Keep the accessible verifier-badge orange generated
+        // here so the app does not fall back to an unstyled badge.
+        'text-orange-800',
         'text-[var(--sdm-c,inherit)]',
         'dark:text-[var(--shiki-dark,var(--sdm-c,inherit))]',
         'bg-[var(--sdm-tbg)]',
