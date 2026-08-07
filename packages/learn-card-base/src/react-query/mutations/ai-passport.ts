@@ -10,6 +10,7 @@ import {
     setAiInsightRefreshError,
     setAiInsightRefreshPending,
 } from '../../stores/aiInsightRefreshStore';
+import { isDemoSessionActive } from '../../stores/demoSessionStore';
 import { getLogger } from '../../logging/logger';
 const log = getLogger('ai-passport');
 
@@ -53,6 +54,11 @@ export const queueAiInsightCredentialRefresh = async ({
     wallet: BespokeLearnCard;
     queryClient: QueryClient;
 }): Promise<void> => {
+    if (isDemoSessionActive()) {
+        log.debug('Skipping AI insight refresh while Sample Wallet mode is active');
+        return;
+    }
+
     if (aiPassportRefreshPromise) {
         logAiInsightRefresh('Refresh already queued; reusing promise');
         return aiPassportRefreshPromise;
