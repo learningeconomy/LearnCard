@@ -74,7 +74,11 @@ vi.mock('./BoostDetailsSideBar', () => ({ default: () => null }));
 vi.mock('./BoostDetailsSideMenu', () => ({ default: () => null }));
 vi.mock('./VerifiedChildCLRFooter', () => ({ default: () => null }));
 vi.mock('../../../boost-endorsements/EndorsementBadge', () => ({ default: () => null }));
-vi.mock('./BoostMediaPreview', () => ({ default: () => null }));
+vi.mock('./BoostMediaPreview', () => ({
+    default: ({ onDotsClick }: MenuProps) => (
+        <div>{onDotsClick && <button type="button">Media options</button>}</div>
+    ),
+}));
 vi.mock('../../../clr-transcript/surfaces/ClrTranscriptFullPage', () => ({
     default: () => null,
 }));
@@ -122,5 +126,26 @@ describe('NonBoostPreview', () => {
 
         expect(screen.getByRole('button', { name: 'Footer options' })).toBeTruthy();
         expect(screen.queryByRole('button', { name: 'Embedded options' })).toBeNull();
+    });
+
+    it('keeps credential options available for media previews', () => {
+        render(
+            <NonBoostPreview
+                credential={credential}
+                verificationItems={[]}
+                categoryType="Achievement"
+                customThumbComponent={null}
+                customBodyCardComponent={null}
+                customFooterComponent={null}
+                customIssueHistoryComponent={null}
+                handleCloseModal={vi.fn()}
+                handleShareBoost={vi.fn()}
+                onDotsClick={vi.fn()}
+                displayType="media"
+                isPreview
+            />
+        );
+
+        expect(screen.getByRole('button', { name: 'Media options' })).toBeTruthy();
     });
 });

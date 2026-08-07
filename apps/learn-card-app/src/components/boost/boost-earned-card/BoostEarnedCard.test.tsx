@@ -17,6 +17,8 @@ const mocks = vi.hoisted(() => ({
     newModal: vi.fn(),
     presentOptions: vi.fn(),
     isBoostCredential: vi.fn(),
+    boostPreview: vi.fn(() => null),
+    nonBoostPreview: vi.fn(() => null),
 }));
 
 vi.mock('learn-card-base', () => ({
@@ -97,10 +99,10 @@ vi.mock('../../clr-transcript', () => ({
 }));
 vi.mock('../boostHelpers', () => ({ getDefaultDisplayType: () => 'badge' }));
 vi.mock('../boostCMS/BoostPreview/BoostPreview', () => ({
-    default: () => null,
+    default: mocks.boostPreview,
 }));
 vi.mock('../boostCMS/BoostPreview/NonBoostPreview', () => ({
-    default: () => null,
+    default: mocks.nonBoostPreview,
 }));
 vi.mock('../boost-options-menu/ShareBoostLink', () => ({ default: () => null }));
 vi.mock('../../familyCMS/FamilyCard/FamilyCard', () => ({ default: () => null }));
@@ -138,6 +140,8 @@ describe('BoostEarnedCard', () => {
         mocks.newModal.mockClear();
         mocks.presentOptions.mockClear();
         mocks.isBoostCredential.mockReturnValue(true);
+        mocks.boostPreview.mockClear();
+        mocks.nonBoostPreview.mockClear();
     });
 
     it('does not expose card options while the credential is loading', () => {
@@ -155,11 +159,11 @@ describe('BoostEarnedCard', () => {
     });
 
     it.each([
-        ['Boost', true],
-        ['non-Boost', false],
+        ['Boost', true, mocks.boostPreview],
+        ['non-Boost', false, mocks.nonBoostPreview],
     ])(
         'keeps preview options active for a %s credential when only the card trigger is hidden',
-        (_credentialKind, isBoost) => {
+        (_credentialKind, isBoost, expectedPreview) => {
             mocks.isBoostCredential.mockReturnValue(isBoost);
             render(
                 <BoostEarnedCard
@@ -180,6 +184,7 @@ describe('BoostEarnedCard', () => {
                 | React.ReactElement<PreviewProps>
                 | undefined;
             expect(preview).toBeDefined();
+            expect(preview!.type).toBe(expectedPreview);
             expect(typeof preview!.props.onDotsClick).toBe('function');
             preview!.props.onDotsClick!();
 
