@@ -19,23 +19,25 @@ import json
 
 from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.contracts_get_consent_flow_contract200_response_contract_read import ContractsGetConsentFlowContract200ResponseContractRead
-from openapi_client.models.storage_resolve200_response_any_of_any_of1_write import StorageResolve200ResponseAnyOfAnyOf1Write
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_contract_contract_write import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite
+from openapi_client.models.storage_resolve200_response_any_of_any_of1_read import StorageResolve200ResponseAnyOfAnyOf1Read
 from typing import Optional, Set
 from typing_extensions import Self
+from pydantic_core import to_jsonable_python
 
 class ContractsGetAllContractRequestsForProfile200ResponseInnerContract(BaseModel):
     """
     ContractsGetAllContractRequestsForProfile200ResponseInnerContract
     """ # noqa: E501
-    read: ContractsGetConsentFlowContract200ResponseContractRead
-    write: StorageResolve200ResponseAnyOfAnyOf1Write
+    read: StorageResolve200ResponseAnyOfAnyOf1Read
+    write: CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite
     uri: Optional[StrictStr]
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["read", "write", "uri"]
 
     model_config = ConfigDict(
-        populate_by_name=True,
+        validate_by_name=True,
+        validate_by_alias=True,
         validate_assignment=True,
         protected_namespaces=(),
     )
@@ -47,8 +49,7 @@ class ContractsGetAllContractRequestsForProfile200ResponseInnerContract(BaseMode
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
-        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
-        return json.dumps(self.to_dict())
+        return json.dumps(to_jsonable_python(self.to_dict()))
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
@@ -103,8 +104,8 @@ class ContractsGetAllContractRequestsForProfile200ResponseInnerContract(BaseMode
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "read": ContractsGetConsentFlowContract200ResponseContractRead.from_dict(obj["read"]) if obj.get("read") is not None else None,
-            "write": StorageResolve200ResponseAnyOfAnyOf1Write.from_dict(obj["write"]) if obj.get("write") is not None else None,
+            "read": StorageResolve200ResponseAnyOfAnyOf1Read.from_dict(obj["read"]) if obj.get("read") is not None else None,
+            "write": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite.from_dict(obj["write"]) if obj.get("write") is not None else None,
             "uri": obj.get("uri")
         })
         # store additional fields in additional_properties

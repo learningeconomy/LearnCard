@@ -56,6 +56,7 @@ class TestStorageResolve200ResponseAnyOfAnyOfAnyOfAnyOf1VerifiableCredential(uni
                 status = None,
                 terms_of_use = None,
                 evidence = None,
+                render_method = None,
                 proof = None
             )
         else:
