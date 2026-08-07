@@ -1,5 +1,12 @@
 # @learncard/meta-mask-snap
 
+## 1.0.125
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.4.29
+
 ## 1.0.124
 
 ### Patch Changes
