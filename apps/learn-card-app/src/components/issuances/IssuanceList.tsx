@@ -151,7 +151,10 @@ export const IssuanceList: React.FC<IssuanceListProps> = ({
             </div>
 
             {showExport && showExportDialog && integrationId && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div
+                    data-modal-root="centered"
+                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 [--modal-gutter:1rem]"
+                >
                     <ExportDialog
                         integrationId={integrationId}
                         integrationName={integrationName ?? integrationId}

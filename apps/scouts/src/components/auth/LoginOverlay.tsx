@@ -52,6 +52,7 @@ export const LoginOverlay: React.FC<{ isOpen: boolean }> = ({ isOpen }) => {
             }`}
         >
             <IonRow
+                data-modal-root
                 className="h-full w-full flex items-center justify-center text-white text-2xl"
                 style={{ backgroundColor: '#622599' }}
             >

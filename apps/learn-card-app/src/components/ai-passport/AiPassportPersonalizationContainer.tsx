@@ -20,7 +20,7 @@ export const AiPassportPersonalizationContainer: React.FC = () => {
                     <AiSessionLoader overrideText={m['aiPersonalization.loading']()} showUserImg />
                 )}
 
-                <section className="h-full bg-[rgba(53,62,100,0.3)] backdrop-blur-[2px] ion-padding overflow-y-scroll pb-[130px] safe-area-top-margin">
+                <section className="h-full bg-[rgba(53,62,100,0.3)] backdrop-blur-[2px] ion-padding overflow-y-scroll pb-[130px]">
                     <AiPassportPersonalizationFormHeader />
                     <AiPassportPersonalizationQuestions
                         personalizedAnswers={personalizedAnswers}

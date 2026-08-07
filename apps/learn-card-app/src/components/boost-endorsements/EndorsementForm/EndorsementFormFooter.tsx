@@ -6,7 +6,6 @@ import { IonFooter } from '@ionic/react';
 import { EndorsmentThumbWithCircle } from 'learn-card-base/svgs/EndorsementThumb';
 
 import { useModal } from 'learn-card-base';
-import { useSafeArea } from 'learn-card-base/hooks/useSafeArea';
 import * as m from '../../../paraglide/messages.js';
 
 const EndorsementFormFooter: React.FC<{
@@ -17,10 +16,7 @@ const EndorsementFormFooter: React.FC<{
     handleEndorsementSubmit?: () => void;
 }> = ({ isDisabled, isLoading, className, showDeclineButton = false, handleEndorsementSubmit }) => {
     const { closeModal } = useModal();
-    const safeArea = useSafeArea();
-
-    let bottomPosition = safeArea.bottom;
-    if (Capacitor.isNativePlatform()) bottomPosition = 20 + safeArea.bottom;
+    const bottomPosition = Capacitor.isNativePlatform() ? 20 : 0;
 
     let iconStyles = '';
     if (isDisabled) iconStyles = 'text-grayscale-300';
@@ -31,7 +27,7 @@ const EndorsementFormFooter: React.FC<{
             mode="ios"
             className={`w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 left-0 bg-white !max-h-[100px] ${className}`}
             style={{
-                bottom: `${bottomPosition}px`,
+                bottom: `calc(${bottomPosition}px + var(--modal-safe-area-bottom, 0px))`,
             }}
         >
             <div className="w-full flex items-center justify-center">

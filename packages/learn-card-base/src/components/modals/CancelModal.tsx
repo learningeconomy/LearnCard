@@ -1,6 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import { SafeArea } from 'capacitor-plugin-safe-area';
-import { useSafeArea } from 'learn-card-base/hooks/useSafeArea';
+import React from 'react';
 import useModal from './useModal';
 
 import { ModalContainer } from './types/Modals';
@@ -15,7 +13,6 @@ interface CancelModalOptions {
 
 export const CancelModal: ModalContainer = ({ component, options, open }) => {
     const { closeModal } = useModal();
-    const safeArea = useSafeArea();
     const t = useT();
     const optionalClass = options?.className || 'd-c-modal';
     const hideButton = typeof options?.hideButton === 'boolean' ? options.hideButton : false;
@@ -39,9 +36,6 @@ export const CancelModal: ModalContainer = ({ component, options, open }) => {
             className={`${optionalClass} ${open ? 'open' : 'closed'} ${
                 options?.hideDimmer ? 'hide-dimmer' : ''
             }`}
-            style={{
-                paddingBottom: `${safeArea.bottom + 10}px`,
-            }}
         >
             {!options?.hideDimmer && (
                 <button

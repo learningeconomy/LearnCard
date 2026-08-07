@@ -217,10 +217,7 @@ export const CheckListUploadRawVC: React.FC = () => {
 
     return (
         <div className="h-full relative bg-grayscale-100">
-            <IonHeader
-                color="light"
-                className="rounded-b-[30px] safe-area-top-margin overflow-hidden shadow-md "
-            >
+            <IonHeader color="light" className="rounded-b-[30px] overflow-hidden shadow-md">
                 <IonToolbar color="light" className="text-white px-4 !py-4">
                     <div className="flex items-center justify-normal p-2">
                         <div className="flex items-center gap-[10px]">

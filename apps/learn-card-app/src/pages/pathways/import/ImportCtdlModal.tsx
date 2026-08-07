@@ -135,6 +135,7 @@ const OverlayFrame: React.FC<{
     // overflow scroll couldn't reach it. Classic Tailwind modal bug.
     <PathwayPortal>
         <motion.div
+            data-modal-root="centered"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -158,18 +159,16 @@ const OverlayFrame: React.FC<{
                            bg-white/95 backdrop-blur-xl
                            sm:rounded-[28px] shadow-2xl shadow-grayscale-900/20
                            border border-white/60"
-                    style={{ paddingTop: 'env(safe-area-inset-top)' }}
                 >
                     <button
                         type="button"
                         onClick={onClose}
                         aria-label={m['common.close']()}
-                        className="sticky float-right mr-3 w-10 h-10 rounded-full
+                        className="sticky top-3 float-right mr-3 w-10 h-10 rounded-full
                                bg-white/80 hover:bg-white hover:shadow-md
                                border border-grayscale-200
                                flex items-center justify-center
                                transition-all duration-200 z-10"
-                        style={{ top: 'max(0.75rem, calc(env(safe-area-inset-top) + 0.5rem))' }}
                     >
                         <IonIcon icon={closeOutline} className="text-grayscale-700 text-xl" />
                     </button>

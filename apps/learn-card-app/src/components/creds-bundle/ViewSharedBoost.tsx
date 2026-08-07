@@ -252,7 +252,10 @@ const ViewSharedBoost: React.FC<{
     }
 
     return (
-        <IonPage>
+        <IonPage
+            data-modal-insets="content-bottom"
+            className="bg-gradient-to-b from-grayscale-500 to-grayscale-900"
+        >
             {!isLoggedIn && (
                 <IonHeader color="light">
                     <IonToolbar className="flex">

@@ -51,6 +51,33 @@ ion-modal.center-modal {
     }
 }
 
+// Centered Ionic cards already sit inside viewport gutters. Keep device insets
+// out of the card itself while still letting full-bleed Ionic modals use the
+// universal modal rules from learn-card-base.
+ion-modal.center-modal,
+.show-modal.boost-cms-appearance-modal,
+ion-modal.user-profile-modal,
+ion-modal.delete-user-modal,
+ion-modal.add-contact-modal,
+ion-modal.boost-confirmation-prompt,
+ion-modal.boost-logged-out-confirmation-prompt,
+ion-modal.user-qrcode-modal,
+ion-modal.network-accept-modal,
+ion-modal.network-reject-modal,
+ion-modal.push-notification-prompt-modal,
+ion-modal.location-search-modal {
+    --modal-safe-area-top: 0px;
+    --modal-safe-area-bottom: 0px;
+    --ion-safe-area-top: 0px;
+    --ion-safe-area-bottom: 0px;
+}
+// Breakpoint modals are bottom sheets: reserve only the home-indicator inset.
+ion-modal.mobile-modal,
+ion-modal.account-selector-modal {
+    --modal-safe-area-top: 0px;
+    --ion-safe-area-top: 0px;
+}
+
 ion-modal.mobile-modal {
     &::part(content) {
         border-top-right-radius: 24px;
@@ -212,13 +239,8 @@ ion-modal.center-modal.smart-resume-prompt-modal {
     }
 }
 
-.vc-preview-modal-safe-area {
-    padding-top: calc(constant(safe-area-inset-top) + 0px);
-    padding-top: calc(env(safe-area-inset-top) + 0px);
-}
-
 .safe-area-top-margin {
-    margin-top: calc(env(safe-area-inset-top) + 0px);
+    margin-top: var(--ion-safe-area-top, env(safe-area-inset-top, 0px));
 }
 
 .app-bar-top {

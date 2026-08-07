@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, waitFor } from '@testing-library/react';
+import { fireEvent, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { VC } from '@learncard/types';
@@ -28,7 +28,9 @@ vi.mock('swiper/modules', () => ({ Navigation: {} }));
 vi.mock('@ionic/react', () => ({
     IonContent: ({ children }: React.PropsWithChildren) => <main>{children}</main>,
     IonFooter: ({ children }: React.PropsWithChildren) => <footer>{children}</footer>,
-    IonPage: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
+    IonPage: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+        <div {...props}>{children}</div>
+    ),
 }));
 
 vi.mock('learn-card-base', () => ({
@@ -74,17 +76,27 @@ vi.mock('./helpers/MediaCollapseButton', () => ({ default: () => null }));
 vi.mock('./helpers/MediaLoader', () => ({ default: () => <div>Loading document</div> }));
 vi.mock('../../../svgs/SlimCaretLeft', () => ({ default: () => null }));
 vi.mock('../../../svgs/SlimCaretRight', () => ({ default: () => null }));
-vi.mock('learn-card-base/components/boost/boostFooter/BoostFooter', () => ({
-    default: () => null,
-}));
-// Surface footerProps so tests can assert on which footer controls are offered.
+// Surface the footer contract while preserving the full-screen interaction used by this suite.
 vi.mock('learn-card-base/components/boost/boostFooter/BoostFooterLayout', () => ({
-    default: ({ children, footerProps }: any) => (
+    default: ({
+        children,
+        footerProps,
+    }: React.PropsWithChildren<{
+        footerProps?: {
+            showFullScreen?: boolean;
+            handleFullScreen?: () => void;
+        };
+    }>) => (
         <div
             data-testid="footer-layout"
             data-show-full-screen={String(!!footerProps?.showFullScreen)}
         >
             {children}
+            {footerProps?.showFullScreen && (
+                <button type="button" onClick={footerProps.handleFullScreen}>
+                    View full screen
+                </button>
+            )}
         </div>
     ),
 }));
@@ -140,6 +152,27 @@ describe('BoostMediaPreview', () => {
             },
         });
     });
+    it('transfers bottom inset ownership when the footer is hidden', () => {
+        const { container, getByRole } = render(
+            <BoostMediaPreview
+                credential={{ attachments: [] } as unknown as VC}
+                openDetailsSideModal={vi.fn()}
+                handleShareBoost={vi.fn()}
+                onDotsClick={vi.fn()}
+                verifications={[]}
+            />
+        );
+
+        const modalRoot = container.firstElementChild;
+
+        expect(modalRoot).toHaveAttribute('data-modal-insets', 'content-bottom');
+        expect(modalRoot).toHaveClass('bg-grayscale-800');
+
+        fireEvent.click(getByRole('button', { name: 'View full screen' }));
+
+        expect(modalRoot).not.toHaveAttribute('data-modal-insets');
+    });
+
     it('previews an embedded PDF attachment without sending it to Filestack', async () => {
         // Resolver behavior is shared by attachment and raw-artifact sources.
 

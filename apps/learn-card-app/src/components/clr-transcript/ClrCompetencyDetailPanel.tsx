@@ -133,7 +133,7 @@ const ClrCompetencyDetailPanel: React.FC<{
     );
 
     return (
-        <div className="space-y-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto safe-area-top-margin">
+        <div className="space-y-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto">
             <div className="bg-white rounded-b-[15px] overflow-hidden shadow-md px-6 py-5">
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex-1 flex items-center gap-2 min-w-0">

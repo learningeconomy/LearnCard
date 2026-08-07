@@ -49,7 +49,7 @@ const ConsentFlowComingSoon: React.FC<ConsentFlowComingSoonProps> = ({
     const brandingConfig = useBrandingConfig();
 
     return (
-        <section className="w-full flex flex-col gap-[20px] items-center px-[20px] py-[30px] bg-white shadow-bottom rounded-[24px] max-w-[350px] disable-scrollbars safe-area-top-margin">
+        <section className="w-full flex flex-col gap-[20px] items-center px-[20px] py-[30px] bg-white shadow-bottom rounded-[24px] max-w-[350px] disable-scrollbars">
             <div className="w-full flex items-center justify-center pt-2">
                 <h6 className="tracking-[12px] text-base font-bold text-black">
                     {brandingConfig?.name}

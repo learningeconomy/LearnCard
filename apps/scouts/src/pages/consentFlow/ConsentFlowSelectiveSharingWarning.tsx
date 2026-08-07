@@ -10,7 +10,7 @@ const ConsentFlowSelectiveSharingWarning: React.FC<ConsentFlowSelectiveSharingWa
 }) => {
     const { closeModal } = useModal();
     return (
-        <section className="max-h-full py-[5px] overflow-y-auto disable-scrollbars safe-area-top-margin">
+        <section className="max-h-full py-[5px] overflow-y-auto disable-scrollbars">
             <section className="w-full flex flex-col gap-[20px] items-center px-[20px] py-[30px] bg-white shadow-bottom rounded-[24px] max-w-[350px]">
                 <header className="flex flex-col gap-[10px] items-center">
                     <h3 className="text-grayscale-900 text-xl font-poppins font-[400] ">

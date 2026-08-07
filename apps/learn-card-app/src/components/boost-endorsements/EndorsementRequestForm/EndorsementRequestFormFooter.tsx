@@ -4,7 +4,6 @@ import { Capacitor } from '@capacitor/core';
 import { IonFooter } from '@ionic/react';
 
 import { ModalTypes, useModal } from 'learn-card-base';
-import { useSafeArea } from 'learn-card-base/hooks/useSafeArea';
 import * as m from '../../../paraglide/messages.js';
 
 const EndorsementRequestFormFooter: React.FC<{
@@ -17,17 +16,14 @@ const EndorsementRequestFormFooter: React.FC<{
         desktop: ModalTypes.Right,
         mobile: ModalTypes.Right,
     });
-    const safeArea = useSafeArea();
-
-    let bottomPosition = safeArea.bottom;
-    if (Capacitor.isNativePlatform()) bottomPosition = 20 + safeArea.bottom;
+    const bottomPosition = Capacitor.isNativePlatform() ? 20 : 0;
 
     return (
         <IonFooter
             mode="ios"
             className={`w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 left-0 bg-white !max-h-[100px] ${className}`}
             style={{
-                bottom: `${bottomPosition}px`,
+                bottom: `calc(${bottomPosition}px + var(--modal-safe-area-bottom, 0px))`,
             }}
         >
             <div className="w-full flex items-center justify-center">

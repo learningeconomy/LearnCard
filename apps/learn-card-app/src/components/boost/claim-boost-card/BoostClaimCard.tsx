@@ -500,7 +500,10 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     }
 
     return (
-        <IonPage className="flex items-center justify-center boost-cms-preview">
+        <IonPage
+            data-modal-insets="content-bottom"
+            className="flex items-center justify-center boost-cms-preview"
+        >
             <BoostFooterLayout
                 contentOwnsScroll
                 footerProps={{
@@ -528,7 +531,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                     <section className="flex flex-1 h-full overflow-y-auto items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0">
                         <section className="flex flex-col items-center justify-center w-full">
                             <section
-                                className={`boost-preview-display w-full safe-area-top-margin max-h-full disable-scrollbars ${
+                                className={`boost-preview-display w-full max-h-full disable-scrollbars ${
                                     shouldUseHostCardPadding ? 'px-6' : ''
                                 } ${Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'}`}
                             >
@@ -547,7 +550,10 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                     </>
                                 )}
                                 {selectedImage && (
-                                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                                    <div
+                                        data-modal-root="centered"
+                                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                                    >
                                         <div className="relative max-w-full max-h-[80vh]">
                                             <img
                                                 src={selectedImage}

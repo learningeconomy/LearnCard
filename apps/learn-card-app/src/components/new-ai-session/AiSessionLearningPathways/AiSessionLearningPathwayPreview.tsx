@@ -71,7 +71,7 @@ export const AiSessionLearningPathwayPreview: React.FC<{
 
     return (
         <div
-            className="h-full w-full flex flex-col items-start justify-center safe-area-top-margin"
+            className="h-full w-full flex flex-col items-start justify-center"
             style={{ ...appStyles }}
         >
             {showLoader && (

@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import useModal from './useModal';
-import { useSafeArea } from '../../hooks/useSafeArea';
 
 import { ModalContainer } from './types/Modals';
 import GenericErrorBoundary from '../generic/GenericErrorBoundary';
@@ -14,7 +13,6 @@ const BottomSheetModal: ModalContainer = ({ component, options, open }) => {
     const [isDragging, setIsDragging] = useState(false);
     const startYRef = useRef<number | null>(null);
     const dragOffsetRef = useRef(0);
-    const { bottom: safeAreaBottom } = useSafeArea();
 
     const optionalClass = options?.className || '';
     const sectionClass = options?.sectionClassName || '';
@@ -85,21 +83,12 @@ const BottomSheetModal: ModalContainer = ({ component, options, open }) => {
         event.currentTarget.setPointerCapture(event.pointerId);
     };
 
-    // Push the safe-area inset onto the <section> rather than the outer <aside>.
-    // The aside is `justify-content: flex-end`, so padding-bottom there would push
-    // the white sheet UP by the inset (~34px on iPhones with a home indicator),
-    // leaving the dimmer visible underneath. Putting the padding on the section
-    // lets its white background extend all the way to the device bottom while
-    // still keeping interactive content above the home indicator.
-    const sectionStyle: React.CSSProperties = {
-        paddingBottom: `${safeAreaBottom}px`,
-        ...(isDragging
-            ? {
-                  transform: `translateY(${dragOffset}px)`,
-                  transition: 'none',
-              }
-            : null),
-    };
+    const sectionStyle: React.CSSProperties | undefined = isDragging
+        ? {
+              transform: `translateY(${dragOffset}px)`,
+              transition: 'none',
+          }
+        : undefined;
 
     return (
         <aside

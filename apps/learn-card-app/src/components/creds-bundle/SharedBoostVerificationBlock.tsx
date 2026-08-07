@@ -121,7 +121,7 @@ const SharedBoostVerificationBlock: React.FC<{
             ? 'share-page-mobile-loggedIn-verification-block'
             : 'share-page-mobile-verification-block';
         return (
-            <div className={`w-full  vc-preview-modal-safe-area ${loggedInStyles}`}>
+            <div className={`w-full ${loggedInStyles}`}>
                 <div className="w-full flex items-center justify-center">
                     <div className="flex items-center justify-between w-[40%] min-w-[360px] mb-[10px] bg-white px-4 py-2 rounded-[12px]">
                         <div>

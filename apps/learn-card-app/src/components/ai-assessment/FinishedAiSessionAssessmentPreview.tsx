@@ -99,7 +99,7 @@ export const FinishedAiSessionAssessmentPreview: React.FC<{
 
     return (
         <div
-            className="h-full w-full flex flex-col items-center justify-center safe-area-top-margin"
+            className="h-full w-full flex flex-col items-center justify-center"
             style={{ ...appStyles }}
         >
             {showLoader && (

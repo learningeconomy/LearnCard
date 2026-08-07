@@ -105,7 +105,8 @@ const ConsentFlowCredFrontDoor: React.FC<ConsentFlowCredFrontDoorProps> = ({
 
     return (
         <div
-            className="h-full w-full bg-cover bg-grayscale-800"
+            data-modal-insets="content-bottom"
+            className="relative h-full w-full bg-cover bg-grayscale-800"
             style={{
                 backgroundImage: showBgImage
                     ? `url(${boost?.display?.backgroundImage})`
@@ -113,7 +114,7 @@ const ConsentFlowCredFrontDoor: React.FC<ConsentFlowCredFrontDoorProps> = ({
                 backgroundColor: boost?.display?.backgroundColor,
             }}
         >
-            <div className="h-full w-full bg-black bg-opacity-20 backdrop-blur-[5px] flex items-center justify-center">
+            <div className="absolute inset-x-0 bottom-0 top-[calc(-1*var(--modal-safe-area-top,0px))] pt-[var(--modal-safe-area-top,0px)] bg-black bg-opacity-20 backdrop-blur-[5px] flex items-center justify-center">
                 {isLoading && (
                     <BoostLoader
                         darkBackground
@@ -142,7 +143,10 @@ const ConsentFlowCredFrontDoor: React.FC<ConsentFlowCredFrontDoorProps> = ({
                                     claimBtnText: hasAlreadyConsented ? 'Accepted' : undefined,
                                 }}
                             >
-                                <section className="min-h-full w-full pt-[calc(30px+env(safe-area-inset-top))] boost-preview-display">
+                                {/* Renders both as a route and inside a full-screen modal.
+                                    Not `env()`: modal.scss zeroes --ion-safe-area-top inside
+                                    modal roots, so `env()` would double the inset there. */}
+                                <section className="min-h-full w-full pt-[calc(30px+var(--ion-safe-area-top,0px))] boost-preview-display">
                                     <VCDisplayCardWrapper2
                                         credential={boost}
                                         checkProof={false}

@@ -12,7 +12,7 @@ export const AiPassportAppProfileHeader: React.FC<{
     const appName = app?.name ?? appMetaData?.trackName;
 
     return (
-        <div className="ion-padding shadow-header safe-area-top-margin">
+        <div className="ion-padding shadow-header">
             <div className="flex items-center justify-normal ion-padding">
                 <div className="h-[65px] w-[65px] mr-2">
                     <img

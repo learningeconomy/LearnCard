@@ -75,7 +75,7 @@ const ClrCourseDetailPanel: React.FC<{
     const allowedGrades = primaryResult?.allowedValue?.value ?? [];
 
     return (
-        <div className="space-y-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto safe-area-top-margin">
+        <div className="space-y-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto">
             {/* Header */}
             <div className="bg-white rounded-b-[30px] overflow-hidden shadow-md px-6 py-5">
                 <div className="flex items-start justify-between gap-3">

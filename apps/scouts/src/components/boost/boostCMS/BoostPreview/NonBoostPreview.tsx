@@ -110,7 +110,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     const showBackground = bgImage && isCertificate;
 
     return (
-        <IonPage>
+        <IonPage data-modal-insets="content-bottom">
             <IonContent
                 fullscreen
                 className={`flex items-center justify-center ion-padding boost-cms-preview transition-colors [&::part(scroll)]:px-0 gradient-mask-b-90`}
@@ -118,12 +118,10 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                 <IonRow
                     className={`flex flex-col items-center justify-center overflow-x-auto pb-32 ${boostPreviewWrapperCustomClass} ${
                         shouldUseHostCardPadding ? 'px-1' : ''
-                    } ${isCertificate ? 'pt-14 md:pt-20' : ''} ${
-                        isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''
-                    }`}
+                    } ${isCertificate ? 'pt-14 md:pt-20' : ''} ${isID ? '!px-0 mt-[20px]' : ''}`}
                 >
                     <section className={`w-full ${shouldUseHostCardPadding ? 'px-6' : ''}`}>
-                        <div className="flex items-center justify-center mb-2 vc-preview-modal-safe-area" />
+                        <div className="flex items-center justify-center mb-2" />
                         <VCDisplayCardWrapper2
                             credential={credential}
                             issueeOverride={issueeOverride}

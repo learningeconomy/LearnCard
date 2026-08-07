@@ -37,7 +37,7 @@ const BoostShareableQRCode: React.FC<BoostShareableQRCodeProps> = ({
     const isFamily = state?.basicInfo?.type === BoostCategoryOptionsEnum.family;
 
     return (
-        <IonRow className="flex flex-col items-center justify-center vc-preview-modal-safe-area">
+        <IonRow className="flex flex-col items-center justify-center">
             <div className="bg-white w-full max-w-[400px] min-w-[320px] rounded-[20px] shadow-3xl pt-3 mt-8 relative">
                 {showCloseButton && handleCloseModal && (
                     <button

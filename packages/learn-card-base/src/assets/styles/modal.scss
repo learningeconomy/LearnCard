@@ -1,5 +1,147 @@
 @import './fonts';
 
+// One modal layer owns device insets. Content inside that layer sees zeroed
+// Ionic safe-area variables, so it cannot accidentally apply the inset twice.
+//
+// `data-modal-root` marks the element that owns insets for a standalone overlay:
+//   - Full-bleed surface: bare `data-modal-root`.
+//   - Centered card backdrop: `data-modal-root="centered"`; this takes the
+//     larger of the device inset and the existing modal gutter.
+//   - Bottom sheet: `data-modal-root="bottom-sheet"`; bottom inset only.
+//   - `data-modal-insets="content-bottom"` leaves the bottom inset to content.
+//   - `data-modal-insets="none"` leaves both insets to Ionic content.
+ion-modal,
+#full-screen-modal,
+#right-modal,
+#center-modal,
+#cancel-modal,
+.freeform-modal,
+[data-modal-root] {
+    --modal-safe-area-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+    --modal-safe-area-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+}
+
+[data-modal-root='bottom-sheet'] {
+    --modal-safe-area-top: 0px;
+}
+
+[data-modal-insets='content-bottom'] {
+    --modal-safe-area-bottom: 0px;
+}
+
+[data-modal-insets='none'] {
+    --modal-safe-area-top: 0px;
+    --modal-safe-area-bottom: 0px;
+}
+
+// Preserve each shared content root's existing layout padding while moving the
+// transparent inset border onto the element that paints the visible surface.
+// This prevents the white/blurred bands produced when the outer modal section
+// owned the border but an inner root owned the background.
+ion-modal
+    > :first-child:not(ion-header):not(ion-content):not(.ion-delegate-host):not([data-modal-root]),
+ion-modal
+    > .ion-delegate-host
+    > :first-child:not(ion-header):not(ion-content):not([data-modal-root]),
+#full-screen-modal > section > :first-child:not([data-modal-root]),
+#right-modal > section > :first-child:not([data-modal-root]),
+.freeform-modal > .freeform-section > :first-child:not([data-modal-root]) {
+    box-sizing: border-box;
+    border-top: var(--modal-safe-area-top) solid transparent !important;
+    background-origin: border-box !important;
+}
+
+ion-modal
+    > :last-child:not(ion-footer):not(ion-content):not(.ion-delegate-host):not([data-modal-root]),
+ion-modal
+    > .ion-delegate-host
+    > :last-child:not(ion-footer):not(ion-content):not([data-modal-root]),
+#full-screen-modal > section > :last-child:not([data-modal-root]),
+#right-modal > section > :last-child:not([data-modal-root]),
+.freeform-modal > .freeform-section > :last-child:not([data-modal-root]) {
+    box-sizing: border-box;
+    border-bottom: var(--modal-safe-area-bottom) solid transparent !important;
+    background-origin: border-box !important;
+}
+
+// IonContent paints and scrolls inside its shadow root. Add the inset to the
+// scroll part's resolved padding so `ion-padding` and custom `--padding-*`
+// values are preserved instead of replaced.
+ion-modal > ion-content:first-child::part(scroll),
+ion-modal > .ion-delegate-host > ion-content:first-child::part(scroll) {
+    padding-top: calc(
+        var(--padding-top, 0px) + var(--offset-top, 0px) + var(--modal-safe-area-top)
+    );
+}
+
+ion-modal > ion-content:last-child::part(scroll),
+ion-modal > .ion-delegate-host > ion-content:last-child::part(scroll) {
+    padding-bottom: calc(
+        var(--padding-bottom, 0px) + var(--keyboard-offset, 0px) + var(--offset-bottom, 0px) +
+            var(--modal-safe-area-bottom)
+    );
+}
+// Full-bleed custom roots own their background. Compose the device inset with
+// any declared root padding instead of replacing the root's visible border.
+[data-modal-root]:not([data-modal-root='centered']) {
+    box-sizing: border-box;
+    padding-top: calc(var(--modal-root-padding-top, 0px) + var(--modal-safe-area-top)) !important;
+    padding-bottom: calc(
+        var(--modal-root-padding-bottom, 0px) + var(--modal-safe-area-bottom)
+    ) !important;
+    background-origin: border-box !important;
+}
+
+[data-modal-root='centered'] {
+    box-sizing: border-box;
+    padding-top: max(var(--modal-safe-area-top), var(--modal-gutter, 0px)) !important;
+    padding-bottom: max(var(--modal-safe-area-bottom), var(--modal-gutter, 0px)) !important;
+}
+
+// The content owner has already reserved the device inset. Zero Ionic's
+// inherited variables at that boundary so nested content cannot add it again.
+// Opted-out roots retain the Ionic variables for their own layout; roots whose
+// footer owns the bottom inset still let the shared layer own the top.
+ion-modal
+    > :not(ion-header):not(ion-footer):not(.ion-delegate-host):not([data-modal-insets='none']),
+ion-modal > .ion-delegate-host > :not(ion-header):not(ion-footer):not([data-modal-insets='none']),
+#full-screen-modal > section > *:not([data-modal-insets='none']),
+#right-modal > section > *:not([data-modal-insets='none']),
+#center-modal > section > *:not([data-modal-insets='none']),
+#cancel-modal > section > *:not([data-modal-insets='none']),
+.freeform-modal > .freeform-section > *:not([data-modal-insets='none']),
+[data-modal-root]:not([data-modal-insets='none']) > * {
+    --ion-safe-area-top: 0px;
+}
+
+ion-modal
+    > :not(ion-header):not(ion-footer):not(.ion-delegate-host):not([data-modal-insets='none']):not(
+        [data-modal-insets='content-bottom']
+    ),
+ion-modal
+    > .ion-delegate-host
+    > :not(ion-header):not(ion-footer):not([data-modal-insets='none']):not(
+        [data-modal-insets='content-bottom']
+    ),
+#full-screen-modal
+    > section
+    > *:not([data-modal-insets='none']):not([data-modal-insets='content-bottom']),
+#right-modal
+    > section
+    > *:not([data-modal-insets='none']):not([data-modal-insets='content-bottom']),
+#center-modal
+    > section
+    > *:not([data-modal-insets='none']):not([data-modal-insets='content-bottom']),
+#cancel-modal
+    > section
+    > *:not([data-modal-insets='none']):not([data-modal-insets='content-bottom']),
+.freeform-modal
+    > .freeform-section
+    > *:not([data-modal-insets='none']):not([data-modal-insets='content-bottom']),
+[data-modal-root]:not([data-modal-insets='none']):not([data-modal-insets='content-bottom']) > * {
+    --ion-safe-area-bottom: 0px;
+}
+
 #center-modal.new-post-overlay {
     overflow: hidden;
 
@@ -205,7 +347,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding-bottom: 0px;
+    padding-bottom: 0;
     background-color: rgba(0, 0, 0, 0.1);
     background: var(--modal-bg);
     background-position: center !important;
@@ -221,7 +363,6 @@
     bottom: 0;
     transition: all 300ms ease;
     animation: center-modal-background-intro 300ms normal none ease-out;
-    padding-top: calc(env(safe-area-inset-top) + 0px);
 
     &.closed {
         background-color: transparent;
@@ -464,7 +605,7 @@
     display: flex;
     justify-content: flex-end;
     z-index: 100000;
-    padding-bottom: 0px;
+    padding-bottom: 0;
     background-color: rgba(0, 0, 0, 0.7);
     position: fixed;
     height: 100%;
@@ -593,13 +734,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding-bottom: 0px;
+    box-sizing: border-box;
+    padding-top: var(--modal-safe-area-top) !important;
+    padding-bottom: var(--modal-safe-area-bottom) !important;
     background-color: rgba(0, 0, 0, 0.1);
     backdrop-filter: blur(10px);
     position: fixed;
     height: 100%;
     width: 100vw;
-    top: env(safe-area-inset-top);
+    top: 0;
     left: 0;
     right: 0;
     bottom: 0;
@@ -762,7 +905,10 @@
     align-items: center;
     gap: 0.62rem;
     justify-content: flex-end;
+    box-sizing: border-box;
     padding: 0.62rem;
+    padding-top: max(0.62rem, var(--modal-safe-area-top)) !important;
+    padding-bottom: max(0.62rem, var(--modal-safe-area-bottom)) !important;
     background-color: rgba(0, 0, 0, 0.1);
     backdrop-filter: blur(10px);
     position: fixed;
@@ -771,7 +917,6 @@
     left: 0;
     right: 0;
     bottom: 0;
-    // padding-bottom: calc(50px + env(safe-area-inset-bottom)); // dynamically set inside <CancelModal />
     transition: all 300ms ease;
     animation: center-modal-background-intro 300ms normal none ease-out;
 
@@ -924,6 +1069,8 @@
 
 #cancel-modal.bottom-sheet-modal {
     padding: 0;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
     justify-content: flex-end;
 
     & > .center-modal-dimmer {
@@ -938,6 +1085,8 @@
         max-width: none;
         max-height: 100vh;
         overflow: hidden;
+        box-sizing: border-box;
+        padding-bottom: var(--modal-safe-area-bottom) !important;
         padding-top: 8px;
         border-radius: 20px 20px 0 0;
         box-shadow: 0 0 2px 0 rgba(0, 0, 0, 0.5);
@@ -1062,6 +1211,7 @@
         z-index: 1;
         width: 100%;
         max-width: 600px;
+        box-sizing: border-box;
         max-height: 100%;
         overflow-y: auto;
         -ms-overflow-style: none;
@@ -1338,8 +1488,6 @@
 }
 
 #full-screen-modal.modal-full-bg {
-    margin-top: calc(0px + env(safe-area-inset-top));
-
     .full-screen-modal-dimmer {
         background-color: #efefef;
         opacity: 0.7;

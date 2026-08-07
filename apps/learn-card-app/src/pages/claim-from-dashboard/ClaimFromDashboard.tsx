@@ -483,7 +483,7 @@ const ClaimFromDashboard: React.FC = () => {
             />
             <IonContent fullscreen color="grayscale-100">
                 <div
-                    className={`pb-[100px] vc-preview-modal-safe-area h-full overflow-y-auto ${previewHorizontalPaddingClass}`}
+                    className={`pb-[100px] h-full overflow-y-auto ${previewHorizontalPaddingClass}`}
                     style={{
                         backgroundImage: `url(${credBackground})`,
                         backgroundSize: 'cover',

@@ -112,13 +112,13 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     }
 
     return (
-        <IonPage>
+        <IonPage data-modal-insets="content-bottom">
             <IonContent
                 fullscreen
                 className={`flex items-center justify-center ion-padding boost-cms-preview transition-colors [&::part(scroll)]:px-0 gradient-mask-b-80`}
             >
                 <IonRow
-                    className={`flex flex-col items-center justify-center overflow-x-auto safe-area-top-margin pb-32 ${
+                    className={`flex flex-col items-center justify-center overflow-x-auto pb-32 ${
                         shouldUseHostCardPadding ? 'px-6' : ''
                     }`}
                 >
@@ -142,7 +142,10 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                             />
                         )}
                         {selectedImage && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                            <div
+                                data-modal-root="centered"
+                                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                            >
                                 <div className="relative max-w-full max-h-[80vh]">
                                     <img
                                         src={selectedImage}

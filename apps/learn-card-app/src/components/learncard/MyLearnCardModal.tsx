@@ -631,10 +631,7 @@ const MyLearnCardModal: React.FC<MyLearnCardModalProps> = ({
                 than the modal, align-items:center pushes the top above the scroll
                 origin where it can't be reached, clipping it. Top-align so it's
                 always scrollable from the top. */}
-            <section
-                className="min-h-[calc(100%-85px)] px-[20px] pb-[20px] flex items-start justify-center"
-                style={{ paddingTop: 'calc(env(safe-area-inset-top) + 20px)' }}
-            >
+            <section className="min-h-[calc(100%-85px)] px-[20px] pt-[20px] pb-[20px] flex items-start justify-center">
                 <div className="max-w-[335px] mx-auto rounded-[15px] overflow-hidden shadow-box-bottom">
                     <div className="bg-white bg-opacity-70 backdrop-blur-[10px]">
                         <div className="p-[15px] flex flex-col gap-[10px]">

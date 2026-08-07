@@ -347,9 +347,8 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     }
 
     return (
-        <IonPage>
+        <IonPage data-modal-insets="content-bottom" className={bgColor}>
             <BoostFooterLayout
-                className={bgColor}
                 contentOwnsScroll
                 footerProps={{
                     handleClose: handleCloseModal,
@@ -365,12 +364,12 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                         <div
                             className={`w-full ${previewWrapperPaddingClass} flex flex-col items-center justify-center overflow-x-auto ${boostPreviewWrapperCustomClass} ${
                                 isCertificate ? 'certificate-display-zoom' : ''
-                            } ${isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''}`}
+                            } ${isID ? '!px-0 mt-[20px]' : ''}`}
                         >
                             <section
                                 className={`w-full overflow-y-auto max-h-full disable-scrollbars ${
                                     Capacitor.isNativePlatform() && !isClrCredential
-                                        ? 'pt-0 safe-area-top-margin'
+                                        ? 'pt-0'
                                         : 'pt-[30px]'
                                 } ${previewContentPaddingClass}`}
                             >

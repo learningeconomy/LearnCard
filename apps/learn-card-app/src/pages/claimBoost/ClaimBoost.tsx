@@ -608,7 +608,11 @@ const ClaimBoost: React.FC<{
     };
 
     return (
-        <IonPage>
+        <IonPage
+            data-modal-insets="content-bottom"
+            className="bg-grayscale-100"
+            style={backgroundStyles}
+        >
             {/* <MainHeader
                 showBackButton={false}
                 customClassName="bg-white"
@@ -624,13 +628,8 @@ const ClaimBoost: React.FC<{
                     useFullCloseButton: !isMobile,
                 }}
             >
-                <div className="flex h-full bg-grayscale-100">
-                    <section
-                        style={{
-                            ...backgroundStyles,
-                        }}
-                        className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0"
-                    >
+                <div className="flex h-full">
+                    <section className="flex h-full overflow-y-scroll flex-1 items-start justify-center relative boost-cms-preview [&::part(scroll)]:px-0">
                         {/* <div
                         style={{
                             ...backgroundStyles,
@@ -638,11 +637,11 @@ const ClaimBoost: React.FC<{
                         className="flex flex-col items-center justify-center px-2 overflow-x-auto h-full pt-[30px]"
                     > */}
                         <section
-                            className={`w-full safe-area-top-margin overflow-y-auto max-h-full disable-scrollbars ${
+                            className={`w-full mt-[var(--ion-safe-area-top,0px)] overflow-y-auto max-h-full disable-scrollbars ${
                                 shouldUseHostCardPadding ? 'px-6' : ''
                             } ${Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'}`}
                         >
-                            <div className="pb-4 vc-preview-modal-safe-area h-full w-full">
+                            <div className="pb-4 h-full w-full">
                                 {loading && (
                                     <section className="relative loading-spinner-container flex flex-col items-center justify-center h-full w-full">
                                         <IonSpinner color="black" />

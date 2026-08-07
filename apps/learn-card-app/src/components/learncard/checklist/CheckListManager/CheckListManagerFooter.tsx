@@ -4,7 +4,6 @@ import { Capacitor } from '@capacitor/core';
 import { IonFooter } from '@ionic/react';
 
 import { useModal } from 'learn-card-base';
-import { useSafeArea } from 'learn-card-base/hooks/useSafeArea';
 
 import useTheme from '../../../../theme/hooks/useTheme';
 import * as m from '../../../../paraglide/messages.js';
@@ -17,10 +16,7 @@ const CheckListManagerFooter: React.FC<{ handleSave?: () => void; loading?: bool
     const primaryColor = colors?.defaults?.primaryColor;
 
     const { closeModal } = useModal();
-    const safeArea = useSafeArea();
-
-    let bottomPosition = safeArea.bottom;
-    if (Capacitor.isNativePlatform()) bottomPosition = 20 + safeArea.bottom;
+    const bottomPosition = Capacitor.isNativePlatform() ? 20 : 0;
 
     return (
         <IonFooter

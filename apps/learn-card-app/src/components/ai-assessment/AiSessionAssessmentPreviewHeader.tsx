@@ -45,7 +45,7 @@ export const AiAssessmentPreviewHeader: React.FC<{
     const thingsLearned = summaryInfo?.learned;
 
     return (
-        <div className="w-full rounded-t-[24px] rounded-b-[24px] overflow-hidden flex flex-col border-solid border-white border-[3px] safe-area-top-margin">
+        <div className="w-full rounded-t-[24px] rounded-b-[24px] overflow-hidden flex flex-col border-solid border-white border-[3px]">
             <div className="w-full flex items-center justify-center flex-col bg-opacity-70 rounded-t-[20px] backdrop-blur-[5px] bg-white">
                 {!hideApp && (
                     <div className="w-full relative flex items-center justify-center flex-col pt-[25px] bg-white">

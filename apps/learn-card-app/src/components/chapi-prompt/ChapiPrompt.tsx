@@ -45,10 +45,7 @@ export const ChapiPrompt: React.FC<ChapiPromptProps> = ({ onBack }) => {
     return (
         <section className="h-full flex flex-col bg-white">
             {/* Top Bar */}
-            <div
-                className="shrink-0 flex items-center px-4 py-3 border-b border-grayscale-100 safe-area-top-margin"
-                style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)' }}
-            >
+            <div className="shrink-0 flex items-center px-4 py-3 border-b border-grayscale-100">
                 <button
                     onClick={onBack}
                     className="flex items-center text-grayscale-600 hover:text-grayscale-900 transition-colors font-poppins font-medium"
@@ -90,10 +87,7 @@ export const ChapiPrompt: React.FC<ChapiPromptProps> = ({ onBack }) => {
             </div>
 
             {/* Bottom Action Area */}
-            <div
-                className="shrink-0 px-6 py-4 border-t border-grayscale-100 bg-white"
-                style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}
-            >
+            <div className="shrink-0 px-6 py-4 border-t border-grayscale-100 bg-white">
                 <div className="max-w-[500px] mx-auto">
                     <button
                         onClick={handleConnectChapi}

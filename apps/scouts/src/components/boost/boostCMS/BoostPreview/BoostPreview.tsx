@@ -146,7 +146,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     let handleShare, handleDotMenu;
 
     return (
-        <IonPage>
+        <IonPage data-modal-insets="content-bottom">
             <IonContent
                 fullscreen
                 className={`flex items-center justify-center ion-padding boost-cms-preview transition-colors [&::part(scroll)]:px-0 gradient-mask-b-90`}
@@ -154,15 +154,9 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                 <IonRow
                     className={`flex flex-col items-center justify-center overflow-x-auto pb-32 ${boostPreviewWrapperCustomClass} ${
                         shouldUseHostCardPadding ? 'px-1' : ''
-                    } ${isCertificate ? 'pt-14 md:pt-20' : ''} ${
-                        isID ? '!px-0 safe-area-top-margin mt-[20px]' : ''
-                    }`}
+                    } ${isCertificate ? 'pt-14 md:pt-20' : ''} ${isID ? '!px-0 mt-[20px]' : ''}`}
                 >
-                    <section
-                        className={`w-full safe-area-top-margin ${
-                            shouldUseHostCardPadding ? 'px-6' : ''
-                        }`}
-                    >
+                    <section className={`w-full ${shouldUseHostCardPadding ? 'px-6' : ''}`}>
                         <VCDisplayCard2
                             credential={credential}
                             issueeOverride={issueeOverride}

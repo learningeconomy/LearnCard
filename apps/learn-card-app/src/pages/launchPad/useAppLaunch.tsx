@@ -93,10 +93,7 @@ const useAppLaunch = ({ listing, isInstalled = false, onInstallSuccess }: UseApp
     const showAgeBlockedModal = () => {
         newModal(
             <div className="flex flex-col h-full w-full bg-white max-w-[500px] mx-auto">
-                <div
-                    className="border-b border-grayscale-200 p-6"
-                    style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}
-                >
+                <div className="border-b border-grayscale-200 p-6">
                     <h2 className="text-2xl font-bold text-grayscale-900 text-center">
                         {m['launchpad.ageRestriction.title']()}
                     </h2>
@@ -142,12 +139,7 @@ const useAppLaunch = ({ listing, isInstalled = false, onInstallSuccess }: UseApp
                     </div>
                 </div>
 
-                <div
-                    className="flex items-center justify-center gap-4 p-6 border-t border-grayscale-200 bg-white"
-                    style={{
-                        paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))',
-                    }}
-                >
+                <div className="flex items-center justify-center gap-4 p-6 border-t border-grayscale-200 bg-white">
                     <button
                         onClick={closeModal}
                         className="px-8 py-3 text-lg font-semibold text-white bg-grayscale-600 rounded-full hover:bg-grayscale-700 transition-colors"
