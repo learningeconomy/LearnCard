@@ -16,10 +16,10 @@ The immediately preceding run started the same instance successfully, and no com
 
 The **Start EC2 instance** step will call the existing `/start` endpoint with curl configured to:
 
-- show response bodies and error details;
-- treat HTTP 4xx/5xx responses as failures;
-- retry transient HTTP failures up to three times with a five-second delay; and
-- stop retrying after a 30-second retry window.
+-   show response bodies and error details;
+-   treat HTTP 4xx/5xx responses as failures;
+-   retry transient HTTP failures up to three times with a five-second delay; and
+-   stop retrying after a 30-second retry window.
 
 The step will pipe curl's combined output through `tee` into `e2e-artifacts/ec2-start.log` while preserving curl's exit status with Bash `pipefail`. This keeps the final Lambda response visible in both the job log and the diagnostic artifact.
 
@@ -29,10 +29,10 @@ Steps that require SSH or SCP will run only when `E2E_EC2_IP` is non-empty. Arti
 
 ## Error Handling
 
-- A transient start 5xx that clears within the retry budget proceeds normally.
-- A persistent start failure stops at **Start EC2 instance**, with the Lambda response body visible in the log.
-- A failure before SSH readiness does not invoke SSH/SCP actions with an empty host.
-- The stop request remains unchanged and still runs after failures.
+-   A transient start 5xx that clears within the retry budget proceeds normally.
+-   A persistent start failure stops at **Start EC2 instance**, with the Lambda response body visible in the log.
+-   A failure before SSH readiness does not invoke SSH/SCP actions with an empty host.
+-   The stop request remains unchanged and still runs after failures.
 
 ## Verification
 

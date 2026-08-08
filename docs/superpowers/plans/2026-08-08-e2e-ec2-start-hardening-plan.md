@@ -10,25 +10,27 @@
 
 ## Global Constraints
 
-- Modify only `.github/workflows/test.yml` plus the already-approved design and plan documents.
-- Use three retries, a five-second retry delay, and a 30-second retry window.
-- Preserve the Lambda response in both the job log and `e2e-artifacts/ec2-start.log`.
-- Do not change the EC2 wait loop, remote E2E command, diagnostics format, or stop request.
-- Fold the commits into existing PR #1464 (`fix/lc-2073-e2e-artifacts`).
+-   Modify only `.github/workflows/test.yml` plus the already-approved design and plan documents.
+-   Use three retries, a five-second retry delay, and a 30-second retry window.
+-   Preserve the Lambda response in both the job log and `e2e-artifacts/ec2-start.log`.
+-   Do not change the EC2 wait loop, remote E2E command, diagnostics format, or stop request.
+-   Fold the commits into existing PR #1464 (`fix/lc-2073-e2e-artifacts`).
 
 ---
 
 ### Task 1: Harden EC2 provisioning failure handling
 
 **Files:**
-- Modify: `.github/workflows/test.yml`
-- Create temporarily (do not commit): `/private/tmp/verify-e2e-workflow-hardening.mjs`
+
+-   Modify: `.github/workflows/test.yml`
+-   Create temporarily (do not commit): `/private/tmp/verify-e2e-workflow-hardening.mjs`
 
 **Interfaces:**
-- Consumes: `secrets.E2E_EC2_LAMBDA_URL`, the existing `/start` endpoint, and `E2E_EC2_IP` written by the unchanged readiness loop.
-- Produces: bounded retry behavior, nonzero exit status for persistent HTTP failures, `e2e-artifacts/ec2-start.log`, and guards on the SSH cleanup and SCP diagnostics steps.
 
-- [ ] **Step 1: Write the failing one-off integration verifier**
+-   Consumes: `secrets.E2E_EC2_LAMBDA_URL`, the existing `/start` endpoint, and `E2E_EC2_IP` written by the unchanged readiness loop.
+-   Produces: bounded retry behavior, nonzero exit status for persistent HTTP failures, `e2e-artifacts/ec2-start.log`, and guards on the SSH cleanup and SCP diagnostics steps.
+
+-   [ ] **Step 1: Write the failing one-off integration verifier**
 
 Create `/private/tmp/verify-e2e-workflow-hardening.mjs` with the following content using `apply_patch`:
 
@@ -60,7 +62,9 @@ async function runScenario(statuses) {
         const status = statuses[Math.min(calls, statuses.length - 1)];
         calls += 1;
         response.writeHead(status, { 'content-type': 'text/plain' });
-        response.end(status === 200 ? 'Starting instance i-test\n' : `Internal Server Error ${calls}\n`);
+        response.end(
+            status === 200 ? 'Starting instance i-test\n' : `Internal Server Error ${calls}\n`
+        );
     });
     server.listen(0, '127.0.0.1');
     await once(server, 'listening');
@@ -102,7 +106,7 @@ assert.match(persistent.output, /Internal Server Error 4/);
 console.log('E2E workflow hardening behavior verified');
 ```
 
-- [ ] **Step 2: Run the verifier and confirm RED**
+-   [ ] **Step 2: Run the verifier and confirm RED**
 
 Run:
 
@@ -112,32 +116,32 @@ node /private/tmp/verify-e2e-workflow-hardening.mjs .github/workflows/test.yml
 
 Expected: FAIL because the transient scenario makes one request instead of three, demonstrating that the current script does not retry HTTP 500 responses.
 
-- [ ] **Step 3: Implement the minimal workflow change**
+-   [ ] **Step 3: Implement the minimal workflow change**
 
 Replace the start step body with:
 
 ```yaml
-              run: |
-                  mkdir -p e2e-artifacts
-                  set -o pipefail
-                  echo "Starting EC2 instance..."
-                  curl --silent --show-error --fail-with-body \
-                    --retry 3 \
-                    --retry-delay 5 \
-                    --retry-max-time 30 \
-                    "${{ secrets.E2E_EC2_LAMBDA_URL }}/start" 2>&1 \
-                    | tee e2e-artifacts/ec2-start.log
+run: |
+    mkdir -p e2e-artifacts
+    set -o pipefail
+    echo "Starting EC2 instance..."
+    curl --silent --show-error --fail-with-body \
+      --retry 3 \
+      --retry-delay 5 \
+      --retry-max-time 30 \
+      "${{ secrets.E2E_EC2_LAMBDA_URL }}/start" 2>&1 \
+      | tee e2e-artifacts/ec2-start.log
 ```
 
 Change both host-dependent `always()` conditions to:
 
 ```yaml
-              if: ${{ always() && env.E2E_EC2_IP != '' }}
+if: ${{ always() && env.E2E_EC2_IP != '' }}
 ```
 
 Apply the condition only to **Cleanup EC2 (docker down, prune)** and **Download E2E diagnostics from EC2**. Do not guard artifact upload, summary publication, or stop.
 
-- [ ] **Step 4: Run the verifier and confirm GREEN**
+-   [ ] **Step 4: Run the verifier and confirm GREEN**
 
 Run:
 
@@ -147,7 +151,7 @@ node /private/tmp/verify-e2e-workflow-hardening.mjs .github/workflows/test.yml
 
 Expected: exit 0 and `E2E workflow hardening behavior verified`.
 
-- [ ] **Step 5: Validate syntax and scope**
+-   [ ] **Step 5: Validate syntax and scope**
 
 Run:
 
@@ -159,7 +163,7 @@ git diff -- .github/workflows/test.yml
 
 Expected: both checks exit 0; the diff contains only the start hardening and two IP guards.
 
-- [ ] **Step 6: Commit the implementation**
+-   [ ] **Step 6: Commit the implementation**
 
 ```bash
 git add .github/workflows/test.yml
