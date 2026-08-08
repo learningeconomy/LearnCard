@@ -1,4 +1,5 @@
 import path from 'path';
+import { readFileSync } from 'fs';
 
 import GlobalPolyfill from '@esbuild-plugins/node-globals-polyfill';
 import { defineConfig, loadEnv } from 'vite';
@@ -8,6 +9,16 @@ import react from '@vitejs/plugin-react-swc';
 import svgr from 'vite-plugin-svgr';
 import stdlibbrowser from 'node-stdlib-browser';
 import basicSsl from '@vitejs/plugin-basic-ssl';
+
+// App version read directly from this app's package.json.
+// Deliberately NOT `process.env.npm_package_version` — that reflects the package.json
+// of the directory the build was invoked from, so CI builds run from the monorepo root
+// would bake in the root package's version instead of the app's.
+const packageVersion = (
+    JSON.parse(readFileSync(path.join(__dirname, 'package.json'), 'utf-8')) as {
+        version: string;
+    }
+).version;
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), [
@@ -54,8 +65,8 @@ export default defineConfig(({ mode }) => {
                 ? JSON.stringify(env.LEARN_CLOUD_XAPI_URL)
                 : 'undefined',
             API_URL: env.API_URL ? JSON.stringify(env.API_URL) : 'undefined',
-            __PACKAGE_VERSION__: JSON.stringify(process.env.npm_package_version),
-            __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+            __PACKAGE_VERSION__: JSON.stringify(packageVersion),
+            __APP_VERSION__: JSON.stringify(packageVersion),
             'process.version': '"1.0.0"',
             IS_PRODUCTION: env.NODE_ENV === 'production',
             SENTRY_ENV: env.SENTRY_ENV ? JSON.stringify(env.SENTRY_ENV) : '"scouts-development"',
