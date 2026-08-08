@@ -40,4 +40,4 @@ A one-off static verification script will parse `.github/workflows/test.yml` and
 
 ## PR Shape
 
-This will be a small stacked PR based on `fix/lc-2073-e2e-artifacts` (#1464), because both changes touch the same workflow. That keeps the hardening diff reviewable and avoids an independent-main merge conflict. After #1464 merges, the hardening PR can be retargeted to `main`.
+This hardening will be folded directly into `fix/lc-2073-e2e-artifacts` (#1464). The PR is still small, both changes touch the same workflow, and keeping them together avoids an unnecessary stacked PR and merge conflict.
