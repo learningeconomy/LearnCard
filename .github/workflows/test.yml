@@ -50,8 +50,15 @@ jobs:
         steps:
             - name: Start EC2 instance
               run: |
+                  mkdir -p e2e-artifacts
+                  set -o pipefail
                   echo "Starting EC2 instance..."
-                  curl -s "${{ secrets.E2E_EC2_LAMBDA_URL }}/start"
+                  curl --silent --show-error --fail-with-body \
+                    --retry 3 \
+                    --retry-delay 5 \
+                    --retry-max-time 30 \
+                    "${{ secrets.E2E_EC2_LAMBDA_URL }}/start" 2>&1 \
+                    | tee e2e-artifacts/ec2-start.log
 
             - name: Wait for EC2 to be ready
               run: |
@@ -98,7 +105,7 @@ jobs:
                       ./scripts/run-tests.sh
 
             - name: Cleanup EC2 (docker down, prune)
-              if: always()
+              if: ${{ always() && env.E2E_EC2_IP != '' }}
               continue-on-error: true
               uses: appleboy/ssh-action@v1.0.3
               with:
@@ -112,7 +119,7 @@ jobs:
                       ./scripts/cleanup.sh
 
             - name: Download E2E diagnostics from EC2
-              if: always()
+              if: ${{ always() && env.E2E_EC2_IP != '' }}
               continue-on-error: true
               run: |
                   mkdir -p e2e-artifacts
