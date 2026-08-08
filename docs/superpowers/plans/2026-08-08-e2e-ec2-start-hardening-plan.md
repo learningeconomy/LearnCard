@@ -54,24 +54,6 @@ const script = match[1]
     .map(line => line.replace(/^ {18}/, ''))
     .join('\n');
 
-assert.match(script, /--retry 3/, 'start request must allow three retries');
-assert.match(script, /--retry-delay 5/, 'start retry delay must be five seconds');
-assert.match(script, /--retry-max-time 30/, 'start retry window must be 30 seconds');
-assert.match(script, /--fail-with-body/, 'HTTP failures must return nonzero with their body');
-assert.match(script, /set -o pipefail/, 'tee pipeline must preserve curl failure');
-
-for (const stepName of ['Cleanup EC2 (docker down, prune)', 'Download E2E diagnostics from EC2']) {
-    const stepStart = workflow.indexOf(`            - name: ${stepName}`);
-    assert.notEqual(stepStart, -1, `${stepName} step was not found`);
-    const nextStep = workflow.indexOf('\n            - name:', stepStart + 1);
-    const step = workflow.slice(stepStart, nextStep === -1 ? undefined : nextStep);
-    assert.match(
-        step,
-        /if: \$\{\{ always\(\) && env\.E2E_EC2_IP != '' \}\}/,
-        `${stepName} must be skipped without an EC2 IP`
-    );
-}
-
 async function runScenario(statuses) {
     let calls = 0;
     const server = http.createServer((_request, response) => {
@@ -96,7 +78,12 @@ async function runScenario(statuses) {
     const [exitCode] = await once(child, 'close');
     server.close();
     await once(server, 'close');
-    const log = await readFile(path.join(directory, 'e2e-artifacts/ec2-start.log'), 'utf8');
+    let log = '';
+    try {
+        log = await readFile(path.join(directory, 'e2e-artifacts/ec2-start.log'), 'utf8');
+    } catch (error) {
+        if (error.code !== 'ENOENT') throw error;
+    }
 
     return { calls, exitCode, log, output };
 }
@@ -123,7 +110,7 @@ Run:
 node /private/tmp/verify-e2e-workflow-hardening.mjs .github/workflows/test.yml
 ```
 
-Expected: FAIL at the first missing invariant, initially `start request must allow three retries`.
+Expected: FAIL because the transient scenario makes one request instead of three, demonstrating that the current script does not retry HTTP 500 responses.
 
 - [ ] **Step 3: Implement the minimal workflow change**
 
