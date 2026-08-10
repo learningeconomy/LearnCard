@@ -24,7 +24,11 @@ export const revokeCredentialForProfile = async (
          MATCH (sender)-[sent:CREDENTIAL_SENT {to: $profileId}]->(credential)
          WHERE sender:Profile OR sender:AppStoreListing
          WITH sent, sent.status AS previousStatus
-         SET sent.status = "revoked", sent.revokedAt = $revokedAt
+         SET sent.status = "revoked",
+             sent.revokedAt = CASE
+                 WHEN previousStatus = "revoked" THEN sent.revokedAt
+                 ELSE $revokedAt
+             END
          RETURN previousStatus`,
         { credentialId, profileId, revokedAt }
     );
