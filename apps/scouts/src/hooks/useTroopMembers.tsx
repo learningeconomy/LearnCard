@@ -13,14 +13,17 @@ import {
 import { MemberTabsEnum } from '../pages/troop/TroopPageMembersBox';
 import { VC } from '@learncard/types';
 import { getLogger } from 'learn-card-base';
+import type { TroopIdIssuanceState } from '../pages/troop/troopIdStatus.helpers';
 const log = getLogger('use-troop-members');
 
-type MemberRow = {
+export type MemberRow = {
     name: string;
     image: string;
     profileId: string;
     type: 'Scout' | 'Leader' | 'Admin';
     boostUri: string;
+    credentialUri?: string;
+    issuanceState: TroopIdIssuanceState;
     isPersonalId: boolean;
     canManageId: boolean;
 };
@@ -51,9 +54,9 @@ export const useTroopMembers = (credential: VC, tab?: MemberTabsEnum, boostUri?:
     const { data: currentBoostCount } = useCountBoostRecipients(uri);
 
     const skipMembers = tab === undefined;
-    const { data: scoutRecipients } = useGetBoostRecipients(scoutBoostUri, !skipMembers);
-    const { data: leaderRecipients } = useGetBoostRecipients(troopBoostUri, !skipMembers);
-    const { data: currentBoostRecipients } = useGetBoostRecipients(uri, !skipMembers);
+    const { data: scoutRecipients } = useGetBoostRecipients(scoutBoostUri, !skipMembers, true);
+    const { data: leaderRecipients } = useGetBoostRecipients(troopBoostUri, !skipMembers, true);
+    const { data: currentBoostRecipients } = useGetBoostRecipients(uri, !skipMembers, true);
 
     const getBoostPermissionsAsync = async (profileId: string) => {
         const wallet = await initWallet();
@@ -80,6 +83,8 @@ export const useTroopMembers = (credential: VC, tab?: MemberTabsEnum, boostUri?:
                             image: scout.to.image ?? '',
                             type: 'Scout',
                             boostUri: scoutBoostUri,
+                            credentialUri: scout.uri,
+                            issuanceState: scout.received ? 'accepted' : 'pending',
                             isPersonalId: scout.to.profileId === myProfileId,
                             canManageId: false,
                         });
@@ -94,6 +99,8 @@ export const useTroopMembers = (credential: VC, tab?: MemberTabsEnum, boostUri?:
                             image: leader.to.image ?? '',
                             type: 'Leader',
                             boostUri: troopBoostUri,
+                            credentialUri: leader.uri,
+                            issuanceState: leader.received ? 'accepted' : 'pending',
                             isPersonalId: leader.to.profileId === myProfileId,
                             canManageId: false,
                         });
@@ -120,6 +127,8 @@ export const useTroopMembers = (credential: VC, tab?: MemberTabsEnum, boostUri?:
                                 image: recipient.to.image ?? '',
                                 type: 'Admin',
                                 boostUri: uri,
+                                credentialUri: recipient.uri,
+                                issuanceState: recipient.received ? 'accepted' : 'pending',
                                 isPersonalId: recipient.to.profileId === myProfileId,
                                 canManageId: Boolean(userPermissions?.canManage),
                             });
@@ -136,6 +145,8 @@ export const useTroopMembers = (credential: VC, tab?: MemberTabsEnum, boostUri?:
                             image: recipient.to.image ?? '',
                             type: 'Admin',
                             boostUri: uri,
+                            credentialUri: recipient.uri,
+                            issuanceState: recipient.received ? 'accepted' : 'pending',
                             isPersonalId: recipient.to.profileId === myProfileId,
                             canManageId: false,
                         });

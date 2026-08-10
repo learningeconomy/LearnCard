@@ -14,15 +14,17 @@ import {
     useGetCurrentUserTroopIds,
     useModal,
     useResolveBoost,
-    useRevokeBoostRecipient,
+    useRevokeBoostRecipientGroup,
     useToast,
     ToastTypeEnum,
     useWallet,
 } from 'learn-card-base';
 import { getScoutsRole } from '../../helpers/troop.helpers';
 import { VC } from '@learncard/types';
-import { PermissionsByRole } from '../../components/troopsCMS/troops.helpers';
 import * as m from '../../paraglide/messages.js';
+import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
+import { getGroupRemovalOutcome } from './groupRemoval.helpers';
+import type { TroopIdIssuanceState } from './troopIdStatus.helpers';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('id-options-modal');
 
@@ -35,6 +37,8 @@ type IdOptionsModalProps = {
     boostUri: string;
     handleShare: () => void;
     credential: VC;
+    credentialUri?: string;
+    issuanceState?: TroopIdIssuanceState;
     type?: string;
 };
 
@@ -47,6 +51,8 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
     boostUri,
     handleShare,
     credential,
+    credentialUri,
+    issuanceState,
     type,
 }) => {
     const { initWallet } = useWallet();
@@ -61,7 +67,7 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
     const hasGlobalAdminID = troopIds?.isScoutGlobalAdmin;
     const isTroopLeader = troopIds?.isTroopLeader;
 
-    const { mutateAsync: revokeBoostRecipient, isPending: isRevoking } = useRevokeBoostRecipient();
+    const { mutateAsync: revokeGroup, isPending: isRevoking } = useRevokeBoostRecipientGroup();
 
     const role = getScoutsRole(credential);
     const troopOrNetwork =
@@ -70,15 +76,18 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
             : m['troops.network']();
     const isScoutMember = type === 'Scout' || type === 'Member';
 
-    const { data: resolvedCredential } = useResolveBoost(boostUri);
-    const _credential = resolvedCredential ?? credential;
+    const { data: resolvedCredential } = useResolveBoost(credentialUri ?? boostUri);
+    const displayCredential =
+        resolvedCredential?.boostCredential ?? resolvedCredential ?? credential;
 
     const handleViewId = () => {
         closeModal();
         newModal(
             <ViewTroopIdModal
-                credential={_credential}
+                credential={displayCredential}
                 boostUri={boostUri}
+                credentialUri={credentialUri}
+                issuanceState={issuanceState}
                 handleShare={handleShare}
                 name={ownerName}
                 image={ownerImage}
@@ -90,12 +99,12 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
 
     const handleViewJson = () => {
         closeModal();
-        newModal(<ViewJsonModal boost={_credential} />, {
+        newModal(<ViewJsonModal boost={displayCredential} />, {
             sectionClassName: '!max-h-[90%] !mx-[20px]',
         });
     };
 
-    const handleRevokeScout = async () => {
+    const handleRemoveFromGroup = async (): Promise<void> => {
         await confirm({
             text: m['troops.options.removeConfirm']({
                 owner: ownerName,
@@ -103,24 +112,31 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
             }),
             onConfirm: async () => {
                 try {
-                    await revokeBoostRecipient({
+                    const result = await revokeGroup({
                         boostUri,
                         recipientProfileId: ownerProfileId,
                     });
+                    if (getGroupRemovalOutcome(result) === 'partial') {
+                        presentToast(m['troops.options.removeFailed']({ owner: ownerName }), {
+                            type: ToastTypeEnum.Error,
+                            hasDismissButton: true,
+                        });
+                        return;
+                    }
+
                     presentToast(
                         m['troops.options.removedMsg']({
                             owner: ownerName,
                             credential: credential?.name ?? '',
                         }),
-                        {
-                            type: ToastTypeEnum.Success,
-                        }
+                        { type: ToastTypeEnum.Success, hasDismissButton: true }
                     );
                     closeAllModals();
                 } catch (error) {
-                    log.error('Failed to revoke scout:', error);
+                    log.error('Failed to remove group member', error);
                     presentToast(m['troops.options.removeFailed']({ owner: ownerName }), {
                         type: ToastTypeEnum.Error,
+                        hasDismissButton: true,
                     });
                 }
             },
@@ -133,6 +149,7 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
 
     const handleRevoke = async () => {
         const wallet = await initWallet();
+        void wallet;
 
         if (isPersonalId) {
             await confirm({
@@ -140,32 +157,6 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
                 onConfirm: () => {
                     log.debug('TODO revoke');
                     // closeAllModals();
-                },
-                cancelButtonClassName:
-                    'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-2 w-[100px] ',
-                confirmButtonClassName:
-                    'confirm-btn bg-grayscale-900 text-white py-2 rounded-[40px] font-bold px-2 w-[100px]',
-            });
-        } else {
-            await confirm({
-                text: m['troops.options.removeConfirm']({
-                    owner: ownerName,
-                    credential: credential?.name ?? '',
-                }),
-                onConfirm: async () => {
-                    const removedAdmin = await wallet?.invoke?.removeBoostAdmin(
-                        boostUri,
-                        ownerProfileId
-                    );
-
-                    const updates = PermissionsByRole.troop;
-                    const updatedPermissions = await wallet?.invoke?.updateBoostPermissions(
-                        boostUri,
-                        { ...updates },
-                        ownerProfileId
-                    );
-
-                    closeAllModals();
                 },
                 cancelButtonClassName:
                     'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-2 w-[100px] ',
@@ -225,8 +216,9 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
             {!isPersonalId && (canManageId || hasGlobalAdminID) && type === 'Admin' && (
                 <IdOptionRow
                     text={m['troops.actions.removeFrom']({ name: troopOrNetwork })}
-                    icon={<PeaceIcon />}
-                    onClick={handleRevoke}
+                    icon={isRevoking ? <LoadingSpinner /> : <PeaceIcon />}
+                    onClick={handleRemoveFromGroup}
+                    disabled={isRevoking}
                 />
             )}
             {/* Remove Scout option - for troop leaders/admins removing non-admin members */}
@@ -235,8 +227,9 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
                 isScoutMember && (
                     <IdOptionRow
                         text={m['troops.actions.removeFrom']({ name: troopOrNetwork })}
-                        icon={<PeaceIcon />}
-                        onClick={handleRevokeScout}
+                        icon={isRevoking ? <LoadingSpinner /> : <PeaceIcon />}
+                        onClick={handleRemoveFromGroup}
+                        disabled={isRevoking}
                     />
                 )}
         </div>
@@ -247,13 +240,15 @@ type IdOptionRowProps = {
     text: string;
     icon: React.ReactNode;
     onClick: () => void;
+    disabled?: boolean;
 };
 
-const IdOptionRow: React.FC<IdOptionRowProps> = ({ text, icon, onClick }) => {
+const IdOptionRow: React.FC<IdOptionRowProps> = ({ text, icon, onClick, disabled = false }) => {
     return (
         <button
             onClick={onClick}
-            className="flex gap-[10px] items-center py-[10px] text-grayscale-900 border-b-[1px] border-grayscale-200 border-solid last:border-b-0 h-[56px]"
+            disabled={disabled}
+            className="flex gap-[10px] items-center py-[10px] text-grayscale-900 border-b-[1px] border-grayscale-200 border-solid last:border-b-0 h-[56px] disabled:opacity-40 disabled:cursor-not-allowed"
         >
             <span className="font-notoSans text-[17px]">{text}</span>
             <div className="ml-auto">{icon}</div>
