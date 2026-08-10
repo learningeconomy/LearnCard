@@ -1,11 +1,9 @@
 import type { VC } from '@learncard/types';
-import {
-    useCredentialStatus as useSharedCredentialStatus,
-    type CredentialLifecycleStatus,
-} from 'learn-card-base';
+import { useCredentialStatus as useSharedCredentialStatus } from 'learn-card-base/hooks/useCredentialStatus';
+import type { CredentialLifecycleStatus } from 'learn-card-base/hooks/deriveLifecycleStatus';
 
-export type { CredentialLifecycleStatus } from 'learn-card-base';
-export { deriveLifecycleStatus } from 'learn-card-base';
+export type { CredentialLifecycleStatus } from 'learn-card-base/hooks/deriveLifecycleStatus';
+export { deriveLifecycleStatus } from 'learn-card-base/hooks/deriveLifecycleStatus';
 
 export const useCredentialStatus = (
     credential: VC | undefined,
