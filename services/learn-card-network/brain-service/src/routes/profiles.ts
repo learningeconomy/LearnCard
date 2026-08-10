@@ -12,6 +12,7 @@ import {
     PaginatedLCNProfilesAndManagersValidator,
     PaginationOptionsValidator,
     LCNNotificationTypeEnumValidator,
+    LCNIssuerRelationshipContextValidator,
 } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
 
@@ -24,6 +25,7 @@ import {
     getPendingConnections,
     requestConnection,
     getConnectionStatus,
+    getIssuerRelationshipMetadata,
     blockProfile,
     getBlockedProfiles,
     unblockProfile,
@@ -368,6 +370,65 @@ export const profilesRouter = t.router({
             }
 
             return sanitizeProfileForTier(profile, tier);
+        }),
+
+    resolveIssuerContext: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/profile/issuer-context/{did}',
+                tags: ['Profiles'],
+                summary: 'Resolve issuer relationship context',
+                description: "Resolves an issuer's profile and relationship to the current user.",
+            },
+            requiredScope: 'connections:read',
+        })
+        .input(z.object({ did: z.string().startsWith('did:') }))
+        .output(LCNIssuerRelationshipContextValidator)
+        .query(async ({ ctx, input }) => {
+            const resolvedProfileId = await getProfileIdFromString(input.did, ctx.domain);
+            const resolvedProfile = resolvedProfileId
+                ? await getProfileByProfileId(resolvedProfileId)
+                : null;
+            const targetProfile =
+                resolvedProfile &&
+                (input.did.startsWith('did:key:') ||
+                    updateDidForProfile(ctx.domain, resolvedProfile).did === input.did)
+                    ? resolvedProfile
+                    : null;
+
+            const relationshipBlocked =
+                targetProfile &&
+                (
+                    await Promise.all([
+                        isRelationshipBlocked(ctx.user.profile, targetProfile),
+                        isRelationshipBlocked(targetProfile, ctx.user.profile),
+                    ])
+                ).some(Boolean);
+
+            if (!targetProfile || relationshipBlocked) {
+                return {
+                    connectionStatus: LCNProfileConnectionStatusEnum.enum.NOT_CONNECTED,
+                    mutualConnectionCount: 0,
+                    hasVerifiedContactMethod: false,
+                };
+            }
+
+            const [connectionStatus, relationshipMetadata, tier] = await Promise.all([
+                getConnectionStatus(ctx.user.profile, targetProfile),
+                getIssuerRelationshipMetadata(ctx.user.profile, targetProfile),
+                resolveProfileTier(ctx.user.profile, targetProfile),
+            ]);
+            const profile = stripSensitiveProfileListFields(
+                sanitizeProfileForTier(updateDidForProfile(ctx.domain, targetProfile), tier)
+            );
+
+            return {
+                profile,
+                connectionStatus,
+                ...relationshipMetadata,
+            };
         }),
 
     getAvailableProfiles: profileRoute

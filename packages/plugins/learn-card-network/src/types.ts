@@ -3,6 +3,7 @@ import {
     LCNProfile,
     LCNVisibleProfile,
     LCNProfileConnectionStatusEnum,
+    LCNIssuerRelationshipContext,
     LCNProfileManager,
     UnsignedVC,
     VC,
@@ -170,6 +171,7 @@ export type LearnCardNetworkPluginMethods = {
     deleteProfile: () => Promise<boolean>;
     getProfile: (profileId?: string) => Promise<LCNVisibleProfile | undefined>;
     getProfileManagerProfile: (id?: string) => Promise<LCNProfileManager | undefined>;
+    resolveIssuerContext: (did: string) => Promise<LCNIssuerRelationshipContext>;
     searchProfiles: (
         profileId?: string,
         options?: {

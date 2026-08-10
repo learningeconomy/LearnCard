@@ -735,6 +735,11 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.profile.getOtherProfile.query({ profileId });
             },
+            resolveIssuerContext: async (_learnCard, did) => {
+                await ensureUser();
+
+                return client.profile.resolveIssuerContext.query({ did });
+            },
             getProfileManagerProfile: async (_learnCard, id) => {
                 if (!id) return client.profileManager.getProfileManager.query();
 
@@ -2624,7 +2629,9 @@ export async function getLearnCardNetworkPlugin(
             },
 
             isServiceTrusted: async (_learnCard, serviceDid) => {
-                const trustedServices = await client.federation.getTrustedServices.query({});
+                const trustedServices = (await client.federation.getTrustedServices.query(
+                    {}
+                )) as Array<{ did: string }>;
                 return trustedServices.some(s => s.did === serviceDid);
             },
 

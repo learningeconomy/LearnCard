@@ -16,6 +16,51 @@ describe('Identity', () => {
         a = await getLearnCardForUser('a');
         b = await getLearnCardForUser('b');
     });
+    test('resolves issuer profiles and relationship context without leaking blocked profiles', async () => {
+        try {
+            await a.invoke.unblockProfile(USERS.b.profileId);
+        } catch {}
+        try {
+            await b.invoke.unblockProfile(USERS.a.profileId);
+        } catch {}
+        try {
+            await a.invoke.disconnectWith(USERS.b.profileId);
+        } catch {}
+
+        try {
+            const issuerDid = b.id.did();
+            const unconnected = await a.invoke.resolveIssuerContext(issuerDid);
+
+            expect(unconnected.profile?.profileId).toBe(USERS.b.profileId);
+            expect(unconnected.connectionStatus).toBe('NOT_CONNECTED');
+            expect(await a.invoke.resolveIssuerContext(`${issuerDid}:unexpected-segment`)).toEqual({
+                connectionStatus: 'NOT_CONNECTED',
+                mutualConnectionCount: 0,
+                hasVerifiedContactMethod: false,
+            });
+
+            await a.invoke.connectWith(USERS.b.profileId);
+            await b.invoke.acceptConnectionRequest(USERS.a.profileId);
+
+            const connected = await a.invoke.resolveIssuerContext(issuerDid);
+            expect(connected.connectionStatus).toBe('CONNECTED');
+
+            await b.invoke.blockProfile(USERS.a.profileId);
+
+            expect(await a.invoke.resolveIssuerContext(issuerDid)).toEqual({
+                connectionStatus: 'NOT_CONNECTED',
+                mutualConnectionCount: 0,
+                hasVerifiedContactMethod: false,
+            });
+        } finally {
+            try {
+                await b.invoke.unblockProfile(USERS.a.profileId);
+            } catch {}
+            try {
+                await a.invoke.disconnectWith(USERS.b.profileId);
+            } catch {}
+        }
+    });
 
     test('Users can create managed profiles and assume their identity', async () => {
         const managerDid = await a.invoke.createProfileManager({ displayName: 'Manager Test!' });

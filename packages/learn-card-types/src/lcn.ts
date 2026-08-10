@@ -156,6 +156,37 @@ export const LCNProfileConnectionStatusEnum = z.enum([
 ]);
 export type LCNProfileConnectionStatusEnum = z.infer<typeof LCNProfileConnectionStatusEnum>;
 
+export const IssuerTrustProfileValidator = z.enum(['social', 'credential']);
+export type IssuerTrustProfile = z.infer<typeof IssuerTrustProfileValidator>;
+
+export const IssuerContextStateValidator = z.enum([
+    'denied',
+    'self',
+    'trusted',
+    'app',
+    'connection',
+    'mutuals',
+    'identified',
+    'unclaimed',
+    'unresolvable',
+]);
+export type IssuerContextState = z.infer<typeof IssuerContextStateValidator>;
+
+export const LCNIssuerRelationshipContextValidator = z.object({
+    profile: LCNVisibleProfileValidator.optional(),
+    connectionStatus: LCNProfileConnectionStatusEnum,
+    mutualConnectionCount: z.number().int().nonnegative(),
+    hasVerifiedContactMethod: z.boolean(),
+});
+export type LCNIssuerRelationshipContext = z.infer<typeof LCNIssuerRelationshipContextValidator>;
+
+export const IssuerContextValidator = LCNIssuerRelationshipContextValidator.extend({
+    state: IssuerContextStateValidator,
+    trustProfile: IssuerTrustProfileValidator,
+    issuerDid: z.string(),
+});
+export type IssuerContext = z.infer<typeof IssuerContextValidator>;
+
 export const LCNProfileManagerValidator = z.object({
     id: z.string(),
     created: z.string(),

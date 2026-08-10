@@ -566,6 +566,39 @@ export const getConnectionStatus = async (
     return LCNProfileConnectionStatusEnum.enum.NOT_CONNECTED;
 };
 
+export const getIssuerRelationshipMetadata = async (
+    source: ProfileType,
+    target: ProfileType
+): Promise<{ mutualConnectionCount: number; hasVerifiedContactMethod: boolean }> => {
+    const result = await neogma.queryRunner.run(
+        `
+            MATCH (source:Profile { profileId: $sourceProfileId })
+            MATCH (target:Profile { profileId: $targetProfileId })
+            OPTIONAL MATCH (source)-[:CONNECTED_WITH]-(mutual:Profile)-[:CONNECTED_WITH]-(target)
+            WITH target, count(DISTINCT mutual) AS mutualConnectionCount
+            OPTIONAL MATCH (target)-[:HAS_CONTACT_METHOD]->(contact:ContactMethod { isVerified: true })
+            RETURN mutualConnectionCount, count(DISTINCT contact) > 0 AS hasVerifiedContactMethod
+        `,
+        {
+            sourceProfileId: source.profileId,
+            targetProfileId: target.profileId,
+        }
+    );
+    const record = result.records[0];
+    const rawMutualConnectionCount = record?.get('mutualConnectionCount') as
+        | number
+        | { toNumber: () => number }
+        | undefined;
+
+    return {
+        mutualConnectionCount:
+            typeof rawMutualConnectionCount === 'number'
+                ? rawMutualConnectionCount
+                : rawMutualConnectionCount?.toNumber() ?? 0,
+        hasVerifiedContactMethod: Boolean(record?.get('hasVerifiedContactMethod')),
+    };
+};
+
 /** Checks if target is blocked by source */
 export const isProfileBlocked = async (
     source: ProfileType,
