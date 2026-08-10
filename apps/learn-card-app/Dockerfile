@@ -8,11 +8,9 @@ ENV SKIP_DIDKIT_NAPI=1
 # Set the working directory in the container
 WORKDIR /app
 
-# Bun can create package-local node_modules symlink forests for workspaces.
-# Clear them before build-time module resolution, then again before snapshotting
-# the final image layer.
-RUN find apps packages services tests -type d -name node_modules -prune -exec rm -rf {} + && \
-    NX_DAEMON=false bunx nx run learn-card-app:docker-build && \
+# Preserve Bun's package-local workspace links during build so packages resolve
+# their locked dependency versions. Remove them only before snapshotting the final layer.
+RUN NX_DAEMON=false bunx nx run learn-card-app:docker-build && \
     find apps packages services tests -type d -name node_modules -prune -exec rm -rf {} +
 
 # Expose the port the app runs on
