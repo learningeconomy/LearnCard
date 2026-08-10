@@ -2100,7 +2100,7 @@ export const boostsRouter = t.router({
                         resolvedRecipientProfileId
                     );
                     const hookResult = await Promise.allSettled([
-                        revokeHooks.processRevokeHooks(recipientProfile, instance.credential),
+                        revokeHooks.processRevokeHooksStrict(recipientProfile, instance.credential),
                     ]);
                     const hooksFailed = hookResult.some(item => item.status === 'rejected');
 

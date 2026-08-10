@@ -299,11 +299,12 @@ describe('Revoke Boost Recipient Group (LC-1950)', { timeout: 30_000 }, () => {
             true
         );
         const failingCredentialId = getIdFromUri(failingUri);
-        const realProcessRevokeHooks = revokeHooks.processRevokeHooks;
+        const realProcessRevokeHooks = revokeHooks.processRevokeHooksStrict;
+        let failingCredentialHookCalls = 0;
         const processRevokeHooksSpy = vi
-            .spyOn(revokeHooks, 'processRevokeHooks')
+            .spyOn(revokeHooks, 'processRevokeHooksStrict')
             .mockImplementation(async (profile, credential) => {
-                if (credential.id === failingCredentialId)
+                if (credential.id === failingCredentialId && failingCredentialHookCalls++ === 0)
                     throw new Error('intentional hook failure');
                 return realProcessRevokeHooks(profile, credential);
             });
@@ -313,10 +314,14 @@ describe('Revoke Boost Recipient Group (LC-1950)', { timeout: 30_000 }, () => {
         expect(firstResult.failedCredentialUris).toEqual([failingUri]);
         expect(firstResult.revokedCredentialUris).toContain(successfulUri);
 
-        processRevokeHooksSpy.mockRestore();
         const secondResult = await userA.clients.fullAuth.boost.revokeBoostRecipientGroup(input);
         expect(secondResult.failedCredentialUris).toEqual([]);
         expect(secondResult.alreadyRevokedCredentialUris).toContain(failingUri);
+        expect(failingCredentialHookCalls).toBe(2);
+        expect(processRevokeHooksSpy).toHaveBeenCalledWith(
+            expect.objectContaining({ profileId: 'userb' }),
+            expect.objectContaining({ id: failingCredentialId })
+        );
     });
 
     it('retries failed status-list updates for already revoked credentials', async () => {
