@@ -9,6 +9,7 @@ import { VC, VerificationStatusEnum } from '@learncard/types';
 import { isCredentialExpired } from '../../components/boost/boostHelpers';
 import {
     deriveTroopIdStatus,
+    shouldShowTroopIdStatus,
     type TroopIdCredentialStatus,
     type TroopIdIssuanceState,
 } from './troopIdStatus.helpers';
@@ -63,6 +64,8 @@ export const useTroopIDStatus = ({
             lifecycleStatus: lifecycle.status,
             issuanceState,
             isLoading: lifecycle.isLoading,
+            isError: lifecycle.isError,
+            lifecycleEnabled: enabled && Boolean(credentialUri),
         }),
     };
 };
@@ -145,7 +148,7 @@ const TroopIdStatusButton: React.FC<TroopIdStatusButtonProps> = ({
             break;
     }
 
-    if (isHidden) return <></>;
+    if (isHidden || !shouldShowTroopIdStatus({ lifecycleEnabled, credentialUri })) return <></>;
 
     return (
         <>

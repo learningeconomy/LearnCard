@@ -106,6 +106,7 @@ const TroopPageIdAndTroopBox: React.FC<TroopPageIdAndTroopBoxProps> = ({
                         credential={credentialNoEdits}
                         credentialUri={credentialUri}
                         issuanceState={issuanceState}
+                        lifecycleEnabled={Boolean(credentialUri)}
                         onClick={handleShowIdDetails}
                         skeletonStyles={{
                             padding: '8px 14px 8px 14px',
