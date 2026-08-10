@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { getGroupRemovalOutcome } from '../groupRemoval.helpers';
+import { getGroupRemovalOutcome, isRemovableGroupMemberRole } from '../groupRemoval.helpers';
 
 describe('getGroupRemovalOutcome', () => {
     it('accepts new and already-revoked complete outcomes', () => {
@@ -27,5 +27,11 @@ describe('getGroupRemovalOutcome', () => {
                 failedCredentialUris: ['credential:2'],
             })
         ).toBe('partial');
+    });
+});
+
+describe('isRemovableGroupMemberRole', () => {
+    it('allows Leader rows through the unified group removal path', () => {
+        expect(isRemovableGroupMemberRole('Leader')).toBe(true);
     });
 });

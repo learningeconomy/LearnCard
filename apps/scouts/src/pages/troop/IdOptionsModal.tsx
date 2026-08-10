@@ -22,7 +22,7 @@ import {
 import { getScoutsRole } from '../../helpers/troop.helpers';
 import { VC } from '@learncard/types';
 import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
-import { getGroupRemovalOutcome } from './groupRemoval.helpers';
+import { getGroupRemovalOutcome, isRemovableGroupMemberRole } from './groupRemoval.helpers';
 import type { TroopIdIssuanceState } from './troopIdStatus.helpers';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('id-options-modal');
@@ -71,7 +71,7 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
     const role = getScoutsRole(credential);
     const troopOrNetwork =
         role === ScoutsRoleEnum.scout || role === ScoutsRoleEnum.leader ? 'Troop' : 'Network';
-    const isScoutMember = type === 'Scout' || type === 'Member';
+    const isRemovableGroupMember = isRemovableGroupMemberRole(type);
 
     const { data: resolvedCredential } = useResolveBoost(credentialUri ?? boostUri);
     const displayCredential =
@@ -208,7 +208,7 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
             {/* Remove Scout option - for troop leaders/admins removing non-admin members */}
             {!isPersonalId &&
                 (isTroopLeader || canManageId || hasGlobalAdminID) &&
-                isScoutMember && (
+                isRemovableGroupMember && (
                     <IdOptionRow
                         text={isRevoking ? 'Removing...' : `Remove from ${troopOrNetwork}`}
                         icon={isRevoking ? <LoadingSpinner /> : <PeaceIcon />}
