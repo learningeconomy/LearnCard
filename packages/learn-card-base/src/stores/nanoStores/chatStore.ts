@@ -15,6 +15,7 @@ import type {
     LearningPathway,
     ActiveSessionStatus,
 } from '../../types/ai-chat';
+import { parseAiErrorPayload, type AiClientError } from '../../helpers/aiErrors';
 
 export const messages = atom<ChatMessage[]>([]);
 export const streamingMessage = atom<ChatMessage | null>(null);
@@ -48,7 +49,9 @@ export const chatInputText = atom('');
  * this to emit failure telemetry. `at` makes each failure a distinct
  * value so repeated failures re-trigger subscribers.
  */
-export const lastAiError = atom<{ at: number; code?: string } | null>(null);
+export const lastAiError = atom<AiClientError | { at: number; code?: string; event?: undefined }>(
+    null
+);
 import { getLogger } from '../../logging/logger';
 const log = getLogger('chat-store');
 
@@ -254,6 +257,32 @@ const flushStream = () => {
 const scheduleFlush = () => {
     if (streamRaf != null) return;
     streamRaf = requestAnimationFrame(flushStream);
+};
+const preservePartialStreamingMessage = () => {
+    if (streamRaf != null) {
+        cancelAnimationFrame(streamRaf);
+        flushStream();
+    }
+
+    const pending = streamingMessage.get();
+
+    if (pending) {
+        messages.set([...messages.get(), pending]);
+        streamingMessage.set(null);
+    }
+
+    streamingId = null;
+};
+
+const stopPendingAiResponse = () => {
+    clearSessionStartWatchdog();
+    currentSessionStartRequestId = null;
+    preservePartialStreamingMessage();
+    isLoading.set(false);
+    isTyping.set(false);
+    isEndingSession.set(false);
+    showEndingSessionLoader.set(false);
+    planStreamActive.set(false);
 };
 
 // Load user's threads
@@ -689,7 +718,7 @@ export function connectWebSocket() {
             if (data.event === 'thread_updated') {
                 if (!isCurrentThreadFrame(data.threadId)) return;
 
-                if (data.phase === 'responding') isTyping.set(true);
+                if (data.phase === 'responding' && !lastAiError.get()) isTyping.set(true);
 
                 void loadThread(data.threadId).finally(() => {
                     if (data.phase !== 'responding') isTyping.set(false);
@@ -742,6 +771,26 @@ export function connectWebSocket() {
                 isLoading.set(false);
                 isTyping.set(false);
                 sessionEnded.set(true);
+                return;
+            }
+
+            const aiServiceError = parseAiErrorPayload(data);
+
+            if (aiServiceError) {
+                if (
+                    typeof aiServiceError.requestId === 'string' &&
+                    !isCurrentSessionStartFrame(aiServiceError.requestId)
+                )
+                    return;
+                if (
+                    typeof aiServiceError.threadId === 'string' &&
+                    !isCurrentThreadFrame(aiServiceError.threadId)
+                )
+                    return;
+
+                stopPendingAiResponse();
+                lastAiError.set({ ...aiServiceError, at: Date.now() });
+
                 return;
             }
 
@@ -963,7 +1012,10 @@ export function connectWebSocket() {
         if (ws !== socket) return;
         log.error('WebSocket error:', err);
         const responsePending = isTyping.get() || isLoading.get() || !!streamingMessage.get();
-        if (responsePending) lastAiError.set({ at: Date.now(), code: 'websocket_error' });
+        if (!responsePending) return;
+
+        stopPendingAiResponse();
+        lastAiError.set({ at: Date.now(), code: 'websocket_error' });
     };
 
     return ws;
@@ -1004,6 +1056,8 @@ export function sendMessageWithQuestion(content: string, selectedQuestion?: stri
         onReady(() => sendMessageWithQuestion(content, selectedQuestion));
         return;
     }
+
+    lastAiError.set(null);
 
     const currentMessages = messages.get();
     let newMessage: ChatMessage;
@@ -1333,6 +1387,7 @@ export function continuePlan() {
         onReady(() => continuePlan());
         return;
     }
+    lastAiError.set(null);
     isTyping.set(true);
     socket.send(JSON.stringify({ action: 'continue_plan', threadId }));
     planReady.set(false);

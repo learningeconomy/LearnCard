@@ -305,6 +305,120 @@ describe('chat session startup', () => {
         );
     });
 
+    it('records typed quota errors and clears startup state without generic modal copy', async () => {
+        const start = startTopic('Algebra');
+        const socket = await openLatestSocket();
+        await start;
+        socket.receive({ event: 'session_start_accepted', requestId: 'request-quota' });
+        socket.receive({
+            event: 'ai_error',
+            code: 'ai_provider_quota_exhausted',
+            message: 'Safe public message',
+            retryable: false,
+            operation: 'session_start',
+            requestId: 'request-quota',
+        });
+
+        expect(isLoading.get()).toBe(false);
+        expect(isTyping.get()).toBe(false);
+        expect(planStreamActive.get()).toBe(false);
+        expect(lastAiError.get()).toMatchObject({
+            event: 'ai_error',
+            code: 'ai_provider_quota_exhausted',
+            retryable: false,
+            operation: 'session_start',
+            requestId: 'request-quota',
+        });
+        expect(mocks.showErrorModal).not.toHaveBeenCalled();
+    });
+
+    it('stops pending response indicators immediately when the WebSocket errors', async () => {
+        const start = startTopic('Algebra');
+        const socket = await openLatestSocket();
+        await start;
+
+        expect(isLoading.get()).toBe(true);
+        expect(isTyping.get()).toBe(true);
+
+        socket.onerror?.();
+
+        expect(isLoading.get()).toBe(false);
+        expect(isTyping.get()).toBe(false);
+        expect(planStreamActive.get()).toBe(false);
+        expect(lastAiError.get()).toMatchObject({ code: 'websocket_error' });
+    });
+
+    it('preserves a partial assistant response when a typed AI error interrupts streaming', async () => {
+        connectWebSocket();
+        const socket = await openLatestSocket();
+        currentThreadId.set('thread-stream');
+        messages.set([{ role: 'user', content: 'My question' }]);
+
+        socket.receive('Partial answer');
+        socket.receive({
+            event: 'ai_error',
+            code: 'ai_provider_quota_exhausted',
+            message: 'Safe public message',
+            retryable: false,
+            operation: 'chat',
+            threadId: 'thread-stream',
+        });
+
+        expect(messages.get().map(message => message.content)).toEqual([
+            'My question',
+            'Partial answer',
+        ]);
+        expect(isTyping.get()).toBe(false);
+        expect(lastAiError.get()).toMatchObject({
+            code: 'ai_provider_quota_exhausted',
+            threadId: 'thread-stream',
+        });
+    });
+
+    it('does not resurrect typing when a responding frame arrives after a quota error', async () => {
+        connectWebSocket();
+        const socket = await openLatestSocket();
+        currentThreadId.set('thread-quota');
+        isTyping.set(true);
+
+        socket.receive({
+            event: 'ai_error',
+            code: 'ai_provider_quota_exhausted',
+            message: 'Safe public message',
+            retryable: false,
+            operation: 'chat',
+            threadId: 'thread-quota',
+        });
+        socket.receive({
+            event: 'thread_updated',
+            threadId: 'thread-quota',
+            phase: 'responding',
+        });
+
+        expect(lastAiError.get()).toMatchObject({
+            code: 'ai_provider_quota_exhausted',
+            threadId: 'thread-quota',
+        });
+        expect(isTyping.get()).toBe(false);
+    });
+
+    it('ignores typed AI errors correlated to a stale startup request', async () => {
+        const start = startTopic('Algebra');
+        const socket = await openLatestSocket();
+        await start;
+        socket.receive({ event: 'session_start_accepted', requestId: 'request-current' });
+        socket.receive({
+            event: 'ai_error',
+            code: 'ai_provider_quota_exhausted',
+            message: 'Safe public message',
+            retryable: false,
+            requestId: 'request-stale',
+        });
+
+        expect(isLoading.get()).toBe(true);
+        expect(lastAiError.get()).toBeNull();
+    });
+
     it('terminates loading for a legacy startup error before request acceptance', async () => {
         const start = startTopic('Algebra');
         const socket = await openLatestSocket();

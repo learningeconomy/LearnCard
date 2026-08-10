@@ -6,6 +6,7 @@ import { useStore } from '@nanostores/react';
 import { lastAiError } from 'learn-card-base/stores/nanoStores/chatStore';
 
 import { AiSessionMode } from './newAiSession.helpers';
+import { getAiErrorCopy } from '../../helpers/aiError.helpers';
 
 export const AiInsightsErrorHandler: React.FC<{
     active: boolean;
@@ -44,6 +45,10 @@ export const AiInsightsErrorHandler: React.FC<{
 
     if (visibleErrorAt === null) return null;
 
+    const { title, body } = getAiErrorCopy(
+        aiError?.event === 'ai_error' ? aiError.code : 'ai_unknown_error'
+    );
+
     return (
         <div className="absolute inset-x-4 top-[calc(80px+env(safe-area-inset-top))] z-[100]">
             <div
@@ -55,10 +60,8 @@ export const AiInsightsErrorHandler: React.FC<{
                     className="text-red-400 text-lg mt-0.5 shrink-0"
                 />
                 <div>
-                    <p className="text-sm font-semibold text-red-700">Something went wrong</p>
-                    <p className="text-sm text-red-700 leading-relaxed">
-                        AI chat is temporarily unavailable. Please try again later.
-                    </p>
+                    <p className="text-sm font-semibold text-red-700">{title}</p>
+                    <p className="text-sm text-red-700 leading-relaxed">{body}</p>
                 </div>
             </div>
         </div>

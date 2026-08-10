@@ -27,6 +27,8 @@
         "build:bootstrap": "nx run-many -t build --projects=types,helpers,core,vc-plugin,email-templates",
         "test:e2e": "nx run e2e:test:e2e",
         "run-network-tests": "nx run network-brain-service:build && bun run --cwd services/learn-card-network/brain-service test",
+        "test:lc-2079": "bun run --cwd packages/learn-card-base test -- src/helpers/aiErrors.test.ts src/stores/nanoStores/chatStore.test.ts && bun run --cwd apps/learn-card-app test:unit -- src/helpers/aiError.helpers.test.ts",
+        "verify:lc-2079": "bun run test:lc-2079 && bunx nx build learn-card-app",
         "validate-packages": "node scripts/validate-packages.mjs",
         "env:pull": "bash scripts/pull-env.sh",
         "env:backup": "bash scripts/backup-env.sh",

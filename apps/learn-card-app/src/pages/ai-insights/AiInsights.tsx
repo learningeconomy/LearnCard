@@ -33,6 +33,7 @@ import {
     useToast,
     ToastTypeEnum,
 } from 'learn-card-base';
+import { AiServiceError, type AiErrorCode } from 'learn-card-base/helpers/aiErrors';
 import { useLoadingLine } from '../../stores/loadingStore';
 import {
     aggregateCategorizedEntries,
@@ -47,6 +48,7 @@ import { useAllContractRequestsForProfile } from 'learn-card-base';
 import { AiInsightsTabsEnum } from './ai-insight-tabs/ai-insights-tabs.helpers';
 import AiInsightsWidgets from './AiInsightsWidgets';
 import { useGlobalSkillFrameworks } from '../../helpers/globalSkillFrameworks.helpers';
+import { getAiErrorCopy } from '../../helpers/aiError.helpers';
 
 type Flags = {
     hideAiPathways?: boolean;
@@ -72,6 +74,7 @@ const AiInsights: React.FC = () => {
 
     const [selectedTab, setSelectedTab] = useState(AiInsightsTabsEnum.MyInsights);
     const autoGenerateAiInsightsAttemptedRef = useRef(false);
+    const [aiInsightErrorCode, setAiInsightErrorCode] = useState<AiErrorCode | null>(null);
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
@@ -147,8 +150,14 @@ const AiInsights: React.FC = () => {
         }
 
         createAiInsightCredential(undefined, {
-            onError: () => {
-                presentToast('Something went wrong. Please try again.', {
+            onSuccess: () => setAiInsightErrorCode(null),
+            onError: error => {
+                const code =
+                    error instanceof AiServiceError ? error.payload.code : 'ai_unknown_error';
+                const { body } = getAiErrorCopy(code);
+
+                setAiInsightErrorCode(code);
+                presentToast(body, {
                     type: ToastTypeEnum.Error,
                     hasDismissButton: true,
                 });
@@ -252,6 +261,7 @@ const AiInsights: React.FC = () => {
             ];
         });
     }, [pendingRequests]);
+    const aiInsightErrorCopy = aiInsightErrorCode ? getAiErrorCopy(aiInsightErrorCode) : undefined;
 
     const myInsights = (
         <>
@@ -274,6 +284,16 @@ const AiInsights: React.FC = () => {
             <ShareInsightsCard />
 
             {topSkills.length > 0 && <AiInsightsTopSkills topSkills={topSkills} />}
+            {aiInsightErrorCopy && !aiInsightCredentialToDisplay && (
+                <div
+                    className="w-full rounded-[15px] border border-current p-4 text-start"
+                    role="status"
+                    aria-live="polite"
+                >
+                    <h2 className="font-semibold">{aiInsightErrorCopy.title}</h2>
+                    <p>{aiInsightErrorCopy.body}</p>
+                </div>
+            )}
             <AiInsightsLearningSnapshots
                 aiInsightCredential={aiInsightCredentialToDisplay}
                 isLoading={learningSnapshotsIsLoading}

@@ -6,7 +6,16 @@ import AiInsightsErrorHandler from './AiInsightsErrorHandler';
 import { AiSessionMode } from './newAiSession.helpers';
 
 const mocks = vi.hoisted(() => ({
-    aiError: null as { at: number; code?: string } | null,
+    aiError: null as
+        | {
+              at: number;
+              event: 'ai_error';
+              code: 'ai_provider_quota_exhausted';
+              message: string;
+              retryable: boolean;
+          }
+        | { at: number; code?: string }
+        | null,
 }));
 
 vi.mock('@nanostores/react', () => ({
@@ -17,23 +26,42 @@ vi.mock('learn-card-base/stores/nanoStores/chatStore', () => ({
     lastAiError: {},
 }));
 
+vi.mock('../../helpers/aiError.helpers', () => ({
+    getAiErrorCopy: (code: string) =>
+        code === 'ai_provider_quota_exhausted'
+            ? {
+                  title: 'LearnCard AI usage limit reached',
+                  body: 'LearnCard AI has reached its current usage limit. Please try again later.',
+              }
+            : {
+                  title: 'LearnCard AI could not complete this request',
+                  body: 'Please try again later.',
+              },
+}));
+
 describe('AiInsightsErrorHandler', () => {
     beforeEach(() => {
         mocks.aiError = null;
         vi.spyOn(Date, 'now').mockReturnValue(1_000);
     });
 
-    it('shows a friendly error for an active Insights request', () => {
+    it('shows quota-specific guidance for an active Insights request', () => {
         const { rerender } = render(
             <AiInsightsErrorHandler active mode={AiSessionMode.insights} />
         );
 
-        mocks.aiError = { at: 1_001, code: 'insufficient_quota' };
+        mocks.aiError = {
+            at: 1_001,
+            event: 'ai_error',
+            code: 'ai_provider_quota_exhausted',
+            message: 'Safe public message',
+            retryable: false,
+        };
         rerender(<AiInsightsErrorHandler active mode={AiSessionMode.insights} />);
 
-        expect(screen.getByRole('alert')).toHaveTextContent('Something went wrong');
+        expect(screen.getByRole('alert')).toHaveTextContent('LearnCard AI usage limit reached');
         expect(screen.getByRole('alert')).toHaveTextContent(
-            'AI chat is temporarily unavailable. Please try again later.'
+            'LearnCard AI has reached its current usage limit. Please try again later.'
         );
     });
 

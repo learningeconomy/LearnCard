@@ -3,7 +3,7 @@ import { useStore } from '@nanostores/react';
 import { useDeviceTypeByWidth, useKeyboardHeight, isPlatformIOS } from 'learn-card-base';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 import { getLogger } from 'learn-card-base';
-const log = getLogger('learn-card-ai-chat-bot');
+import { showErrorModal } from 'learn-card-base/stores/nanoStores/ErrorModalStore';
 
 import {
     useAnalytics,
@@ -49,6 +49,9 @@ import {
 import { AiFeatureGate } from '../../ai-feature-gate/AiFeatureGate';
 import { useStickToBottom } from '../../../hooks/useStickToBottom';
 import { preloadMarkdownRenderer } from '../../ai-assessment/AiAssessment/helpers/LazyMarkdownRenderer';
+import { getAiErrorCopy } from '../../../helpers/aiError.helpers';
+
+const log = getLogger('learn-card-ai-chat-bot');
 
 export const getBackendUrl = (): string => networkStore.get.aiServiceUrl();
 
@@ -358,6 +361,12 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
         ) {
             return;
         }
+        if (aiError.event === 'ai_error') {
+            const { title, body } = getAiErrorCopy(aiError.code);
+
+            showErrorModal(title, body);
+        }
+
         const response = aiResponseQueueRef.current[0];
         if (!response?.lifecycle.terminate()) {
             aiHandledErrorAtRef.current = aiError.at;
@@ -476,7 +485,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                                         </div>
                                     )}
 
-                                    {typing && !streaming && (
+                                    {typing && !streaming && !aiError && (
                                         <div
                                             role="status"
                                             aria-label="AI is responding"
