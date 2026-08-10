@@ -51,6 +51,21 @@ jobs:
               if: steps.changed.outputs.has_files != 'true'
               run: echo "No lintable files changed in this PR — skipping."
 
+    Accessibility:
+        name: Run accessibility lint
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
+
+            - name: Run jsx-a11y lint
+              run: bun run lint
+
     I18nKeys:
         runs-on: ubuntu-latest
         steps:
