@@ -168,6 +168,8 @@ const TroopPageMembersBox: React.FC<TroopPageMembersBoxProps> = ({
                     ownerProfileId={member.profileId}
                     handleShare={handleShare}
                     boostUri={member.boostUri}
+                    credentialUri={member.credentialUri}
+                    issuanceState={member.issuanceState}
                     type={member?.type}
                 />,
                 { sectionClassName: '!max-w-[400px]' }
