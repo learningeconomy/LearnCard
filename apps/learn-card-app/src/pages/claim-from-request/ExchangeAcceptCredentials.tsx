@@ -48,17 +48,23 @@ import { getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 import { BoostEarnedCard } from '../../components/boost/boost-earned-card/BoostEarnedCard';
 import { publishWalletEvent } from '../pathways/events/walletEventBus';
 
+import type { DuplicateCredentialResolution } from '../../components/credentials/duplicate-credential/useDuplicateCredentialGuard';
+
 import { VCAPIRequestStrategy } from './ClaimFromRequest';
 
 interface ExchangeAcceptCredentialsProps {
     verifiablePresentation: VP; // Contains the verifiablePresentation from the server
     onAccept: (body: any, credentialClaimCount: number) => void; // Callback to continue the exchange
+    requestDuplicateResolution: (credential: VC) => Promise<DuplicateCredentialResolution>;
+    isCheckingDuplicate: boolean;
     strategy?: VCAPIRequestStrategy;
 }
 
 const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     verifiablePresentation,
     onAccept,
+    requestDuplicateResolution,
+    isCheckingDuplicate,
     strategy,
 }) => {
     const [claiming, setClaiming] = useState(false);
@@ -229,6 +235,33 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
             });
             return;
         }
+        const credentialsToStore: {
+            credential: VC;
+            duplicateResolution: DuplicateCredentialResolution;
+        }[] = [];
+
+        // Resolve every selected credential before writing any of them so cancelling a later
+        // duplicate prompt cannot leave a partially stored batch.
+        for (const credential of selectedCredentials) {
+            // Duplicate prompts must be handled one at a time.
+            // eslint-disable-next-line no-await-in-loop
+            const duplicateResolution = await requestDuplicateResolution(credential);
+            if (duplicateResolution.action === 'cancel') return;
+            if (duplicateResolution.action === 'save') {
+                credentialsToStore.push({ credential, duplicateResolution });
+            }
+        }
+
+        if (credentialsToStore.length === 0) {
+            setIsClaimed(true);
+            presentToast(m['claim.duplicate.skippedToast'](), {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
+            onAccept({}, selectedCredentials.length);
+            return;
+        }
+
         beginClaimAttempt();
         setClaiming(true);
         // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
@@ -245,7 +278,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
             // acceptance calls `storeAndAddVCToWallet` directly, so
             // we do the publish inline here.
             const storeResults = await Promise.all(
-                selectedCredentials.map((credential, i) => {
+                credentialsToStore.map(({ credential, duplicateResolution }, i) => {
                     const name = credential.name || 'Credential';
                     const category = getDefaultCategoryForCredential(credential);
                     const achievementType = getAchievementType(credential);
@@ -272,7 +305,15 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                         msSinceSessionStart: now - sessionStart,
                     });
 
-                    return storeAndAddVCToWallet(credential, { title: name }, 'LearnCloud', true);
+                    return storeAndAddVCToWallet(
+                        credential,
+                        {
+                            title: name,
+                            allowDuplicate: duplicateResolution.isDuplicate,
+                        },
+                        'LearnCloud',
+                        true
+                    );
                 })
             );
 
@@ -282,7 +323,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
             // bus listener must never break the core claim flow —
             // the reactor's dedup-by-eventId tolerates a future
             // replay sweep that catches anything we drop here.
-            selectedCredentials.forEach((credential, index) => {
+            credentialsToStore.forEach(({ credential }, index) => {
                 const credentialUri = storeResults[index]?.credentialUri;
 
                 if (!credentialUri) return;
@@ -304,7 +345,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
             setIsClaimed(true);
             completeClaimAttempt(AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED);
 
-            presentToast(m['claim.accept.success']({ count: selectedCredentials.length }), {
+            presentToast(m['claim.accept.success']({ count: credentialsToStore.length }), {
                 type: ToastTypeEnum.Success,
                 hasDismissButton: true,
             });
@@ -570,6 +611,8 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
     const claimBtnText = isClaimed
         ? m['claim.accept.claimed']()
+        : isCheckingDuplicate
+        ? m['claim.duplicate.checking']()
         : claiming
         ? m['common.loading']()
         : m['common.accept']();
@@ -582,7 +625,14 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
         return (
             <IonPage>
-                <IonLoading isOpen={claiming} message={m['claim.accept.claiming']()} />
+                <IonLoading
+                    isOpen={claiming || isCheckingDuplicate}
+                    message={
+                        isCheckingDuplicate
+                            ? m['claim.duplicate.checking']()
+                            : m['claim.accept.claiming']()
+                    }
+                />
                 <BoostFooterLayout
                     contentOwnsScroll
                     footerProps={{
@@ -595,7 +645,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                             : undefined,
                         handleClaim,
                         claimBtnText,
-                        disableClaimButton: claiming || isClaimed,
+                        disableClaimButton: claiming || isCheckingDuplicate || isClaimed,
                         useFullCloseButton: !isMobile,
                     }}
                 >
@@ -637,7 +687,14 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     // Multiple-credential claim — grid selection view (unchanged).
     return (
         <IonPage>
-            <IonLoading isOpen={claiming} message={'Claiming Credential(s)...'} />
+            <IonLoading
+                isOpen={claiming || isCheckingDuplicate}
+                message={
+                    isCheckingDuplicate
+                        ? m['claim.duplicate.checking']()
+                        : 'Claiming Credential(s)...'
+                }
+            />
             <BoostFooterLayout
                 contentOwnsScroll
                 footerProps={{
@@ -647,7 +704,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                     },
                     handleClaim,
                     claimBtnText,
-                    disableClaimButton: claiming || isClaimed,
+                    disableClaimButton: claiming || isCheckingDuplicate || isClaimed,
                     useFullCloseButton: false,
                 }}
             >

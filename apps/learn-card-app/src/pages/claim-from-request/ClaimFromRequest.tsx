@@ -805,7 +805,9 @@ const ClaimFromRequest: React.FC = () => {
     };
 
     const renderExchangeStep = () => {
-        if (isCheckingDuplicate) return <ExchangeLoading />;
+        if (isCheckingDuplicate && exchangeState.state !== ExchangeState.AcceptCredentials) {
+            return <ExchangeLoading />;
+        }
 
         switch (exchangeState.state) {
             case ExchangeState.PresentationRequest:
@@ -823,6 +825,8 @@ const ClaimFromRequest: React.FC = () => {
                         verifiablePresentation={exchangeState.data}
                         onAccept={handleRequest}
                         strategy={exchangeState.strategy}
+                        requestDuplicateResolution={requestDuplicateResolution}
+                        isCheckingDuplicate={isCheckingDuplicate}
                     />
                 );
             case ExchangeState.Redirect:

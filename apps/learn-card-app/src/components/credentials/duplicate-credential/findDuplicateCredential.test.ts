@@ -135,6 +135,30 @@ describe('findDuplicateCredential', () => {
         expect(wallet.index.LearnCloud.get).toHaveBeenCalledWith({ boostUri });
     });
 
+    it('uses the issued credential Boost URI for a repeated VC API interaction claim', async () => {
+        const boostUri = 'lc:network:localhost%3A4000/trpc:boost:boost-id';
+        const interactionCredential = {
+            id: 'urn:uuid:new-interaction-issuance',
+            type: ['VerifiableCredential', 'BoostCredential'],
+            boostId: boostUri,
+        } as VC;
+        const savedCredential = {
+            ...interactionCredential,
+            id: 'urn:uuid:previous-interaction-issuance',
+        } as VC;
+        const wallet = createWallet({
+            boostRecords: [{ uri: 'lc:credential:previous', boostUri }],
+            credentialsByUri: { 'lc:credential:previous': savedCredential },
+        });
+
+        await expect(findDuplicateCredential(wallet, interactionCredential)).resolves.toMatchObject(
+            {
+                record: { uri: 'lc:credential:previous', boostUri },
+                credential: savedCredential,
+            }
+        );
+    });
+
     it('does not scan the wallet when the incoming credential has no stable ID', async () => {
         const wallet = createWallet();
 
