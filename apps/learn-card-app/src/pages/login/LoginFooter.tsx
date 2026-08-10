@@ -43,7 +43,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                                 openToS();
                             }
                         }}
-                        className="flex items-center justify-center whitespace-nowrap text-grayscale-900 font-bold text-xs hover:underline"
+                        className="flex items-center justify-center whitespace-nowrap text-white font-bold text-xs hover:underline"
                     >
                         {m['login.footer.terms']()}
                     </a>
@@ -55,7 +55,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                                 openPP();
                             }
                         }}
-                        className="flex items-center whitespace-nowrap text-grayscale-900 font-bold text-xs hover:underline"
+                        className="flex items-center whitespace-nowrap text-white font-bold text-xs hover:underline"
                     >
                         {m['login.footer.privacy']()}
                     </a>
@@ -67,7 +67,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                                 openLCwebsite();
                             }
                         }}
-                        className="flex items-center whitespace-nowrap text-grayscale-900 font-bold text-xs hover:underline"
+                        className="flex items-center whitespace-nowrap text-white font-bold text-xs hover:underline"
                     >
                         {m['login.footer.learnMore']()}
                     </a>
@@ -77,7 +77,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                             e.preventDefault();
                             history.push('/ai/pathways/discovery');
                         }}
-                        className="flex items-center whitespace-nowrap text-grayscale-900 font-bold text-xs hover:underline"
+                        className="flex items-center whitespace-nowrap text-white font-bold text-xs hover:underline"
                     >
                         {m['login.footer.explorePathways']()}
                     </button>
@@ -87,10 +87,10 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                         size="12"
                         className="w-full flex flex-col items-center justify-center text-center mt-[20px] space-y-[4px] "
                     >
-                        <p className="text-grayscale-900 font-medium text-base">
+                        <p className="text-white font-medium text-base">
                             {m['login.footer.selfCustodialLogin']()}
                         </p>
-                        <p className="text-grayscale-900 text-sm">
+                        <p className="text-white text-sm">
                             <TransP
                                 m={m['login.footer.haveSeedPhrase']}
                                 components={[
@@ -103,7 +103,7 @@ const LoginFooter: React.FC<{ hideSelfCustodialLogin?: boolean }> = ({
                                             e.stopPropagation();
                                             openSeedPhraseModal();
                                         }}
-                                        className="font-bold underline text-sm text-grayscale-900"
+                                        className="font-bold underline text-sm text-white"
                                     />,
                                 ]}
                             />

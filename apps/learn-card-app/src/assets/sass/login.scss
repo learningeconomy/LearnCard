@@ -48,7 +48,7 @@
     .PhoneInputInput {
         background-color: var(--ion-color-grayscale-100);
         border: 1px solid var(--ion-color-grayscale-200);
-        color: var(--ion-color-grayscale-900);
+        color: white;
 
         &::placeholder {
             color: var(--ion-color-grayscale-500);
@@ -185,7 +185,7 @@
         outline: none;
 
         &::placeholder {
-            color: var(--ion-color-grayscale-900);
+            color: white;
             font-size: 14px;
             font-weight: 600;
         }
@@ -210,7 +210,7 @@
 
         .PhoneInputCountryIcon {
             background: none;
-            border: solid 1px var(--ion-color-grayscale-900);
+            border: solid 1px white;
             width: 30px;
             height: 30px;
             outline: none;

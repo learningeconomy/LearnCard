@@ -326,9 +326,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                         key="0"
                         type="button"
                         aria-label="Start over"
-                        className={
-                            startOverClassNameOverride ?? 'text-grayscale-900 underline font-bold'
-                        }
+                        className={startOverClassNameOverride ?? 'text-white underline font-bold'}
                         onClick={resetForm}
                     />,
                 ]}
@@ -406,7 +404,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                                     }}
                                     className={
                                         resendCodeButtonClassNameOverride ??
-                                        'text-grayscale-900 font-bold mt-4 border-b-grayscale-900 border-solid border-b-[1px]'
+                                        'text-white font-bold mt-4 border-b-white border-solid border-b-[1px]'
                                     }
                                 >
                                     {resendCodeButtonText}
@@ -417,7 +415,7 @@ const PhoneForm: React.FC<PhoneFormProps> = ({
                                     disabled
                                     className={
                                         resendCodeButtonClassNameOverride ??
-                                        'text-grayscale-900 font-bold mt-4 border-b-grayscale-900 border-solid border-b-[1px]'
+                                        'text-white font-bold mt-4 border-b-white border-solid border-b-[1px]'
                                     }
                                 >
                                     {m['common.resendIn']({ seconds })}

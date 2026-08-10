@@ -311,10 +311,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
     if (currentStep === EmailFormStepsEnum.email) {
         formTitle = null;
 
-        // The field sits on the themed login background. Use an ink-colored
-        // treatment so text remains legible on the brighter brand surface.
-        const defaultEmailInputClassName =
-            'bg-black/10 text-grayscale-900 placeholder:text-grayscale-900';
+        const defaultEmailInputClassName = 'bg-black/10 text-white placeholder:text-white';
         const resolvedEmailInputClassName = emailInputClassName ?? defaultEmailInputClassName;
 
         const emailError = errors.email?.[0];
@@ -383,9 +380,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                         key="0"
                         type="button"
                         aria-label="Start over"
-                        className={
-                            startOverClassNameOverride ?? 'text-grayscale-900 underline font-bold'
-                        }
+                        className={startOverClassNameOverride ?? 'text-white underline font-bold'}
                         onClick={resetForm}
                     />,
                 ]}
@@ -427,8 +422,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                 <IonCol size="12">
                     <div
                         className={
-                            formTitleClassNameOverride ??
-                            'w-full font-medium text-grayscale-900 normal'
+                            formTitleClassNameOverride ?? 'w-full font-medium text-white normal'
                         }
                     >
                         {formTitle}
@@ -469,7 +463,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                                     }}
                                     className={
                                         resendCodeButtonClassNameOverride ??
-                                        'text-grayscale-900 font-bold mt-4 border-b-grayscale-900 border-solid border-b-[1px]'
+                                        'text-white font-bold mt-4 border-b-white border-solid border-b-[1px]'
                                     }
                                 >
                                     {resendCodeButtonText}
@@ -480,7 +474,7 @@ const EmailForm: React.FC<EmailFormProps> = ({
                                     disabled
                                     className={
                                         resendCodeButtonClassNameOverride ??
-                                        'text-grayscale-900 font-bold mt-4 border-b-grayscale-900 border-solid border-b-[1px]'
+                                        'text-white font-bold mt-4 border-b-white border-solid border-b-[1px]'
                                     }
                                 >
                                     {m['common.resendIn']({ seconds })}

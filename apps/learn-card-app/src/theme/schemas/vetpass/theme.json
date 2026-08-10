@@ -276,7 +276,7 @@
             "primaryColor": "baltic-blue-500",
             "primaryColorShade": "baltic-blue-200",
             "loaders": ["#0089EE", "#78852F", "#396888", "#66B8FF"],
-            "loginBgColor": "#33A0FF",
+            "loginBgColor": "#0061B8",
             "loginButtonBgColor": "#11354E",
             "loginButtonTextColor": "#FFFFFF",
             "actionModalButtonColors": ["#F1F5F9"],
