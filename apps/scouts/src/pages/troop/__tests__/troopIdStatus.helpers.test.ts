@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'bun:test';
 
-import { deriveTroopIdStatus, isCredentialActionRestricted } from '../troopIdStatus.helpers';
+import {
+    deriveTroopIdStatus,
+    isCredentialActionRestricted,
+    isTroopIdContentRestricted,
+    shouldShowTroopIdStatus,
+} from '../troopIdStatus.helpers';
 
 describe('deriveTroopIdStatus', () => {
     it('uses revoked and suspended lifecycle states before issuance state', () => {
@@ -38,5 +43,41 @@ describe('deriveTroopIdStatus', () => {
         ['valid', false],
     ] as const)('maps %s to restricted=%s', (status, expected) => {
         expect(isCredentialActionRestricted(status)).toBe(expected);
+    });
+
+    it('keeps lifecycle errors and missing holder URIs unavailable and restricted', () => {
+        const lifecycleErrorStatus = deriveTroopIdStatus({
+            lifecycleStatus: 'active',
+            isError: true,
+        });
+        const missingHolderUriStatus = deriveTroopIdStatus({
+            lifecycleStatus: 'active',
+            lifecycleEnabled: false,
+        });
+
+        expect(lifecycleErrorStatus).toBeUndefined();
+        expect(isCredentialActionRestricted(lifecycleErrorStatus)).toBe(true);
+        expect(missingHolderUriStatus).toBeUndefined();
+        expect(isCredentialActionRestricted(missingHolderUriStatus)).toBe(true);
+    });
+
+    it('hides URI-less managed status instead of showing a valid holder ID', () => {
+        expect(shouldShowTroopIdStatus({ lifecycleEnabled: false })).toBe(false);
+    });
+
+    it('preserves the explicit parent-admin content bypass without a holder status', () => {
+        const holderStatus = deriveTroopIdStatus({
+            lifecycleStatus: 'active',
+            lifecycleEnabled: false,
+        });
+
+        expect(holderStatus).toBeUndefined();
+        expect(
+            isTroopIdContentRestricted({
+                hasParentAdminAccess: true,
+                lifecycleLoading: false,
+                status: holderStatus,
+            })
+        ).toBe(false);
     });
 });

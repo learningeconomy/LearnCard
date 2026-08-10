@@ -26,7 +26,7 @@ import {
 } from 'learn-card-base';
 import { VC, VerificationItem, Boost } from '@learncard/types';
 import { useTroopIDStatus } from './TroopIdStatusButton';
-import { isCredentialActionRestricted, type TroopIdIssuanceState } from './troopIdStatus.helpers';
+import { isTroopIdContentRestricted, type TroopIdIssuanceState } from './troopIdStatus.helpers';
 
 type TroopPageProps = {
     credential: VC;
@@ -121,9 +121,11 @@ const TroopPage: React.FC<TroopPageProps> = ({
         issuanceState: holderIssuanceState,
         enabled: ownsCurrentId && Boolean(holderCredentialUri),
     });
-    const isRestricted =
-        !hasParentAdminAccess &&
-        (lifecycleLoading || isCredentialActionRestricted(credentialStatus));
+    const isRestricted = isTroopIdContentRestricted({
+        hasParentAdminAccess,
+        lifecycleLoading,
+        status: credentialStatus,
+    });
 
     const getScoutIdTypeFromBoost = (vc: VC) => {
         return vc?.credentialSubject?.achievement?.achievementType;
