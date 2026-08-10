@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 
 import {
+    canSharePersonalTroopId,
     deriveTroopIdStatus,
     isCredentialActionRestricted,
     isTroopIdContentRestricted,
@@ -80,4 +81,25 @@ describe('deriveTroopIdStatus', () => {
             })
         ).toBe(false);
     });
+
+    it.each([
+        ['missing', undefined, false, false],
+        ['loading', undefined, true, false],
+        ['error', undefined, false, false],
+        ['pending', 'pending', false, false],
+        ['suspended', 'suspended', false, false],
+        ['revoked', 'revoked', false, false],
+        ['valid', 'valid', false, true],
+    ] as const)(
+        'allows personal Share only for a resolved valid credential (%s)',
+        (_case, status, lifecycleLoading, expected) => {
+            expect(
+                canSharePersonalTroopId({
+                    isPersonalId: true,
+                    lifecycleLoading,
+                    status,
+                })
+            ).toBe(expected);
+        }
+    );
 });

@@ -2090,6 +2090,7 @@ export const boostsRouter = t.router({
                 alreadyRevokedCredentialUris: [],
                 failedCredentialUris: [],
             };
+            const newlyRevokedCredentialUris: string[] = [];
 
             for (const instance of instances) {
                 const uri = constructUri('credential', instance.credential.id, ctx.domain);
@@ -2099,6 +2100,9 @@ export const boostsRouter = t.router({
                         instance.credential.id,
                         resolvedRecipientProfileId
                     );
+                    if (revocation.found && !revocation.wasAlreadyRevoked) {
+                        newlyRevokedCredentialUris.push(uri);
+                    }
                     const hookResult = await Promise.allSettled([
                         revokeHooks.processRevokeHooksStrict(recipientProfile, instance.credential),
                     ]);
@@ -2127,7 +2131,7 @@ export const boostsRouter = t.router({
                 }
             }
 
-            if (result.revokedCredentialUris.length > 0) {
+            if (newlyRevokedCredentialUris.length > 0) {
                 try {
                     await addNotificationToQueue({
                         type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_REVOKED,
@@ -2151,7 +2155,7 @@ export const boostsRouter = t.router({
                                 issuer: ctx.user.profile.displayName ?? ctx.user.profile.profileId,
                             }
                         ),
-                        data: { vcUris: result.revokedCredentialUris },
+                        data: { vcUris: newlyRevokedCredentialUris },
                     });
                 } catch (error) {
                     console.error('Failed to queue group CREDENTIAL_REVOKED notification', error);

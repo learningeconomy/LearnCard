@@ -259,6 +259,48 @@ describe('Revoke Boost Recipient Group (LC-1950)', { timeout: 30_000 }, () => {
         expect(await isStatusBitSet(secondEntry)).toBe(true);
     });
 
+    it('rejects singular revocation when the status-list update throws', async () => {
+        const boostUri = await userA.clients.fullAuth.boost.createBoost({
+            credential: statusBoostTemplate,
+        });
+        const { credentialUri } = await issueStatusInstanceToUserB(boostUri);
+        vi.spyOn(statusListHelpers, 'setCredentialBitstringStatusWithResult').mockRejectedValueOnce(
+            new Error('intentional status-list failure')
+        );
+        const notificationSpy = vi.spyOn(notifications, 'addNotificationToQueue');
+        notificationSpy.mockClear();
+
+        await expect(
+            userA.clients.fullAuth.boost.revokeBoostRecipient({
+                boostUri,
+                recipientProfileId: 'userb',
+                credentialUri,
+            })
+        ).rejects.toThrow('Failed to update credential status list');
+        expect(notificationSpy).not.toHaveBeenCalled();
+    });
+
+    it('rejects singular revocation when the status-list update reports failure', async () => {
+        const boostUri = await userA.clients.fullAuth.boost.createBoost({
+            credential: statusBoostTemplate,
+        });
+        const { credentialUri } = await issueStatusInstanceToUserB(boostUri);
+        vi.spyOn(statusListHelpers, 'setCredentialBitstringStatusWithResult').mockResolvedValueOnce(
+            'failed'
+        );
+        const notificationSpy = vi.spyOn(notifications, 'addNotificationToQueue');
+        notificationSpy.mockClear();
+
+        await expect(
+            userA.clients.fullAuth.boost.revokeBoostRecipient({
+                boostUri,
+                recipientProfileId: 'userb',
+                credentialUri,
+            })
+        ).rejects.toThrow('Failed to update credential status list');
+        expect(notificationSpy).not.toHaveBeenCalled();
+    });
+
     it('authoritatively revokes legacy credentials while logging a migration gap', async () => {
         const boostUri = await userA.clients.fullAuth.boost.createBoost({
             credential: testUnsignedBoost,
@@ -282,6 +324,59 @@ describe('Revoke Boost Recipient Group (LC-1950)', { timeout: 30_000 }, () => {
         );
     });
 
+    it('repairs legacy received-side revocation without changing its audit time or notifying', async () => {
+        const boostUri = await userA.clients.fullAuth.boost.createBoost({
+            credential: testUnsignedBoost,
+        });
+        const credentialUri = await sendBoost(
+            { profileId: 'usera', user: userA },
+            { profileId: 'userb', user: userB },
+            boostUri,
+            true
+        );
+        const credentialId = getIdFromUri(credentialUri);
+        const legacyRevokedAt = '2025-01-02T03:04:05.000Z';
+        const { neogma } = await import('@instance');
+        await neogma.queryRunner.run(
+            `MATCH (:Profile)-[sent:CREDENTIAL_SENT {to: $profileId}]->(credential:Credential {id: $credentialId})
+             MATCH (credential)-[received:CREDENTIAL_RECEIVED]->(:Profile {profileId: $profileId})
+             SET sent.status = null,
+                 received.status = "revoked",
+                 received.revokedAt = $legacyRevokedAt
+             REMOVE sent.revokedAt`,
+            { credentialId, profileId: 'userb', legacyRevokedAt }
+        );
+        const notificationSpy = vi.spyOn(notifications, 'addNotificationToQueue');
+        notificationSpy.mockClear();
+        const hookSpy = vi.spyOn(revokeHooks, 'processRevokeHooksStrict');
+
+        const result = await userA.clients.fullAuth.boost.revokeBoostRecipientGroup({
+            boostUri,
+            recipientProfileId: 'userb',
+        });
+
+        expect(result.revokedCredentialUris).toEqual([]);
+        expect(result.alreadyRevokedCredentialUris).toEqual([credentialUri]);
+        expect(result.failedCredentialUris).toEqual([]);
+        expect(notificationSpy).not.toHaveBeenCalled();
+        expect(hookSpy).toHaveBeenCalledWith(
+            expect.objectContaining({ profileId: 'userb' }),
+            expect.objectContaining({ id: credentialId })
+        );
+
+        const audit = await neogma.queryRunner.run(
+            `MATCH (:Profile)-[sent:CREDENTIAL_SENT {to: $profileId}]->(credential:Credential {id: $credentialId})
+             MATCH (credential)-[received:CREDENTIAL_RECEIVED]->(:Profile {profileId: $profileId})
+             RETURN sent.status AS sentStatus,
+                    sent.revokedAt AS sentRevokedAt,
+                    received.revokedAt AS receivedRevokedAt`,
+            { credentialId, profileId: 'userb' }
+        );
+        expect(audit.records[0]?.get('sentStatus')).toBe('revoked');
+        expect(audit.records[0]?.get('sentRevokedAt')).toBe(legacyRevokedAt);
+        expect(audit.records[0]?.get('receivedRevokedAt')).toBe(legacyRevokedAt);
+    });
+
     it('retries cleanup hooks for already revoked credentials after a partial failure', async () => {
         const boostUri = await userA.clients.fullAuth.boost.createBoost({
             credential: testUnsignedBoost,
@@ -300,6 +395,8 @@ describe('Revoke Boost Recipient Group (LC-1950)', { timeout: 30_000 }, () => {
         );
         const failingCredentialId = getIdFromUri(failingUri);
         const realProcessRevokeHooks = revokeHooks.processRevokeHooksStrict;
+        const notificationSpy = vi.spyOn(notifications, 'addNotificationToQueue');
+        notificationSpy.mockClear();
         let failingCredentialHookCalls = 0;
         const processRevokeHooksSpy = vi
             .spyOn(revokeHooks, 'processRevokeHooksStrict')
@@ -313,11 +410,18 @@ describe('Revoke Boost Recipient Group (LC-1950)', { timeout: 30_000 }, () => {
         const firstResult = await userA.clients.fullAuth.boost.revokeBoostRecipientGroup(input);
         expect(firstResult.failedCredentialUris).toEqual([failingUri]);
         expect(firstResult.revokedCredentialUris).toContain(successfulUri);
+        expect(notificationSpy).toHaveBeenCalledTimes(1);
+        expect(notificationSpy).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: { vcUris: expect.arrayContaining([successfulUri, failingUri]) },
+            })
+        );
 
         const secondResult = await userA.clients.fullAuth.boost.revokeBoostRecipientGroup(input);
         expect(secondResult.failedCredentialUris).toEqual([]);
         expect(secondResult.alreadyRevokedCredentialUris).toContain(failingUri);
         expect(failingCredentialHookCalls).toBe(2);
+        expect(notificationSpy).toHaveBeenCalledTimes(1);
         expect(processRevokeHooksSpy).toHaveBeenCalledWith(
             expect.objectContaining({ profileId: 'userb' }),
             expect.objectContaining({ id: failingCredentialId })
@@ -329,21 +433,33 @@ describe('Revoke Boost Recipient Group (LC-1950)', { timeout: 30_000 }, () => {
             credential: statusBoostTemplate,
         });
         await issueStatusInstanceToUserB(boostUri);
-        const { credentialUri: newestCredentialUri } = await issueStatusInstanceToUserB(boostUri);
+        const { credentialUri: newestCredentialUri, credential: newestCredential } =
+            await issueStatusInstanceToUserB(boostUri);
+        const newestRevocationEntry = getEntryForPurpose(newestCredential, 'revocation');
         const realStatusUpdate = statusListHelpers.setCredentialBitstringStatusWithResult;
         const statusUpdateSpy = vi
             .spyOn(statusListHelpers, 'setCredentialBitstringStatusWithResult')
             .mockResolvedValueOnce('failed')
             .mockImplementation(realStatusUpdate);
+        const notificationSpy = vi.spyOn(notifications, 'addNotificationToQueue');
+        notificationSpy.mockClear();
 
         const input = { boostUri, recipientProfileId: 'userb' };
         const firstResult = await userA.clients.fullAuth.boost.revokeBoostRecipientGroup(input);
         expect(firstResult.failedCredentialUris).toContain(newestCredentialUri);
+        expect(notificationSpy).toHaveBeenCalledTimes(1);
+        expect(notificationSpy).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: { vcUris: expect.arrayContaining([newestCredentialUri]) },
+            })
+        );
 
         statusUpdateSpy.mockRestore();
         const retryResult = await userA.clients.fullAuth.boost.revokeBoostRecipientGroup(input);
         expect(retryResult.failedCredentialUris).toEqual([]);
         expect(retryResult.alreadyRevokedCredentialUris).toContain(newestCredentialUri);
+        expect(notificationSpy).toHaveBeenCalledTimes(1);
+        expect(await isStatusBitSet(newestRevocationEntry)).toBe(true);
     });
 
     it('removes permissions and admin roles granted by repeated claim instances', async () => {

@@ -24,7 +24,8 @@ import { VC } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
 import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinner';
 import { getGroupRemovalOutcome, isRemovableGroupMemberRole } from './groupRemoval.helpers';
-import type { TroopIdIssuanceState } from './troopIdStatus.helpers';
+import { canSharePersonalTroopId, type TroopIdIssuanceState } from './troopIdStatus.helpers';
+import { useTroopIDStatus } from './TroopIdStatusButton';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('id-options-modal');
 
@@ -79,6 +80,18 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
     const { data: resolvedCredential } = useResolveBoost(credentialUri ?? boostUri);
     const displayCredential =
         resolvedCredential?.boostCredential ?? resolvedCredential ?? credential;
+    const { status: personalCredentialStatus, isLoading: personalLifecycleLoading } =
+        useTroopIDStatus({
+            credential: displayCredential,
+            credentialUri,
+            issuanceState,
+            enabled: isPersonalId && Boolean(credentialUri),
+        });
+    const canSharePersonalId = canSharePersonalTroopId({
+        isPersonalId,
+        lifecycleLoading: personalLifecycleLoading,
+        status: personalCredentialStatus,
+    });
 
     const handleViewId = () => {
         closeModal();
@@ -189,7 +202,7 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
                 onClick={handleViewId}
             />
 
-            {isPersonalId && (
+            {canSharePersonalId && (
                 <IdOptionRow
                     text={m['troops.actions.shareId']()}
                     icon={<ReplyIcon size="30" filled={false} />}
