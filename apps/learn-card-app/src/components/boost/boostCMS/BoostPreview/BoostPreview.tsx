@@ -31,7 +31,8 @@ import {
     BoostCategoryOptionsEnum,
     PreviewTypeEnum,
 } from 'learn-card-base';
-import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
+import { getIssuerContextLabel, useIssuerContext } from 'learn-card-base/hooks/useIssuerContext';
+import { useT } from 'learn-card-base/i18n';
 
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { getAchievementType } from 'learn-card-base/helpers/credentialHelpers';
@@ -203,9 +204,14 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     const { credentialIssuerPopoverProps, openCredentialIssuerPopover } =
         useReactCredentialIssuerPopover();
 
-    const profileID =
-        typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
-    const { data: knownDIDRegistry } = useKnownDIDRegistry(profileID);
+    const t = useT();
+    const { issuerContext, registryIssuerName } = useIssuerContext(credential, {
+        trustProfile:
+            categoryType === BoostCategoryOptionsEnum.socialBadge ? 'social' : 'credential',
+    });
+    const issuerLabel = issuerContext
+        ? getIssuerContextLabel(issuerContext, t, issuerOverride ?? registryIssuerName)
+        : undefined;
 
     const vcVerifications = useVerification(credential);
     const [isFront, setIsFront] = useState(true);
@@ -342,7 +348,8 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
             customIssueHistoryComponent={customIssueHistoryComponent}
             enableLightbox
             titleOverride={titleOverride}
-            knownDIDRegistry={knownDIDRegistry}
+            issuerContext={issuerContext}
+            issuerLabel={issuerLabel}
             handleXClick={isCertificate ? closeModal : undefined}
             hideIssueDate={hideIssueDate}
             customRibbonCategoryComponent={<RibbonCategory categoryType={categoryType} />}
@@ -353,7 +360,11 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
             formattedDisplayType={formattedDisplayType}
             customLinkedCredentialsComponent={customLinkedCredentialsComponent}
             customBodyContentSlot={endorsementBadge}
-            onVerifierClick={openCredentialIssuerPopover}
+            onVerifierClick={
+                issuerContext
+                    ? event => openCredentialIssuerPopover(event, issuerContext)
+                    : undefined
+            }
         />
     );
 

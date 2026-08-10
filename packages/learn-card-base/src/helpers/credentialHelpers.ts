@@ -8,7 +8,6 @@ import {
     Boost,
     Profile,
 } from '@learncard/types';
-import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
 import { SortedCredentials } from 'learn-card-base/stores/selectedCredsStore';
 import { SyncCredentialsVCs } from 'learn-card-base/stores/syncSchoolStore';
 import { walletStore } from 'learn-card-base/stores/walletStore';
@@ -32,9 +31,6 @@ import {
     CredentialCategoryEnum,
     boostCategoryMetadata,
 } from 'learn-card-base';
-import { VerifierState } from '@learncard/react';
-import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
-import { VERIFIER_STATES } from '@learncard/react';
 import { BoostCMSMediaAttachment, BoostEvidenceSpec } from 'learn-card-base/components/boost/boost';
 import { getVideoMetadata } from './video.helpers';
 import { getFileMetadata } from './attachment.helpers';
@@ -495,43 +491,6 @@ export const getImageFromProfile = (profile: Profile): string => {
     if (typeof profile === 'string') return '';
 
     return getImageFromImage(profile.image ?? '');
-};
-
-export const getVerifierState = (credential: VC | UnsignedVC) => {
-    const {
-        // oxlint-disable-next-line no-unused-vars
-        title = '',
-        // oxlint-disable-next-line no-unused-vars
-        createdAt,
-        issuer: _issuer = '',
-        issuee: _issuee = '',
-        credentialSubject,
-    } = getInfoFromCredential(credential as VC, 'MMM dd, yyyy', { uppercaseDate: false });
-    const profileID =
-        typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
-    const { data: knownDIDRegistry } = useKnownDIDRegistry(profileID);
-
-    const issuerDid =
-        typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id;
-
-    let verifierState: VerifierState;
-    if (credentialSubject?.id === issuerDid && issuerDid && issuerDid !== 'did:example:123') {
-        // the extra "&& issuerDid" is so that the credential preview doesn't say "Self Verified"
-        // the did:example:123 condition is so that we don't show this status from the Manage Boosts tab
-        verifierState = VERIFIER_STATES.selfVerified;
-    } else {
-        if (knownDIDRegistry?.source === 'trusted') {
-            verifierState = VERIFIER_STATES.trustedVerifier;
-        } else if (knownDIDRegistry?.source === 'untrusted') {
-            verifierState = VERIFIER_STATES.untrustedVerifier;
-        } else if (knownDIDRegistry?.source === 'unknown') {
-            verifierState = VERIFIER_STATES.unknownVerifier;
-        } else {
-            verifierState = VERIFIER_STATES.unknownVerifier;
-        }
-    }
-
-    return verifierState;
 };
 
 export const getDefaultCategoryForCredential = (

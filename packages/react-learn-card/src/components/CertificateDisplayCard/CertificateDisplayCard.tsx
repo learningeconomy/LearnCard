@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { VC, Profile, VerificationItem } from '@learncard/types';
+import type { IssuerContext, Profile, VC, VerificationItem } from '@learncard/types';
 import {
     BoostAchievementCredential,
     LCCategoryEnum,
@@ -10,8 +10,6 @@ import CertificateFrontFace from './CertificateFrontFace';
 import CertificateBackFace from './CertificateBackFace';
 import FatArrow from '../svgs/FatArrow';
 import ThreeDots from '../../assets/images/DotsThreeOutline.svg';
-import { KnownDIDRegistryType } from '../../types';
-import { VerifierState } from './VerifierStateBadgeAndText';
 
 type CertificateDisplayCardProps = {
     credential: VC | BoostAchievementCredential;
@@ -19,7 +17,8 @@ type CertificateDisplayCardProps = {
     verificationItems: VerificationItem[];
     issuerOverride?: Profile;
     issueeOverride?: Profile;
-    knownDIDRegistry?: KnownDIDRegistryType;
+    issuerContext?: IssuerContext;
+    issuerLabel?: string;
     subjectImageComponent?: React.ReactNode;
     issuerImageComponent?: React.ReactNode;
     customBodyCardComponent?: React.ReactNode;
@@ -41,13 +40,9 @@ type CertificateDisplayCardProps = {
     formattedDisplayType?: string;
     customLinkedCredentialsComponent?: React.ReactNode;
     customBodyContentSlot?: React.ReactNode;
-    unknownVerifierTitle?: string;
     hideAwardedTo?: boolean;
     hideFrontFaceDetails?: boolean;
-    onVerifierClick?: (
-        event: React.MouseEvent<HTMLButtonElement>,
-        verifierState: VerifierState
-    ) => void;
+    onVerifierClick?: React.MouseEventHandler<HTMLButtonElement>;
 };
 
 export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
@@ -59,7 +54,8 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     subjectImageComponent,
     issuerImageComponent,
     customBodyCardComponent,
-    knownDIDRegistry,
+    issuerContext,
+    issuerLabel,
     hideIssueDate,
     customSkillsComponent,
 
@@ -78,7 +74,6 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     formattedDisplayType,
     customLinkedCredentialsComponent,
     customBodyContentSlot,
-    unknownVerifierTitle,
     hideAwardedTo,
     hideFrontFaceDetails,
     onVerifierClick,
@@ -97,7 +92,8 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
                         categoryType={categoryType}
                         issuerOverride={issuerOverride}
                         issueeOverride={issueeOverride}
-                        knownDIDRegistry={knownDIDRegistry}
+                        issuerContext={issuerContext}
+                        issuerLabel={issuerLabel}
                         subjectImageComponent={subjectImageComponent}
                         issuerImageComponent={issuerImageComponent}
                         customBodyCardComponent={customBodyCardComponent}
@@ -107,7 +103,6 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
                         showDetailsBtn={showDetailsBtn}
                         formattedDisplayType={formattedDisplayType}
                         customBodyContentSlot={customBodyContentSlot}
-                        unknownVerifierTitle={unknownVerifierTitle}
                         hideAwardedTo={hideAwardedTo}
                         hideFrontFaceDetails={hideFrontFaceDetails}
                         onVerifierClick={onVerifierClick}

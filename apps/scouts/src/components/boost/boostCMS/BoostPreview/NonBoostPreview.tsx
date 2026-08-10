@@ -1,14 +1,12 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { getVCDisplayCardVariant } from '@learncard/react';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import { IonContent, IonFooter, IonPage, IonRow, IonToolbar } from '@ionic/react';
 
-import { VC, VerificationItem } from '@learncard/types';
+import type { IssuerTrustProfile, VC, VerificationItem } from '@learncard/types';
 import { useWallet, BoostCategoryOptionsEnum } from 'learn-card-base';
-import { useHighlightedCredentials } from '../../../../hooks/useHighlightedCredentials';
-import { getRoleFromCred, getScoutsNounForRole } from '../../../../helpers/troop.helpers';
 import X from 'learn-card-base/svgs/X';
 import FatArrow from 'learn-card-base/svgs/FatArrow';
 
@@ -42,7 +40,8 @@ type NonBoostPreviewProps = {
     onDotsClick?: () => void;
     qrCodeOnClick?: () => void;
     hideQRCode?: boolean;
-    unknownVerifierTitle?: string;
+    verifierLabelOverride?: string;
+    issuerTrustProfile?: IssuerTrustProfile;
 };
 
 const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
@@ -56,7 +55,8 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     customThumbComponent,
     customBodyCardComponent,
     customFooterComponent,
-    unknownVerifierTitle: unknownVerifierTitleProp,
+    verifierLabelOverride,
+    issuerTrustProfile,
     subjectDID,
     subjectImageComponent,
     issuerImageComponent,
@@ -71,24 +71,8 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     hideQRCode,
 }) => {
     const { initWallet } = useWallet();
-    const issuerDid =
-        typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
-    // Extract user ID from DID (e.g., "jpgclub" from "did:web:localhost%3A4000:users:jpgclub")
-    const profileID = issuerDid?.split(':').pop();
-
     const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
     const [isFront, setIsFront] = useState(true);
-    const { credentials: highlightedCreds } = useHighlightedCredentials(
-        unknownVerifierTitleProp ? undefined : profileID
-    );
-
-    const unknownVerifierTitle = useMemo(() => {
-        if (unknownVerifierTitleProp) return unknownVerifierTitleProp;
-        if (!highlightedCreds || highlightedCreds.length === 0) return undefined;
-
-        const role = getRoleFromCred(highlightedCreds[0]);
-        return getScoutsNounForRole(role); // Just the role, no "Verified" prefix
-    }, [highlightedCreds, unknownVerifierTitleProp]);
 
     useEffect(() => {
         const verify = async () => {
@@ -105,9 +89,6 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     const isCertificate = credential?.display?.displayType === 'certificate';
     const isID = credential?.display?.displayType === 'id' || categoryType === 'ID';
     const shouldUseHostCardPadding = getVCDisplayCardVariant(credential, categoryType) !== 'ribbon';
-
-    const bgImage = credential?.display?.backgroundImager;
-    const showBackground = bgImage && isCertificate;
 
     return (
         <IonPage>
@@ -149,7 +130,8 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                             setIsFrontOverride={setIsFront}
                             qrCodeOnClick={qrCodeOnClick}
                             hideQRCode={hideQRCode}
-                            unknownVerifierTitle={unknownVerifierTitle}
+                            verifierLabelOverride={verifierLabelOverride}
+                            issuerTrustProfile={issuerTrustProfile}
                         />
                     </section>
                 </IonRow>

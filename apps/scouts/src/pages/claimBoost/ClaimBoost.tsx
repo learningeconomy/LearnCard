@@ -138,12 +138,12 @@ export const ClaimBoostModal: React.FC<{
     const { presentToast } = useToast();
     const troopTypes = ['ext:TroopID', 'ext:GlobalID', 'ext:NetworkID', 'ext:ScoutID'];
 
-    // Get issuer DID and profile ID for unknownVerifierTitle
+    // Resolve the Scout role for the identified-profile label.
     const issuerDid = typeof boost?.issuer === 'string' ? boost.issuer : boost?.issuer?.id;
     const profileID = issuerDid?.split(':').pop();
     const { credentials: highlightedCreds } = useHighlightedCredentials(profileID);
 
-    const unknownVerifierTitle = React.useMemo(() => {
+    const verifierLabelOverride = React.useMemo(() => {
         if (!highlightedCreds || highlightedCreds.length === 0) return undefined;
 
         const role = getRoleFromCred(highlightedCreds[0]);
@@ -365,7 +365,7 @@ export const ClaimBoostModal: React.FC<{
                                     isFrontOverride={isFront}
                                     setIsFrontOverride={setIsFront}
                                     hideNavButtons
-                                    unknownVerifierTitle={unknownVerifierTitle}
+                                    verifierLabelOverride={verifierLabelOverride}
                                 />
                             ) : (
                                 <ViewTroopIdModal

@@ -5,7 +5,8 @@ import { VCDisplayCard2 } from '@learncard/react';
 import FamilyBoostPreview from './FamilyBoostPreview/FamilyBoostPreview';
 
 import useVerifyCredential from 'learn-card-base/hooks/useVerifyCredential';
-import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
+import { getIssuerContextLabel, useIssuerContext } from 'learn-card-base/hooks/useIssuerContext';
+import { useT } from 'learn-card-base/i18n';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
 import { useGetVCInfo } from 'learn-card-base/hooks/useGetVCInfo';
 
@@ -16,7 +17,7 @@ import {
     CredentialSubjectDisplay,
 } from 'learn-card-base';
 
-import { VC, VerificationItem, CredentialRecord } from '@learncard/types';
+import type { CredentialRecord, IssuerTrustProfile, VC, VerificationItem } from '@learncard/types';
 import { applyLifecycleStatusToVerifications } from 'learn-card-base/helpers/lifecycleVerification.helpers';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
@@ -60,7 +61,8 @@ type VCDisplayCardWrapper2Props = {
     customLinkedCredentialsComponent?: React.ReactNode;
     useCurrentUserName?: boolean;
     customBodyContentSlot?: React.ReactNode;
-    unknownVerifierTitle?: string;
+    verifierLabelOverride?: string;
+    issuerTrustProfile?: IssuerTrustProfile;
     issueeOverride?: string;
     issuerOverride?: string;
     issueHistory?: any[];
@@ -113,7 +115,8 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
     customLinkedCredentialsComponent,
     useCurrentUserName,
     customBodyContentSlot,
-    unknownVerifierTitle,
+    verifierLabelOverride,
+    issuerTrustProfile,
     issueeOverride,
     issuerOverride,
     issueHistory,
@@ -201,8 +204,6 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
         idDisplayBackgroundImage,
         idDisplayDimBackgroundImage,
     } = useGetVCInfo(credential, categoryType || _category);
-
-    const { data: knownDIDRegistry } = useKnownDIDRegistry(issuerDid);
 
     useEffect(() => {
         verifyCredential(credential, (verificationItems: VerificationItem[]) => {
@@ -292,6 +293,20 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
 
     const isCertificate = displayType === 'certificate';
     const isFamily = category === BoostCategoryOptionsEnum.family;
+    const t = useT();
+    const { issuerContext, registryIssuerName } = useIssuerContext(credential, {
+        trustProfile:
+            issuerTrustProfile ??
+            (category === BoostCategoryOptionsEnum.socialBadge ? 'social' : 'credential'),
+    });
+    const issuerLabel = issuerContext
+        ? getIssuerContextLabel(
+              issuerContext,
+              t,
+              issuerName ?? registryIssuerName,
+              verifierLabelOverride
+          )
+        : undefined;
     const { credentialIssuerPopoverProps, openCredentialIssuerPopover } =
         useCredentialIssuerPopover();
 
@@ -382,7 +397,8 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
                 titleOverride={overrideCardTitle || title}
                 customDescription={customDescription}
                 handleXClick={isCertificate ? handleClose : undefined}
-                knownDIDRegistry={knownDIDRegistry}
+                issuerContext={issuerContext}
+                issuerLabel={issuerLabel}
                 isFrontOverride={isFrontOverride}
                 setIsFrontOverride={setIsFrontOverride}
                 hideNavButtons={hideNavButtons}
@@ -396,9 +412,12 @@ export const VCDisplayCardWrapper2: React.FC<VCDisplayCardWrapper2Props> = ({
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                 customBodyContentSlot={customBodyContentSlot}
                 onDotsClick={onDotsClick}
-                unknownVerifierTitle={unknownVerifierTitle}
                 formattedDisplayType={subtitleDisplayType}
-                onVerifierClick={openCredentialIssuerPopover}
+                onVerifierClick={
+                    issuerContext
+                        ? event => openCredentialIssuerPopover(event, issuerContext)
+                        : undefined
+                }
             />
             <CredentialIssuerPopover {...credentialIssuerPopoverProps} />
         </>

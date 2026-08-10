@@ -15,7 +15,7 @@ import {
     getIssuanceDate,
 } from 'learn-card-base/helpers/credentialHelpers';
 import { CredentialCategory, CredentialCategoryEnum, categoryMetadata } from 'learn-card-base';
-import { VC } from '@learncard/types';
+import type { IssuerTrustProfile, VC } from '@learncard/types';
 import BoostTextSkeleton, { BoostSkeleton } from './boostSkeletonLoaders/BoostSkeletons';
 import { BrandingEnum } from '../headerBranding/headerBrandingHelpers';
 import {
@@ -45,7 +45,8 @@ type BoostListItemProps = {
     managedBoost?: boolean;
     uri?: string;
     indicatorColor?: string;
-    unknownVerifierTitle?: string;
+    verifierLabelOverride?: string;
+    issuerTrustProfile?: IssuerTrustProfile;
     relativeDate?: boolean;
     compact?: boolean;
     lifecycleStatus?: CredentialLifecycleStatus;
@@ -69,7 +70,8 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
     managedBoost,
     uri,
     indicatorColor,
-    unknownVerifierTitle,
+    verifierLabelOverride,
+    issuerTrustProfile,
     relativeDate = false,
     compact = false,
     lifecycleStatus = 'active',
@@ -319,7 +321,8 @@ const BoostListItem: React.FC<BoostListItemProps> = ({
                             managedBoost={managedBoost}
                             credential={credential}
                             iconClassName={verificationIconClass}
-                            unknownVerifierTitle={unknownVerifierTitle}
+                            verifierLabelOverride={verifierLabelOverride}
+                            issuerTrustProfile={issuerTrustProfile}
                             lifecycleStatus={lifecycleStatus}
                             trustedOnly={trustedVerifierOnly}
                         />

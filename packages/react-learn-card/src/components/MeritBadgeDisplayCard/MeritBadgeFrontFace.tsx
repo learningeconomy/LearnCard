@@ -13,16 +13,11 @@ import {
     getCategoryLightColor,
     getCategoryDarkColor,
 } from '../../helpers/credential.helpers';
-import { isAppDidWeb } from '@learncard/helpers';
 import { resolveProfileDisplay } from '../../helpers/did-display.helpers';
 
-import { VC, Profile } from '@learncard/types';
+import type { IssuerContext, Profile, VC } from '@learncard/types';
 import { BoostAchievementCredential, LCCategoryEnum } from '../../types';
-import VerifierStateBadgeAndText, {
-    VerifierState,
-    VERIFIER_STATES,
-} from '../CertificateDisplayCard/VerifierStateBadgeAndText';
-import { KnownDIDRegistryType } from '../../types';
+import VerifierStateBadgeAndText from '../CertificateDisplayCard/VerifierStateBadgeAndText';
 
 type MeritBadgeFrontFaceProps = {
     isFront?: boolean;
@@ -30,7 +25,8 @@ type MeritBadgeFrontFaceProps = {
     categoryType?: LCCategoryEnum;
     issuerOverride?: Profile;
     issueeOverride?: Profile;
-    knownDIDRegistry?: KnownDIDRegistryType;
+    issuerContext?: IssuerContext;
+    issuerLabel?: string;
     subjectImageComponent?: React.ReactNode;
     issuerImageComponent?: React.ReactNode;
     customBodyCardComponent?: React.ReactNode;
@@ -39,12 +35,8 @@ type MeritBadgeFrontFaceProps = {
     showDetailsBtn?: boolean;
     formattedDisplayType?: string;
     customBodyContentSlot?: React.ReactNode;
-    unknownVerifierTitle?: string;
     hideFrontFaceDetails?: boolean;
-    onVerifierClick?: (
-        event: React.MouseEvent<HTMLButtonElement>,
-        verifierState: VerifierState
-    ) => void;
+    onVerifierClick?: React.MouseEventHandler<HTMLButtonElement>;
 };
 
 export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
@@ -53,7 +45,8 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
     categoryType,
     issuerOverride,
     issueeOverride,
-    knownDIDRegistry,
+    issuerContext,
+    issuerLabel,
     subjectImageComponent,
     issuerImageComponent,
     customBodyCardComponent,
@@ -62,7 +55,6 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
     showDetailsBtn = false,
     formattedDisplayType,
     customBodyContentSlot,
-    unknownVerifierTitle,
     hideFrontFaceDetails,
     onVerifierClick,
 }) => {
@@ -114,32 +106,6 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
     const issueeName = issueeDisplay.displayName;
     const issuerImage = getImageFromProfile(issuer ?? '');
     const issueeImage = getImageFromProfile(issuee ?? '');
-
-    const issuerDid =
-        typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id;
-    const isAppIssuerDid = isAppDidWeb(issuerDid);
-
-    let verifierState: VerifierState;
-    if (credentialSubject?.id === issuerDid && issuerDid && issuerDid !== 'did:example:123') {
-        verifierState = VERIFIER_STATES.selfVerified;
-    } else if (unknownVerifierTitle) {
-        verifierState = VERIFIER_STATES.trustedVerifier;
-    } else {
-        if (knownDIDRegistry?.source === 'trusted') {
-            verifierState = VERIFIER_STATES.trustedVerifier;
-        } else if (knownDIDRegistry?.source === 'untrusted') {
-            verifierState = VERIFIER_STATES.untrustedVerifier;
-        } else if (knownDIDRegistry?.source === 'unknown') {
-            verifierState = isAppIssuerDid
-                ? VERIFIER_STATES.appIssuer
-                : VERIFIER_STATES.unknownVerifier;
-        } else {
-            verifierState = isAppIssuerDid
-                ? VERIFIER_STATES.appIssuer
-                : VERIFIER_STATES.unknownVerifier;
-        }
-    }
-    const isSelfVerified = verifierState === VERIFIER_STATES.selfVerified;
 
     return (
         <section
@@ -274,14 +240,16 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                 </>
             )}
 
-            <div className="absolute bottom-0 w-[calc(100%-26px)] flex justify-center">
-                <VerifierStateBadgeAndText
-                    verifierState={verifierState}
-                    unknownVerifierTitle={unknownVerifierTitle}
-                    className="bg-white px-[5px] pb-[5px]"
-                    onClick={event => onVerifierClick?.(event, verifierState)}
-                />
-            </div>
+            {issuerContext && issuerLabel && (
+                <div className="absolute bottom-0 w-[calc(100%-26px)] flex justify-center">
+                    <VerifierStateBadgeAndText
+                        issuerContext={issuerContext}
+                        label={issuerLabel}
+                        className="bg-white px-[5px] pb-[5px]"
+                        onClick={onVerifierClick}
+                    />
+                </div>
+            )}
 
             {/* so that tailwind will put these colors in the css */}
             <span className="hidden border-rose-500 text-spice-500 border-spice-500 border-cyan-500 text-cyan-500 border-indigo-500 border-sp-purple-base"></span>

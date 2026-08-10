@@ -63,8 +63,8 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     // Fetch highlighted credentials to get the issuer's role
     const { credentials: highlightedCreds } = useHighlightedCredentials(profileID);
 
-    // Compute unknownVerifierTitle based on the role (same logic as BoostPreview)
-    const unknownVerifierTitle = useMemo(() => {
+    // Use the issuer's Scout role only when the relationship resolver identifies the profile.
+    const verifierLabelOverride = useMemo(() => {
         if (!highlightedCreds || highlightedCreds.length === 0) return undefined;
 
         const role = getRoleFromCred(highlightedCreds[0]);
@@ -138,7 +138,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                 setIsFrontOverride={setIsFront}
                                 brandingEnum={BrandingEnum.scoutPass}
                                 onMediaClick={handleImageClick}
-                                unknownVerifierTitle={unknownVerifierTitle}
+                                verifierLabelOverride={verifierLabelOverride}
                             />
                         )}
                         {selectedImage && (

@@ -3,16 +3,11 @@ import { Flipped as UntypedFlipped } from 'react-flip-toolkit';
 
 import UserProfilePicture from '../UserProfilePicture/UserProfilePicture';
 
-import { getImageFromProfile, getInfoFromCredential } from '../../helpers/credential.helpers';
+import { getImageFromProfile } from '../../helpers/credential.helpers';
 import { resolveProfileDisplay } from '../../helpers/did-display.helpers';
-import { isAppDidWeb } from '@learncard/helpers';
-import { Profile, VC } from '@learncard/types';
-import VerifierStateBadgeAndText, {
-    VerifierState,
-    VERIFIER_STATES,
-} from '../CertificateDisplayCard/VerifierStateBadgeAndText';
+import type { IssuerContext, Profile, VC } from '@learncard/types';
+import VerifierStateBadgeAndText from '../CertificateDisplayCard/VerifierStateBadgeAndText';
 import { BoostAchievementCredential } from '../../types';
-import { KnownDIDRegistryType } from '../../types';
 
 type FlippedComponentProps = React.PropsWithChildren<{
     flipId?: string;
@@ -34,13 +29,10 @@ type VC2FrontFaceInfoProps = {
     imageUrl?: string;
     customBodyCardComponent?: React.ReactNode;
     customThumbComponent?: React.ReactNode;
-    knownDIDRegistry?: KnownDIDRegistryType;
     customBodyContentSlot?: React.ReactNode;
-    unknownVerifierTitle?: string;
-    onVerifierClick?: (
-        event: React.MouseEvent<HTMLButtonElement>,
-        verifierState: VerifierState
-    ) => void;
+    issuerContext?: IssuerContext;
+    issuerLabel?: string;
+    onVerifierClick?: React.MouseEventHandler<HTMLButtonElement>;
 };
 
 const BadgeThumbnailPlaceholder: React.FC = () => (
@@ -77,9 +69,9 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     createdAt,
     imageUrl,
     customThumbComponent,
-    knownDIDRegistry,
     customBodyContentSlot,
-    unknownVerifierTitle,
+    issuerContext,
+    issuerLabel,
     onVerifierClick,
 }) => {
     const issuerImage = getImageFromProfile(issuer ?? '');
@@ -94,10 +86,6 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
 
     const issueeDisplay = resolveProfileDisplay(issuee, '');
     const issuerDisplay = resolveProfileDisplay(issuer, '');
-
-    const { credentialSubject } = getInfoFromCredential(credential, 'MMM dd, yyyy', {
-        uppercaseDate: false,
-    });
 
     const getImageElement = (
         imageUrl: string,
@@ -151,33 +139,6 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
         'h-[22px] w-[22px]',
         issuerDisplay.isDidValue ? 'fingerprint' : 'initial'
     );
-
-    const issuerDid =
-        typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id;
-    const isAppIssuerDid = isAppDidWeb(issuerDid);
-
-    let verifierState: VerifierState;
-    if (credentialSubject?.id === issuerDid && issuerDid && issuerDid !== 'did:example:123') {
-        // the extra "&& issuerDid" is so that the credential preview doesn't say "Self Verified"
-        // the did:example:123 condition is so that we don't show this status from the Manage Boosts tab
-        verifierState = VERIFIER_STATES.selfVerified;
-    } else if (unknownVerifierTitle) {
-        verifierState = VERIFIER_STATES.trustedVerifier;
-    } else {
-        if (knownDIDRegistry?.source === 'trusted') {
-            verifierState = VERIFIER_STATES.trustedVerifier;
-        } else if (knownDIDRegistry?.source === 'untrusted') {
-            verifierState = VERIFIER_STATES.untrustedVerifier;
-        } else if (knownDIDRegistry?.source === 'unknown') {
-            verifierState = isAppIssuerDid
-                ? VERIFIER_STATES.appIssuer
-                : VERIFIER_STATES.unknownVerifier;
-        } else {
-            verifierState = isAppIssuerDid
-                ? VERIFIER_STATES.appIssuer
-                : VERIFIER_STATES.unknownVerifier;
-        }
-    }
 
     return (
         <Flipped inverseFlipId="card">
@@ -260,11 +221,13 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
                                         </span>
                                     )}
                                 </div>
-                                <VerifierStateBadgeAndText
-                                    verifierState={verifierState}
-                                    unknownVerifierTitle={unknownVerifierTitle}
-                                    onClick={event => onVerifierClick?.(event, verifierState)}
-                                />
+                                {issuerContext && issuerLabel && (
+                                    <VerifierStateBadgeAndText
+                                        issuerContext={issuerContext}
+                                        label={issuerLabel}
+                                        onClick={onVerifierClick}
+                                    />
+                                )}
                             </div>
                         </>
                     )}

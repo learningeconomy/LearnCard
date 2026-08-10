@@ -35,6 +35,30 @@ export const EN_DEFAULTS: Record<string, string> = {
     'verification.unknownIssuer': 'Unknown Issuer',
     'verification.appIssuer': 'App Issuer',
     'verification.untrustedIssuer': 'Untrusted Issuer',
+    'verification.youCreatedThis': 'You created this',
+    'verification.issuedVia': 'Issued via {name}',
+    'verification.fromConnection': 'From your connection {name}',
+    'verification.knownByConnections': 'Known by {count} of your connections',
+    'verification.verifiedProfile': '{name} · Verified profile',
+    'verification.unverifiedProfile': '{name} · Unverified profile',
+    'verification.issuerUnidentified': 'Issuer could not be identified',
+    'verification.trustedIssuerDescription':
+        'A Trusted Issuer has been reviewed by a trusted community so you can understand who issued this credential.',
+    'verification.selfIssuedDescription': 'You created this credential for yourself.',
+    'verification.appIssuerDescription':
+        'This credential was issued through a LearnCard app or service.',
+    'verification.untrustedIssuerDescription':
+        'This issuer has been flagged by a registry LearnCard checks. Review the issuer before relying on this credential.',
+    'verification.connectionDescription': '{name} is one of your LearnCard connections.',
+    'verification.mutualsDescription':
+        'You are not connected to {name}, but {count} of your connections are.',
+    'verification.identifiedDescription':
+        '{name} has a LearnCard profile with verified contact information.',
+    'verification.unclaimedDescription': "This badge came from {name}'s LearnCard profile.",
+    'verification.unresolvableSocialDescription':
+        'We could not match this issuer to a LearnCard profile.',
+    'verification.unresolvableCredentialDescription':
+        "This issuer is not currently verified by LearnCard. This does not mean the credential is invalid; it means we have not verified the issuer's authority.",
     'credential.lifecycle.revoked': 'Revoked',
     'credential.lifecycle.suspended': 'Suspended',
     'boostFooter.close': 'Close',

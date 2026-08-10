@@ -3,6 +3,7 @@
 import React from 'react';
 import { render } from '@testing-library/react';
 import { describe, expect, test, vi } from 'vitest';
+import type { Profile, VC } from '@learncard/types';
 
 vi.mock('react-flip-toolkit', () => ({
     Flipped: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -10,14 +11,9 @@ vi.mock('react-flip-toolkit', () => ({
 
 vi.mock('../../CertificateDisplayCard/VerifierStateBadgeAndText', () => ({
     __esModule: true,
-    default: () => <div data-testid="verifier-state-badge" />,
-    VERIFIER_STATES: {
-        selfVerified: 'selfVerified',
-        trustedVerifier: 'trustedVerifier',
-        untrustedVerifier: 'untrustedVerifier',
-        appIssuer: 'appIssuer',
-        unknownVerifier: 'unknownVerifier',
-    },
+    default: ({ label }: { label: string }) => (
+        <div data-testid="verifier-state-badge">{label}</div>
+    ),
 }));
 
 import VC2FrontFaceInfo from '../VC2FrontFaceInfo';
@@ -41,12 +37,11 @@ describe('VC2FrontFaceInfo', () => {
 
         const { container } = render(
             <VC2FrontFaceInfo
-                credential={credential as any}
+                credential={credential as VC}
                 issuee=""
                 issuer=""
                 title="Badge Title"
                 createdAt="May 15, 2026"
-                knownDIDRegistry={{ source: 'unknown', results: {} }}
             />
         );
 
@@ -78,12 +73,11 @@ describe('VC2FrontFaceInfo', () => {
 
         const { container } = render(
             <VC2FrontFaceInfo
-                credential={credential as any}
+                credential={credential as VC}
                 issuee="did:key:z6Mkq4C8nT1pV7xY2dH9jL6sR3wM5aZ8c"
                 issuer="did:key:z6MkpX1aYzR3uN8bQ5cT7vH2jL9mF6sD4"
                 title="Badge Title"
                 createdAt="May 15, 2026"
-                knownDIDRegistry={{ source: 'unknown', results: {} }}
             />
         );
 
@@ -111,12 +105,11 @@ describe('VC2FrontFaceInfo', () => {
 
         const { container, getByText } = render(
             <VC2FrontFaceInfo
-                credential={credential as any}
+                credential={credential as VC}
                 issuee=""
-                issuer={{ name: longIssuerName } as any}
+                issuer={{ name: longIssuerName } as Profile}
                 title="Badge Title"
                 createdAt="May 15, 2026"
-                knownDIDRegistry={{ source: 'unknown', results: {} }}
             />
         );
 
@@ -130,5 +123,40 @@ describe('VC2FrontFaceInfo', () => {
         expect(issuedBy?.className).toContain('line-clamp-2');
         expect(issuedBy?.className).not.toContain('flex');
         expect(getByText(longIssuerName)).not.toBeNull();
+    });
+    test('renders the relationship-aware issuer label supplied by the host app', () => {
+        const credential = {
+            issuer: 'did:key:issuer',
+            issuanceDate: '2026-05-15T00:00:00.000Z',
+            credentialSubject: {
+                id: 'did:key:holder',
+                achievement: { name: 'Badge Title', description: 'Badge description' },
+            },
+            display: { displayType: 'badge' },
+        };
+        const { getByText } = render(
+            <VC2FrontFaceInfo
+                credential={credential as VC}
+                issuee="did:key:holder"
+                issuer="Charles Henway"
+                title="Badge Title"
+                createdAt="May 15, 2026"
+                issuerContext={{
+                    issuerDid: 'did:key:issuer',
+                    state: 'connection',
+                    trustProfile: 'social',
+                    profile: {
+                        profileId: 'charles-henway',
+                        displayName: 'Charles Henway',
+                    },
+                    connectionStatus: 'CONNECTED',
+                    mutualConnectionCount: 0,
+                    hasVerifiedContactMethod: true,
+                }}
+                issuerLabel="From your connection: Charles Henway"
+            />
+        );
+
+        expect(getByText('From your connection: Charles Henway')).not.toBeNull();
     });
 });

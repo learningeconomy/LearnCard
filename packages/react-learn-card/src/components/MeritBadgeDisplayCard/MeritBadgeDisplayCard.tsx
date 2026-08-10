@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { VC, Profile, VerificationItem } from '@learncard/types';
+import type { IssuerContext, Profile, VC, VerificationItem } from '@learncard/types';
 import {
     BoostAchievementCredential,
     LCCategoryEnum,
@@ -10,8 +10,6 @@ import MeritBadgeFrontFace from './MeritBadgeFrontFace';
 import MeritBadgeBackFace from './MeritBadgeBackFace';
 import FatArrow from '../svgs/FatArrow';
 import ThreeDots from '../../assets/images/DotsThreeOutline.svg';
-import { KnownDIDRegistryType } from '../../types';
-import { VerifierState } from '../CertificateDisplayCard/VerifierStateBadgeAndText';
 
 type MeritBadgeDisplayCardProps = {
     credential: VC | BoostAchievementCredential;
@@ -19,7 +17,8 @@ type MeritBadgeDisplayCardProps = {
     verificationItems: VerificationItem[];
     issuerOverride?: Profile;
     issueeOverride?: Profile;
-    knownDIDRegistry?: KnownDIDRegistryType;
+    issuerContext?: IssuerContext;
+    issuerLabel?: string;
     subjectImageComponent?: React.ReactNode;
     issuerImageComponent?: React.ReactNode;
     customBodyCardComponent?: React.ReactNode;
@@ -41,12 +40,8 @@ type MeritBadgeDisplayCardProps = {
     formattedDisplayType?: string;
     customLinkedCredentialsComponent?: React.ReactNode;
     customBodyContentSlot?: React.ReactNode;
-    unknownVerifierTitle?: string;
     hideFrontFaceDetails?: boolean;
-    onVerifierClick?: (
-        event: React.MouseEvent<HTMLButtonElement>,
-        verifierState: VerifierState
-    ) => void;
+    onVerifierClick?: React.MouseEventHandler<HTMLButtonElement>;
 };
 
 export const MeritBadgeDisplayCard: React.FC<MeritBadgeDisplayCardProps> = ({
@@ -58,7 +53,8 @@ export const MeritBadgeDisplayCard: React.FC<MeritBadgeDisplayCardProps> = ({
     subjectImageComponent,
     issuerImageComponent,
     customBodyCardComponent,
-    knownDIDRegistry,
+    issuerContext,
+    issuerLabel,
     hideIssueDate,
     customSkillsComponent,
 
@@ -77,7 +73,6 @@ export const MeritBadgeDisplayCard: React.FC<MeritBadgeDisplayCardProps> = ({
     formattedDisplayType,
     customLinkedCredentialsComponent,
     customBodyContentSlot,
-    unknownVerifierTitle,
     hideFrontFaceDetails,
     onVerifierClick,
 }) => {
@@ -95,7 +90,8 @@ export const MeritBadgeDisplayCard: React.FC<MeritBadgeDisplayCardProps> = ({
                         categoryType={categoryType}
                         issuerOverride={issuerOverride}
                         issueeOverride={issueeOverride}
-                        knownDIDRegistry={knownDIDRegistry}
+                        issuerContext={issuerContext}
+                        issuerLabel={issuerLabel}
                         subjectImageComponent={subjectImageComponent}
                         issuerImageComponent={issuerImageComponent}
                         customBodyCardComponent={customBodyCardComponent}
@@ -105,7 +101,6 @@ export const MeritBadgeDisplayCard: React.FC<MeritBadgeDisplayCardProps> = ({
                         showDetailsBtn={showDetailsBtn}
                         formattedDisplayType={formattedDisplayType}
                         customBodyContentSlot={customBodyContentSlot}
-                        unknownVerifierTitle={unknownVerifierTitle}
                         hideFrontFaceDetails={hideFrontFaceDetails}
                         onVerifierClick={onVerifierClick}
                     />

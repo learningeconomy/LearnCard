@@ -176,7 +176,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
         Boolean(profileID)
     );
 
-    const unknownVerifierTitle = React.useMemo(() => {
+    const verifierLabelOverride = React.useMemo(() => {
         if (!highlightedCreds || highlightedCreds.length === 0) return undefined;
 
         const role = getRoleFromCred(highlightedCreds[0]);
@@ -230,7 +230,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             issuerOverride: issuerName,
             issueeOverride: issueeName,
             verificationItems: isBoost ? (undefined as any) : [],
-            handleShareBoost: () => openShareBoostLink(unknownVerifierTitle),
+            handleShareBoost: () => openShareBoostLink(verifierLabelOverride),
             handleCloseModal: () => closeModal(),
             subjectImageComponent: subjectProfileImageElement,
             issuerImageComponent: issuerProfileImageElement,
@@ -254,7 +254,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             customBodyCardComponent: undefined as any,
             customFooterComponent: undefined as any,
             customIssueHistoryComponent: undefined as any,
-            unknownVerifierTitle,
+            verifierLabelOverride,
         };
 
         const backgroundImage = isCertificate || isID ? cred?.display?.backgroundImage : undefined;
@@ -342,7 +342,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     boostPageViewMode={boostPageViewMode}
                     credential={cred as any}
                     branding={branding}
-                    unknownVerifierTitle={unknownVerifierTitle}
+                    verifierLabelOverride={verifierLabelOverride}
                 />
             </ErrorBoundary>
         );
@@ -398,7 +398,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                         boostPageViewMode={boostPageViewMode}
                         credential={cred as any}
                         branding={branding}
-                        unknownVerifierTitle={unknownVerifierTitle}
+                        verifierLabelOverride={verifierLabelOverride}
                     />
                 </IonCol>
             </ErrorBoundary>
@@ -529,7 +529,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     credential={cred as any}
                     branding={branding}
                     loading={showSkeleton}
-                    unknownVerifierTitle={unknownVerifierTitle}
+                    verifierLabelOverride={verifierLabelOverride}
                 />
             </IonCol>
         </ErrorBoundary>

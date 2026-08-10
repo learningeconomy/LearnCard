@@ -10,9 +10,7 @@ import {
     MediaMetadata,
     VideoMetadata,
 } from '../../types';
-import { VC, VerificationItem } from '@learncard/types';
-import { KnownDIDRegistryType } from '../../types';
-import { VerifierState } from '../CertificateDisplayCard/VerifierStateBadgeAndText';
+import type { IssuerContext, VC, VerificationItem } from '@learncard/types';
 
 type FlippedComponentProps = React.PropsWithChildren<{
     flipId?: string;
@@ -35,7 +33,8 @@ export type VCIDDisplayCardProps = {
     issueHistory?: IssueHistory[];
     showBackButton?: boolean;
     enableLightbox?: boolean;
-    knownDIDRegistry?: KnownDIDRegistryType;
+    issuerContext?: IssuerContext;
+    issuerLabel?: string;
     customSkillsComponent?: React.ReactNode;
     isFrontOverride?: boolean;
     setIsFrontOverride?: (value: boolean) => void;
@@ -46,11 +45,7 @@ export type VCIDDisplayCardProps = {
     customIDDescription?: React.ReactNode;
     hideGradientBackground?: boolean;
     customLinkedCredentialsComponent?: React.ReactNode;
-    unknownVerifierTitle?: string;
-    onVerifierClick?: (
-        event: React.MouseEvent<HTMLButtonElement>,
-        verifierState: VerifierState
-    ) => void;
+    onVerifierClick?: React.MouseEventHandler<HTMLButtonElement>;
 };
 
 export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
@@ -66,7 +61,8 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
     issueHistory,
     showBackButton = true,
     enableLightbox,
-    knownDIDRegistry,
+    issuerContext,
+    issuerLabel,
     customSkillsComponent,
     isFrontOverride,
     setIsFrontOverride,
@@ -77,7 +73,6 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
     customIDDescription,
     hideGradientBackground = false,
     customLinkedCredentialsComponent,
-    unknownVerifierTitle,
     onVerifierClick,
 }) => {
     const [_isFront, _setIsFront] = useState<boolean>(isFrontOverride ?? true);
@@ -118,11 +113,11 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
                                     showDetailsBtn={showDetailsBtn}
                                     customThumbComponent={customThumbComponent}
                                     credential={credential}
-                                    knownDIDRegistry={knownDIDRegistry}
+                                    issuerContext={issuerContext}
+                                    issuerLabel={issuerLabel}
                                     qrCodeOnClick={qrCodeOnClick}
                                     hideQRCode={hideQRCode}
                                     customIDDescription={customIDDescription}
-                                    unknownVerifierTitle={unknownVerifierTitle}
                                     onVerifierClick={onVerifierClick}
                                 />
                             )}

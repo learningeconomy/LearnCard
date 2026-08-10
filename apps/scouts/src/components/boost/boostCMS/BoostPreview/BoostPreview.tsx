@@ -1,5 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
+import React, { useEffect, useState } from 'react';
 import BoostFooter from 'learn-card-base/components/boost/boostFooter/BoostFooter';
 import CredentialIssuerPopover, {
     useCredentialIssuerPopover,
@@ -7,10 +6,10 @@ import CredentialIssuerPopover, {
 import { getVCDisplayCardVariant, VCDisplayCard2 } from '@learncard/react';
 import { IonContent, IonFooter, IonPage, IonRow } from '@ionic/react';
 
-import { VC, VerificationItem } from '@learncard/types';
+import type { IssuerTrustProfile, VC, VerificationItem } from '@learncard/types';
 import { useWallet, BoostCategoryOptionsEnum } from 'learn-card-base';
-import { useHighlightedCredentials } from '../../../../hooks/useHighlightedCredentials';
-import { getRoleFromCred, getScoutsNounForRole } from '../../../../helpers/troop.helpers';
+import { getIssuerContextLabel, useIssuerContext } from 'learn-card-base/hooks/useIssuerContext';
+import { useT } from 'learn-card-base/i18n';
 
 type IssueHistory = {
     id?: string | number;
@@ -44,12 +43,9 @@ type BoostPreviewProps = {
     qrCodeOnClick?: () => void;
     hideQRCode?: boolean;
     handleShareBoost?: () => void;
-    unknownVerifierTitle?: string;
+    verifierLabelOverride?: string;
+    issuerTrustProfile?: IssuerTrustProfile;
 };
-enum BoostPreviewTypeEnum {
-    managed,
-    earned,
-}
 
 const BoostPreview: React.FC<BoostPreviewProps> = ({
     credential,
@@ -62,7 +58,8 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     customThumbComponent,
     customBodyCardComponent,
     customFooterComponent,
-    unknownVerifierTitle: unknownVerifierTitleProp,
+    verifierLabelOverride,
+    issuerTrustProfile,
     subjectDID,
     subjectImageComponent,
     issuerImageComponent,
@@ -81,25 +78,19 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     const { initWallet } = useWallet();
     const { credentialIssuerPopoverProps, openCredentialIssuerPopover } =
         useCredentialIssuerPopover();
-    const issuerDid =
-        typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
-    // Extract user ID from DID (e.g., "jpgclub" from "did:web:localhost%3A4000:users:jpgclub")
-    const profileID = issuerDid?.split(':').pop();
-
-    const { data: knownDIDRegistry } = useKnownDIDRegistry(profileID);
-    const { credentials: highlightedCreds } = useHighlightedCredentials(
-        unknownVerifierTitleProp ? undefined : profileID
-    );
-    const [vcVerifications, setVCVerifications] = useState<VerificationItem[]>([]);
+    const t = useT();
+    const { issuerContext, registryIssuerName } = useIssuerContext(credential, {
+        trustProfile: issuerTrustProfile,
+    });
+    const issuerLabel = issuerContext
+        ? getIssuerContextLabel(
+              issuerContext,
+              t,
+              issuerOverride ?? registryIssuerName,
+              verifierLabelOverride
+          )
+        : undefined;
     const [isFront, setIsFront] = useState(true);
-
-    const unknownVerifierTitle = useMemo(() => {
-        if (unknownVerifierTitleProp) return unknownVerifierTitleProp;
-        if (!highlightedCreds || highlightedCreds.length === 0) return undefined;
-
-        const role = getRoleFromCred(highlightedCreds[0]);
-        return getScoutsNounForRole(role); // Just the role, no "Verified" prefix
-    }, [highlightedCreds, unknownVerifierTitleProp]);
 
     useEffect(() => {
         const verify = async () => {
@@ -119,10 +110,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
         categoryType === BoostCategoryOptionsEnum.membership ||
         categoryType === BoostCategoryOptionsEnum.id;
     const shouldUseHostCardPadding = getVCDisplayCardVariant(credential, categoryType) !== 'ribbon';
-    let _categoryType = categoryType;
-
-    const bgImage = credential?.display?.backgroundImage;
-    const showBackground = bgImage && isCertificate;
+    let displayCategoryType = categoryType;
 
     let customRibbonCategoryComponent;
 
@@ -140,10 +128,8 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                 Troop
             </span>
         );
-        _categoryType = BoostCategoryOptionsEnum.id;
+        displayCategoryType = BoostCategoryOptionsEnum.id;
     }
-
-    let handleShare, handleDotMenu;
 
     return (
         <IonPage>
@@ -168,8 +154,8 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                             issueeOverride={issueeOverride}
                             issuerOverride={issuerOverride}
                             issueHistory={issueHistory}
-                            categoryType={categoryType as any}
-                            verificationItems={vcVerifications}
+                            categoryType={displayCategoryType}
+                            verificationItems={verifications}
                             customThumbComponent={customThumbComponent}
                             customBodyCardComponent={customBodyCardComponent}
                             customFooterComponent={customFooterComponent}
@@ -181,7 +167,8 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                             customIssueHistoryComponent={customIssueHistoryComponent}
                             enableLightbox
                             titleOverride={titleOverride}
-                            knownDIDRegistry={knownDIDRegistry}
+                            issuerContext={issuerContext}
+                            issuerLabel={issuerLabel}
                             handleXClick={isCertificate ? handleCloseModal : undefined}
                             hideIssueDate={hideIssueDate}
                             customRibbonCategoryComponent={customRibbonCategoryComponent}
@@ -190,8 +177,11 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                             setIsFrontOverride={setIsFront}
                             qrCodeOnClick={qrCodeOnClick}
                             hideQRCode={hideQRCode}
-                            unknownVerifierTitle={unknownVerifierTitle}
-                            onVerifierClick={openCredentialIssuerPopover}
+                            onVerifierClick={
+                                issuerContext
+                                    ? event => openCredentialIssuerPopover(event, issuerContext)
+                                    : undefined
+                            }
                         />
                     </section>
                 </IonRow>

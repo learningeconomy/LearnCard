@@ -12,9 +12,9 @@ import RoundedX from '../svgs/RoundedX';
 import VCDisplayCardCategoryType from './VCDisplayCardCategoryType';
 import VCDisplayCardSkillsCount from './VCDisplayCardSkillsCount';
 import VCIDDisplayCard from './VCIDDIsplayCard';
-import { VerifierState } from '../CertificateDisplayCard/VerifierStateBadgeAndText';
 
-import { Profile, VC, VerificationItem, VerificationStatusEnum } from '@learncard/types';
+import type { IssuerContext, Profile, VC, VerificationItem } from '@learncard/types';
+import { VerificationStatusEnum } from '@learncard/types';
 import {
     getColorForVerificationStatus,
     getInfoFromCredential,
@@ -28,7 +28,6 @@ import {
 } from '../../types';
 import { CertificateDisplayCard } from '../CertificateDisplayCard';
 import { MeritBadgeDisplayCard } from '../MeritBadgeDisplayCard';
-import { KnownDIDRegistryType } from '../../types';
 
 type FlippedComponentProps = React.PropsWithChildren<{
     flipId?: string;
@@ -97,7 +96,8 @@ export type VCDisplayCard2Props = {
     enableLightbox?: boolean;
     customRibbonCategoryComponent?: React.ReactNode;
     customFrontButton?: React.ReactNode;
-    knownDIDRegistry?: KnownDIDRegistryType;
+    issuerContext?: IssuerContext;
+    issuerLabel?: string;
     hideIssueDate?: boolean;
     onDotsClick?: () => void;
     customSkillsComponent?: React.ReactNode;
@@ -113,12 +113,8 @@ export type VCDisplayCard2Props = {
     customLinkedCredentialsComponent?: React.ReactNode;
     customContentSlot?: React.ReactNode;
     customBodyContentSlot?: React.ReactNode;
-    unknownVerifierTitle?: string;
     hideFrontFaceDetails?: boolean;
-    onVerifierClick?: (
-        event: React.MouseEvent<HTMLButtonElement>,
-        verifierState: VerifierState
-    ) => void;
+    onVerifierClick?: React.MouseEventHandler<HTMLButtonElement>;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -149,7 +145,8 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     enableLightbox,
     customRibbonCategoryComponent,
     customFrontButton,
-    knownDIDRegistry,
+    issuerContext,
+    issuerLabel,
     hideIssueDate,
     onDotsClick,
     customSkillsComponent,
@@ -165,7 +162,6 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     customLinkedCredentialsComponent,
     customContentSlot,
     customBodyContentSlot,
-    unknownVerifierTitle,
     hideFrontFaceDetails,
     onVerifierClick,
 }) => {
@@ -259,7 +255,8 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 getVideoMetadata={getVideoMetadata}
                 onMediaAttachmentClick={onMediaAttachmentClick}
                 enableLightbox={enableLightbox}
-                knownDIDRegistry={knownDIDRegistry}
+                issuerContext={issuerContext}
+                issuerLabel={issuerLabel}
                 handleXClick={handleXClick}
                 subjectImageComponent={subjectImageComponent}
                 issuerImageComponent={issuerImageComponent}
@@ -274,7 +271,6 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 formattedDisplayType={formattedDisplayType}
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                 customBodyContentSlot={customBodyContentSlot}
-                unknownVerifierTitle={unknownVerifierTitle}
                 hideFrontFaceDetails={hideFrontFaceDetails}
                 onVerifierClick={onVerifierClick}
             />
@@ -293,7 +289,8 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 getVideoMetadata={getVideoMetadata}
                 onMediaAttachmentClick={onMediaAttachmentClick}
                 enableLightbox={enableLightbox}
-                knownDIDRegistry={knownDIDRegistry}
+                issuerContext={issuerContext}
+                issuerLabel={issuerLabel}
                 handleXClick={handleXClick}
                 subjectImageComponent={subjectImageComponent}
                 issuerImageComponent={issuerImageComponent}
@@ -308,7 +305,6 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 formattedDisplayType={formattedDisplayType}
                 customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                 customBodyContentSlot={customBodyContentSlot}
-                unknownVerifierTitle={unknownVerifierTitle}
                 hideFrontFaceDetails={hideFrontFaceDetails}
                 onVerifierClick={onVerifierClick}
             />
@@ -328,7 +324,8 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     customIssueHistoryComponent={customIssueHistoryComponent}
                     issueHistory={issueHistory}
                     enableLightbox={enableLightbox}
-                    knownDIDRegistry={knownDIDRegistry}
+                    issuerContext={issuerContext}
+                    issuerLabel={issuerLabel}
                     customSkillsComponent={customSkillsComponent}
                     isFrontOverride={isFrontOverride}
                     setIsFrontOverride={setIsFrontOverride}
@@ -340,7 +337,6 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     customIDDescription={customIDDescription}
                     hideGradientBackground={hideGradientBackground}
                     customLinkedCredentialsComponent={customLinkedCredentialsComponent}
-                    unknownVerifierTitle={unknownVerifierTitle}
                     onVerifierClick={onVerifierClick}
                 />
             </div>
@@ -448,9 +444,9 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                     customThumbComponent={customThumbComponent}
                                     createdAt={createdAt ?? ''}
                                     imageUrl={imageUrl}
-                                    knownDIDRegistry={knownDIDRegistry}
+                                    issuerContext={issuerContext}
+                                    issuerLabel={issuerLabel}
                                     customBodyContentSlot={customBodyContentSlot}
-                                    unknownVerifierTitle={unknownVerifierTitle}
                                     onVerifierClick={onVerifierClick}
                                 />
                             )}

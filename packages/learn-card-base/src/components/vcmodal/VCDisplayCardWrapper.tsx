@@ -3,7 +3,12 @@ import { getVCDisplayCardVariant, VCDisplayCard2 } from '@learncard/react';
 import { VC, VerificationItem, CredentialRecord } from '@learncard/types';
 import { getCredentialSubject } from '../IssueVC/helpers';
 import useCurrentUser from 'learn-card-base/hooks/useGetCurrentUser';
-import { CredentialCategory, categoryMetadata, useWallet } from 'learn-card-base';
+import {
+    BoostCategoryOptionsEnum,
+    CredentialCategory,
+    categoryMetadata,
+    useWallet,
+} from 'learn-card-base';
 import { getEmojiFromDidString } from 'learn-card-base/helpers/walletHelpers';
 import X from 'learn-card-base/svgs/X';
 import { IonContent, IonPage, IonRow } from '@ionic/react';
@@ -23,6 +28,8 @@ import { getLogger } from '../../logging/logger';
 import CredentialIssuerPopover, {
     useCredentialIssuerPopover,
 } from '../CredentialBadge/CredentialIssuerPopover';
+import { getIssuerContextLabel, useIssuerContext } from 'learn-card-base/hooks/useIssuerContext';
+import { useT } from 'learn-card-base/i18n';
 const log = getLogger('vcdisplay-card-wrapper');
 
 const DetailsDisplay: React.FC<VC> = ({ credential }) => {
@@ -204,6 +211,13 @@ export const VCDisplayCardWrapper = ({
     const issuerImageComp = getDisplayComponent('issuer');
 
     const category: CredentialCategory = VcCategory || cr?.category || 'Achievement';
+    const t = useT();
+    const { issuerContext, registryIssuerName } = useIssuerContext(credential, {
+        trustProfile: category === BoostCategoryOptionsEnum.socialBadge ? 'social' : 'credential',
+    });
+    const issuerLabel = issuerContext
+        ? getIssuerContextLabel(issuerContext, t, issuerText || registryIssuerName)
+        : undefined;
     const categoryImgUrl = categoryMetadata[category].defaultImageSrc;
     const shouldUseHostCardPadding = getVCDisplayCardVariant(credential, category) !== 'ribbon';
 
@@ -256,7 +270,13 @@ export const VCDisplayCardWrapper = ({
                             overrideCardTitle={cardTitle}
                             overrideDetailsComponent={renderDetailsEl}
                             categoryType={category}
-                            onVerifierClick={openCredentialIssuerPopover}
+                            issuerContext={issuerContext}
+                            issuerLabel={issuerLabel}
+                            onVerifierClick={
+                                issuerContext
+                                    ? event => openCredentialIssuerPopover(event, issuerContext)
+                                    : undefined
+                            }
                         />
                         <CredentialIssuerPopover {...credentialIssuerPopoverProps} />
                     </>

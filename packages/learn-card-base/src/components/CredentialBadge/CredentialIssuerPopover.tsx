@@ -1,20 +1,21 @@
 import React, { useState } from 'react';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
-
 import { IonPopover } from '@ionic/react';
+import type { IssuerContext } from '@learncard/types';
+import { useT } from 'learn-card-base/i18n';
+
 import BecomeTrustedIssuerForm from './BecomeTrustedIssuerForm';
-
 import useModal from '../modals/useModal';
-
 import { ModalTypes } from '../modals/types/Modals';
-import { VERIFIER_STATES, VerifierState } from './credentialVerificationTypes';
+
+const TRUST_REGISTRIES_DOCS_URL =
+    'https://docs.learncard.com/core-concepts/identities-and-keys/trust-registries';
 
 type CredentialIssuerPopoverProps = {
     enabled: boolean;
     triggerId?: string;
-    verifierState: VerifierState;
-    issuerDid?: string;
+    issuerContext?: IssuerContext;
     isOpen?: boolean;
     event?: Event;
     onDidDismiss?: () => void;
@@ -23,46 +24,27 @@ type CredentialIssuerPopoverProps = {
 type CredentialIssuerPopoverState = {
     isOpen: boolean;
     event?: Event;
-    verifierState: VerifierState;
+    issuerContext?: IssuerContext;
 };
-
-const TRUST_REGISTRIES_DOCS_URL =
-    'https://docs.learncard.com/core-concepts/identities-and-keys/trust-registries';
 
 const stopPopoverInteraction = (event: React.SyntheticEvent): void => {
     event.stopPropagation();
 };
 
-export const normalizeCredentialIssuerVerifierState = (
-    verifierState: string | undefined
-): VerifierState => {
-    if (verifierState === VERIFIER_STATES.selfVerified) return VERIFIER_STATES.selfVerified;
-    if (verifierState === VERIFIER_STATES.trustedVerifier) return VERIFIER_STATES.trustedVerifier;
-    // Legacy react-learn-card ID cards previously emitted "Trusted App" for app-issued creds.
-    if (verifierState === VERIFIER_STATES.appIssuer || verifierState === 'Trusted App') {
-        return VERIFIER_STATES.appIssuer;
-    }
-    if (verifierState === VERIFIER_STATES.untrustedVerifier)
-        return VERIFIER_STATES.untrustedVerifier;
-
-    return VERIFIER_STATES.unknownVerifier;
-};
-
 export const useCredentialIssuerPopover = () => {
     const [popoverState, setPopoverState] = useState<CredentialIssuerPopoverState>({
         isOpen: false,
-        verifierState: VERIFIER_STATES.unknownVerifier,
     });
 
     const openCredentialIssuerPopover = (
         event: React.MouseEvent<HTMLElement>,
-        verifierState: string
+        issuerContext: IssuerContext
     ): void => {
         event.stopPropagation();
         setPopoverState({
             isOpen: true,
             event: event.nativeEvent,
-            verifierState: normalizeCredentialIssuerVerifierState(verifierState),
+            issuerContext,
         });
     };
 
@@ -75,44 +57,73 @@ export const useCredentialIssuerPopover = () => {
             enabled: true,
             isOpen: popoverState.isOpen,
             event: popoverState.event,
-            verifierState: popoverState.verifierState,
+            issuerContext: popoverState.issuerContext,
             onDidDismiss: closeCredentialIssuerPopover,
         },
         openCredentialIssuerPopover,
         closeCredentialIssuerPopover,
     };
 };
+export const getIssuerPopoverDescription = (
+    issuerContext: IssuerContext,
+    t: (key: string, params?: Record<string, unknown>) => string
+): string => {
+    const issuerName =
+        issuerContext.profile?.displayName ?? issuerContext.profile?.profileId ?? 'This issuer';
+
+    switch (issuerContext.state) {
+        case 'trusted':
+            return t('verification.trustedIssuerDescription');
+        case 'self':
+            return t('verification.selfIssuedDescription');
+        case 'app':
+            return t('verification.appIssuerDescription');
+        case 'denied':
+            return t('verification.untrustedIssuerDescription');
+        case 'connection':
+            return t('verification.connectionDescription', { name: issuerName });
+        case 'mutuals':
+            return t('verification.mutualsDescription', {
+                name: issuerName,
+                count: issuerContext.mutualConnectionCount,
+            });
+        case 'identified':
+            return t('verification.identifiedDescription', { name: issuerName });
+        case 'unclaimed':
+            return t('verification.unclaimedDescription', { name: issuerName });
+        case 'unresolvable':
+            return issuerContext.trustProfile === 'social'
+                ? t('verification.unresolvableSocialDescription')
+                : t('verification.unresolvableCredentialDescription');
+    }
+};
 
 const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
     enabled,
     triggerId,
-    verifierState,
-    issuerDid,
+    issuerContext,
     isOpen,
     event,
     onDidDismiss,
 }) => {
+    const t = useT();
     const { newModal } = useModal();
 
-    if (!enabled) return null;
+    if (!enabled || !issuerContext) return null;
 
     const openBecomeTrustedIssuerForm = (e: React.MouseEvent<HTMLButtonElement>): void => {
         e.stopPropagation();
         stopPopoverInteraction(e);
-
-        // Dismiss the popover before opening the modal. We dismiss the host
-        // ion-popover directly so it closes in both trigger modes (event-based
-        // and triggerId), then open the modal once it has gone away.
         const popover = e.currentTarget.closest('ion-popover') as
             | (HTMLElement & { dismiss?: () => Promise<void> })
             | null;
-
-        const open = () =>
+        const open = (): void => {
             newModal(
-                <BecomeTrustedIssuerForm issuerDid={issuerDid} />,
+                <BecomeTrustedIssuerForm issuerDid={issuerContext.issuerDid} />,
                 { hideButton: true },
                 { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
             );
+        };
 
         if (popover?.dismiss) {
             popover.dismiss().then(() => {
@@ -128,59 +139,16 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
     const openTrustRegistriesDocs = (e: React.MouseEvent<HTMLButtonElement>): void => {
         e.stopPropagation();
         stopPopoverInteraction(e);
-        if (Capacitor?.isNativePlatform()) {
-            Browser?.open({ url: TRUST_REGISTRIES_DOCS_URL });
+        if (Capacitor.isNativePlatform()) {
+            Browser.open({ url: TRUST_REGISTRIES_DOCS_URL });
         } else {
-            window?.open(TRUST_REGISTRIES_DOCS_URL, '_blank', 'noopener,noreferrer');
+            window.open(TRUST_REGISTRIES_DOCS_URL, '_blank', 'noopener,noreferrer');
         }
     };
-
-    const getIssuerPopoverDescription = (verifierState: VerifierState): React.ReactNode => {
-        if (verifierState === VERIFIER_STATES.trustedVerifier) {
-            return (
-                <>
-                    A <span className="font-semibold text-grayscale-800">Trusted Issuer</span> has
-                    been reviewed by a trusted community so you can better understand who issued
-                    this credential.
-                </>
-            );
-        }
-        if (verifierState === VERIFIER_STATES.selfVerified) {
-            return (
-                <>
-                    <span className="font-semibold text-grayscale-800">Self Issued</span>{' '}
-                    credentials are issued by the holder to themselves.
-                </>
-            );
-        }
-        if (verifierState === VERIFIER_STATES.appIssuer) {
-            return (
-                <>
-                    An <span className="font-semibold text-grayscale-800">App Issuer</span> is a
-                    LearnCard app or service that issued this credential through LearnCard.
-                </>
-            );
-        }
-        if (verifierState === VERIFIER_STATES.untrustedVerifier) {
-            return (
-                <>
-                    An <span className="font-semibold text-grayscale-800">Untrusted Issuer</span>{' '}
-                    has been flagged by a registry LearnCard checks. Review the issuer before
-                    relying on this credential.
-                </>
-            );
-        }
-
-        return (
-            <>
-                An <span className="font-semibold text-grayscale-800">Unknown Issuer</span> is not
-                currently verified by LearnCard. This does not mean your credential is invalid; it
-                just means we have not verified who issued it.
-            </>
-        );
-    };
-
-    const popoverDescription = getIssuerPopoverDescription(verifierState);
+    const showRegistryActions =
+        issuerContext.state === 'trusted' ||
+        issuerContext.state === 'denied' ||
+        (issuerContext.state === 'unresolvable' && issuerContext.trustProfile === 'credential');
     const popoverTriggerProps = triggerId
         ? {
               trigger: triggerId,
@@ -211,22 +179,26 @@ const CredentialIssuerPopover: React.FC<CredentialIssuerPopoverProps> = ({
                 onPointerDown={stopPopoverInteraction}
                 onTouchStart={stopPopoverInteraction}
             >
-                <p className="text-xs text-grayscale-600 leading-relaxed">{popoverDescription}</p>
+                <p className="text-xs text-grayscale-600 leading-relaxed">
+                    {getIssuerPopoverDescription(issuerContext, t)}
+                </p>
 
-                <div className="mt-2 flex flex-row items-center gap-2">
-                    <button
-                        onClick={openTrustRegistriesDocs}
-                        className="font-semibold text-indigo-600 underline underline-offset-2 text-xs"
-                    >
-                        Learn More
-                    </button>
-                    <button
-                        onClick={openBecomeTrustedIssuerForm}
-                        className="font-semibold text-indigo-600 underline underline-offset-2 text-xs"
-                    >
-                        Become a Trusted Issuer
-                    </button>
-                </div>
+                {showRegistryActions && (
+                    <div className="mt-2 flex flex-row items-center gap-2">
+                        <button
+                            onClick={openTrustRegistriesDocs}
+                            className="font-semibold text-grayscale-700 hover:text-grayscale-900 underline underline-offset-2 text-xs transition-colors"
+                        >
+                            Learn More
+                        </button>
+                        <button
+                            onClick={openBecomeTrustedIssuerForm}
+                            className="font-semibold text-grayscale-700 hover:text-grayscale-900 underline underline-offset-2 text-xs transition-colors"
+                        >
+                            Become a Trusted Issuer
+                        </button>
+                    </div>
+                )}
             </div>
         </IonPopover>
     );

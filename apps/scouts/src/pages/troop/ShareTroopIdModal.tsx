@@ -19,14 +19,9 @@ import { getCredentialSubject as getSubject } from 'learn-card-base/helpers/cred
 type ShareTroopIdModalProps = {
     credential: VC;
     uri: string;
-    unknownVerifierTitle?: string;
 };
 
-const ShareTroopIdModal: React.FC<ShareTroopIdModalProps> = ({
-    credential,
-    uri,
-    unknownVerifierTitle,
-}) => {
+const ShareTroopIdModal: React.FC<ShareTroopIdModalProps> = ({ credential, uri }) => {
     const { presentToast } = useToast();
 
     const currentUser = useGetCurrentLCNUser();

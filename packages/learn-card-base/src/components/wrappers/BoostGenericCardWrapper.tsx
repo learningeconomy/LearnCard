@@ -3,7 +3,7 @@ import React from 'react';
 import { BoostGenericCard } from '@learncard/react';
 import BoostListItem from '../boost/BoostListItem';
 
-import { VC } from '@learncard/types';
+import type { IssuerTrustProfile, VC } from '@learncard/types';
 import { CredentialCategory } from 'learn-card-base/types/credentials';
 import { WalletCategoryTypes } from '../IssueVC/types';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
@@ -45,7 +45,8 @@ type BoostGenericCardWrapperProps = {
     displayType?: string;
     uri?: string;
     indicatorColor?: string;
-    unknownVerifierTitle?: string;
+    verifierLabelOverride?: string;
+    issuerTrustProfile?: IssuerTrustProfile;
     relativeDate?: boolean;
     compact?: boolean;
     isCLR?: boolean;
@@ -83,7 +84,8 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
     displayType,
     uri,
     indicatorColor,
-    unknownVerifierTitle,
+    verifierLabelOverride,
+    issuerTrustProfile,
     relativeDate,
     compact,
     isCLR,
@@ -106,7 +108,8 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
                 thumbImgSrc={thumbImgSrc}
                 indicatorColor={indicatorColor}
                 uri={uri}
-                unknownVerifierTitle={unknownVerifierTitle}
+                verifierLabelOverride={verifierLabelOverride}
+                issuerTrustProfile={issuerTrustProfile}
                 relativeDate={relativeDate}
                 compact={compact}
                 lifecycleStatus={lifecycleStatus}
@@ -141,8 +144,9 @@ export const BoostGenericCardWrapper: React.FC<BoostGenericCardWrapperProps> = (
                     <CredentialVerificationDisplay
                         credential={credential}
                         iconClassName="!w-[15px] !h-[15px]"
-                        showText={!!unknownVerifierTitle}
-                        unknownVerifierTitle={unknownVerifierTitle}
+                        showText={!!verifierLabelOverride}
+                        verifierLabelOverride={verifierLabelOverride}
+                        issuerTrustProfile={issuerTrustProfile}
                         lifecycleStatus={lifecycleStatus}
                         trustedOnly={trustedVerifierOnly}
                     />

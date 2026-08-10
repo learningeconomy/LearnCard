@@ -2,18 +2,16 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
+import type { IssuerContext } from '@learncard/types';
+import { useT } from 'learn-card-base/i18n';
 
 import BecomeTrustedIssuerForm from './BecomeTrustedIssuerForm';
-
+import { getIssuerPopoverDescription } from './CredentialIssuerPopover';
 import useModal from '../modals/useModal';
-
 import { ModalTypes } from '../modals/types/Modals';
-import { VERIFIER_STATES, VerifierState } from './credentialVerificationTypes';
-import { normalizeCredentialIssuerVerifierState } from './CredentialIssuerPopover';
 
 const TRUST_REGISTRIES_DOCS_URL =
     'https://docs.learncard.com/core-concepts/identities-and-keys/trust-registries';
-
 const POPOVER_WIDTH = 320;
 const VIEWPORT_MARGIN = 16;
 const ANCHOR_GAP = 8;
@@ -25,85 +23,32 @@ type ReactCredentialIssuerPopoverAnchor = {
 
 type ReactCredentialIssuerPopoverProps = {
     isOpen: boolean;
-    verifierState: VerifierState;
+    issuerContext?: IssuerContext;
     anchor?: ReactCredentialIssuerPopoverAnchor;
-    issuerDid?: string;
     onDidDismiss?: () => void;
 };
 
 type ReactCredentialIssuerPopoverState = {
     isOpen: boolean;
     anchor?: ReactCredentialIssuerPopoverAnchor;
-    verifierState: VerifierState;
+    issuerContext?: IssuerContext;
 };
 
-const getIssuerPopoverDescription = (verifierState: VerifierState): React.ReactNode => {
-    if (verifierState === VERIFIER_STATES.trustedVerifier) {
-        return (
-            <>
-                A <span className="font-semibold text-grayscale-800">Trusted Issuer</span> has been
-                reviewed by a trusted community so you can better understand who issued this
-                credential.
-            </>
-        );
-    }
-    if (verifierState === VERIFIER_STATES.selfVerified) {
-        return (
-            <>
-                <span className="font-semibold text-grayscale-800">Self Issued</span> credentials
-                are issued by the holder to themselves.
-            </>
-        );
-    }
-    if (verifierState === VERIFIER_STATES.appIssuer) {
-        return (
-            <>
-                An <span className="font-semibold text-grayscale-800">App Issuer</span> is a
-                LearnCard app or service that issued this credential through LearnCard.
-            </>
-        );
-    }
-    if (verifierState === VERIFIER_STATES.untrustedVerifier) {
-        return (
-            <>
-                An <span className="font-semibold text-grayscale-800">Untrusted Issuer</span> has
-                been flagged by a registry LearnCard checks. Review the issuer before relying on
-                this credential.
-            </>
-        );
-    }
-
-    return (
-        <>
-            An <span className="font-semibold text-grayscale-800">Unknown Issuer</span> is not
-            currently verified by LearnCard. This does not mean your credential is invalid; it just
-            means we have not verified who issued it.
-        </>
-    );
-};
-
-/**
- * React-native (non-Ionic) hook mirroring `useCredentialIssuerPopover`, but
- * capturing click coordinates so the popover can be positioned without relying
- * on Ionic's portal/gesture system. Built specifically for the BoostPreview,
- * where the Ionic popover's buttons were not clickable.
- */
 export const useReactCredentialIssuerPopover = () => {
     const [popoverState, setPopoverState] = useState<ReactCredentialIssuerPopoverState>({
         isOpen: false,
-        verifierState: VERIFIER_STATES.unknownVerifier,
     });
 
     const openCredentialIssuerPopover = (
         event: React.MouseEvent<HTMLElement>,
-        verifierState: string
+        issuerContext: IssuerContext
     ): void => {
         event.stopPropagation();
         const rect = event.currentTarget.getBoundingClientRect();
         setPopoverState({
             isOpen: true,
             anchor: { x: rect.left + rect.width / 2, y: rect.bottom },
-            verifierState: normalizeCredentialIssuerVerifierState(verifierState),
+            issuerContext,
         });
     };
 
@@ -115,7 +60,7 @@ export const useReactCredentialIssuerPopover = () => {
         credentialIssuerPopoverProps: {
             isOpen: popoverState.isOpen,
             anchor: popoverState.anchor,
-            verifierState: popoverState.verifierState,
+            issuerContext: popoverState.issuerContext,
             onDidDismiss: closeCredentialIssuerPopover,
         },
         openCredentialIssuerPopover,
@@ -125,30 +70,27 @@ export const useReactCredentialIssuerPopover = () => {
 
 const ReactCredentialIssuerPopover: React.FC<ReactCredentialIssuerPopoverProps> = ({
     isOpen,
-    verifierState,
+    issuerContext,
     anchor,
-    issuerDid,
     onDidDismiss,
 }) => {
+    const t = useT();
     const { newModal } = useModal();
     const popoverRef = useRef<HTMLDivElement>(null);
     const [position, setPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
-    // Position the popover relative to the anchor once it (and its measured
-    // size) are available, clamping it within the viewport.
     useLayoutEffect(() => {
         if (!isOpen || !anchor) return;
 
         const width = popoverRef.current?.offsetWidth ?? POPOVER_WIDTH;
         const height = popoverRef.current?.offsetHeight ?? 0;
-
         let left = anchor.x - width / 2;
         left = Math.max(
             VIEWPORT_MARGIN,
             Math.min(left, window.innerWidth - width - VIEWPORT_MARGIN)
         );
-
         let top = anchor.y + ANCHOR_GAP;
+
         if (height && top + height > window.innerHeight - VIEWPORT_MARGIN) {
             top = Math.max(VIEWPORT_MARGIN, anchor.y - ANCHOR_GAP - height);
         }
@@ -156,7 +98,6 @@ const ReactCredentialIssuerPopover: React.FC<ReactCredentialIssuerPopoverProps> 
         setPosition({ top, left });
     }, [isOpen, anchor?.x, anchor?.y]);
 
-    // Dismiss on outside click / escape.
     useEffect(() => {
         if (!isOpen) return;
 
@@ -177,26 +118,29 @@ const ReactCredentialIssuerPopover: React.FC<ReactCredentialIssuerPopoverProps> 
         };
     }, [isOpen, onDidDismiss]);
 
-    if (!isOpen || !anchor) return null;
+    if (!isOpen || !anchor || !issuerContext) return null;
 
     const openBecomeTrustedIssuerForm = (e: React.MouseEvent<HTMLButtonElement>): void => {
         e.stopPropagation();
         onDidDismiss?.();
         newModal(
-            <BecomeTrustedIssuerForm issuerDid={issuerDid} />,
+            <BecomeTrustedIssuerForm issuerDid={issuerContext.issuerDid} />,
             { hideButton: true },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
         );
     };
-
     const openTrustRegistriesDocs = (e: React.MouseEvent<HTMLButtonElement>): void => {
         e.stopPropagation();
-        if (Capacitor?.isNativePlatform()) {
-            Browser?.open({ url: TRUST_REGISTRIES_DOCS_URL });
+        if (Capacitor.isNativePlatform()) {
+            Browser.open({ url: TRUST_REGISTRIES_DOCS_URL });
         } else {
-            window?.open(TRUST_REGISTRIES_DOCS_URL, '_blank', 'noopener,noreferrer');
+            window.open(TRUST_REGISTRIES_DOCS_URL, '_blank', 'noopener,noreferrer');
         }
     };
+    const showRegistryActions =
+        issuerContext.state === 'trusted' ||
+        issuerContext.state === 'denied' ||
+        (issuerContext.state === 'unresolvable' && issuerContext.trustProfile === 'credential');
 
     return createPortal(
         <div
@@ -208,26 +152,28 @@ const ReactCredentialIssuerPopover: React.FC<ReactCredentialIssuerPopoverProps> 
                 left: position.left,
                 width: `min(${POPOVER_WIDTH}px, calc(100vw - ${VIEWPORT_MARGIN * 2}px))`,
             }}
-            onClick={e => e.stopPropagation()}
+            onClick={event => event.stopPropagation()}
         >
             <p className="text-xs text-grayscale-600 leading-relaxed">
-                {getIssuerPopoverDescription(verifierState)}
+                {getIssuerPopoverDescription(issuerContext, t)}
             </p>
 
-            <div className="mt-2 flex flex-row items-center gap-2">
-                <button
-                    onClick={openTrustRegistriesDocs}
-                    className="font-semibold text-indigo-600 underline underline-offset-2 text-xs"
-                >
-                    Learn More
-                </button>
-                <button
-                    onClick={openBecomeTrustedIssuerForm}
-                    className="font-semibold text-indigo-600 underline underline-offset-2 text-xs"
-                >
-                    Become a Trusted Issuer
-                </button>
-            </div>
+            {showRegistryActions && (
+                <div className="mt-2 flex flex-row items-center gap-2">
+                    <button
+                        onClick={openTrustRegistriesDocs}
+                        className="font-semibold text-grayscale-700 hover:text-grayscale-900 underline underline-offset-2 text-xs transition-colors"
+                    >
+                        Learn More
+                    </button>
+                    <button
+                        onClick={openBecomeTrustedIssuerForm}
+                        className="font-semibold text-grayscale-700 hover:text-grayscale-900 underline underline-offset-2 text-xs transition-colors"
+                    >
+                        Become a Trusted Issuer
+                    </button>
+                </div>
+            )}
         </div>,
         document.body
     );

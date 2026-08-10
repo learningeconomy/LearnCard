@@ -4,22 +4,11 @@ import { Flipper, Flipped as UntypedFlipped } from 'react-flip-toolkit';
 import IDIcon from '../svgs/IDIcon';
 import IDSleeve from '../../assets/images/id-sleeve.png';
 import QRCodeIcon from '../svgs/QRCodeIcon';
-import UnknownVerifierBadge from '../svgs/UnknownVerifierBadge';
-import VerifiedBadge from '../svgs/VerifiedBadge';
-import PersonBadge from '../svgs/PersonBadge';
-import RedFlag from '../svgs/RedFlag';
 
-import { getInfoFromCredential } from '../../helpers/credential.helpers';
-import { isAppDidWeb } from '@learncard/helpers';
-
-import { VC } from '@learncard/types';
+import type { IssuerContext, VC } from '@learncard/types';
 import { BoostAchievementCredential } from '../../types';
 import TruncateTextBox from './TruncateTextBox';
-import { KnownDIDRegistryType } from '../../types';
-import {
-    VerifierState,
-    VERIFIER_STATES,
-} from '../CertificateDisplayCard/VerifierStateBadgeAndText';
+import VerifierStateBadgeAndText from '../CertificateDisplayCard/VerifierStateBadgeAndText';
 
 type FlippedComponentProps = React.PropsWithChildren<{
     flipId?: string;
@@ -34,16 +23,13 @@ type VCIDDisplayFrontFaceProps = {
     setIsFront: (value: boolean) => void;
     showDetailsBtn?: boolean;
     credential: VC | BoostAchievementCredential;
-    knownDIDRegistry?: KnownDIDRegistryType;
+    issuerContext?: IssuerContext;
+    issuerLabel?: string;
     customThumbComponent?: React.ReactNode;
     hideQRCode?: boolean;
     qrCodeOnClick?: () => void;
     customIDDescription?: React.ReactNode;
-    unknownVerifierTitle?: string;
-    onVerifierClick?: (
-        event: React.MouseEvent<HTMLButtonElement>,
-        verifierState: VerifierState
-    ) => void;
+    onVerifierClick?: React.MouseEventHandler<HTMLButtonElement>;
 };
 
 const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
@@ -51,46 +37,14 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
     setIsFront,
     showDetailsBtn,
     credential,
-    knownDIDRegistry,
+    issuerContext,
+    issuerLabel,
     customThumbComponent,
     hideQRCode = false,
     qrCodeOnClick,
     customIDDescription,
-    unknownVerifierTitle,
     onVerifierClick,
 }) => {
-    const { credentialSubject } = getInfoFromCredential(credential, 'MMM dd, yyyy', {
-        uppercaseDate: false,
-    });
-
-    const issuerDid =
-        typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id;
-    const isAppIssuerDid = isAppDidWeb(issuerDid);
-
-    let verifierState: VerifierState;
-    if (credentialSubject?.id === issuerDid && issuerDid && issuerDid !== 'did:example:123') {
-        // the extra "&& issuerDid" is so that the credential preview doesn't say "Self Verified"
-        // the did:example:123 condition is so that we don't show this status from the Manage Boosts tab
-        verifierState = VERIFIER_STATES.selfVerified;
-    } else if (unknownVerifierTitle) {
-        verifierState = VERIFIER_STATES.trustedVerifier;
-    } else {
-        if (knownDIDRegistry?.source === 'trusted') {
-            verifierState = VERIFIER_STATES.trustedVerifier;
-        } else if (knownDIDRegistry?.source === 'untrusted') {
-            verifierState = VERIFIER_STATES.untrustedVerifier;
-        } else if (knownDIDRegistry?.source === 'unknown') {
-            verifierState = isAppIssuerDid
-                ? VERIFIER_STATES.appIssuer
-                : VERIFIER_STATES.unknownVerifier;
-        } else {
-            verifierState = isAppIssuerDid
-                ? VERIFIER_STATES.appIssuer
-                : VERIFIER_STATES.unknownVerifier;
-        }
-    }
-    const isSelfVerified = verifierState === VERIFIER_STATES.selfVerified;
-
     const achievement =
         'achievement' in credential?.credentialSubject
             ? credential?.credentialSubject?.achievement
@@ -158,50 +112,15 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
                                 <div className="h-[2px] w-full bg-gray-200" />
                             </div>
 
-                            <button
-                                type="button"
-                                className="w-full flex items-center justify-center mt-2 appearance-none bg-transparent p-0"
-                                onClick={event => {
-                                    event.stopPropagation();
-                                    onVerifierClick?.(event, verifierState);
-                                }}
-                                onMouseDown={event => event.stopPropagation()}
-                                aria-haspopup="dialog"
-                                aria-label={`Open issuer details for ${
-                                    unknownVerifierTitle ?? verifierState
-                                }`}
-                            >
-                                {isSelfVerified && (
-                                    <span className="uppercase font-poppins text-base font-[500] text-green-dark flex gap-[3px] items-center">
-                                        <PersonBadge className="w-[20px] h-[20px]" />
-                                        Self Issued
-                                    </span>
-                                )}
-                                {verifierState === VERIFIER_STATES.trustedVerifier && (
-                                    <span className="uppercase font-poppins text-base font-[500] text-blue-light flex gap-[3px] items-center text-center">
-                                        <VerifiedBadge className="w-[20px] h-[20px]" />
-                                        {unknownVerifierTitle ?? 'Trusted Issuer'}
-                                    </span>
-                                )}
-                                {verifierState === VERIFIER_STATES.unknownVerifier && (
-                                    <span className="uppercase font-poppins text-base font-[500] text-orange-500 flex gap-[3px] items-center">
-                                        <UnknownVerifierBadge className="w-[20px] h-[20px]" />
-                                        Unknown Issuer
-                                    </span>
-                                )}
-                                {verifierState === VERIFIER_STATES.appIssuer && (
-                                    <span className="uppercase font-poppins text-base font-[500] text-cyan-600 flex gap-[3px] items-center">
-                                        <VerifiedBadge className="w-[20px] h-[20px]" />
-                                        App Issuer
-                                    </span>
-                                )}
-                                {verifierState === VERIFIER_STATES.untrustedVerifier && (
-                                    <span className="uppercase font-poppins text-base font-[500] text-red-mastercard flex gap-[3px] items-center">
-                                        <RedFlag className="w-[20px] h-[20px]" />
-                                        Untrusted Issuer
-                                    </span>
-                                )}
-                            </button>
+                            {issuerContext && issuerLabel && (
+                                <div className="w-full flex items-center justify-center mt-2">
+                                    <VerifierStateBadgeAndText
+                                        issuerContext={issuerContext}
+                                        label={issuerLabel}
+                                        onClick={onVerifierClick}
+                                    />
+                                </div>
+                            )}
                         </div>
                     </Flipped>
                 </section>
