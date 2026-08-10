@@ -6,7 +6,11 @@ import {
     DuplicateCredentialPrompt,
     type DuplicateCredentialAction,
 } from './DuplicateCredentialPrompt';
-import { findDuplicateCredential, type ExistingCredentialMatch } from './findDuplicateCredential';
+import {
+    findDuplicateCredential,
+    type DuplicateCredentialLookup,
+    type ExistingCredentialMatch,
+} from './findDuplicateCredential';
 
 const log = getLogger('duplicate-credential-guard');
 
@@ -47,7 +51,10 @@ export const useDuplicateCredentialGuard = () => {
     }, []);
 
     const requestDuplicateResolution = useCallback(
-        (credential: VC): Promise<DuplicateCredentialResolution> => {
+        (
+            credential: VC,
+            lookup?: DuplicateCredentialLookup
+        ): Promise<DuplicateCredentialResolution> => {
             if (activeRequestRef.current) {
                 return Promise.resolve({ action: 'cancel', isDuplicate: false });
             }
@@ -56,7 +63,7 @@ export const useDuplicateCredentialGuard = () => {
             const request = (async () => {
                 try {
                     const wallet = await initWallet();
-                    const match = await findDuplicateCredential(wallet, credential);
+                    const match = await findDuplicateCredential(wallet, credential, lookup);
                     if (mountedRef.current) setIsCheckingDuplicate(false);
 
                     if (!match || !mountedRef.current) {

@@ -362,8 +362,7 @@ const ClaimBoost: React.FC<{
         const { prompted } = await gate();
         if (prompted) return;
         if (!boost) return;
-
-        const duplicateResolution = await requestDuplicateResolution(boost);
+        const duplicateResolution = await requestDuplicateResolution(boost, { boostUri });
         if (duplicateResolution.action === 'cancel') return;
         if (duplicateResolution.action === 'skip') {
             setIsClaimed(true);

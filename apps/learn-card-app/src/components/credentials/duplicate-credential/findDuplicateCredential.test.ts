@@ -18,17 +18,19 @@ const credential = { id: 'urn:uuid:credential-id', type: ['VerifiableCredential'
 
 const createWallet = ({
     exactRecords = [],
+    boostRecords = [],
     categoryRecords = [],
     credentialsByUri = {},
 }: {
-    exactRecords?: { uri: string; id?: string }[];
-    categoryRecords?: { uri: string; id?: string }[];
+    exactRecords?: { uri: string; id?: string; boostUri?: string }[];
+    boostRecords?: { uri: string; id?: string; boostUri?: string }[];
+    categoryRecords?: { uri: string; id?: string; boostUri?: string }[];
     credentialsByUri?: Record<string, VC>;
 } = {}): BespokeLearnCard => {
     const get = vi
         .fn()
-        .mockImplementation(({ id }: { id?: string }) =>
-            Promise.resolve(id ? exactRecords : categoryRecords)
+        .mockImplementation(({ id, boostUri }: { id?: string; boostUri?: string }) =>
+            Promise.resolve(id ? exactRecords : boostUri ? boostRecords : categoryRecords)
         );
 
     return {
@@ -107,6 +109,30 @@ describe('findDuplicateCredential', () => {
             { category: 'Achievement' },
             { cursor: 'next-page', limit: 50 }
         );
+    });
+    it('matches a repeated claim link by boost URI when issuance creates a new credential ID', async () => {
+        const boostUri = 'lc:network:example.org/trpc:boost:boost-id';
+        const previewCredential = {
+            id: 'urn:uuid:boost-template',
+            type: ['VerifiableCredential', 'BoostCredential'],
+        } as VC;
+        const issuedCredential = {
+            id: 'urn:uuid:issued-instance',
+            type: ['VerifiableCredential', 'BoostCredential'],
+            boostId: boostUri,
+        } as VC;
+        const wallet = createWallet({
+            boostRecords: [{ uri: 'lc:credential:issued', boostUri }],
+            credentialsByUri: { 'lc:credential:issued': issuedCredential },
+        });
+
+        await expect(
+            findDuplicateCredential(wallet, previewCredential, { boostUri })
+        ).resolves.toMatchObject({
+            record: { uri: 'lc:credential:issued', boostUri },
+            credential: issuedCredential,
+        });
+        expect(wallet.index.LearnCloud.get).toHaveBeenCalledWith({ boostUri });
     });
 
     it('does not scan the wallet when the incoming credential has no stable ID', async () => {

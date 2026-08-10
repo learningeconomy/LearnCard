@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { VC } from '@learncard/types';
 
+import type { DuplicateCredentialLookup } from './findDuplicateCredential';
 import type { DuplicateCredentialResolution } from './useDuplicateCredentialGuard';
 import { useDuplicateCredentialGuard } from './useDuplicateCredentialGuard';
 
@@ -43,7 +44,10 @@ const existingMatch = {
     record: { uri: 'lc:credential:existing' },
 };
 
-type RequestDuplicateResolution = (credential: VC) => Promise<DuplicateCredentialResolution>;
+type RequestDuplicateResolution = (
+    credential: VC,
+    lookup?: DuplicateCredentialLookup
+) => Promise<DuplicateCredentialResolution>;
 
 let requestDuplicateResolution: RequestDuplicateResolution;
 
@@ -66,10 +70,12 @@ const requestResolution = (): Promise<DuplicateCredentialResolution> => {
     });
     return promise;
 };
-const requestImmediateResolution = async (): Promise<DuplicateCredentialResolution> => {
+const requestImmediateResolution = async (
+    lookup?: DuplicateCredentialLookup
+): Promise<DuplicateCredentialResolution> => {
     let resolution!: DuplicateCredentialResolution;
     await act(async () => {
-        resolution = await requestDuplicateResolution(incomingCredential);
+        resolution = await requestDuplicateResolution(incomingCredential, lookup);
     });
     return resolution;
 };
@@ -90,6 +96,20 @@ describe('useDuplicateCredentialGuard', () => {
         });
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
+    it('forwards a claim-link Boost URI to the wallet lookup', async () => {
+        render(<Harness />);
+
+        await requestImmediateResolution({
+            boostUri: 'lc:network:example.org/trpc:boost:boost-id',
+        });
+
+        expect(mocks.findDuplicateCredential).toHaveBeenCalledWith(
+            expect.any(Object),
+            incomingCredential,
+            { boostUri: 'lc:network:example.org/trpc:boost:boost-id' }
+        );
+    });
+
     it('reports when it is checking the wallet for a duplicate', async () => {
         let resolveCheck!: (match: null) => void;
         mocks.findDuplicateCredential.mockReturnValue(
