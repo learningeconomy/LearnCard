@@ -45,12 +45,12 @@ app.post('/credentials/issue', async (req: TypedRequest<IssueEndpoint>, res) => 
     try {
         // issuanceDate is a VC 1.x term (2.0 uses validFrom). Only default it for v1
         // credentials — injecting it into a v2 credential trips strict JSON-LD
-        // data-loss detection (undefined term) and fails issuance.
+        // data-loss detection (undefined term) and fails issuance. Per the VC Data
+        // Model, the base context MUST be the first @context entry.
         const credential = req.body?.credential;
         const context = credential?.['@context'];
-        const isV1 = (Array.isArray(context) ? context : [context]).includes(
-            'https://www.w3.org/2018/credentials/v1'
-        );
+        const baseContext = Array.isArray(context) ? context[0] : context;
+        const isV1 = baseContext === 'https://www.w3.org/2018/credentials/v1';
 
         if (credential && isV1 && !('issuanceDate' in credential)) {
             credential.issuanceDate = new Date().toISOString();
