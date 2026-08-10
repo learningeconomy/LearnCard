@@ -9,8 +9,8 @@ export interface RevokeBoostRecipientGroupParams {
 
 const INVALIDATION_PREFIXES = [
     ['boostRecipients'],
-    ['getPaginatedBoostRecipients'],
-    ['getBoostRecipientCount'],
+    ['paginatedBoostRecipients'],
+    ['useCountBoostRecipients'],
     ['boosts'],
     ['useNetworkMembers'],
     ['getMyActivities'],

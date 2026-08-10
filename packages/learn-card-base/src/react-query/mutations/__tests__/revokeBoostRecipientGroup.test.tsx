@@ -19,16 +19,21 @@ vi.mock('../../../hooks/useWallet', () => ({
     }),
 }));
 
-const INVALIDATION_PREFIXES = [
-    ['boostRecipients'],
-    ['getPaginatedBoostRecipients'],
-    ['getBoostRecipientCount'],
-    ['boosts'],
-    ['useNetworkMembers'],
-    ['getMyActivities'],
-    ['getActivityStats'],
-    ['credentialStatus'],
-];
+const boostUri = 'lc:network:test:boost:troop';
+const consumerQueryKeys = [
+    ['paginatedBoostRecipients', boostUri, { limit: 10 }],
+    ['useCountBoostRecipients', boostUri, false],
+] as const;
+
+const seedConsumerQueries = (queryClient: QueryClient) => {
+    for (const queryKey of consumerQueryKeys) queryClient.setQueryData(queryKey, { seeded: true });
+};
+
+const expectConsumerQueriesInvalidated = (queryClient: QueryClient) => {
+    for (const queryKey of consumerQueryKeys) {
+        expect(queryClient.getQueryState(queryKey)?.isInvalidated).toBe(true);
+    }
+};
 
 const makeWrapper =
     (queryClient: QueryClient) =>
@@ -47,28 +52,23 @@ describe('useRevokeBoostRecipientGroup', () => {
 
     it('revokes the recipient group and invalidates related caches after success', async () => {
         const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+        seedConsumerQueries(queryClient);
         const { result } = renderHook(() => useRevokeBoostRecipientGroup(), {
             wrapper: makeWrapper(queryClient),
         });
 
         await result.current.mutateAsync({
-            boostUri: 'lc:network:test:boost:troop',
+            boostUri,
             recipientProfileId: 'scout-1',
         });
 
-        expect(mocks.revokeBoostRecipientGroup).toHaveBeenCalledWith(
-            'lc:network:test:boost:troop',
-            'scout-1'
-        );
-        for (const queryKey of INVALIDATION_PREFIXES) {
-            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey });
-        }
+        expect(mocks.revokeBoostRecipientGroup).toHaveBeenCalledWith(boostUri, 'scout-1');
+        expectConsumerQueriesInvalidated(queryClient);
     });
 
     it('invalidates related caches after the recipient group revocation fails', async () => {
         const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+        seedConsumerQueries(queryClient);
         mocks.revokeBoostRecipientGroup.mockRejectedValueOnce(new Error('offline'));
         const { result } = renderHook(() => useRevokeBoostRecipientGroup(), {
             wrapper: makeWrapper(queryClient),
@@ -76,13 +76,11 @@ describe('useRevokeBoostRecipientGroup', () => {
 
         await expect(
             result.current.mutateAsync({
-                boostUri: 'lc:network:test:boost:troop',
+                boostUri,
                 recipientProfileId: 'scout-1',
             })
         ).rejects.toThrow('offline');
 
-        for (const queryKey of INVALIDATION_PREFIXES) {
-            expect(invalidateSpy).toHaveBeenCalledWith({ queryKey });
-        }
+        expectConsumerQueriesInvalidated(queryClient);
     });
 });

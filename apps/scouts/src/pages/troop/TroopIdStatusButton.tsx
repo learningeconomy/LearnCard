@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 
 import { BoostSkeleton } from 'learn-card-base/components/boost/boostSkeletonLoaders/BoostSkeletons';
-import { useGetBoost, useCredentialStatus, type CredentialStatusResult } from 'learn-card-base';
+import { useGetBoost, useCredentialStatus } from 'learn-card-base';
 import useVerifyCredential from 'learn-card-base/hooks/useVerifyCredential';
 
 import { VC, VerificationStatusEnum } from '@learncard/types';
@@ -10,9 +10,9 @@ import { isCredentialExpired } from '../../components/boost/boostHelpers';
 import {
     deriveTroopIdStatus,
     shouldShowTroopIdStatus,
-    type TroopIdCredentialStatus,
     type TroopIdIssuanceState,
 } from './troopIdStatus.helpers';
+import type { TroopIdStatusResult } from './troopIdStatus.types';
 
 enum TroopIdStatusEnum {
     Valid,
@@ -40,10 +40,6 @@ export interface UseTroopIdStatusOptions {
     credentialUri?: string;
     issuanceState?: TroopIdIssuanceState;
     enabled?: boolean;
-}
-
-export interface TroopIdStatusResult extends CredentialStatusResult {
-    status: TroopIdCredentialStatus | undefined;
 }
 
 export const useTroopIDStatus = ({

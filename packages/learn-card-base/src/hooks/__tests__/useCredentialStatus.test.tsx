@@ -87,6 +87,18 @@ describe('useCredentialStatus', () => {
         expect(result.current.isError).toBe(true);
     });
 
+    it('fails open and retains error metadata when verification resolves with errors', async () => {
+        mocks.getMyCredentialLifecycleStatuses.mockRejectedValue(new Error('network unavailable'));
+        mocks.verifyCredential.mockResolvedValue({ errors: ['proof could not be verified'] });
+
+        const { result } = renderStatusHook({ credential, uri });
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+        expect(result.current.status).toBe('active');
+        expect(result.current.isError).toBe(true);
+    });
+
     it('does not initialize a wallet or load when disabled or missing a URI', () => {
         const { result } = renderStatusHook({ credential, enabled: false });
 

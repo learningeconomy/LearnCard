@@ -1,0 +1,5 @@
+{
+    "extends": "./tsconfig.json",
+    "include": [],
+    "files": ["src/pages/troop/troopIdStatus.types.ts"]
+}

@@ -27,6 +27,7 @@ import {
 import { VC, VerificationItem, Boost } from '@learncard/types';
 import { useTroopIDStatus } from './TroopIdStatusButton';
 import { isTroopIdContentRestricted, type TroopIdIssuanceState } from './troopIdStatus.helpers';
+import { selectHolderRecipient } from './troopPage.helpers';
 
 type TroopPageProps = {
     credential: VC;
@@ -87,8 +88,10 @@ const TroopPage: React.FC<TroopPageProps> = ({
     const currentUser = useGetCurrentLCNUser();
     const { data: recipients } = useGetBoostRecipients(_boostUri, true, true);
 
-    const currentUserRecipient = recipients?.find(
-        r => r.to.profileId === currentUser?.currentLCNUser?.profileId
+    const currentUserRecipient = selectHolderRecipient(
+        recipients,
+        currentUser?.currentLCNUser?.profileId,
+        credentialUri
     );
     const holderCredentialUri = credentialUri ?? currentUserRecipient?.uri;
     const ownsCurrentId =

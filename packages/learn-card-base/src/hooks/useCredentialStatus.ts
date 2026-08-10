@@ -2,18 +2,9 @@ import { useQuery } from '@tanstack/react-query';
 import type { VC, VerificationCheck } from '@learncard/types';
 import { useWallet } from './useWallet';
 import { deriveLifecycleStatus, type CredentialLifecycleStatus } from './deriveLifecycleStatus';
+import type { CredentialStatusResult, UseCredentialStatusOptions } from './credentialStatus.types';
 
-export interface UseCredentialStatusOptions {
-    uri?: string;
-    credential?: VC;
-    enabled?: boolean;
-}
-
-export interface CredentialStatusResult {
-    status: CredentialLifecycleStatus;
-    isLoading: boolean;
-    isError: boolean;
-}
+export type { CredentialStatusResult, UseCredentialStatusOptions } from './credentialStatus.types';
 
 interface CredentialStatusQueryResult {
     status: CredentialLifecycleStatus;
@@ -59,6 +50,9 @@ export const useCredentialStatus = ({
                     prettify: boolean
                 ) => Promise<VerificationCheck>;
                 const check = await verify(resolved, {}, false);
+                if (check.errors?.length) {
+                    return { status: 'active', isError: true };
+                }
                 return { status: deriveLifecycleStatus(check), isError: false };
             } catch {
                 return { status: 'active', isError: true };

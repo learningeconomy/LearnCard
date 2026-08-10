@@ -1,7 +1,8 @@
 import type { CredentialLifecycleStatus } from 'learn-card-base';
 
-export type TroopIdCredentialStatus = 'valid' | 'pending' | 'suspended' | 'revoked';
-export type TroopIdIssuanceState = 'accepted' | 'pending';
+import type { TroopIdCredentialStatus, TroopIdIssuanceState } from './troopIdStatus.types';
+
+export type { TroopIdCredentialStatus, TroopIdIssuanceState } from './troopIdStatus.types';
 
 export interface DeriveTroopIdStatusOptions {
     lifecycleStatus: CredentialLifecycleStatus;
@@ -28,6 +29,19 @@ export const deriveTroopIdStatus = ({
 export const isCredentialActionRestricted = (
     status: TroopIdCredentialStatus | undefined
 ): boolean => status !== 'valid';
+
+export interface CanSharePersonalTroopIdOptions {
+    isPersonalId: boolean;
+    lifecycleLoading: boolean;
+    status: TroopIdCredentialStatus | undefined;
+}
+
+export const canSharePersonalTroopId = ({
+    isPersonalId,
+    lifecycleLoading,
+    status,
+}: CanSharePersonalTroopIdOptions): boolean =>
+    isPersonalId && !lifecycleLoading && !isCredentialActionRestricted(status);
 
 export interface TroopIdContentRestrictionOptions {
     hasParentAdminAccess: boolean;

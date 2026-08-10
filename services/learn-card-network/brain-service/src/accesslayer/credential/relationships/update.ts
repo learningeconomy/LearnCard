@@ -23,13 +23,25 @@ export const revokeCredentialForProfile = async (
         `MATCH (credential:Credential {id: $credentialId})
          MATCH (sender)-[sent:CREDENTIAL_SENT {to: $profileId}]->(credential)
          WHERE sender:Profile OR sender:AppStoreListing
-         WITH sent, sent.status AS previousStatus
+         OPTIONAL MATCH (credential)-[received:CREDENTIAL_RECEIVED]->(:Profile {profileId: $profileId})
+         WITH sent,
+              sent.status AS previousSentStatus,
+              sent.revokedAt AS sentRevokedAt,
+              received.status AS previousReceivedStatus,
+              received.revokedAt AS receivedRevokedAt
+         WITH sent,
+              previousSentStatus,
+              previousReceivedStatus,
+              CASE
+                  WHEN previousSentStatus = "revoked"
+                      THEN coalesce(sentRevokedAt, receivedRevokedAt, $revokedAt)
+                  WHEN previousReceivedStatus = "revoked"
+                      THEN coalesce(receivedRevokedAt, sentRevokedAt, $revokedAt)
+                  ELSE $revokedAt
+              END AS effectiveRevokedAt
          SET sent.status = "revoked",
-             sent.revokedAt = CASE
-                 WHEN previousStatus = "revoked" THEN sent.revokedAt
-                 ELSE $revokedAt
-             END
-         RETURN previousStatus`,
+             sent.revokedAt = effectiveRevokedAt
+         RETURN previousSentStatus, previousReceivedStatus`,
         { credentialId, profileId, revokedAt }
     );
 
@@ -49,7 +61,9 @@ export const revokeCredentialForProfile = async (
 
     return {
         found: true,
-        wasAlreadyRevoked: result.records[0]?.get('previousStatus') === 'revoked',
+        wasAlreadyRevoked:
+            result.records[0]?.get('previousSentStatus') === 'revoked' ||
+            result.records[0]?.get('previousReceivedStatus') === 'revoked',
         statusList,
     };
 };
@@ -63,14 +77,18 @@ export const revokeCredentialReceived = async (
     profileId: string
 ): Promise<boolean> => {
     const result = await revokeCredentialForProfile(credentialId, profileId);
-    if (result.found && result.statusList !== 'updated') {
+    if (!result.found) return false;
+    if (result.statusList === 'failed') {
+        throw new Error('Failed to update credential status list');
+    }
+    if (result.statusList === 'missing-entry') {
         console.warn('[revokeCredentialReceived] verifiable revocation unavailable', {
             credentialId,
             reason: result.statusList,
         });
     }
 
-    return result.found;
+    return true;
 };
 
 /**
