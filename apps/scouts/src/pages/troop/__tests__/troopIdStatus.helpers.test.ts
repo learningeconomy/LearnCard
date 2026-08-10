@@ -29,4 +29,14 @@ describe('deriveTroopIdStatus', () => {
         expect(isCredentialActionRestricted('suspended')).toBe(true);
         expect(isCredentialActionRestricted('revoked')).toBe(true);
     });
+
+    it.each([
+        [undefined, true],
+        ['pending', true],
+        ['suspended', true],
+        ['revoked', true],
+        ['valid', false],
+    ] as const)('maps %s to restricted=%s', (status, expected) => {
+        expect(isCredentialActionRestricted(status)).toBe(expected);
+    });
 });

@@ -33,9 +33,15 @@ const useBoostMenu = (
     onDelete?: () => void
 ) => {
     const { isLoading } = useGetBoost(boost?.boostId);
-    const { status: credentialStatus } = useTroopIDStatus({ credential: boost });
-    const isRevokedOrPending = isCredentialActionRestricted(credentialStatus);
     const isTroopID = isTroopCategory(categoryType as BoostCategoryOptionsEnum);
+    const { status: credentialStatus, isLoading: statusLoading } = useTroopIDStatus({
+        credential: boost as unknown as VC,
+        credentialUri: boostUri,
+        enabled: menuType === BoostMenuType.earned && isTroopID,
+    });
+    const isRevokedOrPending = isCredentialActionRestricted(credentialStatus);
+    const canShare =
+        !isTroopID || (!statusLoading && !isCredentialActionRestricted(credentialStatus));
 
     const showDeleteButton = (!isLoading && isRevokedOrPending && isTroopID) || !isTroopID;
 
@@ -51,6 +57,8 @@ const useBoostMenu = (
     const { mutate: shareEarnedBoost } = useShareBoostMutation();
 
     const handleShareBoost = async () => {
+        if (!canShare) return false;
+
         try {
             const res = await shareEarnedBoost({
                 credential: boostCredential,
@@ -87,6 +95,7 @@ const useBoostMenu = (
                 handleShareBoost={handleShareBoost}
                 menuType={menuType}
                 categoryType={categoryType}
+                showShareButton={menuType === BoostMenuType.earned && canShare}
             />,
             { sectionClassName: '!max-w-[400px]' }
         );
@@ -96,6 +105,7 @@ const useBoostMenu = (
         handlePresentBoostMenuModal,
         handleShareBoost,
         handleDeleteBoost,
+        canShare,
     };
 };
 

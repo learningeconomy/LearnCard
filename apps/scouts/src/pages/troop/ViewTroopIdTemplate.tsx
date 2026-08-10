@@ -21,10 +21,13 @@ import * as m from '../../paraglide/messages.js';
 import { VC } from '@learncard/types';
 import { ScoutsRoleEnum } from '../../stores/troopPageStore';
 import { AchievementTypes } from 'learn-card-base/components/IssueVC/constants';
+import { type TroopIdIssuanceState } from './troopIdStatus.helpers';
 
 type ViewTroopIdTemplateProps = {
     credential: VC; // for the ID footer
     boostUri?: string;
+    credentialUri?: string;
+    issuanceState?: TroopIdIssuanceState;
 
     idMainText: string; // line 1
     idSubText?: string; // line 2 override
@@ -42,13 +45,13 @@ type ViewTroopIdTemplateProps = {
     skipProofCheck?: boolean;
 
     showCounts?: boolean;
-
-    otherUserProfileID?: string;
 };
 
 const ViewTroopIdTemplate: React.FC<ViewTroopIdTemplateProps> = ({
     credential,
     boostUri,
+    credentialUri,
+    issuanceState,
 
     idMainText,
     idSubText,
@@ -65,7 +68,6 @@ const ViewTroopIdTemplate: React.FC<ViewTroopIdTemplateProps> = ({
     skipProofCheck,
 
     showCounts = true,
-    otherUserProfileID,
 }) => {
     boostUri = boostUri ?? credential?.boostId;
 
@@ -132,6 +134,9 @@ const ViewTroopIdTemplate: React.FC<ViewTroopIdTemplateProps> = ({
                 <div className="bg-white relative px-[20px] flex flex-col gap-[10px] pb-[10px] pt-[10px]">
                     <TroopIdStatusButton
                         credential={credential}
+                        credentialUri={credentialUri}
+                        issuanceState={issuanceState}
+                        lifecycleEnabled={Boolean(credentialUri)}
                         checkProof={!isGeneralView && !isClaimMode && !skipProofCheck}
                         skeletonStyles={{
                             padding: '8px 14px 8px 14px',
@@ -140,7 +145,7 @@ const ViewTroopIdTemplate: React.FC<ViewTroopIdTemplateProps> = ({
                             top: '-40px',
                             right: '-10px',
                         }}
-                        isHidden={!isAlreadyClaimed}
+                        isHidden={isClaimMode && !isAlreadyClaimed}
                     />
 
                     <div className="flex flex-col items-center gap-[7px]">

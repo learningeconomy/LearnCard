@@ -61,6 +61,8 @@ type IdDisplayContainerProps = {
     cred?: VC;
     showQRCode?: boolean;
     handleQRCodeClick?: () => void;
+    credentialUri?: string;
+    canShare?: boolean;
     boostPageViewMode?: BoostPageViewModeType;
     loading?: boolean;
 };
@@ -93,6 +95,8 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
     cred,
     showQRCode = false,
     handleQRCodeClick = () => {},
+    credentialUri,
+    canShare = true,
     boostPageViewMode = BoostPageViewMode.Card,
     loading,
 }) => {
@@ -167,6 +171,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                         <div className="w-full absolute top-[30px] right-[35px]">
                             <TroopIdStatusButton
                                 credential={cred?.boostCredential ?? cred}
+                                credentialUri={credentialUri}
                                 skeletonStyles={{
                                     padding: '8px 14px 8px 14px',
                                     width: '100px',
@@ -281,6 +286,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                 newModal(
                     <TroopPage
                         credential={cred.boostCredential ?? cred}
+                        credentialUri={credentialUri}
                         handleShare={handleQRCodeClick}
                     />
                 );
@@ -378,7 +384,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
                             mainClassName="!pt-[15px] pb-[22px] !items-start"
                             hideFooter
                         />
-                        {!loading && (
+                        {!loading && canShare && (
                             <button
                                 onClick={e => {
                                     e.stopPropagation();

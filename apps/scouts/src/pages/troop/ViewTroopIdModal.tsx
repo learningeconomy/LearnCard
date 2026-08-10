@@ -20,10 +20,14 @@ import { LoadingSpinner } from 'learn-card-base/components/loaders/LoadingSpinne
 
 import { getWallpaperBackgroundStyles } from '../../helpers/troop.helpers';
 import { VC, VerificationItem } from '@learncard/types';
+import { useTroopIDStatus } from './TroopIdStatusButton';
+import { isCredentialActionRestricted, type TroopIdIssuanceState } from './troopIdStatus.helpers';
 
 type ViewTroopIdModalProps = {
     credential: VC;
     boostUri: string;
+    credentialUri?: string;
+    issuanceState?: TroopIdIssuanceState;
     name?: string;
     image?: string;
     profileId?: string;
@@ -48,6 +52,8 @@ type ViewTroopIdModalProps = {
 const ViewTroopIdModal: React.FC<ViewTroopIdModalProps> = ({
     credential,
     boostUri,
+    credentialUri,
+    issuanceState,
     name,
     image,
     profileId,
@@ -76,8 +82,16 @@ const ViewTroopIdModal: React.FC<ViewTroopIdModalProps> = ({
 
     const [showDetails, setShowDetails] = useState(false);
 
-    const { data: resolvedCredential } = useResolveBoost(boostUri);
-    credential = resolvedCredential ?? credential;
+    const { data: resolvedCredential } = useResolveBoost(credentialUri ?? boostUri);
+    credential = resolvedCredential?.boostCredential ?? resolvedCredential ?? credential;
+
+    const { status, isLoading: statusLoading } = useTroopIDStatus({
+        credential,
+        credentialUri,
+        issuanceState,
+        enabled: Boolean(credentialUri),
+    });
+    const canShare = !statusLoading && !isCredentialActionRestricted(status);
 
     const [verificationItems, setVerificationItems] = useState<VerificationItem[]>([]);
     const { verifyCredential } = useVerifyCredential(!isClaimMode && !skipProofCheck);
@@ -112,9 +126,12 @@ const ViewTroopIdModal: React.FC<ViewTroopIdModalProps> = ({
                     <ViewTroopIdTemplate
                         idMainText={name}
                         idThumb={image}
-                        credential={{ ...credential, boostId: boostUri }}
+                        credential={credential}
+                        boostUri={boostUri}
+                        credentialUri={credentialUri}
+                        issuanceState={issuanceState}
                         divetButton={
-                            handleShare ? (
+                            handleShare && canShare ? (
                                 <button
                                     onClick={handleShare}
                                     className="bg-white rounded-full p-[10px] h-[50px] w-[50px] shadow-box-bottom"
@@ -129,7 +146,6 @@ const ViewTroopIdModal: React.FC<ViewTroopIdModalProps> = ({
                         handleClaim={handleClaimCredential}
                         skipProofCheck={skipProofCheck}
                         showCounts={showCounts}
-                        otherUserProfileID={profileId}
                     />
                 )}
 
@@ -161,7 +177,7 @@ const ViewTroopIdModal: React.FC<ViewTroopIdModalProps> = ({
                             >
                                 {showDetails ? m['common.back']() : m['common.details']()}
                             </button>
-                            {handleShare && (
+                            {handleShare && canShare && (
                                 <button
                                     onClick={handleShare}
                                     className="bg-grayscale-800 py-[9px] pl-[20px] pr-[15px] rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-white w-full shadow-button-bottom flex gap-[5px] justify-center"
