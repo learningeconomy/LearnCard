@@ -26,7 +26,8 @@ const ClaimLoginPage: React.FC<{
 }> = ({ alternateBgComponent, vc_request_url }) => {
     const { desktopLoginBg } = useTenantBrandingAssets();
     const { theme } = useTheme();
-    const loginBgColor = theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#059669';
+    const loginBgColor =
+        theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#047857';
     const showConfirmation = confirmationStore.use.showConfirmation();
     const { isDesktop } = useDeviceTypeByWidth();
     return (
@@ -39,7 +40,10 @@ const ClaimLoginPage: React.FC<{
                 className="flex flex-col flex-grow"
                 style={{ '--background': loginBgColor } as React.CSSProperties}
             >
-                <IonGrid className="h-full w-full flex items-center justify-center" style={{ backgroundColor: loginBgColor }}>
+                <IonGrid
+                    className="h-full w-full flex items-center justify-center"
+                    style={{ backgroundColor: loginBgColor }}
+                >
                     {!isDesktop && <MobileClaimLoginContainer vc_request_url={vc_request_url} />}
                     {/* Desktop background image */}
                     {isDesktop && (
@@ -54,7 +58,9 @@ const ClaimLoginPage: React.FC<{
                                         alt=""
                                         aria-hidden="true"
                                         className="w-full h-full object-cover"
-                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                        onError={e => {
+                                            (e.target as HTMLImageElement).style.display = 'none';
+                                        }}
                                     />
                                 ) : (
                                     <LoginWelcomePanel />

@@ -435,12 +435,12 @@ export const LoginContent: React.FC = () => {
                             className={`w-full p-3 rounded-[20px] border ${
                                 isNewUserSetup
                                     ? 'bg-emerald-50 border-emerald-100'
-                                    : 'bg-white/20 border-white/10 backdrop-blur-sm'
+                                    : 'bg-black/10 border-white/20 backdrop-blur-sm'
                             }`}
                         >
                             <p
                                 className={`text-sm font-medium ${
-                                    isNewUserSetup ? 'text-emerald-800' : 'text-white'
+                                    isNewUserSetup ? 'text-emerald-800' : 'text-grayscale-900'
                                 }`}
                             >
                                 {isNewUserSetup
@@ -454,14 +454,14 @@ export const LoginContent: React.FC = () => {
 
                     {showLinkedBanner && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
-                            <div className="w-full p-3 bg-white/20 backdrop-blur-sm rounded-[20px] flex items-center justify-center gap-2.5">
+                            <div className="w-full p-3 bg-black/10 backdrop-blur-sm rounded-[20px] flex items-center justify-center gap-2.5">
                                 <svg
                                     width="16"
                                     height="16"
                                     viewBox="0 0 24 24"
                                     fill="none"
                                     stroke="currentColor"
-                                    className="text-white shrink-0"
+                                    className="text-grayscale-900 shrink-0"
                                     strokeWidth="2.5"
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
@@ -469,7 +469,7 @@ export const LoginContent: React.FC = () => {
                                     <polyline points="20 6 9 17 4 12" />
                                 </svg>
 
-                                <span className="text-sm text-white font-medium">
+                                <span className="text-sm text-grayscale-900 font-medium">
                                     {accountHint ? (
                                         <TransP
                                             m={m['login.linkedBanner.withHint']}
@@ -488,7 +488,7 @@ export const LoginContent: React.FC = () => {
 
                     {installIntent?.listingId && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
-                            <div className="w-full p-3 bg-white/20 backdrop-blur-sm rounded-[20px] flex items-center gap-3 justify-center">
+                            <div className="w-full p-3 bg-black/10 backdrop-blur-sm rounded-[20px] flex items-center gap-3 justify-center">
                                 {installIntent.appIcon && (
                                     <img
                                         src={installIntent.appIcon}
@@ -496,7 +496,7 @@ export const LoginContent: React.FC = () => {
                                         className="w-6 h-6 rounded-md object-cover shrink-0"
                                     />
                                 )}
-                                <span className="text-sm text-white font-medium">
+                                <span className="text-sm text-grayscale-900 font-medium">
                                     <TransP
                                         m={m['login.installIntent.banner']}
                                         values={{
@@ -514,7 +514,7 @@ export const LoginContent: React.FC = () => {
                     {((query.get('redirectTo') ?? '').includes('createFamily=true') ||
                         Boolean(query.get('underageFamily'))) && (
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center px-4 mb-3">
-                            <div className="w-full p-3 bg-white/20 backdrop-blur-sm rounded-[20px] flex items-start gap-2.5">
+                            <div className="w-full p-3 bg-black/10 backdrop-blur-sm rounded-[20px] flex items-start gap-2.5">
                                 <svg
                                     viewBox="0 0 24 24"
                                     fill="none"
@@ -522,7 +522,7 @@ export const LoginContent: React.FC = () => {
                                     strokeWidth={2}
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
-                                    className="w-5 h-5 text-white shrink-0 mt-0.5"
+                                    className="w-5 h-5 text-grayscale-900 shrink-0 mt-0.5"
                                     aria-hidden="true"
                                 >
                                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -530,7 +530,7 @@ export const LoginContent: React.FC = () => {
                                     <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
                                     <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                                 </svg>
-                                <span className="text-sm text-white leading-relaxed">
+                                <span className="text-sm text-grayscale-900 leading-relaxed">
                                     Sign in as a parent or guardian to create a family account and
                                     add your child.
                                 </span>
@@ -595,8 +595,8 @@ export const LoginContent: React.FC = () => {
                                     transition-all duration-200 select-none
                                     ${
                                         isPublicMode
-                                            ? 'bg-white/20 ring-1 ring-white/40'
-                                            : 'bg-white/10 hover:bg-white/15'
+                                            ? 'bg-black/15 ring-1 ring-white/50'
+                                            : 'bg-black/10 hover:bg-black/15'
                                     }
                                 `}
                             >
@@ -622,7 +622,11 @@ export const LoginContent: React.FC = () => {
                                 <span
                                     className={`
                                     text-sm transition-colors duration-200
-                                    ${isPublicMode ? 'text-white font-medium' : 'text-white/60'}
+                                    ${
+                                        isPublicMode
+                                            ? 'text-grayscale-900 font-medium'
+                                            : 'text-grayscale-900'
+                                    }
                                 `}
                                 >
                                     {m['login.sharedComputer']()}
@@ -635,7 +639,7 @@ export const LoginContent: React.FC = () => {
                         <IonRow className="w-full max-w-[500px] flex items-center justify-center mt-4">
                             <button
                                 onClick={() => setShowQrLogin(true)}
-                                className="text-sm text-white/80 hover:text-white underline transition-colors"
+                                className="text-sm text-grayscale-900 hover:text-grayscale-900 underline transition-colors"
                             >
                                 {m['login.signInFromAnotherDevice']()}
                             </button>
@@ -657,7 +661,7 @@ const LoginPage: React.FC<{ alternateBgComponent?: React.ReactNode }> = ({
     const { desktopLoginBg } = useTenantBrandingAssets();
     const { theme } = useTheme();
     const loginBgColor =
-        theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#059669';
+        theme.colors.defaults.loginBgColor ?? theme.colors.defaults.loaders?.[0] ?? '#047857';
     const { newModal } = useModal({
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
