@@ -11,7 +11,7 @@ import BoostDetailsSideBar from './BoostDetailsSideBar';
 import SlimCaretRight from '../../../svgs/SlimCaretRight';
 import { IonContent, IonPage } from '@ionic/react';
 import MediaCollapseButton from './helpers/MediaCollapseButton';
-import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
+import BoostFooterLayout from '../../../accessibility/AccessibleBoostFooterLayout';
 
 import {
     useModal,
@@ -23,10 +23,14 @@ import {
 import { VC } from '@learncard/types';
 import { VideoMetadata } from 'learn-card-base';
 import { canEmbedVideoIframe, ExternalVideoFallback, getExternalVideoUrl } from '@learncard/react';
-import { getExistingAttachmentsOrEvidence } from 'learn-card-base/helpers/credentialHelpers';
+import {
+    getCredentialName,
+    getExistingAttachmentsOrEvidence,
+} from 'learn-card-base/helpers/credentialHelpers';
 import { getAttachmentSource } from 'learn-card-base/helpers/attachment.helpers';
 import { getFilestackPreviewUrl } from 'learn-card-base/filestack/images/images.helpers';
 import { resolvePdfDocumentResource } from '../../../../pages/ids/view-id/IdDetails/helpers/pdfDocumentResource.helpers';
+import * as m from '../../../../paraglide/messages.js';
 
 export const BoostMediaPreview: React.FC<{
     credential: VC;
@@ -151,6 +155,7 @@ export const BoostMediaPreview: React.FC<{
             mediaContent = (
                 <>
                     <iframe
+                        title={attachment.title || attachment.fileName || 'Credential document'}
                         src={documentUrl}
                         style={{
                             width: '100%',
@@ -237,7 +242,11 @@ export const BoostMediaPreview: React.FC<{
                             <SwiperSlide key={index}>
                                 <img
                                     src={img.url}
-                                    alt={`Image ${index + 1}`}
+                                    alt={
+                                        img.title ||
+                                        img.fileName ||
+                                        `Credential attachment ${index + 1}`
+                                    }
                                     className="object-contain w-full h-full"
                                 />
                             </SwiperSlide>
@@ -246,19 +255,27 @@ export const BoostMediaPreview: React.FC<{
 
                     {!isFirstSlide && (
                         <button
+                            type="button"
+                            aria-label="Previous image"
                             onClick={() => swiperRef.current?.slidePrev()}
                             className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-20 shadow-md hover:bg-gray-200 opacity-50"
                         >
-                            <SlimCaretLeft className="w-5 h-auto" />
+                            <span aria-hidden="true">
+                                <SlimCaretLeft className="w-5 h-auto" />
+                            </span>
                         </button>
                     )}
 
                     {!isLastSlide && (
                         <button
+                            type="button"
+                            aria-label="Next image"
                             onClick={() => swiperRef.current?.slideNext()}
                             className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white text-black p-2 rounded-full z-20 shadow-md hover:bg-gray-200 opacity-50"
                         >
-                            <SlimCaretRight className="w-5 h-auto" />
+                            <span aria-hidden="true">
+                                <SlimCaretRight className="w-5 h-auto" />
+                            </span>
                         </button>
                     )}
                 </>
@@ -293,6 +310,9 @@ export const BoostMediaPreview: React.FC<{
 
     return (
         <IonPage className="grayscale-800 h-full">
+            <h1 className="sr-only">
+                {getCredentialName(credential) || m['claim.modal.credentialFallback']()}
+            </h1>
             <BoostFooterLayout contentOwnsScroll footerClassName="z-50" footerProps={footerProps}>
                 {isMobile ? (
                     <IonContent fullscreen className="h-full">

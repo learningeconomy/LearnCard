@@ -49,7 +49,7 @@ const VerifierStateBadgeAndText = forwardRef<HTMLButtonElement, VerifierStateBad
                     </div>
                 )}
                 {effectiveState === VERIFIER_STATES.unknownVerifier && (
-                    <div className="flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight text-orange-500">
+                    <div className="flex items-center gap-0.5 font-poppins font-[500] text-[12px] leading-tight text-orange-800">
                         <UnknownVerifierBadge />
                         <span className="whitespace-nowrap">
                             {unknownVerifierTitle ?? VERIFIER_STATES.unknownVerifier}

@@ -15,7 +15,8 @@ import BoostDetailsSideMenu from './BoostDetailsSideMenu';
 import RenderMethodDisplay from '../../../render-method/RenderMethodDisplay';
 import VerifiedChildCLRFooter from './VerifiedChildCLRFooter';
 import EndorsementBadge from '../../../boost-endorsements/EndorsementBadge';
-import BoostFooterLayout from 'learn-card-base/components/boost/boostFooter/BoostFooterLayout';
+import BoostFooterLayout from '../../../accessibility/AccessibleBoostFooterLayout';
+import AccessibleCredentialCard from '../../../accessibility/AccessibleCredentialCard';
 import ReactCredentialIssuerPopover, {
     useReactCredentialIssuerPopover,
 } from 'learn-card-base/components/CredentialBadge/ReactCredentialIssuerPopover';
@@ -33,8 +34,11 @@ import {
 } from 'learn-card-base';
 import { useKnownDIDRegistry } from 'learn-card-base/hooks/useRegistry';
 
-import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
-import { getAchievementType } from 'learn-card-base/helpers/credentialHelpers';
+import {
+    getAchievementType,
+    getCredentialName,
+    unwrapBoostCredential,
+} from 'learn-card-base/helpers/credentialHelpers';
 import { getSvgMustacheRenderMethod } from '@learncard/render-method-plugin';
 import { BoostPreviewDisplayViewEnum } from 'learn-card-base/stores/boostPreviewStore';
 import { AnalyticsEvents, useAnalytics } from '@analytics';
@@ -322,43 +326,56 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
     }
 
     const credentialDisplay = (
-        <VCDisplayCard2
-            credential={credential}
-            issueeOverride={issueeOverride}
-            issuerOverride={issuerOverride}
-            issueHistory={issueHistory}
-            categoryType={categoryType}
-            verificationItems={verifications}
-            customThumbComponent={customThumbComponent}
-            customBodyCardComponent={customBodyCardComponent}
-            customFooterComponent={
-                isClrChildCredential ? <VerifiedChildCLRFooter /> : customFooterComponent
+        <AccessibleCredentialCard
+            label={
+                titleOverride ||
+                getCredentialName(credential) ||
+                m['claim.modal.credentialFallback']()
             }
-            subjectDID={subjectDID}
-            subjectImageComponent={subjectImageComponent}
-            issuerImageComponent={issuerImageComponent}
-            customDescription={customDescription}
-            customCriteria={customCriteria}
-            customIssueHistoryComponent={customIssueHistoryComponent}
-            enableLightbox
-            titleOverride={titleOverride}
-            knownDIDRegistry={knownDIDRegistry}
-            handleXClick={isCertificate ? closeModal : undefined}
-            hideIssueDate={hideIssueDate}
-            customRibbonCategoryComponent={<RibbonCategory categoryType={categoryType} />}
-            hideNavButtons
-            setIsFrontOverride={setIsFront}
-            qrCodeOnClick={qrCodeOnClick}
-            hideQRCode={hideQRCode}
-            formattedDisplayType={formattedDisplayType}
-            customLinkedCredentialsComponent={customLinkedCredentialsComponent}
-            customBodyContentSlot={endorsementBadge}
-            onVerifierClick={openCredentialIssuerPopover}
-        />
+        >
+            <VCDisplayCard2
+                credential={credential}
+                issueeOverride={issueeOverride}
+                issuerOverride={issuerOverride}
+                issueHistory={issueHistory}
+                categoryType={categoryType}
+                verificationItems={verifications}
+                customThumbComponent={customThumbComponent}
+                customBodyCardComponent={customBodyCardComponent}
+                customFooterComponent={
+                    isClrChildCredential ? <VerifiedChildCLRFooter /> : customFooterComponent
+                }
+                subjectDID={subjectDID}
+                subjectImageComponent={subjectImageComponent}
+                issuerImageComponent={issuerImageComponent}
+                customDescription={customDescription}
+                customCriteria={customCriteria}
+                customIssueHistoryComponent={customIssueHistoryComponent}
+                enableLightbox
+                titleOverride={titleOverride}
+                knownDIDRegistry={knownDIDRegistry}
+                handleXClick={isCertificate ? closeModal : undefined}
+                hideIssueDate={hideIssueDate}
+                customRibbonCategoryComponent={<RibbonCategory categoryType={categoryType} />}
+                hideNavButtons
+                setIsFrontOverride={setIsFront}
+                qrCodeOnClick={qrCodeOnClick}
+                hideQRCode={hideQRCode}
+                formattedDisplayType={formattedDisplayType}
+                customLinkedCredentialsComponent={customLinkedCredentialsComponent}
+                customBodyContentSlot={endorsementBadge}
+                onVerifierClick={openCredentialIssuerPopover}
+            />
+        </AccessibleCredentialCard>
     );
 
     return (
         <IonPage>
+            <h1 className="sr-only">
+                {titleOverride ||
+                    getCredentialName(credential) ||
+                    m['claim.modal.credentialFallback']()}
+            </h1>
             <BoostFooterLayout
                 contentOwnsScroll
                 footerProps={{
