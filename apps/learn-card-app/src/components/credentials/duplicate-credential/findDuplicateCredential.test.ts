@@ -159,6 +159,39 @@ describe('findDuplicateCredential', () => {
         );
     });
 
+    it('matches legacy interaction claims by credential contents when no Boost URI was stored', async () => {
+        const boostUri = 'lc:network:localhost%3A4000/trpc:boost:boost-id';
+        const interactionCredential = {
+            id: 'urn:uuid:new-open-badge',
+            issuer: 'did:web:localhost%3A4000:users:kai-lef',
+            type: ['VerifiableCredential', 'OpenBadgeCredential'],
+            validFrom: '2026-08-10T18:00:00.000Z',
+            credentialSubject: {
+                id: 'did:key:learner',
+                type: ['AchievementSubject'],
+                achievement: { type: ['Achievement'], name: 'Duplicate Claim Test' },
+            },
+            proof: { proofValue: 'new-proof' },
+        } as VC;
+        const savedCredential = {
+            ...interactionCredential,
+            id: 'urn:uuid:previous-open-badge',
+            validFrom: '2026-08-10T17:00:00.000Z',
+            proof: { proofValue: 'previous-proof' },
+        } as VC;
+        const wallet = createWallet({
+            categoryRecords: [{ uri: 'lc:credential:legacy-interaction' }],
+            credentialsByUri: { 'lc:credential:legacy-interaction': savedCredential },
+        });
+
+        await expect(
+            findDuplicateCredential(wallet, interactionCredential, { boostUri })
+        ).resolves.toMatchObject({
+            record: { uri: 'lc:credential:legacy-interaction' },
+            credential: savedCredential,
+        });
+    });
+
     it('does not scan the wallet when the incoming credential has no stable ID', async () => {
         const wallet = createWallet();
 

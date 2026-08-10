@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import moment from 'moment';
 import { useHistory, useLocation } from 'react-router-dom';
 import queryString from 'query-string';
@@ -58,6 +58,7 @@ import { AlertCircle, RefreshCw, Home, CheckCircle } from 'lucide-react';
 import LoggedOutRequest from './LoggedOutRequest';
 import { getInfoFromCredential } from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 import * as m from '../../paraglide/messages.js';
+import { getClaimInteractionBoostUri } from './claimRequest.helpers';
 
 export type RequestMetadata = {
     credentialName: string;
@@ -549,6 +550,10 @@ const ClaimFromRequest: React.FC = () => {
     const history = useHistory();
     const { search } = useLocation();
     const { vc_request_url } = queryString.parse(search);
+    const claimInteractionBoostUri = useMemo(
+        () => getClaimInteractionBoostUri(vc_request_url),
+        [vc_request_url]
+    );
 
     const isLoggedIn = useIsLoggedIn();
 
@@ -827,6 +832,7 @@ const ClaimFromRequest: React.FC = () => {
                         strategy={exchangeState.strategy}
                         requestDuplicateResolution={requestDuplicateResolution}
                         isCheckingDuplicate={isCheckingDuplicate}
+                        sourceBoostUri={claimInteractionBoostUri}
                     />
                 );
             case ExchangeState.Redirect:

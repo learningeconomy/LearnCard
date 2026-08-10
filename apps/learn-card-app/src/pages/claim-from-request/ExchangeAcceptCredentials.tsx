@@ -3,7 +3,7 @@ import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { VC, VP, VerificationItem } from '@learncard/types';
 import { prettifyVerificationItems } from 'learn-card-base/helpers/verificationPrettifier';
-import { IonContent, IonPage, IonLoading } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
 import { Gift, Check, AlertCircle, Home, HelpCircle } from 'lucide-react';
 import { getVCDisplayCardVariant } from '@learncard/react';
 
@@ -48,6 +48,7 @@ import { getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 import { BoostEarnedCard } from '../../components/boost/boost-earned-card/BoostEarnedCard';
 import { publishWalletEvent } from '../pathways/events/walletEventBus';
 
+import type { DuplicateCredentialLookup } from '../../components/credentials/duplicate-credential/findDuplicateCredential';
 import type { DuplicateCredentialResolution } from '../../components/credentials/duplicate-credential/useDuplicateCredentialGuard';
 
 import { VCAPIRequestStrategy } from './ClaimFromRequest';
@@ -55,8 +56,12 @@ import { VCAPIRequestStrategy } from './ClaimFromRequest';
 interface ExchangeAcceptCredentialsProps {
     verifiablePresentation: VP; // Contains the verifiablePresentation from the server
     onAccept: (body: any, credentialClaimCount: number) => void; // Callback to continue the exchange
-    requestDuplicateResolution: (credential: VC) => Promise<DuplicateCredentialResolution>;
+    requestDuplicateResolution: (
+        credential: VC,
+        lookup?: DuplicateCredentialLookup
+    ) => Promise<DuplicateCredentialResolution>;
     isCheckingDuplicate: boolean;
+    sourceBoostUri?: string;
     strategy?: VCAPIRequestStrategy;
 }
 
@@ -65,6 +70,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     onAccept,
     requestDuplicateResolution,
     isCheckingDuplicate,
+    sourceBoostUri,
     strategy,
 }) => {
     const [claiming, setClaiming] = useState(false);
@@ -245,7 +251,9 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
         for (const credential of selectedCredentials) {
             // Duplicate prompts must be handled one at a time.
             // eslint-disable-next-line no-await-in-loop
-            const duplicateResolution = await requestDuplicateResolution(credential);
+            const duplicateResolution = sourceBoostUri
+                ? await requestDuplicateResolution(credential, { boostUri: sourceBoostUri })
+                : await requestDuplicateResolution(credential);
             if (duplicateResolution.action === 'cancel') return;
             if (duplicateResolution.action === 'save') {
                 credentialsToStore.push({ credential, duplicateResolution });
@@ -310,6 +318,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
                         {
                             title: name,
                             allowDuplicate: duplicateResolution.isDuplicate,
+                            boostUri: sourceBoostUri,
                         },
                         'LearnCloud',
                         true
@@ -617,6 +626,26 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
         ? m['common.loading']()
         : m['common.accept']();
 
+    const claimLoadingOverlay = (claiming || isCheckingDuplicate) && (
+        <div
+            role="status"
+            aria-live="polite"
+            className="fixed inset-0 z-[10001] flex items-center justify-center bg-grayscale-900/40 p-6"
+        >
+            <div className="flex items-center gap-3 rounded-[20px] bg-white px-5 py-4 shadow-2xl">
+                <span
+                    aria-hidden
+                    className="h-5 w-5 animate-spin rounded-full border-2 border-grayscale-300 border-t-grayscale-900"
+                />
+                <span className="font-poppins text-sm font-medium text-grayscale-900">
+                    {isCheckingDuplicate
+                        ? m['claim.duplicate.checking']()
+                        : m['claim.accept.claiming']()}
+                </span>
+            </div>
+        </div>
+    );
+
     // Single-credential claim — full credential view, matching ClaimBoost:
     // themed background, edge-to-edge scroll area (no phantom padding / inset
     // scrollbar), and the shared frosted BoostFooter (Close / Details / Accept).
@@ -625,14 +654,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
 
         return (
             <IonPage>
-                <IonLoading
-                    isOpen={claiming || isCheckingDuplicate}
-                    message={
-                        isCheckingDuplicate
-                            ? m['claim.duplicate.checking']()
-                            : m['claim.accept.claiming']()
-                    }
-                />
+                {claimLoadingOverlay}
                 <BoostFooterLayout
                     contentOwnsScroll
                     footerProps={{
@@ -687,14 +709,7 @@ const ExchangeAcceptCredentials: React.FC<ExchangeAcceptCredentialsProps> = ({
     // Multiple-credential claim — grid selection view (unchanged).
     return (
         <IonPage>
-            <IonLoading
-                isOpen={claiming || isCheckingDuplicate}
-                message={
-                    isCheckingDuplicate
-                        ? m['claim.duplicate.checking']()
-                        : 'Claiming Credential(s)...'
-                }
-            />
+            {claimLoadingOverlay}
             <BoostFooterLayout
                 contentOwnsScroll
                 footerProps={{

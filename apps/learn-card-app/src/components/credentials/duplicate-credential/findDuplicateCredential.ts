@@ -3,6 +3,7 @@ import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import type { CredentialMetadata, LCR } from 'learn-card-base/types/credential-records';
 import { getCategoryForCredential } from 'learn-card-base/hooks/useWallet';
 import { unwrapBoostCredential } from 'learn-card-base/helpers/credentialHelpers';
+import { stringify } from 'learn-card-base/helpers/jsonHelpers';
 
 export type ExistingCredentialMatch = {
     credential: VC;
@@ -11,12 +12,39 @@ export type ExistingCredentialMatch = {
 export type DuplicateCredentialLookup = {
     boostUri?: string;
 };
+const getCredentialContentKey = (credential: VC): string => {
+    const unwrappedCredential = unwrapBoostCredential(credential) ?? credential;
+    const {
+        id: _id,
+        proof: _proof,
+        validFrom: _validFrom,
+        issuanceDate: _issuanceDate,
+        credentialStatus: _credentialStatus,
+        boostId: _boostId,
+        credentialSubject,
+        ...stableCredential
+    } = unwrappedCredential as VC & Record<string, unknown>;
+
+    const withoutSubjectId = (subject: unknown): unknown => {
+        if (!subject || typeof subject !== 'object') return subject;
+        const { id: _subjectId, ...stableSubject } = subject as Record<string, unknown>;
+        return stableSubject;
+    };
+
+    return stringify({
+        ...stableCredential,
+        credentialSubject: Array.isArray(credentialSubject)
+            ? credentialSubject.map(withoutSubjectId)
+            : withoutSubjectId(credentialSubject),
+    });
+};
 
 const resolveMatchingRecord = async (
     wallet: BespokeLearnCard,
     records: LCR[],
     credentialId: string,
     boostUri: string,
+    credentialContentKey: string,
     seenUris: Set<string>
 ): Promise<ExistingCredentialMatch | null> => {
     const unreadRecords = records.filter(record => record.uri && !seenUris.has(record.uri));
@@ -40,8 +68,13 @@ const resolveMatchingRecord = async (
         const matchesBoostUri = Boolean(
             boostUri && (result.value.record.boostUri === boostUri || resolvedBoostUri === boostUri)
         );
+        const matchesCredentialContents = Boolean(
+            credentialContentKey &&
+                getCredentialContentKey(resolvedCredential) === credentialContentKey
+        );
 
-        if (matchesCredentialId || matchesBoostUri) return result.value;
+        if (matchesCredentialId || matchesBoostUri || matchesCredentialContents)
+            return result.value;
     }
 
     return null;
@@ -52,8 +85,8 @@ const resolveMatchingRecord = async (
  *
  * Older claim flows generated a random wallet-index record ID, so exact index lookups are only
  * fast paths. The category scan preserves duplicate detection for those existing records. Claim
- * links also issue a new credential ID on each request, so their stable Boost URI is used when
- * available.
+ * links also issue a new credential ID on each request. New records retain the source Boost URI;
+ * legacy records fall back to comparing stable credential contents.
  */
 export const findDuplicateCredential = async (
     wallet: BespokeLearnCard,
@@ -69,6 +102,7 @@ export const findDuplicateCredential = async (
         typeof (lookup.boostUri ?? credentialBoostUri) === 'string'
             ? (lookup.boostUri ?? credentialBoostUri)?.trim() ?? ''
             : '';
+    const credentialContentKey = boostUri ? getCredentialContentKey(credential) : '';
     if (!credentialId && !boostUri) return null;
 
     const seenUris = new Set<string>();
@@ -82,6 +116,7 @@ export const findDuplicateCredential = async (
             exactRecords,
             credentialId,
             boostUri,
+            credentialContentKey,
             seenUris
         );
         if (exactMatch) return exactMatch;
@@ -96,6 +131,7 @@ export const findDuplicateCredential = async (
             boostRecords,
             credentialId,
             boostUri,
+            credentialContentKey,
             seenUris
         );
         if (boostMatch) return boostMatch;
@@ -108,7 +144,14 @@ export const findDuplicateCredential = async (
         const categoryRecords = ((await wallet.index.LearnCloud.get<CredentialMetadata>({
             category,
         })) ?? []) as LCR[];
-        return resolveMatchingRecord(wallet, categoryRecords, credentialId, boostUri, seenUris);
+        return resolveMatchingRecord(
+            wallet,
+            categoryRecords,
+            credentialId,
+            boostUri,
+            credentialContentKey,
+            seenUris
+        );
     }
 
     let cursor: string | undefined;
@@ -127,6 +170,7 @@ export const findDuplicateCredential = async (
             (page?.records ?? []) as LCR[],
             credentialId,
             boostUri,
+            credentialContentKey,
             seenUris
         );
         if (match) return match;

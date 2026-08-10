@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { VC, VP } from '@learncard/types';
 
@@ -123,12 +123,13 @@ vi.mock('../pathways/events/walletEventBus', () => ({
     publishWalletEvent: mocks.publishWalletEvent,
 }));
 
+const sourceBoostUri = 'lc:network:localhost%3A4000/trpc:boost:boost-id';
+
 const credential = {
     id: 'urn:uuid:issued-instance',
     issuer: 'did:key:issuer',
     name: 'Safety Training',
-    type: ['VerifiableCredential', 'BoostCredential'],
-    boostId: 'lc:network:localhost%3A4000/trpc:boost:boost-id',
+    type: ['VerifiableCredential', 'OpenBadgeCredential'],
 } as VC;
 
 const presentation = {
@@ -159,13 +160,16 @@ describe('ExchangeAcceptCredentials duplicate handling', () => {
                 onAccept={mocks.onAccept}
                 requestDuplicateResolution={mocks.requestDuplicateResolution}
                 isCheckingDuplicate={false}
+                sourceBoostUri={sourceBoostUri}
             />
         );
 
         fireEvent.click(screen.getByRole('button', { name: 'Claim My Credential' }));
 
         await waitFor(() => {
-            expect(mocks.requestDuplicateResolution).toHaveBeenCalledWith(credential);
+            expect(mocks.requestDuplicateResolution).toHaveBeenCalledWith(credential, {
+                boostUri: sourceBoostUri,
+            });
         });
         expect(mocks.storeAndAddVCToWallet).not.toHaveBeenCalled();
         expect(mocks.onAccept).toHaveBeenCalledWith({}, 1);
@@ -182,6 +186,7 @@ describe('ExchangeAcceptCredentials duplicate handling', () => {
                 onAccept={mocks.onAccept}
                 requestDuplicateResolution={mocks.requestDuplicateResolution}
                 isCheckingDuplicate={false}
+                sourceBoostUri={sourceBoostUri}
             />
         );
 
@@ -190,12 +195,51 @@ describe('ExchangeAcceptCredentials duplicate handling', () => {
         await waitFor(() => {
             expect(mocks.storeAndAddVCToWallet).toHaveBeenCalledWith(
                 credential,
-                { title: 'Safety Training', allowDuplicate: true },
+                { title: 'Safety Training', allowDuplicate: true, boostUri: sourceBoostUri },
                 'LearnCloud',
                 true
             );
         });
         expect(mocks.onAccept).toHaveBeenCalledWith({}, 1);
+    });
+
+    it('removes the inline claim overlay when exchange completion unmounts the claim screen', async () => {
+        const { promise: storeResult, resolve: resolveStore } = Promise.withResolvers<{
+            result: boolean;
+            credentialUri: string;
+        }>();
+        mocks.requestDuplicateResolution.mockResolvedValue({
+            action: 'save',
+            isDuplicate: false,
+        });
+        mocks.storeAndAddVCToWallet.mockReturnValue(storeResult);
+
+        const Harness = () => {
+            const [complete, setComplete] = React.useState(false);
+            return complete ? (
+                <div>Exchange complete</div>
+            ) : (
+                <ExchangeAcceptCredentials
+                    verifiablePresentation={presentation}
+                    onAccept={() => setComplete(true)}
+                    requestDuplicateResolution={mocks.requestDuplicateResolution}
+                    isCheckingDuplicate={false}
+                    sourceBoostUri={sourceBoostUri}
+                />
+            );
+        };
+
+        render(<Harness />);
+        fireEvent.click(screen.getByRole('button', { name: 'Claim My Credential' }));
+
+        expect(await screen.findByRole('status')).toHaveTextContent('Claiming Credential');
+
+        await act(async () => {
+            resolveStore({ result: true, credentialUri: 'lc:credential:stored' });
+        });
+
+        expect(await screen.findByText('Exchange complete')).toBeVisible();
+        expect(screen.queryByRole('status')).not.toBeInTheDocument();
     });
 
     it('does not store or complete the exchange when the learner cancels', async () => {
@@ -209,13 +253,16 @@ describe('ExchangeAcceptCredentials duplicate handling', () => {
                 onAccept={mocks.onAccept}
                 requestDuplicateResolution={mocks.requestDuplicateResolution}
                 isCheckingDuplicate={false}
+                sourceBoostUri={sourceBoostUri}
             />
         );
 
         fireEvent.click(screen.getByRole('button', { name: 'Claim My Credential' }));
 
         await waitFor(() => {
-            expect(mocks.requestDuplicateResolution).toHaveBeenCalledWith(credential);
+            expect(mocks.requestDuplicateResolution).toHaveBeenCalledWith(credential, {
+                boostUri: sourceBoostUri,
+            });
         });
         expect(mocks.storeAndAddVCToWallet).not.toHaveBeenCalled();
         expect(mocks.onAccept).not.toHaveBeenCalled();
