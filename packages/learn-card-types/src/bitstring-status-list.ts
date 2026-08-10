@@ -10,7 +10,7 @@ export const BitstringStatusListEntryValidator = z.object({
     id: z.string().optional(),
     type: z.literal('BitstringStatusListEntry'),
     statusPurpose: BitstringStatusPurposeValidator,
-    statusListIndex: z.string(),
+    statusListIndex: z.string().or(z.number().int().nonnegative()),
     statusListCredential: z.string(),
 });
 export type BitstringStatusListEntry = z.infer<typeof BitstringStatusListEntryValidator>;

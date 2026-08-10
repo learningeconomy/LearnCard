@@ -8,7 +8,7 @@ export const openApiDocument = generateOpenApiDocument(appRouter, {
     title: 'LearnCloud Network API',
     description: 'API for interacting with LearnCloud Network',
     version: '1.0.0',
-    baseUrl: '../api',
+    baseUrl: '/api',
     docsUrl: 'https://docs.learncard.com',
     tags: [
         'Profiles',

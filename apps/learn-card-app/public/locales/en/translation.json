@@ -979,7 +979,16 @@
         "sharedComputer": "Shared or public computer",
         "signInFromAnotherDevice": "Sign in from another device",
         "social": {
-            "or": "OR"
+            "or": "OR",
+            "inProgress": "A sign-in is already in progress. Finish it before trying again.",
+            "signingInWith": "Signing in with {{provider}}",
+            "googleStartFailed": "Google sign-in failed to start. If the issue persists, check your browser settings, clear the site data, refresh the page, and try again. You can also try a different browser or private browsing mode.",
+            "popupBlocked": "Popups are blocked in your browser. Enable popups and try again.",
+            "genericError": "Something went wrong. Please try again.",
+            "provider": {
+                "apple": "Apple",
+                "google": "Google"
+            }
         },
         "welcome": {
             "heading": "Welcome to {{brand}}",
@@ -2595,6 +2604,31 @@
         },
         "endorsements": "Endorsements"
     },
+    "feedback": {
+        "howWasThat": "How was that?",
+        "thanks": "Thanks for the feedback!",
+        "bad": "Not good",
+        "okay": "Okay",
+        "great": "Great",
+        "followup": {
+            "title": "What went wrong?",
+            "desc": "Your feedback helps us make LearnCard better.",
+            "reason": {
+                "confusing": "Confusing",
+                "slow": "Slow",
+                "broken": "Something broke",
+                "other": "Other"
+            },
+            "placeholder": "Tell us more (optional)",
+            "send": "Send Feedback",
+            "skip": "Skip"
+        },
+        "github": {
+            "body": "Enjoying LearnCard? It's open source.",
+            "cta": "Star us on GitHub",
+            "dismiss": "Dismiss"
+        }
+    },
     "toasts": {
         "acceptFailed": "Oops, we were unable accept the credentials. Please try again.",
         "ai": {
@@ -2932,7 +2966,17 @@
         "unfinished": "Unfinished",
         "learningOverview": "Learning Overview",
         "finishSession": "Finish Session",
-        "finish": "Finish"
+        "finish": "Finish",
+        "activeTitle": "Session in progress",
+        "activeFallbackTitle": "Your current AI session",
+        "activeDescription": "\"{{title}}\" is still active. Starting a new session will end it.",
+        "resumeSession": "Resume Session",
+        "resumingSession": "Resuming...",
+        "checkingActiveSession": "Checking sessions...",
+        "startNewSession": "Start New Session",
+        "startingNewSession": "Starting...",
+        "activeCheckFailedTitle": "Something went wrong",
+        "activeCheckFailedDescription": "Please try starting the session again."
     },
     "aiFeatureLinks": {
         "skillsHub": "Skills Hub"
@@ -3279,7 +3323,11 @@
                 "approvedPre": "Thanks!",
                 "approvedPost": "Endorsement Approved!",
                 "waitingReview": "Waiting for review by {{name}}",
-                "approvedBy": "Approved by {{name}}"
+                "approvedBy": "Approved by {{name}}",
+                "sendFailedTitle": "Endorsement Not Sent",
+                "sendFailedDescription": "Your endorsement is still saved. Try again.",
+                "missingRequestDescription": "Close this screen and reopen the endorsement link to try again.",
+                "tryAgain": "Try Again"
             },
             "footer": {
                 "viewEndorsement": "View Endorsement"
@@ -3323,7 +3371,7 @@
         },
         "viewRequest": {
             "ok": "OK",
-            "errorFetching": "Error fetching credential: {{error}}"
+            "errorOpening": "We couldn't open this credential. Please try again."
         }
     },
     "verification": {

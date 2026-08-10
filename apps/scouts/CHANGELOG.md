@@ -1,5 +1,37 @@
 # Changelog
 
+## 1.90.26
+
+### Patch Changes
+
+-   [#1440](https://github.com/learningeconomy/LearnCard/pull/1440) [`54bdfbee2960f0c38c7faa801ca82911fb3fcf03`](https://github.com/learningeconomy/LearnCard/commit/54bdfbee2960f0c38c7faa801ca82911fb3fcf03) Thanks [@gerardopar](https://github.com/gerardopar)! - Keep credential-card padding aligned with the rendered card variant and improve responsive ribbon-title fitting.
+
+-   [#1431](https://github.com/learningeconomy/LearnCard/pull/1431) [`ddc5662b01d3c4f2f684357d939544ddaf2b90de`](https://github.com/learningeconomy/LearnCard/commit/ddc5662b01d3c4f2f684357d939544ddaf2b90de) Thanks [@smurflo2](https://github.com/smurflo2)! - Improve Network/Troop -> Badge/Boost creation flow
+
+-   Updated dependencies [[`b61fb6c6ae83838549078a538ca765776ba46b5e`](https://github.com/learningeconomy/LearnCard/commit/b61fb6c6ae83838549078a538ca765776ba46b5e), [`5489866631ce3b19709a3685c56ff68e2d817af4`](https://github.com/learningeconomy/LearnCard/commit/5489866631ce3b19709a3685c56ff68e2d817af4), [`54bdfbee2960f0c38c7faa801ca82911fb3fcf03`](https://github.com/learningeconomy/LearnCard/commit/54bdfbee2960f0c38c7faa801ca82911fb3fcf03), [`306855bd45eacd131f5803ba74c87519ab316ff5`](https://github.com/learningeconomy/LearnCard/commit/306855bd45eacd131f5803ba74c87519ab316ff5)]:
+    -   @learncard/react@2.12.0
+    -   @learncard/helpers@1.3.11
+    -   @learncard/lca-api-plugin@1.2.23
+    -   @learncard/sss-key-manager@0.1.19
+
+## 1.90.25
+
+### Patch Changes
+
+-   [#1432](https://github.com/learningeconomy/LearnCard/pull/1432) [`0ec072538d67ebf48af55e427426717420de6e62`](https://github.com/learningeconomy/LearnCard/commit/0ec072538d67ebf48af55e427426717420de6e62) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: [LC-1970] - hide sidenav scroll bar
+
+-   [#1400](https://github.com/learningeconomy/LearnCard/pull/1400) [`acf13250d6ffd39798b44f0c5b9331b3769ebd24`](https://github.com/learningeconomy/LearnCard/commit/acf13250d6ffd39798b44f0c5b9331b3769ebd24) Thanks [@Custard7](https://github.com/Custard7)! - feat: inAppMessage Nudge
+
+-   [#1425](https://github.com/learningeconomy/LearnCard/pull/1425) [`378217a4923e5ea4dc70ff0acff0463534810307`](https://github.com/learningeconomy/LearnCard/commit/378217a4923e5ea4dc70ff0acff0463534810307) Thanks [@gerardopar](https://github.com/gerardopar)! - chore: Deploy ScoutPass Staging from `main`
+
+-   [#1436](https://github.com/learningeconomy/LearnCard/pull/1436) [`3fb7cc7a994e39985151ed9020922e8a59bee347`](https://github.com/learningeconomy/LearnCard/commit/3fb7cc7a994e39985151ed9020922e8a59bee347) Thanks [@smurflo2](https://github.com/smurflo2)! - Polish loading states across LearnCard and ScoutPass with credential skeletons and accessible spinners
+
+-   Updated dependencies [[`660778e73161c9c185e1f6592a5ac90dd9309a0a`](https://github.com/learningeconomy/LearnCard/commit/660778e73161c9c185e1f6592a5ac90dd9309a0a), [`0f93889aeebd38203ec57c44ed888d25f8d75f4f`](https://github.com/learningeconomy/LearnCard/commit/0f93889aeebd38203ec57c44ed888d25f8d75f4f)]:
+    -   @learncard/react@2.11.0
+    -   @learncard/lca-api-plugin@1.2.22
+    -   @learncard/helpers@1.3.10
+    -   @learncard/sss-key-manager@0.1.18
+
 ## 1.90.24
 
 ### Patch Changes

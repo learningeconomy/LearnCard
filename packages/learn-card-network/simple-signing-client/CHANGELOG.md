@@ -1,5 +1,19 @@
 # @welibraryos/lca-api-client
 
+## 1.1.34
+
+### Patch Changes
+
+-   Updated dependencies [[`36cc19241aa3bbe6c82a1664f967992d09176d4a`](https://github.com/learningeconomy/LearnCard/commit/36cc19241aa3bbe6c82a1664f967992d09176d4a), [`540434989e3b0e15b9d3ca76388ca4de6730a56b`](https://github.com/learningeconomy/LearnCard/commit/540434989e3b0e15b9d3ca76388ca4de6730a56b)]:
+    -   @learncard/simple-signing-service@1.2.28
+
+## 1.1.33
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/simple-signing-service@1.2.27
+
 ## 1.1.32
 
 ### Patch Changes

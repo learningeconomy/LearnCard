@@ -202,12 +202,6 @@ export const SkillsHubPopOverButton: React.FC<SkillsHubPopOverButtonProps> = ({
                                         ) : (
                                             <div className="w-[22px] h-[22px] shrink-0"> </div>
                                         )}
-                                        {option.type === SkillsHubFilterOptionsEnum.legacy && (
-                                            <FrameworkImage
-                                                sizeClassName="w-[25px] h-[25px]"
-                                                iconSizeClassName="w-[16px] h-[16px]"
-                                            />
-                                        )}
                                         {option.title}
                                     </button>
                                 );

@@ -207,18 +207,24 @@ The app uses `useIonModal` (Ionic) in many components. These create phantom `ion
 
 ### Credential Issuance Flow (Test Perspective)
 
-The credential issuance UI flow through BoostCMS:
+Peer-badge issuance follows the Launchpad flow:
+
+```
+Boost a Friend → Pick a Badge → Personalize → Send To → Just me (or a recipient)
+```
+
+**Self-issue helper**: `issueBadgeToSelf(page)` handles the full peer-badge flow.
+
+For specs that still exercise the legacy BoostCMS issuance route, use:
 
 ```
 Add to LearnCard → Boost Someone → pick template → fill form →
 Next → Publish & Issue → Plus → Boost Myself (or Boost Others + search) → Save
 ```
 
-After save, the app calls `history.goBack()` — tests must start from the page they want to return to (e.g., `/wallet`).
+After the BoostCMS save, the app calls `history.goBack()` — those tests must start from the page they want to return to (e.g., `/wallet`).
 
-**Self-issue helper**: `issueCredentialToSelf(page)` handles the full flow.
-
-**Two Save buttons exist** during issuance:
+**Two Save buttons exist in BoostCMS issuance:**
 
 1. Address book modal Save — confirms recipient selection
 2. Header Save (`data-testid="boost-cms-save"`) — issues the credential

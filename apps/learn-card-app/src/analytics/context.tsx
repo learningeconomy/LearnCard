@@ -6,6 +6,7 @@ const log = getLogger('context');
 import type { AnalyticsProvider, AnalyticsProviderName } from './types';
 import type { AnalyticsEventName, EventPayload } from './events';
 import { NoopProvider } from './providers/noop';
+import { getSharedEventContext, shouldDropEvents } from './sharedContext';
 import { getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
 import {
     setAnalyticsProvider as setSendCredentialFlowProvider,
@@ -64,6 +65,39 @@ async function loadProvider(): Promise<AnalyticsProvider> {
     }
 }
 
+/**
+ * Wrap a provider so every `track`/`page` call carries the enforced
+ * shared context (`environment`, `app_version`, `tenant_id`,
+ * `platform`) and automation/e2e traffic is dropped client-side.
+ * Enforced context wins key conflicts — call sites cannot override
+ * `environment`. PostHog additionally applies this at the SDK level
+ * (see `applyPostHogHygiene`) so `$exception`/`$rageclick`/`$pageleave`
+ * are covered too.
+ */
+function withSharedContext(provider: AnalyticsProvider): AnalyticsProvider {
+    return {
+        name: provider.name,
+        init: () => provider.init(),
+        identify: (userId, traits) => {
+            // Drop automation/e2e identify calls provider-agnostically —
+            // PostHog also catches $identify in before_send, but other
+            // providers have no SDK-level hook.
+            if (shouldDropEvents()) return Promise.resolve();
+            return provider.identify(userId, traits);
+        },
+        reset: () => provider.reset(),
+        setEnabled: enabled => provider.setEnabled(enabled),
+        track: async (event, properties) => {
+            if (shouldDropEvents()) return;
+            await provider.track(event, { ...properties, ...getSharedEventContext() });
+        },
+        page: async (name, properties) => {
+            if (shouldDropEvents()) return;
+            await provider.page(name, { ...properties, ...getSharedEventContext() });
+        },
+    };
+}
+
 interface AnalyticsContextValue {
     provider: AnalyticsProvider;
     isReady: boolean;
@@ -104,12 +138,14 @@ export function AnalyticsContextProvider({ children }: AnalyticsProviderProps) {
         let mounted = true;
 
         loadProvider()
-            .then(async loadedProvider => {
+            .then(async rawProvider => {
                 if (!mounted) return;
 
-                await loadedProvider.init();
+                await rawProvider.init();
 
                 if (!mounted) return;
+
+                const loadedProvider = withSharedContext(rawProvider);
 
                 setProvider(loadedProvider);
                 setIsReady(true);

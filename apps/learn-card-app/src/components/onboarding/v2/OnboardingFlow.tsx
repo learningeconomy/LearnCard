@@ -58,6 +58,11 @@ import {
     AnalyticsEvents,
     NEW_SIGNUP_FLAG_KEY,
     ONBOARDING_STARTED_AT_KEY,
+    newFlowId,
+    createFlowLifecycle,
+    LAST_LOGIN_METHOD_KEY,
+    getOrCreateSignupFlow,
+    clearSignupFlow,
 } from '@analytics';
 
 import countries from '../../../constants/countries.json';
@@ -95,16 +100,82 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const flowStartedAt = useRef(
         Number(localStorage.getItem(ONBOARDING_STARTED_AT_KEY) ?? Date.now())
     );
+    const onboardingFlowIdRef = useRef(newFlowId());
+    const onboardingStartedTrackedRef = useRef(false);
+    const onboardingAbandonedTrackedRef = useRef(false);
+    const onboardingCompletedRef = useRef(false);
+    const currentStepRef = useRef<Step>('age-country');
+    const stepStartedAtRef = useRef(Date.now());
+    const completedStepIdsRef = useRef<Record<'age-country' | 'profile', boolean>>({
+        'age-country': false,
+        profile: false,
+    });
+
+    const getStepMetadata = useCallback((currentStep: Step) => {
+        switch (currentStep) {
+            case 'age-country':
+                return { step_id: 'age-country', step_index: 1 } as const;
+            case 'profile':
+                return { step_id: 'profile', step_index: 2 } as const;
+            case 'celebrate':
+                return { step_id: 'celebrate', step_index: 3 } as const;
+        }
+    }, []);
+
+    const getStepDuration = useCallback(() => Date.now() - stepStartedAtRef.current, []);
+
+    const trackOnboardingStepCompleted = useCallback(
+        (stepId: 'age-country' | 'profile', stepIndex: number) => {
+            if (completedStepIdsRef.current[stepId]) {
+                return;
+            }
+
+            track(AnalyticsEvents.ONBOARDING_STEP_COMPLETED, {
+                flow_id: onboardingFlowIdRef.current,
+                step_id: stepId,
+                step_index: stepIndex,
+                duration_ms: getStepDuration(),
+            });
+
+            completedStepIdsRef.current[stepId] = true;
+        },
+        [getStepDuration, track]
+    );
+
+    const trackOnboardingAbandoned = useCallback(() => {
+        if (onboardingCompletedRef.current || onboardingAbandonedTrackedRef.current) {
+            return;
+        }
+
+        const { step_id, step_index } = getStepMetadata(currentStepRef.current);
+
+        track(AnalyticsEvents.ONBOARDING_ABANDONED, {
+            flow_id: onboardingFlowIdRef.current,
+            step_id,
+            step_index,
+            duration_ms: getStepDuration(),
+        });
+
+        onboardingAbandonedTrackedRef.current = true;
+    }, [getStepDuration, getStepMetadata, track]);
 
     useEffect(() => {
+        if (!onboardingStartedTrackedRef.current) {
+            track(AnalyticsEvents.ONBOARDING_STARTED, {
+                flow_id: onboardingFlowIdRef.current,
+            });
+            onboardingStartedTrackedRef.current = true;
+        }
+
         if (!localStorage.getItem(ONBOARDING_STARTED_AT_KEY)) {
             localStorage.setItem(ONBOARDING_STARTED_AT_KEY, String(flowStartedAt.current));
         }
         redirectStore.set.isOnboardingOpen(true);
         return () => {
+            trackOnboardingAbandoned();
             redirectStore.set.isOnboardingOpen(false);
         };
-    }, []);
+    }, [track, trackOnboardingAbandoned]);
 
     const [step, setStep] = useState<Step>('age-country');
     const [isPreparingKey, setIsPreparingKey] = useState(false);
@@ -116,6 +187,11 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
     const [dob, setDob] = useState<string>('');
     const [country, setCountry] = useState<string>('');
     const [usMinorConsent, setUsMinorConsent] = useState(false);
+
+    useEffect(() => {
+        currentStepRef.current = step;
+        stepStartedAtRef.current = Date.now();
+    }, [step]);
 
     useEffect(() => {
         setCountry(prev => prev || inferCountryCode() || '');
@@ -314,6 +390,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                         closeModal();
                         if (await prepareNewUserKey()) {
                             setPrivacyPreferences(getDefaultPrivacyPreferences(dob, country));
+                            trackOnboardingStepCompleted('age-country', 1);
                             setStep('profile');
                         }
                     }}
@@ -334,6 +411,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
         if (await prepareNewUserKey()) {
             setPrivacyPreferences(getDefaultPrivacyPreferences(dob, country));
+            trackOnboardingStepCompleted('age-country', 1);
             setStep('profile');
         }
     };
@@ -355,6 +433,22 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
         setError(null);
         setIsCreating(true);
+
+        const {
+            flowId: signupFlowId,
+            startedAtMs: signupStartedAtMs,
+            isNew,
+        } = getOrCreateSignupFlow();
+        const signupMethod = localStorage.getItem(LAST_LOGIN_METHOD_KEY) ?? undefined;
+        const signupLifecycle = createFlowLifecycle(signupFlowId);
+
+        if (isNew) {
+            track(AnalyticsEvents.SIGNUP_STARTED, {
+                flow_id: signupFlowId,
+                method: signupMethod,
+                entry_point: 'onboarding_retry',
+            });
+        }
 
         try {
             const wallet = await initWallet();
@@ -387,6 +481,19 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
             });
 
             if (didWeb) {
+                localStorage.setItem(NEW_SIGNUP_FLAG_KEY, '1');
+
+                if (signupLifecycle.terminate()) {
+                    track(AnalyticsEvents.SIGNUP_COMPLETED, {
+                        flow_id: signupFlowId,
+                        method: signupMethod,
+                        duration_ms: Date.now() - signupStartedAtMs,
+                    });
+                    clearSignupFlow();
+                }
+
+                onboardingCompletedRef.current = true;
+
                 if (euParentalConsentRequested && guardianEmail) {
                     try {
                         await wallet.invoke.sendGuardianApprovalEmail({ guardianEmail });
@@ -419,7 +526,6 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                     msSinceMethodStarted: Date.now() - flowStartedAt.current,
                 });
 
-                localStorage.setItem(NEW_SIGNUP_FLAG_KEY, '1');
                 localStorage.removeItem(ONBOARDING_STARTED_AT_KEY);
 
                 let claimedChildren: Awaited<
@@ -479,9 +585,22 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                     );
                 }
 
+                trackOnboardingStepCompleted('profile', 2);
                 setStep('celebrate');
             }
         } catch (err: any) {
+            if (signupLifecycle.terminate()) {
+                const errorCode = err?.code || err?.name;
+                track(AnalyticsEvents.SIGNUP_FAILED, {
+                    flow_id: signupFlowId,
+                    method: signupMethod,
+                    step_id: 'profile_creation',
+                    error_code: typeof errorCode === 'string' ? errorCode : undefined,
+                    duration_ms: Date.now() - signupStartedAtMs,
+                });
+                clearSignupFlow();
+            }
+
             log.error('createProfile::error', err);
             setError(err?.message || m['onboarding.profile.error.createFailed']());
         } finally {

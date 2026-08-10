@@ -3,6 +3,7 @@ import moment from 'moment';
 import { useHistory } from 'react-router';
 
 import { IonContent, IonPage, IonSpinner, useIonAlert, IonRow } from '@ionic/react';
+import { getVCDisplayCardVariant } from '@learncard/react';
 // import MainHeader from '../../components/main-header/MainHeader';
 import X from 'learn-card-base/svgs/X';
 // @ts-ignore
@@ -313,6 +314,9 @@ export const ClaimBoostModal: React.FC<{
     const isTroopIdClaim = boost ? isTroopCredential(boost) : false;
 
     const boostExists = !!boost && !loading;
+    const isRibbonDisplayCard =
+        boostExists &&
+        getVCDisplayCardVariant(boost, getDefaultCategoryForCredential(boost)) === 'ribbon';
 
     return (
         <IonPage>
@@ -322,7 +326,11 @@ export const ClaimBoostModal: React.FC<{
                 customHeaderClass="main-header-branding-public-route"
             /> */}
             <IonContent fullscreen color="grayscale-100">
-                <div className="px-[40px] pb-4 vc-preview-modal-safe-area h-full">
+                <div
+                    className={`pb-4 vc-preview-modal-safe-area h-full ${
+                        isRibbonDisplayCard ? 'px-0' : 'px-[40px]'
+                    }`}
+                >
                     {!boostExists && (
                         <section className="relative loading-spinner-container flex flex-col items-center justify-center h-full w-full">
                             <IonSpinner color="black" />

@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { VC } from '@learncard/types';
+import { IonIcon } from '@ionic/react';
+import { alertCircleOutline } from 'ionicons/icons';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('endorsement-draft-request-success');
 
@@ -19,6 +21,8 @@ import {
     useGetCurrentLCNUser,
     useIsLoggedIn,
     useWallet,
+    useToast,
+    ToastTypeEnum,
 } from 'learn-card-base';
 import {
     BoostEndorsement,
@@ -27,6 +31,7 @@ import {
 } from '../boost-endorsement.helpers';
 import { convertAttachmentsToEvidence } from '../EndorsementForm/endorsement-state.helpers';
 import * as m from '../../../paraglide/messages.js';
+import { createEndorsementShareLinkInfo } from './endorsement-request.helpers';
 
 export const EndorsementDraftRequestSuccess: React.FC<{
     credential: VC;
@@ -39,18 +44,21 @@ export const EndorsementDraftRequestSuccess: React.FC<{
     const { initWallet } = useWallet();
     const { handlePresentJoinNetworkModal } = useJoinLCNetworkModal();
     const { currentLCNUser } = useGetCurrentLCNUser();
+    const { presentToast } = useToast();
 
     const { newModal, closeModal: close } = useModal({
         mobile: ModalTypes.Right,
         desktop: ModalTypes.Right,
     });
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [sendFailed, setSendFailed] = useState<boolean>(false);
     const { issueeName, issueeProfile } = useGetVCInfo(credential, categoryType);
     const draftEndorsementRequest = endorsementsRequestStore.useTracked.endorsementRequest();
     const shareLinkInfo = endorsementsRequestStore.useTracked.credentialInfo();
 
     const [endorsement, setEndorsement] = useState<BoostEndorsement | null>(null);
     const hasAutoSentRef = useRef(false);
+    const canRetry = Boolean(shareLinkInfo);
 
     const status = endorsement?.status || false;
     const endorsementStatus = status;
@@ -112,7 +120,11 @@ export const EndorsementDraftRequestSuccess: React.FC<{
 
         try {
             if (isLoggedIn) {
+                hasAutoSentRef.current = true;
+                setSendFailed(false);
                 setIsLoading(true);
+
+                if (!shareLinkInfo) throw new Error('Missing endorsement request identity');
                 const wallet = await initWallet();
 
                 const evidence = convertAttachmentsToEvidence(
@@ -131,18 +143,24 @@ export const EndorsementDraftRequestSuccess: React.FC<{
                     endorsementVC,
                     {
                         type: 'endorsement',
-                        sharedUri: `uri=${shareLinkInfo?.uri}&seed=${shareLinkInfo?.seed}&pin=${shareLinkInfo?.pin}`,
+                        sharedUri: createEndorsementShareLinkInfo(shareLinkInfo),
                         credentialId: credential.id,
                         relationship: draftEndorsementRequest.relationship,
                     }
                 );
 
                 clearDraftEndorsementRequest();
-
+                setSendFailed(false);
                 setIsLoading(false);
             }
         } catch (error) {
+            hasAutoSentRef.current = false;
+            setSendFailed(true);
             log.error(error);
+            presentToast(m['toasts.boost.endorsementRequestFailed'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
             setIsLoading(false);
         }
     };
@@ -164,8 +182,7 @@ export const EndorsementDraftRequestSuccess: React.FC<{
         const hasValidDraft =
             draftEndorsementRequest?.relationship?.type && draftEndorsementRequest?.description;
 
-        if (credential?.id && autoSend && hasValidDraft && currentLCNUser) {
-            hasAutoSentRef.current = true;
+        if (credential?.id && autoSend && hasValidDraft && currentLCNUser && !sendFailed) {
             setEndorsement({
                 ...draftEndorsementRequest,
                 user: {
@@ -173,9 +190,9 @@ export const EndorsementDraftRequestSuccess: React.FC<{
                     image: currentLCNUser?.image,
                 },
             });
-            handleEndorsementSubmit();
+            void handleEndorsementSubmit();
         }
-    }, [credential?.id, currentLCNUser, autoSend]);
+    }, [credential?.id, currentLCNUser, autoSend, sendFailed]);
 
     let endorsementStatusEl = (
         <>
@@ -205,6 +222,30 @@ export const EndorsementDraftRequestSuccess: React.FC<{
         </>
     );
 
+    if (sendFailed) {
+        endorsementStatusEl = (
+            <>
+                <h1 className="text-center text-xl font-semibold text-grayscale-900">
+                    {m['endorsement.request.draft.sendFailedTitle']()}
+                </h1>
+                <p className="text-center text-sm text-grayscale-600 leading-relaxed">
+                    {canRetry
+                        ? m['endorsement.request.draft.sendFailedDescription']()
+                        : m['endorsement.request.draft.missingRequestDescription']()}
+                </p>
+                {canRetry && (
+                    <button
+                        type="button"
+                        onClick={() => void handleEndorsementSubmit()}
+                        className="py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+                    >
+                        {m['endorsement.request.draft.tryAgain']()}
+                    </button>
+                )}
+            </>
+        );
+    }
+
     if (endorsementStatus === BoostEndorsementStatusEnum.Approved) {
         endorsementStatusEl = (
             <>
@@ -228,10 +269,14 @@ export const EndorsementDraftRequestSuccess: React.FC<{
     return (
         <div className="w-full h-full flex flex-col items-center justify-center bg-white bg-opacity-10 px-4">
             <div className="w-full flex flex-col items-center justify-center  bg-white rounded-[20px] px-4 py-8 gap-2 max-w-[375px]">
-                <EndorsmentThumbWithCircle
-                    className="w-[50px] h-[50px] text-white"
-                    fill="#2DD4BF"
-                />
+                {sendFailed ? (
+                    <IonIcon icon={alertCircleOutline} className="text-red-400 text-[50px]" />
+                ) : (
+                    <EndorsmentThumbWithCircle
+                        className="w-[50px] h-[50px] text-white"
+                        fill="#2DD4BF"
+                    />
+                )}
                 {endorsementStatusEl}
             </div>
 
@@ -240,7 +285,8 @@ export const EndorsementDraftRequestSuccess: React.FC<{
                 showEndorsementPreview
                 handleCloseModal={() => {
                     close();
-                    clearDraftEndorsementRequest();
+
+                    if (!sendFailed) clearDraftEndorsementRequest();
                 }}
             />
         </div>
